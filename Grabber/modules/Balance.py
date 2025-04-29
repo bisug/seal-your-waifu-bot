@@ -7,8 +7,8 @@ from pymongo import MongoClient
 
 from Grabber import user_collection, collection, application
 
-SUPPORT_GROUP_ID = -1002528887253  
-OWNER_ID = 7717913705  
+SUPPORT_GROUP_ID = -1002429397912  
+OWNER_ID = 6574393060  
 current_characters = {}  
 
 MAX_ACTIVE_GAMES = 100  
@@ -90,7 +90,7 @@ async def nguess(update: Update, context: CallbackContext):
     chat_id = update.effective_chat.id
 
     if chat_id != SUPPORT_GROUP_ID:
-        await update.message.reply_text("❌ This command only works in @nguess_redirect.")
+        await update.message.reply_text("❌ This command only works in @TNJBotSupport .")
         return
 
     if len(current_characters) >= MAX_ACTIVE_GAMES:
