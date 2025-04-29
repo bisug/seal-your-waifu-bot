@@ -11,7 +11,7 @@ db = client['Character_catchers']
 user_collection = db['total_pm_users']  
 group_collection = db['total_groups']
 
-ADMIN_ID = 7717913705  
+ADMIN_ID = 6574393060  
 
 # 📢 **Custom Broadcast Command**
 @app.on_message(filters.command("broadcasts") & filters.user(ADMIN_ID))
