@@ -6,7 +6,7 @@ from pyrogram.types import Message
 from Grabber import user_collection, collection, Grabberu as app
 
 # Allowed group ID (Only works in this group)
-ALLOWED_GROUP_ID = -1002528887253  # Replace with your group's ID
+ALLOWED_GROUP_ID = -1002429397912  # Replace with your group's ID
 
 # Rarity probability for waifu claims
 RARITY_WEIGHTS = {
