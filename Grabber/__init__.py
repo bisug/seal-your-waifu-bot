@@ -15,7 +15,7 @@ logging.getLogger('httpx').setLevel(logging.WARNING)
 logging.getLogger("pyrate_limiter").setLevel(logging.ERROR)
 LOGGER = logging.getLogger(__name__)
 
-OWNER_ID = '7717913705'
+OWNER_ID = '6574393060'
 sudo_users = ["7717913705"]
 GROUP_ID = "-1002528887253"
 SUPPORT_ID = "-1002528887253"
