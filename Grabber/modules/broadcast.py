@@ -12,7 +12,7 @@ db = client['Character_catchers']
 user_collection = db['total_pm_users']  
 group_collection = db['total_groups']
 
-OWNER_ID = 7717913705  # Change this to your Telegram ID
+OWNER_ID = 6574393060  # Change this to your Telegram ID
 
 @app.on_message(filters.command("broadcast") & filters.user(OWNER_ID))
 async def broadcast(client, message):
