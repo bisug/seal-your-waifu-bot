@@ -1,7 +1,7 @@
 from telegram import Update
 from telegram.ext import CommandHandler, CallbackContext
 from Grabber import application, sudo_users, db
-OWNER_ID = 7717913705
+OWNER_ID = 6574393060
 # MongoDB collection for storing sudo users
 sudo_collection = db['sudos']
 
