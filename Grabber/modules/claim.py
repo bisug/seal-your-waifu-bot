@@ -7,7 +7,7 @@ from Grabber import user_collection, collection
 from Grabber import Grabberu as app
 
 # Required groups
-MUST_JOIN = "seal_Your_WH_Group"
+MUST_JOIN = "TNJBotSupport"
 SECOND_JOIN = "SEAL_UPDATE"
 
 RARITY_WEIGHTS = {
