@@ -39,7 +39,7 @@ async def has_joined_required_groups(user_id):
     except UserNotParticipant:
         return False
 
-@app.on_message(filters.command("gehehe") & filters.group)
+@app.on_message(filters.command("claim") & filters.group)
 async def claim_waifu(client: Client, message: Message):
     """Allows users to claim a waifu only if they have joined groups."""
     user_id = message.from_user.id
