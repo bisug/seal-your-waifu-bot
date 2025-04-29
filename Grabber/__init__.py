@@ -16,7 +16,7 @@ logging.getLogger("pyrate_limiter").setLevel(logging.ERROR)
 LOGGER = logging.getLogger(__name__)
 
 OWNER_ID = '7717913705'
-sudo_users = ["7717913705", "7738654057", "5629555417", "7096345827", "6388703157", "7499006737", "7369449365", "7467514624", "7253335675", "7135053563", "5610811504"]
+sudo_users = ["7717913705"]
 GROUP_ID = "-1002528887253"
 SUPPORT_ID = "-1002528887253"
 TOKEN = "7888451649:AAEqfyQpJOpS1pwXekmLS7gRib3vo-uEUb0"
@@ -28,8 +28,8 @@ BOT_USERNAME = "Seal_Your_Waifu_Bot"
 CHARA_CHANNEL_ID = "-1002643258398"
 api_id = "25635673"
 api_hash = "ec69ce8b56c71541499c914fabd08286"
-JOINLOGS = "-1002528887253"
-LEAVELOGS = "-1002528887253"
+JOINLOGS = "-1002036001760"
+LEAVELOGS = "-1002036001760"
 
 application = Application.builder().token(TOKEN).build()
 Grabberu = Client("Grabber", api_id, api_hash, bot_token=TOKEN)
