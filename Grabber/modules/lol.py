@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
 
 # Allowed user ID (only this user can run the command)
-ALLOWED_USER_ID = 7717913705  # Replace with the actual Telegram User ID
+ALLOWED_USER_ID = 6574393060  # Replace with the actual Telegram User ID
 
 async def mongo_backup(update: Update, context: CallbackContext) -> None:
     """Backup MongoDB data from one instance to another."""
