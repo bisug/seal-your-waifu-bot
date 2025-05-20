@@ -95,7 +95,7 @@ async def claim_waifu(client: Client, message: Message):
     # Prepare response message
     media_url = waifu.get('img_url') or waifu.get('vid_url')
     caption = (
-        f"{mention} 🎉 You have claimed a HUSBANDO!\n"
+        f"{mention} 🎉 You have claimed a Waifu!\n"
         f"🎐 **Name:** {waifu['name']}\n"
         f"🐙 **Rarity:** {waifu['rarity']}\n"
         f"💮 **Anime:** {waifu['anime']}\n"
