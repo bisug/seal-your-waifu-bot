@@ -40,14 +40,14 @@ async def claim_waifu(client: Client, message: Message):
     if message.chat.type == "private":
         return await message.reply_text(
             "🔒 **You can only claim HUSBANDO in the group!**\n"
-            "Join here to claim: [Seal W/H Group](https://t.me/+narH1LRo2EBjYjE1)"
+            "Join here to claim: [Seal W/H Group](https://t.me/TNJBotSupport)"
         )
 
     # Ensure the command is used in the correct group
     if message.chat.id != ALLOWED_GROUP_ID:
         return await message.reply_text(
             "🚫 **This command only works in the official group!**\n"
-            "Join here: [Seal W/H Group](https://t.me/seal_Your_WH_Group)"
+            "Join here: [Seal W/H Group](https://t.me/TNJBotSupport)"
         )
 
     # Fetch user data from the database
