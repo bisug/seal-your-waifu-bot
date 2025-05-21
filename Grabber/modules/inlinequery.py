@@ -109,9 +109,9 @@ async def inlinequery(update: Update, context: CallbackContext) -> None:
     await update.inline_query.answer(results, next_offset=next_offset, cache_time=5)
 
 async def guessed_callback(update: Update, context: CallbackContext) -> None:
+    print("Callback received!")  # Debug ke liye
     query = update.callback_query
-    char_id = int(query.data.split("_")[2])  # Extract character ID
-
+    char_id = int(query.data.split("_")[2])
     global_count = await user_collection.count_documents({'characters.id': char_id})
     await query.answer(f"📊 This character is owned by {global_count} users!", show_alert=True)
 
