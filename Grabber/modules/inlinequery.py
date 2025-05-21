@@ -116,6 +116,6 @@ async def guessed_callback(update: Update, context: CallbackContext) -> None:
     await query.answer(f"📊 This character is owned by {global_count} users!", show_alert=True)
 
 # Register handlers
-application.add_handler(CallbackQueryHandler(guessed_callback, pattern='^character_count_\\d+$'))
+application.add_handler(CallbackQueryHandler(guessed_callback, pattern=r'^character_count_\d+$'))
 application.add_handler(InlineQueryHandler(inlinequery))
             
