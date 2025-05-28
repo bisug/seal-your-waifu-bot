@@ -111,11 +111,17 @@ async def inlinequery(update: Update, context: CallbackContext) -> None:
 
 async def guessed_callback(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
-    await query.answer()  # Prevent loading spinner
+    print("Callback triggered with data:", query.data)
+    try:
+        await query.answer()
+    except Exception as e:
+        print("Error answering callback:", e)
+        # optionally: await query.edit_message_text(text=f"Error: {e}")
 
     try:
         char_id = query.data.split("_")[2]
     except IndexError:
+        print("IndexError in callback data splitting")
         await query.edit_message_text("Invalid callback data.", parse_mode="HTML")
         return
 
@@ -124,7 +130,7 @@ async def guessed_callback(update: Update, context: CallbackContext) -> None:
             {"$match": {"characters.id": char_id}},
             {"$unwind": "$characters"},
             {"$match": {"characters.id": char_id}},
-            {"$group": {"_id": "$id"}},  # Get unique user IDs
+            {"$group": {"_id": "$id"}},
             {"$count": "user_count"}
         ]).to_list(length=1)
 
@@ -136,7 +142,9 @@ async def guessed_callback(update: Update, context: CallbackContext) -> None:
             await query.answer(f"📊 This character is owned by {global_count} users!", show_alert=True)
 
     except Exception as e:
+        print("Error during DB query or answering:", e)
         await query.answer(f"❌ An error occurred: {str(e)}", show_alert=True)
+
 
 
 # Register handlers
