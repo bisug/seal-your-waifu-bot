@@ -199,16 +199,15 @@ async def message_count_cmd(update: Update, context: CallbackContext) -> None:
     await update.message.reply_text(f"📨 Total messages counted in this group: {count}")
 
 
-# --- Main Function ---
 def main() -> None:
     application.add_handler(CommandHandler("seal", guess))
     application.add_handler(CommandHandler("messagecount", message_count_cmd))
     application.add_handler(MessageHandler(filters.ALL, message_counter))
 
-    async def startup_tasks():
+    async def post_init(app):
         await load_message_counts()
 
-    asyncio.get_event_loop().run_until_complete(startup_tasks())
+    application.post_init = post_init
     application.run_polling(drop_pending_updates=True)
 
 
