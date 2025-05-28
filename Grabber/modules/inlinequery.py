@@ -92,7 +92,8 @@ async def inlinequery(update: Update, context: CallbackContext) -> None:
             )
 
         keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton("📊 How many users have?", callback_data=f"character_count_{char_id}")]
+              [InlineKeyboardButton("📊 How many users have?", callback_data=f"character_count_{char_id}")]
+
         ])
 
         results.append(
@@ -109,13 +110,37 @@ async def inlinequery(update: Update, context: CallbackContext) -> None:
     await update.inline_query.answer(results, next_offset=next_offset, cache_time=5)
 
 async def guessed_callback(update: Update, context: CallbackContext) -> None:
-    print("Callback received!")  # Debug ke liye
     query = update.callback_query
-    char_id = int(query.data.split("_")[2])
-    global_count = await user_collection.count_documents({'characters.id': char_id})
-    await query.answer(f"📊 This character is owned by {global_count} users!", show_alert=True)
+    await query.answer()  # Prevent loading spinner
+
+    try:
+        char_id = query.data.split("_")[2]
+    except IndexError:
+        await query.edit_message_text("Invalid callback data.", parse_mode="HTML")
+        return
+
+    try:
+        result = await user_collection.aggregate([
+            {"$match": {"characters.id": char_id}},
+            {"$unwind": "$characters"},
+            {"$match": {"characters.id": char_id}},
+            {"$group": {"_id": "$id"}},  # Get unique user IDs
+            {"$count": "user_count"}
+        ]).to_list(length=1)
+
+        global_count = result[0]["user_count"] if result else 0
+
+        if global_count == 0:
+            await query.answer("🚫 No users currently own this character.", show_alert=True)
+        else:
+            await query.answer(f"📊 This character is owned by {global_count} users!", show_alert=True)
+
+    except Exception as e:
+        await query.answer(f"❌ An error occurred: {str(e)}", show_alert=True)
+
 
 # Register handlers
 application.add_handler(CallbackQueryHandler(guessed_callback, pattern=r'^character_count_\d+$'))
+
 application.add_handler(InlineQueryHandler(inlinequery))
             
