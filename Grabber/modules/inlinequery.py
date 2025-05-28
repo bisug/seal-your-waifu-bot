@@ -19,7 +19,6 @@ from Grabber import user_collection, collection, application
 global_guess_cache = {}
 
 async def get_global_guess_count(char_id):
-    """Fetches and caches global guess count."""
     if char_id in global_guess_cache:
         return global_guess_cache[char_id]
     global_count = await user_collection.count_documents({'characters.id': char_id})
@@ -61,7 +60,7 @@ async def inlinequery(update: Update, context: CallbackContext) -> None:
 
     next_offset = str(offset + len(characters)) if len(characters) == 10 else ""
 
-    # Pre-fetch guess counts
+    # Pre-fetch guess counts asynchronously
     tasks = [get_global_guess_count(char["id"]) for char in characters]
     global_counts = await asyncio.gather(*tasks)
 
@@ -92,8 +91,7 @@ async def inlinequery(update: Update, context: CallbackContext) -> None:
             )
 
         keyboard = InlineKeyboardMarkup([
-              [InlineKeyboardButton("📊 How many users have?", callback_data=f"character_count_{char_id}")]
-
+            [InlineKeyboardButton("📊 How many users have?", callback_data=f"character_count_{char_id}")]
         ])
 
         results.append(
@@ -109,23 +107,26 @@ async def inlinequery(update: Update, context: CallbackContext) -> None:
 
     await update.inline_query.answer(results, next_offset=next_offset, cache_time=5)
 
+
 async def guessed_callback(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
-    print("Callback triggered with data:", query.data)
-    try:
-        await query.answer()
-    except Exception as e:
-        print("Error answering callback:", e)
-        # optionally: await query.edit_message_text(text=f"Error: {e}")
+    data = query.data
 
-    try:
-        char_id = query.data.split("_")[2]
-    except IndexError:
-        print("IndexError in callback data splitting")
-        await query.edit_message_text("Invalid callback data.", parse_mode="HTML")
+    # Always answer the callback to remove the loading spinner ASAP
+    await query.answer()
+
+    if not data.startswith("character_count_"):
+        await query.edit_message_text("⚠️ Invalid callback data.", parse_mode="HTML")
         return
 
     try:
+        char_id = data.split("_")[2]
+    except IndexError:
+        await query.edit_message_text("⚠️ Invalid callback data format.", parse_mode="HTML")
+        return
+
+    try:
+        # Aggregate unique users owning this character
         result = await user_collection.aggregate([
             {"$match": {"characters.id": char_id}},
             {"$unwind": "$characters"},
@@ -142,14 +143,9 @@ async def guessed_callback(update: Update, context: CallbackContext) -> None:
             await query.answer(f"📊 This character is owned by {global_count} users!", show_alert=True)
 
     except Exception as e:
-        print("Error during DB query or answering:", e)
         await query.answer(f"❌ An error occurred: {str(e)}", show_alert=True)
 
 
-
-# Register handlers
-application.add_handler(CallbackQueryHandler(guessed_callback, pattern=r'^character_count_\d+$'))
-
-
+# Register handlers - note only ONE CallbackQueryHandler for guessed_callback with correct pattern
 application.add_handler(InlineQueryHandler(inlinequery))
-            
+application.add_handler(CallbackQueryHandler(guessed_callback, pattern=r'^character_count_\d+$'))
