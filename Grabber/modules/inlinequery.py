@@ -141,7 +141,7 @@ async def guessed_callback(update: Update, context: CallbackContext) -> None:
 
 # Register handlers
 application.add_handler(CallbackQueryHandler(guessed_callback, pattern=r'^character_count_\d+$'))
-application.add_handler(CallbackQueryHandler(guessed_callback))
+
 
 application.add_handler(InlineQueryHandler(inlinequery))
             
