@@ -34,17 +34,20 @@ async def broadcast(update: Update, context: CallbackContext) -> None:
             try:
                 await context.bot.send_message(chat_id=user_id, text=message_text)
                 sent_count += 1
-                await asyncio.sleep(0.1)  # Prevent flooding
+                await asyncio.sleep(0.1)
             except Exception:
                 failed_count += 1
 
         await update.message.reply_text(
-            f"✅ Broadcast sent to {sent_count} users.\n❌ Failed to send to {failed_count} users."
+            f"📢 Broadcast Summary:\n\n"
+            f"👥 Total users: {sent_count + failed_count}\n"
+            f"✅ Successfully sent: {sent_count}\n"
+            f"❌ Failed to send: {failed_count}"
         )
 
     except PyMongoError as e:
         await update.message.reply_text(f"Database error: {str(e)}")
-
+        
 # Eval Command
 async def eval_handler(update: Update, context: CallbackContext) -> None:
     if update.effective_user.id != OWNER_ID:
