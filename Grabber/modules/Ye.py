@@ -3,7 +3,7 @@ from telegram.ext import CallbackContext, CommandHandler
 from pymongo.errors import PyMongoError
 import asyncio
 
-from shivu import (
+from Grabber import (
     application, PHOTO_URL, OWNER_ID,
     user_collection, top_global_groups_collection,
     group_user_totals_collection, sudo_users as SUDO_USERS
