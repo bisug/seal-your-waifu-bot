@@ -169,4 +169,3 @@ application.add_handler(CommandHandler('shop', shop))
 application.add_handler(CommandHandler('balance', balance_command))
 application.add_handler(CallbackQueryHandler(shop_navigation, pattern="^shop_(prev|next)$"))
 application.add_handler(CallbackQueryHandler(buy_character, pattern="^buy_"))
-        
