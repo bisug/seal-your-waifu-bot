@@ -1,11 +1,11 @@
 import random
 import logging
 import aiohttp
+from pymongo import MongoClient
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, CallbackContext
 from Grabber import application, collection, user_collection  # Presumed MongoDB + bot app initialized
-
-# Constants
+# === Configuration ===
 EXTOL_API_KEY = ""
 EXTOL_RECEIVER = "EXTAF9VYPP67bpFWJmw301503c4"
 SHOP_RARITY = "🪽 Shop"
@@ -16,27 +16,28 @@ ADMINS = [7717913705]
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# External API calls
+# === MongoDB ===
+
+
+# === Extol API ===
 async def get_extol_balance():
     async with aiohttp.ClientSession() as session:
-        async with session.get("https://marketapi.animerealms.org/api/balance", headers={"api-key": EXTOL_API_KEY}) as resp:
+        async with session.get("https://marketapi.animerealms.org/api/balance",
+                               headers={"api-key": EXTOL_API_KEY}) as resp:
             return await resp.json()
 
 async def withdraw_extol(amount, to):
     async with aiohttp.ClientSession() as session:
-        async with session.get(
-            "https://marketapi.animerealms.org/api/withdraw",
-            headers={"api-key": EXTOL_API_KEY},
-            params={"amount": amount, "address": to}
-        ) as resp:
+        async with session.get("https://marketapi.animerealms.org/api/withdraw",
+                               headers={"api-key": EXTOL_API_KEY},
+                               params={"amount": amount, "address": to}) as resp:
             return await resp.json()
 
-# Load daily shop characters
+# === Character Shop ===
 async def get_daily_shop_characters():
     characters = await collection.find({"rarity": SHOP_RARITY}).to_list(None)
     return random.sample(characters, min(len(characters), SHOP_PAGE_SIZE))
 
-# /shop command
 async def shop(update: Update, context: CallbackContext):
     chars = await get_daily_shop_characters()
     if not chars:
@@ -47,7 +48,6 @@ async def shop(update: Update, context: CallbackContext):
     context.user_data["shop_page"] = 0
     await send_shop_message(update, context)
 
-# Send shop character
 async def send_shop_message(update: Update, context: CallbackContext):
     page = context.user_data.get("shop_page", 0)
     chars = context.user_data.get("shop", [])
@@ -55,24 +55,23 @@ async def send_shop_message(update: Update, context: CallbackContext):
         await update.message.reply_text("🚫 Invalid page.")
         return
 
-    character = chars[page]
-    price = character.get("price", DEFAULT_PRICE)
-
+    char = chars[page]
+    price = char.get("price", DEFAULT_PRICE)
     balance_data = await get_extol_balance()
     balance = balance_data.get("balance", 0)
 
     text = (
         f"🛍️ *Character Shop*\n"
         f"💰 *Extol Balance:* {balance} EXT\n\n"
-        f"🆔 *ID:* {character['id']}\n"
-        f"📛 *Name:* {character['name']}\n"
-        f"📺 *Anime:* {character['anime']}\n"
-        f"🏷 *Rarity:* {character['rarity']}\n"
+        f"🆔 *ID:* {char['id']}\n"
+        f"📛 *Name:* {char['name']}\n"
+        f"📺 *Anime:* {char['anime']}\n"
+        f"🏷 *Rarity:* {char['rarity']}\n"
         f"💲 *Price:* {price} EXT"
     )
 
     keyboard = [
-        [InlineKeyboardButton("💰 Buy", callback_data=f"buy_{character['id']}")],
+        [InlineKeyboardButton("💰 Buy", callback_data=f"buy_{char['id']}")],
         [
             InlineKeyboardButton("⬅️ Prev", callback_data="shop_prev"),
             InlineKeyboardButton("➡️ Next", callback_data="shop_next")
@@ -81,16 +80,15 @@ async def send_shop_message(update: Update, context: CallbackContext):
 
     if update.callback_query:
         await update.callback_query.message.edit_media(
-            media=InputMediaPhoto(media=character["img_url"], caption=text, parse_mode="Markdown"),
+            media=InputMediaPhoto(media=char["img_url"], caption=text, parse_mode="Markdown"),
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
     else:
         await update.message.reply_photo(
-            photo=character["img_url"], caption=text,
+            photo=char["img_url"], caption=text,
             reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown"
         )
 
-# Navigation buttons
 async def shop_navigation(update: Update, context: CallbackContext):
     query = update.callback_query
     action = query.data
@@ -104,7 +102,6 @@ async def shop_navigation(update: Update, context: CallbackContext):
     await send_shop_message(update, context)
     await query.answer()
 
-# Buy character
 async def buy_character(update: Update, context: CallbackContext):
     query = update.callback_query
     user_id = query.from_user.id
@@ -118,7 +115,7 @@ async def buy_character(update: Update, context: CallbackContext):
         await query.answer("❌ Character not available.", show_alert=True)
         return
 
-    if any(c["id"] == char_id for c in owned):
+    if char_id in [c["id"] if isinstance(c, dict) else c for c in owned]:
         await query.answer("✅ You already own this character.", show_alert=True)
         return
 
@@ -150,7 +147,6 @@ async def buy_character(update: Update, context: CallbackContext):
     )
     await query.answer()
 
-# /balance command
 async def balance_command(update: Update, context: CallbackContext):
     data = await get_extol_balance()
     if not data or not data.get("ok"):
@@ -163,24 +159,27 @@ async def balance_command(update: Update, context: CallbackContext):
         f"💳 *Extol Balance:* {balance} EXT\n🏦 *Address:* `{address}`",
         parse_mode="Markdown"
     )
-   # Admin command: /setpr (Set Price)
-async def set_price(update: Update, context: CallbackContext) -> None:
+
+async def set_price(update: Update, context: CallbackContext):
     if update.effective_user.id not in ADMINS:
         await update.message.reply_text("❌ You are not an admin.")
         return
 
     try:
-        character_id, price = context.args
-        price = int(price)
-        await collection.update_one({"id": character_id}, {"$set": {"price": price}})
-        await update.message.reply_text(f"✅ Price updated: **{character_id}** → {price} coins")
+        char_id, price = context.args
+        await collection.update_one({"id": char_id}, {"$set": {"price": int(price)}})
+        await update.message.reply_text(f"✅ Price updated: {char_id} → {price} EXT")
     except:
-        await update.message.reply_text("❌ Invalid format. Use `/setpr id price`.")
-        
+        await update.message.reply_text("❌ Use: /setpr <id> <price>")
 
-# Register handlers
-application.add_handler(CommandHandler('shop', shop))
-application.add_handler(CommandHandler('setpr', set_price))
-application.add_handler(CommandHandler('balances', balance_command))
+# === Start Bot ===
+
+application.add_handler(CommandHandler("shop", shop))
+application.add_handler(CommandHandler("balances", balance_command))
+application.add_handler(CommandHandler("setpr", set_price))
 application.add_handler(CallbackQueryHandler(shop_navigation, pattern="^shop_(prev|next)$"))
 application.add_handler(CallbackQueryHandler(buy_character, pattern="^buy_"))
+
+logger.info("Bot is running...")
+
+    
