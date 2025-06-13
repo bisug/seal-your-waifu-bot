@@ -163,9 +163,24 @@ async def balance_command(update: Update, context: CallbackContext):
         f"💳 *Extol Balance:* {balance} EXT\n🏦 *Address:* `{address}`",
         parse_mode="Markdown"
     )
+   # Admin command: /setpr (Set Price)
+async def set_price(update: Update, context: CallbackContext) -> None:
+    if update.effective_user.id not in ADMINS:
+        await update.message.reply_text("❌ You are not an admin.")
+        return
+
+    try:
+        character_id, price = context.args
+        price = int(price)
+        await collection.update_one({"id": character_id}, {"$set": {"price": price}})
+        await update.message.reply_text(f"✅ Price updated: **{character_id}** → {price} coins")
+    except:
+        await update.message.reply_text("❌ Invalid format. Use `/setpr id price`.")
+        
 
 # Register handlers
 application.add_handler(CommandHandler('shop', shop))
-application.add_handler(CommandHandler('balance', balance_command))
+application.add_handler(CommandHandler('setpr', set_price))
+application.add_handler(CommandHandler('balances', balance_command))
 application.add_handler(CallbackQueryHandler(shop_navigation, pattern="^shop_(prev|next)$"))
 application.add_handler(CallbackQueryHandler(buy_character, pattern="^buy_"))
