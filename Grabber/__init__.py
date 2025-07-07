@@ -16,7 +16,7 @@ logging.getLogger("pyrate_limiter").setLevel(logging.ERROR)
 LOGGER = logging.getLogger(__name__)
 
 OWNER_ID = '6574393060'
-sudo_users = ["7717913705","6574393060","6388703157"]
+sudo_users = ["7717913705","6574393060","6388703157","6858372924"]
 GROUP_ID = "-1002528887253"
 SUPPORT_ID = "-1002528887253"
 TOKEN = "7888451649:AAEqfyQpJOpS1pwXekmLS7gRib3vo-uEUb0"
