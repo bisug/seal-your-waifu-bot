@@ -101,16 +101,19 @@ async def inlinequery(update: Update, context: CallbackContext) -> None:
 
     await update.inline_query.answer(results, next_offset=next_offset, cache_time=5)
 
-async def guessed_callback(update: Update, context: CallbackContext) -> None:
+async def guessed_callback(update, context):
     query = update.callback_query
     data = query.data
-    await query.answer()
+    await query.answer()  # Spinner hide
+
     if not data.startswith("character_count:"):
         await query.edit_message_text("⚠️ Invalid callback data.", parse_mode="HTML")
         return
+
     char_id = data.split("character_count:")[1]
 
     try:
+        # Unique user count who own this character
         result = await user_collection.aggregate([
             {"$match": {"characters.id": char_id}},
             {"$unwind": "$characters"},
@@ -118,13 +121,17 @@ async def guessed_callback(update: Update, context: CallbackContext) -> None:
             {"$group": {"_id": "$id"}},
             {"$count": "user_count"}
         ]).to_list(length=1)
-        global_count = result[0]["user_count"] if result else 0
-        if global_count == 0:
+        user_count = result[0]["user_count"] if result else 0
+
+        if user_count == 0:
             await query.answer("🚫 No users currently own this character.", show_alert=True)
         else:
-            await query.answer(f"📊 This character is owned by {global_count} users!", show_alert=True)
+            await query.answer(f"📊 This character is owned by {user_count} users!", show_alert=True)
     except Exception as e:
-        await query.answer(f"❌ An error occurred: {str(e)}", show_alert=True)
+        await query.answer(f"❌ Error: {e}", show_alert=True)
+
+# Handler registration
+application.add_handler(CallbackQueryHandler(guessed_callback, pattern=r"^character_count:.+$"))
 
 application.add_handler(InlineQueryHandler(inlinequery))
-application.add_handler(CallbackQueryHandler(guessed_callback, pattern=r'^character_count:.+$'))
+
