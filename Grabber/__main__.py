@@ -1,217 +1,102 @@
-import importlib
+import re
 import time
-import random
-import asyncio
 from html import escape
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import (
+    InlineQueryResultPhoto,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Update,
+)
 from telegram.ext import (
-    CommandHandler,
-    MessageHandler,
-    filters,
+    InlineQueryHandler,
+    CallbackQueryHandler,
     CallbackContext,
 )
-from Grabber import (
-    collection, db, user_collection, message_counts_collection,
-    application, LOGGER, user_totals_collection, Grabberu
-)
-from Grabber.modules import ALL_MODULES
+from Grabber import collection, user_collection, application  # अपने env के हिसाब से import करें
 
-# --- Constants ---
-SPECIAL_GROUP_ID = -1002528887253  # Royal spawns only here
-ROYAL_NOTIFY_USER_ID = 7717913705  # Send royal info to this user
+# Cache (अगर चाहें तो बाद में अपग्रेड कर सकते हैं)
+global_guess_cache = {}
 
-# --- Globals ---
-locks = {}
-message_counts = {}
-waifu_spawn_order = {}
-last_characters = {}
-first_correct_guesses = {}
-waifu_message = {}
-warned_users = {}
+async def get_global_guess_count(char_id: str) -> int:
+    if char_id in global_guess_cache:
+        return global_guess_cache[char_id]
+    count = await user_collection.count_documents({'characters.id': char_id})
+    global_guess_cache[char_id] = count
+    return count
 
-# --- Rarity ---
-rarity_map = {
-    1: "⚪ Common", 2: "🟢 Medium", 3: "🟠 Rare", 4: "🟡 Legendary",
-    5: "💠 Cosmic", 6: "💮 Exclusive", 7: "🔮 Limited Edition", 8: "🫧 Royal"
-}
+async def inlinequery(update: Update, context: CallbackContext) -> None:
+    query_text = update.inline_query.query.strip()
+    # DB से characters ले लें (यहां limit 10, आप जरूरत अनुसार बदल सकते हैं)
+    filter_query = {}
+    if query_text:
+        regex = re.compile(re.escape(query_text), re.IGNORECASE)
+        filter_query = {"$or": [{"name": regex}, {"anime": regex}]}
+    characters = await collection.find(filter_query, {
+        "id": 1, "name":1, "anime":1, "rarity":1, "img_url":1
+    }).limit(10).to_list(length=10)
 
-rarity_spawn_order = ["⚪ Common", "🟢 Medium", "🟠 Rare", "🟡 Legendary"]
+    results = []
+    for character in characters:
+        char_id = str(character["id"])
+        name = escape(character["name"])
+        anime = escape(character["anime"])
+        rarity = escape(character["rarity"])
 
-special_rarity_thresholds = {
-    "💠 Cosmic": 300,
-    "💮 Exclusive": 600,
-    "🔮 Limited Edition": 900,
-    "🫧 Royal": 1000
-}
-
-# --- Module Loader ---
-for module_name in ALL_MODULES:
-    importlib.import_module("Grabber.modules." + module_name)
-
-
-# --- Message Counter ---
-async def load_message_counts():
-    global message_counts
-    cursor = message_counts_collection.find({})
-    async for doc in cursor:
-        message_counts[str(doc["chat_id"])] = doc["count"]
-
-async def save_message_counts():
-    for chat_id, count in message_counts.items():
-        await message_counts_collection.update_one(
-            {"chat_id": chat_id},
-            {"$set": {"count": count}},
-            upsert=True
+        caption = (
+            f"🌸 <b>{name}</b>\n"
+            f"🎬 Anime: {anime}\n"
+            f"🔮 Rarity: {rarity}\n"
+            f"🆔 ID: {char_id}"
         )
 
-async def message_counter(update: Update, context: CallbackContext) -> None:
-    chat_id = str(update.effective_chat.id)
-    user = update.effective_user
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("📊 How many users have?", callback_data=f"character_count:{char_id}")]
+        ])
 
-    if not user:
+        results.append(
+            InlineQueryResultPhoto(
+                id=f"{char_id}_{int(time.time())}",
+                photo_url=character["img_url"],
+                thumbnail_url=character["img_url"],
+                caption=caption,
+                parse_mode="HTML",
+                reply_markup=keyboard
+            )
+        )
+
+    await update.inline_query.answer(results, cache_time=5)
+
+async def guessed_callback(update: Update, context: CallbackContext) -> None:
+    query = update.callback_query
+    data = query.data
+    await query.answer()  # spinner हटाने के लिए जरूरी
+
+    if not data.startswith("character_count:"):
+        await query.edit_message_text("⚠️ Invalid callback data.", parse_mode="HTML")
         return
 
-    user_id = user.id
-
-    if chat_id not in locks:
-        locks[chat_id] = asyncio.Lock()
-    lock = locks[chat_id]
-
-    async with lock:
-        if chat_id not in message_counts:
-            data = await message_counts_collection.find_one({"chat_id": chat_id})
-            message_counts[chat_id] = data["count"] if data else 0
-
-        chat_settings = await user_totals_collection.find_one({"chat_id": chat_id})
-        message_frequency = chat_settings.get("message_frequency", 100) if chat_settings else 100
-
-        message_counts[chat_id] += 1
-
-        for rarity, threshold in special_rarity_thresholds.items():
-            if message_counts[chat_id] % threshold == 0:
-                if rarity == "🫧 Royal" and int(chat_id) != SPECIAL_GROUP_ID:
-                    continue
-                await send_character(update, context, rarity)
-                return
-
-        if message_counts[chat_id] % message_frequency == 0:
-            cycle_index = waifu_spawn_order.get(chat_id, 0) % len(rarity_spawn_order)
-            rarity = rarity_spawn_order[cycle_index]
-            await send_character(update, context, rarity)
-            waifu_spawn_order[chat_id] = cycle_index + 1
-
-        if message_counts[chat_id] % 50 == 0:
-            await save_message_counts()
-
-
-# --- Send Character ---
-async def send_character(update: Update, context: CallbackContext, rarity: str) -> None:
-    chat_id = update.effective_chat.id
-    all_characters = list(await collection.find({"rarity": rarity}).to_list(length=None))
-    if not all_characters:
-        return
-
-    if chat_id in first_correct_guesses and first_correct_guesses[chat_id] is not None:
-        last_grabber_id = first_correct_guesses[chat_id]
-        last_grabber_user = await user_collection.find_one({'id': last_grabber_id})
-        last_grabber_name = last_grabber_user.get('first_name', 'Unknown User') if last_grabber_user else 'Unknown User'
-        warning_text = f'⚠ Waifu already grabbed by <a href="tg://user?id={last_grabber_id}">{escape(last_grabber_name)}</a>.\nℹ Wait for a new waifu to appear.'
-        await context.bot.send_message(chat_id=chat_id, text=warning_text, parse_mode='HTML')
-
-    character = random.choice(all_characters)
-    last_characters[chat_id] = character
-    first_correct_guesses[chat_id] = None
-
-    caption_text = """
-🪽 A new amazing character has arrived in this chat...
-🦋 Use /seal character_name to add them to your harem!
-👑 Find out the rarity by sealing!
-"""
+    char_id = data.split("character_count:")[1]
 
     try:
-        waifu_message[chat_id] = await context.bot.send_photo(
-            chat_id=chat_id,
-            photo=character['img_url'],
-            caption=caption_text,
-            parse_mode='HTML'
-        )
+        result = await user_collection.aggregate([
+            {"$match": {"characters.id": char_id}},
+            {"$unwind": "$characters"},
+            {"$match": {"characters.id": char_id}},
+            {"$group": {"_id": "$id"}},
+            {"$count": "user_count"},
+        ]).to_list(length=1)
+
+        user_count = result[0]["user_count"] if result else 0
+
+        if user_count == 0:
+            await query.answer("🚫 No users currently own this character.", show_alert=True)
+        else:
+            await query.answer(f"📊 This character is owned by {user_count} users!", show_alert=True)
+
     except Exception as e:
-        await update.message.reply_text(f"⚠️ Failed to send image. Error: {str(e)}")
-
-    if rarity == "🫧 Royal":
-        try:
-            await context.bot.send_message(
-                chat_id=ROYAL_NOTIFY_USER_ID,
-                text=f"👑 A Royal character has spawned!\nCharacter ID: {character.get('id', 'N/A')}",
-            )
-        except Exception as e:
-            LOGGER.error(f"Failed to notify about Royal character: {e}")
+        await query.answer(f"❌ An error occurred: {e}", show_alert=True)
 
 
-# --- Seal Command ---
-async def guess(update: Update, context: CallbackContext) -> None:
-    chat_id = update.effective_chat.id
-    user_id = update.effective_user.id
-
-    if chat_id not in last_characters:
-        return
-
-    if chat_id in first_correct_guesses and first_correct_guesses[chat_id] is not None:
-        last_grabber_id = first_correct_guesses[chat_id]
-        last_grabber_user = await user_collection.find_one({'id': last_grabber_id})
-        last_grabber_name = last_grabber_user['first_name'] if last_grabber_user else 'Unknown User'
-        await update.message.reply_text(
-            f'⚠ Waifu already grabbed by <a href="tg://user?id={last_grabber_id}">{escape(last_grabber_name)}</a>.\nℹ Wait for a new waifu to appear.',
-            parse_mode='HTML'
-        )
-        return
-
-    guess_text = ' '.join(context.args).lower() if context.args else ''
-    character = last_characters[chat_id]
-    name_parts = character['name'].lower().split()
-
-    if sorted(name_parts) == sorted(guess_text.split()) or any(part == guess_text for part in name_parts):
-        first_correct_guesses[chat_id] = user_id
-        await user_collection.update_one({'id': user_id}, {'$push': {'characters': character}}, upsert=True)
-
-        keyboard = [[InlineKeyboardButton("See Harem", switch_inline_query_current_chat=f"collection.{user_id}")]]
-        await update.message.reply_text(
-            f"💫 Congratulations <b>{escape(update.effective_user.first_name)}</b>!\n"
-            f"🎗 𝐍𝐚𝐦𝐞 : <b>{character['name']}</b>\n"
-            f"🏵 𝐀𝐧𝐢𝐦𝐞 : <b>{character['anime']}</b>\n"
-            f"🎮 𝐑𝐚𝐫𝐢𝐭𝐲 : <b>{character['rarity']}</b>\n\n"
-            f"🎯 Do /collection to check your amazing character collection 🎳",
-            parse_mode="HTML", reply_markup=InlineKeyboardMarkup(keyboard)
-        )
-    else:
-        await update.message.reply_text("❌ Please write the correct character name... ❌")
-
-
-# --- Message Count Command ---
-async def message_count_cmd(update: Update, context: CallbackContext) -> None:
-    chat_id = str(update.effective_chat.id)
-    count = message_counts.get(chat_id)
-
-    if count is None:
-        data = await message_counts_collection.find_one({"chat_id": chat_id})
-        count = data["count"] if data else 0
-
-    await update.message.reply_text(f"📨 Total messages counted in this group: {count}")
-
-
-def main() -> None:
-    application.add_handler(CommandHandler("seal", guess))
-    application.add_handler(CommandHandler("messagecount", message_count_cmd))
-    application.add_handler(MessageHandler(filters.ALL, message_counter))
-
-    async def post_init(app):
-        await load_message_counts()
-
-    application.post_init = post_init
-    application.run_polling(drop_pending_updates=True)
-
-
-if __name__ == "__main__":
-    Grabberu.start()
-    LOGGER.info("Bot started")
-    main()
+# Register handlers — बॉट के startup कोड में इस फाइल को import कर handler लोड करें
+application.add_handler(InlineQueryHandler(inlinequery))
+application.add_handler(CallbackQueryHandler(guessed_callback, pattern=r"^character_count:.+$"))
