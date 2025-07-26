@@ -15,7 +15,6 @@ from telegram.ext import (
 )
 from Grabber import user_collection, collection, application
 
-# Global cache for performance
 global_guess_cache = {}
 
 async def get_global_guess_count(char_id):
@@ -35,11 +34,9 @@ async def inlinequery(update: Update, context: CallbackContext) -> None:
         parts = query.split(' ')
         user_id_part = parts[0].split('.')[1] if len(parts[0].split('.')) > 1 else None
         search_terms = ' '.join(parts[1:]) if len(parts) > 1 else ""
-
         if user_id_part and user_id_part.isdigit():
             user_id = int(user_id_part)
             user = await user_collection.find_one({'id': user_id}, {'characters': 1, 'id': 1, 'first_name': 1})
-
             if user and isinstance(user.get('characters'), list):
                 characters = list({char['id']: char for char in user['characters'] if isinstance(char, dict)}.values())
                 if search_terms:
@@ -53,21 +50,19 @@ async def inlinequery(update: Update, context: CallbackContext) -> None:
         if query:
             search_regex = re.compile(re.escape(query), re.IGNORECASE)
             filter_query = {"$or": [{"name": search_regex}, {"anime": search_regex}]}
-
         characters = await collection.find(filter_query, {
             "id": 1, "name": 1, "anime": 1, "rarity": 1, "img_url": 1
         }).skip(offset).limit(10).to_list(None)
 
     next_offset = str(offset + len(characters)) if len(characters) == 10 else ""
 
-    # Pre-fetch guess counts asynchronously
+    # Pre-fetch guess counts
     tasks = [get_global_guess_count(char["id"]) for char in characters]
     global_counts = await asyncio.gather(*tasks)
 
     results = []
     for i, character in enumerate(characters):
         char_id = str(character["id"])
-        global_count = global_counts[i]
         name = escape(character['name'])
         anime = escape(character['anime'])
         rarity = escape(character['rarity'])
@@ -93,7 +88,6 @@ async def inlinequery(update: Update, context: CallbackContext) -> None:
         keyboard = InlineKeyboardMarkup([
             [InlineKeyboardButton("📊 How many users have?", callback_data=f"character_count:{char_id}")]
         ])
-
         results.append(
             InlineQueryResultPhoto(
                 id=f"{char_id}_{int(time.time())}",
@@ -107,18 +101,13 @@ async def inlinequery(update: Update, context: CallbackContext) -> None:
 
     await update.inline_query.answer(results, next_offset=next_offset, cache_time=5)
 
-
 async def guessed_callback(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     data = query.data
-
-    # Immutable answer to remove the loading spinner quickly
     await query.answer()
-
     if not data.startswith("character_count:"):
         await query.edit_message_text("⚠️ Invalid callback data.", parse_mode="HTML")
         return
-
     char_id = data.split("character_count:")[1]
 
     try:
@@ -129,18 +118,13 @@ async def guessed_callback(update: Update, context: CallbackContext) -> None:
             {"$group": {"_id": "$id"}},
             {"$count": "user_count"}
         ]).to_list(length=1)
-
         global_count = result[0]["user_count"] if result else 0
-
         if global_count == 0:
             await query.answer("🚫 No users currently own this character.", show_alert=True)
         else:
             await query.answer(f"📊 This character is owned by {global_count} users!", show_alert=True)
-
     except Exception as e:
         await query.answer(f"❌ An error occurred: {str(e)}", show_alert=True)
 
-
-# Register handlers with updated pattern
 application.add_handler(InlineQueryHandler(inlinequery))
 application.add_handler(CallbackQueryHandler(guessed_callback, pattern=r'^character_count:.+$'))
