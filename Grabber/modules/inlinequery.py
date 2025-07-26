@@ -91,7 +91,7 @@ async def inlinequery(update: Update, context: CallbackContext) -> None:
             )
 
         keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton("📊 How many users have?", callback_data=f"character_count_{char_id}")]
+            [InlineKeyboardButton("📊 How many users have?", callback_data=f"character_count:{char_id}")]
         ])
 
         results.append(
@@ -112,21 +112,16 @@ async def guessed_callback(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     data = query.data
 
-    # Always answer the callback to remove the loading spinner ASAP
+    # Immutable answer to remove the loading spinner quickly
     await query.answer()
 
-    if not data.startswith("character_count_"):
+    if not data.startswith("character_count:"):
         await query.edit_message_text("⚠️ Invalid callback data.", parse_mode="HTML")
         return
 
-    try:
-        char_id = data.split("_")[2]
-    except IndexError:
-        await query.edit_message_text("⚠️ Invalid callback data format.", parse_mode="HTML")
-        return
+    char_id = data.split("character_count:")[1]
 
     try:
-        # Aggregate unique users owning this character
         result = await user_collection.aggregate([
             {"$match": {"characters.id": char_id}},
             {"$unwind": "$characters"},
@@ -146,6 +141,6 @@ async def guessed_callback(update: Update, context: CallbackContext) -> None:
         await query.answer(f"❌ An error occurred: {str(e)}", show_alert=True)
 
 
-# Register handlers - note only ONE CallbackQueryHandler for guessed_callback with correct pattern
+# Register handlers with updated pattern
 application.add_handler(InlineQueryHandler(inlinequery))
-application.add_handler(CallbackQueryHandler(guessed_callback, pattern=r'^character_count_\d+$'))
+application.add_handler(CallbackQueryHandler(guessed_callback, pattern=r'^character_count:.+$'))
