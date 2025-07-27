@@ -1,110 +1,75 @@
 import re
 import time
-import asyncio
 from html import escape
 from telegram import (
-    Update,
     InlineQueryResultPhoto,
-    InlineKeyboardMarkup,
     InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Update,
 )
 from telegram.ext import (
     InlineQueryHandler,
     CallbackQueryHandler,
     CallbackContext,
 )
-from Grabber import user_collection, collection, application
+from Grabber import collection, user_collection, application  # अपने env के हिसाब से import करें
 
+# Cache (अगर चाहें तो बाद में अपग्रेड कर सकते हैं)
 global_guess_cache = {}
 
-async def get_global_guess_count(char_id):
+async def get_global_guess_count(char_id: str) -> int:
     if char_id in global_guess_cache:
         return global_guess_cache[char_id]
-    global_count = await user_collection.count_documents({'characters.id': char_id})
-    global_guess_cache[char_id] = global_count
-    return global_count
+    count = await user_collection.count_documents({'characters.id': char_id})
+    global_guess_cache[char_id] = count
+    return count
 
 async def inlinequery(update: Update, context: CallbackContext) -> None:
-    query = update.inline_query.query.strip()
-    offset = int(update.inline_query.offset or 0)
-    characters = []
-    user = None
-
-    if query.startswith('collection.'):
-        parts = query.split(' ')
-        user_id_part = parts[0].split('.')[1] if len(parts[0].split('.')) > 1 else None
-        search_terms = ' '.join(parts[1:]) if len(parts) > 1 else ""
-        if user_id_part and user_id_part.isdigit():
-            user_id = int(user_id_part)
-            user = await user_collection.find_one({'id': user_id}, {'characters': 1, 'id': 1, 'first_name': 1})
-            if user and isinstance(user.get('characters'), list):
-                characters = list({char['id']: char for char in user['characters'] if isinstance(char, dict)}.values())
-                if search_terms:
-                    search_regex = re.compile(re.escape(search_terms), re.IGNORECASE)
-                    characters = [
-                        char for char in characters
-                        if search_regex.search(char.get('name', '')) or search_regex.search(char.get('anime', ''))
-                    ]
-    else:
-        filter_query = {}
-        if query:
-            search_regex = re.compile(re.escape(query), re.IGNORECASE)
-            filter_query = {"$or": [{"name": search_regex}, {"anime": search_regex}]}
-        characters = await collection.find(filter_query, {
-            "id": 1, "name": 1, "anime": 1, "rarity": 1, "img_url": 1
-        }).skip(offset).limit(10).to_list(None)
-
-    next_offset = str(offset + len(characters)) if len(characters) == 10 else ""
-
-    # Pre-fetch guess counts
-    tasks = [get_global_guess_count(char["id"]) for char in characters]
-    global_counts = await asyncio.gather(*tasks)
+    query_text = update.inline_query.query.strip()
+    # DB से characters ले लें (यहां limit 10, आप जरूरत अनुसार बदल सकते हैं)
+    filter_query = {}
+    if query_text:
+        regex = re.compile(re.escape(query_text), re.IGNORECASE)
+        filter_query = {"$or": [{"name": regex}, {"anime": regex}]}
+    characters = await collection.find(filter_query, {
+        "id": 1, "name":1, "anime":1, "rarity":1, "img_url":1
+    }).limit(10).to_list(length=10)
 
     results = []
-    for i, character in enumerate(characters):
+    for character in characters:
         char_id = str(character["id"])
-        name = escape(character['name'])
-        anime = escape(character['anime'])
-        rarity = escape(character['rarity'])
+        name = escape(character["name"])
+        anime = escape(character["anime"])
+        rarity = escape(character["rarity"])
 
-        if query.startswith("collection.") and user:
-            first_name = escape(user.get("first_name", "Unknown"))
-            caption = (
-                f"⛩ 【{first_name}】's harem\n\n"
-                f"☘️ Name: {name} (x1)\n"
-                f"🟠 Rarity: {rarity}\n"
-                f"⚜️ Anime: {anime} (1/4)\n\n"
-                f"🆔: {char_id} - Needed for trading/gifting"
-            )
-        else:
-            caption = (
-                f"» 𝐖𝐚𝐭𝐜𝐡 𝐭𝐡𝐢𝐬 𝐚𝐰𝐞𝐬𝐨𝐦𝐞 𝐂𝐡𝐚𝐫𝐚𝐜𝐭𝐞𝐫 «\n\n"
-                f"🌸 {name}\n"
-                f"🏖️ {anime}\n"
-                f"🎭 {rarity}\n"
-                f"🆔 {char_id}\n\n"
-            )
+        caption = (
+            f"🌸 <b>{name}</b>\n"
+            f"🎬 Anime: {anime}\n"
+            f"🔮 Rarity: {rarity}\n"
+            f"🆔 ID: {char_id}"
+        )
 
         keyboard = InlineKeyboardMarkup([
             [InlineKeyboardButton("📊 How many users have?", callback_data=f"character_count:{char_id}")]
         ])
+
         results.append(
             InlineQueryResultPhoto(
                 id=f"{char_id}_{int(time.time())}",
-                thumbnail_url=character['img_url'],
-                photo_url=character['img_url'],
+                photo_url=character["img_url"],
+                thumbnail_url=character["img_url"],
                 caption=caption,
-                parse_mode='HTML',
+                parse_mode="HTML",
                 reply_markup=keyboard
             )
         )
 
-    await update.inline_query.answer(results, next_offset=next_offset, cache_time=5)
+    await update.inline_query.answer(results, cache_time=5)
 
-async def guessed_callback(update, context):
+async def guessed_callback(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     data = query.data
-    await query.answer()  # Spinner hide
+    await query.answer()  # spinner हटाने के लिए जरूरी
 
     if not data.startswith("character_count:"):
         await query.edit_message_text("⚠️ Invalid callback data.", parse_mode="HTML")
@@ -113,25 +78,25 @@ async def guessed_callback(update, context):
     char_id = data.split("character_count:")[1]
 
     try:
-        # Unique user count who own this character
         result = await user_collection.aggregate([
             {"$match": {"characters.id": char_id}},
             {"$unwind": "$characters"},
             {"$match": {"characters.id": char_id}},
             {"$group": {"_id": "$id"}},
-            {"$count": "user_count"}
+            {"$count": "user_count"},
         ]).to_list(length=1)
+
         user_count = result[0]["user_count"] if result else 0
 
         if user_count == 0:
             await query.answer("🚫 No users currently own this character.", show_alert=True)
         else:
             await query.answer(f"📊 This character is owned by {user_count} users!", show_alert=True)
+
     except Exception as e:
-        await query.answer(f"❌ Error: {e}", show_alert=True)
+        await query.answer(f"❌ An error occurred: {e}", show_alert=True)
 
-# Handler registration
-application.add_handler(CallbackQueryHandler(guessed_callback, pattern=r"^character_count:.+$"))
 
+# Register handlers — बॉट के startup कोड में इस फाइल को import कर handler लोड करें
 application.add_handler(InlineQueryHandler(inlinequery))
-
+application.add_handler(CallbackQueryHandler(guessed_callback, pattern=r"^character_count:.+$"))
