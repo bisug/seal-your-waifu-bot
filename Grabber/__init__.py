@@ -19,7 +19,7 @@ OWNER_ID = '6574393060'
 sudo_users = ["7717913705","6574393060","6388703157","6858372924"]
 GROUP_ID = "-1002528887253"
 SUPPORT_ID = "-1002528887253"
-TOKEN = "7888451649:AAEqfyQpJOpS1pwXekmLS7gRib3vo-uEUb0"
+TOKEN = "7888451649:AAGqpCops8LxBCs54h23SmD771TKRMucGh8"
 mongo_url = "mongodb+srv://botmaker9675208:botmaker9675208@cluster0.sc9mq8b.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 PHOTO_URL = ["https://files.catbox.moe/2hsawz.jpg"]
 SUPPORT_CHAT = "seal_Your_WH_Group"
