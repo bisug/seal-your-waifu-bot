@@ -35,7 +35,7 @@ async def balance_cmd(_, message: Message):
         {"id": user_id}, {"balance": 1}
     )
     balance_amount = user_data.get("balance", 0) if user_data else 0
-    await message.reply(f"Your balance: 💵 **{balance_amount}** coins", parse_mode="markdown")
+    await message.reply(f"Your balance: 💵 **{balance_amount}** coins", parse_mode="Markdown")
 
 @app.on_message(filters.command("pay") & filters.reply)
 async def pay_cmd(_, message: Message):
@@ -58,7 +58,6 @@ async def pay_cmd(_, message: Message):
     if not sender_data or sender_data.get("balance", 0) < amount:
         return await message.reply("Insufficient balance!")
 
-    # Atomic bulk operation
     await user_collection.bulk_write([
         {"updateOne": {
             "filter": {"id": sender_id},
@@ -79,7 +78,7 @@ async def pay_cmd(_, message: Message):
     await message.reply(
         f"💵 Payment successful! You paid **{amount}** coins to {mention}\n"
         f"Your balance: 💵 **{new_balance.get('balance', 0)}** coins",
-        parse_mode="markdown"
+        parse_mode="Markdown"
     )
 
 @app.on_message(filters.command("daily"))
@@ -102,7 +101,7 @@ async def daily_reward_cmd(_, message: Message):
         },
         upsert=True
     )
-    await message.reply("🎉 You've claimed your daily reward of **150 coins**!", parse_mode="markdown")
+    await message.reply("🎉 You've claimed your daily reward of **150 coins**!", parse_mode="Markdown")
 
 @app.on_message(filters.command("weekly"))
 async def weekly_bonus_cmd(_, message: Message):
@@ -123,7 +122,7 @@ async def weekly_bonus_cmd(_, message: Message):
         },
         upsert=True
     )
-    await message.reply("🎉 You've claimed your **weekly bonus** of **750 coins**!", parse_mode="markdown")
+    await message.reply("🎉 You've claimed your **weekly bonus** of **750 coins**!", parse_mode="Markdown")
 
 @app.on_message(filters.command("bonus"))
 async def one_time_bonus_cmd(_, message: Message):
@@ -133,7 +132,7 @@ async def one_time_bonus_cmd(_, message: Message):
     )
 
     if user and user.get("bonus_claimed"):
-        return await message.reply("❌ You have **already claimed** this one-time bonus!", parse_mode="markdown")
+        return await message.reply("❌ You have **already claimed** this one-time bonus!", parse_mode="Markdown")
 
     await user_collection.update_one(
         {"id": user_id},
@@ -143,7 +142,7 @@ async def one_time_bonus_cmd(_, message: Message):
         },
         upsert=True
     )
-    await message.reply("🎁 You've claimed your **one-time bonus** of **3000 coins**!", parse_mode="markdown")
+    await message.reply("🎁 You've claimed your **one-time bonus** of **3000 coins**!", parse_mode="Markdown")
 
 @app.on_message(filters.command("mtop"))
 async def mtop_cmd(_, message: Message):
@@ -189,13 +188,13 @@ async def nguess_cmd(_, message: Message):
     await message.reply_photo(
         photo=character["img_url"],
         caption="✨ **Guess this Waifu!** 🧐✨\nJust send the name!",
-        parse_mode="markdown"
+        parse_mode="Markdown"
     )
 
-# ==================== FIXED HANDLER ====================
+# ==================== WORKING HANDLER ====================
 @app.on_message(
     filters.text &
-    ~filters.command([""]) &  # ✅ FINAL FIX: Negates ALL commands
+    ~filters.command([""]) &
     filters.chat(SUPPORT_GROUP_ID)
 )
 async def handle_guess(_, message: Message):
@@ -219,7 +218,7 @@ async def handle_guess(_, message: Message):
         
         await message.reply(
             f"🎉 **Correct!** You earned **100 coins**! {message.from_user.mention}",
-            parse_mode="markdown"
+            parse_mode="Markdown"
         )
 
         del current_characters[chat_id]
@@ -243,7 +242,7 @@ async def name_cmd(_, message: Message):
     await message.reply(
         f"📜 **Character Name:**\n`{char_name}`",
         reply_markup=markup,
-        parse_mode="markdown"
+        parse_mode="Markdown"
     )
 
 print("Balance & Waifu Guess module loaded successfully!")
