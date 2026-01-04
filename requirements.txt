@@ -8,3 +8,5 @@ pyrogram
 tgcrypto
 fastapi
 uvicorn
+motor
+
