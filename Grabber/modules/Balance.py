@@ -7,7 +7,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 # Assuming these are already imported from Grabber
 from Grabber import Grabberu as app
-from Grabber import user_collection, collection, characters_collection  # adjust if name is different
+from Grabber import user_collection, collection # adjust if name is different
 
 # ==========================================
 #               CONFIGURATION
