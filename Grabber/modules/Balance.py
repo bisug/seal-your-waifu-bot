@@ -1,7 +1,7 @@
 import asyncio
 import random
 from datetime import datetime, timedelta
-from pyrogram import filters
+from pyrogram import filters, enums  # ✅ Added enums import
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 
 # Assuming these are already defined and exported from Grabber
@@ -12,7 +12,7 @@ SUPPORT_GROUP_ID = -1002429397912
 OWNER_ID = 6574393060
 
 MAX_ACTIVE_GAMES = 100
-current_characters = {}  # chat_id → {"character": dict, "guessed": bool}
+current_characters = {}
 
 # ==================== HELPERS ====================
 
@@ -31,11 +31,12 @@ async def add_coins(user_id: int, amount: int):
 @app.on_message(filters.command(["balance", "bal"]))
 async def balance_cmd(_, message: Message):
     user_id = message.from_user.id
-    user_data = await user_collection.find_one(
-        {"id": user_id}, {"balance": 1}
-    )
+    user_data = await user_collection.find_one({"id": user_id}, {"balance": 1})
     balance_amount = user_data.get("balance", 0) if user_data else 0
-    await message.reply(f"Your balance: 💵 **{balance_amount}** coins", parse_mode="Markdown")
+    await message.reply(
+        f"Your balance: 💵 **{balance_amount}** coins",
+        parse_mode=enums.ParseMode.MARKDOWN
+    )
 
 @app.on_message(filters.command("pay") & filters.reply)
 async def pay_cmd(_, message: Message):
@@ -51,9 +52,7 @@ async def pay_cmd(_, message: Message):
     if amount <= 0:
         return await message.reply("Amount must be positive!")
 
-    sender_data = await user_collection.find_one(
-        {"id": sender_id}, {"balance": 1}
-    )
+    sender_data = await user_collection.find_one({"id": sender_id}, {"balance": 1})
     
     if not sender_data or sender_data.get("balance", 0) < amount:
         return await message.reply("Insufficient balance!")
@@ -70,23 +69,19 @@ async def pay_cmd(_, message: Message):
         }}
     ])
 
-    new_balance = await user_collection.find_one(
-        {"id": sender_id}, {"balance": 1}
-    )
+    new_balance = await user_collection.find_one({"id": sender_id}, {"balance": 1})
 
     mention = f"@{recipient.username}" if recipient.username else recipient.mention
     await message.reply(
         f"💵 Payment successful! You paid **{amount}** coins to {mention}\n"
         f"Your balance: 💵 **{new_balance.get('balance', 0)}** coins",
-        parse_mode="Markdown"
+        parse_mode=enums.ParseMode.MARKDOWN
     )
 
 @app.on_message(filters.command("daily"))
 async def daily_reward_cmd(_, message: Message):
     user_id = message.from_user.id
-    user_data = await user_collection.find_one(
-        {"id": user_id}, {"last_daily_reward": 1}
-    )
+    user_data = await user_collection.find_one({"id": user_id}, {"last_daily_reward": 1})
 
     today = datetime.utcnow().date()
     if user_data and user_data.get("last_daily_reward"):
@@ -95,20 +90,18 @@ async def daily_reward_cmd(_, message: Message):
 
     await user_collection.update_one(
         {"id": user_id},
-        {
-            "$inc": {"balance": 150},
-            "$set": {"last_daily_reward": datetime.utcnow()}
-        },
+        {"$inc": {"balance": 150}, "$set": {"last_daily_reward": datetime.utcnow()}},
         upsert=True
     )
-    await message.reply("🎉 You've claimed your daily reward of **150 coins**!", parse_mode="Markdown")
+    await message.reply(
+        "🎉 You've claimed your daily reward of **150 coins**!",
+        parse_mode=enums.ParseMode.MARKDOWN
+    )
 
 @app.on_message(filters.command("weekly"))
 async def weekly_bonus_cmd(_, message: Message):
     user_id = message.from_user.id
-    user = await user_collection.find_one(
-        {"id": user_id}, {"last_weekly_bonus": 1}
-    )
+    user = await user_collection.find_one({"id": user_id}, {"last_weekly_bonus": 1})
 
     if user and user.get("last_weekly_bonus"):
         if (datetime.utcnow() - user["last_weekly_bonus"]).days < 7:
@@ -116,33 +109,34 @@ async def weekly_bonus_cmd(_, message: Message):
 
     await user_collection.update_one(
         {"id": user_id},
-        {
-            "$inc": {"balance": 750},
-            "$set": {"last_weekly_bonus": datetime.utcnow()}
-        },
+        {"$inc": {"balance": 750}, "$set": {"last_weekly_bonus": datetime.utcnow()}},
         upsert=True
     )
-    await message.reply("🎉 You've claimed your **weekly bonus** of **750 coins**!", parse_mode="Markdown")
+    await message.reply(
+        "🎉 You've claimed your **weekly bonus** of **750 coins**!",
+        parse_mode=enums.ParseMode.MARKDOWN
+    )
 
 @app.on_message(filters.command("bonus"))
 async def one_time_bonus_cmd(_, message: Message):
     user_id = message.from_user.id
-    user = await user_collection.find_one(
-        {"id": user_id}, {"bonus_claimed": 1}
-    )
+    user = await user_collection.find_one({"id": user_id}, {"bonus_claimed": 1})
 
     if user and user.get("bonus_claimed"):
-        return await message.reply("❌ You have **already claimed** this one-time bonus!", parse_mode="Markdown")
+        return await message.reply(
+            "❌ You have **already claimed** this one-time bonus!",
+            parse_mode=enums.ParseMode.MARKDOWN
+        )
 
     await user_collection.update_one(
         {"id": user_id},
-        {
-            "$inc": {"balance": 3000},
-            "$set": {"bonus_claimed": True}
-        },
+        {"$inc": {"balance": 3000}, "$set": {"bonus_claimed": True}},
         upsert=True
     )
-    await message.reply("🎁 You've claimed your **one-time bonus** of **3000 coins**!", parse_mode="Markdown")
+    await message.reply(
+        "🎁 You've claimed your **one-time bonus** of **3000 coins**!",
+        parse_mode=enums.ParseMode.MARKDOWN
+    )
 
 @app.on_message(filters.command("mtop"))
 async def mtop_cmd(_, message: Message):
@@ -188,10 +182,9 @@ async def nguess_cmd(_, message: Message):
     await message.reply_photo(
         photo=character["img_url"],
         caption="✨ **Guess this Waifu!** 🧐✨\nJust send the name!",
-        parse_mode="Markdown"
+        parse_mode=enums.ParseMode.MARKDOWN
     )
 
-# ==================== WORKING HANDLER ====================
 @app.on_message(
     filters.text &
     ~filters.command([""]) &
@@ -218,7 +211,7 @@ async def handle_guess(_, message: Message):
         
         await message.reply(
             f"🎉 **Correct!** You earned **100 coins**! {message.from_user.mention}",
-            parse_mode="Markdown"
+            parse_mode=enums.ParseMode.MARKDOWN
         )
 
         del current_characters[chat_id]
@@ -242,7 +235,7 @@ async def name_cmd(_, message: Message):
     await message.reply(
         f"📜 **Character Name:**\n`{char_name}`",
         reply_markup=markup,
-        parse_mode="Markdown"
+        parse_mode=enums.ParseMode.MARKDOWN
     )
 
 print("Balance & Waifu Guess module loaded successfully!")
