@@ -35,8 +35,7 @@ async def balance_cmd(_, message: Message):
         {"id": user_id}, {"balance": 1}
     )
     balance_amount = user_data.get("balance", 0) if user_data else 0
-    await message.reply(f"Your balance: 💵 **{balance_amount}** coins")
-
+    await message.reply(f"Your balance: 💵 **{balance_amount}** coins", parse_mode="markdown")
 
 @app.on_message(filters.command("pay") & filters.reply)
 async def pay_cmd(_, message: Message):
@@ -79,9 +78,9 @@ async def pay_cmd(_, message: Message):
     mention = f"@{recipient.username}" if recipient.username else recipient.mention
     await message.reply(
         f"💵 Payment successful! You paid **{amount}** coins to {mention}\n"
-        f"Your balance: 💵 **{new_balance.get('balance', 0)}** coins"
+        f"Your balance: 💵 **{new_balance.get('balance', 0)}** coins",
+        parse_mode="markdown"
     )
-
 
 @app.on_message(filters.command("daily"))
 async def daily_reward_cmd(_, message: Message):
@@ -103,8 +102,7 @@ async def daily_reward_cmd(_, message: Message):
         },
         upsert=True
     )
-    await message.reply("🎉 You've claimed your daily reward of **150 coins**!")
-
+    await message.reply("🎉 You've claimed your daily reward of **150 coins**!", parse_mode="markdown")
 
 @app.on_message(filters.command("weekly"))
 async def weekly_bonus_cmd(_, message: Message):
@@ -125,8 +123,7 @@ async def weekly_bonus_cmd(_, message: Message):
         },
         upsert=True
     )
-    await message.reply("🎉 You've claimed your **weekly bonus** of **750 coins**!")
-
+    await message.reply("🎉 You've claimed your **weekly bonus** of **750 coins**!", parse_mode="markdown")
 
 @app.on_message(filters.command("bonus"))
 async def one_time_bonus_cmd(_, message: Message):
@@ -136,7 +133,7 @@ async def one_time_bonus_cmd(_, message: Message):
     )
 
     if user and user.get("bonus_claimed"):
-        return await message.reply("❌ You have **already claimed** this one-time bonus!")
+        return await message.reply("❌ You have **already claimed** this one-time bonus!", parse_mode="markdown")
 
     await user_collection.update_one(
         {"id": user_id},
@@ -146,8 +143,7 @@ async def one_time_bonus_cmd(_, message: Message):
         },
         upsert=True
     )
-    await message.reply("🎁 You've claimed your **one-time bonus** of **3000 coins**!")
-
+    await message.reply("🎁 You've claimed your **one-time bonus** of **3000 coins**!", parse_mode="markdown")
 
 @app.on_message(filters.command("mtop"))
 async def mtop_cmd(_, message: Message):
@@ -173,7 +169,6 @@ async def mtop_cmd(_, message: Message):
         parse_mode="html"
     )
 
-
 @app.on_message(filters.command("nguess") & filters.chat(SUPPORT_GROUP_ID))
 async def nguess_cmd(_, message: Message):
     chat_id = message.chat.id
@@ -193,15 +188,14 @@ async def nguess_cmd(_, message: Message):
 
     await message.reply_photo(
         photo=character["img_url"],
-        caption="✨ **Guess this Waifu!** 🧐✨\nJust send the name!"
+        caption="✨ **Guess this Waifu!** 🧐✨\nJust send the name!",
+        parse_mode="markdown"
     )
 
-
-# ─── FIXED HANDLER ──────────────────────────────────────────────────────────
-# The problematic ~filters.command is now correctly used
+# ==================== FIXED HANDLER ====================
 @app.on_message(
     filters.text &
-    ~filters.command &                    # ← correct syntax
+    filters.command(None, "") &  # FIXED: Negates ALL commands properly
     filters.chat(SUPPORT_GROUP_ID)
 )
 async def handle_guess(_, message: Message):
@@ -224,22 +218,22 @@ async def handle_guess(_, message: Message):
         await add_coins(message.from_user.id, 100)
         
         await message.reply(
-            f"🎉 **Correct!** You earned **100 coins**! {message.from_user.mention}"
+            f"🎉 **Correct!** You earned **100 coins**! {message.from_user.mention}",
+            parse_mode="markdown"
         )
 
         del current_characters[chat_id]
         await asyncio.sleep(1.0)  # small delay before next round
         await nguess_cmd(_, message)  # auto start next game
 
-
 @app.on_message(filters.command("name") & filters.reply & filters.chat(SUPPORT_GROUP_ID))
 async def name_cmd(_, message: Message):
     if not message.reply_to_message or not message.reply_to_message.photo:
-        return
+        return await message.reply("Reply to a waifu photo!")
 
     chat_id = message.chat.id
     if chat_id not in current_characters:
-        return
+        return await message.reply("No active game in this chat!")
 
     char_name = current_characters[chat_id]["character"]["name"]
     markup = InlineKeyboardMarkup([[
@@ -252,5 +246,4 @@ async def name_cmd(_, message: Message):
         parse_mode="markdown"
     )
 
-
-print("Balance & Waifu Guess module loaded successfully")
+print("Balance & Waifu Guess module loaded successfully!")
