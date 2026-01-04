@@ -1,247 +1,264 @@
-#!/usr/bin/env python3
-"""
-🔥 Main Grabber Bot - Pyrogram(app) + PTB(application) Hybrid 🔥
-Updated from your FIRST file + enhanced economy module.
-"""
-
 import importlib
 import asyncio
 import random
-import time
 from html import escape
-from typing import Dict, List
+from typing import Optional, Dict, Any
 
-from pyrogram import Client, filters
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
-    CommandHandler, MessageHandler, filters as ptb_filters, CallbackContext, Update
+    Application,
+    CommandHandler,
+    MessageHandler,
+    filters,
+    ContextTypes,
 )
 
-# === YOUR ORIGINAL IMPORTS (EXACT from first file) ===
 from Grabber import (
     collection, db, user_collection, message_counts_collection,
-    application, LOGGER, user_totals_collection, Grabberu  # app = Grabberu
+    application, LOGGER, user_totals_collection, Grabberu
 )
 from Grabber.modules import ALL_MODULES
 
-# Constants (from your first file)
-SPECIAL_GROUP_ID = -1002528887253
-ROYAL_NOTIFY_USER_ID = 7717913705
+# ─── Constants ──────────────────────────────────────────────────────────────
+SPECIAL_GROUP_ID = -1002528887253    # Royal spawns only here
+ROYAL_NOTIFY_USER_ID = 7717913705    # Send royal info to this user
 
-# Economy constants (from your economy module)
-SUPPORT_GROUP_ID = -1002429397912
-OWNER_ID = 6574393060
-MAX_ACTIVE_GAMES = 100
-WEEKLY_INTERVAL = 7
-
-# === Globals ===
+# ─── Globals ────────────────────────────────────────────────────────────────
 locks: Dict[str, asyncio.Lock] = {}
 message_counts: Dict[str, int] = {}
 waifu_spawn_order: Dict[str, int] = {}
-last_characters: Dict[int, Dict] = {}
-first_correct_guesses: Dict[int, int | None] = {}
-warned_users: Dict[tuple[int, int], float] = {}
-rarity_char_cache: Dict[str, List[Dict]] = {}
-current_characters: Dict[int, Dict] = {}  # Economy nguess games
+last_characters: Dict[int, dict] = {}
+first_correct_guesses: Dict[int, Optional[int]] = {}
+waifu_message: Dict[int, Any] = {}
+# warned_users  ← currently unused → can be removed if not planned to be used
+
+rarity_map = {
+    1: "⚪ Common", 2: "🟢 Medium", 3: "🟠 Rare", 4: "🟡 Legendary",
+    5: "💠 Cosmic", 6: "💮 Exclusive", 7: "🔮 Limited Edition", 8: "🫧 Royal"
+}
 
 rarity_spawn_order = ["⚪ Common", "🟢 Medium", "🟠 Rare", "🟡 Legendary"]
-special_rarity_thresholds = {"💠 Cosmic": 300, "💮 Exclusive": 600, "🔮 Limited Edition": 900, "🫧 Royal": 1000}
 
-# === Utils ===
-def normalize_tokens(text: str) -> List[str]:
-    return [t for t in text.lower().split() if t]
+special_rarity_thresholds = {
+    "💠 Cosmic": 300,
+    "💮 Exclusive": 600,
+    "🔮 Limited Edition": 900,
+    "🫧 Royal": 1000
+}
 
-def normalize_guess(guess: str) -> set:
-    return {word for word in guess.lower().split() if len(word) > 1}
+# Preload characters per rarity (big optimization!)
+characters_by_rarity: Dict[str, list] = {}
 
-async def add_coins(user_id: int, amount: int) -> bool:
-    if amount <= 0: return False
-    result = await user_collection.update_one({"id": user_id}, {"$inc": {"balance": amount}}, upsert=True)
-    return bool(result.modified_count or result.upserted_id)
+# ─── Module Loader ──────────────────────────────────────────────────────────
+for module_name in ALL_MODULES:
+    importlib.import_module(f"Grabber.modules.{module_name}")
 
-async def get_balance(user_id: int) -> int:
-    user = await user_collection.find_one({"id": user_id}, {"balance": 1})
-    return user.get("balance", 0) if user else 0
 
-# === Waifu Game Preload ===
-async def preload_characters():
-    global rarity_char_cache
-    rarity_char_cache.clear()
-    cursor = collection.find({})
-    async for doc in cursor:
-        rarity_char_cache.setdefault(doc.get("rarity", ""), []).append(doc)
-    LOGGER.info(f"Waifu cache: {len(rarity_char_cache)} rarities")
+# ─── Utils ──────────────────────────────────────────────────────────────────
+async def get_or_load_characters(rarity: str) -> list:
+    """Cache characters per rarity - huge performance gain"""
+    if rarity not in characters_by_rarity:
+        chars = await collection.find({"rarity": rarity}).to_list(None)
+        random.shuffle(chars)  # shuffle once → faster random.choice later
+        characters_by_rarity[rarity] = chars
+    return characters_by_rarity[rarity]
 
-async def load_message_counts():
-    global message_counts
-    cursor = message_counts_collection.find({})
-    async for doc in cursor:
-        message_counts[str(doc["chat_id"])] = doc["count"]
 
-async def save_message_counts():
-    for chat_id, count in message_counts.items():
-        await message_counts_collection.update_one({"chat_id": chat_id}, {"$set": {"count": count}}, upsert=True)
+# ─── Message Counter (main hot path) ────────────────────────────────────────
+async def message_counter(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    chat = update.effective_chat
+    user = update.effective_user
+    if not user or not chat:
+        return
 
-# === PYROGRAM WAIFU GAME (app = Grabberu) ===
-@Grabberu.on_message((filters.text | filters.photo | filters.video | filters.sticker) & ~filters.command(None) & filters.group)
-async def pyro_message_counter(client, message: Message):
-    chat_id_int = message.chat.id
-    chat_id = str(chat_id_int)
-    
-    if chat_id not in locks:
-        locks[chat_id] = asyncio.Lock()
-    async with locks[chat_id]:
-        count = message_counts.get(chat_id, 0)
-        if count == 0:
-            data = await message_counts_collection.find_one({"chat_id": chat_id})
-            count = data["count"] if data else 0
-        count += 1
-        message_counts[chat_id] = count
+    chat_id_str = str(chat.id)
+    chat_id_int = chat.id
 
-        settings = await user_totals_collection.find_one({"chat_id": chat_id}) or {}
-        freq = settings.get("message_frequency", 100)
+    # Fast path — lock only when needed
+    if chat_id_str not in locks:
+        locks[chat_id_str] = asyncio.Lock()
 
-        spawned = False
-        for rarity, thresh in special_rarity_thresholds.items():
-            if count % thresh == 0:
-                if rarity == "🫧 Royal" and chat_id_int != SPECIAL_GROUP_ID:
+    async with locks[chat_id_str]:
+        # Lazy load count
+        if chat_id_str not in message_counts:
+            doc = await message_counts_collection.find_one({"chat_id": chat_id_str})
+            message_counts[chat_id_str] = doc["count"] if doc else 0
+
+        count = message_counts[chat_id_str] + 1
+        message_counts[chat_id_str] = count
+
+        # Get frequency once
+        chat_settings = await user_totals_collection.find_one(
+            {"chat_id": chat_id_str},
+            projection={"message_frequency": 1}
+        )
+        freq = chat_settings.get("message_frequency", 100) if chat_settings else 100
+
+        # ── Special rarity check first (most rare → should be fast path) ──
+        for r_name, threshold in special_rarity_thresholds.items():
+            if count % threshold == 0:
+                if r_name == "🫧 Royal" and chat_id_int != SPECIAL_GROUP_ID:
                     continue
-                await send_waifu(client, message, rarity)
-                spawned = True
-                break
-        
-        if not spawned and count % freq == 0:
-            idx = waifu_spawn_order.get(chat_id, 0) % len(rarity_spawn_order)
+                await send_character(chat_id_int, context, r_name)
+                # We return early → no normal spawn in the same message
+                return
+
+        # ── Normal cycle spawn ─────────────────────────────────────────────
+        if count % freq == 0:
+            idx = waifu_spawn_order.get(chat_id_str, 0) % len(rarity_spawn_order)
             rarity = rarity_spawn_order[idx]
-            waifu_spawn_order[chat_id] = idx + 1
-            await send_waifu(client, message, rarity)
-        
-        if count % 200 == 0:
-            await save_message_counts()
+            await send_character(chat_id_int, context, rarity)
+            waifu_spawn_order[chat_id_str] = idx + 1
 
-async def send_waifu(client, message: Message, rarity: str):
-    chat_id = message.chat.id
-    
-    chars = rarity_char_cache.get(rarity) or await collection.find({"rarity": rarity}).to_list(None)
-    if not chars: return
-    
-    grabber = first_correct_guesses.get(chat_id)
-    if grabber:
-        user = await user_collection.find_one({"id": grabber})
-        name = user.get("first_name", "Unknown") if user else "Unknown"
-        await client.send_message(chat_id, f'⚠ Already grabbed by <a href="tg://user?id={grabber}">{escape(name)}</a>', parse_mode="HTML")
+        # Batch save every 50 messages (still)
+        if count % 50 == 0:
+            await message_counts_collection.update_one(
+                {"chat_id": chat_id_str},
+                {"$set": {"count": count}},
+                upsert=True
+            )
 
-    char = random.choice(chars)
-    last_characters[chat_id] = char
+
+# ─── Send Character ─────────────────────────────────────────────────────────
+async def send_character(chat_id: int, context: ContextTypes.DEFAULT_TYPE, rarity: str) -> None:
+    chars = await get_or_load_characters(rarity)
+    if not chars:
+        return
+
+    if chat_id in first_correct_guesses and first_correct_guesses[chat_id] is not None:
+        last_id = first_correct_guesses[chat_id]
+        user_doc = await user_collection.find_one(
+            {'id': last_id},
+            projection={'first_name': 1}
+        )
+        name = user_doc.get('first_name', 'Unknown') if user_doc else 'Unknown'
+        text = (
+            f'⚠ Waifu already grabbed by <a href="tg://user?id={last_id}">{escape(name)}</a>.\n'
+            f'ℹ Wait for a new waifu to appear.'
+        )
+        await context.bot.send_message(chat_id, text, parse_mode='HTML')
+        return  # ← early return, prevents sending new character
+
+    character = random.choice(chars)
+    last_characters[chat_id] = character
     first_correct_guesses[chat_id] = None
 
-    caption = "🪽 **New Waifu!**\n🦋 `/seal name` to claim!\n👑 Rarity revealed!"
+    caption = (
+        "🪽 A new amazing character has arrived in this chat...\n"
+        "🦋 Use /seal character_name to add them to your harem!\n"
+        "👑 Find out the rarity by sealing!"
+    )
+
     try:
-        await client.send_photo(chat_id, char["img_url"], caption=caption, parse_mode="HTML")
-    except Exception as e:
-        LOGGER.error(f"Waifu send failed: {e}")
-
-    if rarity == "🫧 Royal":
-        await client.send_message(ROYAL_NOTIFY_USER_ID, f"👑 ROYAL in {chat_id}! ID: {char.get('id')}")
-
-@Grabberu.on_message(filters.command("seal"))
-async def pyro_seal(client, message: Message):
-    chat_id = message.chat.id
-    user_id = message.from_user.id
-    
-    char = last_characters.get(chat_id)
-    if not char: return
-    
-    if first_correct_guesses.get(chat_id):
-        grabber = first_correct_guesses[chat_id]
-        user = await user_collection.find_one({"id": grabber})
-        name = user.get("first_name", "Unknown") if user else "Unknown"
-        await message.reply(f'⚠ Already by <a href="tg://user?id={grabber}">{escape(name)}</a>', parse_mode="HTML")
-        return
-    
-    now = time.time()
-    key = (chat_id, user_id)
-    if warned_users.get(key, 0) > now - 1: return
-    warned_users[key] = now
-    
-    guess = " ".join(message.command[1:])
-    g_tokens = normalize_tokens(guess)
-    c_tokens = normalize_tokens(char["name"])
-    
-    if len(g_tokens) == len(c_tokens) and sorted(g_tokens) == sorted(c_tokens):
-        first_correct_guesses[chat_id] = user_id
-        await user_collection.update_one({"id": user_id}, {"$push": {"characters": char}}, upsert=True)
-        
-        kb = InlineKeyboardMarkup([[InlineKeyboardButton("Harem", switch_inline_query_current_chat=f"collection.{user_id}")]])
-        await message.reply(
-            f"💫 **{escape(message.from_user.first_name)} grabbed!**\n"
-            f"🎗 **{escape(char['name'])}**\n🏵 **{escape(char['anime'])}**\n🎮 **{escape(char['rarity'])}**",
-            parse_mode="HTML", reply_markup=kb
+        msg = await context.bot.send_photo(
+            chat_id=chat_id,
+            photo=character['img_url'],
+            caption=caption,
+            parse_mode='HTML'
         )
-    else:
-        await message.reply("❌ Wrong name!")
+        waifu_message[chat_id] = msg
+    except Exception as e:
+        LOGGER.error(f"Failed to send waifu photo: {e}", exc_info=True)
 
-@Grabberu.on_message(filters.command("messagecount"))
-async def pyro_msgcount(client, message: Message):
-    chat_id = str(message.chat.id)
-    count = message_counts.get(chat_id, 0)
-    if count == 0:
-        data = await message_counts_collection.find_one({"chat_id": chat_id})
-        count = data["count"] if data else 0
-    await message.reply(f"📨 **Messages:** `{count:,}`", parse_mode="Markdown")
+    # Royal notification
+    if rarity == "🫧 Royal":
+        try:
+            await context.bot.send_message(
+                ROYAL_NOTIFY_USER_ID,
+                f"👑 A Royal character has spawned!\nCharacter ID: {character.get('id', 'N/A')}"
+            )
+        except Exception as e:
+            LOGGER.error(f"Royal notification failed: {e}")
 
-# === ECONOMY MODULE (Pyrogram - replaces your PTB economy) ===
-@Grabberu.on_message(filters.command("balance", prefixes=["/", "!", "."]))
-async def balance_cmd(client, message: Message):
-    balance = await get_balance(message.from_user.id)
-    await message.reply(f"💵 **Balance:** `{balance:,}` coins", parse_mode="Markdown")
 
-@Grabberu.on_message(filters.command("pay") & filters.reply)
-async def pay_cmd(client, message: Message):
-    sender_id = message.from_user.id
-    try:
-        amount = int(message.command[1])
-    except:
-        await message.reply("❌ `/pay <amount>` (reply)")
+# ─── Seal / Guess ───────────────────────────────────────────────────────────
+async def guess(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    chat_id = update.effective_chat.id
+    user = update.effective_user
+
+    if chat_id not in last_characters:
         return
-    
-    recip_id = message.reply_to_message.from_user.id
-    sender_bal = await get_balance(sender_id)
-    
-    if sender_bal < amount or sender_id == recip_id:
-        await message.reply("❌ Invalid!")
+
+    if chat_id in first_correct_guesses and first_correct_guesses[chat_id] is not None:
+        last_id = first_correct_guesses[chat_id]
+        user_doc = await user_collection.find_one(
+            {'id': last_id},
+            projection={'first_name': 1}
+        )
+        name = user_doc.get('first_name', 'Unknown') if user_doc else 'Unknown'
+        await update.message.reply_text(
+            f'⚠ Waifu already grabbed by <a href="tg://user?id={last_id}">{escape(name)}</a>.\n'
+            f'ℹ Wait for a new waifu to appear.',
+            parse_mode='HTML'
+        )
         return
-    
-    await user_collection.update_one({"id": sender_id}, {"$inc": {"balance": -amount}})
-    await user_collection.update_one({"id": recip_id}, {"$inc": {"balance": amount}})
-    
-    new_bal = await get_balance(sender_id)
-    await message.reply(f"✅ **Paid `{amount:,}`**\n💵 **Balance:** `{new_bal:,}`", parse_mode="Markdown")
 
-# === PTB FALLBACKS (your other modules safe) ===
-async def ptb_seal(update: Update, context: CallbackContext): pass  # Handled by pyrogram
-async def ptb_msgcount(update: Update, context: CallbackContext): pass
+    if not context.args:
+        return
 
-application.add_handler(CommandHandler("seal", ptb_seal))
-application.add_handler(CommandHandler("messagecount", ptb_msgcount))
+    guess_text = ' '.join(context.args).lower()
+    character = last_characters[chat_id]
 
-# === LOAD MODULES ===
-for module_name in ALL_MODULES:
-    importlib.import_module("Grabber.modules." + module_name)
+    name_parts = character['name'].lower().split()
 
-# === MAIN (your original structure) ===
-async def main():
+    # Fast check
+    if (sorted(name_parts) == sorted(guess_text.split()) or
+            any(part == guess_text for part in name_parts)):
+        first_correct_guesses[chat_id] = user.id
+
+        await user_collection.update_one(
+            {'id': user.id},
+            {'$push': {'characters': character}},
+            upsert=True
+        )
+
+        keyboard = [[InlineKeyboardButton(
+            "See Harem",
+            switch_inline_query_current_chat=f"collection.{user.id}"
+        )]]
+
+        await update.message.reply_text(
+            f"💫 Congratulations <b>{escape(user.first_name)}</b>!\n"
+            f"🎗 𝐍𝐚𝐦𝐞 : <b>{character['name']}</b>\n"
+            f"🏵 𝐀𝐧𝐢𝐦𝐞 : <b>{character['anime']}</b>\n"
+            f"🎮 𝐑𝐚𝐫𝐢𝐭𝐲 : <b>{character['rarity']}</b>\n\n"
+            f"🎯 Do /collection to check your amazing character collection 🎳",
+            parse_mode="HTML",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+
+
+# ─── Message Count Command ──────────────────────────────────────────────────
+async def message_count_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    chat_id_str = str(update.effective_chat.id)
+    count = message_counts.get(chat_id_str)
+
+    if count is None:
+        doc = await message_counts_collection.find_one({"chat_id": chat_id_str})
+        count = doc["count"] if doc else 0
+
+    await update.message.reply_text(f"📨 Total messages counted in this group: {count}")
+
+
+async def post_init(app: Application) -> None:
     await load_message_counts()
-    await preload_characters()
-    
-    await Grabberu.start()
-    ptb_task = asyncio.create_task(application.run_polling(drop_pending_updates=True))
-    
-    LOGGER.info("🔥 Grabber LIVE - Pyrogram + PTB!")
-    await asyncio.Event().wait()  # Idle equivalent
-    
-    ptb_task.cancel()
-    await Grabberu.stop()
+
+
+async def load_message_counts():
+    async for doc in message_counts_collection.find({}):
+        message_counts[str(doc["chat_id"])] = doc["count"]
+
+
+def main():
+    application.add_handler(CommandHandler("seal", guess))
+    application.add_handler(CommandHandler("messagecount", message_count_cmd))
+    application.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, message_counter))
+
+    application.post_init = post_init
+    application.run_polling(drop_pending_updates=True)
+
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    Grabberu.start()
+    LOGGER.info("Bot started")
+    main()
