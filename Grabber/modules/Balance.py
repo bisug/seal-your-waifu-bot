@@ -3,21 +3,22 @@ import random
 from datetime import datetime, timedelta
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
-from motor.motor_asyncio import AsyncIOMotorClient  # or use pymongo async
+from motor.motor_asyncio import AsyncIOMotorClient
+
+# Assuming these are already imported from Grabber
 from Grabber import Grabberu as app
-from Grabber import *
+from Grabber import user_collection, collection, characters_collection  # adjust if name is different
+
 # ==========================================
 #               CONFIGURATION
 # ==========================================
-
 
 SUPPORT_GROUP_ID = -1002429397912
 OWNER_ID = 6574393060
 MAX_ACTIVE_GAMES = 120
 
-
-# In-memory active games
-active_games = {}  # chat_id: {"character": dict, "guessed": bool}
+# In-memory active games (chat_id → game data)
+active_games = {}  # {"character": dict, "guessed": bool}
 
 # ==========================================
 #               HELPERS
@@ -38,28 +39,18 @@ async def add_coins(user_id: int, amount: int):
     )
 
 
-async def update_last_claim(user_id: int, field: str):
-    await user_collection.update_one(
-        {"id": user_id},
-        {"$set": {field: datetime.utcnow()}},
-        upsert=True
-    )
-
-
 # ==========================================
 #               COMMANDS
 # ==========================================
 
-
-
 @app.on_message(filters.command(["balance", "bal"]))
-async def balance_cmd(_, msg: Message):
+async def balance_cmd(client, msg: Message):
     bal = await get_user_balance(msg.from_user.id)
     await msg.reply(f"Your balance: 💵 **{bal}** coins")
 
 
 @app.on_message(filters.command("pay") & filters.reply)
-async def pay_cmd(_, msg: Message):
+async def pay_cmd(client, msg: Message):
     try:
         amount = int(msg.command[1])
     except (IndexError, ValueError):
@@ -76,15 +67,19 @@ async def pay_cmd(_, msg: Message):
         return await msg.reply("Insufficient balance 😔")
 
     await user_collection.bulk_write([
-        {"updateOne": {
-            "filter": {"id": sender_id},
-            "update": {"$inc": {"balance": -amount}}
-        }},
-        {"updateOne": {
-            "filter": {"id": recipient_id},
-            "update": {"$inc": {"balance": amount}},
-            "upsert": True
-        }}
+        {
+            "updateOne": {
+                "filter": {"id": sender_id},
+                "update": {"$inc": {"balance": -amount}}
+            }
+        },
+        {
+            "updateOne": {
+                "filter": {"id": recipient_id},
+                "update": {"$inc": {"balance": amount}},
+                "upsert": True
+            }
+        }
     ])
 
     new_bal = await get_user_balance(sender_id)
@@ -95,7 +90,7 @@ async def pay_cmd(_, msg: Message):
 
 
 @app.on_message(filters.command("daily"))
-async def daily_reward(_, msg: Message):
+async def daily_reward(client, msg: Message):
     user_id = msg.from_user.id
     user = await user_collection.find_one(
         {"id": user_id},
@@ -103,9 +98,8 @@ async def daily_reward(_, msg: Message):
     )
 
     today = datetime.utcnow().date()
-    if user and "last_daily_reward" in user:
-        if user["last_daily_reward"].date() == today:
-            return await msg.reply("You've already claimed your daily reward today 🌞")
+    if user and user.get("last_daily_reward") and user["last_daily_reward"].date() == today:
+        return await msg.reply("You've already claimed your daily reward today 🌞")
 
     await user_collection.update_one(
         {"id": user_id},
@@ -116,16 +110,15 @@ async def daily_reward(_, msg: Message):
 
 
 @app.on_message(filters.command("weekly"))
-async def weekly_bonus(_, msg: Message):
+async def weekly_bonus(client, msg: Message):
     user_id = msg.from_user.id
     user = await user_collection.find_one(
         {"id": user_id},
         {"last_weekly_bonus": 1}
     )
 
-    if user and "last_weekly_bonus" in user:
-        last = user["last_weekly_bonus"]
-        if datetime.utcnow() - last < timedelta(days=7):
+    if user and user.get("last_weekly_bonus"):
+        if (datetime.utcnow() - user["last_weekly_bonus"]).days < 7:
             return await msg.reply("You've already claimed your weekly bonus this week ⏳")
 
     await user_collection.update_one(
@@ -137,7 +130,7 @@ async def weekly_bonus(_, msg: Message):
 
 
 @app.on_message(filters.command("bonus"))
-async def one_time_bonus(_, msg: Message):
+async def one_time_bonus(client, msg: Message):
     user_id = msg.from_user.id
     user = await user_collection.find_one({"id": user_id}, {"bonus_claimed": 1})
 
@@ -153,7 +146,7 @@ async def one_time_bonus(_, msg: Message):
 
 
 @app.on_message(filters.command("mtop"))
-async def money_top(_, msg: Message):
+async def money_top(client, msg: Message):
     top_users = await user_collection.find(
         {},
         {"id": 1, "first_name": 1, "balance": 1}
@@ -170,14 +163,14 @@ async def money_top(_, msg: Message):
 
     text = "🏆 **TOP 10 RICHEST USERS**\n\n" + "\n".join(lines)
     await msg.reply_photo(
-        "https://telegra.ph/file/8fce79d744297133b79b6.jpg",
+        photo="https://telegra.ph/file/8fce79d744297133b79b6.jpg",
         caption=text,
         parse_mode="html"
     )
 
 
 @app.on_message(filters.command("nguess") & filters.chat(SUPPORT_GROUP_ID))
-async def new_guess(_, msg: Message):
+async def new_guess(client, msg: Message):
     chat_id = msg.chat.id
 
     if len(active_games) >= MAX_ACTIVE_GAMES:
@@ -197,14 +190,20 @@ async def new_guess(_, msg: Message):
     }
 
     await msg.reply_photo(
-        character["img_url"],
+        photo=character["img_url"],
         caption="✨ **Guess this Waifu!** 🧐✨\nSend the name in chat!"
     )
 
 
-@app.on_message(filters.text & ~filters.command & filters.chat(SUPPORT_GROUP_ID))
+# Fixed version - correct filter combination
+@app.on_message(
+    filters.text &
+    ~filters.command &
+    filters.chat(SUPPORT_GROUP_ID)
+)
 async def handle_guess(client, msg: Message):
     chat_id = msg.chat.id
+    
     if chat_id not in active_games:
         return
 
@@ -221,19 +220,24 @@ async def handle_guess(client, msg: Message):
     if correct_words & guess_words:
         game["guessed"] = True
         await add_coins(msg.from_user.id, 100)
-        await msg.reply(f"🎉 **Correct!** +100 coins for {msg.from_user.mention}")
+        
+        await msg.reply(
+            f"🎉 **Correct!** +100 coins for {msg.from_user.mention}"
+        )
 
-        # Start new game automatically
-        await asyncio.sleep(1.5)
+        # Small delay before new game
+        await asyncio.sleep(1.2)
+        
+        # Start next round
         await new_guess(client, msg)
-
-        # Clean up old game
+        
+        # Clean up
         active_games.pop(chat_id, None)
 
 
 @app.on_message(filters.command("name") & filters.reply & filters.chat(SUPPORT_GROUP_ID))
-async def show_name(_, msg: Message):
-    if not msg.reply_to_message.photo:
+async def show_name(client, msg: Message):
+    if not msg.reply_to_message or not msg.reply_to_message.photo:
         return
 
     chat_id = msg.chat.id
@@ -251,3 +255,8 @@ async def show_name(_, msg: Message):
         parse_mode="markdown"
     )
 
+
+# If you need to run the bot manually (optional)
+# if __name__ == "__main__":
+#     print("Bot is running...")
+#     app.run()
