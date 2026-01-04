@@ -195,7 +195,7 @@ async def nguess_cmd(_, message: Message):
 # ==================== FIXED HANDLER ====================
 @app.on_message(
     filters.text &
-    filters.command(None, "") &  # FIXED: Negates ALL commands properly
+    ~filters.command([""]) &  # ✅ FINAL FIX: Negates ALL commands
     filters.chat(SUPPORT_GROUP_ID)
 )
 async def handle_guess(_, message: Message):
@@ -223,8 +223,8 @@ async def handle_guess(_, message: Message):
         )
 
         del current_characters[chat_id]
-        await asyncio.sleep(1.0)  # small delay before next round
-        await nguess_cmd(_, message)  # auto start next game
+        await asyncio.sleep(1.0)
+        await nguess_cmd(_, message)
 
 @app.on_message(filters.command("name") & filters.reply & filters.chat(SUPPORT_GROUP_ID))
 async def name_cmd(_, message: Message):
