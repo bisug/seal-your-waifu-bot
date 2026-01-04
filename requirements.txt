@@ -1,11 +1,24 @@
-motor
-aiohttp
-requests
-python-telegram-bot==20.6
-pymongo 
-pyrate-limiter==3.1.0
-apscheduler==3.6.3
-pyrogram
-tgcrypto 
-fastapi
-uvicorn
+# Core telegram bot & async http (very important)
+python-telegram-bot        == 21.5        # ← current stable recommendation (Jan 2026)
+aiohttp                    == 3.11.8      # very mature & fast
+requests                   == 2.32.3      # (still very widely used)
+
+# Database & rate limiting
+pymongo                    == 4.10.1      # current stable (works great with 3.13)
+pyrate-limiter             == 3.2.0       # small bump - better asyncio support
+
+# Scheduling
+apscheduler                == 3.10.4      # still very popular & maintained
+
+# Alternative telegram client (if you use it)
+pyrogram                   == 2.0.106     # latest stable series
+tgcrypto                   == 1.2.5       # usually kept in sync with pyrogram
+
+# Web / API part
+fastapi                    == 0.115.0     # current stable (very active project)
+uvicorn                    == 0.32.0      # current stable (works perfectly with fastapi 0.115)
+
+# Optional but commonly useful together with the stack above
+python-dotenv              == 1.0.1       # strongly recommended
+pydantic                   == 2.10.0      # (usually comes with fastapi, but good to pin)
+pydantic-settings          == 2.6.1       # nice settings management
