@@ -7,11 +7,12 @@ from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 # Assuming these are already defined and exported from Grabber
 from Grabber import user_collection, collection
 from Grabber import Grabberu as app
+
 SUPPORT_GROUP_ID = -1002429397912
 OWNER_ID = 6574393060
 
 MAX_ACTIVE_GAMES = 100
-current_characters = {}  # chat_id: {"character": dict, "guessed": bool}
+current_characters = {}  # chat_id → {"character": dict, "guessed": bool}
 
 # ==================== HELPERS ====================
 
@@ -31,8 +32,7 @@ async def add_coins(user_id: int, amount: int):
 async def balance_cmd(_, message: Message):
     user_id = message.from_user.id
     user_data = await user_collection.find_one(
-        {"id": user_id},
-        {"balance": 1}
+        {"id": user_id}, {"balance": 1}
     )
     balance_amount = user_data.get("balance", 0) if user_data else 0
     await message.reply(f"Your balance: 💵 **{balance_amount}** coins")
@@ -53,8 +53,7 @@ async def pay_cmd(_, message: Message):
         return await message.reply("Amount must be positive!")
 
     sender_data = await user_collection.find_one(
-        {"id": sender_id},
-        {"balance": 1}
+        {"id": sender_id}, {"balance": 1}
     )
     
     if not sender_data or sender_data.get("balance", 0) < amount:
@@ -74,8 +73,7 @@ async def pay_cmd(_, message: Message):
     ])
 
     new_balance = await user_collection.find_one(
-        {"id": sender_id},
-        {"balance": 1}
+        {"id": sender_id}, {"balance": 1}
     )
 
     mention = f"@{recipient.username}" if recipient.username else recipient.mention
@@ -89,8 +87,7 @@ async def pay_cmd(_, message: Message):
 async def daily_reward_cmd(_, message: Message):
     user_id = message.from_user.id
     user_data = await user_collection.find_one(
-        {"id": user_id},
-        {"last_daily_reward": 1}
+        {"id": user_id}, {"last_daily_reward": 1}
     )
 
     today = datetime.utcnow().date()
@@ -113,8 +110,7 @@ async def daily_reward_cmd(_, message: Message):
 async def weekly_bonus_cmd(_, message: Message):
     user_id = message.from_user.id
     user = await user_collection.find_one(
-        {"id": user_id},
-        {"last_weekly_bonus": 1}
+        {"id": user_id}, {"last_weekly_bonus": 1}
     )
 
     if user and user.get("last_weekly_bonus"):
@@ -136,8 +132,7 @@ async def weekly_bonus_cmd(_, message: Message):
 async def one_time_bonus_cmd(_, message: Message):
     user_id = message.from_user.id
     user = await user_collection.find_one(
-        {"id": user_id},
-        {"bonus_claimed": 1}
+        {"id": user_id}, {"bonus_claimed": 1}
     )
 
     if user and user.get("bonus_claimed"):
@@ -157,8 +152,7 @@ async def one_time_bonus_cmd(_, message: Message):
 @app.on_message(filters.command("mtop"))
 async def mtop_cmd(_, message: Message):
     top_users = await user_collection.find(
-        {},
-        {"id": 1, "first_name": 1, "balance": 1}
+        {}, {"id": 1, "first_name": 1, "balance": 1}
     ).sort("balance", -1).limit(10).to_list(length=10)
 
     if not top_users:
@@ -203,7 +197,13 @@ async def nguess_cmd(_, message: Message):
     )
 
 
-@app.on_message(filters.text & ~filters.command & filters.chat(SUPPORT_GROUP_ID))
+# ─── FIXED HANDLER ──────────────────────────────────────────────────────────
+# The problematic ~filters.command is now correctly used
+@app.on_message(
+    filters.text &
+    ~filters.command &                    # ← correct syntax
+    filters.chat(SUPPORT_GROUP_ID)
+)
 async def handle_guess(_, message: Message):
     chat_id = message.chat.id
     if chat_id not in current_characters:
@@ -217,16 +217,19 @@ async def handle_guess(_, message: Message):
     character_name = game["character"]["name"].strip().lower()
 
     correct_words = set(character_name.split())
-    guess_words = set(word for word in guess.split() if len(word) > 1)
+    guess_words = {word for word in guess.split() if len(word) > 1}
 
     if correct_words & guess_words:
         game["guessed"] = True
         await add_coins(message.from_user.id, 100)
-        await message.reply(f"🎉 **Correct!** You earned **100 coins**!")
+        
+        await message.reply(
+            f"🎉 **Correct!** You earned **100 coins**! {message.from_user.mention}"
+        )
 
         del current_characters[chat_id]
-        await asyncio.sleep(1)  # small delay
-        await nguess_cmd(_, message)  # start new round
+        await asyncio.sleep(1.0)  # small delay before next round
+        await nguess_cmd(_, message)  # auto start next game
 
 
 @app.on_message(filters.command("name") & filters.reply & filters.chat(SUPPORT_GROUP_ID))
@@ -250,5 +253,4 @@ async def name_cmd(_, message: Message):
     )
 
 
-# Optional: bot startup message (you can remove if not needed)
 print("Balance & Waifu Guess module loaded successfully")
