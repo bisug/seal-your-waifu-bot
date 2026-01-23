@@ -1,6 +1,6 @@
 import asyncio
 import random
-from pyrogram import filters, types, enums
+from pyrogram import filters, types, enums, errors
 from Grabber.app import app
 from Grabber import LOGGER
 from Grabber.core.game import get_user_balance, update_user_balance, check_and_deduct
@@ -62,12 +62,20 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
     # Atomic deduction
     if not await check_and_deduct(attacker_id, bet):
         await delete_session(battle_id)
-        return await query.message.edit_text("❌ Attacker no longer has enough balance.")
+        try:
+            await query.message.edit_text("❌ Attacker no longer has enough balance.")
+        except errors.MessageNotModified:
+            pass
+        return
     
     if not await check_and_deduct(defender_id, bet):
         await update_user_balance(attacker_id, bet)
         await delete_session(battle_id)
-        return await query.message.edit_text("❌ You no longer have enough balance.")
+        try:
+            await query.message.edit_text("❌ You no longer have enough balance.")
+        except errors.MessageNotModified:
+            pass
+        return
 
     await delete_session(battle_id)
     
@@ -86,13 +94,16 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
         d_pet_name = d_pet["name"] if d_pet else "Hand-to-Hand"
 
         text = (
-            f"⚔️ **Battle Started!**\n"
+            f"⚔️ <b>Battle Started!</b>\n"
             f"👤 {a_user.mention} (w/ {a_pet_name})\n"
             f" 🆚 \n"
             f"👤 {d_user.mention} (w/ {d_pet_name})\n\n"
-            f"🔥 **Fighting...**"
+            f"🔥 <b>Fighting...</b>"
         )
-        await query.message.edit_text(text, parse_mode=enums.ParseMode.MARKDOWN)
+        try:
+            await query.message.edit_text(text, parse_mode=enums.ParseMode.HTML)
+        except errors.MessageNotModified:
+            pass
         await app.send_chat_action(query.message.chat.id, enums.ChatAction.TYPING)
         
         await asyncio.sleep(2)
@@ -111,13 +122,13 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
         winner_pet = a_pet_name if winner_id == attacker_id else d_pet_name
 
         result_text = (
-            f"🏆 **Winner:** {winner_user.mention}\n"
-            f"🐾 **MVP:** {winner_pet}\n"
-            f"💰 **Winnings:** {winnings} coins!\n"
-            f"📈 **Odds:** {int(a_win_chance)}% vs {int(100 - a_win_chance)}%"
+            f"🏆 <b>Winner:</b> {winner_user.mention}\n"
+            f"🐾 <b>MVP:</b> {winner_pet}\n"
+            f"💰 <b>Winnings:</b> {winnings} coins!\n"
+            f"📈 <b>Odds:</b> {int(a_win_chance)}% vs {int(100 - a_win_chance)}%"
         )
 
-        await query.message.reply_text(result_text, parse_mode=enums.ParseMode.MARKDOWN)
+        await query.message.reply_text(result_text, parse_mode=enums.ParseMode.HTML)
 
     except Exception as e:
         LOGGER.error(f"Battle Error: {e}")

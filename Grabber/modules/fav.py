@@ -1,4 +1,4 @@
-from pyrogram import filters, types, enums
+from pyrogram import filters, types, enums, errors
 from Grabber.app import app
 from Grabber import LOGGER
 from Grabber.core.user import get_user_data, update_user
@@ -28,8 +28,9 @@ async def fav_handler(_, message: types.Message):
 
     await message.reply_photo(
         photo=character.get('img_url'),
-        caption=f"Set **{character.get('name')}** as your favorite?",
-        reply_markup=markup
+        caption=f"Set <b>{character.get('name')}</b> as your favorite?",
+        reply_markup=markup,
+        parse_mode=enums.ParseMode.HTML
     )
 
 @app.on_callback_query(filters.regex(r"^fav_set:"))
@@ -39,7 +40,10 @@ async def fav_set_handler(_, query: types.CallbackQuery):
         return await query.answer("❌ This is not for you!", show_alert=True)
 
     await update_user(int(user_id), {"$set": {"favorites": [char_id]}})
-    await query.message.edit_caption(f"✅ Character `{char_id}` is now your favorite!")
+    try:
+        await query.message.edit_caption(f"✅ Character <code>{char_id}</code> is now your favorite!", parse_mode=enums.ParseMode.HTML)
+    except errors.MessageNotModified:
+        pass
     await query.answer("Favorites updated.")
 
 @app.on_callback_query(filters.regex(r"fav_cancel"))
