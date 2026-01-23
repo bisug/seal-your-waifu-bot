@@ -8,8 +8,8 @@ from Grabber import collection, LOGGER
 from Grabber.core.user import get_user_data
 
 FORMATS = [
-    "⧉ {anime} [🎮] ⦋{page}/{total_pages}⦌\n⤷〔{rarity}〕 {name} (ID: {id}) ×{count}",
-    "⧉ {anime} [🎮] ⦋{page}/{total_pages}⦌\n⤷ ᴷᴱʸ: {id} - {name} [Rarity: {rarity}] ×{count}",
+    "⧉ {anime} [🎮] ⦋{page}/{total_pages}⦌\n⤷〔<b>{rarity}</b>〕 {name} (ID: <code>{id}</code>) ×{count}",
+    "⧉ {anime} [🎮] ⦋{page}/{total_pages}⦌\n⤷ ᴷᴱʸ: <code>{id}</code> - {name} [Rarity: <b>{rarity}</b>] ×{count}",
 ]
 
 @app.on_message(filters.command(["harem", "collection"]))
@@ -41,7 +41,7 @@ async def show_harem(message_obj, user_id, page):
     current_idx = user.get('current_format_index', 0)
     char_format = FORMATS[current_idx % len(FORMATS)]
 
-    harem_text = f"🐰 **{escape(user.get('first_name', 'User'))}'s Harem**\n"
+    harem_text = f"🐰 <b>{escape(user.get('first_name', 'User'))}'s Harem</b>\n"
     harem_text += f"Page {page + 1}/{total_pages}\n\n"
 
     current_slice = unique_chars[page * per_page : (page + 1) * per_page]
@@ -68,7 +68,7 @@ async def show_harem(message_obj, user_id, page):
     try:
         if isinstance(message_obj, types.CallbackQuery):
             await message_obj.edit_message_media(
-                media=types.InputMediaPhoto(media=random.choice(chars)['img_url'], caption=harem_text),
+                media=types.InputMediaPhoto(media=random.choice(chars)['img_url'], caption=harem_text, parse_mode=enums.ParseMode.HTML),
                 reply_markup=markup
             )
         else:
@@ -76,7 +76,7 @@ async def show_harem(message_obj, user_id, page):
                 photo=random.choice(chars)['img_url'],
                 caption=harem_text,
                 reply_markup=markup,
-                parse_mode=enums.ParseMode.MARKDOWN
+                parse_mode=enums.ParseMode.HTML
             )
     except errors.MessageNotModified:
         pass
