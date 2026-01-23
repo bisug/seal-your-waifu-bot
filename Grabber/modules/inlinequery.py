@@ -1,99 +1,116 @@
 import re
-import time
 from html import escape
 from pyrogram import filters, types, enums
 from Grabber import app, collection, user_collection, LOGGER
 
-# Cache
-global_guess_cache = {}
-
-async def get_global_guess_count(char_id: str) -> int:
-    if char_id in global_guess_cache:
-        return global_guess_cache[char_id]
-    count = await user_collection.count_documents({'characters.id': char_id})
-    global_guess_cache[char_id] = count
-    return count
+# Constants
+RESULTS_PER_PAGE = 50
 
 @app.on_inline_query()
 async def inline_query_handler(_, query: types.InlineQuery) -> None:
     query_text = query.query.strip()
+    offset = int(query.offset) if query.offset else 0
+    results = []
     
+    # ─── Collection Search (collection.<user_id>) ───────────────────────────
+    if query_text.startswith("collection."):
+        try:
+            parts = query_text.split(".")
+            if len(parts) < 2:
+                return await query.answer([], cache_time=5)
+            
+            user_id = int(parts[1])
+            # Optimized aggregation: Get unique characters from user collection sorted by ID desc
+            # This is much faster than fetching full user doc and filtering in Python
+            pipeline = [
+                {"$match": {"id": user_id}},
+                {"$unwind": "$characters"},
+                {"$replaceRoot": {"newRoot": "$characters"}},
+                {"$group": {
+                    "_id": "$id",
+                    "id": {"$first": "$id"},
+                    "name": {"$first": "$name"},
+                    "anime": {"$first": "$anime"},
+                    "rarity": {"$first": "$rarity"},
+                    "img_url": {"$first": "$img_url"}
+                }},
+                {"$sort": {"id": -1}},
+                {"$skip": offset},
+                {"$limit": RESULTS_PER_PAGE}
+            ]
+            
+            characters = await user_collection.aggregate(pipeline).to_list(length=RESULTS_PER_PAGE)
+            
+            for char in characters:
+                results.append(create_inline_result(char))
+                
+            next_offset = str(offset + RESULTS_PER_PAGE) if len(characters) == RESULTS_PER_PAGE else ""
+            await query.answer(results, cache_time=5, next_offset=next_offset)
+            return
+
+        except (ValueError, IndexError):
+            return await query.answer([], cache_time=5)
+        except Exception as e:
+            LOGGER.error(f"Inline collection error: {e}")
+            return await query.answer([], cache_time=5)
+
+    # ─── Global Character Search ───────────────────────────────────────────
     filter_query = {}
     if query_text:
-        # Check if it's a collection request (handled by harem logic usually, but we implement basic search here)
-        if query_text.startswith("collection."):
-            try:
-                user_id = int(query_text.split(".")[1])
-                user_doc = await user_collection.find_one({"id": user_id})
-                characters = user_doc.get("characters", []) if user_doc else []
-                # Pyrogram inline results limit is 50 usually
-                unique_chars = {c['id']: c for c in characters}.values()
-                results = []
-                for character in list(unique_chars)[:50]:
-                    results.append(
-                        types.InlineQueryResultPhoto(
-                            photo_url=character["img_url"],
-                            thumb_url=character["img_url"],
-                            caption=f"🌸 **{escape(character['name'])}**\n🎬 Anime: {escape(character['anime'])}\n🔮 Rarity: {escape(character['rarity'])}\n🆔 ID: {character['id']}",
-                            parse_mode=enums.ParseMode.MARKDOWN
-                        )
-                    )
-                await query.answer(results, cache_time=5)
-                return
-            except Exception as e:
-                LOGGER.error(f"Error in collection inline query: {e}")
-        
-        # Normal search
-        regex = re.compile(re.escape(query_text), re.IGNORECASE)
-        filter_query = {"$or": [{"name": regex}, {"anime": regex}]}
-    
-    # DB search
-    cursor = collection.find(filter_query, {
-        "id": 1, "name":1, "anime":1, "rarity":1, "img_url":1
-    }).limit(50)
-    characters = await cursor.to_list(length=50)
+        # Use native MongoDB regex for performance
+        filter_query = {
+            "$or": [
+                {"name": {"$regex": query_text, "$options": "i"}},
+                {"anime": {"$regex": query_text, "$options": "i"}}
+            ]
+        }
 
-    results = []
-    for character in characters:
-        char_id = str(character["id"])
-        name = escape(character["name"])
-        anime = escape(character["anime"])
-        rarity = escape(character["rarity"])
+    # Fetch with descending ID sort and pagination
+    cursor = collection.find(filter_query).sort("id", -1).skip(offset).limit(RESULTS_PER_PAGE)
+    characters = await cursor.to_list(length=RESULTS_PER_PAGE)
 
-        caption = (
-            f"🌸 **{name}**\n"
-            f"🎬 **Anime:** {anime}\n"
-            f"🔮 **Rarity:** {rarity}\n"
-            f"🆔 **ID:** `{char_id}`"
-        )
+    for char in characters:
+        results.append(create_inline_result(char))
 
-        keyboard = types.InlineKeyboardMarkup([
-            [types.InlineKeyboardButton("📊 How many users have?", callback_data=f"character_count:{char_id}")]
-        ])
+    next_offset = str(offset + RESULTS_PER_PAGE) if len(characters) == RESULTS_PER_PAGE else ""
+    await query.answer(results, cache_time=5, next_offset=next_offset)
 
-        results.append(
-            types.InlineQueryResultPhoto(
-                photo_url=character["img_url"],
-                thumb_url=character["img_url"],
-                caption=caption,
-                parse_mode=enums.ParseMode.MARKDOWN,
-                reply_markup=keyboard
-            )
-        )
+def create_inline_result(character: dict) -> types.InlineQueryResultPhoto:
+    """Standardized helper to create inline results with HTML formatting."""
+    char_id = str(character["id"])
+    name = escape(character["name"])
+    anime = escape(character["anime"])
+    rarity = escape(character["rarity"])
+    img_url = character["img_url"]
 
-    await query.answer(results, cache_time=5)
+    caption = (
+        f"🌸 <b>{name}</b>\n"
+        f"🎬 <b>Anime:</b> {anime}\n"
+        f"🔮 <b>Rarity:</b> {rarity}\n"
+        f"🆔 <b>ID:</b> <code>{char_id}</code>"
+    )
+
+    keyboard = types.InlineKeyboardMarkup([
+        [types.InlineKeyboardButton("📊 Owners Count", callback_data=f"character_count:{char_id}")]
+    ])
+
+    return types.InlineQueryResultPhoto(
+        photo_url=img_url,
+        thumb_url=img_url,
+        caption=caption,
+        parse_mode=enums.ParseMode.HTML,
+        reply_markup=keyboard
+    )
 
 @app.on_callback_query(filters.regex(r"^character_count:.+$"))
 async def guessed_callback(_, query: types.CallbackQuery) -> None:
     char_id = query.data.split("character_count:")[1]
 
     try:
+        # Optimized count check with aggregation
         result = await user_collection.aggregate([
             {"$match": {"characters.id": char_id}},
-            {"$unwind": "$characters"},
-            {"$match": {"characters.id": char_id}},
-            {"$group": {"_id": "$id"}},
-            {"$count": "user_count"},
+            {"$count": "user_count"}
         ]).to_list(length=1)
 
         user_count = result[0]["user_count"] if result else 0
@@ -105,4 +122,4 @@ async def guessed_callback(_, query: types.CallbackQuery) -> None:
 
     except Exception as e:
         LOGGER.error(f"Error in guessed_callback: {e}")
-        await query.answer(f"❌ An error occurred.", show_alert=True)
+        await query.answer("❌ An error occurred while fetching stats.", show_alert=True)
