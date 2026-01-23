@@ -3,6 +3,7 @@ import random
 import time
 from pyrogram import filters, types, enums
 from Grabber import user_collection, collection, app
+from Grabber.core.user import add_pet_xp
 
 # Rarity chances
 RARITY_CHANCES = {
@@ -16,7 +17,7 @@ RARITY_CHANCES = {
 }
 
 # Default pet
-DEFAULT_PET = {"name": "Fluffy", "luck": 1.0, "owned": True}
+DEFAULT_PET = {"name": "Fluffy Fox 🦊", "luck": 0.10, "level": 1, "xp": 0, "owned": True}
 
 # Cooldown tracker
 hunt_cooldowns = {}
@@ -41,9 +42,9 @@ async def hunt_cmd(_, message: types.Message):
 
     user = await user_collection.find_one({"id": user_id}) or {}
     pets = user.get("pets", [DEFAULT_PET])
-    current = user.get("current_pet", "Fluffy")
+    current = user.get("current_pet", DEFAULT_PET["name"])
     pet = next((p for p in pets if p["name"] == current), DEFAULT_PET)
-    luck = pet.get("luck", 1.0)
+    luck = pet.get("luck", 0.1)
 
     msg = await message.reply_text(f"🦊 {pet['name']} is going hunting...")
     await asyncio.sleep(1)
@@ -52,16 +53,22 @@ async def hunt_cmd(_, message: types.Message):
 
     coins = random.randint(100, 300)
     await user_collection.update_one({"id": user_id}, {"$inc": {"balance": coins}}, upsert=True)
+    
+    # Award pet XP: 10-20 XP per hunt
+    xp_gain = random.randint(10, 20)
+    await add_pet_xp(user_id, pet["name"], xp_gain)
 
-    egg_chance = 5 * luck
+    # Egg chance logic (luck is a multiplier here, e.g. 0.1 = 10% bonus)
+    base_egg_chance = 10
+    egg_chance = base_egg_chance * (1 + luck)
     roll = random.uniform(0, 100)
 
     if roll <= egg_chance:
         egg_id = f"egg_{random.randint(1000, 9999)}"
         await user_collection.update_one({"id": user_id}, {"$push": {"eggs": egg_id}}, upsert=True)
-        await msg.edit_text(f"🥚 {pet['name']} found a mysterious egg!\n💰 Also brought back {coins} coins!")
+        await msg.edit_text(f"🥚 {pet['name']} found a mysterious egg!\n💰 Also brought back {coins} coins and gained {xp_gain} XP!")
     else:
-        await msg.edit_text(f"💰 {pet['name']} brought back {coins} coins from the hunt!")
+        await msg.edit_text(f"💰 {pet['name']} brought back {coins} coins and gained {xp_gain} XP!")
 
 @app.on_message(filters.command("hatch"))
 async def hatch_cmd(_, message: types.Message):

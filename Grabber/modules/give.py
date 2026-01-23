@@ -22,7 +22,7 @@ async def give_balance(_, message: types.Message):
         if amount <= 0:
             raise ValueError("Amount must be positive")
     except (IndexError, ValueError):
-        await message.reply_text("⚠️ Usage: `/givebalance <amount>` (Reply to user)", parse_mode=enums.ParseMode.MARKDOWN)
+        await message.reply_text("⚠️ Usage: <code>/givebalance &lt;amount&gt;</code> (Reply to user)", parse_mode=enums.ParseMode.HTML)
         return
 
     # Admin bypass for unlimited coins
@@ -70,7 +70,7 @@ async def take_balance(_, message: types.Message):
         if amount <= 0:
             raise ValueError("Amount must be positive")
     except (IndexError, ValueError):
-        await message.reply_text("⚠️ Usage: `/takebalance <amount>` (Reply to user)", parse_mode=enums.ParseMode.MARKDOWN)
+        await message.reply_text("⚠️ Usage: <code>/takebalance &lt;amount&gt;</code> (Reply to user)", parse_mode=enums.ParseMode.HTML)
         return
 
     await user_collection.update_one({'id': recipient_id}, {'$inc': {'balance': -amount}})
