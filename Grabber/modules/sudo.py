@@ -1,57 +1,49 @@
-from telegram import Update
-from telegram.ext import CommandHandler, CallbackContext
-from Grabber import application, sudo_users, db
-OWNER_ID = 6574393060
-# MongoDB collection for storing sudo users
-sudo_collection = db['sudos']
+from pyrogram import filters, types, enums
+from Grabber.app import app
+from Grabber import OWNER_ID, sudo_users, LOGGER
+from Grabber.database import sudo_collection
 
-async def add_sudo(update: Update, context: CallbackContext) -> None:
-    user_id = update.effective_user.id
-    if user_id == OWNER_ID:
-        if len(context.args) != 1 or not context.args[0].isdigit():
-            await update.message.reply_text("Please provide a valid user ID.")
-            return
+@app.on_message(filters.command("addsudo") & filters.user(OWNER_ID))
+async def addsudo_handler(_, message: types.Message):
+    if len(message.command) < 2 or not message.command[1].isdigit():
+        return await message.reply_text("❌ Provide a User ID.")
 
-        new_sudo = int(context.args[0])
-        existing_sudo = await sudo_collection.find_one({'user_id': new_sudo})
-        if existing_sudo:
-            await update.message.reply_text("This user is already a sudo.")
-        else:
-            await sudo_collection.insert_one({'user_id': new_sudo})
-            await update.message.reply_text("User has been added as a sudo.")
+    target_id = int(message.command[1])
+    if await sudo_collection.find_one({"user_id": target_id}):
+        return await message.reply_text("❗ This user is already a sudo user.")
+
+    await sudo_collection.insert_one({"user_id": target_id})
+    if target_id not in sudo_users:
+        sudo_users.append(target_id)
+        
+    await message.reply_text(f"✅ User `{target_id}` added to sudo list.")
+    LOGGER.info(f"New sudo added: {target_id} by {message.from_user.id}")
+
+@app.on_message(filters.command("rmsudo") & filters.user(OWNER_ID))
+async def rmsudo_handler(_, message: types.Message):
+    if len(message.command) < 2 or not message.command[1].isdigit():
+        return await message.reply_text("❌ Provide a User ID.")
+
+    target_id = int(message.command[1])
+    res = await sudo_collection.delete_one({"user_id": target_id})
+    
+    if res.deleted_count > 0:
+        if target_id in sudo_users:
+            sudo_users.remove(target_id)
+        await message.reply_text(f"✅ User `{target_id}` removed from sudo list.")
     else:
-        await update.message.reply_text("Only the owner can add sudo users.")
+        await message.reply_text("❌ User not found in sudo list.")
 
-async def rm_sudo(update: Update, context: CallbackContext) -> None:
-    user_id = update.effective_user.id
-    if user_id == OWNER_ID:
-        if len(context.args) != 1 or not context.args[0].isdigit():
-            await update.message.reply_text("Please provide a valid user ID.")
-            return
-
-        remove_sudo = int(context.args[0])
-        result = await sudo_collection.delete_one({'user_id': remove_sudo})
-        if result.deleted_count:
-            await update.message.reply_text("User has been removed from sudo.")
-        else:
-            await update.message.reply_text("This user is not a sudo.")
-    else:
-        await update.message.reply_text("Only the owner can remove sudo users.")
-
-async def sudo_list(update: Update, context: CallbackContext) -> None:
-    user_id = update.effective_user.id
-    if user_id in sudo_users:
-        sudo_users_cursor = sudo_collection.find({})
-        sudo_list = await sudo_users_cursor.to_list(length=None)
-        if sudo_list:
-            sudo_ids = [str(sudo['user_id']) for sudo in sudo_list]
-            await update.message.reply_text("Sudo users:\n" + "\n".join(sudo_ids))
-        else:
-            await update.message.reply_text("There are no sudo users.")
-    else:
-        await update.message.reply_text("You don't have permission to view the sudo list.")
-
-# Register the command handlers
-application.add_handler(CommandHandler("addsudo", add_sudo))
-application.add_handler(CommandHandler("rmsudo", rm_sudo))
-application.add_handler(CommandHandler("sudolist", sudo_list))
+@app.on_message(filters.command("sudolist") & filters.user([OWNER_ID] + sudo_users))
+async def sudolist_handler(_, message: types.Message):
+    cursor = sudo_collection.find({})
+    sudos = await cursor.to_list(length=None)
+    
+    if not sudos:
+        return await message.reply_text("Empty sudo list.")
+        
+    text = "👤 **Sudo Users List:**\n\n"
+    for s in sudos:
+        text += f"• `{s['user_id']}`\n"
+        
+    await message.reply_text(text, parse_mode=enums.ParseMode.MARKDOWN)

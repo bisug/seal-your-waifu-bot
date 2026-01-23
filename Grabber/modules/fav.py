@@ -1,84 +1,47 @@
-from pyrogram import Client, filters
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
-from pymongo import MongoClient
-import json  
-
-from Grabber import Grabberu as app, user_collection
+from pyrogram import filters, types, enums
+from Grabber.app import app
+from Grabber import LOGGER
+from Grabber.core.user import get_user_data, update_user
 
 @app.on_message(filters.command(["fav", "sfav"]))
-async def fav_command(client, message):
-    user_id = message.from_user.id
-
+async def fav_handler(_, message: types.Message):
     if len(message.command) < 2:
-        await message.reply_text("Please provide a character ID. ❌")
-        return
+        return await message.reply_text("❌ Provide a character ID.")
 
-    character_id = message.command[1]
+    char_id = message.command[1]
+    user_id = message.from_user.id
+    user = await get_user_data(user_id)
 
-    # Fetch user data from MongoDB
-    user = await user_collection.find_one({"id": user_id})
-    if not user or 'characters' not in user or not isinstance(user['characters'], list) or not user['characters']:
-        await message.reply_text("You have not guessed any characters yet. ❌")
-        return
+    if not user or not user.get('characters'):
+        return await message.reply_text("❌ Your collection is empty.")
 
-    # Ensure 'characters' is a valid list of dictionaries
-    characters = [c for c in user['characters'] if isinstance(c, dict) and 'id' in c and 'name' in c]
-
-    if not characters:
-        await message.reply_text("Your character list is empty! ❌")
-        return
-
-    # Find character in user's collection
-    character = next((c for c in characters if c["id"] == character_id), None)
+    # Business logic: Ownership check
+    character = next((c for c in user['characters'] if isinstance(c, dict) and str(c.get('id')) == str(char_id)), None)
+    
     if not character:
-        await message.reply_text("This character is not in your collection. ❌")
-        return
+        return await message.reply_text("❌ You don't own this character.")
 
-    # Send media with buttons
-    keyboard = InlineKeyboardMarkup(
-        [[
-            InlineKeyboardButton("✅ Yes", callback_data=f"fav_yes_{character_id}_{user_id}"),
-            InlineKeyboardButton("❎ No", callback_data="fav_no")
-        ]]
+    markup = types.InlineKeyboardMarkup([[
+        types.InlineKeyboardButton("✅ Set as Favorite", callback_data=f"fav_set:{char_id}:{user_id}"),
+        types.InlineKeyboardButton("❌ Cancel", callback_data="fav_cancel")
+    ]])
+
+    await message.reply_photo(
+        photo=character.get('img_url'),
+        caption=f"Set **{character.get('name')}** as your favorite?",
+        reply_markup=markup
     )
 
-    if "vid_url" in character:
-        await message.reply_video(video=character["vid_url"], caption=f"Add {character['name']} to favorites?", reply_markup=keyboard)
-    elif "img_url" in character:
-        await message.reply_photo(photo=character["img_url"], caption=f"Add {character['name']} to favorites?", reply_markup=keyboard)
-    else:
-        await message.reply_text("This character has no media (image or video) associated with it. ❌")
+@app.on_callback_query(filters.regex(r"^fav_set:"))
+async def fav_set_handler(_, query: types.CallbackQuery):
+    _, char_id, user_id = query.data.split(":")
+    if query.from_user.id != int(user_id):
+        return await query.answer("❌ This is not for you!", show_alert=True)
 
-# Callback handler for adding to favorites
-@app.on_callback_query(filters.regex(r"fav_yes_(.+?)_(\d+)"))
-async def fav_yes(client, callback_query: CallbackQuery):
-    character_id, user_id = callback_query.data.split("_")[2], int(callback_query.data.split("_")[3])
+    await update_user(int(user_id), {"$set": {"favorites": [char_id]}})
+    await query.message.edit_caption(f"✅ Character `{char_id}` is now your favorite!")
+    await query.answer("Favorites updated.")
 
-    if callback_query.from_user.id != user_id:
-        await callback_query.answer("This button is not for you! ❌", show_alert=True)
-        return
-
-    # Fetch user data
-    user = await user_collection.find_one({"id": user_id})
-    if not user or 'characters' not in user:
-        await callback_query.message.reply_text("User not found. ❌")
-        return
-
-    characters = [c for c in user["characters"] if isinstance(c, dict) and 'id' in c]
-
-    character = next((c for c in characters if c["id"] == character_id), None)
-    if not character:
-        await callback_query.message.reply_text("Character not found in your collection. ❎")
-        return
-
-    # Update favorites
-    user["favorites"] = [character_id]
-    await user_collection.update_one({"id": user_id}, {"$set": {"favorites": user["favorites"]}})
-
-    await callback_query.message.edit_caption(f"{character['name']} has been added to your favorites! ✅")
-    await callback_query.answer("Character added to favorites. ✅")
-
-@app.on_callback_query(filters.regex(r"fav_no"))
-async def fav_no(client, callback_query: CallbackQuery):
-    await callback_query.message.delete()
-    await callback_query.answer("Action canceled.")
+@app.on_callback_query(filters.regex(r"fav_cancel"))
+async def fav_cancel_handler(_, query: types.CallbackQuery):
+    await query.message.delete()

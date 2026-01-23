@@ -1,30 +1,23 @@
-import random
-from pyrogram import Client, filters
-from pyrogram.types import Message
-from pymongo import MongoClient
-from Grabber import user_collection, group_collection, Grabberu as app  
+from pyrogram import filters, types, enums
+from Grabber import (
+    Grabberu as app, 
+    JOINLOGS, LEAVELOGS, db, LOGGER
+)
 
-# **Logging Groups**
-JOINLOGS = "@seal_Your_WH_Group"
-LEAVELOGS = "@seal_Your_WH_Group"
-
-# **MongoDB Connection** (Already connected in `Grabber`)
-mongo_url = "mongodb+srv://botmaker9675208:botmaker9675208@cluster0.sc9mq8b.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-client = MongoClient(mongo_url)
-db = client['Character_catchers']
 group_collection = db['total_groups']
 
 # **Function to Send Log Messages**
 async def send_log(chat_id: str, message: str):
     try:
-        await app.send_message(chat_id=chat_id, text=message)
+        await app.send_message(chat_id=chat_id, text=message, parse_mode=enums.ParseMode.MARKDOWN)
     except Exception as e:
-        print(f"Error sending log message: {e}")
+        LOGGER.error(f"Error sending log message: {e}")
 
 # **Auto-Add New Group to Database**
 @app.on_message(filters.new_chat_members)
-async def on_new_chat_members(client: Client, message: Message):
-    bot_id = (await client.get_me()).id
+async def on_new_chat_members(_, message: types.Message):
+    me = await app.get_me()
+    bot_id = me.id
     new_members = [user.id for user in message.new_chat_members]
 
     if bot_id in new_members:
@@ -34,9 +27,9 @@ async def on_new_chat_members(client: Client, message: Message):
         added_by = message.from_user.mention if message.from_user else "Unknown User"
 
         # **Check if group already exists in database**
-        existing_group = group_collection.find_one({"group_id": chat_id})
+        existing_group = await group_collection.find_one({"group_id": chat_id})
         if not existing_group:
-            group_collection.insert_one({"group_id": chat_id, "group_name": chat_title})
+            await group_collection.insert_one({"group_id": chat_id, "group_name": chat_title})
 
         # **Log Message**
         log_text = (
@@ -50,8 +43,9 @@ async def on_new_chat_members(client: Client, message: Message):
 
 # **Auto-Remove Group from Database if Bot is Removed**
 @app.on_message(filters.left_chat_member)
-async def on_left_chat_member(client, message):
-    bot_id = (await client.get_me()).id
+async def on_left_chat_member(_, message: types.Message):
+    me = await app.get_me()
+    bot_id = me.id
     if bot_id == message.left_chat_member.id:
         chat_id = message.chat.id
         chat_title = message.chat.title
@@ -59,7 +53,7 @@ async def on_left_chat_member(client, message):
         chat_username = f"@{message.chat.username}" if message.chat.username else "Private Chat"
 
         # **Remove Group from Database**
-        group_collection.delete_one({"group_id": chat_id})
+        await group_collection.delete_one({"group_id": chat_id})
 
         # **Log Message**
         log_text = (
@@ -70,4 +64,3 @@ async def on_left_chat_member(client, message):
             f"✫ **Removed By:** {remove_by}"
         )
         await send_log(LEAVELOGS, log_text)
-        

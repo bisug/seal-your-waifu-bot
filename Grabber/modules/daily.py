@@ -1,116 +1,50 @@
 import random
-import html
-from datetime import datetime
-from pyrogram import Client, filters
-from pyrogram.types import Message
-from Grabber import user_collection, collection, Grabberu as app
+from datetime import datetime, timezone
+from pyrogram import filters, enums, types
+from Grabber.app import app
+from Grabber import SUPPORT_GROUP_ID, LOGGER
+from Grabber.core.user import get_user_data, add_char_to_user, update_user
+from Grabber.database import collection
 
-# Allowed group ID (Only works in this group)
-ALLOWED_GROUP_ID = -1002429397912  # Replace with your group's ID
-
-# Rarity probability for waifu claims
 RARITY_WEIGHTS = {
-    '⚪ Common': 2,
-    '🟢 Medium': 3,
-    '🟠 Rare': 5,
-    '🟡 Legendary': 90
+    '⚪ Common': 60,
+    '🟢 Medium': 30,
+    '🟠 Rare': 9,
+    '🟡 Legendary': 1
 }
 
-async def get_random_waifu():
-    """Fetch a random waifu from the database based on rarity probability."""
-    selected_rarity = random.choices(
-        list(RARITY_WEIGHTS.keys()), weights=RARITY_WEIGHTS.values(), k=1
-    )[0]
+async def get_daily_waifu():
+    rarity = random.choices(list(RARITY_WEIGHTS.keys()), weights=RARITY_WEIGHTS.values(), k=1)[0]
+    cursor = collection.aggregate([{'$match': {'rarity': rarity}}, {'$sample': {'size': 1}}])
+    res = await cursor.to_list(length=1)
+    return res[0] if res else None
 
-    waifu = await collection.aggregate([
-        {'$match': {'rarity': selected_rarity}},  
-        {'$sample': {'size': 1}}  
-    ]).to_list(length=1)
+@app.on_message(filters.command("daily_claim") & filters.group)
+async def daily_claim_handler(_, message: types.Message):
+    if message.chat.id != SUPPORT_GROUP_ID:
+        return await message.reply_text("❌ This command only works in the support group.")
 
-    return waifu[0] if waifu else None
-
-@app.on_message(filters.command("claim"))
-async def claim_waifu(client: Client, message: Message):
-    """Allows users to claim a waifu only in the allowed group."""
     user_id = message.from_user.id
-    first_name = html.escape(message.from_user.first_name)
-    mention = f"[{first_name}](tg://user?id={user_id})"
+    user = await get_user_data(user_id)
+    
+    now_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    if user and user.get('last_daily_claim_date') == now_date:
+        return await message.reply_text("⏳ You've already claimed your daily character today!")
 
-    # Check if the command is used in a private chat
-    if message.chat.type == "private":
-        return await message.reply_text(
-            "🔒 **You can only claim HUSBANDO in the group!**\n"
-            "Join here to claim: [Seal W/H Group](https://t.me/TNJBotSupport)"
-        )
+    await app.send_chat_action(message.chat.id, enums.ChatAction.UPLOAD_PHOTO)
+    char = await get_daily_waifu()
+    
+    if not char:
+        return await message.reply_text("⚠️ No characters available currently.")
 
-    # Ensure the command is used in the correct group
-    if message.chat.id != ALLOWED_GROUP_ID:
-        return await message.reply_text(
-            "🚫 **This command only works in the official group!**\n"
-            "Join here: [Seal W/H Group](https://t.me/TNJBotSupport)"
-        )
+    await add_char_to_user(user_id, char)
+    await update_user(user_id, {"$set": {"last_daily_claim_date": now_date}})
 
-    # Fetch user data from the database
-    user_data = await user_collection.find_one({'id': user_id})
-    now_ist = datetime.utcnow().astimezone().strftime("%Y-%m-%d")
-
-    if not user_data:
-        user_data = {
-            'id': user_id,
-            'first_name': first_name,
-            'characters': [],
-            'waifu_count': 0,
-            'last_claim_date': None
-        }
-        await user_collection.insert_one(user_data)
-
-    # Check if user has already claimed today
-    if user_data.get('last_claim_date') == now_ist:
-        return await message.reply_text("⏳ **You have already claimed a HUSBANDO today! Try again tomorrow.**")
-
-    # Get a random waifu
-    waifu = await get_random_waifu()
-    if not waifu:
-        return await message.reply_text("⚠️ No HUSBANDO available at the moment. Try again later!")
-
-    # Store waifu claim and update last claim date
-    waifu_data = {
-        'id': waifu['id'],
-        'name': waifu['name'],
-        'anime': waifu['anime'],
-        'rarity': waifu['rarity'],
-        'img_url': waifu.get('img_url', ''),
-        'vid_url': waifu.get('vid_url', '')
-    }
-
-    await user_collection.update_one(
-        {'id': user_id},
-        {
-            '$set': {'last_claim_date': now_ist},
-            '$push': {'characters': waifu_data},  
-            '$inc': {'waifu_count': 1}  
-        }
-    )
-
-    # Prepare response message
-    media_url = waifu.get('img_url') or waifu.get('vid_url')
     caption = (
-        f"{mention} 🎉 You have claimed a Waifu!\n"
-        f"🎐 **Name:** {waifu['name']}\n"
-        f"🐙 **Rarity:** {waifu['rarity']}\n"
-        f"💮 **Anime:** {waifu['anime']}\n"
+        f"🎊 {message.from_user.mention} claimed their daily character!\n\n"
+        f"📛 **Name:** {char['name']}\n"
+        f"✨ **Rarity:** {char['rarity']}\n"
+        f"🎬 **Anime:** {char['anime']}"
     )
 
-    # Send media (image/video) or fallback to text
-    try:
-        if media_url:
-            if media_url.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')):  
-                await message.reply_photo(photo=media_url, caption=caption)
-            elif media_url.endswith(('.mp4', '.mov', '.avi', '.webm')):  
-                await message.reply_video(video=media_url, caption=caption)
-        else:
-            await message.reply_text(caption)
-    except Exception as e:
-        print(f"Failed to send media: {e}")
-        await message.reply_text(caption)
-        
+    await message.reply_photo(char['img_url'], caption=caption)

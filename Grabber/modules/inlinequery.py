@@ -1,20 +1,10 @@
 import re
 import time
 from html import escape
-from telegram import (
-    InlineQueryResultPhoto,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-    Update,
-)
-from telegram.ext import (
-    InlineQueryHandler,
-    CallbackQueryHandler,
-    CallbackContext,
-)
-from Grabber import collection, user_collection, application  # अपने env के हिसाब से import करें
+from pyrogram import filters, types, enums
+from Grabber import app, collection, user_collection, LOGGER
 
-# Cache (अगर चाहें तो बाद में अपग्रेड कर सकते हैं)
+# Cache
 global_guess_cache = {}
 
 async def get_global_guess_count(char_id: str) -> int:
@@ -24,16 +14,44 @@ async def get_global_guess_count(char_id: str) -> int:
     global_guess_cache[char_id] = count
     return count
 
-async def inlinequery(update: Update, context: CallbackContext) -> None:
-    query_text = update.inline_query.query.strip()
-    # DB से characters ले लें (यहां limit 10, आप जरूरत अनुसार बदल सकते हैं)
+@app.on_inline_query()
+async def inline_query_handler(_, query: types.InlineQuery) -> None:
+    query_text = query.query.strip()
+    
     filter_query = {}
     if query_text:
+        # Check if it's a collection request (handled by harem logic usually, but we implement basic search here)
+        if query_text.startswith("collection."):
+            try:
+                user_id = int(query_text.split(".")[1])
+                user_doc = await user_collection.find_one({"id": user_id})
+                characters = user_doc.get("characters", []) if user_doc else []
+                # Pyrogram inline results limit is 50 usually
+                unique_chars = {c['id']: c for c in characters}.values()
+                results = []
+                for character in list(unique_chars)[:50]:
+                    results.append(
+                        types.InlineQueryResultPhoto(
+                            photo_url=character["img_url"],
+                            thumb_url=character["img_url"],
+                            caption=f"🌸 **{escape(character['name'])}**\n🎬 Anime: {escape(character['anime'])}\n🔮 Rarity: {escape(character['rarity'])}\n🆔 ID: {character['id']}",
+                            parse_mode=enums.ParseMode.MARKDOWN
+                        )
+                    )
+                await query.answer(results, cache_time=5)
+                return
+            except Exception as e:
+                LOGGER.error(f"Error in collection inline query: {e}")
+        
+        # Normal search
         regex = re.compile(re.escape(query_text), re.IGNORECASE)
         filter_query = {"$or": [{"name": regex}, {"anime": regex}]}
-    characters = await collection.find(filter_query, {
+    
+    # DB search
+    cursor = collection.find(filter_query, {
         "id": 1, "name":1, "anime":1, "rarity":1, "img_url":1
-    }).limit(10).to_list(length=10)
+    }).limit(50)
+    characters = await cursor.to_list(length=50)
 
     results = []
     for character in characters:
@@ -43,39 +61,31 @@ async def inlinequery(update: Update, context: CallbackContext) -> None:
         rarity = escape(character["rarity"])
 
         caption = (
-            f"🌸 <b>{name}</b>\n"
-            f"🎬 Anime: {anime}\n"
-            f"🔮 Rarity: {rarity}\n"
-            f"🆔 ID: {char_id}"
+            f"🌸 **{name}**\n"
+            f"🎬 **Anime:** {anime}\n"
+            f"🔮 **Rarity:** {rarity}\n"
+            f"🆔 **ID:** `{char_id}`"
         )
 
-        keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton("📊 How many users have?", callback_data=f"character_count:{char_id}")]
+        keyboard = types.InlineKeyboardMarkup([
+            [types.InlineKeyboardButton("📊 How many users have?", callback_data=f"character_count:{char_id}")]
         ])
 
         results.append(
-            InlineQueryResultPhoto(
-                id=f"{char_id}_{int(time.time())}",
+            types.InlineQueryResultPhoto(
                 photo_url=character["img_url"],
-                thumbnail_url=character["img_url"],
+                thumb_url=character["img_url"],
                 caption=caption,
-                parse_mode="HTML",
+                parse_mode=enums.ParseMode.MARKDOWN,
                 reply_markup=keyboard
             )
         )
 
-    await update.inline_query.answer(results, cache_time=5)
+    await query.answer(results, cache_time=5)
 
-async def guessed_callback(update: Update, context: CallbackContext) -> None:
-    query = update.callback_query
-    data = query.data
-    await query.answer()  # spinner हटाने के लिए जरूरी
-
-    if not data.startswith("character_count:"):
-        await query.edit_message_text("⚠️ Invalid callback data.", parse_mode="HTML")
-        return
-
-    char_id = data.split("character_count:")[1]
+@app.on_callback_query(filters.regex(r"^character_count:.+$"))
+async def guessed_callback(_, query: types.CallbackQuery) -> None:
+    char_id = query.data.split("character_count:")[1]
 
     try:
         result = await user_collection.aggregate([
@@ -94,9 +104,5 @@ async def guessed_callback(update: Update, context: CallbackContext) -> None:
             await query.answer(f"📊 This character is owned by {user_count} users!", show_alert=True)
 
     except Exception as e:
-        await query.answer(f"❌ An error occurred: {e}", show_alert=True)
-
-
-# Register handlers — बॉट के startup कोड में इस फाइल को import कर handler लोड करें
-application.add_handler(InlineQueryHandler(inlinequery))
-application.add_handler(CallbackQueryHandler(guessed_callback, pattern=r"^character_count:.+$"))
+        LOGGER.error(f"Error in guessed_callback: {e}")
+        await query.answer(f"❌ An error occurred.", show_alert=True)

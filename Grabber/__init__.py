@@ -1,9 +1,18 @@
-import logging  
-from pyrogram import Client 
+import logging
+import time
+from config import config
+from Grabber.app import app
+from Grabber.database import (
+    client, db, collection, group_collection, 
+    user_totals_collection, message_counts_collection, 
+    user_collection, group_user_totals_collection, 
+    top_global_groups_collection, total_pm_users, sudo_collection
+)
 
-from telegram.ext import Application
-from motor.motor_asyncio import AsyncIOMotorClient
+# Global StartTime
+StartTime = time.time()
 
+# Setup logging
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
     handlers=[logging.FileHandler("log.txt"), logging.StreamHandler()],
@@ -13,32 +22,24 @@ logging.basicConfig(
 logging.getLogger("apscheduler").setLevel(logging.ERROR)
 logging.getLogger('httpx').setLevel(logging.WARNING)
 logging.getLogger("pyrate_limiter").setLevel(logging.ERROR)
+logging.getLogger("pyrogram").setLevel(logging.WARNING)
+
 LOGGER = logging.getLogger(__name__)
 
-OWNER_ID = '6574393060'
-sudo_users = ["7717913705","6574393060","6388703157","6858372924"]
-GROUP_ID = "-1002528887253"
-SUPPORT_ID = "-1002528887253"
-TOKEN = "7888451649:AAGqpCops8LxBCs54h23SmD771TKRMucGh8"
-mongo_url = "mongodb+srv://botmaker9675208:botmaker9675208@cluster0.sc9mq8b.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-PHOTO_URL = ["https://files.catbox.moe/2hsawz.jpg"]
-SUPPORT_CHAT = "seal_Your_WH_Group"
-UPDATE_CHAT = "SEAL_UPDATE"
-BOT_USERNAME = "Seal_Your_Waifu_Bot"
-CHARA_CHANNEL_ID = "-1002643258398"
-api_id = "25635673"
-api_hash = "ec69ce8b56c71541499c914fabd08286"
-JOINLOGS = "-1002036001760"
-LEAVELOGS = "-1002036001760"
+# Constants from config for direct access
+OWNER_ID = config.OWNER_ID
+sudo_users = config.SUDO_USERS
+GROUP_ID = config.GROUP_ID
+SUPPORT_ID = config.SUPPORT_ID
+SUPPORT_GROUP_ID = config.SUPPORT_GROUP_ID
+TOKEN = config.TOKEN
+PHOTO_URL = config.PHOTO_URL
+SUPPORT_CHAT = config.SUPPORT_CHAT
+UPDATE_CHAT = config.UPDATE_CHAT
+BOT_USERNAME = config.BOT_USERNAME
+CHARA_CHANNEL_ID = config.CHARA_CHANNEL_ID
+JOINLOGS = config.JOINLOGS
+LEAVELOGS = config.LEAVELOGS
 
-application = Application.builder().token(TOKEN).build()
-Grabberu = Client("Grabber", api_id, api_hash, bot_token=TOKEN)
-client = AsyncIOMotorClient(mongo_url)
-db = client['Character_catchers']
-collection = db['anime_characterss']
-group_collection = db['total_groups']
-user_totals_collection = db['user_totalssss']
-message_counts_collection = db['message']
-user_collection = db["user_collectionsss"]
-group_user_totals_collection = db['group_user_totals']
-top_global_groups_collection = db['top_global_groupss']
+# For backward compatibility if any module still uses Grabberu
+Grabberu = app
