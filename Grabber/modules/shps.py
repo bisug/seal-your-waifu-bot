@@ -10,7 +10,7 @@ EXTOL_RECEIVER = config.EXTOL_RECEIVER
 SHOP_RARITY = "🪽 Shop"
 DEFAULT_PRICE = 50  # Extols
 SHOP_PAGE_SIZE = 5
-ADMINS = set(sudo_users + [OWNER_ID])
+ADMINS = list(set(sudo_users + [OWNER_ID]))
 
 # Global state for shop sessions
 shop_sessions = {}
