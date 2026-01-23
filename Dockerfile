@@ -1,77 +1,38 @@
-FROM python:3.8.5-slim-buster
+# Use Python 3.12 slim image as base
+FROM python:3.12-slim
 
-ENV PIP_NO_CACHE_DIR 1
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
 
-RUN sed -i.bak 's/us-west-2\.ec2\.//' /etc/apt/sources.list
+# Set working directory
+WORKDIR /app
 
-# Installing Required Packages
-RUN apt update && apt upgrade -y && \
-    apt install --no-install-recommends -y \
-    debian-keyring \
-    debian-archive-keyring \
-    bash \
-    bzip2 \
-    curl \
-    figlet \
-    git \
-    util-linux \
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
     libffi-dev \
-    libjpeg-dev \
-    libjpeg62-turbo-dev \
-    libwebp-dev \
-    linux-headers-amd64 \
-    musl-dev \
-    musl \
-    neofetch \
-    php-pgsql \
-    python3-lxml \
-    postgresql \
-    postgresql-client \
-    python3-psycopg2 \
-    libpq-dev \
-    libcurl4-openssl-dev \
-    libxml2-dev \
-    libxslt1-dev \
-    python3-pip \
-    python3-requests \
-    python3-sqlalchemy \
-    python3-tz \
-    python3-aiohttp \
-    openssl \
-    pv \
-    jq \
-    wget \
-    python3 \
-    python3-dev \
-    libreadline-dev \
-    libyaml-dev \
-    gcc \
-    sqlite3 \
-    libsqlite3-dev \
-    sudo \
-    zlib1g \
-    ffmpeg \
     libssl-dev \
-    libgconf-2-4 \
-    libxi6 \
-    xvfb \
-    unzip \
-    libopus0 \
-    libopus-dev \
-    && rm -rf /var/lib/apt/lists /var/cache/apt/archives /tmp
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Pypi package Repo upgrade
-RUN pip3 install --upgrade pip setuptools
+# Create a non-root user
+RUN useradd -m -u 1000 botuser && \
+    chown -R botuser:botuser /app
 
-# Copy Python Requirements to /root/FallenRobot
-RUN git clone https://github.com/DAXXTEAM/Waifubot /root/Waifubot
-WORKDIR /root/ptb
+# Switch to non-root user
+USER botuser
 
+# Copy and install Python dependencies
+COPY --chown=botuser:botuser requirements.txt .
+RUN pip install --user --no-warn-script-location -r requirements.txt
 
-ENV PATH="/home/bot/bin:$PATH"
+# Add user's bin to PATH
+ENV PATH="/home/botuser/.local/bin:${PATH}"
 
-# Install requirements
-RUN pip3 install -U -r requirements.txt
+# Copy the rest of the application
+COPY --chown=botuser:botuser . .
 
-# Starting Worker
-CMD ["python3","-m", "Grabber"]
+# Run the application
+CMD ["python", "-m", "Grabber"]

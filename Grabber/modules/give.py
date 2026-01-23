@@ -1,79 +1,78 @@
-from telegram import Update
-from telegram.ext import CommandHandler, CallbackContext
-from Grabber import application, user_collection
+from pyrogram import filters, types, enums
+from Grabber import app, user_collection, OWNER_ID, sudo_users, LOGGER
 
-# Define the special admin user who can give/take unlimited balance
-UNLIMITED_USER_ID = 7717913705  
+# Authorized users for unlimited balance manipulation
+AUTHORIZED_ADMINS = set(sudo_users + [OWNER_ID])
 
-async def give_balance(update: Update, context: CallbackContext):
-    sender_id = update.effective_user.id
+@app.on_message(filters.command("givebalance"))
+async def give_balance(_, message: types.Message):
+    sender_id = message.from_user.id
 
-    if not update.message.reply_to_message:
-        await update.message.reply_text("❌ Please reply to a user to give balance.")
+    if not message.reply_to_message:
+        await message.reply_text("❌ Please reply to a user to give balance.")
         return
 
-    recipient_id = update.message.reply_to_message.from_user.id
+    recipient = message.reply_to_message.from_user
+    recipient_id = recipient.id
 
     try:
-        amount = int(context.args[0])
+        if len(message.command) < 2:
+            raise ValueError
+        amount = int(message.command[1])
         if amount <= 0:
             raise ValueError("Amount must be positive")
     except (IndexError, ValueError):
-        await update.message.reply_text("❌ Invalid amount. Usage: `/givebalance <amount>` (Reply to user)", parse_mode="Markdown")
+        await message.reply_text("⚠️ Usage: `/givebalance <amount>` (Reply to user)", parse_mode=enums.ParseMode.MARKDOWN)
         return
 
-    if sender_id == UNLIMITED_USER_ID:
+    # Admin bypass for unlimited coins
+    if sender_id in AUTHORIZED_ADMINS:
         await user_collection.update_one({'id': recipient_id}, {'$inc': {'balance': amount}}, upsert=True)
-        await update.message.reply_text(f"✅ {amount} coins given to {update.message.reply_to_message.from_user.username or 'the user'}!")
+        await message.reply_text(f"✅ {amount} coins given to {recipient.first_name}!")
+        LOGGER.info(f"ADMIN {sender_id} gave {amount} to {recipient_id}")
         return
 
+    # Regular user check
     sender = await user_collection.find_one({'id': sender_id}, projection={'balance': 1})
     sender_balance = sender.get("balance", 0) if sender else 0
 
     if sender_balance < amount:
-        await update.message.reply_text("❌ Insufficient balance to give.")
+        await message.reply_text("❌ Insufficient balance to give.")
         return
 
-    await user_collection.update_one({'id': sender_id}, {'$inc': {'balance': -amount}}, upsert=True)
+    # Atomic move
+    await user_collection.update_one({'id': sender_id}, {'$inc': {'balance': -amount}})
     await user_collection.update_one({'id': recipient_id}, {'$inc': {'balance': amount}}, upsert=True)
 
-    await update.message.reply_text(f"✅ You gave {amount} coins to {update.message.reply_to_message.from_user.username or 'the user'}!")
+    await message.reply_text(f"✅ You gave {amount} coins to {recipient.first_name}!")
+    LOGGER.info(f"User {sender_id} gave {amount} to {recipient_id}")
 
 
-async def take_balance(update: Update, context: CallbackContext):
-    sender_id = update.effective_user.id
+@app.on_message(filters.command("takebalance"))
+async def take_balance(_, message: types.Message):
+    sender_id = message.from_user.id
 
-    if not update.message.reply_to_message:
-        await update.message.reply_text("❌ Please reply to a user to take balance from.")
+    if sender_id not in AUTHORIZED_ADMINS:
+        await message.reply_text("❌ You are not authorized to take balance.")
         return
 
-    recipient_id = update.message.reply_to_message.from_user.id
+    if not message.reply_to_message:
+        await message.reply_text("❌ Please reply to a user to take balance from.")
+        return
+
+    recipient = message.reply_to_message.from_user
+    recipient_id = recipient.id
 
     try:
-        amount = int(context.args[0])
+        if len(message.command) < 2:
+            raise ValueError
+        amount = int(message.command[1])
         if amount <= 0:
             raise ValueError("Amount must be positive")
     except (IndexError, ValueError):
-        await update.message.reply_text("❌ Invalid amount. Usage: `/takebalance <amount>` (Reply to user)", parse_mode="Markdown")
-        return
-
-    if sender_id == UNLIMITED_USER_ID:
-        await user_collection.update_one({'id': recipient_id}, {'$inc': {'balance': -amount}})
-        await update.message.reply_text(f"✅ {amount} coins taken from {update.message.reply_to_message.from_user.username or 'the user'}!")
-        return
-
-    sender = await user_collection.find_one({'id': sender_id}, projection={'balance': 1})
-    sender_balance = sender.get("balance", 0) if sender else 0
-
-    if sender_balance < amount:
-        await update.message.reply_text("❌ You don’t have enough coins to take.")
+        await message.reply_text("⚠️ Usage: `/takebalance <amount>` (Reply to user)", parse_mode=enums.ParseMode.MARKDOWN)
         return
 
     await user_collection.update_one({'id': recipient_id}, {'$inc': {'balance': -amount}})
-    await update.message.reply_text(f"✅ You took {amount} coins from {update.message.reply_to_message.from_user.username or 'the user'}!")
-
-
-# Register commands
-application.add_handler(CommandHandler("givebalance", give_balance))
-application.add_handler(CommandHandler("takebalance", take_balance))
-    
+    await message.reply_text(f"✅ {amount} coins taken from {recipient.first_name}!")
+    LOGGER.info(f"ADMIN {sender_id} took {amount} from {recipient_id}")

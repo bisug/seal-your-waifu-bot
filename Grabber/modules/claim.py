@@ -1,12 +1,10 @@
 import random
-import html
-from pyrogram import Client, filters
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
-from pyrogram.errors import UserNotParticipant
-from Grabber import user_collection, collection
-from Grabber import Grabberu as app
+from pyrogram import filters, types, enums, errors
+from Grabber.app import app
+from Grabber import LOGGER
+from Grabber.database import collection, user_collection
+from Grabber.core.user import get_user_data, add_char_to_user, update_user
 
-# Required groups
 MUST_JOIN = "TNJBotSupport"
 SECOND_JOIN = "SEAL_UPDATE"
 
@@ -17,128 +15,75 @@ RARITY_WEIGHTS = {
     '🟡 Legendary': 1
 }
 
-async def get_random_waifu():
-    """Fetch a random waifu from the database based on rarity probability."""
-    selected_rarity = random.choices(
-        list(RARITY_WEIGHTS.keys()), weights=RARITY_WEIGHTS.values(), k=1
-    )[0]
+async def get_weighted_rarity_character():
+    rarity = random.choices(list(RARITY_WEIGHTS.keys()), weights=RARITY_WEIGHTS.values(), k=1)[0]
+    cursor = collection.aggregate([{'$match': {'rarity': rarity}}, {'$sample': {'size': 1}}])
+    res = await cursor.to_list(length=1)
+    return res[0] if res else None
 
-    waifu = await collection.aggregate([
-        {'$match': {'rarity': selected_rarity}},  
-        {'$sample': {'size': 1}}  
-    ]).to_list(length=1)
-
-    return waifu[0] if waifu else None
-
-async def has_joined_required_groups(user_id):
-    """Check if the user has joined both required groups."""
+async def check_groups_joined(user_id: int) -> bool:
     try:
         await app.get_chat_member(MUST_JOIN, user_id)
         await app.get_chat_member(SECOND_JOIN, user_id)
         return True
-    except UserNotParticipant:
+    except errors.UserNotParticipant:
+        return False
+    except Exception as e:
+        LOGGER.error(f"FZS Check Error: {e}")
         return False
 
-@app.on_message(filters.command("claim") & filters.group)
-async def claim_waifu(client: Client, message: Message):
-    """Allows users to claim a waifu only if they have joined groups."""
+@app.on_message(filters.command("claim"))
+async def claim_handler(_, message: types.Message):
     user_id = message.from_user.id
-    first_name = html.escape(message.from_user.first_name)  
-    mention = f"[{first_name}](tg://user?id={user_id})"
+    user = await get_user_data(user_id)
 
-    # Check if user exists in the database; if not, insert them
-    user_data = await user_collection.find_one({'id': user_id})
+    if user and user.get('claimed_waifu'):
+        return await message.reply_text("🎖️ **You already claimed your free waifu!**")
 
-    if not user_data:
-        print(f"🔍 New user detected: {user_id}, inserting into database...")
-        user_data = {
-            'id': user_id,
-            'first_name': first_name,
-            'claimed_waifu': False,
-            'joined_required_groups': False,
-            'characters': [],
-            'waifu_count': 0
-        }
-        await user_collection.insert_one(user_data)
-
-    # Check if the user has already claimed a waifu
-    if user_data.get('claimed_waifu', False):
-        return await message.reply_text("🎖️ **You have already claimed your waifu! You cannot claim again.**")
-
-    # Check if the user has joined the required groups
-    if not await has_joined_required_groups(user_id):
+    if not await check_groups_joined(user_id):
+        markup = types.InlineKeyboardMarkup([
+            [types.InlineKeyboardButton("✅ Group", url=f"t.me/{MUST_JOIN}"),
+             types.InlineKeyboardButton("📢 Channel", url=f"t.me/{SECOND_JOIN}")],
+            [types.InlineKeyboardButton("🔄 Verify & Claim", callback_data=f"clm_v:{user_id}")]
+        ])
         return await message.reply_text(
-            "🔒 **To claim a waifu, you must join both groups!**",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("✅ Join Group", url=f"https://t.me/{MUST_JOIN}")],
-                [InlineKeyboardButton("📢 Join Channel", url=f"https://t.me/{SECOND_JOIN}")],
-                [InlineKeyboardButton("🔄 Check Again", callback_data=f"check_join_{user_id}")]
-            ])
+            "🔒 **Join our channels to unlock your free waifu!**",
+            reply_markup=markup,
+            parse_mode=enums.ParseMode.MARKDOWN
         )
 
-    # Save that user has joined the required groups
-    await user_collection.update_one({'id': user_id}, {'$set': {'joined_required_groups': True}})
-    print(f"✅ User {user_id} marked as joined_required_groups")
+    await process_claim(message, user_id)
 
-    # Get a random waifu
-    waifu = await get_random_waifu()
-    if not waifu:
-        return await message.reply_text("⚠️ No waifus available at the moment. Try again later!")
+async def process_claim(message_obj, user_id):
+    char = await get_weighted_rarity_character()
+    if not char:
+        return await (message_obj.edit_text("⚠️ No characters found.") if isinstance(message_obj, types.Message) else message_obj.message.edit_text("⚠️ No characters found."))
 
-    # Format waifu data
-    waifu_data = {
-        'id': waifu['id'],
-        'name': waifu['name'],
-        'anime': waifu['anime'],
-        'rarity': waifu['rarity'],
-        'img_url': waifu.get('img_url', ''),
-        'vid_url': waifu.get('vid_url', '')
-    }
+    await add_char_to_user(user_id, char)
+    await update_user(user_id, {"$set": {"claimed_waifu": True}})
 
-    # Store waifu claim in user collection
-    await user_collection.update_one(
-        {'id': user_id},
-        {
-            '$set': {'claimed_waifu': True, 'first_name': first_name},
-            '$push': {'characters': waifu_data},  
-            '$inc': {'waifu_count': 1}  
-        }
-    )
-
-    print(f"✅ Successfully updated database for {user_id}")
-
-    # Prepare response message
-    media_url = waifu.get('img_url') or waifu.get('vid_url')
     caption = (
-        f"{mention} 🎉 You have claimed a waifu!\n"
-        f"🎐 **Name:** {waifu['name']}\n"
-        f"🐙 **Rarity:** {waifu['rarity']}\n"
-        f"💮 **Anime:** {waifu['anime']}\n"
+        f"🎉 {message_obj.from_user.mention} claimed a free waifu!\n\n"
+        f"🆔 **ID:** `{char['id']}`\n"
+        f"📛 **Name:** {char['name']}\n"
+        f"🎬 **Anime:** {char['anime']}\n"
+        f"✨ **Rarity:** {char['rarity']}"
     )
 
-    # Send media (image/video) or fallback to text
-    try:
-        if media_url:
-            if media_url.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')):  
-                await message.reply_photo(photo=media_url, caption=caption)
-            elif media_url.endswith(('.mp4', '.mov', '.avi', '.webm')):  
-                await message.reply_video(video=media_url, caption=caption)
-        else:
-            await message.reply_text(caption)
-    except Exception as e:
-        print(f"Failed to send media: {e}")
-        await message.reply_text(caption)
-
-@app.on_callback_query(filters.regex(r"check_join_(\d+)"))
-async def check_join(client: Client, callback_query):
-    """Rechecks if the user has joined the required groups."""
-    user_id = int(callback_query.matches[0].group(1))
-
-    if callback_query.from_user.id != user_id:
-        return await callback_query.answer("⚠️ This is not for you!", show_alert=True)
-
-    if await has_joined_required_groups(user_id):
-        await callback_query.message.edit_text("✅ **You have successfully joined the required groups! Now use /claim to get your waifu.**")
+    if isinstance(message_obj, types.CallbackQuery):
+        await message_obj.message.delete()
+        await app.send_photo(message_obj.message.chat.id, char['img_url'], caption=caption)
     else:
-        await callback_query.answer("❌ You still haven't joined both groups!", show_alert=True)
-        
+        await message_obj.reply_photo(char['img_url'], caption=caption)
+
+@app.on_callback_query(filters.regex(r"^clm_v:"))
+async def claim_verify_handler(_, query: types.CallbackQuery):
+    user_id = int(query.data.split(":")[1])
+    if query.from_user.id != user_id:
+        return await query.answer("❌ Not for you!", show_alert=True)
+
+    if await check_groups_joined(user_id):
+        await process_claim(query, user_id)
+        await query.answer("Claimed! 🎊")
+    else:
+        await query.answer("❌ You haven't joined yet!", show_alert=True)

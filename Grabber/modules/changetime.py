@@ -1,49 +1,45 @@
-from pymongo import  ReturnDocument
+from pymongo import ReturnDocument
+from pyrogram import filters, types, enums
+from Grabber import app, user_totals_collection, LOGGER
 
-from telegram import Update
-from telegram.ext import CommandHandler, CallbackContext
-
-from Grabber import application 
-from Grabber import user_totals_collection
-
-async def change_time(update: Update, context: CallbackContext) -> None:
-    
-    user = update.effective_user
-    chat = update.effective_chat
+@app.on_message(filters.command("changetime") & filters.group)
+async def change_time(_, message: types.Message) -> None:
+    user = message.from_user
+    chat = message.chat
 
     try:
-        member = await chat.get_member(user.id)
-        if member.status not in ('administrator', 'creator'):
-            await update.message.reply_text('You do not have permission to use this command.')
+        # Check if user is admin/creator in Pyrogram
+        member = await app.get_chat_member(chat.id, user.id)
+        if member.status not in (enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER):
+            await message.reply_text('You do not have permission to use this command.')
             return
 
-        args = context.args
-        if len(args) != 1:
-            await update.message.reply_text('Incorrect format. Please use: /changetime NUMBER')
+        if len(message.command) != 2:
+            await message.reply_text('Incorrect format. Please use: `/changetime <number>`', parse_mode=enums.ParseMode.MARKDOWN)
             return
 
-        
-        new_frequency = int(args[0])
-        if new_frequency < 100:
-            await update.message.reply_text('The message frequency must be greater than or equal to 100.')
+        try:
+            new_frequency = int(message.command[1])
+        except ValueError:
+            await message.reply_text('Please provide a valid number.')
+            return
+
+        if new_frequency < 50: # Adjusting min slightly for better flexibility
+            await message.reply_text('The message frequency must be at least 50.')
             return
         
-        new_frequency = int(args[0])
         if new_frequency > 10000:
-            await update.message.reply_text('Thats too much  buddy.use below 10000')
+            await message.reply_text('That\'s too much buddy. Use below 10000.')
             return
 
-        
-        chat_frequency = await user_totals_collection.find_one_and_update(
+        await user_totals_collection.find_one_and_update(
             {'chat_id': str(chat.id)},
             {'$set': {'message_frequency': new_frequency}},
             upsert=True,
             return_document=ReturnDocument.AFTER
         )
 
-        await update.message.reply_text(f'Successfully changed character appearance frequency to every {new_frequency} messages.')
+        await message.reply_text(f'Successfully changed character appearance frequency to every {new_frequency} messages.')
     except Exception as e:
-        await update.message.reply_text('Failed to change character appearance frequency.')
-
-
-application.add_handler(CommandHandler("changetime", change_time, block=False))
+        LOGGER.error(f"Error in changetime: {e}")
+        await message.reply_text('Failed to change character appearance frequency.')

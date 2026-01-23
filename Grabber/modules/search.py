@@ -1,21 +1,16 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import CommandHandler
-from Grabber import application
-from telegram import Update
-from telegram.ext import ContextTypes
+from pyrogram import filters, types, enums
+from Grabber import app, BOT_USERNAME
 
-async def search_waifu(update: Update, context: ContextTypes):
+@app.on_message(filters.command("search"))
+async def search_waifu(_, message: types.Message):
     """Handles the /search command with an inline button."""
     keyboard = [
-        [InlineKeyboardButton("🔍 Search Waifu", switch_inline_query="@Seal_Your_Waifu_Bot")]
+        [types.InlineKeyboardButton("🔍 Search Waifu", switch_inline_query_current_chat="")]
     ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    reply_markup = types.InlineKeyboardMarkup(keyboard)
 
-    await update.message.reply_text(
+    await message.reply_text(
         "🪄 To search for a waifu, click the button below!",
         reply_markup=reply_markup,
-        parse_mode="Markdown"
+        parse_mode=enums.ParseMode.MARKDOWN
     )
-
-# Adding command handler
-application.add_handler(CommandHandler("search", search_waifu, block=False))

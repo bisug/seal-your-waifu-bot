@@ -1,83 +1,65 @@
 import asyncio
-from pyrogram import Client, filters
-from pyrogram.errors import FloodWait, UserIsBlocked, PeerIdInvalid, ChatWriteForbidden
-from pymongo import MongoClient
-from Grabber import Grabberu as app
-
-# MongoDB Connection
-mongo_url = "REDACTED_MONGO_URI"
-client = MongoClient(mongo_url)
-db = client['Character_catchers']
-
-# Collections
-user_collection = db['total_pm_users']  
-group_collection = db['total_groups']
-
-OWNER_ID = 6574393060  # Change this to your Telegram ID
+from pyrogram import filters, types, enums, errors
+from Grabber.app import app
+from Grabber import OWNER_ID, LOGGER
+from Grabber.database import total_pm_users, group_collection
 
 @app.on_message(filters.command("broadcast") & filters.user(OWNER_ID))
-async def broadcast(client, message):
+async def broadcast_handler(_, message: types.Message):
     if not message.reply_to_message:
-        await message.reply_text("❌ **Reply to a message to broadcast.**")
-        return
+        return await message.reply_text("❌ **Reply to a message to broadcast.**")
 
-    args = message.text.split()
-    send_to_users = "-user" in args
-    send_to_groups = "-group" in args
+    cmd_parts = message.text.split()
+    send_users = "-u" in cmd_parts
+    send_groups = "-g" in cmd_parts
+    
+    # Default to both if no flags
+    if not send_users and not send_groups:
+        send_users = send_groups = True
 
-    if not send_to_users and not send_to_groups:
-        send_to_users = send_to_groups = True
+    msg = message.reply_to_message
+    status = await message.reply_text("🚀 **Broadcast started...**")
+    
+    success_u = failed_u = success_g = failed_g = 0
 
-    broadcast_msg = message.reply_to_message
-    sent_users = failed_users = sent_groups = failed_groups = 0
-
-    # Clean up invalid user entries (no user_id)
-    user_collection.delete_many({"user_id": {"$exists": False}})
-
-    # Broadcast to Users
-    if send_to_users:
-        users = list(user_collection.find({"user_id": {"$exists": True}}, {"user_id": 1}))
-        for user in users:
-            user_id = user.get("user_id")
-            if not user_id:
-                continue
+    if send_users:
+        async for user in total_pm_users.find({}, {"_id": 1}):
+            user_id = user["_id"]
             try:
-                await broadcast_msg.forward(user_id)
-                sent_users += 1
-            except FloodWait as e:
+                await msg.forward(user_id)
+                success_u += 1
+                await asyncio.sleep(0.05) # Tiny delay to prevent spam trigger
+            except errors.FloodWait as e:
                 await asyncio.sleep(e.value)
-                continue
-            except (UserIsBlocked, PeerIdInvalid):
-                failed_users += 1
-                user_collection.delete_one({"user_id": user_id})
+                await msg.forward(user_id)
+                success_u += 1
+            except (errors.UserIsBlocked, errors.PeerIdInvalid):
+                failed_u += 1
+                await total_pm_users.delete_one({"_id": user_id})
             except Exception as e:
-                failed_users += 1
-                print(f"❌ Failed to send to user {user_id}: {e}")
+                failed_u += 1
+                LOGGER.error(f"Broadcast User Error ({user_id}): {e}")
 
-    # Broadcast to Groups
-    if send_to_groups:
-        group_ids = group_collection.distinct("group_id")
-        for group_id in group_ids:
+    if send_groups:
+        async for group in group_collection.find({}, {"group_id": 1}):
+            group_id = group["group_id"]
             try:
-                await broadcast_msg.forward(group_id)
-                sent_groups += 1
-            except FloodWait as e:
+                await msg.forward(group_id)
+                success_g += 1
+                await asyncio.sleep(0.05)
+            except errors.FloodWait as e:
                 await asyncio.sleep(e.value)
-                continue
-            except ChatWriteForbidden:
-                failed_groups += 1
-                group_collection.delete_one({"group_id": group_id})
+                await msg.forward(group_id)
+                success_g += 1
+            except (errors.ChatWriteForbidden, errors.ChatAdminRequired):
+                failed_g += 1
             except Exception as e:
-                failed_groups += 1
-                print(f"❌ Failed to send to group {group_id}: {e}")
+                failed_g += 1
+                LOGGER.error(f"Broadcast Group Error ({group_id}): {e}")
 
-    # Summary
-    await message.reply_text(
-        f"📊 **Broadcast Summary:**\n\n"
-        f"👤 **Total Users:** `{user_collection.count_documents({})}`\n"
-        f"👥 **Total Groups:** `{len(group_ids)}`\n\n"
-        f"✅ **Sent to Users:** `{sent_users}`\n"
-        f"❌ **Failed Users:** `{failed_users}`\n"
-        f"✅ **Sent to Groups:** `{sent_groups}`\n"
-        f"❌ **Failed Groups:** `{failed_groups}`"
+    summary = (
+        "📊 **Broadcast Complete**\n\n"
+        f"👤 **Users:** `{success_u}` successful / `{failed_u}` failed\n"
+        f"👥 **Groups:** `{success_g}` successful / `{failed_g}` failed"
     )
+    await status.edit_text(summary, parse_mode=enums.ParseMode.MARKDOWN)
