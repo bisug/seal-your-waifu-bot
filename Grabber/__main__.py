@@ -1,14 +1,13 @@
 import importlib
 import asyncio
 import random
-import signal
 from typing import Dict
 
-from pyrogram import filters, types, enums
+from pyrogram import filters, types, enums, idle
 from pyrogram.handlers import MessageHandler
 
 from Grabber import (
-    app, LOGGER, collection, config
+    app, LOGGER, collection, config, message_counts_collection
 )
 from Grabber.modules import ALL_MODULES
 from Grabber.core.spawns import (
@@ -48,10 +47,10 @@ async def message_counter(_, message: types.Message):
 
     chat_id = chat.id
     
-    # 1. Update count in DB
+    # Update count in DB
     count = await increment_message_count(chat_id)
 
-    # 2. Check special thresholds
+    # Check special thresholds
     for r_name, threshold in special_rarity_thresholds.items():
         if count % threshold == 0:
             if r_name == "🫧 Royal" and chat_id != SPECIAL_GROUP_ID:
@@ -59,7 +58,7 @@ async def message_counter(_, message: types.Message):
             await send_character(chat_id, r_name)
             return
 
-    # 3. Check normal spawn cycle
+    # Check normal spawn cycle
     freq = await get_chat_frequency(chat_id)
     if count % freq == 0:
         idx = await get_spawn_order(chat_id)
@@ -72,13 +71,6 @@ async def send_character(chat_id: int, rarity: str):
     chars = await get_or_load_characters(rarity)
     if not chars:
         return
-
-    # Don't spawn if something is already there and not yet caught?
-    # Actually, we let new ones overwrite old ones for speed.
-    state = await get_chat_state(chat_id)
-    if state.get("last_character") and state.get("first_correct_guess") is None:
-        # Optional: could skip or notify
-        pass
 
     character = random.choice(chars)
 
@@ -96,7 +88,6 @@ async def send_character(chat_id: int, rarity: str):
             caption=caption,
             parse_mode=enums.ParseMode.MARKDOWN
         )
-        # Persistent link: Store in DB
         await set_active_spawn(chat_id, character, msg.id)
         
     except Exception as e:
@@ -111,40 +102,33 @@ async def send_character(chat_id: int, rarity: str):
         except Exception:
             pass
 
-# ─── Load Modules ───────────────────────────────────────────────────────────
+# ─── Initialization ─────────────────────────────────────────────────────────
 def load_plugins():
     for module_name in ALL_MODULES:
         importlib.import_module(f"Grabber.modules.{module_name}")
     LOGGER.info(f"Loaded {len(ALL_MODULES)} modules.")
 
 async def main():
-    LOGGER.info("Starting bot (Persistent Mode)...")
+    """Main entry point using Pyrogram's startup sequence."""
+    LOGGER.info("Initializing Seal-Bot (Strict Pyrogram Mode)...")
     
-    # Register core handlers
+    # 1. Register background counter in high-priority group
     app.add_handler(MessageHandler(message_counter, filters.group & ~filters.command(["seal", "messagecount"])), group=1)
     
-    # Load all feature modules
+    # 2. Load all module commands
     load_plugins()
 
-    async with app:
-        LOGGER.info("Bot is now online!")
-        stop_event = asyncio.Event()
-        try:
-            loop = asyncio.get_running_loop()
-            for sig in (signal.SIGINT, signal.SIGTERM):
-                loop.add_signal_handler(sig, stop_event.set)
-        except (NotImplementedError, AttributeError):
-            pass
-
-        try:
-            await stop_event.wait()
-        except KeyboardInterrupt:
-            pass
-        
-        LOGGER.info("Shutdown signal received. Cleaning up...")
+    # 3. Start client and block
+    await app.start()
+    LOGGER.info("Bot is now online and active!")
+    
+    # Block until shutdown
+    await idle()
+    
+    # Graceful stop
+    await app.stop()
+    LOGGER.info("Bot shut down cleanly.")
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        pass
+    # Use app.run for robust event loop management on all systems (fixes RuntimeError)
+    app.run(main())
