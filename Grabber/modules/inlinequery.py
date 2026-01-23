@@ -17,7 +17,7 @@ async def inline_query_handler(_, query: types.InlineQuery) -> None:
         try:
             parts = query_text.split(".")
             if len(parts) < 2:
-                return await query.answer([], cache_time=5)
+                return await query.answer([], cache_time=1)
             
             user_id = int(parts[1])
             # Optimized aggregation: Get unique characters from user collection sorted by ID desc
@@ -42,17 +42,18 @@ async def inline_query_handler(_, query: types.InlineQuery) -> None:
             characters = await user_collection.aggregate(pipeline).to_list(length=RESULTS_PER_PAGE)
             
             for char in characters:
-                results.append(create_inline_result(char))
+                res = create_inline_result(char)
+                if res: results.append(res)
                 
             next_offset = str(offset + RESULTS_PER_PAGE) if len(characters) == RESULTS_PER_PAGE else ""
-            await query.answer(results, cache_time=5, next_offset=next_offset)
+            await query.answer(results, cache_time=1, next_offset=next_offset)
             return
 
         except (ValueError, IndexError):
-            return await query.answer([], cache_time=5)
+            return await query.answer([], cache_time=1)
         except Exception as e:
             LOGGER.error(f"Inline collection error: {e}")
-            return await query.answer([], cache_time=5)
+            return await query.answer([], cache_time=1)
 
     # ─── Global Character Search ───────────────────────────────────────────
     filter_query = {}
@@ -70,13 +71,17 @@ async def inline_query_handler(_, query: types.InlineQuery) -> None:
     characters = await cursor.to_list(length=RESULTS_PER_PAGE)
 
     for char in characters:
-        results.append(create_inline_result(char))
+        res = create_inline_result(char)
+        if res: results.append(res)
 
     next_offset = str(offset + RESULTS_PER_PAGE) if len(characters) == RESULTS_PER_PAGE else ""
-    await query.answer(results, cache_time=5, next_offset=next_offset)
+    await query.answer(results, cache_time=1, next_offset=next_offset)
 
 def create_inline_result(character: dict) -> types.InlineQueryResultPhoto:
     """Standardized helper to create inline results with HTML formatting."""
+    if not character.get("img_url"):
+        return None
+
     char_id = str(character["id"])
     name = escape(character["name"])
     anime = escape(character["anime"])
@@ -91,6 +96,7 @@ def create_inline_result(character: dict) -> types.InlineQueryResultPhoto:
     )
 
     return types.InlineQueryResultPhoto(
+        id=char_id,
         photo_url=img_url,
         thumb_url=img_url,
         caption=caption,

@@ -1,4 +1,4 @@
-from pyrogram import filters, types, enums
+from pyrogram import filters, types, enums, errors
 from Grabber.app import app
 from Grabber import LOGGER
 from Grabber.core.user import get_user_data, update_user
@@ -65,9 +65,13 @@ async def trade_callback_handler(_, query: types.CallbackQuery):
 
     if action == "x":
         if query.from_user.id not in [sender_id, receiver_id]:
-            return await query.answer("❌ Not yours!")
+            return await query.answer("❌ Not yours!", show_alert=True)
         await delete_session(trade_id)
-        return await query.message.edit_text("❌ Trade canceled.")
+        try:
+            await query.message.edit_text("❌ Trade canceled.")
+        except errors.MessageNotModified:
+            pass
+        return
 
     if query.from_user.id != receiver_id:
         return await query.answer("❌ This is for the receiver to accept!", show_alert=True)
@@ -82,6 +86,9 @@ async def trade_callback_handler(_, query: types.CallbackQuery):
        not any(c['id'] == r_char['id'] for c in receiver['characters']):
         await delete_session(trade_id)
         return await query.message.edit_text("❌ One of the characters is no longer available.")
+
+    # Instant Feedback
+    await query.answer("Processing trade...", cache_time=1)
 
     # Remove session from DB immediately
     await delete_session(trade_id)

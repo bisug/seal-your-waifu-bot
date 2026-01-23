@@ -47,9 +47,9 @@ async def claim_handler(_, message: types.Message):
             [types.InlineKeyboardButton("🔄 Verify & Claim", callback_data=f"clm_v:{user_id}")]
         ])
         return await message.reply_text(
-            "🔒 **Join our channels to unlock your free waifu!**",
+            "🔒 <b>Join our channels to unlock your free waifu!</b>",
             reply_markup=markup,
-            parse_mode=enums.ParseMode.MARKDOWN
+            parse_mode=enums.ParseMode.HTML
         )
 
     await process_claim(message, user_id)
@@ -70,11 +70,16 @@ async def process_claim(message_obj, user_id):
         f"✨ **Rarity:** {char['rarity']}"
     )
 
-    if isinstance(message_obj, types.CallbackQuery):
-        await message_obj.message.delete()
-        await app.send_photo(message_obj.message.chat.id, char['img_url'], caption=caption)
-    else:
-        await message_obj.reply_photo(char['img_url'], caption=caption)
+    try:
+        if isinstance(message_obj, types.CallbackQuery):
+            await message_obj.message.delete()
+            await app.send_photo(message_obj.message.chat.id, char['img_url'], caption=caption, parse_mode=enums.ParseMode.HTML)
+        else:
+            await message_obj.reply_photo(char['img_url'], caption=caption, parse_mode=enums.ParseMode.HTML)
+    except errors.MessageNotModified:
+        pass
+    except Exception as e:
+        LOGGER.error(f"Error in process_claim: {e}")
 
 @app.on_callback_query(filters.regex(r"^clm_v:"))
 async def claim_verify_handler(_, query: types.CallbackQuery):
@@ -82,8 +87,10 @@ async def claim_verify_handler(_, query: types.CallbackQuery):
     if query.from_user.id != user_id:
         return await query.answer("❌ Not for you!", show_alert=True)
 
+    # Instant feedback
+    await query.answer("Verifying...", cache_time=1)
+
     if await check_groups_joined(user_id):
         await process_claim(query, user_id)
-        await query.answer("Claimed! 🎊")
     else:
         await query.answer("❌ You haven't joined yet!", show_alert=True)
