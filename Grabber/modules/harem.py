@@ -2,7 +2,7 @@ import math
 import random
 from html import escape
 from itertools import groupby
-from pyrogram import filters, types, enums
+from pyrogram import filters, types, enums, errors
 from Grabber.app import app
 from Grabber import collection, LOGGER
 from Grabber.core.user import get_user_data
@@ -65,18 +65,23 @@ async def show_harem(message_obj, user_id, page):
         [types.InlineKeyboardButton("Full Collection", switch_inline_query_current_chat=f"collection.{user_id}")]
     ])
 
-    if isinstance(message_obj, types.CallbackQuery):
-        await message_obj.edit_message_media(
-            media=types.InputMediaPhoto(media=random.choice(chars)['img_url'], caption=harem_text),
-            reply_markup=markup
-        )
-    else:
-        await message_obj.reply_photo(
-            photo=random.choice(chars)['img_url'],
-            caption=harem_text,
-            reply_markup=markup,
-            parse_mode=enums.ParseMode.MARKDOWN
-        )
+    try:
+        if isinstance(message_obj, types.CallbackQuery):
+            await message_obj.edit_message_media(
+                media=types.InputMediaPhoto(media=random.choice(chars)['img_url'], caption=harem_text),
+                reply_markup=markup
+            )
+        else:
+            await message_obj.reply_photo(
+                photo=random.choice(chars)['img_url'],
+                caption=harem_text,
+                reply_markup=markup,
+                parse_mode=enums.ParseMode.MARKDOWN
+            )
+    except errors.MessageNotModified:
+        pass
+    except Exception as e:
+        LOGGER.error(f"Error in show_harem: {e}")
 
 @app.on_callback_query(filters.regex(r"^h:(p|n):"))
 async def harem_nav_handler(_, query: types.CallbackQuery):

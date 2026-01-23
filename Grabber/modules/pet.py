@@ -1,4 +1,4 @@
-from pyrogram import filters, types, enums
+from pyrogram import filters, types, enums, errors
 from Grabber import app, user_collection, PHOTO_URL, LOGGER
 
 # Default Pet
@@ -44,6 +44,8 @@ async def send_petshop_page(message_or_query_obj, page: int):
             await message_or_query_obj.reply_photo(
                 photo=pet["img"], caption=caption, parse_mode=enums.ParseMode.MARKDOWN, reply_markup=reply_markup
             )
+    except errors.MessageNotModified:
+        pass
     except Exception as e:
         LOGGER.error(f"Error in send_petshop_page: {e}")
 
@@ -151,6 +153,8 @@ async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
             await message_or_query_obj.reply_photo(
                 photo=photo, caption=caption, parse_mode=enums.ParseMode.MARKDOWN, reply_markup=reply_markup
             )
+    except errors.MessageNotModified:
+        pass
     except Exception as e:
         LOGGER.error(f"Error in send_mypet_page: {e}")
 

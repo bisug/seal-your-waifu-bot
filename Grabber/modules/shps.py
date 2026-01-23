@@ -1,6 +1,6 @@
 import random
 import httpx
-from pyrogram import filters, types, enums
+from pyrogram import filters, types, enums, errors
 from Grabber import app, collection, user_collection, sudo_users, OWNER_ID, LOGGER
 from config import config
 from Grabber.core.sessions import create_session, get_session
@@ -79,16 +79,21 @@ async def send_shop_message(message, user_id):
 
     markup = types.InlineKeyboardMarkup(keyboard)
 
-    if isinstance(message, types.CallbackQuery):
-        await message.message.edit_media(
-            media=types.InputMediaPhoto(media=char["img_url"], caption=text, parse_mode=enums.ParseMode.MARKDOWN),
-            reply_markup=markup
-        )
-    else:
-        await message.reply_photo(
-            photo=char["img_url"], caption=text,
-            reply_markup=markup, parse_mode=enums.ParseMode.MARKDOWN
-        )
+    try:
+        if isinstance(message, types.CallbackQuery):
+            await message.message.edit_media(
+                media=types.InputMediaPhoto(media=char["img_url"], caption=text, parse_mode=enums.ParseMode.MARKDOWN),
+                reply_markup=markup
+            )
+        else:
+            await message.reply_photo(
+                photo=char["img_url"], caption=text,
+                reply_markup=markup, parse_mode=enums.ParseMode.MARKDOWN
+            )
+    except errors.MessageNotModified:
+        pass
+    except Exception as e:
+        LOGGER.error(f"Error in send_shop_message: {e}")
 
 @app.on_callback_query(filters.regex(r"^shop_(prev|next):(\d+)$"))
 async def shop_navigation(_, query: types.CallbackQuery):
