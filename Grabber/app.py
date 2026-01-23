@@ -11,6 +11,5 @@ app = Client(
     name="Grabber",
     api_id=api_id,
     api_hash=api_hash,
-    bot_token=bot_token,
-    plugins=dict(root="Grabber/modules") # This enables automatic plugin loading if wanted, but we use explicit imports in __main__
+    bot_token=bot_token
 )
