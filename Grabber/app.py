@@ -13,3 +13,14 @@ app = Client(
     api_hash=api_hash,
     bot_token=bot_token
 )
+
+# Set global prefix for command filters (Strictly '/')
+from pyrogram import filters
+
+_original_command = filters.command
+
+def patched_command(commands, prefixes="/", case_sensitive=False):
+    return _original_command(commands, prefixes, case_sensitive)
+
+filters.command = patched_command
+

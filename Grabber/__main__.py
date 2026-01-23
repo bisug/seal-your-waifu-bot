@@ -2,29 +2,24 @@ import importlib
 import asyncio
 import random
 import signal
-from html import escape
-from typing import Optional, Dict, Any
+from typing import Dict
 
 from pyrogram import filters, types, enums
 from pyrogram.handlers import MessageHandler
 
 from Grabber import (
-    app, LOGGER, collection, message_counts_collection, 
-    user_collection, user_totals_collection, config
+    app, LOGGER, collection, config
 )
 from Grabber.modules import ALL_MODULES
+from Grabber.core.spawns import (
+    increment_message_count, get_chat_frequency, 
+    set_active_spawn, get_spawn_order, increment_spawn_order,
+    get_chat_state
+)
 
 # ─── Constants ──────────────────────────────────────────────────────────────
 SPECIAL_GROUP_ID = config.SPECIAL_GROUP_ID
 ROYAL_NOTIFY_USER_ID = config.ROYAL_NOTIFY_USER_ID
-
-# ─── Globals ────────────────────────────────────────────────────────────────
-locks: Dict[str, asyncio.Lock] = {}
-message_counts: Dict[str, int] = {}
-waifu_spawn_order: Dict[str, int] = {}
-last_characters: Dict[int, dict] = {}
-first_correct_guesses: Dict[int, Optional[int]] = {}
-waifu_message: Dict[int, Any] = {}
 
 rarity_spawn_order = ["⚪ Common", "🟢 Medium", "🟠 Rare", "🟡 Legendary"]
 special_rarity_thresholds = {
@@ -48,52 +43,29 @@ async def get_or_load_characters(rarity: str) -> list:
 # ─── Message Counter ────────────────────────────────────────────────────────
 async def message_counter(_, message: types.Message):
     chat = message.chat
-    user = message.from_user
-    if not user or not chat:
+    if not chat or not message.from_user:
         return
 
-    chat_id_str = str(chat.id)
-    chat_id_int = chat.id
+    chat_id = chat.id
+    
+    # 1. Update count in DB
+    count = await increment_message_count(chat_id)
 
-    if chat_id_str not in locks:
-        locks[chat_id_str] = asyncio.Lock()
+    # 2. Check special thresholds
+    for r_name, threshold in special_rarity_thresholds.items():
+        if count % threshold == 0:
+            if r_name == "🫧 Royal" and chat_id != SPECIAL_GROUP_ID:
+                continue
+            await send_character(chat_id, r_name)
+            return
 
-    async with locks[chat_id_str]:
-        if chat_id_str not in message_counts:
-            doc = await message_counts_collection.find_one({"chat_id": chat_id_str})
-            message_counts[chat_id_str] = doc["count"] if doc else 0
-
-        count = message_counts[chat_id_str] + 1
-        message_counts[chat_id_str] = count
-
-        chat_settings = await user_totals_collection.find_one(
-            {"chat_id": chat_id_str},
-            projection={"message_frequency": 1}
-        )
-        freq = chat_settings.get("message_frequency", 100) if chat_settings else 100
-
-        # Special rarity check
-        for r_name, threshold in special_rarity_thresholds.items():
-            if count % threshold == 0:
-                if r_name == "🫧 Royal" and chat_id_int != SPECIAL_GROUP_ID:
-                    continue
-                await send_character(chat_id_int, r_name)
-                return
-
-        # Normal cycle spawn
-        if count % freq == 0:
-            idx = waifu_spawn_order.get(chat_id_str, 0) % len(rarity_spawn_order)
-            rarity = rarity_spawn_order[idx]
-            await send_character(chat_id_int, rarity)
-            waifu_spawn_order[chat_id_str] = idx + 1
-
-        # Periodic save
-        if count % 50 == 0:
-            await message_counts_collection.update_one(
-                {"chat_id": chat_id_str},
-                {"$set": {"count": count}},
-                upsert=True
-            )
+    # 3. Check normal spawn cycle
+    freq = await get_chat_frequency(chat_id)
+    if count % freq == 0:
+        idx = await get_spawn_order(chat_id)
+        rarity = rarity_spawn_order[idx % len(rarity_spawn_order)]
+        await send_character(chat_id, rarity)
+        await increment_spawn_order(chat_id)
 
 # ─── Send Character ─────────────────────────────────────────────────────────
 async def send_character(chat_id: int, rarity: str):
@@ -101,12 +73,14 @@ async def send_character(chat_id: int, rarity: str):
     if not chars:
         return
 
-    if chat_id in first_correct_guesses and first_correct_guesses[chat_id] is not None:
-        return
+    # Don't spawn if something is already there and not yet caught?
+    # Actually, we let new ones overwrite old ones for speed.
+    state = await get_chat_state(chat_id)
+    if state.get("last_character") and state.get("first_correct_guess") is None:
+        # Optional: could skip or notify
+        pass
 
     character = random.choice(chars)
-    last_characters[chat_id] = character
-    first_correct_guesses[chat_id] = None
 
     caption = (
         "🪽 **A new character appeared!**\n"
@@ -122,7 +96,9 @@ async def send_character(chat_id: int, rarity: str):
             caption=caption,
             parse_mode=enums.ParseMode.MARKDOWN
         )
-        waifu_message[chat_id] = msg
+        # Persistent link: Store in DB
+        await set_active_spawn(chat_id, character, msg.id)
+        
     except Exception as e:
         LOGGER.error(f"Error sending character: {e}")
 
@@ -142,31 +118,22 @@ def load_plugins():
     LOGGER.info(f"Loaded {len(ALL_MODULES)} modules.")
 
 async def main():
-    # Pre-startup tasks
-    LOGGER.info("Starting bot...")
-    
-    # Load counts from DB
-    async for doc in message_counts_collection.find({}):
-        message_counts[str(doc["chat_id"])] = doc["count"]
+    LOGGER.info("Starting bot (Persistent Mode)...")
     
     # Register core handlers
-    app.add_handler(MessageHandler(message_counter, filters.group & ~filters.command(["seal", "messagecount"])))
+    app.add_handler(MessageHandler(message_counter, filters.group & ~filters.command(["seal", "messagecount"])), group=1)
     
     # Load all feature modules
     load_plugins()
 
     async with app:
         LOGGER.info("Bot is now online!")
-        # Use an event to handle shutdown gracefully
         stop_event = asyncio.Event()
-        
-        # Signal handlers for Unix-like systems
         try:
             loop = asyncio.get_running_loop()
             for sig in (signal.SIGINT, signal.SIGTERM):
                 loop.add_signal_handler(sig, stop_event.set)
         except (NotImplementedError, AttributeError):
-            # Windows or alternative loop support
             pass
 
         try:
