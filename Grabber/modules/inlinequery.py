@@ -90,36 +90,10 @@ def create_inline_result(character: dict) -> types.InlineQueryResultPhoto:
         f"🆔 <b>ID:</b> <code>{char_id}</code>"
     )
 
-    keyboard = types.InlineKeyboardMarkup([
-        [types.InlineKeyboardButton("📊 Owners Count", callback_data=f"character_count:{char_id}")]
-    ])
-
     return types.InlineQueryResultPhoto(
         photo_url=img_url,
         thumb_url=img_url,
         caption=caption,
-        parse_mode=enums.ParseMode.HTML,
-        reply_markup=keyboard
+        parse_mode=enums.ParseMode.HTML
     )
 
-@app.on_callback_query(filters.regex(r"^character_count:.+$"))
-async def guessed_callback(_, query: types.CallbackQuery) -> None:
-    char_id = query.data.split("character_count:")[1]
-
-    try:
-        # Optimized count check with aggregation
-        result = await user_collection.aggregate([
-            {"$match": {"characters.id": char_id}},
-            {"$count": "user_count"}
-        ]).to_list(length=1)
-
-        user_count = result[0]["user_count"] if result else 0
-
-        if user_count == 0:
-            await query.answer("🚫 No users currently own this character.", show_alert=True)
-        else:
-            await query.answer(f"📊 This character is owned by {user_count} users!", show_alert=True)
-
-    except Exception as e:
-        LOGGER.error(f"Error in guessed_callback: {e}")
-        await query.answer("❌ An error occurred while fetching stats.", show_alert=True)

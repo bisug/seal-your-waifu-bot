@@ -35,18 +35,19 @@ async def status_handler(_, message: types.Message):
         r = c.get('rarity', '⚪ Common')
         stats[r] = stats.get(r, 0) + 1
 
+    first_name = escape(message.from_user.first_name)
     text = (
-        f"📊 **{message.from_user.first_name}'s Status**\n"
+        f"📊 <b>{first_name}'s Status</b>\n"
         f"━━━━━━━━━━━━━━━━━━\n"
-        f"🆔 **User ID:** `{user_id}`\n"
-        f"💰 **Balance:** {user.get('balance', 0)} coins\n"
-        f"🍱 **Collected:** {char_count}/{total_db_chars}\n"
-        f"📈 **Progress:** [{bar}] {progress:.1f}%\n"
+        f"🆔 <b>User ID:</b> <code>{user_id}</code>\n"
+        f"💰 <b>Balance:</b> <code>{user.get('balance', 0)}</code> coins\n"
+        f"🍱 <b>Collected:</b> {char_count}/{total_db_chars}\n"
+        f"📈 <b>Progress:</b> [{bar}] {progress:.1f}%\n"
         f"━━━━━━━━━━━━━━━━━━\n"
     )
 
     for rarity, icon in RARITY_ICONS.items():
         count = stats.get(rarity, 0)
-        text += f"{icon} {rarity.split()[-1]}: `{count}`\n"
+        text += f"{icon} {rarity.split()[-1]}: <code>{count}</code>\n"
 
-    await message.reply_text(text, parse_mode=enums.ParseMode.MARKDOWN)
+    await message.reply_text(text, parse_mode=enums.ParseMode.HTML)
