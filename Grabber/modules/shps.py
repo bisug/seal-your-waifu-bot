@@ -191,7 +191,7 @@ async def balance_command(_, message: types.Message):
 @app.on_message(filters.command("setpr") & filters.user(ADMINS))
 async def set_price(_, message: types.Message):
     if len(message.command) != 3:
-        await message.reply_text("❌ Use: /setpr <id> <price>")
+        return await message.reply_text("❌ Usage: <code>/setpr &lt;id&gt; &lt;price&gt;</code>", parse_mode=enums.ParseMode.HTML)
         return
 
     try:
