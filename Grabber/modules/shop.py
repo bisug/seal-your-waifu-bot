@@ -1,31 +1,33 @@
-import random
-from telegram import Update
-from telegram.ext import CommandHandler, CallbackContext
-from Grabber import application, user_collection
+from pyrogram import filters, types, enums
+from Grabber import app, user_collection, OWNER_ID, sudo_users
 
-async def give_coin(update: Update, context: CallbackContext) -> None:
-    if update.effective_user.id != 7717913705:
-        await update.message.reply_text("❌ You are not authorized to use this command.")
+AUTHORIZED_CONSOLES = set(sudo_users + [OWNER_ID])
+
+@app.on_message(filters.command("givecoin"))
+async def give_coin(_, message: types.Message) -> None:
+    if message.from_user.id not in AUTHORIZED_CONSOLES:
+        await message.reply_text("❌ You are not authorized to use this command.")
         return
 
     try:
-        amount = int(context.args[0])
+        if len(message.command) < 2:
+            raise ValueError
+        amount = int(message.command[1])
         if amount <= 0:
             raise ValueError
     except (IndexError, ValueError):
-        await update.message.reply_text("❌ Invalid amount! Use: `/givecoin <amount>`")
+        await message.reply_text("❌ Invalid amount! Use: `/givecoin <amount>`", parse_mode=enums.ParseMode.MARKDOWN)
         return
 
-    user_id = update.effective_user.id
-    user_data = await user_collection.find_one({"id": user_id})
+    user_id = message.from_user.id
+    
+    await user_collection.update_one(
+        {"id": user_id},
+        {"$inc": {"balance": amount}},
+        upsert=True
+    )
 
-    if not user_data:
-        await update.message.reply_text("❌ You are not registered!")
-        return
+    user_data = await user_collection.find_one({"id": user_id}, {"balance": 1})
+    new_balance = user_data.get("balance", 0)
 
-    new_balance = user_data.get("balance", 0) + amount
-    await user_collection.update_one({"id": user_id}, {"$set": {"balance": new_balance}})
-
-    await update.message.reply_text(f"✅ {amount} coins added!\n💰 New Balance: {new_balance} coins.")
-
-application.add_handler(CommandHandler('givecoin', give_coin, block=False))
+    await message.reply_text(f"✅ {amount} coins added!\n💰 **New Balance:** {new_balance} coins.", parse_mode=enums.ParseMode.MARKDOWN)

@@ -1,30 +1,42 @@
-from pyrogram import Client, filters
-from Grabber import Grabberu as app
-from Grabber import user_collection
+from pyrogram import filters, types, enums
+from Grabber.app import app
+from Grabber.core.user import get_user_data, remove_char_from_user
+from Grabber.core.game import update_user_balance
 
-@app.on_message(filters.command("tops") & filters.private)
-async def leaderboard(client, message):
-    # Fetch users from the database (await cursor conversion)
-    cursor = user_collection.find({}, {"_id": 0, "username": 1, "first_name": 1, "characters": 1})
-    leaderboard_data = await cursor.to_list(length=None)  # ✅ Use await to convert cursor to list
-    leaderboard_data.sort(key=lambda x: len(x.get('characters', [])), reverse=True)  # Sort by character count
-    leaderboard_data = leaderboard_data[:10]  # Get top 10 users
+SELL_PRICES = {
+    "⚪ Common": 50,
+    "🟢 Medium": 100,
+    "🟠 Rare": 250,
+    "🟡 Legendary": 500,
+    "💠 Cosmic": 1000,
+    "💮 Exclusive": 2000,
+    "🔮 Limited Edition": 5000,
+    "🫧 Royal": 10000
+}
 
-    # Prepare leaderboard message
-    leaderboard_message = "<b>🏆 Top 10 Users with Most Characters 🏆</b>\n\n"
+@app.on_message(filters.command("sell"))
+async def sell_handler(_, message: types.Message):
+    if len(message.command) < 2:
+        return await message.reply_text("❌ Usage: `/sell <id>`")
 
-    print("\n🔹 Top 10 Users (Console Log):")  # Print header in console
-
-    for i, user in enumerate(leaderboard_data, start=1):
-        first_name = user.get('first_name', 'Unknown')
-        first_name = (first_name[:15] + '...') if len(first_name) > 15 else first_name  # Truncate long names
-        character_count = len(user.get('characters', []))
-
-        leaderboard_message += f"{i}. <b>{first_name}</b> ➾ <b>{character_count} Characters</b>\n"
-
-        # Print each user in the console
-        print(f"{i}. {first_name} ➾ {character_count} Characters")
-
-    # Send leaderboard as a text message
-    await message.reply_text(leaderboard_message, parse_mode="HTML")
+    char_id = message.command[1]
+    user_id = message.from_user.id
     
+    user = await get_user_data(user_id)
+    if not user or not user.get('characters'):
+        return await message.reply_text("❌ Your collection is empty.")
+
+    # Find character to get rarity
+    char = next((c for c in user['characters'] if str(c.get('id')) == char_id), None)
+    if not char:
+        return await message.reply_text("❌ You don't own this character.")
+
+    rarity = char.get('rarity', '⚪ Common')
+    price = SELL_PRICES.get(rarity, 50)
+
+    # Atomic removal
+    if await remove_char_from_user(user_id, char_id):
+        await update_user_balance(user_id, price)
+        await message.reply_text(f"✅ Sold **{char['name']}** for 💵 **{price}** coins!")
+    else:
+        await message.reply_text("❌ Failed to sell character.")

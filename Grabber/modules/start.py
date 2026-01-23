@@ -1,109 +1,79 @@
-import random
-from html import escape
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler
-from Grabber import application, db, GROUP_ID, BOT_USERNAME, SUPPORT_CHAT, UPDATE_CHAT
+from pyrogram import filters, types, enums
+from Grabber.app import app
+from Grabber import PHOTO_URL, BOT_USERNAME, SUPPORT_CHAT, UPDATE_CHAT
+from Grabber.database import total_pm_users
 
-# MongoDB Collection
-collection = db['total_pm_users']
+START_TEXT = """
+***Hey! I'm Seal... Your ultimate Character Catcher!*** ✨
 
-async def start(update: Update, context: CallbackContext) -> None:
-    user_id = update.effective_user.id
-    first_name = escape(update.effective_user.first_name)  # Escape to prevent HTML issues
-    username = update.effective_user.username or "No Username"
-    chat_id = update.effective_chat.id
+Add me to your groups and I'll drop random characters periodically. 
+Guess their names to build your massive harem!
 
-    user_data = await collection.find_one({"_id": user_id})
+🦋 /harem - View your collection
+⚔ /battle - Fight others for coins
+🛍 /shop - Buy special characters
+"""
 
-    if user_data is None:
-        await collection.insert_one({"_id": user_id, "first_name": first_name, "username": username})
+HELP_TEXT = """
+***Complete Command List:***
 
-        # Send log message to the group
-        log_message = (
-            "📌 <b>New User Started the Bot</b>\n\n"
-            f"👤 <b>User ID:</b> <code>{user_id}</code>\n"
-            f"📛 <b>Username:</b> @{username}\n"
-            f"🔗 <b>Profile:</b> <a href='tg://user?id={user_id}'>{first_name}</a>"
+🔹 /seal <name> - Catch a dropped character
+🔹 /harem - Your collection
+🔹 /top - Global rankings
+🔹 /ctop - Chat rankings
+🔹 /battle - Bet & Fight
+🔹 /trade - Exchange characters
+🔹 /gift - Send characters to friends
+🔹 /hunt - Find eggs with pets
+🔹 /hatch - Hatch eggs for characters
+"""
+
+@app.on_message(filters.command("start"))
+async def start_handler(_, message: types.Message):
+    user_id = message.from_user.id
+    
+    # Track new users
+    await total_pm_users.update_one(
+        {"_id": user_id},
+        {"$set": {"first_name": message.from_user.first_name, "username": message.from_user.username}},
+        upsert=True
+    )
+
+    if message.chat.type == enums.ChatType.PRIVATE:
+        markup = types.InlineKeyboardMarkup([
+            [types.InlineKeyboardButton("➕ Add Me", url=f"https://t.me/{BOT_USERNAME}?startgroup=true")],
+            [types.InlineKeyboardButton("❓ Help", callback_data="st:h"),
+             types.InlineKeyboardButton("💬 Support", url=f"https://t.me/{SUPPORT_CHAT}")],
+            [types.InlineKeyboardButton("📢 Updates", url=f"https://t.me/{UPDATE_CHAT}")]
+        ])
+        
+        await message.reply_photo(
+            photo=random_photo(),
+            caption=START_TEXT,
+            reply_markup=markup,
+            parse_mode=enums.ParseMode.MARKDOWN
         )
-        await context.bot.send_message(chat_id=GROUP_ID, text=log_message, parse_mode='HTML')
-
-    # Update user details if changed
-    elif user_data['first_name'] != first_name or user_data['username'] != username:
-        await collection.update_one({"_id": user_id}, {"$set": {"first_name": first_name, "username": username}})
-
-    # Private Chat
-    if update.effective_chat.type == "private":
-        photo_url = "https://files.catbox.moe/2hsawz.jpg"
-        caption = """
-        ***Heyyyy...***
-
-        ***I am an Open Source Character Catcher Bot! Add me to your group, and I will send random characters every 100 messages. Use /seal to collect characters and check your collection with /harem. Start collecting your harem today!***
-        """
-        keyboard = [
-            [InlineKeyboardButton("➕ Add Me", url=f'http://t.me/{BOT_USERNAME}?startgroup=new')],
-            [InlineKeyboardButton("💬 Support", url=f'https://t.me/{SUPPORT_CHAT}'),
-             InlineKeyboardButton("📢 Updates", url=f'https://t.me/{UPDATE_CHAT}')],
-            [InlineKeyboardButton("❓ Help", callback_data='help')],
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-
-        await context.bot.send_photo(chat_id=chat_id, photo=photo_url, caption=caption, reply_markup=reply_markup, parse_mode='markdown')
-
-    # Group Chat
     else:
-        photo_url = "https://files.catbox.moe/2hsawz.jpg"
-        keyboard = [
-            [InlineKeyboardButton("💬 Support", url=f'https://t.me/{SUPPORT_CHAT}'),
-             InlineKeyboardButton("📢 Updates", url=f'https://t.me/{UPDATE_CHAT}')],
-            [InlineKeyboardButton("➕ Add Me", url=f'http://t.me/{BOT_USERNAME}?startgroup=new')],
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
+        await message.reply_text("✅ I'm active and ready to drop characters!")
 
-        await context.bot.send_photo(chat_id=chat_id, photo=photo_url, caption="✅ I am active!", reply_markup=reply_markup)
-
-async def button(update: Update, context: CallbackContext) -> None:
-    query = update.callback_query
+@app.on_callback_query(filters.regex(r"^st:(h|b)"))
+async def start_callback_handler(_, query: types.CallbackQuery):
+    action = query.data.split(":")[1]
+    
+    if action == "h":
+        markup = types.InlineKeyboardMarkup([[types.InlineKeyboardButton("⤾ Back", callback_data="st:b")]])
+        await query.message.edit_caption(HELP_TEXT, reply_markup=markup, parse_mode=enums.ParseMode.MARKDOWN)
+    else:
+        markup = types.InlineKeyboardMarkup([
+            [types.InlineKeyboardButton("➕ Add Me", url=f"https://t.me/{BOT_USERNAME}?startgroup=true")],
+            [types.InlineKeyboardButton("❓ Help", callback_data="st:h"),
+             types.InlineKeyboardButton("💬 Support", url=f"https://t.me/{SUPPORT_CHAT}")],
+            [types.InlineKeyboardButton("📢 Updates", url=f"https://t.me/{UPDATE_CHAT}")]
+        ])
+        await query.message.edit_caption(START_TEXT, reply_markup=markup, parse_mode=enums.ParseMode.MARKDOWN)
+    
     await query.answer()
 
-    if query.data == 'help':
-        help_text = """
-        ***Help Section:***
-
-        /seal - Guess character (works in groups)  
-        /fav - Add to favorites  
-        /trade - Trade characters  
-        /gift - Gift a character to another user (groups only)  
-        /harem - View your collection  
-        /topgroups - See top groups  
-        /top - View top users  
-        /ctop - Your chat’s top rankings  
-        /changetime - Change character appearance time (groups only)  
-        """
-        help_keyboard = [[InlineKeyboardButton("⤾ Back", callback_data='back')]]
-        reply_markup = InlineKeyboardMarkup(help_keyboard)
-
-        await context.bot.edit_message_caption(chat_id=query.message.chat_id, message_id=query.message.message_id,
-                                               caption=help_text, reply_markup=reply_markup, parse_mode='markdown')
-
-    elif query.data == 'back':
-        caption = """
-        ***Hey there!*** ✨
-
-        ***I am an Open Source Character Catcher Bot! Add me to your group, and I will send random characters every 100 messages. Use /seal to collect characters and check your collection with /harem. Start collecting your harem today!***
-        """
-        keyboard = [
-            [InlineKeyboardButton("➕ Add Me", url=f'http://t.me/{BOT_USERNAME}?startgroup=new')],
-            [InlineKeyboardButton("💬 Support", url=f'https://t.me/{SUPPORT_CHAT}'),
-             InlineKeyboardButton("📢 Updates", url=f'https://t.me/{UPDATE_CHAT}')],
-            [InlineKeyboardButton("❓ Help", callback_data='help')],
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-
-        await context.bot.edit_message_caption(chat_id=query.message.chat_id, message_id=query.message.message_id,
-                                               caption=caption, reply_markup=reply_markup, parse_mode='markdown')
-
-# Handlers
-application.add_handler(CallbackQueryHandler(button, pattern='^help$|^back$', block=False))
-start_handler = CommandHandler('start', start, block=False)
-application.add_handler(start_handler)
-        
+def random_photo():
+    import random
+    return random.choice(PHOTO_URL)

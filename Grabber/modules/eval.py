@@ -1,100 +1,61 @@
-
 import io
 import os
 import textwrap
 import traceback
 from contextlib import redirect_stdout
-
-from Grabber import application, LOGGER
-from telegram import Update
-from telegram.constants import ChatID, ParseMode
-from telegram.ext import ContextTypes, CommandHandler
-from telegram.ext import CallbackContext 
+from pyrogram import filters, types, enums
+from Grabber import app, LOGGER, OWNER_ID, sudo_users
+from config import config
 
 namespaces = {}
-DEV_LIST = [7717913705]
+AUTHORIZED_USERS = set(sudo_users + [OWNER_ID])
 
-def namespace_of(chat, update, bot):
-    if chat not in namespaces:
-        namespaces[chat] = {
+def namespace_of(chat_id, message):
+    if chat_id not in namespaces:
+        namespaces[chat_id] = {
             "__builtins__": globals()["__builtins__"],
-            "bot": bot,
-            "effective_message": update.effective_message,
-            "effective_user": update.effective_user,
-            "effective_chat": update.effective_chat,
-            "update": update,
+            "app": app,
+            "message": message,
+            "user": message.from_user,
+            "chat": message.chat,
+            "config": config,
         }
+    return namespaces[chat_id]
 
-    return namespaces[chat]
-
-
-def log_input(update):
-    user = update.effective_user.id
-    chat = update.effective_chat.id
-    LOGGER.info(f"IN: {update.effective_message.text} (user={user}, chat={chat})")
-
-
-async def send(msg, bot, update):
-    if len(str(msg)) > 2000:
-        with io.BytesIO(str.encode(msg)) as out_file:
+async def send_result(result, message: types.Message):
+    if not result:
+        return
+    
+    result = str(result)
+    if len(result) > 2000:
+        with io.BytesIO(str.encode(result)) as out_file:
             out_file.name = "output.txt"
-            await bot.send_document(
-                chat_id=update.effective_chat.id, 
-                document=out_file, 
-                message_thread_id=update.effective_message.message_thread_id if update.effective_chat.is_forum else None
-            )
+            await message.reply_document(document=out_file)
     else:
-        LOGGER.info(f"OUT: '{msg}'")
-        await bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=f"`{msg}`",
-            parse_mode=ParseMode.MARKDOWN,
-            message_thread_id=update.effective_message.message_thread_id if update.effective_chat.is_forum else None
-        )
-
-
-async def evaluate(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_message.from_user.id not in DEV_LIST:
-        return
-
-    bot = context.bot
-    await send(await do(eval, bot, update), bot, update)
-
-
-async def execute(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_message.from_user.id not in DEV_LIST:
-        return
-
-    bot = context.bot
-    await send(await do(exec, bot, update), bot, update)
-
+        await message.reply_text(f"```python\n{result}```", parse_mode=enums.ParseMode.MARKDOWN)
 
 def cleanup_code(code):
     if code.startswith("```") and code.endswith("```"):
         return "\n".join(code.split("\n")[1:-1])
     return code.strip("` \n")
 
-
-async def do(func, bot, update):
-    log_input(update)
-    content = update.message.text.split(" ", 1)[-1]
-    body = cleanup_code(content)
-    env = namespace_of(update.message.chat_id, update, bot)
-
-    os.chdir(os.getcwd())
-    with open(
-        "temp.txt", "w",
-    ) as temp:
-        temp.write(body)
-
+@app.on_message(filters.command(["e", "ev", "eva", "eval", "x", "ex", "exe", "exec", "py"]) & filters.user(AUTHORIZED_USERS))
+async def evaluate_or_execute(_, message: types.Message):
+    content = message.text.split(None, 1)
+    if len(content) < 2:
+        return
+    
+    body = cleanup_code(content[1])
+    env = namespace_of(message.chat.id, message)
+    
     stdout = io.StringIO()
-
     to_compile = f'async def func():\n{textwrap.indent(body, "  ")}'
 
     try:
         exec(to_compile, env)
     except Exception as e:
-        return f"{e.__class__.__name__}: {e}"
+        await send_result(f"{e.__class__.__name__}: {e}", message)
+        return
 
     func = env["func"]
 
@@ -103,7 +64,7 @@ async def do(func, bot, update):
             func_return = await func()
     except Exception as e:
         value = stdout.getvalue()
-        return f"{value}{traceback.format_exc()}"
+        await send_result(f"{value}{traceback.format_exc()}", message)
     else:
         value = stdout.getvalue()
         result = None
@@ -117,26 +78,15 @@ async def do(func, bot, update):
                     pass
         else:
             result = f"{value}{func_return}"
+        
         if result:
-            return result
+            await send_result(result, message)
+        elif value:
+             await send_result(value, message)
 
-
-async def clear(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_message.from_user.id not in DEV_LIST:
-        return
-
-    bot = context.bot
-    log_input(update)
+@app.on_message(filters.command("clearlocals") & filters.user(AUTHORIZED_USERS))
+async def clear_locals(_, message: types.Message):
     global namespaces
-    if update.message.chat_id in namespaces:
-        del namespaces[update.message.chat_id]
-    await send("Cleared locals.", bot, update)
-
-
-EVAL_HANDLER = CommandHandler(("e", "ev", "eva", "eval"), evaluate, block=False)
-EXEC_HANDLER = CommandHandler(("x", "ex", "exe", "exec", "py"), execute, block=False)
-CLEAR_HANDLER = CommandHandler("clearlocals", clear, block=False)
-
-application.add_handler(EVAL_HANDLER)
-application.add_handler(EXEC_HANDLER)
-application.add_handler(CLEAR_HANDLER)
+    if message.chat.id in namespaces:
+        del namespaces[message.chat.id]
+    await message.reply_text("Cleared locales for this chat.")

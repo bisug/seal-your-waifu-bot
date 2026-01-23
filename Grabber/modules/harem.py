@@ -1,245 +1,88 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import CommandHandler, CallbackContext, CallbackQueryHandler
-from itertools import groupby
 import math
 import random
 from html import escape
-from Grabber import collection, user_collection, application
+from itertools import groupby
+from pyrogram import filters, types, enums
+from Grabber.app import app
+from Grabber import collection, LOGGER
+from Grabber.core.user import get_user_data
 
-# Define distinct character display formats
-character_formats = [
+FORMATS = [
     "⧉ {anime} [🎮] ⦋{page}/{total_pages}⦌\n⤷〔{rarity}〕 {name} (ID: {id}) ×{count}",
     "⧉ {anime} [🎮] ⦋{page}/{total_pages}⦌\n⤷ ᴷᴱʸ: {id} - {name} [Rarity: {rarity}] ×{count}",
-    "⧉ {anime} [🎮] ⦋{page}/{total_pages}⦌\n⤷ ᴥ {name} ᴥ | ID: {id} | Rarity: {rarity} ×{count}",
-    "⧉ {anime} [🎮] ⦋{page}/{total_pages}⦌\n⤷ {name} ⦠ ID: {id} ⦠ Rarity: {rarity} ×{count}",
-    "⧉ {anime} [🎮] ⦋{page}/{total_pages}⦌\n⤷ [⭐] {name} (#ID: {id}) | Rarity: {rarity} ×{count}"
 ]
 
-async def harem(update: Update, context: CallbackContext, page=0) -> None:
-    user_id = update.effective_user.id
-    user = await user_collection.find_one({'id': user_id})
+@app.on_message(filters.command(["harem", "collection"]))
+async def harem_handler(_, message: types.Message):
+    user_id = message.from_user.id
+    await show_harem(message, user_id, 0)
 
-    if not user or 'characters' not in user or not isinstance(user['characters'], list) or not user['characters']:
-        text = "❌ You have not collected any characters yet!"
-        if update.message:
-            await update.message.reply_text(text)
-        else:
-            await update.callback_query.edit_message_text(text)
-        return
+async def show_harem(message_obj, user_id, page):
+    user = await get_user_data(user_id)
+    if not user or not user.get('characters'):
+        text = "❌ You don't have any characters!"
+        return await (message_obj.edit_text(text) if isinstance(message_obj, types.Message) and message_obj.from_user.id == app.me.id else message_obj.reply_text(text))
 
-    characters = [c for c in user['characters'] if isinstance(c, dict) and 'id' in c and 'anime' in c and 'name' in c]
-
-    if not characters:
-        text = "❌ Your character list is empty!"
-        if update.message:
-            await update.message.reply_text(text)
-        else:
-            await update.callback_query.edit_message_text(text)
-        return
-
-    characters = sorted(characters, key=lambda x: (x['anime'], x['id']))
-    character_counts = {k: len(list(v)) for k, v in groupby(characters, key=lambda x: x['id'])}
-    unique_characters = list({character['id']: character for character in characters}.values())
-
-    characters_per_page = 7
-    total_pages = math.ceil(len(unique_characters) / characters_per_page)
-    page = max(0, min(page, total_pages - 1))
-
-    current_format_index = user.get('current_format_index', 0)
-    character_format = character_formats[current_format_index]
-
-    harem_message = f"🐰 {escape(update.effective_user.first_name)} ┊ **Harem - Page {page + 1}/{total_pages}**\n\n"
-
-    current_characters = unique_characters[page * characters_per_page:(page + 1) * characters_per_page]
-    grouped_characters = {k: list(v) for k, v in groupby(current_characters, key=lambda x: x['anime'])}
-
-    for anime, chars in grouped_characters.items():
-        total_anime_characters = await collection.count_documents({'anime': anime})
-        harem_message += f"🎬 **{anime}** ({len(chars)}/{total_anime_characters})\n━━━━━━━━━━━━━━━━━\n"
-
-        for char in chars:
-            count = character_counts[char['id']]
-            rarity = char.get("rarity", "Unknown")
-            harem_message += character_format.format(
-                anime=char['anime'],
-                page=page + 1,
-                total_pages=total_pages,
-                rarity=rarity,
-                id=char['id'],
-                name=char['name'],
-                count=count
-            ) + "\n"
-        harem_message += "━━━━━━━━━━━━━━━━━\n"
-
-    total_count = len(user['characters'])
-    keyboard = [[InlineKeyboardButton(f"📜 Full Collection ({total_count})", switch_inline_query_current_chat=f"collection.{user_id}")]]
-
-    nav_buttons = []
-    if page > 0:
-        nav_buttons.append(InlineKeyboardButton("⬅️ Prev", callback_data=f"harem:{page-1}:{user_id}"))
-    if page < total_pages - 1:
-        nav_buttons.append(InlineKeyboardButton("➡️ Next", callback_data=f"harem:{page+1}:{user_id}"))
-
-    if nav_buttons:
-        keyboard.append(nav_buttons)
-
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    favorite_character = next((c for c in characters if 'favorites' in user and c['id'] in user['favorites']), None)
-    if not favorite_character:
-        favorite_character = random.choice(characters) if characters else None
-
-    if update.message:
-        if favorite_character and 'img_url' in favorite_character:
-            await update.message.reply_photo(photo=favorite_character['img_url'], caption=harem_message, parse_mode='HTML', reply_markup=reply_markup)
-        else:
-            await update.message.reply_text(harem_message, parse_mode='HTML', reply_markup=reply_markup)
-    else:
-        if update.callback_query.message.caption != harem_message:
-            await update.callback_query.edit_message_caption(caption=harem_message, parse_mode='HTML', reply_markup=reply_markup)
-        else:
-            await update.callback_query.edit_message_text(harem_message, parse_mode='HTML', reply_markup=reply_markup)
-
-async def harem_callback(update: Update, context: CallbackContext) -> None:
-    query = update.callback_query
-    _, page, user_id = query.data.split(':')
-    page = int(page)
-    user_id = int(user_id)
-
-    if query.from_user.id != user_id:
-        await query.answer("⚠️ You can't view someone else's Harem!", show_alert=True)
-        return
-
-    await harem(update, context, page)
-
-async def hstyle(update: Update, context: CallbackContext) -> None:
-    user_id = update.effective_user.id
-    user = await user_collection.find_one({'id': user_id})
-    current_format_index = user.get('current_format_index', 0)
-
-    # Prepare example data for format display
-    anime_example = "Honkai Star Rail"
-    page_example = 1
-    total_pages_example = 86
-    rarity_example = "🟡"
-    name_example = "Stelle"
-    id_example = 3547
-    count_example = 1
-
-    # Generate current format message
-    current_format = character_formats[current_format_index].format(
-        anime=anime_example,
-        page=page_example,
-        total_pages=total_pages_example,
-        rarity=rarity_example,
-        id=id_example,
-        name=name_example,
-        count=count_example
-    )
-
-    keyboard = [
-        [InlineKeyboardButton("Set", callback_data=f"set_format:{current_format_index}:{user_id}")],
-        [InlineKeyboardButton("⬅️ Previous", callback_data=f"prev_format:{user_id}"),
-         InlineKeyboardButton("➡️ Next", callback_data=f"next_format:{user_id}")]
-    ]
-
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    await update.message.reply_text(
-        f"⧉ Select a new format:\n\n{current_format}",
-        reply_markup=reply_markup
-    )
-
-async def select_format(update: Update, context: CallbackContext) -> None:
-    query = update.callback_query
-    _, format_index, user_id = query.data.split(':')
-    format_index = int(format_index)
-    user_id = int(user_id)
-
-    await user_collection.update_one({'id': user_id}, {'$set': {'current_format_index': format_index}})
-    await query.answer(f"Format set to Format {format_index + 1}.")
-    await hstyle(update, context)
-
-async def next_format(update: Update, context: CallbackContext) -> None:
-    query = update.callback_query
-    user_id = int(query.data.split(':')[1])
-    user = await user_collection.find_one({'id': user_id})
-    current_format_index = user.get('current_format_index', 0)
-
-    next_format_index = (current_format_index + 1) % len(character_formats)
-
-    # Prepare example data for next format display
-    anime_example = "Honkai Star Rail"
-    page_example = 1
-    total_pages_example = 86
-    rarity_example = "🟡"
-    name_example = "Stelle"
-    id_example = 3547
-    count_example = 1
-
-    # Generate next format message
-    next_format_message = character_formats[next_format_index].format(
-        anime=anime_example,
-        page=page_example,
-        total_pages=total_pages_example,
-        rarity=rarity_example,
-        id=id_example,
-        name=name_example,
-        count=count_example
-    )
-
-    await query.answer(f"Next format is Format {next_format_index + 1}.")
-    await query.message.edit_text(
-        f"⧉ Select a new format:\n\n{next_format_message}",
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("Set", callback_data=f"set_format:{next_format_index}:{user_id}")],
-            [InlineKeyboardButton("⬅️ Previous", callback_data=f"prev_format:{user_id}"),
-             InlineKeyboardButton("➡️ Next", callback_data=f"next_format:{user_id}")]
-        ])
-    )
-
-async def prev_format(update: Update, context: CallbackContext) -> None:
-    query = update.callback_query
-    user_id = int(query.data.split(':')[1])
-    user = await user_collection.find_one({'id': user_id})
-    current_format_index = user.get('current_format_index', 0)
-
-    prev_format_index = (current_format_index - 1) % len(character_formats)
-
-    # Prepare example data for previous format display
-    anime_example = "Honkai Star Rail"
-    page_example = 1
-    total_pages_example = 86
-    rarity_example = "🟡"
-    name_example = "Stelle"
-    id_example = 3547
-    count_example = 1
-
-    # Generate previous format message
-    prev_format_message = character_formats[prev_format_index].format(
-        anime=anime_example,
-        page=page_example,
-        total_pages=total_pages_example,
-        rarity=rarity_example,
-        id=id_example,
-        name=name_example,
-        count=count_example
-    )
-
-    await query.answer(f"Previous format is Format {prev_format_index + 1}.")
-    await query.message.edit_text(
-        f"⧉ Select a new format:\n\n{prev_format_message}",
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("Set", callback_data=f"set_format:{prev_format_index}:{user_id}")],
-            [InlineKeyboardButton("⬅️ Previous", callback_data=f"prev_format:{user_id}"),
-             InlineKeyboardButton("➡️ Next", callback_data=f"next_format:{user_id}")]
-        ])
-    )
-
-application.add_handler(CommandHandler(["harem", "collection"], harem, block=False))
-application.add_handler(CallbackQueryHandler(harem_callback, pattern='^harem', block=False))
-application.add_handler(CommandHandler("hstyle", hstyle, block=False))
-application.add_handler(CallbackQueryHandler(select_format, pattern='^select_format:', block=False))
-application.add_handler(CallbackQueryHandler(next_format, pattern='^next_format:', block=False))
-application.add_handler(CallbackQueryHandler(prev_format, pattern='^prev_format:', block=False))
+    chars = sorted(user['characters'], key=lambda x: (x.get('anime', ''), x.get('id', '')))
     
+    # Logic: Group and count
+    id_counts = {k: len(list(v)) for k, v in groupby(chars, key=lambda x: x.get('id', ''))}
+    unique_chars = []
+    seen = set()
+    for c in chars:
+        if c.get('id') not in seen:
+            unique_chars.append(c)
+            seen.add(c.get('id'))
+
+    per_page = 7
+    total_pages = math.ceil(len(unique_chars) / per_page)
+    page = max(0, min(page, total_pages - 1))
+    
+    current_idx = user.get('current_format_index', 0)
+    char_format = FORMATS[current_idx % len(FORMATS)]
+
+    harem_text = f"🐰 **{escape(user.get('first_name', 'User'))}'s Harem**\n"
+    harem_text += f"Page {page + 1}/{total_pages}\n\n"
+
+    current_slice = unique_chars[page * per_page : (page + 1) * per_page]
+    
+    for char in current_slice:
+        harem_text += char_format.format(
+            anime=char.get('anime', 'Mixed'),
+            page=page + 1,
+            total_pages=total_pages,
+            rarity=char.get('rarity', 'Common'),
+            id=char.get('id', 'N/A'),
+            name=char.get('name', 'Unknown'),
+            count=id_counts.get(char.get('id'), 1)
+        ) + "\n"
+
+    markup = types.InlineKeyboardMarkup([
+        [
+            types.InlineKeyboardButton("⬅️ Prev", callback_data=f"h:p:{page-1}:{user_id}"),
+            types.InlineKeyboardButton("Next ➡️", callback_data=f"h:n:{page+1}:{user_id}")
+        ] if total_pages > 1 else [],
+        [types.InlineKeyboardButton("Full Collection", switch_inline_query_current_chat=f"collection.{user_id}")]
+    ])
+
+    if isinstance(message_obj, types.CallbackQuery):
+        await message_obj.edit_message_media(
+            media=types.InputMediaPhoto(media=random.choice(chars)['img_url'], caption=harem_text),
+            reply_markup=markup
+        )
+    else:
+        await message_obj.reply_photo(
+            photo=random.choice(chars)['img_url'],
+            caption=harem_text,
+            reply_markup=markup,
+            parse_mode=enums.ParseMode.MARKDOWN
+        )
+
+@app.on_callback_query(filters.regex(r"^h:(p|n):"))
+async def harem_nav_handler(_, query: types.CallbackQuery):
+    _, _, page, user_id = query.data.split(":")
+    if query.from_user.id != int(user_id):
+        return await query.answer("❌ This is not your harem!", show_alert=True)
+    
+    await show_harem(query, int(user_id), int(page))
+    await query.answer()
