@@ -34,7 +34,7 @@ async def inline_query_handler(_, query: types.InlineQuery) -> None:
                     "rarity": {"$first": "$rarity"},
                     "img_url": {"$first": "$img_url"}
                 }},
-                {"$sort": {"id": -1}},
+                {"$sort": {"id": 1}},
                 {"$skip": offset},
                 {"$limit": RESULTS_PER_PAGE}
             ]
@@ -65,8 +65,8 @@ async def inline_query_handler(_, query: types.InlineQuery) -> None:
             ]
         }
 
-    # Fetch with descending ID sort and pagination
-    cursor = collection.find(filter_query).sort("id", -1).skip(offset).limit(RESULTS_PER_PAGE)
+    # Fetch with ascending ID sort and pagination
+    cursor = collection.find(filter_query).sort("id", 1).skip(offset).limit(RESULTS_PER_PAGE)
     characters = await cursor.to_list(length=RESULTS_PER_PAGE)
 
     for char in characters:
