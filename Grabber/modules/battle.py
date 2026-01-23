@@ -5,6 +5,7 @@ from Grabber.app import app
 from Grabber import LOGGER
 from Grabber.core.game import get_user_balance, update_user_balance, check_and_deduct
 from Grabber.core.sessions import create_session, get_session, delete_session
+from Grabber.core.user import get_active_pet
 
 @app.on_message(filters.command("battle") & filters.group)
 async def battle_challenge_handler(_, message: types.Message):
@@ -21,7 +22,7 @@ async def battle_challenge_handler(_, message: types.Message):
         bet = int(message.command[1])
         if bet <= 0: raise ValueError
     except (IndexError, ValueError):
-        return await message.reply_text("❌ Usage: `/battle <bet_amount>`")
+        return await message.reply_text("❌ Usage: <code>/battle &lt;bet_amount&gt;</code>", parse_mode=enums.ParseMode.HTML)
 
     # Fast balance check
     if await get_user_balance(attacker.id) < bet:
@@ -47,8 +48,6 @@ async def battle_challenge_handler(_, message: types.Message):
 @app.on_callback_query(filters.regex(r"^abt_acc:"))
 async def battle_accept_handler(_, query: types.CallbackQuery):
     battle_id = query.data.split(":")[1]
-    
-    # Fetch from MongoDB
     battle_info = await get_session(battle_id)
 
     if not battle_info:
@@ -66,33 +65,59 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
         return await query.message.edit_text("❌ Attacker no longer has enough balance.")
     
     if not await check_and_deduct(defender_id, bet):
-        # Refund attacker
         await update_user_balance(attacker_id, bet)
         await delete_session(battle_id)
         return await query.message.edit_text("❌ You no longer have enough balance.")
 
-    # Remove session from DB immediately to prevent double clicks
     await delete_session(battle_id)
     
     try:
         a_user = await app.get_users(attacker_id)
         d_user = await app.get_users(defender_id)
+        
+        # Fetch Pets
+        a_pet = await get_active_pet(attacker_id)
+        d_pet = await get_active_pet(defender_id)
+        
+        a_luck = a_pet["luck"] if a_pet else 0.0
+        d_luck = d_pet["luck"] if d_pet else 0.0
+        
+        a_pet_name = a_pet["name"] if a_pet else "Hand-to-Hand"
+        d_pet_name = d_pet["name"] if d_pet else "Hand-to-Hand"
 
-        await query.message.edit_text(f"⚔️ **Battle Started!**\n{a_user.mention} 🆚 {d_user.mention}\n\n🔥 **Fighting...**")
+        text = (
+            f"⚔️ **Battle Started!**\n"
+            f"👤 {a_user.mention} (w/ {a_pet_name})\n"
+            f" 🆚 \n"
+            f"👤 {d_user.mention} (w/ {d_pet_name})\n\n"
+            f"🔥 **Fighting...**"
+        )
+        await query.message.edit_text(text, parse_mode=enums.ParseMode.MARKDOWN)
         await app.send_chat_action(query.message.chat.id, enums.ChatAction.TYPING)
         
         await asyncio.sleep(2)
         
-        winner_id = random.choice([attacker_id, defender_id])
+        # Win logic: Base 50% + luck difference (capped at 20% shift)
+        luck_diff = (a_luck - d_luck) * 100
+        luck_diff = max(-20, min(20, luck_diff))
+        a_win_chance = 50 + luck_diff
+        
+        roll = random.uniform(0, 100)
+        winner_id = attacker_id if roll <= a_win_chance else defender_id
         winnings = bet * 2
 
         await update_user_balance(winner_id, winnings)
         winner_user = a_user if winner_id == attacker_id else d_user
+        winner_pet = a_pet_name if winner_id == attacker_id else d_pet_name
 
-        await query.message.reply_text(
-            f"🏆 **Winner:** {winner_user.mention}\n💰 **Winnings:** {winnings} coins!",
-            parse_mode=enums.ParseMode.MARKDOWN
+        result_text = (
+            f"🏆 **Winner:** {winner_user.mention}\n"
+            f"🐾 **MVP:** {winner_pet}\n"
+            f"💰 **Winnings:** {winnings} coins!\n"
+            f"📈 **Odds:** {int(a_win_chance)}% vs {int(100 - a_win_chance)}%"
         )
+
+        await query.message.reply_text(result_text, parse_mode=enums.ParseMode.MARKDOWN)
 
     except Exception as e:
         LOGGER.error(f"Battle Error: {e}")

@@ -12,7 +12,7 @@ RARITY_MAP = {
 @app.on_message(filters.command("upload") & filters.user(sudo_users + [OWNER_ID]))
 async def upload_waifu_handler(_, message: types.Message):
     if len(message.command) != 5:
-        return await message.reply_text("❌ **Format:** `/upload <url> <name> <anime> <rarity_num>`")
+        return await message.reply_text("❌ <b>Format:</b> <code>/upload &lt;url&gt; &lt;name&gt; &lt;anime&gt; &lt;rarity_num&gt;</code>", parse_mode=enums.ParseMode.HTML)
 
     img_url, name, anime, rarity_num = message.command[1], message.command[2], message.command[3], message.command[4]
     
@@ -72,7 +72,7 @@ async def upload_waifu_handler(_, message: types.Message):
 @app.on_message(filters.command(["delete", "delhete"]) & filters.user(sudo_users + [OWNER_ID]))
 async def delete_waifu_handler(_, message: types.Message):
     if len(message.command) < 2:
-        return await message.reply_text("❌ Usage: `/delete <id>`")
+        return await message.reply_text("❌ Usage: <code>/delete &lt;id&gt;</code>", parse_mode=enums.ParseMode.HTML)
 
     char_id = message.command[1]
     character = await collection.find_one_and_delete({'id': char_id})

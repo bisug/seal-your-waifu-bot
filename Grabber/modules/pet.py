@@ -5,16 +5,18 @@ from Grabber import app, user_collection, PHOTO_URL, LOGGER
 DEFAULT_PET = {
     "name": "Fluffy Fox 🦊",
     "luck": 0.10,
+    "level": 1,
+    "xp": 0,
     "owned": True,
     "img": PHOTO_URL[0]
 }
 
 # Pet Shop List
 PET_SHOP = [
-    {"name": "Blaze Fang 🐺", "luck": 0.15, "price": 10000, "img": "https://i.ibb.co/fd1qPVJs/file-89.jpg"},
-    {"name": "Mystic Dragon 🐲", "luck": 0.25, "price": 25000, "img": "https://files.catbox.moe/7kvcqj.jpg"},
-    {"name": "Shadow Panther 🐆", "luck": 0.35, "price": 50000, "img": "https://i.ibb.co/8CdC5QG/file-86.jpg"},
-    {"name": "Cosmic Phoenix 🦅", "luck": 0.50, "price": 100000, "img": "https://i.ibb.co/b5CrL8rp/file-84.jpg"},
+    {"name": "Blaze Fang 🐺", "luck": 0.15, "level": 1, "xp": 0, "price": 10000, "img": "https://i.ibb.co/fd1qPVJs/file-89.jpg"},
+    {"name": "Mystic Dragon 🐲", "luck": 0.25, "level": 1, "xp": 0, "price": 25000, "img": "https://files.catbox.moe/7kvcqj.jpg"},
+    {"name": "Shadow Panther 🐆", "luck": 0.35, "level": 1, "xp": 0, "price": 50000, "img": "https://i.ibb.co/8CdC5QG/file-86.jpg"},
+    {"name": "Cosmic Phoenix 🦅", "luck": 0.50, "level": 1, "xp": 0, "price": 100000, "img": "https://i.ibb.co/b5CrL8rp/file-84.jpg"},
 ]
 
 # Send Pet Shop Page
@@ -63,8 +65,7 @@ async def petshop(_, message: types.Message):
 @app.on_message(filters.command("buypet"))
 async def buypet_cmd(_, message: types.Message):
     if len(message.command) < 2:
-        await message.reply_text("Usage: /buypet <pet_id> (e.g. /buypet 2)")
-        return
+        return await message.reply_text("❌ Usage: <code>/buypet &lt;pet_id&gt;</code>", parse_mode=enums.ParseMode.HTML)
     
     try:
         pet_id = int(message.command[1])
@@ -116,17 +117,24 @@ async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
     page = page % len(pets)
     pet = pets[page]
     is_active = pet["name"] == current
+    
+    level = pet.get("level", 1)
+    xp = pet.get("xp", 0)
+    needed = level * 100
+    
     caption = (
-        f"**Your Pet**\n"
+        f"🐾 **Your Pet**\n"
         f"Name: **{pet['name']}**\n"
-        f"Luck: {int(pet['luck'] * 100)}%\n"
-        f"{'✅ This is your active pet.' if is_active else 'Click below to set as active.'}"
+        f"Level: `{level}`\n"
+        f"XP: `{xp}/{needed}`\n"
+        f"Luck: `{int(pet['luck'] * 100)}%`\n\n"
+        f"{'✅ **Active Pet**' if is_active else '⚠️ *Inactive*'}"
     )
 
     buttons = [
         [
             types.InlineKeyboardButton("⬅️ Prev", callback_data=f"mypet_prev_{page}"),
-            types.InlineKeyboardButton("Set Active", callback_data=f"setpet_{page}"),
+            types.InlineKeyboardButton("Set Active" if not is_active else "🌟 Active", callback_data=f"setpet_{page}"),
             types.InlineKeyboardButton("Next ➡️", callback_data=f"mypet_next_{page}")
         ]
     ]
@@ -162,8 +170,6 @@ async def shop_mypet_navigation(_, query: types.CallbackQuery):
         elif "prev" in data:
             page = (page - 1) % len(PET_SHOP)
         elif "buy" in data:
-            # Inline buy logic would go here, simplifying for now to use redirect
-            # We can handle it directly or tell them to use /buypet
             await send_petshop_page(query, page)
             return
 

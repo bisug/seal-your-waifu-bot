@@ -16,7 +16,7 @@ async def trade_handler(_, message: types.Message):
         return await message.reply_text("⚠️ No self-trading!")
 
     if len(message.command) != 3:
-        return await message.reply_text("❌ Use: `/trade <your_char_id> <their_char_id>`")
+        return await message.reply_text("❌ Usage: <code>/trade &lt;your_char_id&gt; &lt;their_char_id&gt;</code>", parse_mode=enums.ParseMode.HTML)
 
     s_char_id, r_char_id = message.command[1], message.command[2]
 
