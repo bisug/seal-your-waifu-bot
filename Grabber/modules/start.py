@@ -1,7 +1,9 @@
 from pyrogram import filters, types, enums
 from Grabber.app import app
-from Grabber import PHOTO_URL, BOT_USERNAME, SUPPORT_CHAT, UPDATE_CHAT
+from Grabber import PHOTO_URL, BOT_USERNAME, SUPPORT_CHAT, UPDATE_CHAT, LOGGER
 from Grabber.database import total_pm_users
+
+LOGGER.info("Loading Start module...")
 
 START_TEXT = """
 ***Hey! I'm Seal... Your ultimate Character Catcher!*** ✨
