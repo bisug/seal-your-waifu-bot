@@ -8,24 +8,28 @@ DEFAULT_PET = {
     "level": 1,
     "xp": 0,
     "owned": True,
+    "ability": "Beginner's Luck",
+    "desc": "+5% XP Gain",
     "img": PHOTO_URL[0]
 }
 
 # Pet Shop List
 PET_SHOP = [
-    {"name": "Blaze Fang 🐺", "luck": 0.15, "level": 1, "xp": 0, "price": 10000, "img": "https://i.ibb.co/fd1qPVJs/file-89.jpg"},
-    {"name": "Mystic Dragon 🐲", "luck": 0.25, "level": 1, "xp": 0, "price": 25000, "img": "https://files.catbox.moe/7kvcqj.jpg"},
-    {"name": "Shadow Panther 🐆", "luck": 0.35, "level": 1, "xp": 0, "price": 50000, "img": "https://i.ibb.co/8CdC5QG/file-86.jpg"},
-    {"name": "Cosmic Phoenix 🦅", "luck": 0.50, "level": 1, "xp": 0, "price": 100000, "img": "https://i.ibb.co/b5CrL8rp/file-84.jpg"},
+    {"name": "Blaze Fang 🐺", "luck": 0.15, "level": 1, "xp": 0, "price": 10000, "ability": "Scavenger", "desc": "20% Chance for Double Coins", "img": "https://i.ibb.co/fd1qPVJs/file-89.jpg"},
+    {"name": "Shadow Panther 🐆", "luck": 0.35, "level": 1, "xp": 0, "price": 25000, "ability": "Speedster", "desc": "-10s Hunt Cooldown", "img": "https://i.ibb.co/8CdC5QG/file-86.jpg"},
+    {"name": "Cosmic Phoenix 🦅", "luck": 0.50, "level": 1, "xp": 0, "price": 50000, "ability": "Caregiver", "desc": "50% Faster Egg Hatching", "img": "https://i.ibb.co/b5CrL8rp/file-84.jpg"},
+    {"name": "Mystic Dragon 🐲", "luck": 0.25, "level": 1, "xp": 0, "price": 100000, "ability": "Hoarder", "desc": "5% Chance for Bonus Egg", "img": "https://files.catbox.moe/7kvcqj.jpg"},
 ]
 
 # Send Pet Shop Page
 async def send_petshop_page(message_or_query_obj, page: int):
     pet = PET_SHOP[page]
     caption = (
-        f"**{pet['name']}**\n"
-        f"Luck: {int(pet['luck'] * 100)}%\n"
-        f"Price: **{pet['price']} coins**"
+        f"<b>{pet['name']}</b>\n"
+        f"✨ Ability: <b>{pet.get('ability', 'None')}</b>\n"
+        f"📖 <i>{pet.get('desc', 'No ability')}</i>\n"
+        f"🍀 Luck: {int(pet['luck'] * 100)}%\n"
+        f"💰 Price: <b>{pet['price']} coins</b>"
     )
     keyboard = [[
         types.InlineKeyboardButton("⬅️ Prev", callback_data=f"shop_prev_{page}"),
@@ -125,12 +129,12 @@ async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
     needed = level * 100
     
     caption = (
-        f"🐾 **Your Pet**\n"
-        f"Name: **{pet['name']}**\n"
-        f"Level: `{level}`\n"
-        f"XP: `{xp}/{needed}`\n"
-        f"Luck: `{int(pet['luck'] * 100)}%`\n\n"
-        f"{'✅ **Active Pet**' if is_active else '⚠️ *Inactive*'}"
+        f"🐾 <b>Your Pet</b>\n"
+        f"📛 Name: <b>{pet['name']}</b>\n"
+        f"⚡ Ability: <b>{pet.get('ability', 'None')}</b>\n"
+        f"📊 Level: <code>{level}</code> | XP: <code>{xp}/{needed}</code>\n"
+        f"🍀 Luck: <code>{int(pet['luck'] * 100)}%</code>\n\n"
+        f"{'✅ <b>Active Pet</b>' if is_active else '⚠️ <i>Inactive</i>'}"
     )
 
     buttons = [
