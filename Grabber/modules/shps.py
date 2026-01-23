@@ -3,6 +3,7 @@ import httpx
 from pyrogram import filters, types, enums
 from Grabber import app, collection, user_collection, sudo_users, OWNER_ID, LOGGER
 from config import config
+from Grabber.core.sessions import create_session, get_session
 
 # === Configuration ===
 EXTOL_API_KEY =""
@@ -11,9 +12,6 @@ SHOP_RARITY = "🪽 Shop"
 DEFAULT_PRICE = 50  # Extols
 SHOP_PAGE_SIZE = 5
 ADMINS = list(set(sudo_users + [OWNER_ID]))
-
-# Global state for shop sessions
-shop_sessions = {}
 
 # === Extol API ===
 async def get_extol_balance():
@@ -44,11 +42,12 @@ async def shop_cmd(_, message: types.Message):
         return
 
     user_id = message.from_user.id
-    shop_sessions[user_id] = {"shop": chars, "page": 0}
+    # Use MongoDB for shop sessions
+    await create_session(f"shop_{user_id}", {"shop": chars, "page": 0})
     await send_shop_message(message, user_id)
 
 async def send_shop_message(message, user_id):
-    session = shop_sessions.get(user_id)
+    session = await get_session(f"shop_{user_id}")
     if not session:
         return
 
@@ -93,14 +92,14 @@ async def send_shop_message(message, user_id):
 
 @app.on_callback_query(filters.regex(r"^shop_(prev|next):(\d+)$"))
 async def shop_navigation(_, query: types.CallbackQuery):
-    action, user_id = query.data.split(":")
-    user_id = int(user_id)
+    action, user_id_str = query.data.split(":")
+    user_id = int(user_id_str)
 
     if query.from_user.id != user_id:
         await query.answer("❌ This shop session is not for you!", show_alert=True)
         return
 
-    session = shop_sessions.get(user_id)
+    session = await get_session(f"shop_{user_id}")
     if not session:
         await query.answer("🚫 Shop session expired. Use /shop again.", show_alert=True)
         return
@@ -109,9 +108,13 @@ async def shop_navigation(_, query: types.CallbackQuery):
     chars = session["shop"]
 
     if "prev" in action:
-        session["page"] = max(0, page - 1)
+        new_page = max(0, page - 1)
     else:
-        session["page"] = min(len(chars) - 1, page + 1)
+        new_page = min(len(chars) - 1, page + 1)
+
+    # Update session in MongoDB
+    session["page"] = new_page
+    await create_session(f"shop_{user_id}", session)
 
     await send_shop_message(query, user_id)
     await query.answer()

@@ -7,9 +7,6 @@ from Grabber import collection, OWNER_ID, SUPPORT_GROUP_ID, LOGGER
 from Grabber.core.game import get_user_balance, update_user_balance, check_and_deduct
 from Grabber.database import user_collection
 
-MAX_ACTIVE_GAMES = 100
-current_characters = {}
-
 @app.on_message(filters.command(["balance", "bal"]))
 async def balance_cmd(_, message: types.Message):
     balance_amount = await get_user_balance(message.from_user.id)

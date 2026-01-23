@@ -4,8 +4,7 @@ from pyrogram import filters, types, enums
 from Grabber.app import app
 from Grabber import LOGGER
 from Grabber.core.game import get_user_balance, update_user_balance, check_and_deduct
-
-active_battles = {}
+from Grabber.core.sessions import create_session, get_session, delete_session
 
 @app.on_message(filters.command("battle") & filters.group)
 async def battle_challenge_handler(_, message: types.Message):
@@ -31,8 +30,9 @@ async def battle_challenge_handler(_, message: types.Message):
     if await get_user_balance(defender.id) < bet:
         return await message.reply_text(f"❌ {defender.first_name} doesn't have enough coins!")
 
-    battle_id = f"{attacker.id}_{defender.id}"
-    active_battles[battle_id] = {"attacker": attacker.id, "defender": defender.id, "bet": bet}
+    # Store challenge in MongoDB
+    battle_id = f"bt_{attacker.id}_{defender.id}"
+    await create_session(battle_id, {"attacker": attacker.id, "defender": defender.id, "bet": bet})
 
     markup = types.InlineKeyboardMarkup([[
         types.InlineKeyboardButton("⚔ Accept", callback_data=f"abt_acc:{battle_id}")
@@ -47,10 +47,12 @@ async def battle_challenge_handler(_, message: types.Message):
 @app.on_callback_query(filters.regex(r"^abt_acc:"))
 async def battle_accept_handler(_, query: types.CallbackQuery):
     battle_id = query.data.split(":")[1]
-    battle_info = active_battles.get(battle_id)
+    
+    # Fetch from MongoDB
+    battle_info = await get_session(battle_id)
 
     if not battle_info:
-        return await query.answer("❌ This battle expired.", show_alert=True)
+        return await query.answer("❌ This battle expired or was already handled.", show_alert=True)
 
     if query.from_user.id != battle_info["defender"]:
         return await query.answer("❌ You are not the challenged person!", show_alert=True)
@@ -60,14 +62,17 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
 
     # Atomic deduction
     if not await check_and_deduct(attacker_id, bet):
+        await delete_session(battle_id)
         return await query.message.edit_text("❌ Attacker no longer has enough balance.")
     
     if not await check_and_deduct(defender_id, bet):
         # Refund attacker
         await update_user_balance(attacker_id, bet)
+        await delete_session(battle_id)
         return await query.message.edit_text("❌ You no longer have enough balance.")
 
-    active_battles.pop(battle_id, None)
+    # Remove session from DB immediately to prevent double clicks
+    await delete_session(battle_id)
     
     try:
         a_user = await app.get_users(attacker_id)
@@ -78,9 +83,8 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
         
         await asyncio.sleep(2)
         
-        # Battle flavor text logic separated or simplified
         winner_id = random.choice([attacker_id, defender_id])
-        winnings = bet * 2 # Total pot is bet*2
+        winnings = bet * 2
 
         await update_user_balance(winner_id, winnings)
         winner_user = a_user if winner_id == attacker_id else d_user
@@ -92,5 +96,4 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
 
     except Exception as e:
         LOGGER.error(f"Battle Error: {e}")
-        # In a real app, you might want to refund both if it crashes here
         await query.message.reply_text("❌ A technical error occurred during battle.")

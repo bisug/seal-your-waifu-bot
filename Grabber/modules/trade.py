@@ -2,9 +2,7 @@ from pyrogram import filters, types, enums
 from Grabber.app import app
 from Grabber import LOGGER
 from Grabber.core.user import get_user_data, update_user
-
-# Global trade registers
-pending_trades = {}
+from Grabber.core.sessions import create_session, get_session, delete_session
 
 @app.on_message(filters.command("trade") & filters.group)
 async def trade_handler(_, message: types.Message):
@@ -37,8 +35,9 @@ async def trade_handler(_, message: types.Message):
     if not r_char:
         return await message.reply_text("❌ They don't own that character.")
 
-    trade_id = f"{sender_id}_{receiver_id}"
-    pending_trades[trade_id] = (s_char, r_char)
+    # Store trade in MongoDB
+    trade_id = f"tr_{sender_id}_{receiver_id}"
+    await create_session(trade_id, {"s_char": s_char, "r_char": r_char, "s_id": sender_id, "r_id": receiver_id})
 
     markup = types.InlineKeyboardMarkup([
         [types.InlineKeyboardButton("✅ Confirm", callback_data=f"tr_c:{trade_id}"),
@@ -55,32 +54,39 @@ async def trade_handler(_, message: types.Message):
 @app.on_callback_query(filters.regex(r"^tr_(c|x):"))
 async def trade_callback_handler(_, query: types.CallbackQuery):
     action, trade_id = query.data.split(":")
-    trade_info = pending_trades.get(trade_id)
+    
+    # Fetch from MongoDB
+    trade_info = await get_session(trade_id)
 
     if not trade_info:
-        return await query.answer("❌ Trade expired.", show_alert=True)
+        return await query.answer("❌ Trade expired or handled.", show_alert=True)
 
-    sender_id, receiver_id = map(int, trade_id.split("_"))
+    sender_id, receiver_id = trade_info["s_id"], trade_info["r_id"]
 
     if action == "x":
         if query.from_user.id not in [sender_id, receiver_id]:
             return await query.answer("❌ Not yours!")
-        pending_trades.pop(trade_id, None)
+        await delete_session(trade_id)
         return await query.message.edit_text("❌ Trade canceled.")
 
     if query.from_user.id != receiver_id:
         return await query.answer("❌ This is for the receiver to accept!", show_alert=True)
 
-    s_char, r_char = trade_info
+    s_char, r_char = trade_info["s_char"], trade_info["r_char"]
     
-    # Atomic-like exchange with checks
+    # Final ownership check before exchange
     sender = await get_user_data(sender_id)
     receiver = await get_user_data(receiver_id)
     
     if not any(c['id'] == s_char['id'] for c in sender['characters']) or \
        not any(c['id'] == r_char['id'] for c in receiver['characters']):
+        await delete_session(trade_id)
         return await query.message.edit_text("❌ One of the characters is no longer available.")
 
+    # Remove session from DB immediately
+    await delete_session(trade_id)
+
+    # Perform exchange
     await update_user(sender_id, {
         "$pull": {"characters": {"id": s_char['id']}},
         "$push": {"characters": r_char}
@@ -90,6 +96,5 @@ async def trade_callback_handler(_, query: types.CallbackQuery):
         "$push": {"characters": s_char}
     })
 
-    pending_trades.pop(trade_id, None)
     await query.message.edit_text(f"✅ Trade successful between {sender_id} and {receiver_id}!")
     LOGGER.info(f"Trade complete: {sender_id} <-> {receiver_id}")
