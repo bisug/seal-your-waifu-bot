@@ -6,6 +6,8 @@ from Grabber import LOGGER
 from Grabber.core.game import get_user_balance, update_user_balance, check_and_deduct
 from Grabber.core.sessions import create_session, get_session, delete_session
 from Grabber.core.user import get_active_pet
+from Grabber.core.progression import add_xp
+from Grabber.modules.quests import update_quest_progress
 
 @app.on_message(filters.command("battle") & filters.group)
 async def battle_challenge_handler(_, message: types.Message):
@@ -120,6 +122,10 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
         await update_user_balance(winner_id, winnings)
         winner_user = a_user if winner_id == attacker_id else d_user
         winner_pet = a_pet_name if winner_id == attacker_id else d_pet_name
+        
+        # Grant XP and update quests for winner
+        await add_xp(winner_id, 20, "battle_win")
+        await update_quest_progress(winner_id,  "battle_veteran", 1)
 
         result_text = (
             f"🏆 <b>Winner:</b> {winner_user.mention}\n"
