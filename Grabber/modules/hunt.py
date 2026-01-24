@@ -5,6 +5,8 @@ from datetime import datetime, timedelta
 from pyrogram import filters, types, enums
 from Grabber import user_collection, collection, app
 from Grabber.core.user import add_pet_xp
+from Grabber.core.progression import add_xp
+from Grabber.modules.quests import update_quest_progress
 
 # Egg Tiers & Properties
 EGG_TIERS = {
@@ -122,6 +124,9 @@ async def hunt_cmd(_, message: types.Message):
             extra_egg["name"] = "🥚 Bonus Common Egg"
             await user_collection.update_one({"id": user_id}, {"$push": {"eggs": extra_egg}}, upsert=True)
             bonus_text += "\n🥚 <b>Bonus Egg Found!</b> (Hoarder)"
+        
+        # Update egg quest
+        await update_quest_progress(user_id, "egg_hunter", 1)
 
         await msg.edit_text(
             f"🎁 <b>Loot Found!</b>\n\n"
@@ -246,6 +251,10 @@ async def crack_open_egg(message, user_id, egg, index):
     if waifus:
         character = random.choice(waifus)
         await user_collection.update_one({"id": user_id}, {"$push": {"characters": character}}, upsert=True)
+        
+        # Grant XP for hatching
+        await add_xp(user_id, 15, "egg_hatch")
+        
         await msg.edit_text("🎉 Success! Sending details...")
         await message.reply_photo(
             photo=character["img_url"],

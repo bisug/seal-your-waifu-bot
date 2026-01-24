@@ -21,7 +21,8 @@ HELP_DATA = {
             [types.InlineKeyboardButton("🎮 Core Basics", callback_data="help:core"),
              types.InlineKeyboardButton("🐾 Pet System", callback_data="help:pet")],
             [types.InlineKeyboardButton("⚔️ Battle & Coins", callback_data="help:battle"),
-             types.InlineKeyboardButton("ℹ️ Info & Stats", callback_data="help:info")],
+             types.InlineKeyboardButton("🎫 Battle Pass", callback_data="help:progression")],
+            [types.InlineKeyboardButton("ℹ️ Info & Stats", callback_data="help:info")],
             [types.InlineKeyboardButton("⤾ Main Menu", callback_data="st:b")]
         ]
     },
@@ -65,6 +66,18 @@ HELP_DATA = {
 🔹 <code>/stats</code> - Bot statistics
 🔹 <code>/ping</code> - Check latency
 🔹 <code>/help</code> - Show this menu
+""",
+    },
+    "PROGRESSION": {
+        "text": """
+<b>🎫 Battle Pass & Progression</b>
+
+🔹 <code>/pass</code> - View your Battle Pass (Free/Premium/Elite)
+🔹 <code>/level</code> - Quick level & XP check
+🔹 <code>/quests</code> - View & claim daily quests
+
+<i>💡 Gain XP by catching, battling, and hatching!</i>
+<i>🎁 Unlock rewards at levels 5, 10, 25, and 50</i>
 """,
     }
 }
