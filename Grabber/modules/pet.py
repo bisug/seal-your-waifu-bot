@@ -16,9 +16,9 @@ DEFAULT_PET = {
 # Pet Shop List
 PET_SHOP = [
     {"name": "Blaze Fang 🐺", "luck": 0.15, "level": 1, "xp": 0, "price": 10000, "ability": "Scavenger", "desc": "20% Chance for Double Coins", "img": "https://i.ibb.co/fd1qPVJs/file-89.jpg"},
-    {"name": "Shadow Panther 🐆", "luck": 0.35, "level": 1, "xp": 0, "price": 25000, "ability": "Speedster", "desc": "-10s Hunt Cooldown", "img": "https://i.ibb.co/8CdC5QG/file-86.jpg"},
-    {"name": "Cosmic Phoenix 🦅", "luck": 0.50, "level": 1, "xp": 0, "price": 50000, "ability": "Caregiver", "desc": "50% Faster Egg Hatching", "img": "https://i.ibb.co/b5CrL8rp/file-84.jpg"},
-    {"name": "Mystic Dragon 🐲", "luck": 0.25, "level": 1, "xp": 0, "price": 100000, "ability": "Hoarder", "desc": "5% Chance for Bonus Egg", "img": "https://files.catbox.moe/7kvcqj.jpg"},
+    {"name": "Shadow Panther 🐆", "luck": 0.25, "level": 1, "xp": 0, "price": 25000, "ability": "Speedster", "desc": "-10s Hunt Cooldown", "img": "https://i.ibb.co/8CdC5QG/file-86.jpg"},
+    {"name": "Cosmic Phoenix 🦅", "luck": 0.35, "level": 1, "xp": 0, "price": 50000, "ability": "Caregiver", "desc": "50% Faster Egg Hatching", "img": "https://i.ibb.co/b5CrL8rp/file-84.jpg"},
+    {"name": "Mystic Dragon 🐲", "luck": 0.50, "level": 1, "xp": 0, "price": 100000, "ability": "Hoarder", "desc": "5% Chance for Bonus Egg", "img": "https://files.catbox.moe/7kvcqj.jpg"},
 ]
 
 # Send Pet Shop Page
@@ -41,12 +41,12 @@ async def send_petshop_page(message_or_query_obj, page: int):
     try:
         if isinstance(message_or_query_obj, types.CallbackQuery):
             await message_or_query_obj.message.edit_media(
-                media=types.InputMediaPhoto(media=pet["img"], caption=caption, parse_mode=enums.ParseMode.MARKDOWN),
+                media=types.InputMediaPhoto(media=pet["img"], caption=caption, parse_mode=enums.ParseMode.HTML),
                 reply_markup=reply_markup
             )
         else:
             await message_or_query_obj.reply_photo(
-                photo=pet["img"], caption=caption, parse_mode=enums.ParseMode.MARKDOWN, reply_markup=reply_markup
+                photo=pet["img"], caption=caption, parse_mode=enums.ParseMode.HTML, reply_markup=reply_markup
             )
     except errors.MessageNotModified:
         pass
@@ -102,8 +102,8 @@ async def buypet_cmd(_, message: types.Message):
 
     await message.reply_photo(
         photo=pet["img"],
-        caption=f"✅ You bought **{pet['name']}** with {int(pet['luck']*100)}% luck!",
-        parse_mode=enums.ParseMode.MARKDOWN
+        caption=f"✅ You bought <b>{pet['name']}</b> with {int(pet['luck']*100)}% luck!",
+        parse_mode=enums.ParseMode.HTML
     )
 
 # /mypet command with pagination
@@ -150,12 +150,12 @@ async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
     try:
         if isinstance(message_or_query_obj, types.CallbackQuery):
             await message_or_query_obj.message.edit_media(
-                media=types.InputMediaPhoto(media=photo, caption=caption, parse_mode=enums.ParseMode.MARKDOWN),
+                media=types.InputMediaPhoto(media=photo, caption=caption, parse_mode=enums.ParseMode.HTML),
                 reply_markup=reply_markup
             )
         else:
             await message_or_query_obj.reply_photo(
-                photo=photo, caption=caption, parse_mode=enums.ParseMode.MARKDOWN, reply_markup=reply_markup
+                photo=photo, caption=caption, parse_mode=enums.ParseMode.HTML, reply_markup=reply_markup
             )
     except errors.MessageNotModified:
         pass
