@@ -20,12 +20,12 @@ class Config:
     OWNER_ID = int(os.getenv("OWNER_ID", "6574393060"))
     SUDO_USERS = [int(i.strip()) for i in os.getenv("SUDO_USERS", "7717913705, 6574393060, 6388703157, 6858372924").split(",") if i.strip().isdigit()]
     
-    GROUP_ID = os.getenv("GROUP_ID", "-1002528887253")
-    SUPPORT_ID = os.getenv("SUPPORT_ID", "-1002528887253")
+    GROUP_ID = int(os.getenv("GROUP_ID", "-1002528887253"))
+    SUPPORT_ID = int(os.getenv("SUPPORT_ID", "-1002528887253"))
     SUPPORT_GROUP_ID = int(os.getenv("SUPPORT_GROUP_ID", "-1002429397912"))
-    CHARA_CHANNEL_ID = os.getenv("CHARA_CHANNEL_ID", "-1002643258398")
-    JOINLOGS = os.getenv("JOINLOGS", "-1002036001760")
-    LEAVELOGS = os.getenv("LEAVELOGS", "-1002036001760")
+    CHARA_CHANNEL_ID = int(os.getenv("CHARA_CHANNEL_ID", "-1002643258398"))
+    JOINLOGS = int(os.getenv("JOINLOGS", "-1002036001760"))
+    LEAVELOGS = int(os.getenv("LEAVELOGS", "-1002036001760"))
     
     # Special IDs for spawns
     SPECIAL_GROUP_ID = int(os.getenv("SPECIAL_GROUP_ID", "-1002528887253"))
