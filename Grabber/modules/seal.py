@@ -3,6 +3,8 @@ from Grabber.app import app
 from Grabber import group_user_totals_collection, LOGGER
 from Grabber.core.user import add_char_to_user
 from Grabber.core.spawns import get_chat_state, clear_active_spawn, get_message_count
+from Grabber.core.progression import add_xp
+from Grabber.modules.quests import update_quest_progress
 
 @app.on_message(filters.command("seal") & filters.group)
 async def seal_handler(_, message: types.Message):
@@ -40,6 +42,10 @@ async def seal_handler(_, message: types.Message):
             {"$inc": {"count": 1}},
             upsert=True
         )
+        
+        # Grant XP and update quests
+        await add_xp(user_id, 10, "character_catch")
+        await update_quest_progress(user_id, "catch_master", 1)
 
         # UI Responses
         spawn_msg_id = state.get("message_id")
