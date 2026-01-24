@@ -1,6 +1,7 @@
 import importlib
 import asyncio
 import random
+import datetime
 from typing import Dict
 
 from pyrogram import filters, types, enums, idle
@@ -13,7 +14,7 @@ from Grabber.modules import ALL_MODULES
 from Grabber.core.spawns import (
     increment_message_count, get_chat_frequency, 
     set_active_spawn, get_spawn_order, increment_spawn_order,
-    get_chat_state
+    get_chat_state, track_user_activity, get_active_user_count
 )
 
 # ─── Constants ──────────────────────────────────────────────────────────────
@@ -46,13 +47,28 @@ async def message_counter(_, message: types.Message):
         return
 
     chat_id = chat.id
+    user_id = message.from_user.id
     
+    # 1. Track Activity (Sug 2)
+    await track_user_activity(chat_id, user_id)
+
+    # 2. Wild Card Logic (Sug 4) - 0.1% chance for Royal on ANY message
+    if random.random() < 0.001:
+        await send_character(chat_id, "🫧 Royal")
+        return
+
     # Update count in DB
     count = await increment_message_count(chat_id)
 
+    # 3. Golden Hour Logic (Sug 3) - 50% faster spawns during 8-10 PM UTC
+    now = datetime.datetime.now(datetime.timezone.utc)
+    multiplier = 1.0
+    if 20 <= now.hour <= 22:
+        multiplier = 0.5
+
     # Check special thresholds
     for r_name, threshold in special_rarity_thresholds.items():
-        if count % threshold == 0:
+        if count % int(threshold * multiplier) == 0:
             if r_name == "🫧 Royal" and chat_id != SPECIAL_GROUP_ID:
                 continue
             await send_character(chat_id, r_name)
@@ -60,9 +76,18 @@ async def message_counter(_, message: types.Message):
 
     # Check normal spawn cycle
     freq = await get_chat_frequency(chat_id)
-    if count % freq == 0:
+    if count % int(freq * multiplier) == 0:
+        # 4. Active Presence Rarity Boost (Sug 2)
+        active_count = await get_active_user_count(chat_id)
         idx = await get_spawn_order(chat_id)
-        rarity = rarity_spawn_order[idx % len(rarity_spawn_order)]
+        
+        if active_count >= 3:
+            # Upgrade: If active, pick from Medium to Cosmic instead of just following order
+            rarities = ["🟢 Medium", "🟠 Rare", "🟡 Legendary", "💠 Cosmic"]
+            rarity = random.choice(rarities)
+        else:
+            rarity = rarity_spawn_order[idx % len(rarity_spawn_order)]
+            
         await send_character(chat_id, rarity)
         await increment_spawn_order(chat_id)
 
