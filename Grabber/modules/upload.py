@@ -110,9 +110,6 @@ async def upload_waifu_handler(_, message: types.Message):
     finally:
         if temp_path and os.path.exists(temp_path):
             os.remove(temp_path)
-    except Exception as e:
-        LOGGER.error(f"Upload Failure: {e}")
-        await status.edit_text(f"❌ Error: {e}")
 
 @app.on_message(filters.command(["delete", "delhete"]) & filters.user(sudo_users + [OWNER_ID]))
 async def delete_waifu_handler(_, message: types.Message):
