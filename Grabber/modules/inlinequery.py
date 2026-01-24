@@ -94,26 +94,10 @@ def get_neighbors(char_list, index):
     return char_list[start:end]
 
 def create_gallery_keyboard(current_char_id, neighbors, offset, context):
-    """Generate the 5-button navigation grid."""
-    buttons = []
-    
-    # Navigation Row (Previous Page / Neighbors / Next Page)
-    row = []
-    if offset > 0:
-        row.append(types.InlineKeyboardButton("⬅️", callback_data=f"gal:nav:{offset-RESULTS_PER_PAGE}:{context}"))
-        
-    for char in neighbors:
-        label = "🔘" if str(char["id"]) == str(current_char_id) else char["name"][:10]  # Show name snippet
-        row.append(types.InlineKeyboardButton(label, callback_data=f"gal:view:{char['id']}"))
-            
-    if len(neighbors) == 5: # Assuming full page flow, simplistic check
-         row.append(types.InlineKeyboardButton("➡️", callback_data=f"gal:nav:{offset+RESULTS_PER_PAGE}:{context}"))
-         
-    buttons.append(row)
-    
-    # Owners Count (Feature from previous request)
-    buttons.append([types.InlineKeyboardButton("📊 Owners Count", callback_data=f"character_count:{current_char_id}")])
-    
+    """Generate the keyboard with only the Owners Count button."""
+    buttons = [
+        [types.InlineKeyboardButton("📊 Owners Count", callback_data=f"character_count:{current_char_id}")]
+    ]
     return types.InlineKeyboardMarkup(buttons)
 
 def create_inline_result(character: dict, neighbors: list, offset: int, context: str) -> types.InlineQueryResultPhoto:
@@ -141,6 +125,8 @@ def create_inline_result(character: dict, neighbors: list, offset: int, context:
         id=char_id,
         photo_url=img_url,
         thumb_url=img_url,
+        title=name,
+        description=f"🎬 {anime}\n✨ {rarity} | 🆔 {char_id}",
         caption=caption,
         reply_markup=reply_markup,
         parse_mode=enums.ParseMode.HTML
