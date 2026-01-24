@@ -76,7 +76,7 @@ async def send_character(chat_id: int, rarity: str):
 
     caption = (
         "🪽 **A new character appeared!**\n"
-        "🦋 Use `/seal <name>` to collect them!\n"
+        "🦋 Use /seal <name> to collect them!\n"
         "👑 Rarity is secret until caught!"
     )
 
