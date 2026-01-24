@@ -126,7 +126,8 @@ async def get_user_progress(user_id: int) -> dict:
             "xp_current": 0,
             "xp_needed": 100,
             "pass_type": "free",
-            "season": 1
+            "season": 1,
+            "claimed_levels": []
         }
     
     total_xp = user.get("xp", 0)
