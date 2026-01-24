@@ -4,8 +4,8 @@ from Grabber.core.progression import get_user_progress, get_progress_bar, LEVEL_
 
 # Pass Tier Prices
 PASS_PRICES = {
-    "premium": 500000,
-    "elite": 1000000
+    "premium": 250000,
+    "elite": 600000
 }
 
 # Pass Tier Emojis
