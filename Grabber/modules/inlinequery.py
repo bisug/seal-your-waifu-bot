@@ -141,8 +141,6 @@ def create_inline_result(character: dict, neighbors: list, offset: int, context:
         id=char_id,
         photo_url=img_url,
         thumb_url=img_url,
-        title=name,
-        description=f"🎬 {anime}\n✨ {rarity} | 🆔 {char_id}",
         caption=caption,
         reply_markup=reply_markup,
         parse_mode=enums.ParseMode.HTML
