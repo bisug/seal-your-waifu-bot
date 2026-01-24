@@ -16,19 +16,40 @@ async def get_next_sequence_number(sequence_name: str) -> int:
     )
     return sequence_document['sequence_value']
 
-async def upload_image_to_imgbb(image_source: str or bytes) -> str or None:
+async def upload_image_to_catbox(file_path: str) -> str or None:
     try:
         async with httpx.AsyncClient() as client:
-            # Handle both URL and raw bytes
-            data = {'key': IMGBB_API_KEY, 'image': image_source}
-            response = await client.post(
-                "https://api.imgbb.com/1/upload",
-                data=data,
-                timeout=60
-            )
-            response_data = response.json()
-            if response_data.get('success'):
-                return response_data['data']['url']
+            with open(file_path, 'rb') as f:
+                files = {'fileToUpload': f}
+                data = {'reqtype': 'fileupload', 'userhash': ''}
+                response = await client.post(
+                    "https://catbox.moe/user/api.php",
+                    data=data,
+                    files=files,
+                    timeout=60
+                )
+                if response.status_code == 200 and response.text.startswith("https://"):
+                    return response.text.strip()
+        return None
+    except Exception as e:
+        LOGGER.error(f"Catbox Upload Error: {e}")
+        return None
+
+async def upload_image_to_imgbb(file_path: str) -> str or None:
+    try:
+        async with httpx.AsyncClient() as client:
+            with open(file_path, 'rb') as f:
+                files = {'image': f}
+                data = {'key': IMGBB_API_KEY}
+                response = await client.post(
+                    "https://api.imgbb.com/1/upload",
+                    data=data,
+                    files=files,
+                    timeout=60
+                )
+                response_data = response.json()
+                if response_data.get('success'):
+                    return response_data['data']['url']
         return None
     except Exception as e:
         LOGGER.error(f"ImgBB Upload Error: {e}")
