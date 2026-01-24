@@ -4,114 +4,105 @@ import uuid
 import httpx
 from pyrogram import filters, enums, types
 from Grabber import Grabberu, LOGGER
-from config import config
 
-ENDPOINT = config.GOOGLE_SEARCH_ENDPOINT
+ENDPOINT = "https://api.trace.moe/search"
 httpx_client = httpx.AsyncClient(timeout=60)
 
-COMMANDS = ["reverse", "grs", "gis", "pp"]
+COMMANDS = ["reverse", "trace", "whatanime", "grs"]
 
 class STRINGS:
-    REPLY_TO_MEDIA = "ℹ️ Please reply to a message that contains one of the supported media types, such as a photo, sticker, or image file."
-    UNSUPPORTED_MEDIA_TYPE = "⚠️ <b>Unsupported media type!</b>\nℹ️ Please reply with a supported media type: image, sticker, or image file."
-    REQUESTING_API_SERVER = "📡 Requesting to <b>API Server</b>... 📶"
-    DOWNLOADING_MEDIA = "⏳ Downloading media..."
-    UPLOADING_TO_API_SERVER = "📡 Uploading media to <b>API Server</b>... 📶"
-    PARSING_RESULT = "💻 Parsing result..."
-    EXCEPTION_OCCURRED = "❌ <b>Exception occurred!</b>\n\n<b>Exception:</b> {}"
+    REPLY_TO_MEDIA = "ℹ️ Please reply to an anime screenshot (photo, sticker, or image file) to identify it."
+    UNSUPPORTED_MEDIA_TYPE = "⚠️ <b>Unsupported media type!</b>\nℹ️ Please reply with a photo or document."
+    REQUESTING_API_SERVER = "📡 Searching <b>Trace.moe</b> database... 📶"
+    DOWNLOADING_MEDIA = "⏳ Downloading image..."
+    UPLOADING_TO_API_SERVER = "📡 Identifying anime scene... 📶"
+    PARSING_RESULT = "💻 Parsing match..."
+    EXCEPTION_OCCURRED = "❌ <b>Error:</b> {}"
     RESULT = """
-🔤 <b>Query:</b> {query}
-🔗 <b>Page Link:</b> <a href="{search_url}">Link</a>
+🌸 <b>Anime:</b> {title}
+� <b>Similarity:</b> <code>{similarity}%</code>
+🎞 <b>Episode:</b> <code>{episode}</code>
+🎬 <b>At:</b> <code>{timestamp}</code>
 
-⌛️ <b>Time Taken:</b> <code>{time_taken}</code> ms.
-🧑‍💻 <b>Credits:</b> @sukuna201
+🔗 <a href="https://anilist.co/anime/{anilist_id}">Anilist Link</a>
     """
-    OPEN_SEARCH_PAGE = "↗️ Open Search Page"
 
 @Grabberu.on_message(filters.command(COMMANDS))
-async def on_google_lens_search(_, message: types.Message):
-    response = None
-    start_time = 0
+async def on_trace_moe_search(_, message: types.Message):
     status_msg = None
+    file_path = None
     
     try:
         if len(message.command) > 1:
             image_url = message.command[1]
-            params = {"image_url": image_url}
             status_msg = await message.reply(STRINGS.REQUESTING_API_SERVER)
-            start_time = asyncio.get_event_loop().time()
-            response = await httpx_client.get(ENDPOINT, params=params)
+            response = await httpx_client.get(f"{ENDPOINT}?url={image_url}&anilistInfo")
         elif (reply := message.reply_to_message):
             if reply.media and reply.media in (enums.MessageMediaType.PHOTO, enums.MessageMediaType.STICKER, enums.MessageMediaType.DOCUMENT):
                 status_msg = await message.reply(STRINGS.DOWNLOADING_MEDIA)
                 
-                # Ensure temp directory exists
                 if not os.path.exists("temp"):
                     os.makedirs("temp")
                     
                 file_path = f"temp/{uuid.uuid4()}"
-                try:
-                    await reply.download(file_path)
-                except Exception as exc:
-                    await message.reply(STRINGS.EXCEPTION_OCCURRED.format(exc))
-                    if os.path.exists(file_path):
-                        os.remove(file_path)
-                    return
+                await reply.download(file_path)
                 
+                await status_msg.edit(STRINGS.UPLOADING_TO_API_SERVER)
                 with open(file_path, "rb") as image_file:
-                    start_time = asyncio.get_event_loop().time()
-                    files = {"file": image_file}
-                    await status_msg.edit(STRINGS.UPLOADING_TO_API_SERVER)
-                    response = await httpx_client.post(ENDPOINT, files=files)
-                
-                if os.path.exists(file_path):
-                    os.remove(file_path)
+                    files = {"image": image_file}
+                    response = await httpx_client.post(f"{ENDPOINT}?anilistInfo", files=files)
             else:
-                await message.reply(STRINGS.UNSUPPORTED_MEDIA_TYPE)
-                return
+                return await message.reply(STRINGS.UNSUPPORTED_MEDIA_TYPE)
         else:
-            await message.reply(STRINGS.REPLY_TO_MEDIA)
-            return
+            return await message.reply(STRINGS.REPLY_TO_MEDIA)
 
-        if not response:
-            await message.reply("❌ Internal error: No response from API.")
-            return
+        if response.status_code != 200:
+            return await message.reply(STRINGS.EXCEPTION_OCCURRED.format(f"API Error ({response.status_code})"))
 
-        if response.status_code == 404:
-            text = STRINGS.EXCEPTION_OCCURRED.format(response.json().get("error", "Not Found"))
-            await message.reply(text)
-            if status_msg: await status_msg.delete()
-            return
-        elif response.status_code != 200:
-            text = STRINGS.EXCEPTION_OCCURRED.format(response.text)
-            await message.reply(text)
-            if status_msg: await status_msg.delete()
-            return
+        data = response.json()
+        if not data.get("result"):
+            return await message.reply("❌ <b>No match found!</b> Try a clearer screenshot.", parse_mode=enums.ParseMode.HTML)
 
-        await status_msg.edit(STRINGS.PARSING_RESULT)
-        response_json = response.json()
-        query = response_json.get("query", "")
-        search_url = response_json.get("search_url", "")
-        end_time = asyncio.get_event_loop().time() - start_time
-        time_taken = "{:.2f}".format(end_time)
+        # Get best match
+        match = data["result"][0]
+        anilist_id = match.get("anilist", {}).get("id") or match.get("anilist")
+        title_info = match.get("anilist", {}).get("title", {})
+        title = title_info.get("english") or title_info.get("romaji") or title_info.get("native") or "Unknown"
         
+        similarity = round(match.get("similarity", 0) * 100, 2)
+        episode = match.get("episode", "N/A")
+        
+        # Convert seconds to timestamp
+        time_sec = match.get("from", 0)
+        timestamp = f"{int(time_sec // 60):02d}:{int(time_sec % 60):02d}"
+
         text = STRINGS.RESULT.format(
-            query=f"<code>{query}</code>" if query else "<i>Name not found</i>",
-            search_url=search_url,
-            time_taken=time_taken
+            title=title,
+            similarity=similarity,
+            episode=episode,
+            timestamp=timestamp,
+            anilist_id=anilist_id
         )
-        buttons = [[types.InlineKeyboardButton(STRINGS.OPEN_SEARCH_PAGE, url=search_url)]]
-        await message.reply(
-            text, 
-            disable_web_page_preview=True, 
-            reply_markup=types.InlineKeyboardMarkup(buttons),
+
+        buttons = [[types.InlineKeyboardButton("🌐 View Source Video", url=match.get("video"))]] if match.get("video") else []
+
+        await message.reply_photo(
+            photo=match.get("image"),
+            caption=text,
+            reply_markup=types.InlineKeyboardMarkup(buttons) if buttons else None,
             parse_mode=enums.ParseMode.HTML
         )
-        await status_msg.delete()
+        
+        if status_msg:
+            await status_msg.delete()
 
     except Exception as e:
-        LOGGER.error(f"Error in Google Lens search: {e}", exc_info=True)
+        LOGGER.error(f"Trace.moe search error: {e}", exc_info=True)
+        error_text = STRINGS.EXCEPTION_OCCURRED.format(str(e))
         if status_msg:
-            await status_msg.edit(STRINGS.EXCEPTION_OCCURRED.format(str(e)))
+            await status_msg.edit(error_text)
         else:
-            await message.reply(STRINGS.EXCEPTION_OCCURRED.format(str(e)))
+            await message.reply(error_text)
+    finally:
+        if file_path and os.path.exists(file_path):
+            os.remove(file_path)
