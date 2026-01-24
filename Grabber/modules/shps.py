@@ -34,8 +34,8 @@ async def get_daily_shop_characters():
         return []
     return random.sample(characters, min(len(characters), SHOP_PAGE_SIZE))
 
-@app.on_message(filters.command("shop"))
-async def shop_cmd(_, message: types.Message):
+@app.on_message(filters.command("cshop"))
+async def cshop_cmd(_, message: types.Message):
     chars = await get_daily_shop_characters()
     if not chars:
         await message.reply_text("🚫 No shop characters available.")
@@ -45,6 +45,53 @@ async def shop_cmd(_, message: types.Message):
     # Use MongoDB for shop sessions
     await create_session(f"shop_{user_id}", {"shop": chars, "page": 0})
     await send_shop_message(message, user_id)
+
+# --- NEW SHOP HUB ---
+@app.on_message(filters.command("shop"))
+async def shop_hub(_, message: types.Message):
+    await send_shop_hub(message)
+
+async def send_shop_hub(message_or_query):
+    text = (
+        "🏪 **Seal Shop Central**\n\n"
+        "Welcome to the marketplace! Choose a category below to start browsing."
+    )
+    keyboard = [
+        [types.InlineKeyboardButton("👤 Character Shop", callback_data="hub_char")],
+        [types.InlineKeyboardButton("🐾 Pet Shop", callback_data="hub_pet")],
+        [types.InlineKeyboardButton("🎫 Battle Pass", callback_data="hub_pass")],
+        [types.InlineKeyboardButton("🥚 Egg Shop", callback_data="hub_egg")]
+    ]
+    reply_markup = types.InlineKeyboardMarkup(keyboard)
+
+    if isinstance(message_or_query, types.CallbackQuery):
+        await message_or_query.message.edit_text(text, reply_markup=reply_markup)
+    else:
+        await message_or_query.reply_text(text, reply_markup=reply_markup)
+
+@app.on_callback_query(filters.regex(r"^hub_(char|pet|pass|egg|main)$"))
+async def hub_callback_handler(_, query: types.CallbackQuery):
+    choice = query.data.split("_")[1]
+    
+    if choice == "main":
+        await send_shop_hub(query)
+    elif choice == "char":
+        chars = await get_daily_shop_characters()
+        if not chars:
+            return await query.answer("🚫 No shop characters available.", show_alert=True)
+        await create_session(f"shop_{query.from_user.id}", {"shop": chars, "page": 0})
+        await send_shop_message(query, query.from_user.id)
+    elif choice == "pet":
+        import Grabber.modules.pet as pet_module
+        await pet_module.send_petshop_page(query, 0)
+    elif choice == "pass":
+        import Grabber.modules.battlepass as pass_module
+        await pass_module.view_pass_inline(query)
+    elif choice == "egg":
+        import Grabber.modules.hunt as hunt_module
+        await hunt_module.show_egg_page(query, 0, query.from_user.id)
+    
+    await query.answer()
 
 async def send_shop_message(message, user_id):
     session = await get_session(f"shop_{user_id}")
@@ -70,11 +117,12 @@ async def send_shop_message(message, user_id):
     )
 
     keyboard = [
-        [types.InlineKeyboardButton("💰 Buy", callback_data=f"buy_{char['id']}")],
+        [types.InlineKeyboardButton("💰 Buy", callback_data=f"ask_buy_char_{char['id']}")],
         [
             types.InlineKeyboardButton("⬅️ Prev", callback_data=f"shop_prev:{user_id}"),
             types.InlineKeyboardButton("➡️ Next", callback_data=f"shop_next:{user_id}")
-        ]
+        ],
+        [types.InlineKeyboardButton("⤾ Back to Hub", callback_data="hub_main")]
     ]
 
     markup = types.InlineKeyboardMarkup(keyboard)
@@ -124,10 +172,30 @@ async def shop_navigation(_, query: types.CallbackQuery):
     await send_shop_message(query, user_id)
     await query.answer()
 
-@app.on_callback_query(filters.regex(r"^buy_(.+)"))
+@app.on_callback_query(filters.regex(r"^ask_buy_char_(.+)"))
+async def ask_buy_character(_, query: types.CallbackQuery):
+    char_id = query.data.split("_")[3]
+    char = await collection.find_one({"id": char_id})
+    if not char:
+        return await query.answer("❌ Character not found.")
+    
+    price = char.get("price", DEFAULT_PRICE)
+    text = (
+        f"⚠️ **Confirm Purchase**\n\n"
+        f"Are you sure you want to buy **{char['name']}** for **{price} EXT**?"
+    )
+    keyboard = [
+        [
+            types.InlineKeyboardButton("Confirm ✅", callback_data=f"confirm_buy_char_{char_id}"),
+            types.InlineKeyboardButton("Cancel ❌", callback_data="hub_char")
+        ]
+    ]
+    await query.message.edit_caption(text, reply_markup=types.InlineKeyboardMarkup(keyboard))
+
+@app.on_callback_query(filters.regex(r"^confirm_buy_char_(.+)"))
 async def buy_character(_, query: types.CallbackQuery):
     user_id = query.from_user.id
-    char_id = query.data.split("_")[1]
+    char_id = query.data.split("_")[3]
 
     user_data = await user_collection.find_one({"id": user_id}) or {}
     owned = user_data.get("characters", [])

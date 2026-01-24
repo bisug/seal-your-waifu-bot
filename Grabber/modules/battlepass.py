@@ -63,7 +63,54 @@ async def view_pass(_, message: types.Message):
     markup = types.InlineKeyboardMarkup(buttons)
     await message.reply_text(text, parse_mode=enums.ParseMode.HTML, reply_markup=markup)
 
-# Callback for buying pass tiers
+# Helper for hub integration
+async def view_pass_inline(query: types.CallbackQuery):
+    user_id = query.from_user.id
+    progress = await get_user_progress(user_id)
+    
+    level = progress["level"]
+    xp_current = progress["xp_current"]
+    xp_needed = progress["xp_needed"]
+    pass_type = progress["pass_type"]
+    season = progress["season"]
+    
+    progress_bar = get_progress_bar(xp_current, xp_needed, 10)
+    percentage = int((xp_current / xp_needed) * 100) if xp_needed > 0 else 100
+    
+    text = (
+        f"🎫 <b>Battle Pass - Season {season}</b>\n\n"
+        f"{PASS_EMOJI[pass_type]} <b>Tier:</b> {pass_type.capitalize()}\n"
+        f"⭐ <b>Level:</b> {level} / 50\n\n"
+        f"<b>Progress to Level {level + 1}:</b>\n"
+        f"{progress_bar} {percentage}%\n"
+        f"⚡ {xp_current} / {xp_needed} XP\n\n"
+    )
+    
+    buttons = []
+    if pass_type == "free":
+        buttons.append([types.InlineKeyboardButton("⭐ Upgrade to Premium", callback_data="buyask_premium")])
+        buttons.append([types.InlineKeyboardButton("💎 Upgrade to Elite", callback_data="buyask_elite")])
+    elif pass_type == "premium":
+        buttons.append([types.InlineKeyboardButton("💎 Upgrade to Elite", callback_data="buyask_elite")])
+    
+    buttons.append([types.InlineKeyboardButton("🎁 View Rewards", callback_data="pass_rewards")])
+    buttons.append([types.InlineKeyboardButton("⤾ Back to Hub", callback_data="hub_main")])
+    
+    await query.message.edit_text(text, parse_mode=enums.ParseMode.HTML, reply_markup=types.InlineKeyboardMarkup(buttons))
+
+# Callback for asking confirmation
+@app.on_callback_query(filters.regex(r"^buyask_(premium|elite)$"))
+async def buypass_ask_callback(_, query: types.CallbackQuery):
+    tier = query.data.split("_")[1]
+    price = PASS_PRICES[tier]
+    text = f"⚠️ **Confirm Upgrade**\n\nUpgrade to **{tier.capitalize()} Pass** for **{price:,} coins**?"
+    keyboard = [[
+        types.InlineKeyboardButton("Confirm ✅", callback_data=f"buypass_{tier}"),
+        types.InlineKeyboardButton("Cancel ❌", callback_data="hub_pass")
+    ]]
+    await query.message.edit_text(text, parse_mode=enums.ParseMode.HTML, reply_markup=types.InlineKeyboardMarkup(keyboard))
+
+# Callback for buying pass tiers (Confirmed)
 @app.on_callback_query(filters.regex(r"^buypass_(premium|elite)$"))
 async def buypass_callback(_, query: types.CallbackQuery):
     user_id = query.from_user.id

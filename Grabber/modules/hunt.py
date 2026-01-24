@@ -210,6 +210,8 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
     if action_button:
         buttons.append([action_button])
     
+    buttons.append([types.InlineKeyboardButton("⤾ Back to Hub", callback_data="hub_main")])
+    
     markup = types.InlineKeyboardMarkup(buttons) if buttons else None
     
     try:
