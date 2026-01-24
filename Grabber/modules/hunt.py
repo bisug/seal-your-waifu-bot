@@ -44,9 +44,10 @@ def get_egg_roll(luck_multiplier):
 @app.on_message(filters.command("hunt"))
 async def hunt_cmd(_, message: types.Message):
     user_id = message.from_user.id
+    cooldown_active, seconds_left = is_on_cooldown(user_id)
+
     if cooldown_active:
         return await message.reply_text(f"⏳ Please wait {seconds_left}s before hunting again.")
-
     # Fetch User & Pet
     user = await user_collection.find_one({"id": user_id}) or {}
     pets = user.get("pets", [DEFAULT_PET])
