@@ -15,10 +15,10 @@ DEFAULT_PET = {
 
 # Pet Shop List
 PET_SHOP = [
-    {"name": "Blaze Fang 🐺", "luck": 0.15, "level": 1, "xp": 0, "price": 10000, "ability": "Scavenger", "desc": "20% Chance for Double Coins", "img": "https://i.ibb.co/fd1qPVJs/file-89.jpg"},
-    {"name": "Shadow Panther 🐆", "luck": 0.25, "level": 1, "xp": 0, "price": 25000, "ability": "Speedster", "desc": "-10s Hunt Cooldown", "img": "https://i.ibb.co/8CdC5QG/file-86.jpg"},
-    {"name": "Cosmic Phoenix 🦅", "luck": 0.35, "level": 1, "xp": 0, "price": 50000, "ability": "Caregiver", "desc": "50% Faster Egg Hatching", "img": "https://i.ibb.co/b5CrL8rp/file-84.jpg"},
-    {"name": "Mystic Dragon 🐲", "luck": 0.50, "level": 1, "xp": 0, "price": 100000, "ability": "Hoarder", "desc": "5% Chance for Bonus Egg", "img": "https://files.catbox.moe/7kvcqj.jpg"},
+    {"name": "Blaze Fang 🐺", "luck": 0.15, "level": 1, "xp": 0, "price": 15000, "ability": "Scavenger", "desc": "20% Chance for Double Coins", "img": "https://i.ibb.co/fd1qPVJs/file-89.jpg"},
+    {"name": "Shadow Panther 🐆", "luck": 0.25, "level": 1, "xp": 0, "price": 45000, "ability": "Speedster", "desc": "-10s Hunt Cooldown", "img": "https://i.ibb.co/8CdC5QG/file-86.jpg"},
+    {"name": "Cosmic Phoenix 🦅", "luck": 0.35, "level": 1, "xp": 0, "price": 120000, "ability": "Caregiver", "desc": "50% Faster Egg Hatching", "img": "https://i.ibb.co/b5CrL8rp/file-84.jpg"},
+    {"name": "Mystic Dragon 🐲", "luck": 0.50, "level": 1, "xp": 0, "price": 250000, "ability": "Hoarder", "desc": "5% Chance for Bonus Egg", "img": "https://files.catbox.moe/7kvcqj.jpg"},
 ]
 
 # Send Pet Shop Page

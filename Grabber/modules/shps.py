@@ -9,9 +9,10 @@ from Grabber.core.sessions import create_session, get_session
 EXTOL_API_KEY = config.EXTOL_API_KEY
 EXTOL_RECEIVER = config.EXTOL_RECEIVER
 SHOP_RARITY = "🪽 Shop"
-DEFAULT_PRICE = 50  # Extols
+DEFAULT_PRICE = 75  # Extols (Balanced)
 SHOP_PAGE_SIZE = 5
 ADMINS = list(set(sudo_users + [OWNER_ID]))
+SHOP_BANNER = config.PHOTO_URL[0]
 
 # === Extol API ===
 async def get_extol_balance():
@@ -64,10 +65,26 @@ async def send_shop_hub(message_or_query):
     ]
     reply_markup = types.InlineKeyboardMarkup(keyboard)
 
-    if isinstance(message_or_query, types.CallbackQuery):
-        await message_or_query.message.edit_text(text, reply_markup=reply_markup)
-    else:
-        await message_or_query.reply_text(text, reply_markup=reply_markup)
+    try:
+        if isinstance(message_or_query, types.CallbackQuery):
+            await message_or_query.message.edit_media(
+                media=types.InputMediaPhoto(media=SHOP_BANNER, caption=text),
+                reply_markup=reply_markup
+            )
+        else:
+            await message_or_query.reply_photo(
+                photo=SHOP_BANNER, caption=text, reply_markup=reply_markup
+            )
+    except Exception as e:
+        LOGGER.error(f"Error in send_shop_hub: {e}")
+        # Final fallback - try text if media edit fails completely
+        if isinstance(message_or_query, types.CallbackQuery):
+            try:
+                await message_or_query.message.edit_text(text, reply_markup=reply_markup)
+            except:
+                pass
+        else:
+            await message_or_query.reply_text(text, reply_markup=reply_markup)
 
 @app.on_callback_query(filters.regex(r"^hub_(char|pet|pass|egg|main)$"))
 async def hub_callback_handler(_, query: types.CallbackQuery):
