@@ -55,10 +55,7 @@ async def my_profile(_, message: types.Message):
     )
 
     buttons = [
-        [types.InlineKeyboardButton("🎒 Harem", callback_data="harem_view"),
-         types.InlineKeyboardButton("🎫 Pass", callback_data="pass_rewards")],
-        [types.InlineKeyboardButton("🛒 Shop", callback_data="shop_next_0"),
-         types.InlineKeyboardButton("🐾 Pets", callback_data="mypet_next_0")]
+        [types.InlineKeyboardButton("🎒 Harem", callback_data="harem_view")]
     ]
 
     try:
