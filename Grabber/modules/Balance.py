@@ -18,28 +18,71 @@ async def balance_cmd(_, message: types.Message):
 @app.on_message(filters.command("pay") & filters.reply)
 async def pay_cmd(_, message: types.Message):
     sender_id = message.from_user.id
+    sender_name = message.from_user.first_name
     recipient = message.reply_to_message.from_user
     recipient_id = recipient.id
 
     if recipient_id == sender_id:
-        return await message.reply_text("❌ You cannot pay yourself.")
+        return await message.reply_text("❌ <b>You cannot pay yourself.</b>", parse_mode=enums.ParseMode.HTML)
 
     try:
         amount = int(message.command[1])
         if amount <= 0: raise ValueError
     except (IndexError, ValueError):
-        return await message.reply_text("Usage: `/pay <amount>` (reply to user)")
+        return await message.reply_text("❌ <b>Usage:</b> <code>/pay &lt;amount&gt;</code> (reply to user)", parse_mode=enums.ParseMode.HTML)
 
+    balance = await get_user_balance(sender_id)
+    if balance < amount:
+        return await message.reply_text("❌ <b>Insufficient balance!</b>", parse_mode=enums.ParseMode.HTML)
+
+    buttons = [
+        [
+            types.InlineKeyboardButton("✅ Confirm", callback_data=f"pay_c_{recipient_id}_{amount}"),
+            types.InlineKeyboardButton("❌ Cancel", callback_data="pay_a")
+        ]
+    ]
+
+    await message.reply_text(
+        f"<b>💸 Payment Confirmation</b>\n\n"
+        f"<b>To:</b> {recipient.mention}\n"
+        f"<b>Amount:</b> 💵 <code>{amount}</code> coins\n\n"
+        f"<i>Are you sure you want to send these coins?</i>",
+        reply_markup=types.InlineKeyboardMarkup(buttons),
+        parse_mode=enums.ParseMode.HTML
+    )
+
+@app.on_callback_query(filters.regex(r"^pay_"))
+async def pay_callback_handler(_, query: types.CallbackQuery):
+    sender_id = query.from_user.id
+    data = query.data.split("_")
+    action = data[1]
+
+    if action == "a":
+        await query.message.edit_text("❌ <b>Payment cancelled.</b>", parse_mode=enums.ParseMode.HTML)
+        return
+
+    recipient_id = int(data[2])
+    amount = int(data[3])
+
+    # Atomic check and deduct
     if await check_and_deduct(sender_id, amount):
         await update_user_balance(recipient_id, amount)
-        new_bal = await get_user_balance(sender_id)
-        await message.reply_text(
-            f"💵 Successfully paid **{amount}** coins to {recipient.mention}\n"
-            f"Your new balance: 💵 **{new_bal}**",
-            parse_mode=enums.ParseMode.MARKDOWN
+        
+        # Get user info for better message
+        try:
+            recipient = await app.get_users(recipient_id)
+            mention = recipient.mention
+        except Exception:
+            mention = f"User ID: {recipient_id}"
+
+        await query.message.edit_text(
+            f"✅ <b>Payment Successful!</b>\n\n"
+            f"<b>Sent:</b> 💵 <code>{amount}</code> coins\n"
+            f"<b>To:</b> {mention}",
+            parse_mode=enums.ParseMode.HTML
         )
     else:
-        await message.reply_text("❌ Insufficient balance!")
+        await query.answer("❌ Insufficient balance or transaction failed.", show_alert=True)
 
 @app.on_message(filters.command("daily"))
 async def daily_reward_cmd(_, message: types.Message):
