@@ -31,11 +31,14 @@ async def send_petshop_page(message_or_query_obj, page: int):
         f"🍀 Luck: {int(pet['luck'] * 100)}%\n"
         f"💰 Price: <b>{pet['price']} coins</b>"
     )
-    keyboard = [[
-        types.InlineKeyboardButton("⬅️ Prev", callback_data=f"shop_prev_{page}"),
-        types.InlineKeyboardButton("Buy Now", callback_data=f"shop_buy_{page}"),
-        types.InlineKeyboardButton("Next ➡️", callback_data=f"shop_next_{page}")
-    ]]
+    keyboard = [
+        [
+            types.InlineKeyboardButton("⬅️ Prev", callback_data=f"shop_prev_{page}"),
+            types.InlineKeyboardButton("Buy Now", callback_data=f"shop_buy_{page}"),
+            types.InlineKeyboardButton("Next ➡️", callback_data=f"shop_next_{page}")
+        ],
+        [types.InlineKeyboardButton("⤾ Back to Hub", callback_data="hub_main")]
+    ]
     reply_markup = types.InlineKeyboardMarkup(keyboard)
 
     try:
@@ -150,7 +153,8 @@ async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
             types.InlineKeyboardButton("⬅️ Prev", callback_data=f"mypet_prev_{page}"),
             types.InlineKeyboardButton("Set Active" if not is_active else "🌟 Active", callback_data=f"setpet_{page}"),
             types.InlineKeyboardButton("Next ➡️", callback_data=f"mypet_next_{page}")
-        ]
+        ],
+        [types.InlineKeyboardButton("⤾ Back to Hub", callback_data="hub_main")]
     ]
     reply_markup = types.InlineKeyboardMarkup(buttons)
     photo = pet.get("img", DEFAULT_PET["img"])
@@ -186,14 +190,14 @@ async def shop_mypet_navigation(_, query: types.CallbackQuery):
         elif "prev" in data:
             page = (page - 1) % len(PET_SHOP)
         elif "buy" in data:
-            result = await perform_pet_purchase(query.from_user.id, page)
-            if result is True:
-                await query.answer(f"✅ Success! You bought {PET_SHOP[page]['name']}.", show_alert=True)
-                await send_mypet_page(query, 0, query.from_user.id)
-                return
-            else:
-                await query.answer(result, show_alert=True)
-                return
+            pet = PET_SHOP[page]
+            text = f"⚠️ **Confirm Purchase**\n\nBuy **{pet['name']}** for **{pet['price']} coins**?"
+            keyboard = [[
+                types.InlineKeyboardButton("Confirm ✅", callback_data=f"petconfirm_{page}"),
+                types.InlineKeyboardButton("Cancel ❌", callback_data=f"shop_next_{page}")
+            ]]
+            await query.message.edit_caption(text, reply_markup=types.InlineKeyboardMarkup(keyboard))
+            return
 
         await send_petshop_page(query, page)
     
@@ -208,6 +212,17 @@ async def shop_mypet_navigation(_, query: types.CallbackQuery):
         await send_mypet_page(query, page, user_id)
     
     await query.answer()
+
+@app.on_callback_query(filters.regex(r"^petconfirm_(\d+)$"))
+async def pet_confirm_callback(_, query: types.CallbackQuery):
+    page = int(query.data.split("_")[1])
+    result = await perform_pet_purchase(query.from_user.id, page)
+    if result is True:
+        await query.answer(f"✅ Success! You bought {PET_SHOP[page]['name']}.", show_alert=True)
+        await send_mypet_page(query, 0, query.from_user.id)
+    else:
+        await query.answer(result, show_alert=True)
+        await send_petshop_page(query, page)
 
 @app.on_callback_query(filters.regex(r"^setpet_(\d+)$"))
 async def setpet_callback(_, query: types.CallbackQuery):
