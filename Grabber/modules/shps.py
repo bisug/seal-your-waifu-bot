@@ -199,7 +199,12 @@ async def ask_buy_character(_, query: types.CallbackQuery):
     price = char.get("price", DEFAULT_PRICE)
     text = (
         f"⚠️ **Confirm Purchase**\n\n"
-        f"Are you sure you want to buy **{char['name']}** for **{price} EXT**?"
+        f"👤 **Name:** {char['name']}\n"
+        f"📺 **Anime:** {char['anime']}\n"
+        f"🏷 **Rarity:** {char['rarity']}\n"
+        f"🆔 **ID:** `{char_id}`\n\n"
+        f"💰 **Price:** {price} EXT\n"
+        f"Are you sure you want to buy this character?"
     )
     keyboard = [
         [
