@@ -19,7 +19,7 @@ EGG_TIERS = {
 CORRUPTED_EGG_CHANCE = 5 
 # 5% chance any egg is actually corrupted (visualized as Void but risky)
 
-DEFAULT_PET = {"name": "Fluffy Fox 🦊", "luck": 0.10, "level": 1, "xp": 0, "owned": True}
+from Grabber.modules.pet import DEFAULT_PET
 hunt_cooldowns = {}
 
 def is_on_cooldown(user_id):

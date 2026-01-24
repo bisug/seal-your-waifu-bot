@@ -67,6 +67,31 @@ async def petshop(_, message: types.Message):
         })
     await send_petshop_page(message, 0)
 
+# Purchase Logic Helper
+async def perform_pet_purchase(user_id, pet_index: int):
+    try:
+        pet = PET_SHOP[pet_index]
+    except IndexError:
+        return "❌ Invalid pet selection."
+
+    user = await user_collection.find_one({"id": user_id})
+    if not user:
+        user = {"id": user_id, "balance": 0, "pets": [DEFAULT_PET.copy()], "current_pet": DEFAULT_PET["name"]}
+        await user_collection.insert_one(user)
+
+    if any(p["name"] == pet["name"] for p in user.get("pets", [])):
+        return f"⚠️ You already own {pet['name']}."
+
+    if user.get("balance", 0) < pet["price"]:
+        return "❌ You don't have enough balance."
+
+    await user_collection.update_one({"id": user_id}, {
+        "$push": {"pets": pet},
+        "$set": {"current_pet": pet["name"]},
+        "$inc": {"balance": -pet["price"]}
+    })
+    return True
+
 # Buy via /buypet
 @app.on_message(filters.command("buypet"))
 async def buypet_cmd(_, message: types.Message):
@@ -75,36 +100,19 @@ async def buypet_cmd(_, message: types.Message):
     
     try:
         pet_id = int(message.command[1])
+    except ValueError:
+        return await message.reply_text("❌ Invalid pet ID.")
+
+    result = await perform_pet_purchase(message.from_user.id, pet_id)
+    if result is True:
         pet = PET_SHOP[pet_id]
-    except (ValueError, IndexError):
-        await message.reply_text("❌ Invalid pet ID.")
-        return
-
-    user_id = message.from_user.id
-    user = await user_collection.find_one({"id": user_id})
-    if not user:
-        user = {"id": user_id, "balance": 0, "pets": [DEFAULT_PET], "current_pet": DEFAULT_PET["name"]}
-        await user_collection.insert_one(user)
-
-    if any(p["name"] == pet["name"] for p in user.get("pets", [])):
-        await message.reply_text(f"⚠️ You already own {pet['name']}.")
-        return
-
-    if user.get("balance", 0) < pet["price"]:
-        await message.reply_text("❌ You don't have enough balance.")
-        return
-
-    await user_collection.update_one({"id": user_id}, {
-        "$push": {"pets": pet},
-        "$set": {"current_pet": pet["name"]},
-        "$inc": {"balance": -pet["price"]}
-    })
-
-    await message.reply_photo(
-        photo=pet["img"],
-        caption=f"✅ You bought <b>{pet['name']}</b> with {int(pet['luck']*100)}% luck!",
-        parse_mode=enums.ParseMode.HTML
-    )
+        await message.reply_photo(
+            photo=pet["img"],
+            caption=f"✅ You bought <b>{pet['name']}</b> with {int(pet['luck']*100)}% luck!",
+            parse_mode=enums.ParseMode.HTML
+        )
+    else:
+        await message.reply_text(result)
 
 # /mypet command with pagination
 async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
@@ -163,7 +171,7 @@ async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
         LOGGER.error(f"Error in send_mypet_page: {e}")
 
 # /mypet command
-@app.on_message(filters.command("mypet"))
+@app.on_message(filters.command(["mypet", "pet", "pets"]))
 async def mypet_cmd(_, message: types.Message):
     await send_mypet_page(message, 0, message.from_user.id)
 
@@ -178,8 +186,14 @@ async def shop_mypet_navigation(_, query: types.CallbackQuery):
         elif "prev" in data:
             page = (page - 1) % len(PET_SHOP)
         elif "buy" in data:
-            await send_petshop_page(query, page)
-            return
+            result = await perform_pet_purchase(query.from_user.id, page)
+            if result is True:
+                await query.answer(f"✅ Success! You bought {PET_SHOP[page]['name']}.", show_alert=True)
+                await send_mypet_page(query, 0, query.from_user.id)
+                return
+            else:
+                await query.answer(result, show_alert=True)
+                return
 
         await send_petshop_page(query, page)
     
