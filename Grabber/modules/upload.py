@@ -9,6 +9,25 @@ RARITY_MAP = {
     6: "💮 Exclusive", 7: "🔮 Limited Edition", 8: "🪽 Shop", 9: "🫧 Royal", 10: "💎 Antique"
 }
 
+WRONG_FORMAT_TEXT = """Wrong ❌️ format...  eg. reply /upload muzan-kibutsuji Demon-slayer 3
+
+img_url character-name anime-name rarity-number
+
+use rarity number accordingly rarity Map
+
+rarity_map = 
+(⚪ Common=1)  
+(🟠 Rare=2) 
+(🟡 Legendary=3)
+(🟢 Medium=4) 
+(💠 Cosmic=5) 
+(💮 Exclusive=6) 
+(🔮 Limited Edition=7) 
+(🪽 Shop=8) 
+(🫧 royal=9) 
+(💎 Antique=10)
+"""
+
 import asyncio
 import os
 
@@ -19,19 +38,14 @@ async def upload_waifu_handler(_, message: types.Message):
     
     if message.reply_to_message and (message.reply_to_message.photo or message.reply_to_message.document):
         if len(message.command) < 4:
-            return await message.reply_text("❌ <b>Usage (Reply):</b> <code>/upload &lt;name&gt; &lt;anime&gt; &lt;rarity_num&gt;</code>", parse_mode=enums.ParseMode.HTML)
+            return await message.reply_text(WRONG_FORMAT_TEXT)
         name, anime, rarity_num = message.command[1], message.command[2], message.command[3]
         is_reply = True
     elif len(message.command) == 5:
         img_url, name, anime, rarity_num = message.command[1], message.command[2], message.command[3], message.command[4]
         is_reply = False
     else:
-        return await message.reply_text(
-            "❌ <b>Invalid Format!</b>\n\n"
-            "1️⃣ <b>Reply to Image:</b> <code>/upload &lt;name&gt; &lt;anime&gt; &lt;rarity_num&gt;</code>\n"
-            "2️⃣ <b>Bulk URL:</b> <code>/upload &lt;url&gt; &lt;name&gt; &lt;anime&gt; &lt;rarity_num&gt;</code>",
-            parse_mode=enums.ParseMode.HTML
-        )
+        return await message.reply_text(WRONG_FORMAT_TEXT)
 
     try:
         rarity_num = int(rarity_num)
