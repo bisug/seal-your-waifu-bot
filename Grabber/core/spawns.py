@@ -1,5 +1,24 @@
+import time
 from typing import Optional, Dict, Any
 from Grabber.database import spawns_collection, message_counts_collection, user_totals_collection
+
+async def track_user_activity(chat_id: int, user_id: int):
+    """Keep track of user activity using a dictionary in MongoDB."""
+    current_time = time.time()
+    await spawns_collection.update_one(
+        {"chat_id": chat_id},
+        {"$set": {f"active_users.{user_id}": current_time}},
+        upsert=True
+    )
+
+async def get_active_user_count(chat_id: int) -> int:
+    """Number of unique users active in the last 10 minutes."""
+    state = await get_chat_state(chat_id)
+    active_dict = state.get("active_users", {})
+    current_time = time.time()
+    # Filter users who were active in the last 600 seconds
+    active_count = sum(1 for ts in active_dict.values() if ts > current_time - 600)
+    return active_count
 
 async def get_chat_state(chat_id: int) -> Dict[str, Any]:
     """Fetch the current state for a chat from MongoDB."""
