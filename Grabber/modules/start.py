@@ -7,10 +7,19 @@ from Grabber.database import total_pm_users
 LOGGER.info("Loading Start module...")
 
 START_TEXT = """
-<b>Hey, {first_name}! I’m {bot_name} — your ultimate Character Catcher!</b> ✨
+<b>✨ Welcome to {bot_name}! ✨</b>
 
-Add me to your groups and I’ll drop random characters from time to time.
-Guess their names, catch them first, and build your own massive harem!
+<b>Hey {first_name}!</b> I am your ultimate companion for <b>Character Catching & PvP Battles!</b>
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+<b>🔥 Core Features:</b>
+🌸 <b>Catch</b> rare anime characters.
+⚔️ <b>Battle</b> other players with your characters.
+🐣 <b>Hatch</b> eggs and grow your collection.
+🎫 <b>Progress</b> through the Battle Pass!
+━━━━━━━━━━━━━━━━━━━━━━━━
+
+<i>Add me to your group and start your journey today!</i>
 """
 
 # Help Categories
@@ -63,9 +72,10 @@ HELP_DATA = {
         "text": """
 <b>ℹ️ Info & Stats</b>
 
-🔹 <code>/stats</code> - Bot statistics
-🔹 <code>/ping</code> - Check latency
-🔹 <code>/help</code> - Show this menu
+🔹 <code>/stats</code> - Global bot statistics
+🔹 <code>/rarities</code> - Character counts by rarity
+🔹 <code>/ping</code> - Real-time system status
+🔹 <code>/help</code> - Show this interactive menu
 """,
     },
     "PROGRESSION": {
