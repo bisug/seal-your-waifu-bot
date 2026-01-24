@@ -20,17 +20,35 @@ async def inline_query_handler(_, query: types.InlineQuery) -> None:
     # ─── Collection Search ─────────────────────────────────────────────────
     if query_text.startswith("collection."):
         try:
-            parts = query_text.split(".")
-            if len(parts) < 2:
+            parts = query_text.split(" ", 1)
+            header = parts[0].split(".")
+            if len(header) < 2:
                 return await query.answer([], cache_time=1)
             
-            user_id = int(parts[1])
-            search_context = f"col_{user_id}"
+            user_id = int(header[1])
+            search_text = parts[1] if len(parts) > 1 else ""
+            search_context = f"col_{user_id}_{search_text[:5]}"
+            
+            match_query = {"id": user_id}
             
             pipeline = [
-                {"$match": {"id": user_id}},
+                {"$match": match_query},
                 {"$unwind": "$characters"},
-                {"$replaceRoot": {"newRoot": "$characters"}},
+                {"$replaceRoot": {"newRoot": "$characters"}}
+            ]
+            
+            # Apply search filter if provided
+            if search_text:
+                pipeline.append({
+                    "$match": {
+                        "$or": [
+                            {"name": {"$regex": search_text, "$options": "i"}},
+                            {"anime": {"$regex": search_text, "$options": "i"}}
+                        ]
+                    }
+                })
+            
+            pipeline.extend([
                 {"$group": {
                     "_id": "$id",
                     "id": {"$first": "$id"},
@@ -42,7 +60,7 @@ async def inline_query_handler(_, query: types.InlineQuery) -> None:
                 {"$sort": {"id": 1}},
                 {"$skip": offset},
                 {"$limit": RESULTS_PER_PAGE}
-            ]
+            ])
             
             characters = await user_collection.aggregate(pipeline).to_list(length=RESULTS_PER_PAGE)
             

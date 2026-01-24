@@ -17,11 +17,18 @@ async def harem_handler(_, message: types.Message):
     user_id = message.from_user.id
     await show_harem(message, user_id, 0)
 
+@app.on_callback_query(filters.regex(r"^harem_view$"))
+async def harem_view_btn_handler(_, query: types.CallbackQuery):
+    await show_harem(query, query.from_user.id, 0)
+    await query.answer()
+
 async def show_harem(message_obj, user_id, page):
     user = await get_user_data(user_id)
     if not user or not user.get('characters'):
-        text = "❌ You don't have any characters!"
-        return await (message_obj.edit_text(text) if isinstance(message_obj, types.Message) and message_obj.from_user.id == app.me.id else message_obj.reply_text(text))
+        text = "❌ <b>You don't have any characters yet!</b>\n\n<i>Go catch some waifus first!</i>"
+        if isinstance(message_obj, types.CallbackQuery):
+            return await message_obj.answer(text, show_alert=True)
+        return await message_obj.reply_text(text, parse_mode=enums.ParseMode.HTML)
 
     chars = sorted(user['characters'], key=lambda x: (x.get('anime', ''), x.get('id', '')))
     
@@ -41,8 +48,11 @@ async def show_harem(message_obj, user_id, page):
     current_idx = user.get('current_format_index', 0)
     char_format = FORMATS[current_idx % len(FORMATS)]
 
-    harem_text = f"🐰 <b>{escape(user.get('first_name', 'User'))}'s Harem</b>\n"
-    harem_text += f"Page {page + 1}/{total_pages}\n\n"
+    first_name = user.get('first_name', 'User')
+    harem_text = f"🎒 <b>{escape(first_name)}'s Collection</b>\n"
+    harem_text += f"━━━━━━━━━━━━━━━━━━━━━\n"
+    harem_text += f"📑 <b>Page:</b> <code>{page + 1}/{total_pages}</code>\n"
+    harem_text += f"✨ <b>Characters:</b> <code>{len(chars)}</code> total\n\n"
 
     current_slice = unique_chars[page * per_page : (page + 1) * per_page]
     
@@ -57,23 +67,38 @@ async def show_harem(message_obj, user_id, page):
             count=id_counts.get(char.get('id'), 1)
         ) + "\n"
 
+    harem_text += f"━━━━━━━━━━━━━━━━━━━━━\n"
+
+    # Navigation buttons
+    nav_buttons = []
+    if total_pages > 1:
+        prev_btn = types.InlineKeyboardButton("⬅️ Prev", callback_data=f"h:p:{page-1}:{user_id}")
+        next_btn = types.InlineKeyboardButton("Next ➡️", callback_data=f"h:n:{page+1}:{user_id}")
+        if page == 0:
+            nav_buttons = [next_btn]
+        elif page == total_pages - 1:
+            nav_buttons = [prev_btn]
+        else:
+            nav_buttons = [prev_btn, next_btn]
+
     markup = types.InlineKeyboardMarkup([
-        [
-            types.InlineKeyboardButton("⬅️ Prev", callback_data=f"h:p:{page-1}:{user_id}"),
-            types.InlineKeyboardButton("Next ➡️", callback_data=f"h:n:{page+1}:{user_id}")
-        ] if total_pages > 1 else [],
-        [types.InlineKeyboardButton("Full Collection", switch_inline_query_current_chat=f"collection.{user_id}")]
+        nav_buttons,
+        [types.InlineKeyboardButton("🔍 Search Harem", switch_inline_query_current_chat=f"collection.{user_id} ")],
+        [types.InlineKeyboardButton("🌐 Global Search", switch_inline_query_current_chat="")]
     ])
 
     try:
+        # Use a random character's image for the harem cover
+        pic = random.choice(chars)['img_url']
+        
         if isinstance(message_obj, types.CallbackQuery):
             await message_obj.edit_message_media(
-                media=types.InputMediaPhoto(media=random.choice(chars)['img_url'], caption=harem_text, parse_mode=enums.ParseMode.HTML),
+                media=types.InputMediaPhoto(media=pic, caption=harem_text, parse_mode=enums.ParseMode.HTML),
                 reply_markup=markup
             )
         else:
             await message_obj.reply_photo(
-                photo=random.choice(chars)['img_url'],
+                photo=pic,
                 caption=harem_text,
                 reply_markup=markup,
                 parse_mode=enums.ParseMode.HTML
