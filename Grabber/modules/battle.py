@@ -1,5 +1,6 @@
 import asyncio
 import random
+import time
 from pyrogram import filters, types, enums, errors
 from Grabber.app import app
 from Grabber import LOGGER
@@ -10,6 +11,9 @@ from Grabber.core.progression import add_xp
 from Grabber.modules.quests import update_quest_progress
 from Grabber.modules.achievements import check_achievements
 
+# Cooldown Storage
+battle_cooldowns = {} # {(user1, user2): timestamp}
+
 # --- Battle Engine ---
 
 def calculate_stats(pet_data):
@@ -18,7 +22,7 @@ def calculate_stats(pet_data):
         # Fallback "Hand-to-Hand" stats
         return {
             "name": "Fists",
-            "hp": 80,
+            "hp": 100,
             "atk": 10,
             "spd": 10,
             "luck": 0.05,
@@ -26,14 +30,9 @@ def calculate_stats(pet_data):
         }
     
     level = pet_data.get("level", 1)
-    base_hp = pet_data.get("hp", 100)
-    base_atk = pet_data.get("atk", 15)
+    base_hp = pet_data.get("hp", 150)
+    base_atk = pet_data.get("atk", 20)
     base_spd = pet_data.get("spd", 15)
-    
-    # Scaling Formula
-    # HP: +5 per level
-    # ATK: +2 per level
-    # SPD: +1 per level
     
     return {
         "name": pet_data["name"],
@@ -58,15 +57,17 @@ def simulate_battle(p1_stats, p2_stats, p1_name, p2_name):
         attacker, defender = p1_stats, p2_stats
         a_name, d_name = p1_name, p2_name
         a_idx, d_idx = 1, 2
+        a_icon, d_icon = "🔴", "🔵"
     else:
         attacker, defender = p2_stats, p1_stats
         a_name, d_name = p2_name, p1_name
         a_idx, d_idx = 2, 1
+        a_icon, d_icon = "🔵", "🔴"
         
     turn = 1
     max_turns = 15
     
-    log.append(f"⏱️ **Initiative:** {a_name} ({attacker['spd']} SPD) goes first!")
+    log.append(f"⏱️ **Initiative:** {a_icon} **{a_name}** ({attacker['spd']} SPD) goes first!")
     
     while attacker["hp"] > 0 and defender["hp"] > 0 and turn <= max_turns:
         # -- Attacker Turn --
@@ -83,8 +84,11 @@ def simulate_battle(p1_stats, p2_stats, p1_name, p2_name):
         
         defender["hp"] -= damage
         
-        crit_txt = " 💥 **CRIT!**" if is_crit else ""
-        log.append(f"🗡️ **{a_name}** hits for `{damage}`{crit_txt} (HP: {max(0, defender['hp'])})")
+        crit_text = " 💥 **CRIT!**" if is_crit else ""
+        
+        # Simplified Log Entry
+        hp_bar = "▓" * int((max(0, defender['hp']) / defender['max_hp']) * 5)
+        log.append(f"{a_icon} **{a_name}** hits for `{damage}`{crit_text} (HP: {max(0, defender['hp'])})")
         
         if defender["hp"] <= 0:
             break
@@ -93,6 +97,7 @@ def simulate_battle(p1_stats, p2_stats, p1_name, p2_name):
         attacker, defender = defender, attacker
         a_name, d_name = d_name, a_name
         a_idx, d_idx = d_idx, a_idx
+        a_icon, d_icon = d_icon, a_icon
         turn += 1
         
     winner = a_idx if attacker["hp"] > 0 else d_idx
@@ -119,6 +124,15 @@ async def battle_challenge_handler(_, message: types.Message):
     if attacker.id == defender.id:
         return await message.reply_text("⚠️ You can't fight yourself!")
 
+    # Check Anti-Farm Cooldown
+    pair_key = tuple(sorted((attacker.id, defender.id)))
+    now = time.time()
+    if pair_key in battle_cooldowns:
+        last_battle = battle_cooldowns[pair_key]
+        if now - last_battle < 300: # 5 minutes
+            remain = int(300 - (now - last_battle))
+            return await message.reply_text(f"⏳ **Cooldown!** Wait {remain}s before battling this user again.", parse_mode=enums.ParseMode.MARKDOWN)
+
     try:
         bet = int(message.command[1])
         if bet <= 0: raise ValueError
@@ -132,7 +146,7 @@ async def battle_challenge_handler(_, message: types.Message):
     if await get_user_balance(defender.id) < bet:
         return await message.reply_text(f"❌ {defender.first_name} doesn't have enough coins!", parse_mode=enums.ParseMode.MARKDOWN)
 
-    # Store challenge in MongoDB
+    # Store challenge
     battle_id = f"bt_{attacker.id}_{defender.id}"
     await create_session(battle_id, {"attacker": attacker.id, "defender": defender.id, "bet": bet})
 
@@ -180,6 +194,10 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
 
     await delete_session(battle_id)
     
+    # Set Cooldown
+    pair_key = tuple(sorted((attacker_id, defender_id)))
+    battle_cooldowns[pair_key] = time.time()
+    
     try:
         a_user = await app.get_users(attacker_id)
         d_user = await app.get_users(defender_id)
@@ -194,10 +212,10 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
         # Intro
         text = (
             f"⚔️ **Battle Started!**\n"
-            f"👤 [{a_user.first_name}](tg://user?id={a_user.id}) - **{a_stats['name']}** (Lvl {a_stats['level']})\n"
+            f"🔴 [{a_user.first_name}](tg://user?id={a_user.id}) - **{a_stats['name']}** (Lvl {a_stats['level']})\n"
             f"   ❤️ {a_stats['hp']} | ⚔️ {a_stats['atk']} | ⚡ {a_stats['spd']}\n"
             f" 🆚 \n"
-            f"👤 [{d_user.first_name}](tg://user?id={d_user.id}) - **{d_stats['name']}** (Lvl {d_stats['level']})\n"
+            f"🔵 [{d_user.first_name}](tg://user?id={d_user.id}) - **{d_stats['name']}** (Lvl {d_stats['level']})\n"
             f"   ❤️ {d_stats['hp']} | ⚔️ {d_stats['atk']} | ⚡ {d_stats['spd']}\n\n"
             f"🔥 **Fighting...**"
         )
@@ -213,10 +231,12 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
         
         winner_id = attacker_id if winner_idx == 1 else defender_id
         winner_user = a_user if winner_idx == 1 else d_user
-        losser_user = d_user if winner_idx == 1 else a_user
-        winnings = bet * 2
         
-        # Payout
+        # Payout Logic (10% Tax on Pot)
+        total_pot = bet * 2
+        tax = int(total_pot * 0.10)
+        winnings = total_pot - tax
+        
         await update_user_balance(winner_id, winnings)
         
         # Rewards
@@ -232,6 +252,7 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
             f"📜 **Battle Log**:\n{battle_log}\n\n"
             f"🏆 **Winner:** [{winner_user.first_name}](tg://user?id={winner_user.id})\n"
             f"💰 **Winnings:** {winnings} coins\n"
+            f"🏦 **Tax:** {tax} coins removed\n"
             f"📈 **+30 XP** for {winner_user.first_name}"
         )
         

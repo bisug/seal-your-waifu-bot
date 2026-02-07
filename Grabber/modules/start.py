@@ -3,6 +3,10 @@ from pyrogram import filters, types, enums, errors
 from Grabber.app import app
 from Grabber import PHOTO_URL, BOT_USERNAME, SUPPORT_CHAT, UPDATE_CHAT, LOGGER
 from Grabber.database import total_pm_users
+from Grabber import user_collection
+from Grabber.modules.pet import DEFAULT_PET
+from Grabber.core.progression import add_xp
+from Grabber.modules.achievements import check_achievements
 
 LOGGER.info("Loading Start module...")
 
@@ -85,6 +89,7 @@ HELP_DATA = {
 
 🔹 `/pass` - View your Battle Pass (Free/Premium/Elite)
 🔹 `/quests` - Daily & Weekly Quests (Earn XP!)
+🔹 `/referrals` - Invite friends & earn rewards
 🔹 `/achievements` - View lifetime milestones & titles
 🔹 `/level` - Check your level progress
 
@@ -98,12 +103,69 @@ _🎁 Unlock rewards at levels 5, 10, 25, and 50_
 async def start_handler(_, message: types.Message):
     user_id = message.from_user.id
     
-    # Track new users
+    # Track new users & Referrals
+    # Check if user exists in MAIN collection (not just pm_users)
+    existing_user = await user_collection.find_one({"id": user_id})
+    
     await total_pm_users.update_one(
         {"_id": user_id},
         {"$set": {"first_name": message.from_user.first_name, "username": message.from_user.username}},
         upsert=True
     )
+    
+    # Referral Logic
+    if not existing_user and len(message.command) > 1:
+        param = message.command[1]
+        if param.startswith("ref_"):
+            try:
+                referrer_id = int(param.split("_")[1])
+                if referrer_id != user_id:
+                    # Grant Rewards
+                    # 1. New User Bonus (1500 Coins + Lvl 10 Pet)
+                    upgraded_pet = DEFAULT_PET.copy()
+                    upgraded_pet["level"] = 10
+                    upgraded_pet["hp"] += 45 # +5 per level * 9 levels
+                    upgraded_pet["atk"] += 18
+                    upgraded_pet["spd"] += 9
+                    
+                    await user_collection.update_one(
+                        {"id": user_id},
+                        {
+                            "$set": {
+                                "balance": 1500,
+                                "pets": [upgraded_pet],
+                                "current_pet": upgraded_pet["name"],
+                                "referred_by": referrer_id
+                            }
+                        },
+                        upsert=True
+                    )
+                    
+                    # 2. Inviter Reward
+                    await user_collection.update_one(
+                        {"id": referrer_id},
+                        {
+                            "$inc": {"balance": 500, "referrals_count": 1, "referrals_earned": 500}
+                        }
+                    )
+                    await add_xp(referrer_id, 50, "referral")
+                    await check_achievements(referrer_id)
+                    
+                    # Notify Inviter
+                    try:
+                        await app.send_message(
+                            referrer_id,
+                            f"🎉 **New Referral!**\n\n{message.from_user.first_name} joined using your link.\n💰 +500 Coins | 📈 +50 XP",
+                            parse_mode=enums.ParseMode.MARKDOWN
+                        )
+                    except:
+                        pass
+                        
+                    await message.reply_text("🎁 **Welcome Bonus!**\nYou received **1,500 Coins** and a **Level 10 Pet** for using a referral link! 🚀", parse_mode=enums.ParseMode.MARKDOWN)
+                    
+            except ValueError:
+                pass
+
 
     if message.chat.type == enums.ChatType.PRIVATE:
         markup = types.InlineKeyboardMarkup([

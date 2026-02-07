@@ -25,12 +25,19 @@ ACHIEVEMENTS = {
         "reward_xp": 500,
         "title": "Gladiator"
     },
-    "rich": {
+    "rich_vip": {
         "name": "Millionaire",
         "description": "Hold 1,000,000 Coins",
         "condition": lambda u: u.get("balance", 0) >= 1000000,
-        "reward_xp": 2000,
-        "title": "Tycoon"
+        "title": "Tycoon 🎩",
+        "reward_xp": 2000
+    },
+    "influencer": {
+        "name": "Influencer",
+        "description": "Invite 10 Users",
+        "condition": lambda u: u.get("referrals_count", 0) >= 10,
+        "title": "Ambassador 🤝",
+        "reward_xp": 1000
     }
 }
 
