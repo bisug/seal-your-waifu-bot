@@ -7,6 +7,7 @@ from Grabber import user_collection, collection, app
 from Grabber.core.user import add_pet_xp
 from Grabber.core.progression import add_xp
 from Grabber.modules.quests import update_quest_progress
+from Grabber.modules.achievements import check_achievements
 from Grabber.modules.rarities import RARITY_MAP
 
 # Egg Tiers & Properties
@@ -91,6 +92,9 @@ async def hunt_cmd(_, message: types.Message):
     if ability == "Beginner's Luck":
         xp_gain = int(xp_gain * 1.05)
     await add_pet_xp(user_id, pet["name"], xp_gain)
+
+    # Check Achievements (Millionaire)
+    await check_achievements(user_id)
 
     # Egg Drop Logic
     base_drop_chance = 15 * (1 + luck) # Base 15% drop rate

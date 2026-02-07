@@ -46,7 +46,7 @@ async def trade_handler(_, message: types.Message):
     ])
 
     await message.reply_to_message.reply_text(
-        f"🤝 {message.reply_to_message.from_user.mention}, accept trade?\n\n"
+        f"🤝 [{message.reply_to_message.from_user.first_name}](tg://user?id={message.reply_to_message.from_user.id}), accept trade?\n\n"
         f"📤 **Give:** {s_char['name']}\n"
         f"📥 **Take:** {r_char['name']}",
         reply_markup=markup
