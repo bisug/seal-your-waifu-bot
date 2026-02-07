@@ -2,26 +2,119 @@ import html
 from pyrogram import filters, types, enums
 from Grabber.app import app
 from Grabber import user_collection, top_global_groups_collection, group_user_totals_collection
+from Grabber.core.progression import get_level_from_xp
+
+METRIC_ORDER = ["harem", "shards", "zenith", "level"]
+
+METRICS = {
+    "harem": {"label": "🎒 Harem", "field": "char_count", "icon": "🍱"},
+    "shards": {"label": "⬪ Shards", "field": "balance", "icon": "⬪"},
+    "zenith": {"label": "⧫ Zenith", "field": "zenith", "icon": "⧫"},
+    "level": {"label": "⭐ Level", "field": "xp", "icon": "🆙"}
+}
+
+async def get_top_users(metric: str, limit: int = 10):
+    """Fetch top users based on the specified metric."""
+    if metric == "harem":
+        pipeline = [
+            {"$project": {"first_name": 1, "id": 1, "char_count": {"$size": {"$ifNull": ["$characters", []]}}}},
+            {"$sort": {"char_count": -1}},
+            {"$limit": limit}
+        ]
+    else:
+        field = METRICS[metric]["field"]
+        pipeline = [
+            {"$project": {"first_name": 1, "id": 1, field: {"$ifNull": [f"${field}", 0]}}},
+            {"$sort": {field: -1}},
+            {"$limit": limit}
+        ]
+    
+    cursor = user_collection.aggregate(pipeline)
+    return await cursor.to_list(length=limit)
+
+def build_leaderboard_text(metric: str, users: list):
+    """Build the leaderboard message text."""
+    info = METRICS[metric]
+    text = f"🌐 **Global Leaderboard**\n"
+    text += f"📊 **Category:** {info['label']}\n"
+    text += "━━━━━━━━━━━━━━━━━━━━━\n\n"
+    
+    if not users:
+        text += "_No data available yet._"
+        return text
+
+    for i, user in enumerate(users, 1):
+        name = html.escape(user.get('first_name', 'User'))
+        value = user.get(info['field'], 0)
+        
+        # Format the value based on metric
+        if metric == "level":
+            lvl = get_level_from_xp(value)
+            display_value = f"Lvl {lvl}"
+        elif metric == "shards":
+            display_value = f"{value:,} ⬪"
+        elif metric == "zenith":
+            display_value = f"{value:,} ⧫"
+        else: # harem
+            display_value = f"{value:,} Chars"
+            
+        text += f"{i}. {name} ➾ **{display_value}**\n"
+    
+    text += "\n━━━━━━━━━━━━━━━━━━━━━"
+    return text
+
+def build_leaderboard_keyboard(current_metric: str):
+    """Build the inline keyboard for switching categories."""
+    idx = METRIC_ORDER.index(current_metric)
+    prev_metric = METRIC_ORDER[(idx - 1) % len(METRIC_ORDER)]
+    next_metric = METRIC_ORDER[(idx + 1) % len(METRIC_ORDER)]
+    
+    buttons = [
+        [
+            types.InlineKeyboardButton("⬅️", callback_data=f"top_switch:{prev_metric}"),
+            types.InlineKeyboardButton(METRICS[current_metric]['label'], callback_data="top_info"),
+            types.InlineKeyboardButton("➡️", callback_data=f"top_switch:{next_metric}"),
+        ],
+        [
+            types.InlineKeyboardButton("❌ Close", callback_data="top_close")
+        ]
+    ]
+    return types.InlineKeyboardMarkup(buttons)
 
 @app.on_message(filters.command("top"))
 async def global_leaderboard_handler(_, message: types.Message):
     await app.send_chat_action(message.chat.id, enums.ChatAction.TYPING)
     
-    # Logic: Aggregation for top users
-    cursor = user_collection.aggregate([
-        {"$project": {"first_name": 1, "id": 1, "char_count": {"$size": {"$ifNull": ["$characters", []]}}}},
-        {"$sort": {"char_count": -1}},
-        {"$limit": 10}
-    ])
+    # Default to Harem leaderboard
+    users = await get_top_users("harem")
+    text = build_leaderboard_text("harem", users)
+    keyboard = build_leaderboard_keyboard("harem")
     
-    top_users = await cursor.to_list(length=10)
+    await message.reply_text(text, reply_markup=keyboard, parse_mode=enums.ParseMode.MARKDOWN)
+
+@app.on_callback_query(filters.regex(r"^top_switch:"))
+async def leaderboard_callback(_, query: types.CallbackQuery):
+    metric = query.data.split(":")[1]
     
-    text = "🏆 **Global Top 10 Grabbers**\n\n"
-    for i, user in enumerate(top_users, 1):
-        name = html.escape(user.get('first_name', 'User'))
-        text += f"{i}. {name} ➾ **{user['char_count']}**\n"
-        
-    await message.reply_text(text, parse_mode=enums.ParseMode.MARKDOWN)
+    users = await get_top_users(metric)
+    text = build_leaderboard_text(metric, users)
+    keyboard = build_leaderboard_keyboard(metric)
+    
+    try:
+        await query.message.edit_text(text, reply_markup=keyboard, parse_mode=enums.ParseMode.MARKDOWN)
+    except Exception:
+        pass
+    await query.answer()
+
+@app.on_callback_query(filters.regex(r"^top_close$"))
+async def leaderboard_close_callback(_, query: types.CallbackQuery):
+    await query.message.delete()
+    await query.answer("Leaderboard closed.")
+
+@app.on_callback_query(filters.regex(r"^top_info$"))
+async def leaderboard_info_callback(_, query: types.CallbackQuery):
+    await query.answer("Use arrows to switch categories!", show_alert=False)
+
 
 @app.on_message(filters.command("ctop") & filters.group)
 async def chat_leaderboard_handler(_, message: types.Message):
