@@ -50,22 +50,23 @@ HELP_DATA = {
         "text": """
 **🐾 Pet System**
 
-🔹 `/petshop` - Buy powerful pets
+🔹 `/petshop` - Buy powerful pets with unique stats
 🔹 `/mypet` - Manage active pet & view stats
-🔹 `/hunt` - Send pet to find loot & XP
-🔹 `/eggs` - Check your egg inventory
-🔹 `/hatch` - Hatch eggs for characters
+🔹 `/hunt` - Send pet to find loot, coins & eggs
+🔹 `/eggs` - Manage and hatch your eggs
+
 """,
     },
     "BATTLE": {
         "text": """
 **⚔️ Battle & Economy**
 
-🔹 `/battle <amount>` - PvP duel (Pets boost win rate!)
+🔹 `/battle <amount>` - PvP duel (Turn-based strategy!)
 🔹 `/balance` - Check your coins
-🔹 `/shop` - Buy premium characters
+🔹 `/shop` - Universal Shop Hub (Chars, Pets, Items)
 🔹 `/daily` - Claim daily rewards
 🔹 `/top` - Global leaderboard
+
 """,
     },
     "INFO": {
@@ -83,10 +84,11 @@ HELP_DATA = {
 **🎫 Battle Pass & Progression**
 
 🔹 `/pass` - View your Battle Pass (Free/Premium/Elite)
-🔹 `/level` - Quick level & XP check
-🔹 `/quests` - View & claim daily quests
+🔹 `/quests` - Daily & Weekly Quests (Earn XP!)
+🔹 `/achievements` - View lifetime milestones & titles
+🔹 `/level` - Check your level progress
 
-_💡 Gain XP by catching, battling, and hatching!_
+_💡 Gain XP by catching, battling, and completing quests!_
 _🎁 Unlock rewards at levels 5, 10, 25, and 50_
 """,
     }
