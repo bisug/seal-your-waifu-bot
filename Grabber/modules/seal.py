@@ -5,6 +5,7 @@ from Grabber.core.user import add_char_to_user
 from Grabber.core.spawns import get_chat_state, clear_active_spawn, get_message_count
 from Grabber.core.progression import add_xp
 from Grabber.modules.quests import update_quest_progress
+from Grabber.modules.achievements import check_achievements
 
 @app.on_message(filters.command("seal") & filters.group)
 async def seal_handler(_, message: types.Message):
@@ -46,6 +47,10 @@ async def seal_handler(_, message: types.Message):
         # Grant XP and update quests
         await add_xp(user_id, 10, "character_catch")
         await update_quest_progress(user_id, "catch_master", 1)
+        await update_quest_progress(user_id, "weekly_catch", 1)
+
+        # Check Achievements
+        await check_achievements(user_id)
 
         # UI Responses
         spawn_msg_id = state.get("message_id")
@@ -56,7 +61,7 @@ async def seal_handler(_, message: types.Message):
                 pass
 
         caption = (
-            f"🎉 **{message.from_user.mention} caught the character!**\n\n"
+            f"🎉 **[{message.from_user.first_name}](tg://user?id={message.from_user.id}) caught the character!**\n\n"
             f"📛 **Name:** {character['name']}\n"
             f"✨ **Rarity:** {character['rarity']}\n"
             f"🎬 **Anime:** {character['anime']}\n"

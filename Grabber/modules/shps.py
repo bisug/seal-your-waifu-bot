@@ -6,6 +6,7 @@ from config import config
 from Grabber.core.sessions import create_session, get_session
 from Grabber.modules.rarities import RARITY_MAP
 from Grabber.modules.quests import update_quest_progress
+from Grabber.modules.achievements import check_achievements
 
 # === Configuration ===
 EXTOL_API_KEY =""
@@ -263,6 +264,9 @@ async def buy_character(_, query: types.CallbackQuery):
     
     # Update Quest
     await update_quest_progress(user_id, "big_spender", price)
+    
+    # Check Achievements
+    await check_achievements(user_id)
 
     await query.message.reply_text(
         f"✅ **Purchase Successful!**\n🎉 You now own **{char['name']}**!",
