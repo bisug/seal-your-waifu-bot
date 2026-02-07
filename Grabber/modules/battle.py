@@ -141,10 +141,10 @@ async def battle_challenge_handler(_, message: types.Message):
 
     # Fast balance check
     if await get_user_balance(attacker.id) < bet:
-        return await message.reply_text("❌ You don't have enough coins!", parse_mode=enums.ParseMode.MARKDOWN)
+        return await message.reply_text("❌ You don't have enough Shards!", parse_mode=enums.ParseMode.MARKDOWN)
     
     if await get_user_balance(defender.id) < bet:
-        return await message.reply_text(f"❌ {defender.first_name} doesn't have enough coins!", parse_mode=enums.ParseMode.MARKDOWN)
+        return await message.reply_text(f"❌ {defender.first_name} doesn't have enough Shards!", parse_mode=enums.ParseMode.MARKDOWN)
 
     # Store challenge
     battle_id = f"bt_{attacker.id}_{defender.id}"
@@ -155,7 +155,7 @@ async def battle_challenge_handler(_, message: types.Message):
     ]])
 
     await message.reply_to_message.reply_text(
-        f"⚔ [{attacker.first_name}](tg://user?id={attacker.id}) challenged you to a battle for **{bet}** coins!",
+        f"⚔ [{attacker.first_name}](tg://user?id={attacker.id}) challenged you to a battle for {bet} ⬪!",
         reply_markup=markup,
         parse_mode=enums.ParseMode.MARKDOWN
     )
@@ -251,8 +251,8 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
         result_text = (
             f"📜 **Battle Log**:\n{battle_log}\n\n"
             f"🏆 **Winner:** [{winner_user.first_name}](tg://user?id={winner_user.id})\n"
-            f"💰 **Winnings:** {winnings} coins\n"
-            f"🏦 **Tax:** {tax} coins removed\n"
+            f"**Winnings:** {winnings} ⬪\n"
+            f"**Tax:** {tax} ⬪\n"
             f"📈 **+30 XP** for {winner_user.first_name}"
         )
         

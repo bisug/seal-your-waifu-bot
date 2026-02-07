@@ -1,20 +1,43 @@
+import math
+from html import escape
 from pyrogram import filters, types, enums
 from Grabber import app, user_collection, PHOTO_URL, LOGGER
-from Grabber.core.user import get_active_pet
+from Grabber.core.user import get_user_data, get_active_pet
 from Grabber.core.progression import get_user_progress, get_progress_bar
+from Grabber.database import collection
 import random
 
-@app.on_message(filters.command(["myprofile", "profile", "me"]))
-async def my_profile(_, message: types.Message):
-    user_id = message.from_user.id
-    user_data = await user_collection.find_one({'id': user_id})
+RARITY_ICONS = {
+    '⚪ Common': '⚪', '🟢 Medium': '🟢', '🟠 Rare': '🟠',
+    '🟡 Legendary': '🟡', '💠 Cosmic': '💠', '💮 Exclusive': '💮',
+    '🔮 Limited Edition': '🔮'
+}
 
+@app.on_message(filters.command(["profile", "myprofile", "me", "status", "mystatus"]))
+async def profile_handler(_, message: types.Message):
+    user_id = message.from_user.id
+    user_data = await get_user_data(user_id)
+    
     if not user_data:
         return await message.reply_text("🚨 **No profile found!** Try collecting a character first.", parse_mode=enums.ParseMode.MARKDOWN)
 
-    user_name = message.from_user.first_name
+    await app.send_chat_action(message.chat.id, enums.ChatAction.TYPING)
+    
+    # Basic Info
+    user_name = escape(message.from_user.first_name)
     user_balance = user_data.get('balance', 0)
-    characters_count = len(user_data.get('characters', []))
+    zenith = user_data.get('zenith', 0)
+    
+    # Characters
+    chars = user_data.get('characters', [])
+    char_count = len(chars)
+    total_db_chars = await collection.count_documents({})
+    
+    # Collection Progress
+    progress_percent = (char_count / total_db_chars * 100) if total_db_chars > 0 else 0
+    bar_len = 10
+    filled = int(progress_percent / 100 * bar_len)
+    progress_bar = "▰" * filled + "▱" * (bar_len - filled)
     
     # Progression Data
     progress = await get_user_progress(user_id)
@@ -22,6 +45,7 @@ async def my_profile(_, message: types.Message):
     xp_current = progress["xp_current"]
     xp_needed = progress["xp_needed"]
     pass_type = progress["pass_type"].capitalize()
+    xp_bar = get_progress_bar(xp_current, xp_needed, 10)
     
     # Active Pet
     active_pet = await get_active_pet(user_id)
@@ -29,42 +53,53 @@ async def my_profile(_, message: types.Message):
     
     # Favorite Character
     fav_id = user_data.get('favorites', [None])[0]
-    fav_char = next((c for c in user_data.get('characters', []) if str(c.get('id')) == str(fav_id)), None)
+    fav_char = next((c for c in chars if str(c.get('id')) == str(fav_id)), None)
     fav_name = fav_char['name'] if fav_char else "None"
+    
+    # Rarity Stats
+    rarity_stats = {}
+    for c in chars:
+        r = c.get('rarity', '⚪ Common')
+        rarity_stats[r] = rarity_stats.get(r, 0) + 1
 
-    # Profile Picture
-    pic = random.choice(PHOTO_URL)
-
-    # Visual Progress Bar
-    pbar = get_progress_bar(xp_current, xp_needed, 10)
-
-    profile_message = (
-        f"**🌟 USER PROFILE 🌟**\n"
+    # Build Profile Message
+    profile_text = (
+        f"**🌟 {user_name}'s Profile 🌟**\n"
         f"━━━━━━━━━━━━━━━━━━━━━\n"
-        f"👤 **Name:** {user_name}\n"
         f"🆔 **ID:** `{user_id}`\n"
-        f"🎫 **Tier:** {pass_type}\n\n"
+        f"🎫 **Battle Pass:** {pass_type}\n\n"
         f"⭐ **Level:** `{level}`\n"
-        f"📊 **XP:** {pbar} `{xp_current}/{xp_needed}`\n"
+        f"📊 **XP:** {xp_bar} `{xp_current}/{xp_needed}`\n"
         f"━━━━━━━━━━━━━━━━━━━━━\n"
-        f"💵 **Balance:** `{user_balance:,}` coins\n"
-        f"🎒 **Characters:** `{characters_count}` collected\n"
+        f"**Shards:** {user_balance:,} ⬪\n"
+        f"**Zenith:** {zenith:,} ⧫\n"
+        f"━━━━━━━━━━━━━━━━━━━━━\n"
+        f"🍱 **Collected:** {char_count}/{total_db_chars}\n"
         f"❤️ **Favorite:** `{fav_name}`\n"
         f"🐾 **Active Pet:** `{pet_text}`\n"
         f"━━━━━━━━━━━━━━━━━━━━━\n"
+        f"**📚 Collection By Rarity**\n"
     )
+    
+    for rarity, icon in RARITY_ICONS.items():
+        count = rarity_stats.get(rarity, 0)
+        rarity_name = rarity.split()[-1]
+        profile_text += f"{icon} {rarity_name}: `{count}`\n"
 
+    # Buttons
     buttons = [
         [types.InlineKeyboardButton("🎒 Harem", callback_data="harem_view")]
     ]
 
+    # Try sending with photo
     try:
+        pic = random.choice(PHOTO_URL)
         await message.reply_photo(
-            photo=pic, 
-            caption=profile_message, 
+            photo=pic,
+            caption=profile_text,
             reply_markup=types.InlineKeyboardMarkup(buttons),
             parse_mode=enums.ParseMode.MARKDOWN
         )
     except Exception as e:
-        LOGGER.error(f"Profile Error: {e}")
-        await message.reply_text(profile_message, parse_mode=enums.ParseMode.MARKDOWN)
+        LOGGER.error(f"Profile Photo Error: {e}")
+        await message.reply_text(profile_text, reply_markup=types.InlineKeyboardMarkup(buttons), parse_mode=enums.ParseMode.MARKDOWN)

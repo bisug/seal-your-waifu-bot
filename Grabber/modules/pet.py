@@ -5,10 +5,10 @@ from Grabber import app, user_collection, PHOTO_URL, LOGGER
 DEFAULT_PET = {
     "name": "Fluffy Fox 🦊",
     "luck": 0.10,
-    "hp": 150,
-    "atk": 20,
-    "spd": 20,
-    "level": 1,
+    "hp": 195,  # 150 + 45 (Level 10 bonus)
+    "atk": 38,  # 20 + 18
+    "spd": 29,  # 20 + 9
+    "level": 10,
     "xp": 0,
     "owned": True,
     "ability": "Beginner's Luck",
@@ -18,27 +18,40 @@ DEFAULT_PET = {
 
 # Pet Shop List
 PET_SHOP = [
-    {"name": "Blaze Fang 🐺", "luck": 0.15, "hp": 180, "atk": 30, "spd": 15, "level": 1, "xp": 0, "price": 15000, "ability": "Scavenger", "desc": "20% Chance for Double Coins", "img": "https://i.ibb.co/fd1qPVJs/file-89.jpg"},
-    {"name": "Shadow Panther 🐆", "luck": 0.25, "hp": 140, "atk": 40, "spd": 35, "level": 1, "xp": 0, "price": 45000, "ability": "Speedster", "desc": "-10s Hunt Cooldown", "img": "https://i.ibb.co/8CdC5QG/file-86.jpg"},
-    {"name": "Cosmic Phoenix 🦅", "luck": 0.35, "hp": 220, "atk": 25, "spd": 25, "level": 1, "xp": 0, "price": 120000, "ability": "Caregiver", "desc": "50% Faster Egg Hatching", "img": "https://i.ibb.co/b5CrL8rp/file-84.jpg"},
-    {"name": "Mystic Dragon 🐲", "luck": 0.50, "hp": 300, "atk": 45, "spd": 10, "level": 1, "xp": 0, "price": 250000, "ability": "Hoarder", "desc": "5% Chance for Bonus Egg", "img": "https://files.catbox.moe/7kvcqj.jpg"},
+    {"name": "Blaze Fang 🐺", "luck": 0.15, "hp": 180, "atk": 30, "spd": 15, "level": 1, "xp": 0, "zenith_price": 2, "req_level": 0, "ability": "Scavenger", "desc": "20% Chance for Double Coins", "img": "https://i.ibb.co/fd1qPVJs/file-89.jpg"},
+    {"name": "Shadow Panther 🐆", "luck": 0.25, "hp": 140, "atk": 40, "spd": 35, "level": 1, "xp": 0, "zenith_price": 5, "req_level": 10, "ability": "Speedster", "desc": "-10s Hunt Cooldown", "img": "https://i.ibb.co/8CdC5QG/file-86.jpg"},
+    {"name": "Cosmic Phoenix 🦅", "luck": 0.35, "hp": 220, "atk": 25, "spd": 25, "level": 1, "xp": 0, "zenith_price": 12, "req_level": 15, "ability": "Caregiver", "desc": "50% Faster Egg Hatching", "img": "https://i.ibb.co/b5CrL8rp/file-84.jpg"},
+    {"name": "Mystic Dragon 🐲", "luck": 0.50, "hp": 300, "atk": 45, "spd": 10, "level": 1, "xp": 0, "zenith_price": 25, "req_level": 20, "ability": "Hoarder", "desc": "5% Chance for Bonus Egg", "img": "https://files.catbox.moe/7kvcqj.jpg"},
 ]
 
 # Send Pet Shop Page
 async def send_petshop_page(message_or_query_obj, page: int, user_id: int):
+    from Grabber.core.progression import get_user_progress
+    
     pet = PET_SHOP[page]
+    user_progress = await get_user_progress(user_id)
+    user_level = user_progress["level"]
+    req_level = pet.get("req_level", 0)
+    is_locked = user_level < req_level
+    
     caption = (
         f"**{pet['name']}**\n"
         f"✨ Ability: **{pet.get('ability', 'None')}**\n"
         f"📖 _{pet.get('desc', 'No ability')}_\n"
         f"❤️ HP: {pet.get('hp', 100)} | ⚔️ ATK: {pet.get('atk', 10)} | ⚡ SPD: {pet.get('spd', 10)}\n"
         f"🍀 Luck: {int(pet['luck'] * 100)}%\n"
-        f"💰 Price: **{pet['price']} coins**"
+        f"💰 Price: **{pet['zenith_price']} ⧫**"
     )
+    
+    if is_locked:
+        caption += f"\n\n🔒 **Requires Level {req_level}** (You: {user_level})"
+    
+    # Button text based on lock status
+    buy_button_text = f"🔒 Locked (Lvl {req_level})" if is_locked else "Buy Now"
     keyboard = [
         [
             types.InlineKeyboardButton("⬅️ Prev", callback_data=f"shop_prev_{page}_{user_id}"),
-            types.InlineKeyboardButton("Buy Now", callback_data=f"shop_buy_{page}_{user_id}"),
+            types.InlineKeyboardButton(buy_button_text, callback_data=f"shop_buy_{page}_{user_id}"),
             types.InlineKeyboardButton("Next ➡️", callback_data=f"shop_next_{page}_{user_id}")
         ],
         [types.InlineKeyboardButton("⤾ Back to Hub", callback_data="hub_main")]
@@ -76,26 +89,44 @@ async def petshop(_, message: types.Message):
 
 # Purchase Logic Helper
 async def perform_pet_purchase(user_id, pet_index: int):
+    from Grabber.core.progression import get_user_progress
+    
     try:
         pet = PET_SHOP[pet_index]
     except IndexError:
         return "❌ Invalid pet selection."
+    
+    # Check level requirement
+    user_progress = await get_user_progress(user_id)
+    user_level = user_progress["level"]
+    req_level = pet.get("req_level", 0)
+    
+    if user_level < req_level:
+        return f"🔒 You need to reach **Level {req_level}** to purchase this pet! (Current: {user_level})"
 
     user = await user_collection.find_one({"id": user_id})
     if not user:
-        user = {"id": user_id, "balance": 0, "pets": [DEFAULT_PET.copy()], "current_pet": DEFAULT_PET["name"]}
+        user = {"id": user_id, "balance": 0, "zenith": 0, "pets": [DEFAULT_PET.copy()], "current_pet": DEFAULT_PET["name"]}
         await user_collection.insert_one(user)
+    
+    user_zenith = user.get("zenith", 0)
+    price = pet["zenith_price"]
+    
+    if user_zenith < price:
+        return f"❌ You need **{price} ⧫ Zenith** to purchase this pet! (You have: {user_zenith} ⧫)"
+    
+    # Deduct Zenith
+    await user_collection.update_one(
+        {"id": user_id},
+        {"$inc": {"zenith": -price}}
+    )
 
     if any(p["name"] == pet["name"] for p in user.get("pets", [])):
         return f"⚠️ You already own {pet['name']}."
 
-    if user.get("balance", 0) < pet["price"]:
-        return "❌ You don't have enough balance."
-
     await user_collection.update_one({"id": user_id}, {
         "$push": {"pets": pet},
-        "$set": {"current_pet": pet["name"]},
-        "$inc": {"balance": -pet["price"]}
+        "$set": {"current_pet": pet["name"]}
     })
     return True
 

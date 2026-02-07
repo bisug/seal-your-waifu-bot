@@ -56,7 +56,7 @@ HELP_DATA = {
 
 🔹 `/petshop` - Buy powerful pets with unique stats
 🔹 `/mypet` - Manage active pet & view stats
-🔹 `/hunt` - Send pet to find loot, coins & eggs
+🔹 `/hunt` - Send pet to find loot, Shards & eggs
 🔹 `/eggs` - Manage and hatch your eggs
 
 """,
@@ -66,7 +66,7 @@ HELP_DATA = {
 **⚔️ Battle & Economy**
 
 🔹 `/battle <amount>` - PvP duel (Turn-based strategy!)
-🔹 `/balance` - Check your coins
+🔹 `/balance` - Check your Shards & Zenith
 🔹 `/shop` - Universal Shop Hub (Chars, Pets, Items)
 🔹 `/daily` - Claim daily rewards
 🔹 `/top` - Global leaderboard
@@ -155,7 +155,7 @@ async def start_handler(_, message: types.Message):
                     try:
                         await app.send_message(
                             referrer_id,
-                            f"🎉 **New Referral!**\n\n{message.from_user.first_name} joined using your link.\n💰 +500 Coins | 📈 +50 XP",
+                            f"🎉 **New Referral!**\n\n{message.from_user.first_name} joined using your link.\n+500 ⬪ | +50 XP",
                             parse_mode=enums.ParseMode.MARKDOWN
                         )
                     except:
