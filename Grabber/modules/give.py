@@ -1,6 +1,7 @@
 from pyrogram import filters, types, enums
 from Grabber import app, user_collection, OWNER_ID, sudo_users, LOGGER
 from Grabber.modules.quests import update_quest_progress
+from Grabber.modules.achievements import check_achievements
 
 # Authorized users for unlimited balance manipulation
 AUTHORIZED_ADMINS = set(sudo_users + [OWNER_ID])
@@ -50,6 +51,9 @@ async def give_balance(_, message: types.Message):
     
     # Update Quest
     await update_quest_progress(sender_id, "generous_soul", 1)
+    
+    # Check Achievements for Recipient (Millionaire)
+    await check_achievements(recipient_id)
 
 
 @app.on_message(filters.command("takebalance"))

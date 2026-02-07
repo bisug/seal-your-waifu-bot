@@ -8,6 +8,7 @@ from Grabber.core.sessions import create_session, get_session, delete_session
 from Grabber.core.user import get_active_pet
 from Grabber.core.progression import add_xp
 from Grabber.modules.quests import update_quest_progress
+from Grabber.modules.achievements import check_achievements
 
 # --- Battle Engine ---
 
@@ -140,7 +141,7 @@ async def battle_challenge_handler(_, message: types.Message):
     ]])
 
     await message.reply_to_message.reply_text(
-        f"⚔ {attacker.mention} challenged you to a battle for **{bet}** coins!",
+        f"⚔ [{attacker.first_name}](tg://user?id={attacker.id}) challenged you to a battle for **{bet}** coins!",
         reply_markup=markup,
         parse_mode=enums.ParseMode.MARKDOWN
     )
@@ -193,10 +194,10 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
         # Intro
         text = (
             f"⚔️ **Battle Started!**\n"
-            f"👤 {a_user.first_name} - **{a_stats['name']}** (Lvl {a_stats['level']})\n"
+            f"👤 [{a_user.first_name}](tg://user?id={a_user.id}) - **{a_stats['name']}** (Lvl {a_stats['level']})\n"
             f"   ❤️ {a_stats['hp']} | ⚔️ {a_stats['atk']} | ⚡ {a_stats['spd']}\n"
             f" 🆚 \n"
-            f"👤 {d_user.first_name} - **{d_stats['name']}** (Lvl {d_stats['level']})\n"
+            f"👤 [{d_user.first_name}](tg://user?id={d_user.id}) - **{d_stats['name']}** (Lvl {d_stats['level']})\n"
             f"   ❤️ {d_stats['hp']} | ⚔️ {d_stats['atk']} | ⚡ {d_stats['spd']}\n\n"
             f"🔥 **Fighting...**"
         )
@@ -221,11 +222,15 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
         # Rewards
         await add_xp(winner_id, 30, "battle_win")
         await update_quest_progress(winner_id, "battle_veteran", 1)
+        await update_quest_progress(winner_id, "weekly_battle", 1)
+        
+        # Check Achievements
+        await check_achievements(winner_id)
         
         # Final Message
         result_text = (
             f"📜 **Battle Log**:\n{battle_log}\n\n"
-            f"🏆 **Winner:** {winner_user.mention}\n"
+            f"🏆 **Winner:** [{winner_user.first_name}](tg://user?id={winner_user.id})\n"
             f"💰 **Winnings:** {winnings} coins\n"
             f"📈 **+30 XP** for {winner_user.first_name}"
         )
