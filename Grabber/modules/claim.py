@@ -47,9 +47,9 @@ async def claim_handler(_, message: types.Message):
             [types.InlineKeyboardButton("🔄 Verify & Claim", callback_data=f"clm_v:{user_id}")]
         ])
         return await message.reply_text(
-            "🔒 <b>Join our channels to unlock your free waifu!</b>",
+            "🔒 **Join our channels to unlock your free waifu!**",
             reply_markup=markup,
-            parse_mode=enums.ParseMode.HTML
+            parse_mode=enums.ParseMode.MARKDOWN
         )
 
     await process_claim(message, user_id)
@@ -73,9 +73,9 @@ async def process_claim(message_obj, user_id):
     try:
         if isinstance(message_obj, types.CallbackQuery):
             await message_obj.message.delete()
-            await app.send_photo(message_obj.message.chat.id, char['img_url'], caption=caption, parse_mode=enums.ParseMode.HTML)
+            await app.send_photo(message_obj.message.chat.id, char['img_url'], caption=caption, parse_mode=enums.ParseMode.MARKDOWN)
         else:
-            await message_obj.reply_photo(char['img_url'], caption=caption, parse_mode=enums.ParseMode.HTML)
+            await message_obj.reply_photo(char['img_url'], caption=caption, parse_mode=enums.ParseMode.MARKDOWN)
     except errors.MessageNotModified:
         pass
     except Exception as e:

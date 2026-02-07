@@ -4,11 +4,13 @@ from pyrogram import filters, types, enums, errors
 from Grabber import app, collection, user_collection, sudo_users, OWNER_ID, LOGGER
 from config import config
 from Grabber.core.sessions import create_session, get_session
+from Grabber.modules.rarities import RARITY_MAP
+from Grabber.modules.quests import update_quest_progress
 
 # === Configuration ===
 EXTOL_API_KEY = config.EXTOL_API_KEY
 EXTOL_RECEIVER = config.EXTOL_RECEIVER
-SHOP_RARITY = "🪽 Shop"
+SHOP_RARITY = RARITY_MAP[8] # 🪽 Shop
 DEFAULT_PRICE = 75  # Extols (Balanced)
 SHOP_PAGE_SIZE = 5
 ADMINS = list(set(sudo_users + [OWNER_ID]))
@@ -258,6 +260,9 @@ async def buy_character(_, query: types.CallbackQuery):
         },
         upsert=True
     )
+    
+    # Update Quest
+    await update_quest_progress(user_id, "big_spender", price)
 
     await query.message.reply_text(
         f"✅ **Purchase Successful!**\n🎉 You now own **{char['name']}**!",
@@ -286,7 +291,7 @@ async def balance_command(_, message: types.Message):
 @app.on_message(filters.command("setpr") & filters.user(ADMINS))
 async def set_price(_, message: types.Message):
     if len(message.command) != 3:
-        return await message.reply_text("❌ Usage: <code>/setpr &lt;id&gt; &lt;price&gt;</code>", parse_mode=enums.ParseMode.HTML)
+        return await message.reply_text("❌ Usage: `/setpr <id> <price>`", parse_mode=enums.ParseMode.MARKDOWN)
         return
 
     try:

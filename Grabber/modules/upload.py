@@ -3,11 +3,7 @@ from Grabber.app import app
 from Grabber import sudo_users, OWNER_ID, CHARA_CHANNEL_ID, LOGGER
 from Grabber.core.waifu import upload_image_to_imgbb, add_character_to_db, get_character_by_id
 from Grabber.database import collection
-
-RARITY_MAP = {
-    1: "⚪ Common", 2: "🟠 Rare", 3: "🟡 Legendary", 4: "🟢 Medium", 5: "💠 Cosmic",
-    6: "💮 Exclusive", 7: "🔮 Limited Edition", 8: "🪽 Shop", 9: "🫧 Royal", 10: "💎 Antique"
-}
+from Grabber.modules.rarities import RARITY_MAP
 
 WRONG_FORMAT_TEXT = """Wrong ❌️ format...  eg. reply /upload muzan-kibutsuji Demon-slayer 3
 
@@ -91,9 +87,9 @@ async def upload_waifu_handler(_, message: types.Message):
         rarity_text = RARITY_MAP[rarity_num]
 
         caption = (
-            f"<b>Character Name:</b> {char_name}\n"
-            f"<b>Anime Name:</b> {anime_name}\n"
-            f"<b>Rarity:</b> {rarity_text}\n"
+            f"**Character Name:** {char_name}\n"
+            f"**Anime Name:** {anime_name}\n"
+            f"**Rarity:** {rarity_text}\n"
             f"Added by {message.from_user.mention}"
         )
 
@@ -101,7 +97,7 @@ async def upload_waifu_handler(_, message: types.Message):
             chat_id=CHARA_CHANNEL_ID,
             photo=final_url,
             caption=caption,
-            parse_mode=enums.ParseMode.HTML
+            parse_mode=enums.ParseMode.MARKDOWN
         )
 
         char_data = {
@@ -128,7 +124,7 @@ async def upload_waifu_handler(_, message: types.Message):
 @app.on_message(filters.command(["delete", "delhete"]) & filters.user(sudo_users + [OWNER_ID]))
 async def delete_waifu_handler(_, message: types.Message):
     if len(message.command) < 2:
-        return await message.reply_text("❌ Usage: <code>/delete &lt;id&gt;</code>", parse_mode=enums.ParseMode.HTML)
+        return await message.reply_text("❌ Usage: `/delete <id>`", parse_mode=enums.ParseMode.MARKDOWN)
 
     char_id = message.command[1]
     character = await collection.find_one_and_delete({'id': char_id})

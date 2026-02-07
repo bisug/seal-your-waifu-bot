@@ -9,6 +9,104 @@ from Grabber.core.user import get_active_pet
 from Grabber.core.progression import add_xp
 from Grabber.modules.quests import update_quest_progress
 
+# --- Battle Engine ---
+
+def calculate_stats(pet_data):
+    """Calculate total stats based on base values and level."""
+    if not pet_data:
+        # Fallback "Hand-to-Hand" stats
+        return {
+            "name": "Fists",
+            "hp": 80,
+            "atk": 10,
+            "spd": 10,
+            "luck": 0.05,
+            "level": 1
+        }
+    
+    level = pet_data.get("level", 1)
+    base_hp = pet_data.get("hp", 100)
+    base_atk = pet_data.get("atk", 15)
+    base_spd = pet_data.get("spd", 15)
+    
+    # Scaling Formula
+    # HP: +5 per level
+    # ATK: +2 per level
+    # SPD: +1 per level
+    
+    return {
+        "name": pet_data["name"],
+        "hp": base_hp + (level * 5),
+        "atk": base_atk + (level * 2),
+        "spd": base_spd + (level * 1),
+        "luck": pet_data.get("luck", 0.1),
+        "level": level,
+        "max_hp": base_hp + (level * 5)
+    }
+
+def simulate_battle(p1_stats, p2_stats, p1_name, p2_name):
+    """
+    Simulate a turn-based battle.
+    Returns: (winner_index, battle_log)
+    winner_index: 1 for p1, 2 for p2
+    """
+    log = []
+    
+    # Determine Initiative
+    if p1_stats["spd"] >= p2_stats["spd"]:
+        attacker, defender = p1_stats, p2_stats
+        a_name, d_name = p1_name, p2_name
+        a_idx, d_idx = 1, 2
+    else:
+        attacker, defender = p2_stats, p1_stats
+        a_name, d_name = p2_name, p1_name
+        a_idx, d_idx = 2, 1
+        
+    turn = 1
+    max_turns = 15
+    
+    log.append(f"⏱️ **Initiative:** {a_name} ({attacker['spd']} SPD) goes first!")
+    
+    while attacker["hp"] > 0 and defender["hp"] > 0 and turn <= max_turns:
+        # -- Attacker Turn --
+        # Crit check
+        crit_mult = 1.0
+        is_crit = False
+        if random.random() < attacker["luck"]:
+            crit_mult = 1.5
+            is_crit = True
+            
+        # Damage variance +/- 10%
+        variance = random.uniform(0.9, 1.1)
+        damage = int(attacker["atk"] * variance * crit_mult)
+        
+        defender["hp"] -= damage
+        
+        crit_txt = " 💥 **CRIT!**" if is_crit else ""
+        log.append(f"🗡️ **{a_name}** hits for `{damage}`{crit_txt} (HP: {max(0, defender['hp'])})")
+        
+        if defender["hp"] <= 0:
+            break
+            
+        # Swap for next turn (Counter-attack)
+        attacker, defender = defender, attacker
+        a_name, d_name = d_name, a_name
+        a_idx, d_idx = d_idx, a_idx
+        turn += 1
+        
+    winner = a_idx if attacker["hp"] > 0 else d_idx
+    
+    if turn > max_turns:
+        log.append("\n⚠️ **Time Limit Reached!** Draw decided by HP.")
+        if p1_stats["hp"] > p2_stats["hp"]:
+            winner = 1
+        else:
+            winner = 2
+            
+    return winner, "\n".join(log)
+
+# --- Handlers ---
+
 @app.on_message(filters.command("battle") & filters.group)
 async def battle_challenge_handler(_, message: types.Message):
     if not message.reply_to_message:
@@ -24,14 +122,14 @@ async def battle_challenge_handler(_, message: types.Message):
         bet = int(message.command[1])
         if bet <= 0: raise ValueError
     except (IndexError, ValueError):
-        return await message.reply_text("❌ Usage: <code>/battle &lt;bet_amount&gt;</code>", parse_mode=enums.ParseMode.HTML)
+        return await message.reply_text("❌ Usage: `/battle <bet_amount>`", parse_mode=enums.ParseMode.MARKDOWN)
 
     # Fast balance check
     if await get_user_balance(attacker.id) < bet:
-        return await message.reply_text("❌ You don't have enough coins!")
+        return await message.reply_text("❌ You don't have enough coins!", parse_mode=enums.ParseMode.MARKDOWN)
     
     if await get_user_balance(defender.id) < bet:
-        return await message.reply_text(f"❌ {defender.first_name} doesn't have enough coins!")
+        return await message.reply_text(f"❌ {defender.first_name} doesn't have enough coins!", parse_mode=enums.ParseMode.MARKDOWN)
 
     # Store challenge in MongoDB
     battle_id = f"bt_{attacker.id}_{defender.id}"
@@ -65,7 +163,7 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
     if not await check_and_deduct(attacker_id, bet):
         await delete_session(battle_id)
         try:
-            await query.message.edit_text("❌ Attacker no longer has enough balance.")
+            await query.message.edit_text("❌ Attacker no longer has enough balance.", parse_mode=enums.ParseMode.MARKDOWN)
         except errors.MessageNotModified:
             pass
         return
@@ -74,7 +172,7 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
         await update_user_balance(attacker_id, bet)
         await delete_session(battle_id)
         try:
-            await query.message.edit_text("❌ You no longer have enough balance.")
+            await query.message.edit_text("❌ You no longer have enough balance.", parse_mode=enums.ParseMode.MARKDOWN)
         except errors.MessageNotModified:
             pass
         return
@@ -86,56 +184,54 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
         d_user = await app.get_users(defender_id)
         
         # Fetch Pets
-        a_pet = await get_active_pet(attacker_id)
-        d_pet = await get_active_pet(defender_id)
+        a_pet_data = await get_active_pet(attacker_id)
+        d_pet_data = await get_active_pet(defender_id)
         
-        a_luck = a_pet["luck"] if a_pet else 0.0
-        d_luck = d_pet["luck"] if d_pet else 0.0
+        a_stats = calculate_stats(a_pet_data)
+        d_stats = calculate_stats(d_pet_data)
         
-        a_pet_name = a_pet["name"] if a_pet else "Hand-to-Hand"
-        d_pet_name = d_pet["name"] if d_pet else "Hand-to-Hand"
-
+        # Intro
         text = (
-            f"⚔️ <b>Battle Started!</b>\n"
-            f"👤 {a_user.mention} (w/ {a_pet_name})\n"
+            f"⚔️ **Battle Started!**\n"
+            f"👤 {a_user.first_name} - **{a_stats['name']}** (Lvl {a_stats['level']})\n"
+            f"   ❤️ {a_stats['hp']} | ⚔️ {a_stats['atk']} | ⚡ {a_stats['spd']}\n"
             f" 🆚 \n"
-            f"👤 {d_user.mention} (w/ {d_pet_name})\n\n"
-            f"🔥 <b>Fighting...</b>"
+            f"👤 {d_user.first_name} - **{d_stats['name']}** (Lvl {d_stats['level']})\n"
+            f"   ❤️ {d_stats['hp']} | ⚔️ {d_stats['atk']} | ⚡ {d_stats['spd']}\n\n"
+            f"🔥 **Fighting...**"
         )
         try:
-            await query.message.edit_text(text, parse_mode=enums.ParseMode.HTML)
+            await query.message.edit_text(text, parse_mode=enums.ParseMode.MARKDOWN)
         except errors.MessageNotModified:
             pass
-        await app.send_chat_action(query.message.chat.id, enums.ChatAction.TYPING)
         
         await asyncio.sleep(2)
         
-        # Win logic: Base 50% + luck difference (capped at 20% shift)
-        luck_diff = (a_luck - d_luck) * 100
-        luck_diff = max(-20, min(20, luck_diff))
-        a_win_chance = 50 + luck_diff
+        # Simulate
+        winner_idx, battle_log = simulate_battle(a_stats.copy(), d_stats.copy(), a_stats['name'], d_stats['name'])
         
-        roll = random.uniform(0, 100)
-        winner_id = attacker_id if roll <= a_win_chance else defender_id
+        winner_id = attacker_id if winner_idx == 1 else defender_id
+        winner_user = a_user if winner_idx == 1 else d_user
+        losser_user = d_user if winner_idx == 1 else a_user
         winnings = bet * 2
-
-        await update_user_balance(winner_id, winnings)
-        winner_user = a_user if winner_id == attacker_id else d_user
-        winner_pet = a_pet_name if winner_id == attacker_id else d_pet_name
         
-        # Grant XP and update quests for winner
-        await add_xp(winner_id, 20, "battle_win")
-        await update_quest_progress(winner_id,  "battle_veteran", 1)
-
+        # Payout
+        await update_user_balance(winner_id, winnings)
+        
+        # Rewards
+        await add_xp(winner_id, 30, "battle_win")
+        await update_quest_progress(winner_id, "battle_veteran", 1)
+        
+        # Final Message
         result_text = (
-            f"🏆 <b>Winner:</b> {winner_user.mention}\n"
-            f"🐾 <b>MVP:</b> {winner_pet}\n"
-            f"💰 <b>Winnings:</b> {winnings} coins!\n"
-            f"📈 <b>Odds:</b> {int(a_win_chance)}% vs {int(100 - a_win_chance)}%"
+            f"📜 **Battle Log**:\n{battle_log}\n\n"
+            f"🏆 **Winner:** {winner_user.mention}\n"
+            f"💰 **Winnings:** {winnings} coins\n"
+            f"📈 **+30 XP** for {winner_user.first_name}"
         )
-
-        await query.message.reply_text(result_text, parse_mode=enums.ParseMode.HTML)
+        
+        await query.message.edit_text(result_text, parse_mode=enums.ParseMode.MARKDOWN)
 
     except Exception as e:
         LOGGER.error(f"Battle Error: {e}")
-        await query.message.reply_text("❌ A technical error occurred during battle.")
+        await query.message.reply_text("❌ A technical error occurred during battle.", parse_mode=enums.ParseMode.MARKDOWN)

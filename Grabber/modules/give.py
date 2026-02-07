@@ -1,5 +1,6 @@
 from pyrogram import filters, types, enums
 from Grabber import app, user_collection, OWNER_ID, sudo_users, LOGGER
+from Grabber.modules.quests import update_quest_progress
 
 # Authorized users for unlimited balance manipulation
 AUTHORIZED_ADMINS = set(sudo_users + [OWNER_ID])
@@ -22,7 +23,7 @@ async def give_balance(_, message: types.Message):
         if amount <= 0:
             raise ValueError("Amount must be positive")
     except (IndexError, ValueError):
-        await message.reply_text("⚠️ Usage: <code>/givebalance &lt;amount&gt;</code> (Reply to user)", parse_mode=enums.ParseMode.HTML)
+        await message.reply_text("⚠️ Usage: `/givebalance <amount>` (Reply to user)", parse_mode=enums.ParseMode.MARKDOWN)
         return
 
     # Admin bypass for unlimited coins
@@ -46,6 +47,9 @@ async def give_balance(_, message: types.Message):
 
     await message.reply_text(f"✅ You gave {amount} coins to {recipient.first_name}!")
     LOGGER.info(f"User {sender_id} gave {amount} to {recipient_id}")
+    
+    # Update Quest
+    await update_quest_progress(sender_id, "generous_soul", 1)
 
 
 @app.on_message(filters.command("takebalance"))
@@ -70,7 +74,7 @@ async def take_balance(_, message: types.Message):
         if amount <= 0:
             raise ValueError("Amount must be positive")
     except (IndexError, ValueError):
-        await message.reply_text("⚠️ Usage: <code>/takebalance &lt;amount&gt;</code> (Reply to user)", parse_mode=enums.ParseMode.HTML)
+        await message.reply_text("⚠️ Usage: `/takebalance <amount>` (Reply to user)", parse_mode=enums.ParseMode.MARKDOWN)
         return
 
     await user_collection.update_one({'id': recipient_id}, {'$inc': {'balance': -amount}})
