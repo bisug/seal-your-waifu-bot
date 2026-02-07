@@ -20,7 +20,7 @@ async def referrals_cmd(_, message: types.Message):
     text = (
         f"🤝 **Your Referral Stats**\n\n"
         f"👥 **Invited Users:** `{referrals_count}`\n"
-        f"💰 **Coins Earned:** `{earned_coins}`\n\n"
+        f"**Shards Earned:** {earned_coins} ⬪\n\n"
         f"🔗 **Your Link:**\n`{ref_link}`\n\n"
         f"**Rewards:**\n"
         f"🔸 You get: **500 Coins** + **50 XP**\n"

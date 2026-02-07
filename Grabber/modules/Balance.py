@@ -9,11 +9,25 @@ from Grabber.database import user_collection
 
 @app.on_message(filters.command(["balance", "bal"]))
 async def balance_cmd(_, message: types.Message):
-    balance_amount = await get_user_balance(message.from_user.id)
-    await message.reply_text(
-        f"Your balance: 💵 **{balance_amount}** coins",
-        parse_mode=enums.ParseMode.MARKDOWN
+    user_id = message.from_user.id
+    user = await user_collection.find_one({"id": user_id})
+    
+    if not user:
+        shards = 0
+        zenith = 0
+    else:
+        shards = user.get("balance", 0)
+        zenith = user.get("zenith", 0)
+    
+    text = (
+        f"💳 **Your Balance**\n\n"
+        f"**Shards:** {shards:,} ⬪\n"
+        f"**Zenith:** {zenith:,} ⧫\n\n"
+        f"_Exchange: 10,000 ⬪ = 1 ⧫_\n"
+        f"_Use /exchange to convert Shards to Zenith_"
     )
+    
+    await message.reply_text(text, parse_mode=enums.ParseMode.MARKDOWN)
 
 @app.on_message(filters.command("pay") & filters.reply)
 async def pay_cmd(_, message: types.Message):
@@ -45,8 +59,8 @@ async def pay_cmd(_, message: types.Message):
     await message.reply_text(
         f"**💸 Payment Confirmation**\n\n"
         f"**To:** {recipient.mention}\n"
-        f"**Amount:** 💵 `{amount}` coins\n\n"
-        f"_Are you sure you want to send these coins?_",
+        f"**Amount:** {amount:,} ⬪\n\n"
+        f"_Are you sure you want to send these Shards?_",
         reply_markup=types.InlineKeyboardMarkup(buttons),
         parse_mode=enums.ParseMode.MARKDOWN
     )
@@ -77,7 +91,7 @@ async def pay_callback_handler(_, query: types.CallbackQuery):
 
         await query.message.edit_text(
             f"✅ **Payment Successful!**\n\n"
-            f"**Sent:** 💵 `{amount}` coins\n"
+            f"**Sent:** {amount:,} ⬪\n"
             f"**To:** {mention}",
             parse_mode=enums.ParseMode.MARKDOWN
         )
@@ -97,7 +111,7 @@ async def daily_reward_cmd(_, message: types.Message):
 
     await update_user_balance(user_id, 150)
     await user_collection.update_one({"id": user_id}, {"$set": {"last_daily_reward": datetime.now(timezone.utc)}})
-    await message.reply_text("🎉 Claimed **150 coins**!")
+    await message.reply_text("🎉 Claimed 150 ⬪!")
 
 @app.on_message(filters.command("bonus"))
 async def bonus_cmd(_, message: types.Message):
@@ -109,7 +123,7 @@ async def bonus_cmd(_, message: types.Message):
 
     await update_user_balance(user_id, 3000)
     await user_collection.update_one({"id": user_id}, {"$set": {"bonus_claimed": True}})
-    await message.reply_text("🎁 You've claimed **3000 coins**!")
+    await message.reply_text("🎁 You've claimed 3000 ⬪!")
 
 @app.on_message(filters.command("mtop"))
 async def mtop_cmd(_, message: types.Message):

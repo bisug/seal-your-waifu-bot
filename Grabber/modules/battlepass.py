@@ -2,10 +2,10 @@ from pyrogram import filters, types, enums
 from Grabber import user_collection, app
 from Grabber.core.progression import get_user_progress, get_progress_bar, LEVEL_REWARDS
 
-# Pass Tier Prices
+# Pass Tier Prices (Zenith)
 PASS_PRICES = {
-    "premium": 250000,
-    "elite": 600000
+    "premium": 25,
+    "elite": 60
 }
 
 # Pass Tier Emojis
@@ -103,7 +103,7 @@ async def view_pass_inline(query: types.CallbackQuery):
 async def buypass_ask_callback(_, query: types.CallbackQuery):
     tier = query.data.split("_")[1]
     price = PASS_PRICES[tier]
-    text = f"⚠️ **Confirm Upgrade**\n\nUpgrade to **{tier.capitalize()} Pass** for **{price:,} coins**?"
+    text = f"⚠️ **Confirm Upgrade**\n\nUpgrade to **{tier.capitalize()} Pass** for **{price} ⧫**?"
     keyboard = [[
         types.InlineKeyboardButton("Confirm ✅", callback_data=f"buypass_{tier}"),
         types.InlineKeyboardButton("Cancel ❌", callback_data="hub_pass")
@@ -129,16 +129,17 @@ async def buypass_callback(_, query: types.CallbackQuery):
     if tiers_order.index(current_tier) >= tiers_order.index(tier):
         return await query.answer(f"✅ You already have {current_tier.capitalize()} or better!", show_alert=True)
     
-    # Check balance
-    if user.get("balance", 0) < price:
-        return await query.answer(f"❌ Insufficient funds! Need {price:,} coins.", show_alert=True)
+    # Check balance (Zenith)
+    user_zenith = user.get("zenith", 0)
+    if user_zenith < price:
+        return await query.answer(f"❌ Insufficient Zenith! Need {price} ⧫.", show_alert=True)
     
     # Purchase
     await user_collection.update_one(
         {"id": user_id},
         {
             "$set": {"pass_type": tier},
-            "$inc": {"balance": -price}
+            "$inc": {"zenith": -price}
         }
     )
     

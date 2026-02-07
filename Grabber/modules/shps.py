@@ -9,27 +9,11 @@ from Grabber.modules.quests import update_quest_progress
 from Grabber.modules.achievements import check_achievements
 
 # === Configuration ===
-EXTOL_API_KEY =""
-EXTOL_RECEIVER = config.EXTOL_RECEIVER
 SHOP_RARITY = RARITY_MAP[8] # 🪽 Shop
-DEFAULT_PRICE = 75  # Extols (Balanced)
+DEFAULT_ZENITH_PRICE = 5  # Zenith per character
 SHOP_PAGE_SIZE = 5
 ADMINS = list(set(sudo_users + [OWNER_ID]))
 SHOP_BANNER = config.PHOTO_URL[0]
-
-# === Extol API ===
-async def get_extol_balance():
-    async with httpx.AsyncClient() as client:
-        resp = await client.get("https://marketapi.animerealms.org/api/balance",
-                               headers={"api-key": EXTOL_API_KEY}, timeout=30)
-        return resp.json()
-
-async def withdraw_extol(amount, to):
-    async with httpx.AsyncClient() as client:
-        resp = await client.get("https://marketapi.animerealms.org/api/withdraw",
-                               headers={"api-key": EXTOL_API_KEY},
-                               params={"amount": amount, "address": to}, timeout=30)
-        return resp.json()
 
 # === Character Shop ===
 async def get_daily_shop_characters():
@@ -122,18 +106,20 @@ async def send_shop_message(message, user_id):
     chars = session.get("shop", [])
     
     char = chars[page]
-    price = char.get("price", DEFAULT_PRICE)
-    balance_data = await get_extol_balance()
-    balance = balance_data.get("balance", 0)
+    price = char.get("zenith_price", DEFAULT_ZENITH_PRICE)
+    
+    # Get user's Zenith balance
+    user = await user_collection.find_one({"id": user_id})
+    zenith_balance = user.get("zenith", 0) if user else 0
 
     text = (
         f"🛍️ **Character Shop**\n"
-        f"💰 **Extol Balance:** {balance} EXT\n\n"
+        f"⧫ **Zenith Balance:** {zenith_balance:,}\n\n"
         f"🆔 **ID:** {char['id']}\n"
         f"📛 **Name:** {char['name']}\n"
         f"📺 **Anime:** {char['anime']}\n"
         f"🏷 **Rarity:** {char['rarity']}\n"
-        f"💲 **Price:** {price} EXT"
+        f"💲 **Price:** {price} ⧫"
     )
 
     keyboard = [
@@ -199,14 +185,14 @@ async def ask_buy_character(_, query: types.CallbackQuery):
     if not char:
         return await query.answer("❌ Character not found.")
     
-    price = char.get("price", DEFAULT_PRICE)
+    price = char.get("zenith_price", DEFAULT_ZENITH_PRICE)
     text = (
         f"⚠️ **Confirm Purchase**\n\n"
         f"👤 **Name:** {char['name']}\n"
         f"📺 **Anime:** {char['anime']}\n"
         f"🏷 **Rarity:** {char['rarity']}\n"
         f"🆔 **ID:** `{char_id}`\n\n"
-        f"💰 **Price:** {price} EXT\n"
+        f"💰 **Price:** {price} ⧫\n"
         f"Are you sure you want to buy this character?"
     )
     keyboard = [
@@ -235,17 +221,22 @@ async def buy_character(_, query: types.CallbackQuery):
         await query.answer("✅ You already own this character.", show_alert=True)
         return
 
-    price = char.get("price", DEFAULT_PRICE)
+    price = char.get("zenith_price", DEFAULT_ZENITH_PRICE)
     
-    try:
-        payment = await withdraw_extol(price, EXTOL_RECEIVER)
-        if not payment.get("ok"):
-            await query.answer(f"❌ Payment failed: {payment.get('error', 'unknown error')}", show_alert=True)
-            return
-    except Exception as e:
-        LOGGER.error(f"Extol API error: {e}")
-        await query.answer("❌ API Error. Try again later.", show_alert=True)
+    # Check Zenith balance
+    user_zenith = user.get("zenith", 0) if user else 0
+    if user_zenith < price:
+        await query.answer(
+            f"❌ Insufficient Zenith!\n\nYou have: {user_zenith} ⧫\nNeed: {price} ⧫",
+            show_alert=True
+        )
         return
+    
+    # Deduct Zenith
+    await user_collection.update_one(
+        {"id": user_id},
+        {"$inc": {"zenith": -price}}
+    )
 
     await user_collection.update_one(
         {"id": user_id},
@@ -274,33 +265,4 @@ async def buy_character(_, query: types.CallbackQuery):
     )
     await query.answer("Success!")
 
-@app.on_message(filters.command("balances"))
-async def balance_command(_, message: types.Message):
-    try:
-        data = await get_extol_balance()
-        if not data or not data.get("ok"):
-            await message.reply_text("❌ Could not retrieve balance.")
-            return
 
-        balance = data.get("balance", 0)
-        address = data.get("address", "Unknown")
-        await message.reply_text(
-            f"💳 **Extol Balance:** {balance} EXT\n🏦 **Address:** `{address}`",
-            parse_mode=enums.ParseMode.MARKDOWN
-        )
-    except Exception as e:
-        LOGGER.error(f"Balance check error: {e}")
-        await message.reply_text("❌ API connection failed.")
-
-@app.on_message(filters.command("setpr") & filters.user(ADMINS))
-async def set_price(_, message: types.Message):
-    if len(message.command) != 3:
-        return await message.reply_text("❌ Usage: `/setpr <id> <price>`", parse_mode=enums.ParseMode.MARKDOWN)
-        return
-
-    try:
-        char_id, price = message.command[1], int(message.command[2])
-        await collection.update_one({"id": char_id}, {"$set": {"price": price}})
-        await message.reply_text(f"✅ Price updated: {char_id} → {price} EXT")
-    except Exception as e:
-        await message.reply_text(f"❌ Error: {e}")
