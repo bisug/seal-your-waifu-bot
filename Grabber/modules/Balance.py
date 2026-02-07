@@ -23,17 +23,17 @@ async def pay_cmd(_, message: types.Message):
     recipient_id = recipient.id
 
     if recipient_id == sender_id:
-        return await message.reply_text("❌ <b>You cannot pay yourself.</b>", parse_mode=enums.ParseMode.HTML)
+        return await message.reply_text("❌ **You cannot pay yourself.**", parse_mode=enums.ParseMode.MARKDOWN)
 
     try:
         amount = int(message.command[1])
         if amount <= 0: raise ValueError
     except (IndexError, ValueError):
-        return await message.reply_text("❌ <b>Usage:</b> <code>/pay &lt;amount&gt;</code> (reply to user)", parse_mode=enums.ParseMode.HTML)
+        return await message.reply_text("❌ **Usage:** `/pay <amount>` (reply to user)", parse_mode=enums.ParseMode.MARKDOWN)
 
     balance = await get_user_balance(sender_id)
     if balance < amount:
-        return await message.reply_text("❌ <b>Insufficient balance!</b>", parse_mode=enums.ParseMode.HTML)
+        return await message.reply_text("❌ **Insufficient balance!**", parse_mode=enums.ParseMode.MARKDOWN)
 
     buttons = [
         [
@@ -43,12 +43,12 @@ async def pay_cmd(_, message: types.Message):
     ]
 
     await message.reply_text(
-        f"<b>💸 Payment Confirmation</b>\n\n"
-        f"<b>To:</b> {recipient.mention}\n"
-        f"<b>Amount:</b> 💵 <code>{amount}</code> coins\n\n"
-        f"<i>Are you sure you want to send these coins?</i>",
+        f"**💸 Payment Confirmation**\n\n"
+        f"**To:** {recipient.mention}\n"
+        f"**Amount:** 💵 `{amount}` coins\n\n"
+        f"_Are you sure you want to send these coins?_",
         reply_markup=types.InlineKeyboardMarkup(buttons),
-        parse_mode=enums.ParseMode.HTML
+        parse_mode=enums.ParseMode.MARKDOWN
     )
 
 @app.on_callback_query(filters.regex(r"^pay_"))
@@ -58,7 +58,7 @@ async def pay_callback_handler(_, query: types.CallbackQuery):
     action = data[1]
 
     if action == "a":
-        await query.message.edit_text("❌ <b>Payment cancelled.</b>", parse_mode=enums.ParseMode.HTML)
+        await query.message.edit_text("❌ **Payment cancelled.**", parse_mode=enums.ParseMode.MARKDOWN)
         return
 
     recipient_id = int(data[2])
@@ -76,10 +76,10 @@ async def pay_callback_handler(_, query: types.CallbackQuery):
             mention = f"User ID: {recipient_id}"
 
         await query.message.edit_text(
-            f"✅ <b>Payment Successful!</b>\n\n"
-            f"<b>Sent:</b> 💵 <code>{amount}</code> coins\n"
-            f"<b>To:</b> {mention}",
-            parse_mode=enums.ParseMode.HTML
+            f"✅ **Payment Successful!**\n\n"
+            f"**Sent:** 💵 `{amount}` coins\n"
+            f"**To:** {mention}",
+            parse_mode=enums.ParseMode.MARKDOWN
         )
     else:
         await query.answer("❌ Insufficient balance or transaction failed.", show_alert=True)

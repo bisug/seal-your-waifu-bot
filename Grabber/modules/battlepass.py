@@ -39,16 +39,16 @@ async def view_pass(_, message: types.Message):
             break
     
     text = (
-        f"🎫 <b>Battle Pass - Season {season}</b>\n\n"
-        f"{PASS_EMOJI[pass_type]} <b>Tier:</b> {pass_type.capitalize()}\n"
-        f"⭐ <b>Level:</b> {level} / 50\n\n"
-        f"<b>Progress to Level {level + 1}:</b>\n"
+        f"🎫 **Battle Pass - Season {season}**\n\n"
+        f"{PASS_EMOJI[pass_type]} **Tier:** {pass_type.capitalize()}\n"
+        f"⭐ **Level:** {level} / 50\n\n"
+        f"**Progress to Level {level + 1}:**\n"
         f"{progress_bar} {percentage}%\n"
         f"⚡ {xp_current} / {xp_needed} XP\n\n"
     )
     
     if next_milestone:
-        text += f"🎯 <b>Next Milestone:</b> Level {next_milestone}\n"
+        text += f"🎯 **Next Milestone:** Level {next_milestone}\n"
     
     # Show upgrade options if not elite
     buttons = []
@@ -61,7 +61,7 @@ async def view_pass(_, message: types.Message):
     buttons.append([types.InlineKeyboardButton("🎁 View Rewards", callback_data="pass_rewards")])
     
     markup = types.InlineKeyboardMarkup(buttons)
-    await message.reply_text(text, parse_mode=enums.ParseMode.HTML, reply_markup=markup)
+    await message.reply_text(text, parse_mode=enums.ParseMode.MARKDOWN, reply_markup=markup)
 
 # Helper for hub integration
 async def view_pass_inline(query: types.CallbackQuery):
@@ -78,10 +78,10 @@ async def view_pass_inline(query: types.CallbackQuery):
     percentage = int((xp_current / xp_needed) * 100) if xp_needed > 0 else 100
     
     text = (
-        f"🎫 <b>Battle Pass - Season {season}</b>\n\n"
-        f"{PASS_EMOJI[pass_type]} <b>Tier:</b> {pass_type.capitalize()}\n"
-        f"⭐ <b>Level:</b> {level} / 50\n\n"
-        f"<b>Progress to Level {level + 1}:</b>\n"
+        f"🎫 **Battle Pass - Season {season}**\n\n"
+        f"{PASS_EMOJI[pass_type]} **Tier:** {pass_type.capitalize()}\n"
+        f"⭐ **Level:** {level} / 50\n\n"
+        f"**Progress to Level {level + 1}:**\n"
         f"{progress_bar} {percentage}%\n"
         f"⚡ {xp_current} / {xp_needed} XP\n\n"
     )
@@ -96,7 +96,7 @@ async def view_pass_inline(query: types.CallbackQuery):
     buttons.append([types.InlineKeyboardButton("🎁 View Rewards", callback_data="pass_rewards")])
     buttons.append([types.InlineKeyboardButton("⤾ Back to Hub", callback_data="hub_main")])
     
-    await query.message.edit_text(text, parse_mode=enums.ParseMode.HTML, reply_markup=types.InlineKeyboardMarkup(buttons))
+    await query.message.edit_text(text, parse_mode=enums.ParseMode.MARKDOWN, reply_markup=types.InlineKeyboardMarkup(buttons))
 
 # Callback for asking confirmation
 @app.on_callback_query(filters.regex(r"^buyask_(premium|elite)$"))
@@ -108,7 +108,7 @@ async def buypass_ask_callback(_, query: types.CallbackQuery):
         types.InlineKeyboardButton("Confirm ✅", callback_data=f"buypass_{tier}"),
         types.InlineKeyboardButton("Cancel ❌", callback_data="hub_pass")
     ]]
-    await query.message.edit_text(text, parse_mode=enums.ParseMode.HTML, reply_markup=types.InlineKeyboardMarkup(keyboard))
+    await query.message.edit_text(text, parse_mode=enums.ParseMode.MARKDOWN, reply_markup=types.InlineKeyboardMarkup(keyboard))
 
 # Callback for buying pass tiers (Confirmed)
 @app.on_callback_query(filters.regex(r"^buypass_(premium|elite)$"))
@@ -155,13 +155,13 @@ async def buypass_callback(_, query: types.CallbackQuery):
     percentage = int((xp_current / xp_needed) * 100) if xp_needed > 0 else 100
     
     text = (
-        f"🎫 <b>Battle Pass - Season {season}</b>\n\n"
-        f"{PASS_EMOJI[tier]} <b>Tier:</b> {tier.capitalize()}\n"
-        f"⭐ <b>Level:</b> {level} / 50\n\n"
-        f"<b>Progress to Level {level + 1}:</b>\n"
+        f"🎫 **Battle Pass - Season {season}**\n\n"
+        f"{PASS_EMOJI[tier]} **Tier:** {tier.capitalize()}\n"
+        f"⭐ **Level:** {level} / 50\n\n"
+        f"**Progress to Level {level + 1}:**\n"
         f"{progress_bar} {percentage}%\n"
         f"⚡ {xp_current} / {xp_needed} XP\n\n"
-        f"✨ <i>Upgraded rewards active!</i>"
+        f"✨ _Upgraded rewards active!_"
     )
     
     buttons = [[types.InlineKeyboardButton("🎁 View Rewards", callback_data="pass_rewards")]]
@@ -169,7 +169,7 @@ async def buypass_callback(_, query: types.CallbackQuery):
         buttons.insert(0, [types.InlineKeyboardButton("💎 Upgrade to Elite", callback_data="buypass_elite")])
     
     try:
-        await query.message.edit_text(text, parse_mode=enums.ParseMode.HTML, reply_markup=types.InlineKeyboardMarkup(buttons))
+        await query.message.edit_text(text, parse_mode=enums.ParseMode.MARKDOWN, reply_markup=types.InlineKeyboardMarkup(buttons))
     except:
         pass
 
@@ -183,7 +183,7 @@ async def view_rewards_callback(_, query: types.CallbackQuery):
     level = progress["level"]
     claimed = set(progress["claimed_levels"])
     
-    text = f"🎁 <b>Battle Pass Rewards</b>\n\n{PASS_EMOJI[pass_type]} <b>{pass_type.capitalize()} Tier</b>\n\n"
+    text = f"🎁 **Battle Pass Rewards**\n\n{PASS_EMOJI[pass_type]} **{pass_type.capitalize()} Tier**\n\n"
     
     for milestone in sorted(LEVEL_REWARDS.keys()):
         reward = LEVEL_REWARDS[milestone].get(pass_type, "None")
@@ -205,10 +205,10 @@ async def view_rewards_callback(_, query: types.CallbackQuery):
         else:
             status = "🔒"
         
-        text += f"{status} <b>Level {milestone}:</b> {reward_text}\n"
+        text += f"{status} **Level {milestone}:** {reward_text}\n"
     
     buttons = [[types.InlineKeyboardButton("⤾ Back", callback_data="pass_back")]]
-    await query.message.edit_text(text, parse_mode=enums.ParseMode.HTML, reply_markup=types.InlineKeyboardMarkup(buttons))
+    await query.message.edit_text(text, parse_mode=enums.ParseMode.MARKDOWN, reply_markup=types.InlineKeyboardMarkup(buttons))
 
 @app.on_callback_query(filters.regex(r"^pass_back$"))
 async def pass_back_callback(_, query: types.CallbackQuery):
@@ -226,10 +226,10 @@ async def pass_back_callback(_, query: types.CallbackQuery):
     percentage = int((xp_current / xp_needed) * 100) if xp_needed > 0 else 100
     
     text = (
-        f"🎫 <b>Battle Pass - Season {season}</b>\n\n"
-        f"{PASS_EMOJI[pass_type]} <b>Tier:</b> {pass_type.capitalize()}\n"
-        f"⭐ <b>Level:</b> {level} / 50\n\n"
-        f"<b>Progress to Level {level + 1}:</b>\n"
+        f"🎫 **Battle Pass - Season {season}**\n\n"
+        f"{PASS_EMOJI[pass_type]} **Tier:** {pass_type.capitalize()}\n"
+        f"⭐ **Level:** {level} / 50\n\n"
+        f"**Progress to Level {level + 1}:**\n"
         f"{progress_bar} {percentage}%\n"
         f"⚡ {xp_current} / {xp_needed} XP"
     )
@@ -243,7 +243,7 @@ async def pass_back_callback(_, query: types.CallbackQuery):
     
     buttons.append([types.InlineKeyboardButton("🎁 View Rewards", callback_data="pass_rewards")])
     
-    await query.message.edit_text(text, parse_mode=enums.ParseMode.HTML, reply_markup=types.InlineKeyboardMarkup(buttons))
+    await query.message.edit_text(text, parse_mode=enums.ParseMode.MARKDOWN, reply_markup=types.InlineKeyboardMarkup(buttons))
 
 # /level command - Quick level check
 @app.on_message(filters.command("level"))
@@ -258,9 +258,9 @@ async def level_cmd(_, message: types.Message):
     progress_bar = get_progress_bar(xp_current, xp_needed, 10)
     
     text = (
-        f"⭐ <b>Level {level}</b> / 50\n\n"
+        f"⭐ **Level {level}** / 50\n\n"
         f"{progress_bar}\n"
         f"⚡ {xp_current} / {xp_needed} XP"
     )
     
-    await message.reply_text(text, parse_mode=enums.ParseMode.HTML)
+    await message.reply_text(text, parse_mode=enums.ParseMode.MARKDOWN)

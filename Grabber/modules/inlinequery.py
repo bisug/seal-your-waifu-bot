@@ -130,10 +130,10 @@ def create_inline_result(character: dict, neighbors: list, offset: int, context:
     img_url = character["img_url"]
 
     caption = (
-        f"🌸 <b>{name}</b>\n"
-        f"🎬 <b>Anime:</b> {anime}\n"
-        f"🔮 <b>Rarity:</b> {rarity}\n"
-        f"🆔 <b>ID:</b> <code>{char_id}</code>"
+        f"🌸 **{name}**\n"
+        f"🎬 **Anime:** {anime}\n"
+        f"🔮 **Rarity:** {rarity}\n"
+        f"🆔 **ID:** `{char_id}`"
     )
     
     # The message sent to chat will have this keyboard
@@ -147,7 +147,7 @@ def create_inline_result(character: dict, neighbors: list, offset: int, context:
         description=f"🎬 {anime}\n✨ {rarity} | 🆔 {char_id}",
         caption=caption,
         reply_markup=reply_markup,
-        parse_mode=enums.ParseMode.HTML
+        parse_mode=enums.ParseMode.MARKDOWN
     )
 
 
@@ -168,10 +168,10 @@ async def gallery_view_callback(_, query: types.CallbackQuery):
         img_url = character["img_url"]
 
         caption = (
-            f"🌸 <b>{name}</b>\n"
-            f"🎬 <b>Anime:</b> {anime}\n"
-            f"🔮 <b>Rarity:</b> {rarity}\n"
-            f"🆔 <b>ID:</b> <code>{char_id}</code>"
+            f"🌸 **{name}**\n"
+            f"🎬 **Anime:** {anime}\n"
+            f"🔮 **Rarity:** {rarity}\n"
+            f"🆔 **ID:** `{char_id}`"
         )
         
         # We need to reconstruct neighbors logic ideally, but for now 
@@ -182,7 +182,7 @@ async def gallery_view_callback(_, query: types.CallbackQuery):
         ]
         
         await query.message.edit_media(
-            media=types.InputMediaPhoto(media=img_url, caption=caption, parse_mode=enums.ParseMode.HTML),
+            media=types.InputMediaPhoto(media=img_url, caption=caption, parse_mode=enums.ParseMode.MARKDOWN),
             reply_markup=types.InlineKeyboardMarkup(buttons)
         )
         await query.answer()

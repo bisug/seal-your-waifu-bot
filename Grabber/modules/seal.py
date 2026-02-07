@@ -22,7 +22,7 @@ async def seal_handler(_, message: types.Message):
         return # Already caught
 
     if len(message.command) < 2:
-        return await message.reply_text("❌ Provide the character's name! Usage: <code>/seal &lt;name&gt;</code>", parse_mode=enums.ParseMode.HTML)
+        return await message.reply_text("❌ Provide the character's name! Usage: `/seal <name>`", parse_mode=enums.ParseMode.MARKDOWN)
 
     guess = " ".join(message.command[1:]).strip().lower()
     correct_name = character['name'].strip().lower()

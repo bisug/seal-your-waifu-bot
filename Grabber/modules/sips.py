@@ -23,16 +23,16 @@ async def search_character(_, message: types.Message):
         return
 
     # Prepare the response message with found characters
-    response_message = "<b>🔍 Found Characters:</b>\n\n"
+    response_message = "**🔍 Found Characters:**\n\n"
     for character in found_characters[:20]: # Limit for performance and message size
         response_message += f"🆔 `ID: {character['id']}`\n"
         response_message += f"📛 Name: {escape(character['name'])}\n"
         response_message += f"🔮 Rarity: {escape(character['rarity'])}\n\n"
 
     if len(found_characters) > 20:
-        response_message += f"<i>...and {len(found_characters) - 20} more.</i>"
+        response_message += f"_...and {len(found_characters) - 20} more._"
 
-    await message.reply_text(response_message, parse_mode=enums.ParseMode.HTML)
+    await message.reply_text(response_message, parse_mode=enums.ParseMode.MARKDOWN)
 
 @app.on_message(filters.command("sani"))
 async def search_anime(_, message: types.Message):
@@ -55,13 +55,13 @@ async def search_anime(_, message: types.Message):
         return
 
     # Prepare the response message with found characters
-    response_message = f"<b>🎬 Characters from Anime '{escape(anime_title)}':</b>\n\n"
+    response_message = f"**🎬 Characters from Anime '{escape(anime_title)}':**\n\n"
     for character in found_characters[:20]:
         response_message += f"🆔 `ID: {character['id']}`\n"
         response_message += f"📛 Name: {escape(character['name'])}\n"
         response_message += f"🔮 Rarity: {escape(character['rarity'])}\n\n"
 
     if len(found_characters) > 20:
-        response_message += f"<i>...and {len(found_characters) - 20} more.</i>"
+        response_message += f"_...and {len(found_characters) - 20} more._"
 
-    await message.reply_text(response_message, parse_mode=enums.ParseMode.HTML)
+    await message.reply_text(response_message, parse_mode=enums.ParseMode.MARKDOWN)

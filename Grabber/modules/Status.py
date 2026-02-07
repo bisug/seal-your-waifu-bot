@@ -37,17 +37,17 @@ async def status_handler(_, message: types.Message):
 
     first_name = escape(message.from_user.first_name)
     text = (
-        f"📊 <b>{first_name}'s Status</b>\n"
+        f"📊 **{first_name}'s Status**\n"
         f"━━━━━━━━━━━━━━━━━━\n"
-        f"🆔 <b>User ID:</b> <code>{user_id}</code>\n"
-        f"💰 <b>Balance:</b> <code>{user.get('balance', 0)}</code> coins\n"
-        f"🍱 <b>Collected:</b> {char_count}/{total_db_chars}\n"
-        f"📈 <b>Progress:</b> [{bar}] {progress:.1f}%\n"
+        f"🆔 **User ID:** `{user_id}`\n"
+        f"💰 **Balance:** `{user.get('balance', 0)}` coins\n"
+        f"🍱 **Collected:** {char_count}/{total_db_chars}\n"
+        f"📈 **Progress:** [{bar}] {progress:.1f}%\n"
         f"━━━━━━━━━━━━━━━━━━\n"
     )
 
     for rarity, icon in RARITY_ICONS.items():
         count = stats.get(rarity, 0)
-        text += f"{icon} {rarity.split()[-1]}: <code>{count}</code>\n"
+        text += f"{icon} {rarity.split()[-1]}: `{count}`\n"
 
-    await message.reply_text(text, parse_mode=enums.ParseMode.HTML)
+    await message.reply_text(text, parse_mode=enums.ParseMode.MARKDOWN)

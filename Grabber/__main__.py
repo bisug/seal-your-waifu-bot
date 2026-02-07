@@ -16,12 +16,13 @@ from Grabber.core.spawns import (
     set_active_spawn, get_spawn_order, increment_spawn_order,
     get_chat_state, track_user_activity, get_active_user_count
 )
+from Grabber.modules.rarities import RARITY_MAP
 
 # ─── Constants ──────────────────────────────────────────────────────────────
 SPECIAL_GROUP_ID = config.SPECIAL_GROUP_ID
 ROYAL_NOTIFY_USER_ID = config.ROYAL_NOTIFY_USER_ID
 
-rarity_spawn_order = ["⚪ Common", "🟢 Medium", "🟠 Rare", "🟡 Legendary"]
+rarity_spawn_order = [RARITY_MAP[1], RARITY_MAP[4], RARITY_MAP[2], RARITY_MAP[3]]
 special_rarity_thresholds = {
     "💠 Cosmic": 300,
     "💮 Exclusive": 600,
@@ -75,15 +76,23 @@ async def message_counter(_, message: types.Message):
             return
 
     # Check normal spawn cycle
-    freq = await get_chat_frequency(chat_id)
-    if count % int(freq * multiplier) == 0:
+    # Dynamic Frequency based on Active Users
+    active_count = await get_active_user_count(chat_id)
+    
+    if active_count >= 6:
+        base_freq = 50
+    elif active_count >= 3:
+        base_freq = 75
+    else:
+        base_freq = await get_chat_frequency(chat_id)
+
+    if count % int(base_freq * multiplier) == 0:
         # 4. Active Presence Rarity Boost (Sug 2)
-        active_count = await get_active_user_count(chat_id)
         idx = await get_spawn_order(chat_id)
         
         if active_count >= 3:
             # Upgrade: If active, pick from Medium to Cosmic instead of just following order
-            rarities = ["🟢 Medium", "🟠 Rare", "🟡 Legendary", "💠 Cosmic"]
+            rarities = [RARITY_MAP[4], RARITY_MAP[2], RARITY_MAP[3], RARITY_MAP[5]]
             rarity = random.choice(rarities)
         else:
             rarity = rarity_spawn_order[idx % len(rarity_spawn_order)]
@@ -135,7 +144,7 @@ def load_plugins():
 
 async def main():
     """Main entry point using Pyrogram's startup sequence."""
-    LOGGER.info("Initializing Seal-Bot (Strict Pyrogram Mode)...")
+    LOGGER.info("Initializing Seal-Bot...")
     
     # 1. Register background counter in high-priority group
     app.add_handler(MessageHandler(message_counter, filters.group & ~filters.command(["seal", "messagecount"])), group=1)
