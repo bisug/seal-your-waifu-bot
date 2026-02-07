@@ -1,4 +1,5 @@
 import math
+from html import escape
 from pyrogram import filters, types, enums
 from Grabber.app import app
 from Grabber.core.user import get_user_data
