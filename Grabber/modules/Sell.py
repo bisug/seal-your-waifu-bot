@@ -17,19 +17,19 @@ SELL_PRICES = {
 @app.on_message(filters.command("sell"))
 async def sell_handler(_, message: types.Message):
     if len(message.command) < 2:
-        return await message.reply_text("❌ <b>Usage:</b> <code>/sell &lt;id&gt;</code>", parse_mode=enums.ParseMode.HTML)
+        return await message.reply_text("❌ **Usage:** `/sell <id>`", parse_mode=enums.ParseMode.MARKDOWN)
 
     char_id = message.command[1]
     user_id = message.from_user.id
     
     user = await get_user_data(user_id)
     if not user or not user.get('characters'):
-        return await message.reply_text("❌ <b>Your collection is empty.</b>", parse_mode=enums.ParseMode.HTML)
+        return await message.reply_text("❌ **Your collection is empty.**", parse_mode=enums.ParseMode.MARKDOWN)
 
     # Find character to get details
     char = next((c for c in user['characters'] if str(c.get('id')) == char_id), None)
     if not char:
-        return await message.reply_text("❌ <b>You don't own this character.</b>", parse_mode=enums.ParseMode.HTML)
+        return await message.reply_text("❌ **You don't own this character.**", parse_mode=enums.ParseMode.MARKDOWN)
 
     rarity = char.get('rarity', '⚪ Common')
     price = SELL_PRICES.get(rarity, 50)
@@ -42,12 +42,12 @@ async def sell_handler(_, message: types.Message):
     ]
     
     await message.reply_text(
-        f"<b>Selling:</b> {char['name']}\n"
-        f"<b>Rarity:</b> {rarity}\n"
-        f"<b>Value:</b> 💵 {price} coins\n\n"
-        "<i>Are you sure you want to sell this character?</i>",
+        f"**Selling:** {char['name']}\n"
+        f"**Rarity:** {rarity}\n"
+        f"**Value:** 💵 {price} coins\n\n"
+        "_Are you sure you want to sell this character?_",
         reply_markup=types.InlineKeyboardMarkup(buttons),
-        parse_mode=enums.ParseMode.HTML
+        parse_mode=enums.ParseMode.MARKDOWN
     )
 
 @app.on_callback_query(filters.regex(r"^sell_"))
@@ -57,7 +57,7 @@ async def sell_callback_handler(_, query: types.CallbackQuery):
     action = data[1]
 
     if action == "a":
-        await query.message.edit_text("❌ <b>Selling cancelled.</b>", parse_mode=enums.ParseMode.HTML)
+        await query.message.edit_text("❌ **Selling cancelled.**", parse_mode=enums.ParseMode.MARKDOWN)
         return
 
     char_id = data[2]
@@ -78,10 +78,10 @@ async def sell_callback_handler(_, query: types.CallbackQuery):
     if await remove_char_from_user(user_id, char_id):
         await update_user_balance(user_id, price)
         await query.message.edit_text(
-            f"✅ <b>Successfully Sold!</b>\n\n"
-            f"<b>Character:</b> {char['name']}\n"
-            f"<b>Price:</b> 💵 {price} coins balance updated!",
-            parse_mode=enums.ParseMode.HTML
+            f"✅ **Successfully Sold!**\n\n"
+            f"**Character:** {char['name']}\n"
+            f"**Price:** 💵 {price} coins balance updated!",
+            parse_mode=enums.ParseMode.MARKDOWN
         )
     else:
         await query.answer("❌ Failed to sell character.", show_alert=True)

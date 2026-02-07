@@ -7,12 +7,13 @@ from Grabber import user_collection, collection, app
 from Grabber.core.user import add_pet_xp
 from Grabber.core.progression import add_xp
 from Grabber.modules.quests import update_quest_progress
+from Grabber.modules.rarities import RARITY_MAP
 
 # Egg Tiers & Properties
 EGG_TIERS = {
-    "common": {"name": "🥚 Common Egg", "chance": 70, "pool": ["🟢 Medium", "🟠 Rare"], "wait_min": 5},
-    "gold":   {"name": "🌟 Golden Egg", "chance": 25, "pool": ["🟡 Legendary", "💠 Cosmic"], "wait_min": 30},
-    "void":   {"name": "🌌 Void Egg",   "chance": 5,  "pool": ["💮 Exclusive", "🔮 Limited Edition"], "wait_min": 180}
+    "common": {"name": "🥚 Common Egg", "chance": 70, "pool": [RARITY_MAP[4], RARITY_MAP[2]], "wait_min": 5},
+    "gold":   {"name": "🌟 Golden Egg", "chance": 25, "pool": [RARITY_MAP[3], RARITY_MAP[5]], "wait_min": 30},
+    "void":   {"name": "🌌 Void Egg",   "chance": 5,  "pool": [RARITY_MAP[6], RARITY_MAP[7]], "wait_min": 180}
 }
 
 # Risk Mechanic
@@ -72,7 +73,7 @@ async def hunt_cmd(_, message: types.Message):
              
     hunt_cooldowns[user_id] = now
 
-    msg = await message.reply_text(f"🦊 <b>{pet['name']}</b> is going hunting...", parse_mode=enums.ParseMode.HTML)
+    msg = await message.reply_text(f"🦊 **{pet['name']}** is going hunting...", parse_mode=enums.ParseMode.MARKDOWN)
     await asyncio.sleep(2)
 
     coins = random.randint(100, 300)
@@ -81,7 +82,7 @@ async def hunt_cmd(_, message: types.Message):
     bonus_text = ""
     if ability == "Scavenger" and random.random() < 0.2:
         coins *= 2
-        bonus_text += "\n💰 <b>Double Coins!</b> (Scavenger)"
+        bonus_text += "\n💰 **Double Coins!** (Scavenger)"
         
     await user_collection.update_one({"id": user_id}, {"$inc": {"balance": coins}}, upsert=True)
     
@@ -123,25 +124,25 @@ async def hunt_cmd(_, message: types.Message):
             extra_egg["tier"] = "common"
             extra_egg["name"] = "🥚 Bonus Common Egg"
             await user_collection.update_one({"id": user_id}, {"$push": {"eggs": extra_egg}}, upsert=True)
-            bonus_text += "\n🥚 <b>Bonus Egg Found!</b> (Hoarder)"
+            bonus_text += "\n🥚 **Bonus Egg Found!** (Hoarder)"
         
         # Update egg quest
         await update_quest_progress(user_id, "egg_hunter", 1)
 
         await msg.edit_text(
-            f"🎁 <b>Loot Found!</b>\n\n"
-            f"🥚 <b>{tier_data['name']}</b> discovered!\n"
-            f"💰 <b>+{coins} Coins</b>{bonus_text}\n"
-            f"🆙 <b>+{xp_gain} XP</b> for {pet['name']}",
-            parse_mode=enums.ParseMode.HTML
+            f"🎁 **Loot Found!**\n\n"
+            f"🥚 **{tier_data['name']}** discovered!\n"
+            f"💰 **+{coins} Coins**{bonus_text}\n"
+            f"🆙 **+{xp_gain} XP** for {pet['name']}",
+            parse_mode=enums.ParseMode.MARKDOWN
         )
     else:
         await msg.edit_text(
-            f"🌲 <b>Hunt Complete!</b>\n\n"
-            f"💰 <b>+{coins} Coins</b>{bonus_text}\n"
-            f"🆙 <b>+{xp_gain} XP</b> for {pet['name']}\n"
-            f"<i>No eggs found this time.</i>",
-            parse_mode=enums.ParseMode.HTML
+            f"🌲 **Hunt Complete!**\n\n"
+            f"💰 **+{coins} Coins**{bonus_text}\n"
+            f"🆙 **+{xp_gain} XP** for {pet['name']}\n"
+            f"_No eggs found this time._",
+            parse_mode=enums.ParseMode.MARKDOWN
         )
 
 @app.on_message(filters.command("eggs"))
@@ -154,14 +155,14 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
     eggs = user.get("eggs", [])
     
     if not eggs:
-        text = "❌ <b>No eggs found!</b>\n\nUse <code>/hunt</code> to find eggs."
+        text = "❌ **No eggs found!**\n\nUse `/hunt` to find eggs."
         if isinstance(message_or_query, types.CallbackQuery):
             try:
-                await message_or_query.message.edit_text(text, parse_mode=enums.ParseMode.HTML)
+                await message_or_query.message.edit_text(text, parse_mode=enums.ParseMode.MARKDOWN)
             except:
                 pass
         else:
-            await message_or_query.reply_text(text, parse_mode=enums.ParseMode.HTML)
+            await message_or_query.reply_text(text, parse_mode=enums.ParseMode.MARKDOWN)
         return
     
     # Pagination
@@ -175,24 +176,24 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
     status_display = ""
     
     if status == "fresh":
-        status_display = f"🛑 <b>Status:</b> Not incubated\n⏱️ <b>Required:</b> {tier_info['wait_min']} minutes"
+        status_display = f"🛑 **Status:** Not incubated\n⏱️ **Required:** {tier_info['wait_min']} minutes"
         action_button = types.InlineKeyboardButton("🌡️ Start Incubation", callback_data=f"egg_incubate:{page}")
     elif status == "incubating":
         hatch_time = egg.get("hatch_time")
         if hatch_time and datetime.now() < hatch_time:
             remaining = hatch_time - datetime.now()
             mins_left = int(remaining.total_seconds() / 60)
-            status_display = f"⏳ <b>Status:</b> Incubating\n⏱️ <b>Time Left:</b> {mins_left} minutes"
+            status_display = f"⏳ **Status:** Incubating\n⏱️ **Time Left:** {mins_left} minutes"
             action_button = types.InlineKeyboardButton("⏳ Incubating...", callback_data="egg_wait")
         else:
-            status_display = "✅ <b>Status:</b> Ready to hatch!"
+            status_display = "✅ **Status:** Ready to hatch!"
             action_button = types.InlineKeyboardButton("🎁 Hatch Now!", callback_data=f"egg_hatch:{page}")
     
     text = (
-        f"🥚 <b>Egg Inventory</b>\n\n"
-        f"<b>{egg.get('name', 'Unknown Egg')}</b>\n"
+        f"🥚 **Egg Inventory**\n\n"
+        f"**{egg.get('name', 'Unknown Egg')}**\n"
         f"{status_display}\n\n"
-        f"<i>Egg {page + 1} of {len(eggs)}</i>"
+        f"_Egg {page + 1} of {len(eggs)}_"
     )
     
     # Build buttons
@@ -216,9 +217,9 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
     
     try:
         if isinstance(message_or_query, types.CallbackQuery):
-            await message_or_query.message.edit_text(text, parse_mode=enums.ParseMode.HTML, reply_markup=markup)
+            await message_or_query.message.edit_text(text, parse_mode=enums.ParseMode.MARKDOWN, reply_markup=markup)
         else:
-            await message_or_query.reply_text(text, parse_mode=enums.ParseMode.HTML, reply_markup=markup)
+            await message_or_query.reply_text(text, parse_mode=enums.ParseMode.MARKDOWN, reply_markup=markup)
     except errors.MessageNotModified:
         pass
     except Exception as e:
@@ -301,16 +302,16 @@ async def crack_open_egg_inline(query: types.CallbackQuery, user_id: int, egg: d
     # Remove egg from inventory
     await user_collection.update_one({"id": user_id}, {"$pull": {"eggs": {"id": egg["id"]}}})
     
-    await query.message.edit_text("🥚 <b>Cracking open...</b>", parse_mode=enums.ParseMode.HTML)
+    await query.message.edit_text("🥚 **Cracking open...**", parse_mode=enums.ParseMode.MARKDOWN)
     await asyncio.sleep(2)
     
     # Corrupted logic
     if egg.get("is_corrupted", False):
         if random.random() < 0.5:
-            await query.message.edit_text("💥 <b>The egg exploded!</b>\nIt was corrupted...", parse_mode=enums.ParseMode.HTML)
+            await query.message.edit_text("💥 **The egg exploded!**\nIt was corrupted...", parse_mode=enums.ParseMode.MARKDOWN)
             return
         else:
-            rarity = "🫧 Royal"
+            rarity = RARITY_MAP[9] # 🫧 Royal
     else:
         rarity_pool = EGG_TIERS[egg["tier"]]["pool"]
         rarity = random.choice(rarity_pool)
@@ -324,19 +325,19 @@ async def crack_open_egg_inline(query: types.CallbackQuery, user_id: int, egg: d
         # Grant XP
         await add_xp(user_id, 15, "egg_hatch")
         
-        await query.message.edit_text("🎉 <b>Success! Sending details...</b>", parse_mode=enums.ParseMode.HTML)
+        await query.message.edit_text("🎉 **Success! Sending details...**", parse_mode=enums.ParseMode.MARKDOWN)
         await query.message.reply_photo(
             photo=character["img_url"],
             caption=(
-                f"🐣 <b>Hatched Successfully!</b>\n\n"
-                f"📛 <b>{character['name']}</b>\n"
-                f"✨ <b>{rarity}</b>\n"
+                f"🐣 **Hatched Successfully!**\n\n"
+                f"📛 **{character['name']}**\n"
+                f"✨ **{rarity}**\n"
                 f"🎬 {character['anime']}"
             ),
-            parse_mode=enums.ParseMode.HTML
+            parse_mode=enums.ParseMode.MARKDOWN
         )
     else:
-        await query.message.edit_text("⚠️ The egg was empty (DB error).", parse_mode=enums.ParseMode.HTML)
+        await query.message.edit_text("⚠️ The egg was empty (DB error).", parse_mode=enums.ParseMode.MARKDOWN)
 
 # Keep old /hatch command for backwards compatibility but redirect to new UI
 
@@ -349,17 +350,17 @@ async def crack_open_egg(message, user_id, egg, index):
     # Consume Egg
     await user_collection.update_one({"id": user_id}, {"$pull": {"eggs": {"id": egg["id"]}}})
     
-    msg = await message.reply_text("🥚 <b>Cracking open...</b>", parse_mode=enums.ParseMode.HTML)
+    msg = await message.reply_text("🥚 **Cracking open...**", parse_mode=enums.ParseMode.MARKDOWN)
     await asyncio.sleep(2)
     
     # Corrupted Logic
     if egg.get("is_corrupted", False):
         if random.random() < 0.5:
-            await msg.edit_text("💥 <b>The egg exploded!</b>\nIt was corrupted... You got nothing.", parse_mode=enums.ParseMode.HTML)
+            await msg.edit_text("💥 **The egg exploded!**\nIt was corrupted... You got nothing.", parse_mode=enums.ParseMode.MARKDOWN)
             return
         else:
             # Jackpot
-            rarity = "🫧 Royal" 
+            rarity = RARITY_MAP[9] # 🫧 Royal
     else:
         # Standard Pool
         rarity_pool = EGG_TIERS[egg["tier"]]["pool"]
@@ -377,11 +378,11 @@ async def crack_open_egg(message, user_id, egg, index):
         await msg.edit_text("🎉 Success! Sending details...")
         await message.reply_photo(
             photo=character["img_url"],
-            caption=f"🐣 <b>Hatched Successfully!</b>\n\n"
-                    f"📛 <b>{character['name']}</b>\n"
-                    f"✨ <b>{rarity}</b>\n"
+            caption=f"🐣 **Hatched Successfully!**\n\n"
+                    f"📛 **{character['name']}**\n"
+                    f"✨ **{rarity}**\n"
                     f"🎬 {character['anime']}",
-            parse_mode=enums.ParseMode.HTML
+            parse_mode=enums.ParseMode.MARKDOWN
         )
     else:
         await msg.edit_text("⚠️ The egg was empty (Database error: No chars for this rarity).")

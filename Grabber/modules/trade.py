@@ -3,6 +3,7 @@ from Grabber.app import app
 from Grabber import LOGGER
 from Grabber.core.user import get_user_data, update_user
 from Grabber.core.sessions import create_session, get_session, delete_session
+from Grabber.modules.quests import update_quest_progress
 
 @app.on_message(filters.command("trade") & filters.group)
 async def trade_handler(_, message: types.Message):
@@ -16,7 +17,7 @@ async def trade_handler(_, message: types.Message):
         return await message.reply_text("⚠️ No self-trading!")
 
     if len(message.command) != 3:
-        return await message.reply_text("❌ Usage: <code>/trade &lt;your_char_id&gt; &lt;their_char_id&gt;</code>", parse_mode=enums.ParseMode.HTML)
+        return await message.reply_text("❌ Usage: `/trade <your_char_id> <their_char_id>`", parse_mode=enums.ParseMode.MARKDOWN)
 
     s_char_id, r_char_id = message.command[1], message.command[2]
 
@@ -102,6 +103,10 @@ async def trade_callback_handler(_, query: types.CallbackQuery):
         "$pull": {"characters": {"id": r_char['id']}},
         "$push": {"characters": s_char}
     })
+
+    # Update Quest Progress for both users
+    await update_quest_progress(sender_id, "trader", 1)
+    await update_quest_progress(receiver_id, "trader", 1)
 
     await query.message.edit_text(f"✅ Trade successful between {sender_id} and {receiver_id}!")
     LOGGER.info(f"Trade complete: {sender_id} <-> {receiver_id}")

@@ -1,10 +1,11 @@
 from datetime import datetime, timedelta
+import random
 from pyrogram import filters, types, enums
 from Grabber import user_collection, app
 from Grabber.core.progression import add_xp, get_progress_bar
 
-# Quest Definitions
-DAILY_QUESTS = {
+# Quest Definitions - The Pool
+QUEST_POOL = {
     "catch_master": {
         "name": "Catch Master",
         "description": "Catch 5 characters",
@@ -25,22 +26,46 @@ DAILY_QUESTS = {
         "target": 2,
         "reward_xp": 60,
         "icon": "🥚"
+    },
+    "generous_soul": {
+        "name": "Generous Soul",
+        "description": "Gift coins to a player",
+        "target": 1,
+        "reward_xp": 40,
+        "icon": "🎁"
+    },
+    "trader": {
+        "name": "Trader",
+        "description": "Complete a trade",
+        "target": 1,
+        "reward_xp": 50,
+        "icon": "🤝"
+    },
+    "big_spender": {
+        "name": "Big Spender",
+        "description": "Spend 1000 coins/extol",
+        "target": 1000,
+        "reward_xp": 100,
+        "icon": "💸"
     }
 }
 
 async def get_user_quests(user_id: int) -> dict:
     """Get user's quest progress, resetting if it's a new day."""
     user = await user_collection.find_one({"id": user_id})
+    today = datetime.utcnow().date().isoformat()
     
     if not user:
-        # Initialize quests
-        quests_data = {quest_id: {"progress": 0, "claimed": False} for quest_id in DAILY_QUESTS}
+        # Initialize quests for new user
+        selected_keys = random.sample(list(QUEST_POOL.keys()), 3)
+        quests_data = {quest_id: {"progress": 0, "claimed": False} for quest_id in selected_keys}
+        
         await user_collection.update_one(
             {"id": user_id},
             {
                 "$set": {
                     "quests": quests_data,
-                    "quests_reset_date": datetime.utcnow().date().isoformat()
+                    "quests_reset_date": today
                 }
             },
             upsert=True
@@ -49,11 +74,12 @@ async def get_user_quests(user_id: int) -> dict:
     
     # Check if quests need to be reset (new day)
     last_reset = user.get("quests_reset_date")
-    today = datetime.utcnow().date().isoformat()
     
     if last_reset != today:
         # Reset quests for new day
-        quests_data = {quest_id: {"progress": 0, "claimed": False} for quest_id in DAILY_QUESTS}
+        selected_keys = random.sample(list(QUEST_POOL.keys()), 3)
+        quests_data = {quest_id: {"progress": 0, "claimed": False} for quest_id in selected_keys}
+        
         await user_collection.update_one(
             {"id": user_id},
             {
@@ -65,7 +91,7 @@ async def get_user_quests(user_id: int) -> dict:
         )
         return quests_data
     
-    return user.get("quests", {quest_id: {"progress": 0, "claimed": False} for quest_id in DAILY_QUESTS})
+    return user.get("quests", {})
 
 async def update_quest_progress(user_id: int, quest_id: str, increment: int = 1):
     """Update progress for a specific quest."""
@@ -75,7 +101,12 @@ async def update_quest_progress(user_id: int, quest_id: str, increment: int = 1)
         return
     
     quest = quests[quest_id]
-    target = DAILY_QUESTS[quest_id]["target"]
+    
+    # Safety check if quest exists in pool
+    if quest_id not in QUEST_POOL:
+        return
+
+    target = QUEST_POOL[quest_id]["target"]
     
     # Only update if not completed
     if quest["progress"] < target:
@@ -90,11 +121,18 @@ async def view_quests(_, message: types.Message):
     user_id = message.from_user.id
     quests = await get_user_quests(user_id)
     
-    text = "📋 <b>Daily Quests</b>\n\n"
+    if not quests:
+        await message.reply_text("🚫 No quests available right now.", parse_mode=enums.ParseMode.MARKDOWN)
+        return
+
+    text = "📋 **Daily Quests**\n\n"
     
     buttons = []
     for quest_id, quest_data in quests.items():
-        quest_info = DAILY_QUESTS[quest_id]
+        quest_info = QUEST_POOL.get(quest_id)
+        if not quest_info:
+            continue
+
         progress = quest_data.get("progress", 0)
         target = quest_info["target"]
         claimed = quest_data.get("claimed", False)
@@ -114,10 +152,10 @@ async def view_quests(_, message: types.Message):
             status = f"{progress}/{target}"
         
         text += (
-            f"{quest_info['icon']} <b>{quest_info['name']}</b>\n"
+            f"{quest_info['icon']} **{quest_info['name']}**\n"
             f"   {quest_info['description']}\n"
             f"   {progress_bar} {status}\n"
-            f"   Reward: <b>+{quest_info['reward_xp']} XP</b>\n\n"
+            f"   Reward: **+{quest_info['reward_xp']} XP**\n\n"
         )
     
     # Calculate time until reset
@@ -127,10 +165,10 @@ async def view_quests(_, message: types.Message):
     hours = int(time_left.total_seconds() // 3600)
     minutes = int((time_left.total_seconds() % 3600) // 60)
     
-    text += f"⏰ <i>Resets in {hours}h {minutes}m</i>"
+    text += f"⏰ _Resets in {hours}h {minutes}m_"
     
     markup = types.InlineKeyboardMarkup(buttons) if buttons else None
-    await message.reply_text(text, parse_mode=enums.ParseMode.HTML, reply_markup=markup)
+    await message.reply_text(text, parse_mode=enums.ParseMode.MARKDOWN, reply_markup=markup)
 
 @app.on_callback_query(filters.regex(r"^quest_claim:"))
 async def claim_quest_callback(_, query: types.CallbackQuery):
@@ -139,7 +177,7 @@ async def claim_quest_callback(_, query: types.CallbackQuery):
     
     quests = await get_user_quests(user_id)
     quest_data = quests.get(quest_id, {})
-    quest_info = DAILY_QUESTS.get(quest_id)
+    quest_info = QUEST_POOL.get(quest_id)
     
     if not quest_info:
         return await query.answer("❌ Quest not found!", show_alert=True)
@@ -167,11 +205,14 @@ async def claim_quest_callback(_, query: types.CallbackQuery):
     # Refresh quest display
     quests = await get_user_quests(user_id)
     
-    text = "📋 <b>Daily Quests</b>\n\n"
+    text = "📋 **Daily Quests**\n\n"
     buttons = []
     
     for qid, qdata in quests.items():
-        qinfo = DAILY_QUESTS[qid]
+        qinfo = QUEST_POOL.get(qid)
+        if not qinfo:
+            continue
+            
         progress = qdata.get("progress", 0)
         target = qinfo["target"]
         claimed = qdata.get("claimed", False)
@@ -187,10 +228,10 @@ async def claim_quest_callback(_, query: types.CallbackQuery):
             status = f"{progress}/{target}"
         
         text += (
-            f"{qinfo['icon']} <b>{qinfo['name']}</b>\n"
+            f"{qinfo['icon']} **{qinfo['name']}**\n"
             f"   {qinfo['description']}\n"
             f"   {progress_bar} {status}\n"
-            f"   Reward: <b>+{qinfo['reward_xp']} XP</b>\n\n"
+            f"   Reward: **+{qinfo['reward_xp']} XP**\n\n"
         )
     
     now = datetime.utcnow()
@@ -199,9 +240,9 @@ async def claim_quest_callback(_, query: types.CallbackQuery):
     hours = int(time_left.total_seconds() // 3600)
     minutes = int((time_left.total_seconds() % 3600) // 60)
     
-    text += f"⏰ <i>Resets in {hours}h {minutes}m</i>"
+    text += f"⏰ _Resets in {hours}h {minutes}m_"
     
     try:
-        await query.message.edit_text(text, parse_mode=enums.ParseMode.HTML, reply_markup=types.InlineKeyboardMarkup(buttons) if buttons else None)
+        await query.message.edit_text(text, parse_mode=enums.ParseMode.MARKDOWN, reply_markup=types.InlineKeyboardMarkup(buttons) if buttons else None)
     except:
         pass

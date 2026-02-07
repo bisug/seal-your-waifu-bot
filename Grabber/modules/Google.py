@@ -12,19 +12,19 @@ COMMANDS = ["reverse", "trace", "whatanime", "grs"]
 
 class STRINGS:
     REPLY_TO_MEDIA = "ℹ️ Please reply to an anime screenshot (photo, sticker, or image file) to identify it."
-    UNSUPPORTED_MEDIA_TYPE = "⚠️ <b>Unsupported media type!</b>\nℹ️ Please reply with a photo or document."
-    REQUESTING_API_SERVER = "📡 Searching <b>Trace.moe</b> database... 📶"
+    UNSUPPORTED_MEDIA_TYPE = "⚠️ **Unsupported media type!**\nℹ️ Please reply with a photo or document."
+    REQUESTING_API_SERVER = "📡 Searching **Trace.moe** database... 📶"
     DOWNLOADING_MEDIA = "⏳ Downloading image..."
     UPLOADING_TO_API_SERVER = "📡 Identifying anime scene... 📶"
     PARSING_RESULT = "💻 Parsing match..."
-    EXCEPTION_OCCURRED = "❌ <b>Error:</b> {}"
+    EXCEPTION_OCCURRED = "❌ **Error:** {}"
     RESULT = """
-🌸 <b>Anime:</b> {title}
-� <b>Similarity:</b> <code>{similarity}%</code>
-🎞 <b>Episode:</b> <code>{episode}</code>
-🎬 <b>At:</b> <code>{timestamp}</code>
+🌸 **Anime:** {title}
+💎 **Similarity:** `{similarity}%`
+🎞 **Episode:** `{episode}`
+🎬 **At:** `{timestamp}`
 
-🔗 <a href="https://anilist.co/anime/{anilist_id}">Anilist Link</a>
+🔗 [Anilist Link](https://anilist.co/anime/{anilist_id})
     """
 
 @Grabberu.on_message(filters.command(COMMANDS))
@@ -61,7 +61,7 @@ async def on_trace_moe_search(_, message: types.Message):
 
         data = response.json()
         if not data.get("result"):
-            return await message.reply("❌ <b>No match found!</b> Try a clearer screenshot.", parse_mode=enums.ParseMode.HTML)
+            return await message.reply("❌ **No match found!** Try a clearer screenshot.", parse_mode=enums.ParseMode.MARKDOWN)
 
         # Get best match
         match = data["result"][0]
@@ -90,7 +90,7 @@ async def on_trace_moe_search(_, message: types.Message):
             photo=match.get("image"),
             caption=text,
             reply_markup=types.InlineKeyboardMarkup(buttons) if buttons else None,
-            parse_mode=enums.ParseMode.HTML
+            parse_mode=enums.ParseMode.MARKDOWN
         )
         
         if status_msg:

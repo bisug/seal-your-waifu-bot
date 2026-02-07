@@ -7,25 +7,25 @@ from Grabber.database import total_pm_users
 LOGGER.info("Loading Start module...")
 
 START_TEXT = """
-<b>✨ Welcome to {bot_name}! ✨</b>
+**✨ Welcome to {bot_name}! ✨**
 
-<b>Hey {first_name}!</b> I am your ultimate companion for <b>Character Catching & PvP Battles!</b>
+**Hey {first_name}!** I am your ultimate companion for **Character Catching & PvP Battles!**
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
-<b>🔥 Core Features:</b>
-🌸 <b>Catch</b> rare anime characters.
-⚔️ <b>Battle</b> other players with your characters.
-🐣 <b>Hatch</b> eggs and grow your collection.
-🎫 <b>Progress</b> through the Battle Pass!
+**🔥 Core Features:**
+🌸 **Catch** rare anime characters.
+⚔️ **Battle** other players with your characters.
+🐣 **Hatch** eggs and grow your collection.
+🎫 **Progress** through the Battle Pass!
 ━━━━━━━━━━━━━━━━━━━━━━━━
 
-<i>Add me to your group and start your journey today!</i>
+_Add me to your group and start your journey today!_
 """
 
 # Help Categories
 HELP_DATA = {
     "MAIN": {
-        "text": "<b>📚 Seal Bot - Help Menu</b>\n\nSelect a category below to see available commands:",
+        "text": "**📚 Seal Bot - Help Menu**\n\nSelect a category below to see available commands:",
         "buttons": [
             [types.InlineKeyboardButton("🎮 Core Basics", callback_data="help:core"),
              types.InlineKeyboardButton("🐾 Pet System", callback_data="help:pet")],
@@ -37,57 +37,57 @@ HELP_DATA = {
     },
     "CORE": {
         "text": """
-<b>🎮 Core Commands</b>
+**🎮 Core Commands**
 
-🔹 <code>/seal &lt;name&gt;</code> - Catch a spawned character
-🔹 <code>/harem</code> - View your character collection
-🔹 <code>/fav &lt;id&gt;</code> - Set a favorite character
-🔹 <code>/trade &lt;my_id&gt; &lt;their_id&gt;</code> - Trade with others
-🔹 <code>/gift &lt;id&gt;</code> - Gift a character to a user
+🔹 `/seal <name>` - Catch a spawned character
+🔹 `/harem` - View your character collection
+🔹 `/fav <id>` - Set a favorite character
+🔹 `/trade <my_id> <their_id>` - Trade with others
+🔹 `/gift <id>` - Gift a character to a user
 """,
     },
     "PET": {
         "text": """
-<b>🐾 Pet System</b>
+**🐾 Pet System**
 
-🔹 <code>/petshop</code> - Buy powerful pets
-🔹 <code>/mypet</code> - Manage active pet & view stats
-🔹 <code>/hunt</code> - Send pet to find loot & XP
-🔹 <code>/eggs</code> - Check your egg inventory
-🔹 <code>/hatch</code> - Hatch eggs for characters
+🔹 `/petshop` - Buy powerful pets
+🔹 `/mypet` - Manage active pet & view stats
+🔹 `/hunt` - Send pet to find loot & XP
+🔹 `/eggs` - Check your egg inventory
+🔹 `/hatch` - Hatch eggs for characters
 """,
     },
     "BATTLE": {
         "text": """
-<b>⚔️ Battle & Economy</b>
+**⚔️ Battle & Economy**
 
-🔹 <code>/battle &lt;amount&gt;</code> - PvP duel (Pets boost win rate!)
-🔹 <code>/balance</code> - Check your coins
-🔹 <code>/shop</code> - Buy premium characters
-🔹 <code>/daily</code> - Claim daily rewards
-🔹 <code>/top</code> - Global leaderboard
+🔹 `/battle <amount>` - PvP duel (Pets boost win rate!)
+🔹 `/balance` - Check your coins
+🔹 `/shop` - Buy premium characters
+🔹 `/daily` - Claim daily rewards
+🔹 `/top` - Global leaderboard
 """,
     },
     "INFO": {
         "text": """
-<b>ℹ️ Info & Stats</b>
+**ℹ️ Info & Stats**
 
-🔹 <code>/stats</code> - Global bot statistics
-🔹 <code>/rarities</code> - Character counts by rarity
-🔹 <code>/ping</code> - Real-time system status
-🔹 <code>/help</code> - Show this interactive menu
+🔹 `/stats` - Global bot statistics
+🔹 `/rarities` - Character counts by rarity
+🔹 `/ping` - Real-time system status
+🔹 `/help` - Show this interactive menu
 """,
     },
     "PROGRESSION": {
         "text": """
-<b>🎫 Battle Pass & Progression</b>
+**🎫 Battle Pass & Progression**
 
-🔹 <code>/pass</code> - View your Battle Pass (Free/Premium/Elite)
-🔹 <code>/level</code> - Quick level & XP check
-🔹 <code>/quests</code> - View & claim daily quests
+🔹 `/pass` - View your Battle Pass (Free/Premium/Elite)
+🔹 `/level` - Quick level & XP check
+🔹 `/quests` - View & claim daily quests
 
-<i>💡 Gain XP by catching, battling, and hatching!</i>
-<i>🎁 Unlock rewards at levels 5, 10, 25, and 50</i>
+_💡 Gain XP by catching, battling, and hatching!_
+_🎁 Unlock rewards at levels 5, 10, 25, and 50_
 """,
     }
 }
@@ -118,10 +118,10 @@ async def start_handler(_, message: types.Message):
             photo=random_photo(),
             caption=text,
             reply_markup=markup,
-            parse_mode=enums.ParseMode.HTML
+            parse_mode=enums.ParseMode.MARKDOWN
         )
     else:
-        await message.reply_text("✅ <b>I'm active and ready to drop characters!</b>", parse_mode=enums.ParseMode.HTML)
+        await message.reply_text("✅ **I'm active and ready to drop characters!**", parse_mode=enums.ParseMode.MARKDOWN)
 
 # Handle Start Menu & Back
 @app.on_callback_query(filters.regex(r"^st:(h|b)"))
@@ -140,9 +140,9 @@ async def start_callback_handler(_, query: types.CallbackQuery):
     
     try:
         if query.message.photo:
-            await query.message.edit_caption(text, reply_markup=markup, parse_mode=enums.ParseMode.HTML)
+            await query.message.edit_caption(text, reply_markup=markup, parse_mode=enums.ParseMode.MARKDOWN)
         else:
-            await query.message.edit_text(text, reply_markup=markup, parse_mode=enums.ParseMode.HTML)
+            await query.message.edit_text(text, reply_markup=markup, parse_mode=enums.ParseMode.MARKDOWN)
     except errors.MessageNotModified:
         pass
     
@@ -166,9 +166,9 @@ async def help_callback_handler(_, query: types.CallbackQuery):
 
     try:
         if query.message.photo:
-            await query.message.edit_caption(text, reply_markup=markup, parse_mode=enums.ParseMode.HTML)
+            await query.message.edit_caption(text, reply_markup=markup, parse_mode=enums.ParseMode.MARKDOWN)
         else:
-            await query.message.edit_text(text, reply_markup=markup, parse_mode=enums.ParseMode.HTML)
+            await query.message.edit_text(text, reply_markup=markup, parse_mode=enums.ParseMode.MARKDOWN)
     except errors.MessageNotModified:
         pass
     

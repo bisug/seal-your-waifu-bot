@@ -10,8 +10,8 @@ from Grabber import LOGGER
 from Grabber.core.user import get_user_data
 
 FORMATS = [
-    "⧉ {anime} [🎮] ⦋{page}/{total_pages}⦌\n⤷〔<b>{rarity}</b>〕 {name} (ID: <code>{id}</code>) ×{count}",
-    "⧉ {anime} [🎮] ⦋{page}/{total_pages}⦌\n⤷ ᴷᴱʸ: <code>{id}</code> - {name} [Rarity: <b>{rarity}</b>] ×{count}",
+    "⧉ {anime} [🎮] ⦋{page}/{total_pages}⦌\n⤷〔**{rarity}**〕 {name} (ID: `{id}`) ×{count}",
+    "⧉ {anime} [🎮] ⦋{page}/{total_pages}⦌\n⤷ ᴷᴱʸ: `{id}` - {name} [Rarity: **{rarity}**] ×{count}",
 ]
 
 @app.on_message(filters.command(["harem", "collection"]))
@@ -28,10 +28,10 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
     try:
         user = await get_user_data(user_id)
         if not user or not user.get('characters'):
-            text = "❌ <b>You don't have any characters yet!</b>\n\n<i>Go catch some waifus first!</i>"
+            text = "❌ **You don't have any characters yet!**\n\n_Go catch some waifus first!_"
             if isinstance(message_obj, types.CallbackQuery):
                 return await message_obj.answer(text, show_alert=True)
-            return await message_obj.reply_text(text, parse_mode=enums.ParseMode.HTML)
+            return await message_obj.reply_text(text, parse_mode=enums.ParseMode.MARKDOWN)
 
         all_chars = user['characters']
         
@@ -61,10 +61,10 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
         
         # Header construction
         header_lines = [
-            f"🎒 <b>{escape(first_name)}'s Collection</b>",
+            f"🎒 **{escape(first_name)}'s Collection**",
             "━━━━━━━━━━━━━━━━━━━━━",
-            f"📑 <b>Page:</b> <code>{page + 1}/{total_pages}</code>",
-            f"✨ <b>Characters:</b> <code>{len(all_chars)}</code> total",
+            f"📑 **Page:** `{page + 1}/{total_pages}`",
+            f"✨ **Characters:** `{len(all_chars)}` total",
             ""
         ]
         harem_text = "\n".join(header_lines)
@@ -101,21 +101,21 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
         if isinstance(message_obj, types.CallbackQuery):
             if pic:
                  await message_obj.edit_message_media(
-                    media=types.InputMediaPhoto(media=pic, caption=harem_text, parse_mode=enums.ParseMode.HTML),
+                    media=types.InputMediaPhoto(media=pic, caption=harem_text, parse_mode=enums.ParseMode.MARKDOWN),
                     reply_markup=markup
                 )
             else:
-                await message_obj.edit_message_text(text=harem_text, reply_markup=markup, parse_mode=enums.ParseMode.HTML)
+                await message_obj.edit_message_text(text=harem_text, reply_markup=markup, parse_mode=enums.ParseMode.MARKDOWN)
         else:
             if pic:
                 await message_obj.reply_photo(
                     photo=pic,
                     caption=harem_text,
                     reply_markup=markup,
-                    parse_mode=enums.ParseMode.HTML
+                    parse_mode=enums.ParseMode.MARKDOWN
                 )
             else:
-                 await message_obj.reply_text(harem_text, reply_markup=markup, parse_mode=enums.ParseMode.HTML)
+                 await message_obj.reply_text(harem_text, reply_markup=markup, parse_mode=enums.ParseMode.MARKDOWN)
 
     except errors.MessageNotModified:
         pass

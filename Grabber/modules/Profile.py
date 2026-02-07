@@ -10,7 +10,7 @@ async def my_profile(_, message: types.Message):
     user_data = await user_collection.find_one({'id': user_id})
 
     if not user_data:
-        return await message.reply_text("🚨 <b>No profile found!</b> Try collecting a character first.", parse_mode=enums.ParseMode.HTML)
+        return await message.reply_text("🚨 **No profile found!** Try collecting a character first.", parse_mode=enums.ParseMode.MARKDOWN)
 
     user_name = message.from_user.first_name
     user_balance = user_data.get('balance', 0)
@@ -39,18 +39,18 @@ async def my_profile(_, message: types.Message):
     pbar = get_progress_bar(xp_current, xp_needed, 10)
 
     profile_message = (
-        f"<b>🌟 USER PROFILE 🌟</b>\n"
+        f"**🌟 USER PROFILE 🌟**\n"
         f"━━━━━━━━━━━━━━━━━━━━━\n"
-        f"� <b>Name:</b> {user_name}\n"
-        f"🆔 <b>ID:</b> <code>{user_id}</code>\n"
-        f"🎫 <b>Tier:</b> {pass_type}\n\n"
-        f"⭐ <b>Level:</b> <code>{level}</code>\n"
-        f"📊 <b>XP:</b> {pbar} <code>{xp_current}/{xp_needed}</code>\n"
+        f"👤 **Name:** {user_name}\n"
+        f"🆔 **ID:** `{user_id}`\n"
+        f"🎫 **Tier:** {pass_type}\n\n"
+        f"⭐ **Level:** `{level}`\n"
+        f"📊 **XP:** {pbar} `{xp_current}/{xp_needed}`\n"
         f"━━━━━━━━━━━━━━━━━━━━━\n"
-        f"💵 <b>Balance:</b> <code>{user_balance:,}</code> coins\n"
-        f"🎒 <b>Characters:</b> <code>{characters_count}</code> collected\n"
-        f"❤️ <b>Favorite:</b> <code>{fav_name}</code>\n"
-        f"🐾 <b>Active Pet:</b> <code>{pet_text}</code>\n"
+        f"💵 **Balance:** `{user_balance:,}` coins\n"
+        f"🎒 **Characters:** `{characters_count}` collected\n"
+        f"❤️ **Favorite:** `{fav_name}`\n"
+        f"🐾 **Active Pet:** `{pet_text}`\n"
         f"━━━━━━━━━━━━━━━━━━━━━\n"
     )
 
@@ -63,8 +63,8 @@ async def my_profile(_, message: types.Message):
             photo=pic, 
             caption=profile_message, 
             reply_markup=types.InlineKeyboardMarkup(buttons),
-            parse_mode=enums.ParseMode.HTML
+            parse_mode=enums.ParseMode.MARKDOWN
         )
     except Exception as e:
         LOGGER.error(f"Profile Error: {e}")
-        await message.reply_text(profile_message, parse_mode=enums.ParseMode.HTML)
+        await message.reply_text(profile_message, parse_mode=enums.ParseMode.MARKDOWN)

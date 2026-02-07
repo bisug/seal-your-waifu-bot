@@ -28,15 +28,15 @@ async def get_target_user(message: types.Message):
 @app.on_message(filters.command("givecoin"))
 async def give_coin_handler(_, message: types.Message):
     if message.from_user.id not in AUTHORIZED_CONSOLES:
-        return await message.reply_text("❌ <b>Unauthorized. Only for Admins.</b>", parse_mode=enums.ParseMode.HTML)
+        return await message.reply_text("❌ **Unauthorized. Only for Admins.**", parse_mode=enums.ParseMode.MARKDOWN)
 
     user_id, amount, name = await get_target_user(message)
     if not user_id or amount <= 0:
         return await message.reply_text(
-            "❌ <b>Invalid Format!</b>\n\n"
-            "1️⃣ <b>Reply:</b> <code>/givecoin &lt;amount&gt;</code>\n"
-            "2️⃣ <b>Direct:</b> <code>/givecoin &lt;user_id&gt; &lt;amount&gt;</code>",
-            parse_mode=enums.ParseMode.HTML
+            "❌ **Invalid Format!**\n\n"
+            "1️⃣ **Reply:** `/givecoin <amount>`\n"
+            "2️⃣ **Direct:** `/givecoin <user_id> <amount>`",
+            parse_mode=enums.ParseMode.MARKDOWN
         )
 
     buttons = [[
@@ -45,27 +45,27 @@ async def give_coin_handler(_, message: types.Message):
     ]]
 
     await message.reply_text(
-        f"<b>🏦 Admin Transfer</b>\n\n"
-        f"<b>Action:</b> GIVING Coins\n"
-        f"<b>Target:</b> {name}\n"
-        f"<b>Amount:</b> 💵 <code>{amount:,}</code> coins\n\n"
-        "<i>Confirm this action?</i>",
+        f"**🏦 Admin Transfer**\n\n"
+        f"**Action:** GIVING Coins\n"
+        f"**Target:** {name}\n"
+        f"**Amount:** 💵 `{amount:,}` coins\n\n"
+        "_Confirm this action?_",
         reply_markup=types.InlineKeyboardMarkup(buttons),
-        parse_mode=enums.ParseMode.HTML
+        parse_mode=enums.ParseMode.MARKDOWN
     )
 
 @app.on_message(filters.command("takecoin"))
 async def take_coin_handler(_, message: types.Message):
     if message.from_user.id not in AUTHORIZED_CONSOLES:
-        return await message.reply_text("❌ <b>Unauthorized. Only for Admins.</b>", parse_mode=enums.ParseMode.HTML)
+        return await message.reply_text("❌ **Unauthorized. Only for Admins.**", parse_mode=enums.ParseMode.MARKDOWN)
 
     user_id, amount, name = await get_target_user(message)
     if not user_id or amount <= 0:
         return await message.reply_text(
-            "❌ <b>Invalid Format!</b>\n\n"
-            "1️⃣ <b>Reply:</b> <code>/takecoin &lt;amount&gt;</code>\n"
-            "2️⃣ <b>Direct:</b> <code>/takecoin &lt;user_id&gt; &lt;amount&gt;</code>",
-            parse_mode=enums.ParseMode.HTML
+            "❌ **Invalid Format!**\n\n"
+            "1️⃣ **Reply:** `/takecoin <amount>`\n"
+            "2️⃣ **Direct:** `/takecoin <user_id> <amount>`",
+            parse_mode=enums.ParseMode.MARKDOWN
         )
 
     buttons = [[
@@ -74,13 +74,13 @@ async def take_coin_handler(_, message: types.Message):
     ]]
 
     await message.reply_text(
-        f"<b>🏦 Admin Deduction</b>\n\n"
-        f"<b>Action:</b> TAKING Coins\n"
-        f"<b>Target:</b> {name}\n"
-        f"<b>Amount:</b> 💵 <code>{amount:,}</code> coins\n\n"
-        "<i>Confirm this action?</i>",
+        f"**🏦 Admin Deduction**\n\n"
+        f"**Action:** TAKING Coins\n"
+        f"**Target:** {name}\n"
+        f"**Amount:** 💵 `{amount:,}` coins\n\n"
+        "_Confirm this action?_",
         reply_markup=types.InlineKeyboardMarkup(buttons),
-        parse_mode=enums.ParseMode.HTML
+        parse_mode=enums.ParseMode.MARKDOWN
     )
 
 @app.on_callback_query(filters.regex(r"^admin_coin_"))
@@ -92,7 +92,7 @@ async def admin_coin_callback(_, query: types.CallbackQuery):
     action = data[2] # give or take or cancel
 
     if action == "cancel":
-        await query.message.edit_text("❌ <b>Admin action cancelled.</b>", parse_mode=enums.ParseMode.HTML)
+        await query.message.edit_text("❌ **Admin action cancelled.**", parse_mode=enums.ParseMode.MARKDOWN)
         return
 
     target_id = int(data[3])
@@ -100,10 +100,10 @@ async def admin_coin_callback(_, query: types.CallbackQuery):
     
     if action == "give":
         await user_collection.update_one({"id": target_id}, {"$inc": {"balance": amount}}, upsert=True)
-        text = f"✅ <b>Successfully added {amount:,} coins!</b>"
+        text = f"✅ **Successfully added {amount:,} coins!**"
     else: # take
         await user_collection.update_one({"id": target_id}, {"$inc": {"balance": -amount}}, upsert=True)
-        text = f"✅ <b>Successfully removed {amount:,} coins!</b>"
+        text = f"✅ **Successfully removed {amount:,} coins!**"
 
     # Get new balance
     user = await user_collection.find_one({"id": target_id}, {"balance": 1, "first_name": 1})
@@ -112,7 +112,7 @@ async def admin_coin_callback(_, query: types.CallbackQuery):
 
     await query.message.edit_text(
         f"{text}\n\n"
-        f"<b>User:</b> {name}\n"
-        f"<b>Final Balance:</b> 💵 <code>{bal:,}</code>",
-        parse_mode=enums.ParseMode.HTML
+        f"**User:** {name}\n"
+        f"**Final Balance:** 💵 `{bal:,}`",
+        parse_mode=enums.ParseMode.MARKDOWN
     )

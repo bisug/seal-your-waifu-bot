@@ -5,6 +5,9 @@ from Grabber import app, user_collection, PHOTO_URL, LOGGER
 DEFAULT_PET = {
     "name": "Fluffy Fox 🦊",
     "luck": 0.10,
+    "hp": 100,
+    "atk": 15,
+    "spd": 20,
     "level": 1,
     "xp": 0,
     "owned": True,
@@ -15,21 +18,22 @@ DEFAULT_PET = {
 
 # Pet Shop List
 PET_SHOP = [
-    {"name": "Blaze Fang 🐺", "luck": 0.15, "level": 1, "xp": 0, "price": 15000, "ability": "Scavenger", "desc": "20% Chance for Double Coins", "img": "https://i.ibb.co/fd1qPVJs/file-89.jpg"},
-    {"name": "Shadow Panther 🐆", "luck": 0.25, "level": 1, "xp": 0, "price": 45000, "ability": "Speedster", "desc": "-10s Hunt Cooldown", "img": "https://i.ibb.co/8CdC5QG/file-86.jpg"},
-    {"name": "Cosmic Phoenix 🦅", "luck": 0.35, "level": 1, "xp": 0, "price": 120000, "ability": "Caregiver", "desc": "50% Faster Egg Hatching", "img": "https://i.ibb.co/b5CrL8rp/file-84.jpg"},
-    {"name": "Mystic Dragon 🐲", "luck": 0.50, "level": 1, "xp": 0, "price": 250000, "ability": "Hoarder", "desc": "5% Chance for Bonus Egg", "img": "https://files.catbox.moe/7kvcqj.jpg"},
+    {"name": "Blaze Fang 🐺", "luck": 0.15, "hp": 120, "atk": 25, "spd": 15, "level": 1, "xp": 0, "price": 15000, "ability": "Scavenger", "desc": "20% Chance for Double Coins", "img": "https://i.ibb.co/fd1qPVJs/file-89.jpg"},
+    {"name": "Shadow Panther 🐆", "luck": 0.25, "hp": 90, "atk": 30, "spd": 35, "level": 1, "xp": 0, "price": 45000, "ability": "Speedster", "desc": "-10s Hunt Cooldown", "img": "https://i.ibb.co/8CdC5QG/file-86.jpg"},
+    {"name": "Cosmic Phoenix 🦅", "luck": 0.35, "hp": 150, "atk": 20, "spd": 25, "level": 1, "xp": 0, "price": 120000, "ability": "Caregiver", "desc": "50% Faster Egg Hatching", "img": "https://i.ibb.co/b5CrL8rp/file-84.jpg"},
+    {"name": "Mystic Dragon 🐲", "luck": 0.50, "hp": 200, "atk": 35, "spd": 10, "level": 1, "xp": 0, "price": 250000, "ability": "Hoarder", "desc": "5% Chance for Bonus Egg", "img": "https://files.catbox.moe/7kvcqj.jpg"},
 ]
 
 # Send Pet Shop Page
 async def send_petshop_page(message_or_query_obj, page: int):
     pet = PET_SHOP[page]
     caption = (
-        f"<b>{pet['name']}</b>\n"
-        f"✨ Ability: <b>{pet.get('ability', 'None')}</b>\n"
-        f"📖 <i>{pet.get('desc', 'No ability')}</i>\n"
+        f"**{pet['name']}**\n"
+        f"✨ Ability: **{pet.get('ability', 'None')}**\n"
+        f"📖 _{pet.get('desc', 'No ability')}_\n"
+        f"❤️ HP: {pet.get('hp', 100)} | ⚔️ ATK: {pet.get('atk', 10)} | ⚡ SPD: {pet.get('spd', 10)}\n"
         f"🍀 Luck: {int(pet['luck'] * 100)}%\n"
-        f"💰 Price: <b>{pet['price']} coins</b>"
+        f"💰 Price: **{pet['price']} coins**"
     )
     keyboard = [
         [
@@ -44,12 +48,12 @@ async def send_petshop_page(message_or_query_obj, page: int):
     try:
         if isinstance(message_or_query_obj, types.CallbackQuery):
             await message_or_query_obj.message.edit_media(
-                media=types.InputMediaPhoto(media=pet["img"], caption=caption, parse_mode=enums.ParseMode.HTML),
+                media=types.InputMediaPhoto(media=pet["img"], caption=caption, parse_mode=enums.ParseMode.MARKDOWN),
                 reply_markup=reply_markup
             )
         else:
             await message_or_query_obj.reply_photo(
-                photo=pet["img"], caption=caption, parse_mode=enums.ParseMode.HTML, reply_markup=reply_markup
+                photo=pet["img"], caption=caption, parse_mode=enums.ParseMode.MARKDOWN, reply_markup=reply_markup
             )
     except errors.MessageNotModified:
         pass
@@ -99,7 +103,7 @@ async def perform_pet_purchase(user_id, pet_index: int):
 @app.on_message(filters.command("buypet"))
 async def buypet_cmd(_, message: types.Message):
     if len(message.command) < 2:
-        return await message.reply_text("❌ Usage: <code>/buypet &lt;pet_id&gt;</code>", parse_mode=enums.ParseMode.HTML)
+        return await message.reply_text("❌ Usage: `/buypet <pet_id>`", parse_mode=enums.ParseMode.MARKDOWN)
     
     try:
         pet_id = int(message.command[1])
@@ -111,8 +115,8 @@ async def buypet_cmd(_, message: types.Message):
         pet = PET_SHOP[pet_id]
         await message.reply_photo(
             photo=pet["img"],
-            caption=f"✅ You bought <b>{pet['name']}</b> with {int(pet['luck']*100)}% luck!",
-            parse_mode=enums.ParseMode.HTML
+            caption=f"✅ You bought **{pet['name']}** with {int(pet['luck']*100)}% luck!",
+            parse_mode=enums.ParseMode.MARKDOWN
         )
     else:
         await message.reply_text(result)
@@ -140,12 +144,13 @@ async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
     needed = level * 100
     
     caption = (
-        f"🐾 <b>Your Pet</b>\n"
-        f"📛 Name: <b>{pet['name']}</b>\n"
-        f"⚡ Ability: <b>{pet.get('ability', 'None')}</b>\n"
-        f"📊 Level: <code>{level}</code> | XP: <code>{xp}/{needed}</code>\n"
-        f"🍀 Luck: <code>{int(pet['luck'] * 100)}%</code>\n\n"
-        f"{'✅ <b>Active Pet</b>' if is_active else '⚠️ <i>Inactive</i>'}"
+        f"🐾 **Your Pet**\n"
+        f"📛 Name: **{pet['name']}**\n"
+        f"⚡ Ability: **{pet.get('ability', 'None')}**\n"
+        f"📊 Level: `{level}` | XP: `{xp}/{needed}`\n"
+        f"❤️ HP: `{pet.get('hp', 100)}` | ⚔️ ATK: `{pet.get('atk', 10)}` | ⚡ SPD: `{pet.get('spd', 10)}`\n"
+        f"🍀 Luck: `{int(pet['luck'] * 100)}%`\n\n"
+        f"{'✅ **Active Pet**' if is_active else '⚠️ _Inactive_'}"
     )
 
     buttons = [
@@ -162,12 +167,12 @@ async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
     try:
         if isinstance(message_or_query_obj, types.CallbackQuery):
             await message_or_query_obj.message.edit_media(
-                media=types.InputMediaPhoto(media=photo, caption=caption, parse_mode=enums.ParseMode.HTML),
+                media=types.InputMediaPhoto(media=photo, caption=caption, parse_mode=enums.ParseMode.MARKDOWN),
                 reply_markup=reply_markup
             )
         else:
             await message_or_query_obj.reply_photo(
-                photo=photo, caption=caption, parse_mode=enums.ParseMode.HTML, reply_markup=reply_markup
+                photo=photo, caption=caption, parse_mode=enums.ParseMode.MARKDOWN, reply_markup=reply_markup
             )
     except errors.MessageNotModified:
         pass
