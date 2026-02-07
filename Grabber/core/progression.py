@@ -78,9 +78,19 @@ async def check_and_grant_rewards(user_id: int, old_level: int, new_level: int):
     pass_type = user.get("pass_type", "free")
     claimed_levels = set(user.get("claimed_levels", []))
     
+    # Standard rewards for non-milestone levels
+    STANDARD_REWARDS = {
+        "free": 100,
+        "premium": 300,
+        "elite": 500
+    }
+    
+    total_coins_earned = 0
+    
     # Check each level between old and new
     for level in range(old_level + 1, new_level + 1):
         if level in LEVEL_REWARDS and level not in claimed_levels:
+            # Milestone reward
             reward = LEVEL_REWARDS[level].get(pass_type)
             
             if isinstance(reward, int):
@@ -89,6 +99,7 @@ async def check_and_grant_rewards(user_id: int, old_level: int, new_level: int):
                     {"id": user_id},
                     {"$inc": {"balance": reward}}
                 )
+                total_coins_earned += reward
                 LOGGER.info(f"User {user_id} received {reward} coins for reaching level {level} ({pass_type})")
             
             elif isinstance(reward, str) and reward.startswith("egg_"):
@@ -108,6 +119,17 @@ async def check_and_grant_rewards(user_id: int, old_level: int, new_level: int):
             
             # Mark as claimed
             claimed_levels.add(level)
+        else:
+            # Standard reward for non-milestone levels
+            if level not in claimed_levels:
+                standard_reward = STANDARD_REWARDS.get(pass_type, 100)
+                await user_collection.update_one(
+                    {"id": user_id},
+                    {"$inc": {"balance": standard_reward}}
+                )
+                total_coins_earned += standard_reward
+                LOGGER.info(f"User {user_id} received {standard_reward} coins (standard) for level {level} ({pass_type})")
+                claimed_levels.add(level)
     
     # Update claimed levels
     await user_collection.update_one(

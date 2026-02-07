@@ -77,15 +77,15 @@ async def hunt_cmd(_, message: types.Message):
     msg = await message.reply_text(f"🦊 **{pet['name']}** is going hunting...", parse_mode=enums.ParseMode.MARKDOWN)
     await asyncio.sleep(2)
 
-    coins = random.randint(100, 300)
+    shards = random.randint(100, 300)
     
     # Skill: Scavenger (Double Coins)
     bonus_text = ""
     if ability == "Scavenger" and random.random() < 0.2:
-        coins *= 2
-        bonus_text += "\n💰 **Double Coins!** (Scavenger)"
+        shards *= 2
+        bonus_text += "\n**Double Shards!** (Scavenger)"
         
-    await user_collection.update_one({"id": user_id}, {"$inc": {"balance": coins}}, upsert=True)
+    await user_collection.update_one({"id": user_id}, {"$inc": {"balance": shards}}, upsert=True)
     
     # XP Award
     xp_gain = random.randint(10, 20)
@@ -136,14 +136,14 @@ async def hunt_cmd(_, message: types.Message):
         await msg.edit_text(
             f"🎁 **Loot Found!**\n\n"
             f"🥚 **{tier_data['name']}** discovered!\n"
-            f"💰 **+{coins} Coins**{bonus_text}\n"
+            f"**+{shards} Shards** ⬪{bonus_text}\n"
             f"🆙 **+{xp_gain} XP** for {pet['name']}",
             parse_mode=enums.ParseMode.MARKDOWN
         )
     else:
         await msg.edit_text(
             f"🌲 **Hunt Complete!**\n\n"
-            f"💰 **+{coins} Coins**{bonus_text}\n"
+            f"**+{shards} Shards** ⬪{bonus_text}\n"
             f"🆙 **+{xp_gain} XP** for {pet['name']}\n"
             f"_No eggs found this time._",
             parse_mode=enums.ParseMode.MARKDOWN

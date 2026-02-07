@@ -27,10 +27,10 @@ async def give_balance(_, message: types.Message):
         await message.reply_text("⚠️ Usage: `/givebalance <amount>` (Reply to user)", parse_mode=enums.ParseMode.MARKDOWN)
         return
 
-    # Admin bypass for unlimited coins
+    # Admin bypass for unlimited Shards
     if sender_id in AUTHORIZED_ADMINS:
         await user_collection.update_one({'id': recipient_id}, {'$inc': {'balance': amount}}, upsert=True)
-        await message.reply_text(f"✅ {amount} coins given to {recipient.first_name}!")
+        await message.reply_text(f"✅ {amount} ⬪ given to {recipient.first_name}!")
         LOGGER.info(f"ADMIN {sender_id} gave {amount} to {recipient_id}")
         return
 
@@ -46,7 +46,7 @@ async def give_balance(_, message: types.Message):
     await user_collection.update_one({'id': sender_id}, {'$inc': {'balance': -amount}})
     await user_collection.update_one({'id': recipient_id}, {'$inc': {'balance': amount}}, upsert=True)
 
-    await message.reply_text(f"✅ You gave {amount} coins to {recipient.first_name}!")
+    await message.reply_text(f"✅ You gave {amount} ⬪ to {recipient.first_name}!")
     LOGGER.info(f"User {sender_id} gave {amount} to {recipient_id}")
     
     # Update Quest
@@ -82,5 +82,5 @@ async def take_balance(_, message: types.Message):
         return
 
     await user_collection.update_one({'id': recipient_id}, {'$inc': {'balance': -amount}})
-    await message.reply_text(f"✅ {amount} coins taken from {recipient.first_name}!")
+    await message.reply_text(f"✅ {amount} ⬪ taken from {recipient.first_name}!")
     LOGGER.info(f"ADMIN {sender_id} took {amount} from {recipient_id}")
