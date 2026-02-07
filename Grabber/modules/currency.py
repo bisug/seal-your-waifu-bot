@@ -41,6 +41,53 @@ async def exchange_command(_, message: types.Message):
     
     zenith_amount = shards_amount // 10000
     
+    # Calculate new balances
+    new_shards = current_shards - shards_amount
+    current_zenith = user.get("zenith", 0) if user else 0
+    new_zenith = current_zenith + zenith_amount
+    
+    # Confirmation message with preview
+    confirmation_text = (
+        f"💱 **Exchange Confirmation**\n\n"
+        f"**Converting:** {shards_amount:,} ⬪ → {zenith_amount:,} ⧫\n\n"
+        f"**Current Balance:**\n"
+        f"Shards: {current_shards:,} ⬪\n"
+        f"Zenith: {current_zenith:,} ⧫\n\n"
+        f"**New Balance:**\n"
+        f"Shards: {new_shards:,} ⬪\n"
+        f"Zenith: {new_zenith:,} ⧫\n\n"
+        f"_Proceed with exchange?_"
+    )
+    
+    buttons = [
+        [
+            types.InlineKeyboardButton("✅ Confirm", callback_data=f"exchange_confirm_{shards_amount}"),
+            types.InlineKeyboardButton("❌ Cancel", callback_data="exchange_cancel")
+        ]
+    ]
+    
+    await message.reply_text(
+        confirmation_text,
+        reply_markup=types.InlineKeyboardMarkup(buttons),
+        parse_mode=enums.ParseMode.MARKDOWN
+    )
+
+# Confirmation callback
+@app.on_callback_query(filters.regex(r"^exchange_confirm_(\d+)$"))
+async def exchange_confirm_callback(_, query: types.CallbackQuery):
+    shards_amount = int(query.data.split("_")[2])
+    user_id = query.from_user.id
+    
+    user = await user_collection.find_one({"id": user_id})
+    current_shards = user.get("balance", 0) if user else 0
+    
+    # Revalidate balance
+    if current_shards < shards_amount:
+        await query.answer("❌ Insufficient Shards!", show_alert=True)
+        return
+    
+    zenith_amount = shards_amount // 10000
+    
     # Perform exchange
     await user_collection.update_one(
         {"id": user_id},
@@ -53,9 +100,27 @@ async def exchange_command(_, message: types.Message):
         upsert=True
     )
     
-    await message.reply_text(
+    # Calculate new balances
+    new_shards = current_shards - shards_amount
+    current_zenith = user.get("zenith", 0) if user else 0
+    new_zenith = current_zenith + zenith_amount
+    
+    await query.message.edit_text(
         f"✅ **Exchange Successful!**\n\n"
         f"Converted: {shards_amount:,} ⬪ → {zenith_amount:,} ⧫\n\n"
-        f"Use `/balance` to check your new balance!",
+        f"**Your New Balance:**\n"
+        f"Shards: {new_shards:,} ⬪\n"
+        f"Zenith: {new_zenith:,} ⧫",
         parse_mode=enums.ParseMode.MARKDOWN
     )
+    await query.answer("Exchange completed!")
+
+# Cancel callback
+@app.on_callback_query(filters.regex(r"^exchange_cancel$"))
+async def exchange_cancel_callback(_, query: types.CallbackQuery):
+    await query.message.edit_text(
+        "❌ **Exchange Cancelled**\n\n"
+        "Your balance remains unchanged.",
+        parse_mode=enums.ParseMode.MARKDOWN
+    )
+    await query.answer("Cancelled")

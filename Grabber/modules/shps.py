@@ -87,7 +87,7 @@ async def hub_callback_handler(_, query: types.CallbackQuery):
         await send_shop_message(query, query.from_user.id)
     elif choice == "pet":
         import Grabber.modules.pet as pet_module
-        await pet_module.send_petshop_page(query, 0)
+        await pet_module.send_petshop_page(query, 0, query.from_user.id)
     elif choice == "pass":
         import Grabber.modules.battlepass as pass_module
         await pass_module.view_pass_inline(query)

@@ -46,9 +46,9 @@ async def give_coin_handler(_, message: types.Message):
 
     await message.reply_text(
         f"**🏦 Admin Transfer**\n\n"
-        f"**Action:** GIVING Coins\n"
+        f"**Action:** GIVING Shards\n"
         f"**Target:** {name}\n"
-        f"**Amount:** 💵 `{amount:,}` coins\n\n"
+        f"**Amount:** {amount:,} ⬪\n\n"
         "_Confirm this action?_",
         reply_markup=types.InlineKeyboardMarkup(buttons),
         parse_mode=enums.ParseMode.MARKDOWN
@@ -75,9 +75,9 @@ async def take_coin_handler(_, message: types.Message):
 
     await message.reply_text(
         f"**🏦 Admin Deduction**\n\n"
-        f"**Action:** TAKING Coins\n"
+        f"**Action:** TAKING Shards\n"
         f"**Target:** {name}\n"
-        f"**Amount:** 💵 `{amount:,}` coins\n\n"
+        f"**Amount:** {amount:,} ⬪\n\n"
         "_Confirm this action?_",
         reply_markup=types.InlineKeyboardMarkup(buttons),
         parse_mode=enums.ParseMode.MARKDOWN
@@ -100,10 +100,10 @@ async def admin_coin_callback(_, query: types.CallbackQuery):
     
     if action == "give":
         await user_collection.update_one({"id": target_id}, {"$inc": {"balance": amount}}, upsert=True)
-        text = f"✅ **Successfully added {amount:,} coins!**"
+        text = f"✅ **Successfully added {amount:,} ⬪!**"
     else: # take
         await user_collection.update_one({"id": target_id}, {"$inc": {"balance": -amount}}, upsert=True)
-        text = f"✅ **Successfully removed {amount:,} coins!**"
+        text = f"✅ **Successfully removed {amount:,} ⬪!**"
 
     # Get new balance
     user = await user_collection.find_one({"id": target_id}, {"balance": 1, "first_name": 1})
@@ -113,6 +113,6 @@ async def admin_coin_callback(_, query: types.CallbackQuery):
     await query.message.edit_text(
         f"{text}\n\n"
         f"**User:** {name}\n"
-        f"**Final Balance:** 💵 `{bal:,}`",
+        f"**Final Balance:** {bal:,} ⬪",
         parse_mode=enums.ParseMode.MARKDOWN
     )

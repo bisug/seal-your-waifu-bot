@@ -44,7 +44,7 @@ async def sell_handler(_, message: types.Message):
     await message.reply_text(
         f"**Selling:** {char['name']}\n"
         f"**Rarity:** {rarity}\n"
-        f"**Value:** 💵 {price} coins\n\n"
+        f"**Value:** {price} ⬪\n\n"
         "_Are you sure you want to sell this character?_",
         reply_markup=types.InlineKeyboardMarkup(buttons),
         parse_mode=enums.ParseMode.MARKDOWN
@@ -80,7 +80,7 @@ async def sell_callback_handler(_, query: types.CallbackQuery):
         await query.message.edit_text(
             f"✅ **Successfully Sold!**\n\n"
             f"**Character:** {char['name']}\n"
-            f"**Price:** 💵 {price} coins balance updated!",
+            f"**Price:** {price} ⬪ balance updated!",
             parse_mode=enums.ParseMode.MARKDOWN
         )
     else:
