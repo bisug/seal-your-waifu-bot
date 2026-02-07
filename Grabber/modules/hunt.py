@@ -181,7 +181,7 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
     
     if status == "fresh":
         status_display = f"🛑 **Status:** Not incubated\n⏱️ **Required:** {tier_info['wait_min']} minutes"
-        action_button = types.InlineKeyboardButton("🌡️ Start Incubation", callback_data=f"egg_incubate:{page}")
+        action_button = types.InlineKeyboardButton("🌡️ Start Incubation", callback_data=f"egg_incubate:{page}") # Placeholder, updated below
     elif status == "incubating":
         hatch_time = egg.get("hatch_time")
         if hatch_time and datetime.now() < hatch_time:
@@ -206,13 +206,18 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
     # Navigation row
     nav_row = []
     if len(eggs) > 1:
-        nav_row.append(types.InlineKeyboardButton("⬅️", callback_data=f"egg_page:{page - 1}"))
+        nav_row.append(types.InlineKeyboardButton("⬅️", callback_data=f"egg_page:{page - 1}:{user_id}"))
         nav_row.append(types.InlineKeyboardButton(f"{page + 1}/{len(eggs)}", callback_data="egg_noop"))
-        nav_row.append(types.InlineKeyboardButton("➡️", callback_data=f"egg_page:{page + 1}"))
+        nav_row.append(types.InlineKeyboardButton("➡️", callback_data=f"egg_page:{page + 1}:{user_id}"))
         buttons.append(nav_row)
     
     # Action button
     if action_button:
+        # Re-construct action button with user_id
+        if "egg_incubate" in action_button.callback_data:
+             action_button.callback_data = f"egg_incubate:{page}:{user_id}"
+        elif "egg_hatch" in action_button.callback_data:
+             action_button = types.InlineKeyboardButton("🎁 Hatch Now!", callback_data=f"egg_hatch:{page}:{user_id}")
         buttons.append([action_button])
     
     buttons.append([types.InlineKeyboardButton("⤾ Back to Hub", callback_data="hub_main")])
@@ -232,14 +237,26 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
 # Callback handlers
 @app.on_callback_query(filters.regex(r"^egg_page:"))
 async def egg_page_callback(_, query: types.CallbackQuery):
-    page = int(query.data.split(":")[1])
-    await show_egg_page(query, page, query.from_user.id)
+    data = query.data.split(":")
+    page = int(data[1])
+    owner_id = int(data[2])
+    
+    if query.from_user.id != owner_id:
+        return await query.answer("❌ This is not your inventory!", show_alert=True)
+        
+    await show_egg_page(query, page, owner_id)
     await query.answer()
 
 @app.on_callback_query(filters.regex(r"^egg_incubate:"))
 async def egg_incubate_callback(_, query: types.CallbackQuery):
-    page = int(query.data.split(":")[1])
-    user_id = query.from_user.id
+    data = query.data.split(":")
+    page = int(data[1])
+    owner_id = int(data[2])
+    
+    if query.from_user.id != owner_id:
+        return await query.answer("❌ This is not your egg!", show_alert=True)
+        
+    user_id = owner_id
     user = await user_collection.find_one({"id": user_id}) or {}
     eggs = user.get("eggs", [])
     
@@ -275,8 +292,14 @@ async def egg_incubate_callback(_, query: types.CallbackQuery):
 
 @app.on_callback_query(filters.regex(r"^egg_hatch:"))
 async def egg_hatch_callback(_, query: types.CallbackQuery):
-    page = int(query.data.split(":")[1])
-    user_id = query.from_user.id
+    data = query.data.split(":")
+    page = int(data[1])
+    owner_id = int(data[2])
+    
+    if query.from_user.id != owner_id:
+        return await query.answer("❌ This is not your egg!", show_alert=True)
+        
+    user_id = owner_id
     user = await user_collection.find_one({"id": user_id}) or {}
     eggs = user.get("eggs", [])
     
