@@ -25,7 +25,7 @@ PET_SHOP = [
 ]
 
 # Send Pet Shop Page
-async def send_petshop_page(message_or_query_obj, page: int):
+async def send_petshop_page(message_or_query_obj, page: int, user_id: int):
     pet = PET_SHOP[page]
     caption = (
         f"**{pet['name']}**\n"
@@ -37,9 +37,9 @@ async def send_petshop_page(message_or_query_obj, page: int):
     )
     keyboard = [
         [
-            types.InlineKeyboardButton("⬅️ Prev", callback_data=f"shop_prev_{page}"),
-            types.InlineKeyboardButton("Buy Now", callback_data=f"shop_buy_{page}"),
-            types.InlineKeyboardButton("Next ➡️", callback_data=f"shop_next_{page}")
+            types.InlineKeyboardButton("⬅️ Prev", callback_data=f"shop_prev_{page}_{user_id}"),
+            types.InlineKeyboardButton("Buy Now", callback_data=f"shop_buy_{page}_{user_id}"),
+            types.InlineKeyboardButton("Next ➡️", callback_data=f"shop_next_{page}_{user_id}")
         ],
         [types.InlineKeyboardButton("⤾ Back to Hub", callback_data="hub_main")]
     ]
@@ -72,7 +72,7 @@ async def petshop(_, message: types.Message):
             "pets": [DEFAULT_PET],
             "current_pet": DEFAULT_PET["name"]
         })
-    await send_petshop_page(message, 0)
+    await send_petshop_page(message, 0, user_id)
 
 # Purchase Logic Helper
 async def perform_pet_purchase(user_id, pet_index: int):
@@ -155,9 +155,9 @@ async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
 
     buttons = [
         [
-            types.InlineKeyboardButton("⬅️ Prev", callback_data=f"mypet_prev_{page}"),
-            types.InlineKeyboardButton("Set Active" if not is_active else "🌟 Active", callback_data=f"setpet_{page}"),
-            types.InlineKeyboardButton("Next ➡️", callback_data=f"mypet_next_{page}")
+            types.InlineKeyboardButton("⬅️ Prev", callback_data=f"mypet_prev_{page}_{user_id}"),
+            types.InlineKeyboardButton("Set Active" if not is_active else "🌟 Active", callback_data=f"setpet_{page}_{user_id}"),
+            types.InlineKeyboardButton("Next ➡️", callback_data=f"mypet_next_{page}_{user_id}")
         ],
         [types.InlineKeyboardButton("⤾ Back to Hub", callback_data="hub_main")]
     ]
@@ -184,33 +184,39 @@ async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
 async def mypet_cmd(_, message: types.Message):
     await send_mypet_page(message, 0, message.from_user.id)
 
-@app.on_callback_query(filters.regex(r"^(shop|mypet)_(next|prev|buy)_(\d+)$"))
+@app.on_callback_query(filters.regex(r"^(shop|mypet)_(next|prev|buy)_(\d+)_(\d+)$"))
 async def shop_mypet_navigation(_, query: types.CallbackQuery):
-    data = query.data
-    page = int(data.split("_")[2])
+    data = query.data.split("_")
+    action_type = data[0] # shop or mypet
+    action = data[1] # next/prev/buy
+    page = int(data[2])
+    owner_id = int(data[3])
     
-    if data.startswith("shop_"):
-        if "next" in data:
+    if query.from_user.id != owner_id:
+        return await query.answer("❌ This is not your menu!", show_alert=True)
+    
+    if action_type == "shop":
+        if action == "next":
             page = (page + 1) % len(PET_SHOP)
-        elif "prev" in data:
+        elif action == "prev":
             page = (page - 1) % len(PET_SHOP)
-        elif "buy" in data:
+        elif action == "buy":
             pet = PET_SHOP[page]
             text = f"⚠️ **Confirm Purchase**\n\nBuy **{pet['name']}** for **{pet['price']} coins**?"
             keyboard = [[
-                types.InlineKeyboardButton("Confirm ✅", callback_data=f"petconfirm_{page}"),
-                types.InlineKeyboardButton("Cancel ❌", callback_data=f"shop_next_{page}")
+                types.InlineKeyboardButton("Confirm ✅", callback_data=f"petconfirm_{page}_{owner_id}"),
+                types.InlineKeyboardButton("Cancel ❌", callback_data=f"shop_next_{page}_{owner_id}")
             ]]
             await query.message.edit_caption(text, reply_markup=types.InlineKeyboardMarkup(keyboard))
             return
-
-        await send_petshop_page(query, page)
+ 
+        await send_petshop_page(query, page, owner_id)
     
-    elif data.startswith("mypet_"):
-        user_id = query.from_user.id
+    elif action_type == "mypet":
+        user_id = owner_id
         user = await user_collection.find_one({"id": user_id})
         total = len(user.get("pets", [DEFAULT_PET]))
-        if "next" in data:
+        if action == "next":
             page = (page + 1) % total
         else:
             page = (page - 1) % total
@@ -218,21 +224,33 @@ async def shop_mypet_navigation(_, query: types.CallbackQuery):
     
     await query.answer()
 
-@app.on_callback_query(filters.regex(r"^petconfirm_(\d+)$"))
+@app.on_callback_query(filters.regex(r"^petconfirm_(\d+)_(\d+)$"))
 async def pet_confirm_callback(_, query: types.CallbackQuery):
-    page = int(query.data.split("_")[1])
-    result = await perform_pet_purchase(query.from_user.id, page)
+    data = query.data.split("_")
+    page = int(data[1])
+    owner_id = int(data[2])
+    
+    if query.from_user.id != owner_id:
+        return await query.answer("❌ This is not your menu!", show_alert=True)
+
+    result = await perform_pet_purchase(owner_id, page)
     if result is True:
         await query.answer(f"✅ Success! You bought {PET_SHOP[page]['name']}.", show_alert=True)
-        await send_mypet_page(query, 0, query.from_user.id)
+        await send_mypet_page(query, 0, owner_id)
     else:
-        await query.answer(result, show_alert=True)
-        await send_petshop_page(query, page)
+        await query.answer(str(result), show_alert=True)
+        await send_petshop_page(query, page, owner_id)
 
-@app.on_callback_query(filters.regex(r"^setpet_(\d+)$"))
+@app.on_callback_query(filters.regex(r"^setpet_(\d+)_(\d+)$"))
 async def setpet_callback(_, query: types.CallbackQuery):
-    index = int(query.data.split("_")[1])
-    user_id = query.from_user.id
+    data = query.data.split("_")
+    index = int(data[1])
+    owner_id = int(data[2])
+    
+    if query.from_user.id != owner_id:
+        return await query.answer("❌ This is not your menu!", show_alert=True)
+    
+    user_id = owner_id
     user = await user_collection.find_one({"id": user_id})
     pets = user.get("pets", [DEFAULT_PET])
     
