@@ -17,7 +17,12 @@ SELL_PRICES = {
 @app.on_message(filters.command("sell"))
 async def sell_handler(_, message: types.Message):
     if len(message.command) < 2:
-        return await message.reply_text("❌ **Usage:** `/sell <id>`", parse_mode=enums.ParseMode.MARKDOWN)
+        rates = "\n".join([f"{rarity}: **{price:,} ⬪**" for rarity, price in SELL_PRICES.items()])
+        return await message.reply_text(
+            f"❌ **Usage:** `/sell <id>`\n\n"
+            f"💰 **Sell Rates:**\n{rates}",
+            parse_mode=enums.ParseMode.MARKDOWN
+        )
 
     char_id = message.command[1]
     user_id = message.from_user.id
@@ -41,11 +46,21 @@ async def sell_handler(_, message: types.Message):
         ]
     ]
     
-    await message.reply_text(
-        f"**Selling:** {char['name']}\n"
+    current_shards = user.get('balance', 0)
+    new_shards = current_shards + price
+    
+    confirmation_text = (
+        f"💰 **Sell Confirmation**\n\n"
+        f"**Character:** {char['name']}\n"
         f"**Rarity:** {rarity}\n"
-        f"**Value:** {price} ⬪\n\n"
-        "_Are you sure you want to sell this character?_",
+        f"**Value:** {price:,} ⬪\n\n"
+        f"**Current Balance:** {current_shards:,} ⬪\n"
+        f"**New Balance:** {new_shards:,} ⬪\n\n"
+        f"_Are you sure you want to sell this character?_"
+    )
+    
+    await message.reply_text(
+        confirmation_text,
         reply_markup=types.InlineKeyboardMarkup(buttons),
         parse_mode=enums.ParseMode.MARKDOWN
     )
@@ -74,13 +89,17 @@ async def sell_callback_handler(_, query: types.CallbackQuery):
     rarity = char.get('rarity', '⚪ Common')
     price = SELL_PRICES.get(rarity, 50)
 
+    current_shards = user.get('balance', 0)
+    new_shards = current_shards + price
+
     # Atomic removal
     if await remove_char_from_user(user_id, char_id):
         await update_user_balance(user_id, price)
         await query.message.edit_text(
             f"✅ **Successfully Sold!**\n\n"
             f"**Character:** {char['name']}\n"
-            f"**Price:** {price} ⬪ balance updated!",
+            f"**Price:** {price:,} ⬪\n\n"
+            f"**Your New Balance:** {new_shards:,} ⬪",
             parse_mode=enums.ParseMode.MARKDOWN
         )
     else:
