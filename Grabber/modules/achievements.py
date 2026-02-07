@@ -27,7 +27,7 @@ ACHIEVEMENTS = {
     },
     "rich_vip": {
         "name": "Millionaire",
-        "description": "Hold 1,000,000 Coins",
+        "description": "Hold 1,000,000 Shards",
         "condition": lambda u: u.get("balance", 0) >= 1000000,
         "title": "Tycoon 🎩",
         "reward_xp": 2000

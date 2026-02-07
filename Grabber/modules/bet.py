@@ -3,7 +3,7 @@ import random
 from pyrogram import filters, types, enums
 from Grabber import app, user_collection
 
-CURRENCY_SYMBOL = "⨭"  # Unique currency symbol
+CURRENCY_SYMBOL = "⬪"  # Shards symbol
 
 @app.on_message(filters.command("bet"))
 async def bet_cmd(_, message: types.Message):
@@ -40,7 +40,7 @@ async def bet_cmd(_, message: types.Message):
     if not user_data:
         await message.reply_text(
             f"💰 **You don't have an account yet!**\n"
-            f"🔥 Use `/bonus` to claim free {CURRENCY_SYMBOL} & start betting!",
+            f"🔥 Use `/bonus` to claim free Shards & start betting!",
             parse_mode=enums.ParseMode.MARKDOWN
         )
         return
@@ -49,23 +49,23 @@ async def bet_cmd(_, message: types.Message):
 
     if balance_amount == 0:
         await message.reply_text(
-            f"💰 **You're out of {CURRENCY_SYMBOL}!**\n"
-            f"🔥 Use `/bonus` to claim free {CURRENCY_SYMBOL} & try again!",
+            f"💰 **You're out of Shards!**\n"
+            f"🔥 Use `/bonus` to claim free Shards & try again!",
             parse_mode=enums.ParseMode.MARKDOWN
         )
         return
 
     if balance_amount < amount:
         await message.reply_text(
-            f"❌ **Not Enough {CURRENCY_SYMBOL}!**\n"
-            f"🏦 Your Balance: **{CURRENCY_SYMBOL} {balance_amount}**\n\n"
-            f"🔥 Use `/bonus` to get free {CURRENCY_SYMBOL}!",
+            f"❌ **Not Enough Shards!**\n"
+            f"🏦 Your Balance: **{balance_amount:,} ⬪**\n\n"
+            f"🔥 Use `/bonus` to get free Shards!",
             parse_mode=enums.ParseMode.MARKDOWN
         )
         return
 
     user_choice_name = "Heads" if choice == "h" else "Tails"
-    await message.reply_text(f"🎰 **Placing Bet:** {CURRENCY_SYMBOL} {amount}\n🪙 **You Chose:** {user_choice_name}", parse_mode=enums.ParseMode.MARKDOWN)  
+    await message.reply_text(f"🎰 **Placing Bet:** {amount:,} ⬪\n🪙 **You Chose:** {user_choice_name}", parse_mode=enums.ParseMode.MARKDOWN)  
 
     await asyncio.sleep(2)  # Suspense delay
 
@@ -79,8 +79,8 @@ async def bet_cmd(_, message: types.Message):
         result_text = (
             f"🎉 **YOU WIN!** 🎉\n"
             f"🪙 The coin landed on **{user_choice_name}**!\n"
-            f"💰 **You Earned:** {CURRENCY_SYMBOL} {winnings}\n\n"
-            f"🏦 **New Balance:** {CURRENCY_SYMBOL} {new_balance}"
+            f"💰 **You Earned:** {winnings:,} ⬪\n\n"
+            f"🏦 **New Balance:** {new_balance:,} ⬪"
         )
     else:
         new_balance = balance_amount - amount  
@@ -88,8 +88,8 @@ async def bet_cmd(_, message: types.Message):
         result_text = (
             f"💔 **YOU LOST!**\n"
             f"🪙 The coin landed on **{comp_choice}**.\n"
-            f"💸 **You Lost:** {CURRENCY_SYMBOL} {amount}\n\n"
-            f"🏦 **New Balance:** {CURRENCY_SYMBOL} {new_balance}"
+            f"💸 **You Lost:** {amount:,} ⬪\n\n"
+            f"🏦 **New Balance:** {new_balance:,} ⬪"
         )
 
     # Update user balance

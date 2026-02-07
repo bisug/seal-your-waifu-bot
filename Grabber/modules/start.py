@@ -33,7 +33,7 @@ HELP_DATA = {
         "buttons": [
             [types.InlineKeyboardButton("🎮 Core Basics", callback_data="help:core"),
              types.InlineKeyboardButton("🐾 Pet System", callback_data="help:pet")],
-            [types.InlineKeyboardButton("⚔️ Battle & Coins", callback_data="help:battle"),
+            [types.InlineKeyboardButton("⚔️ Battle & Shards", callback_data="help:battle"),
              types.InlineKeyboardButton("🎫 Battle Pass", callback_data="help:progression")],
             [types.InlineKeyboardButton("ℹ️ Info & Stats", callback_data="help:info")],
             [types.InlineKeyboardButton("⤾ Main Menu", callback_data="st:b")]
@@ -161,7 +161,7 @@ async def start_handler(_, message: types.Message):
                     except:
                         pass
                         
-                    await message.reply_text("🎁 **Welcome Bonus!**\nYou received **1,500 Coins** and a **Level 10 Pet** for using a referral link! 🚀", parse_mode=enums.ParseMode.MARKDOWN)
+                    await message.reply_text("🎁 **Welcome Bonus!**\nYou received **1,500 ⬪** and a **Level 10 Pet** for using a referral link! 🚀", parse_mode=enums.ParseMode.MARKDOWN)
                     
             except ValueError:
                 pass

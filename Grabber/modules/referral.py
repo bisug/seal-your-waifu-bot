@@ -23,8 +23,8 @@ async def referrals_cmd(_, message: types.Message):
         f"**Shards Earned:** {earned_coins} ⬪\n\n"
         f"🔗 **Your Link:**\n`{ref_link}`\n\n"
         f"**Rewards:**\n"
-        f"🔸 You get: **500 Coins** + **50 XP**\n"
-        f"🔹 They get: **1,500 Coins** + **Level 10 Pet!** 🦊"
+        f"🔸 You get: **500 ⬪** + **50 XP**\n"
+        f"🔹 They get: **1,500 ⬪** + **Level 10 Pet!** 🦊"
     )
     
     await message.reply_text(text, parse_mode=enums.ParseMode.MARKDOWN)

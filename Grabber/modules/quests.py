@@ -30,7 +30,7 @@ QUEST_POOL = {
     },
     "generous_soul": {
         "name": "Generous Soul",
-        "description": "Gift coins to a player",
+        "description": "Gift Shards to a player",
         "target": 1,
         "reward_xp": 40,
         "icon": "🎁"
@@ -44,8 +44,8 @@ QUEST_POOL = {
     },
     "big_spender": {
         "name": "Big Spender",
-        "description": "Spend 1000 coins/extol",
-        "target": 1000,
+        "description": "Spend 1,000 Shards / 5 Zenith",
+        "target": 5,
         "reward_xp": 100,
         "icon": "💸"
     }
@@ -69,10 +69,10 @@ WEEKLY_POOL = {
     },
     "weekly_spender": {
         "name": "Tycoon",
-        "description": "Spend 50,000 coins this week",
+        "description": "Spend 50,000 Shards this week",
         "target": 50000,
         "reward_xp": 800,
-        "icon": "💰"
+        "icon": "⬪"
     }
 }
 
