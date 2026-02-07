@@ -1,10 +1,12 @@
 import math
 import random
 from html import escape
-from itertools import groupby
+from collections import Counter
+from typing import List, Dict, Union, Any
+
 from pyrogram import filters, types, enums, errors
 from Grabber.app import app
-from Grabber import collection, LOGGER
+from Grabber import LOGGER
 from Grabber.core.user import get_user_data
 
 FORMATS = [
@@ -22,54 +24,109 @@ async def harem_view_btn_handler(_, query: types.CallbackQuery):
     await show_harem(query, query.from_user.id, 0)
     await query.answer()
 
-async def show_harem(message_obj, user_id, page):
-    user = await get_user_data(user_id)
-    if not user or not user.get('characters'):
-        text = "❌ <b>You don't have any characters yet!</b>\n\n<i>Go catch some waifus first!</i>"
+async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], user_id: int, page: int):
+    try:
+        user = await get_user_data(user_id)
+        if not user or not user.get('characters'):
+            text = "❌ <b>You don't have any characters yet!</b>\n\n<i>Go catch some waifus first!</i>"
+            if isinstance(message_obj, types.CallbackQuery):
+                return await message_obj.answer(text, show_alert=True)
+            return await message_obj.reply_text(text, parse_mode=enums.ParseMode.HTML)
+
+        all_chars = user['characters']
+        
+        # Count occurrences of each character ID efficiently
+        char_counts = Counter(c.get('id') for c in all_chars)
+        
+        # Sort characters: Anime Name -> Character ID
+        sorted_chars = sorted(all_chars, key=lambda x: (x.get('anime', ''), x.get('id', '')))
+
+        # Deduplicate while preserving sort order
+        unique_chars: List[Dict[str, Any]] = []
+        seen_ids = set()
+        for char in sorted_chars:
+            char_id = char.get('id')
+            if char_id not in seen_ids:
+                unique_chars.append(char)
+                seen_ids.add(char_id)
+
+        per_page = 7
+        total_pages = math.ceil(len(unique_chars) / per_page)
+        page = max(0, min(page, total_pages - 1))
+        
+        current_idx = user.get('current_format_index', 0)
+        char_format = FORMATS[current_idx % len(FORMATS)]
+
+        first_name = user.get('first_name', 'User')
+        
+        # Header construction
+        header_lines = [
+            f"🎒 <b>{escape(first_name)}'s Collection</b>",
+            "━━━━━━━━━━━━━━━━━━━━━",
+            f"📑 <b>Page:</b> <code>{page + 1}/{total_pages}</code>",
+            f"✨ <b>Characters:</b> <code>{len(all_chars)}</code> total",
+            ""
+        ]
+        harem_text = "\n".join(header_lines)
+
+        # Get current page slice
+        start_idx = page * per_page
+        end_idx = start_idx + per_page
+        current_slice = unique_chars[start_idx:end_idx]
+        
+        for char in current_slice:
+            char_id = char.get('id', 'N/A')
+            harem_text += char_format.format(
+                anime=char.get('anime', 'Mixed'),
+                page=page + 1,
+                total_pages=total_pages,
+                rarity=char.get('rarity', 'Common'),
+                id=char_id,
+                name=char.get('name', 'Unknown'),
+                count=char_counts.get(char_id, 1)
+            ) + "\n"
+
+        harem_text += "━━━━━━━━━━━━━━━━━━━━━\n"
+
+        # Navigation buttons
+        markup = _build_harem_markup(page, total_pages, user_id)
+
+        # Select random image for cover
+        try:
+            pic = random.choice(all_chars).get('img_url')
+        except (IndexError, KeyError):
+            # Fallback if image selection fails
+            pic = None 
+
         if isinstance(message_obj, types.CallbackQuery):
-            return await message_obj.answer(text, show_alert=True)
-        return await message_obj.reply_text(text, parse_mode=enums.ParseMode.HTML)
+            if pic:
+                 await message_obj.edit_message_media(
+                    media=types.InputMediaPhoto(media=pic, caption=harem_text, parse_mode=enums.ParseMode.HTML),
+                    reply_markup=markup
+                )
+            else:
+                await message_obj.edit_message_text(text=harem_text, reply_markup=markup, parse_mode=enums.ParseMode.HTML)
+        else:
+            if pic:
+                await message_obj.reply_photo(
+                    photo=pic,
+                    caption=harem_text,
+                    reply_markup=markup,
+                    parse_mode=enums.ParseMode.HTML
+                )
+            else:
+                 await message_obj.reply_text(harem_text, reply_markup=markup, parse_mode=enums.ParseMode.HTML)
 
-    chars = sorted(user['characters'], key=lambda x: (x.get('anime', ''), x.get('id', '')))
-    
-    # Logic: Group and count
-    id_counts = {k: len(list(v)) for k, v in groupby(chars, key=lambda x: x.get('id', ''))}
-    unique_chars = []
-    seen = set()
-    for c in chars:
-        if c.get('id') not in seen:
-            unique_chars.append(c)
-            seen.add(c.get('id'))
+    except errors.MessageNotModified:
+        pass
+    except Exception as e:
+        LOGGER.error(f"Error in show_harem: {e}", exc_info=True)
+        # Inform user if it's a message, stay silent if it's a callback to avoid spam
+        if isinstance(message_obj, types.Message):
+             await message_obj.reply_text("An error occurred while fetching your harem.")
 
-    per_page = 7
-    total_pages = math.ceil(len(unique_chars) / per_page)
-    page = max(0, min(page, total_pages - 1))
-    
-    current_idx = user.get('current_format_index', 0)
-    char_format = FORMATS[current_idx % len(FORMATS)]
-
-    first_name = user.get('first_name', 'User')
-    harem_text = f"🎒 <b>{escape(first_name)}'s Collection</b>\n"
-    harem_text += f"━━━━━━━━━━━━━━━━━━━━━\n"
-    harem_text += f"📑 <b>Page:</b> <code>{page + 1}/{total_pages}</code>\n"
-    harem_text += f"✨ <b>Characters:</b> <code>{len(chars)}</code> total\n\n"
-
-    current_slice = unique_chars[page * per_page : (page + 1) * per_page]
-    
-    for char in current_slice:
-        harem_text += char_format.format(
-            anime=char.get('anime', 'Mixed'),
-            page=page + 1,
-            total_pages=total_pages,
-            rarity=char.get('rarity', 'Common'),
-            id=char.get('id', 'N/A'),
-            name=char.get('name', 'Unknown'),
-            count=id_counts.get(char.get('id'), 1)
-        ) + "\n"
-
-    harem_text += f"━━━━━━━━━━━━━━━━━━━━━\n"
-
-    # Navigation buttons
+def _build_harem_markup(page: int, total_pages: int, user_id: int) -> types.InlineKeyboardMarkup:
+    """Helper to build navigation keyboard."""
     nav_buttons = []
     if total_pages > 1:
         prev_btn = types.InlineKeyboardButton("⬅️ Prev", callback_data=f"h:p:{page-1}:{user_id}")
@@ -81,38 +138,30 @@ async def show_harem(message_obj, user_id, page):
         else:
             nav_buttons = [prev_btn, next_btn]
 
-    markup = types.InlineKeyboardMarkup([
+    keyboard = [
         nav_buttons,
         [types.InlineKeyboardButton("🔍 Search Harem", switch_inline_query_current_chat=f"collection.{user_id} ")],
         [types.InlineKeyboardButton("🌐 Global Search", switch_inline_query_current_chat="")]
-    ])
-
-    try:
-        # Use a random character's image for the harem cover
-        pic = random.choice(chars)['img_url']
-        
-        if isinstance(message_obj, types.CallbackQuery):
-            await message_obj.edit_message_media(
-                media=types.InputMediaPhoto(media=pic, caption=harem_text, parse_mode=enums.ParseMode.HTML),
-                reply_markup=markup
-            )
-        else:
-            await message_obj.reply_photo(
-                photo=pic,
-                caption=harem_text,
-                reply_markup=markup,
-                parse_mode=enums.ParseMode.HTML
-            )
-    except errors.MessageNotModified:
-        pass
-    except Exception as e:
-        LOGGER.error(f"Error in show_harem: {e}")
+    ]
+    # Filter out empty rows (e.g. if nav_buttons is empty)
+    return types.InlineKeyboardMarkup([row for row in keyboard if row])
 
 @app.on_callback_query(filters.regex(r"^h:(p|n):"))
 async def harem_nav_handler(_, query: types.CallbackQuery):
-    _, _, page, user_id = query.data.split(":")
-    if query.from_user.id != int(user_id):
-        return await query.answer("❌ This is not your harem!", show_alert=True)
-    
-    await show_harem(query, int(user_id), int(page))
-    await query.answer()
+    try:
+        data_parts = query.data.split(":")
+        # Expected format: h:p:page:user_id or h:n:page:user_id
+        if len(data_parts) != 4:
+            return await query.answer("❌ Invalid data!", show_alert=True)
+            
+        _, _, page_str, user_id_str = data_parts
+        page = int(page_str)
+        user_id = int(user_id_str)
+
+        if query.from_user.id != user_id:
+            return await query.answer("❌ This is not your harem!", show_alert=True)
+        
+        await show_harem(query, user_id, page)
+        await query.answer()
+    except ValueError:
+         await query.answer("❌ Invalid data format!", show_alert=True)
