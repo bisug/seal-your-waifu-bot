@@ -18,7 +18,7 @@ DEFAULT_PET = {
 
 # Pet Shop List
 PET_SHOP = [
-    {"name": "Blaze Fang 🐺", "luck": 0.15, "hp": 180, "atk": 30, "spd": 15, "level": 1, "xp": 0, "zenith_price": 2, "req_level": 0, "ability": "Scavenger", "desc": "20% Chance for Double Coins", "img": "https://i.ibb.co/fd1qPVJs/file-89.jpg"},
+    {"name": "Blaze Fang 🐺", "luck": 0.15, "hp": 180, "atk": 30, "spd": 15, "level": 1, "xp": 0, "zenith_price": 2, "req_level": 0, "ability": "Scavenger", "desc": "20% Chance for Double Shards", "img": "https://i.ibb.co/fd1qPVJs/file-89.jpg"},
     {"name": "Shadow Panther 🐆", "luck": 0.25, "hp": 140, "atk": 40, "spd": 35, "level": 1, "xp": 0, "zenith_price": 5, "req_level": 10, "ability": "Speedster", "desc": "-10s Hunt Cooldown", "img": "https://i.ibb.co/8CdC5QG/file-86.jpg"},
     {"name": "Cosmic Phoenix 🦅", "luck": 0.35, "hp": 220, "atk": 25, "spd": 25, "level": 1, "xp": 0, "zenith_price": 12, "req_level": 15, "ability": "Caregiver", "desc": "50% Faster Egg Hatching", "img": "https://i.ibb.co/b5CrL8rp/file-84.jpg"},
     {"name": "Mystic Dragon 🐲", "luck": 0.50, "hp": 300, "atk": 45, "spd": 10, "level": 1, "xp": 0, "zenith_price": 25, "req_level": 20, "ability": "Hoarder", "desc": "5% Chance for Bonus Egg", "img": "https://files.catbox.moe/7kvcqj.jpg"},
@@ -233,7 +233,7 @@ async def shop_mypet_navigation(_, query: types.CallbackQuery):
             page = (page - 1) % len(PET_SHOP)
         elif action == "buy":
             pet = PET_SHOP[page]
-            text = f"⚠️ **Confirm Purchase**\n\nBuy **{pet['name']}** for **{pet['price']} coins**?"
+            text = f"⚠️ **Confirm Purchase**\n\nBuy **{pet['name']}** for **{pet['zenith_price']} ⧫**?"
             keyboard = [[
                 types.InlineKeyboardButton("Confirm ✅", callback_data=f"petconfirm_{page}_{owner_id}"),
                 types.InlineKeyboardButton("Cancel ❌", callback_data=f"shop_next_{page}_{owner_id}")

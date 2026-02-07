@@ -191,7 +191,7 @@ async def view_rewards_callback(_, query: types.CallbackQuery):
         
         # Format reward
         if isinstance(reward, int):
-            reward_text = f"{reward:,} Coins"
+            reward_text = f"{reward:,} ⬪"
         elif isinstance(reward, str) and reward.startswith("egg_"):
             tier_name = reward.split("_")[1].capitalize()
             reward_text = f"{tier_name} Egg"
