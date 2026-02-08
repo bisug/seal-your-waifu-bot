@@ -12,6 +12,7 @@ from Grabber.modules.achievements import check_achievements
 SHOP_RARITY = RARITY_MAP[8] # 🪽 Shop
 DEFAULT_ZENITH_PRICE = 5  # Zenith per character
 SHOP_PAGE_SIZE = 5
+SHOP_LIMIT = 20 # Global limit per character
 ADMINS = list(set(sudo_users + [OWNER_ID]))
 SHOP_BANNER = config.PHOTO_URL[0]
 
@@ -112,6 +113,12 @@ async def send_shop_message(message, user_id):
     user = await user_collection.find_one({"id": user_id})
     zenith_balance = user.get("zenith", 0) if user else 0
 
+    # Stock logic
+    sold_count = char.get("sold_count", 0)
+    stock_display = f"{sold_count}/{SHOP_LIMIT}"
+    if sold_count >= SHOP_LIMIT:
+        stock_display = "❌ SOLD OUT"
+
     text = (
         f"🛍️ **Character Shop**\n"
         f"⧫ **Zenith Balance:** {zenith_balance:,}\n\n"
@@ -119,7 +126,8 @@ async def send_shop_message(message, user_id):
         f"📛 **Name:** {char['name']}\n"
         f"📺 **Anime:** {char['anime']}\n"
         f"🏷 **Rarity:** {char['rarity']}\n"
-        f"💲 **Price:** {price} ⧫"
+        f"� **Stock:** {stock_display}\n"
+        f"�💲 **Price:** {price} ⧫"
     )
 
     keyboard = [
@@ -186,12 +194,17 @@ async def ask_buy_character(_, query: types.CallbackQuery):
         return await query.answer("❌ Character not found.")
     
     price = char.get("zenith_price", DEFAULT_ZENITH_PRICE)
+    
+    sold_count = char.get("sold_count", 0)
+    stock_status = "✅ In Stock" if sold_count < SHOP_LIMIT else "❌ SOLD OUT"
+    
     text = (
         f"⚠️ **Confirm Purchase**\n\n"
         f"👤 **Name:** {char['name']}\n"
         f"📺 **Anime:** {char['anime']}\n"
         f"🏷 **Rarity:** {char['rarity']}\n"
-        f"🆔 **ID:** `{char_id}`\n\n"
+        f"🆔 **ID:** `{char_id}`\n"
+        f"📦 **Stock:** {sold_count}/{SHOP_LIMIT}\n\n"
         f"💰 **Price:** {price} ⧫\n"
         f"Are you sure you want to buy this character?"
     )
@@ -224,7 +237,7 @@ async def buy_character(_, query: types.CallbackQuery):
     price = char.get("zenith_price", DEFAULT_ZENITH_PRICE)
     
     # Check Zenith balance
-    user_zenith = user.get("zenith", 0) if user else 0
+    user_zenith = user_data.get("zenith", 0) if user_data else 0
     if user_zenith < price:
         await query.answer(
             f"❌ Insufficient Zenith!\n\nYou have: {user_zenith} ⧫\nNeed: {price} ⧫",
@@ -232,6 +245,25 @@ async def buy_character(_, query: types.CallbackQuery):
         )
         return
     
+    # --- ATOMIC STOCK RESERVATION ---
+    # Try to increment sold_count ONLY IF it is less than limit
+    # We use $or to handle cases where sold_count doesn't exist yet (treated as 0)
+    update_result = await collection.update_one(
+        {
+            "id": char_id,
+            "$or": [
+                {"sold_count": {"$lt": SHOP_LIMIT}},
+                {"sold_count": {"$exists": False}}
+            ]
+        },
+        {"$inc": {"sold_count": 1}}
+    )
+
+    if update_result.modified_count == 0:
+        await query.answer("❌ SOLD OUT! This character has reached the purchase limit.", show_alert=True)
+        await query.message.edit_caption(f"❌ **SOLD OUT**\n\nSomeone bought the last copy of {char['name']}!")
+        return
+
     # Deduct Zenith
     await user_collection.update_one(
         {"id": user_id},
@@ -260,7 +292,7 @@ async def buy_character(_, query: types.CallbackQuery):
     await check_achievements(user_id)
 
     await query.message.reply_text(
-        f"✅ **Purchase Successful!**\n🎉 You now own **{char['name']}**!",
+        f"✅ **Purchase Successful!**\n🎉 You now own **{char['name']}**!\n📦 Stock: {char.get('sold_count', 0) + 1}/{SHOP_LIMIT}",
         parse_mode=enums.ParseMode.MARKDOWN
     )
     await query.answer("Success!")
