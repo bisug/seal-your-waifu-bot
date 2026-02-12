@@ -1,12 +1,12 @@
 from pyrogram import Client, filters, enums, types
-from pymongo import MongoClient
+from motor.motor_asyncio import AsyncIOMotorClient
 import re
 from Grabber import LOGGER
 from config import config
 
 # MongoDB Connection from config
 MONGO_URI = config.BATCH_MONGO_URI
-mongo_client = MongoClient(MONGO_URI)
+mongo_client = AsyncIOMotorClient(MONGO_URI)
 db = mongo_client["CharacterDB"]
 collection = db["Characters"]
 
@@ -70,12 +70,12 @@ async def batch_fetch(_, message: types.Message):
                     unique_id = post.photo.file_unique_id
                     
                     # Check for duplicates
-                    if collection.find_one({"unique_id": unique_id}):
+                    if await collection.find_one({"unique_id": unique_id}):
                         await message.reply(f"🔄 Already saved: {character_name}")
                         continue
                     
                     # Save to DB
-                    collection.insert_one({
+                    await collection.insert_one({
                         "file_id": file_id, 
                         "unique_id": unique_id, 
                         "name": character_name, 
