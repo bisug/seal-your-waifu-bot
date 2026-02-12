@@ -1,7 +1,7 @@
 import math
-from html import escape
 from pyrogram import filters, types, enums
 from Grabber import app, user_collection, PHOTO_URL, LOGGER
+from Grabber.core.utils import md_escape
 from Grabber.core.user import get_user_data, get_active_pet
 from Grabber.core.progression import get_user_progress, get_progress_bar
 from Grabber.database import collection
@@ -19,12 +19,12 @@ async def profile_handler(_, message: types.Message):
     user_data = await get_user_data(user_id)
     
     if not user_data:
-        return await message.reply_text("🚨 **No profile found!** Try collecting a character first.", parse_mode=enums.ParseMode.MARKDOWN)
+        return await message.reply_text("🚨 **No profile found!** Try collecting a character first.")
 
     await app.send_chat_action(message.chat.id, enums.ChatAction.TYPING)
     
     # Basic Info
-    user_name = escape(message.from_user.first_name)
+    user_name = md_escape(message.from_user.first_name)
     user_balance = user_data.get('balance', 0)
     zenith = user_data.get('zenith', 0)
     
@@ -97,9 +97,8 @@ async def profile_handler(_, message: types.Message):
         await message.reply_photo(
             photo=pic,
             caption=profile_text,
-            reply_markup=types.InlineKeyboardMarkup(buttons),
-            parse_mode=enums.ParseMode.MARKDOWN
+            reply_markup=types.InlineKeyboardMarkup(buttons)
         )
     except Exception as e:
         LOGGER.error(f"Profile Photo Error: {e}")
-        await message.reply_text(profile_text, reply_markup=types.InlineKeyboardMarkup(buttons), parse_mode=enums.ParseMode.MARKDOWN)
+        await message.reply_text(profile_text, reply_markup=types.InlineKeyboardMarkup(buttons))
