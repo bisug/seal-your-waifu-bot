@@ -2,7 +2,7 @@ import httpx
 from Grabber.database import collection, db
 from Grabber import LOGGER
 from config import config
-from pymongo import ReturnDocument
+
 
 IMGBB_API_KEY = config.IMGBB_API_KEY
 
@@ -12,7 +12,7 @@ async def get_next_sequence_number(sequence_name: str) -> int:
         {'_id': sequence_name},
         {'$inc': {'sequence_value': 1}},
         upsert=True,
-        return_document=ReturnDocument.AFTER
+        return_document=True
     )
     return sequence_document['sequence_value']
 

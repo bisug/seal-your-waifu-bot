@@ -20,9 +20,7 @@ logging.basicConfig(
     level=logging.INFO,
 )
 
-logging.getLogger("apscheduler").setLevel(logging.ERROR)
 logging.getLogger('httpx').setLevel(logging.WARNING)
-logging.getLogger("pyrate_limiter").setLevel(logging.ERROR)
 logging.getLogger("pyrogram").setLevel(logging.WARNING)
 
 LOGGER = logging.getLogger(__name__)

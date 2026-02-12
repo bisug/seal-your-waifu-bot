@@ -1,4 +1,4 @@
-from pymongo import ReturnDocument
+
 from pyrogram import filters, types, enums
 from Grabber import app, user_totals_collection, LOGGER
 
@@ -36,7 +36,7 @@ async def change_time(_, message: types.Message) -> None:
             {'chat_id': str(chat.id)},
             {'$set': {'message_frequency': new_frequency}},
             upsert=True,
-            return_document=ReturnDocument.AFTER
+            return_document=True
         )
 
         await message.reply_text(f'Successfully changed character appearance frequency to every {new_frequency} messages.')
