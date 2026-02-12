@@ -1,5 +1,5 @@
-from html import escape
 from pyrogram import filters, types, enums, errors
+from Grabber.core.utils import md_escape
 from Grabber.app import app
 from Grabber import PHOTO_URL, BOT_USERNAME, SUPPORT_CHAT, UPDATE_CHAT, LOGGER
 from Grabber.database import total_pm_users
@@ -155,13 +155,12 @@ async def start_handler(_, message: types.Message):
                     try:
                         await app.send_message(
                             referrer_id,
-                            f"🎉 **New Referral!**\n\n{message.from_user.first_name} joined using your link.\n+500 ⬪ | +50 XP",
-                            parse_mode=enums.ParseMode.MARKDOWN
+                            f"🎉 **New Referral!**\n\n{md_escape(message.from_user.first_name)} joined using your link.\n+500 ⬪ | +50 XP"
                         )
                     except:
                         pass
                         
-                    await message.reply_text("🎁 **Welcome Bonus!**\nYou received **1,500 ⬪** and a **Level 10 Pet** for using a referral link! 🚀", parse_mode=enums.ParseMode.MARKDOWN)
+                    await message.reply_text("🎁 **Welcome Bonus!**\nYou received **1,500 ⬪** and a **Level 10 Pet** for using a referral link! 🚀")
                     
             except ValueError:
                 pass
@@ -175,17 +174,16 @@ async def start_handler(_, message: types.Message):
             [types.InlineKeyboardButton("❓ Help & Commands", callback_data="help:main")]
         ])
         
-        first_name = escape(message.from_user.first_name)
+        first_name = md_escape(message.from_user.first_name)
         text = START_TEXT.format(first_name=first_name, bot_name=app.name)
 
         await message.reply_photo(
             photo=random_photo(),
             caption=text,
-            reply_markup=markup,
-            parse_mode=enums.ParseMode.MARKDOWN
+            reply_markup=markup
         )
     else:
-        await message.reply_text("✅ **I'm active and ready to drop characters!**", parse_mode=enums.ParseMode.MARKDOWN)
+        await message.reply_text("✅ **I'm active and ready to drop characters!**")
 
 # Handle Start Menu & Back
 @app.on_callback_query(filters.regex(r"^st:(h|b)"))
@@ -199,14 +197,14 @@ async def start_callback_handler(_, query: types.CallbackQuery):
         [types.InlineKeyboardButton("❓ Help & Commands", callback_data="help:main")]
     ])
     
-    first_name = escape(query.from_user.first_name)
+    first_name = md_escape(query.from_user.first_name)
     text = START_TEXT.format(first_name=first_name, bot_name=app.name)
     
     try:
         if query.message.photo:
-            await query.message.edit_caption(text, reply_markup=markup, parse_mode=enums.ParseMode.MARKDOWN)
+            await query.message.edit_caption(text, reply_markup=markup)
         else:
-            await query.message.edit_text(text, reply_markup=markup, parse_mode=enums.ParseMode.MARKDOWN)
+            await query.message.edit_text(text, reply_markup=markup)
     except errors.MessageNotModified:
         pass
     
@@ -230,9 +228,9 @@ async def help_callback_handler(_, query: types.CallbackQuery):
 
     try:
         if query.message.photo:
-            await query.message.edit_caption(text, reply_markup=markup, parse_mode=enums.ParseMode.MARKDOWN)
+            await query.message.edit_caption(text, reply_markup=markup)
         else:
-            await query.message.edit_text(text, reply_markup=markup, parse_mode=enums.ParseMode.MARKDOWN)
+            await query.message.edit_text(text, reply_markup=markup)
     except errors.MessageNotModified:
         pass
     
