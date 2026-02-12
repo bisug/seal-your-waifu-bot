@@ -1,7 +1,8 @@
 import random
 import httpx
 from pyrogram import filters, types, enums, errors
-from Grabber import app, collection, user_collection, sudo_users, OWNER_ID, LOGGER
+from Grabber import app, sudo_users, OWNER_ID, LOGGER
+from Grabber.models import Character, User
 from config import config
 from Grabber.core.sessions import create_session, get_session
 from Grabber.modules.rarities import RARITY_MAP
@@ -18,7 +19,7 @@ SHOP_BANNER = config.PHOTO_URL[0]
 
 # === Character Shop ===
 async def get_daily_shop_characters():
-    characters = await collection.find({"rarity": SHOP_RARITY}).to_list(None)
+    characters = await Character.find({"rarity": SHOP_RARITY}).to_list(None)
     if not characters:
         return []
     return random.sample(characters, min(len(characters), SHOP_PAGE_SIZE))
@@ -107,14 +108,14 @@ async def send_shop_message(message, user_id):
     chars = session.get("shop", [])
     
     char = chars[page]
-    price = char.get("zenith_price", DEFAULT_ZENITH_PRICE)
+    price = getattr(char, "zenith_price", DEFAULT_ZENITH_PRICE)
     
     # Get user's Zenith balance
-    user = await user_collection.find_one({"id": user_id})
-    zenith_balance = user.get("zenith", 0) if user else 0
+    user = await User.find_one({"id": user_id})
+    zenith_balance = user.zenith if user else 0
 
     # Stock logic
-    sold_count = char.get("sold_count", 0)
+    sold_count = getattr(char, "sold_count", 0)
     stock_display = f"{sold_count}/{SHOP_LIMIT}"
     if sold_count >= SHOP_LIMIT:
         stock_display = "❌ SOLD OUT"
@@ -122,16 +123,16 @@ async def send_shop_message(message, user_id):
     text = (
         f"🛍️ **Character Shop**\n"
         f"⧫ **Zenith Balance:** {zenith_balance:,}\n\n"
-        f"🆔 **ID:** {char['id']}\n"
-        f"📛 **Name:** {char['name']}\n"
-        f"📺 **Anime:** {char['anime']}\n"
-        f"🏷 **Rarity:** {char['rarity']}\n"
+        f"🆔 **ID:** {char.id}\n"
+        f"📛 **Name:** {char.name}\n"
+        f"📺 **Anime:** {char.anime}\n"
+        f"🏷 **Rarity:** {char.rarity}\n"
         f"� **Stock:** {stock_display}\n"
         f"�💲 **Price:** {price} ⧫"
     )
 
     keyboard = [
-        [types.InlineKeyboardButton("💰 Buy", callback_data=f"ask_buy_char_{char['id']}")],
+        [types.InlineKeyboardButton("💰 Buy", callback_data=f"ask_buy_char_{char.id}")],
         [
             types.InlineKeyboardButton("⬅️ Prev", callback_data=f"shop_prev:{user_id}"),
             types.InlineKeyboardButton("➡️ Next", callback_data=f"shop_next:{user_id}")
@@ -144,12 +145,12 @@ async def send_shop_message(message, user_id):
     try:
         if isinstance(message, types.CallbackQuery):
             await message.message.edit_media(
-                media=types.InputMediaPhoto(media=char["img_url"], caption=text, parse_mode=enums.ParseMode.MARKDOWN),
+                media=types.InputMediaPhoto(media=char.img_url, caption=text, parse_mode=enums.ParseMode.MARKDOWN),
                 reply_markup=markup
             )
         else:
             await message.reply_photo(
-                photo=char["img_url"], caption=text,
+                photo=char.img_url, caption=text,
                 reply_markup=markup, parse_mode=enums.ParseMode.MARKDOWN
             )
     except errors.MessageNotModified:
@@ -189,20 +190,20 @@ async def shop_navigation(_, query: types.CallbackQuery):
 @app.on_callback_query(filters.regex(r"^ask_buy_char_(.+)"))
 async def ask_buy_character(_, query: types.CallbackQuery):
     char_id = query.data.split("_")[3]
-    char = await collection.find_one({"id": char_id})
+    char = await Character.find_one({"id": char_id})
     if not char:
         return await query.answer("❌ Character not found.")
     
-    price = char.get("zenith_price", DEFAULT_ZENITH_PRICE)
+    price = getattr(char, "zenith_price", DEFAULT_ZENITH_PRICE)
     
-    sold_count = char.get("sold_count", 0)
+    sold_count = getattr(char, "sold_count", 0)
     stock_status = "✅ In Stock" if sold_count < SHOP_LIMIT else "❌ SOLD OUT"
     
     text = (
         f"⚠️ **Confirm Purchase**\n\n"
-        f"👤 **Name:** {char['name']}\n"
-        f"📺 **Anime:** {char['anime']}\n"
-        f"🏷 **Rarity:** {char['rarity']}\n"
+        f"👤 **Name:** {char.name}\n"
+        f"📺 **Anime:** {char.anime}\n"
+        f"🏷 **Rarity:** {char.rarity}\n"
         f"🆔 **ID:** `{char_id}`\n"
         f"📦 **Stock:** {sold_count}/{SHOP_LIMIT}\n\n"
         f"💰 **Price:** {price} ⧫\n"
@@ -221,23 +222,23 @@ async def buy_character(_, query: types.CallbackQuery):
     user_id = query.from_user.id
     char_id = query.data.split("_")[3]
 
-    user_data = await user_collection.find_one({"id": user_id}) or {}
-    owned = user_data.get("characters", [])
+    user_data = await User.find_one({"id": user_id})
+    owned = user_data.characters if user_data else []
 
-    char = await collection.find_one({"id": char_id})
-    if not char or char["rarity"] != SHOP_RARITY:
+    char = await Character.find_one({"id": char_id})
+    if not char or char.rarity != SHOP_RARITY:
         await query.answer("❌ Character not available.", show_alert=True)
         return
 
-    owned_ids = [c["id"] if isinstance(c, dict) else c for c in owned]
+    owned_ids = [c.id if hasattr(c, "id") else (c["id"] if isinstance(c, dict) else c) for c in owned]
     if char_id in owned_ids:
         await query.answer("✅ You already own this character.", show_alert=True)
         return
 
-    price = char.get("zenith_price", DEFAULT_ZENITH_PRICE)
+    price = getattr(char, "zenith_price", DEFAULT_ZENITH_PRICE)
     
     # Check Zenith balance
-    user_zenith = user_data.get("zenith", 0) if user_data else 0
+    user_zenith = user_data.zenith if user_data else 0
     if user_zenith < price:
         await query.answer(
             f"❌ Insufficient Zenith!\n\nYou have: {user_zenith} ⧫\nNeed: {price} ⧫",
@@ -248,7 +249,7 @@ async def buy_character(_, query: types.CallbackQuery):
     # --- ATOMIC STOCK RESERVATION ---
     # Try to increment sold_count ONLY IF it is less than limit
     # We use $or to handle cases where sold_count doesn't exist yet (treated as 0)
-    update_result = await collection.update_one(
+    update_result = await Character.collection.update_one(
         {
             "id": char_id,
             "$or": [
@@ -261,25 +262,25 @@ async def buy_character(_, query: types.CallbackQuery):
 
     if update_result.modified_count == 0:
         await query.answer("❌ SOLD OUT! This character has reached the purchase limit.", show_alert=True)
-        await query.message.edit_caption(f"❌ **SOLD OUT**\n\nSomeone bought the last copy of {char['name']}!")
+        await query.message.edit_caption(f"❌ **SOLD OUT**\n\nSomeone bought the last copy of {char.name}!")
         return
 
     # Deduct Zenith
-    await user_collection.update_one(
+    await User.collection.update_one(
         {"id": user_id},
         {"$inc": {"zenith": -price}}
     )
 
-    await user_collection.update_one(
+    await User.collection.update_one(
         {"id": user_id},
         {
             "$set": {"id": user_id},
             "$push": {"characters": {
-                "id": char["id"],
-                "name": char["name"],
-                "anime": char["anime"],
-                "rarity": char["rarity"],
-                "img_url": char["img_url"]
+                "id": char.id,
+                "name": char.name,
+                "anime": char.anime,
+                "rarity": char.rarity,
+                "img_url": char.img_url
             }}
         },
         upsert=True
@@ -292,7 +293,7 @@ async def buy_character(_, query: types.CallbackQuery):
     await check_achievements(user_id)
 
     await query.message.reply_text(
-        f"✅ **Purchase Successful!**\n🎉 You now own **{char['name']}**!\n📦 Stock: {char.get('sold_count', 0) + 1}/{SHOP_LIMIT}",
+        f"✅ **Purchase Successful!**\n🎉 You now own **{char.name}**!\n📦 Stock: {getattr(char, 'sold_count', 0) + 1}/{SHOP_LIMIT}",
         parse_mode=enums.ParseMode.MARKDOWN
     )
     await query.answer("Success!")
