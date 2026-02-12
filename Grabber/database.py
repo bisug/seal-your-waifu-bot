@@ -7,8 +7,7 @@ mongo_url = config.MONGO_URL
 client = AsyncIOMotorClient(mongo_url)
 db = client['Character_catchers']
 
-from umongo.frameworks.motor_asyncio import MotorAsyncIOInstance
-instance = MotorAsyncIOInstance(db)
+
 
 # Collections
 collection = db['anime_characterss']
