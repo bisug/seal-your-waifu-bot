@@ -1,7 +1,7 @@
 import random
 import httpx
 from pyrogram import filters, types, enums, errors
-from Grabber import app, sudo_users, OWNER_ID, LOGGER
+from Grabber import app, collection, user_collection, sudo_users, OWNER_ID, LOGGER
 from Grabber.models import Character, User
 from config import config
 from Grabber.core.sessions import create_session, get_session
@@ -19,9 +19,11 @@ SHOP_BANNER = config.PHOTO_URL[0]
 
 # === Character Shop ===
 async def get_daily_shop_characters():
-    characters = await Character.find({"rarity": SHOP_RARITY}).to_list(None)
-    if not characters:
+    cursor = collection.find({"rarity": SHOP_RARITY})
+    characters_raw = await cursor.to_list(None)
+    if not characters_raw:
         return []
+    characters = [Character(**c) for c in characters_raw]
     return random.sample(characters, min(len(characters), SHOP_PAGE_SIZE))
 
 @app.on_message(filters.command("cshop"))
@@ -111,7 +113,8 @@ async def send_shop_message(message, user_id):
     price = getattr(char, "zenith_price", DEFAULT_ZENITH_PRICE)
     
     # Get user's Zenith balance
-    user = await User.find_one({"id": user_id})
+    user_raw = await user_collection.find_one({"id": user_id})
+    user = User(**user_raw) if user_raw else None
     zenith_balance = user.zenith if user else 0
 
     # Stock logic
@@ -190,7 +193,8 @@ async def shop_navigation(_, query: types.CallbackQuery):
 @app.on_callback_query(filters.regex(r"^ask_buy_char_(.+)"))
 async def ask_buy_character(_, query: types.CallbackQuery):
     char_id = query.data.split("_")[3]
-    char = await Character.find_one({"id": char_id})
+    char_raw = await collection.find_one({"id": char_id})
+    char = Character(**char_raw) if char_raw else None
     if not char:
         return await query.answer("❌ Character not found.")
     
@@ -222,10 +226,12 @@ async def buy_character(_, query: types.CallbackQuery):
     user_id = query.from_user.id
     char_id = query.data.split("_")[3]
 
-    user_data = await User.find_one({"id": user_id})
+    user_raw = await user_collection.find_one({"id": user_id})
+    user_data = User(**user_raw) if user_raw else None
     owned = user_data.characters if user_data else []
 
-    char = await Character.find_one({"id": char_id})
+    char_raw = await collection.find_one({"id": char_id})
+    char = Character(**char_raw) if char_raw else None
     if not char or char.rarity != SHOP_RARITY:
         await query.answer("❌ Character not available.", show_alert=True)
         return
@@ -249,7 +255,7 @@ async def buy_character(_, query: types.CallbackQuery):
     # --- ATOMIC STOCK RESERVATION ---
     # Try to increment sold_count ONLY IF it is less than limit
     # We use $or to handle cases where sold_count doesn't exist yet (treated as 0)
-    update_result = await Character.collection.update_one(
+    update_result = await collection.update_one(
         {
             "id": char_id,
             "$or": [
@@ -266,12 +272,12 @@ async def buy_character(_, query: types.CallbackQuery):
         return
 
     # Deduct Zenith
-    await User.collection.update_one(
+    await user_collection.update_one(
         {"id": user_id},
         {"$inc": {"zenith": -price}}
     )
 
-    await User.collection.update_one(
+    await user_collection.update_one(
         {"id": user_id},
         {
             "$set": {"id": user_id},
