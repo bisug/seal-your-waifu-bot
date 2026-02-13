@@ -114,9 +114,38 @@ async def start_handler(_, message: types.Message):
     )
     
     # Referral Logic
-    if not existing_user and len(message.command) > 1:
+    if len(message.command) > 1:
         param = message.command[1]
-        if param.startswith("ref_"):
+        
+        # Deep Linking for Character Location
+        if param.startswith("locate_"):
+            try:
+                char_id = param.split("_")[1]
+                from Grabber.database import collection
+                character = await collection.find_one({'id': char_id})
+                
+                if character:
+                    response_message = (
+                        f"**Character Name:** {character['name']}\n"
+                        f"**Anime:** {character['anime']}\n"
+                        f"**Rarity:** {character['rarity']}\n"
+                        f"**Character ID:** `{character['id']}`\n"
+                    )
+
+                    await message.reply_photo(
+                        photo=character['img_url'],
+                        caption=response_message,
+                        parse_mode=enums.ParseMode.MARKDOWN
+                    )
+                    return # Stop further start message processing
+                else:
+                    await message.reply_text("❌ Character not found.")
+                    return
+            except Exception as e:
+                LOGGER.error(f"Locate Error: {e}")
+                pass
+
+        elif not existing_user and param.startswith("ref_"):
             try:
                 referrer_id = int(param.split("_")[1])
                 if referrer_id != user_id:
