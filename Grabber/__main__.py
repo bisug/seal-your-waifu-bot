@@ -177,7 +177,7 @@ async def set_bot_commands(client):
         
     if commands:
         try:
-            await client.set_my_commands(commands)
+            await client.set_bot_commands(commands)
             LOGGER.info(f"Successfully registered {len(commands)} commands with Telegram.")
         except Exception as e:
             LOGGER.error(f"Failed to set bot commands: {e}")
