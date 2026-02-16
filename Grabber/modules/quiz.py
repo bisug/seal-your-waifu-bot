@@ -4,7 +4,8 @@ import html
 import httpx
 from pyrogram import filters, types, enums
 from Grabber.app import app
-from Grabber import LOGGER
+from Grabber import LOGGER, quiz_questions_collection
+from Grabber.core.game import update_user_balance, get_user_balance
 
 # ─── API URL ────────────────────────────────────────────────────────────────
 QUIZ_API_URL = "https://opentdb.com/api.php?amount=1&category=31&difficulty=easy"
@@ -14,14 +15,32 @@ async def quiz_cmd(_, message: types.Message):
     user_id = message.from_user.id
     
     try:
+        result = None
         async with httpx.AsyncClient() as client:
-            response = await client.get(QUIZ_API_URL, timeout=10)
-            data = response.json()
+            try:
+                response = await client.get(QUIZ_API_URL, timeout=10)
+                data = response.json()
+                if data.get("response_code") == 0:
+                    result = data["results"][0]
+            except Exception as e:
+                LOGGER.warning(f"Quiz API failed, falling back to DB: {e}")
+
+        if not result:
+            # Fallback to Database
+            cursor = quiz_questions_collection.aggregate([{"$sample": {"size": 1}}])
+            questions = await cursor.to_list(length=1)
+            if questions:
+                result = questions[0]
+            else:
+                return await message.reply_text("❌ **Failed to fetch a quiz question and no cache available.**")
+        else:
+            # Store in DB for future fallback (if not already there)
+            await quiz_questions_collection.update_one(
+                {"question": result["question"]},
+                {"$set": result},
+                upsert=True
+            )
             
-        if data.get("response_code") != 0:
-            return await message.reply_text("❌ **Failed to fetch a quiz question. Try again later.**")
-            
-        result = data["results"][0]
         question = html.unescape(result["question"])
         correct_answer = html.unescape(result["correct_answer"])
         incorrect_answers = [html.unescape(ans) for ans in result["incorrect_answers"]]
@@ -90,7 +109,14 @@ async def quiz_callback_handler(_, query: types.CallbackQuery):
         return await query.answer("Too late!")
         
     if pressed_idx == correct_idx:
-        result_text = "✅ **Correct!** Well done! 🎉"
+        await update_user_balance(user_id, 100)
+        new_balance = await get_user_balance(user_id)
+        result_text = (
+            f"✅ **Correct!**\n\n"
+            f"💰 **Reward:** 100 Shards\n"
+            f"💳 **New Balance:** {new_balance:,} Shards\n\n"
+            "Well done! 🎉"
+        )
     else:
         # Get the correct answer text from the buttons
         correct_answer_text = "Unknown"
