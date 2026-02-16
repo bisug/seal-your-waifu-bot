@@ -205,4 +205,10 @@ async def main():
     LOGGER.info("Bot shut down cleanly.")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        LOGGER.info("Starting bot event loop...")
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        pass
+    except Exception as e:
+        LOGGER.critical(f"Fatal error in main loop: {e}", exc_info=True)
