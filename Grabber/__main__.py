@@ -205,5 +205,4 @@ async def main():
     LOGGER.info("Bot shut down cleanly.")
 
 if __name__ == "__main__":
-    # Use app.run for robust event loop management on all systems (fixes RuntimeError)
-    app.run(main())
+    asyncio.run(main())
