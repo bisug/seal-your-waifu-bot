@@ -48,6 +48,7 @@ HELP_DATA = {
 🔹 `/fav <id>` - Set a favorite character
 🔹 `/trade <my_id> <their_id>` - Trade with others
 🔹 `/gift <id>` - Gift a character to a user
+🔹 `/quiz` - Test your anime knowledge & have fun!
 """,
     },
     "PET": {
