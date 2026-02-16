@@ -1,5 +1,5 @@
 motor
-kurigram
+pyrogram
 tgcrypto
 python-dotenv
 httpx
