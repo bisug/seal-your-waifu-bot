@@ -2,6 +2,7 @@ import importlib
 import asyncio
 import random
 import datetime
+import re
 from typing import Dict
 
 from pyrogram import filters, types, enums, idle
@@ -142,6 +143,45 @@ def load_plugins():
         importlib.import_module(f"Grabber.modules.{module_name}")
     LOGGER.info(f"Loaded {len(ALL_MODULES)} modules.")
 
+async def set_bot_commands(client):
+    """Parses HELP_DATA from start module and sets bot commands on Telegram."""
+    from Grabber.modules.start import HELP_DATA
+    
+    commands = []
+    # Regex to extract command and description: 🔹 /command <args> - Description
+    command_pattern = re.compile(r"🔹\s+/(?P<cmd>\w+)(?:\s+<[^>]+>)*\s+-\s+(?P<desc>.+)")
+    
+    seen_commands = set()
+    
+    for category in HELP_DATA.values():
+        if "text" in category:
+            for line in category["text"].split("\n"):
+                match = command_pattern.search(line)
+                if match:
+                    cmd = match.group("cmd")
+                    desc = match.group("desc").strip()
+                    
+                    if cmd not in seen_commands:
+                        # Telegram limit for description is 100 chars
+                        commands.append(
+                            types.BotCommand(
+                                command=cmd,
+                                description=desc[:100]
+                            )
+                        )
+                        seen_commands.add(cmd)
+    
+    # Add standard start command if not present
+    if "start" not in seen_commands:
+        commands.append(types.BotCommand("start", "Start the bot and get welcome message"))
+        
+    if commands:
+        try:
+            await client.set_my_commands(commands)
+            LOGGER.info(f"Successfully registered {len(commands)} commands with Telegram.")
+        except Exception as e:
+            LOGGER.error(f"Failed to set bot commands: {e}")
+
 async def main():
     """Main entry point using Pyrogram's startup sequence."""
     LOGGER.info("Initializing Seal-Bot...")
@@ -152,8 +192,9 @@ async def main():
     # 2. Load all module commands
     load_plugins()
 
-    # 3. Start client and block
+    # 3. Start client and set commands
     await app.start()
+    await set_bot_commands(app)
     LOGGER.info("Bot is now online and active!")
     
     # Block until shutdown
