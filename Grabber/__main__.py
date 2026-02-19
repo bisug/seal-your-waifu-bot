@@ -25,7 +25,7 @@ async def set_bot_commands(client):
     
     commands = []
                                                                                
-    command_pattern = re.compile(r"🔹\s+/(?P<cmd>\w+)(?:\s+<[^>]+>)*\s+-\s+(?P<desc>.+)")
+    command_pattern = re.compile(r"🔹\s+[`]?/(?P<cmd>\w+)[^`]*[`]?\s+-\s+(?P<desc>.+)")
     
     seen_commands = set()
     
