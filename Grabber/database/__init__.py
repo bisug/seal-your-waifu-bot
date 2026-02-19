@@ -1,21 +1,49 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 from config import config
 
-mongo_url = config.MONGO_URL
+class Database:
+    """
+    Database abstraction layer.
+    Manages the MongoDB connection and collection references.
+    """
+    def __init__(self, uri):
+        self.client = AsyncIOMotorClient(uri)
+        self.db = self.client['Character_catchers']
+        
+        # Initialize collections
+        self.anime_characters = self.db['anime_characterss']
+        self.groups = self.db['total_groups']
+        self.user_totals = self.db['user_totalssss']
+        self.message_counts = self.db['message']
+        self.users = self.db["user_collectionsss"]
+        self.group_user_totals = self.db['group_user_totals']
+        self.top_global_groups = self.db['top_global_groupss']
+        self.total_pm_users = self.db['total_pm_users']
+        self.sudo_users = self.db['sudos']
+        self.spawns = self.db['active_spawns']
+        self.sessions = self.db['active_sessions']
+        self.quiz_questions = self.db['quiz_questions']
 
-client = AsyncIOMotorClient(mongo_url)
-db = client['Character_catchers']
+# Initialize Database
+try:
+    seal_db = Database(config.MONGO_URL)
+except Exception as e:
+    print(f"Failed to connect to MongoDB: {e}")
+    raise e
 
+# Export variables for backward compatibility
+client = seal_db.client
+db = seal_db.db
 
-collection = db['anime_characterss']
-group_collection = db['total_groups']
-user_totals_collection = db['user_totalssss']
-message_counts_collection = db['message']
-user_collection = db["user_collectionsss"]
-group_user_totals_collection = db['group_user_totals']
-top_global_groups_collection = db['top_global_groupss']
-total_pm_users = db['total_pm_users']
-sudo_collection = db['sudos']
-spawns_collection = db['active_spawns']
-sessions_collection = db['active_sessions']
-quiz_questions_collection = db['quiz_questions']
+collection = seal_db.anime_characters
+group_collection = seal_db.groups
+user_totals_collection = seal_db.user_totals
+message_counts_collection = seal_db.message_counts
+user_collection = seal_db.users
+group_user_totals_collection = seal_db.group_user_totals
+top_global_groups_collection = seal_db.top_global_groups
+total_pm_users = seal_db.total_pm_users
+sudo_collection = seal_db.sudo_users
+spawns_collection = seal_db.spawns
+sessions_collection = seal_db.sessions
+quiz_questions_collection = seal_db.quiz_questions

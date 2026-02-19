@@ -60,6 +60,7 @@ async def send_petshop_page(message_or_query_obj, page: int, user_id: int):
 
     try:
         if isinstance(message_or_query_obj, types.CallbackQuery):
+            LOGGER.info("DEBUG: Calling edit_message_media for petshop")
             await message_or_query_obj.edit_message_media(
                 media=types.InputMediaPhoto(media=pet["img"], caption=caption),
                 reply_markup=reply_markup
