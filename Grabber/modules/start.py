@@ -13,17 +13,19 @@ LOGGER.info("Loading Start module...")
 START_TEXT = """
 **✨ Welcome to {bot_name}! ✨**
 
-**Hey {first_name}!** I am your ultimate companion for **Character Catching & PvP Battles!**
+**Hey {first_name}!** 👋
+I’m your ultimate companion for **Anime Character Collecting & PvP Battles!**
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
-**🔥 Core Features:**
-🌸 **Catch** rare anime characters.
-⚔️ **Battle** other players with your characters.
-🐣 **Hatch** eggs and grow your collection.
-🎫 **Progress** through the Battle Pass!
+**🔥 What can I do?**
+🌸 **Catch** thousands of anime characters.
+⚔️ **Battle** friends in strategic duels.
+🐣 **Hatch** eggs & raise powerful pets.
+🎫 **Rank Up** & unlock exclusive rewards.
+🏰 **Build** your Harem & dominate the leaderboard!
 ━━━━━━━━━━━━━━━━━━━━━━━━
 
-_Add me to your group and start your journey today!_
+_Add me to your group & start your adventure!_ 🚀
 """
 
                  
@@ -33,8 +35,8 @@ HELP_DATA = {
         "buttons": [
             [types.InlineKeyboardButton("🎮 Core Basics", callback_data="help:core"),
              types.InlineKeyboardButton("🐾 Pet System", callback_data="help:pet")],
-            [types.InlineKeyboardButton("⚔️ Battle & Shards", callback_data="help:battle"),
-             types.InlineKeyboardButton("🎫 Battle Pass", callback_data="help:progression")],
+            [types.InlineKeyboardButton("⚔️ Battle & Economy", callback_data="help:battle"),
+             types.InlineKeyboardButton("🎫 Progression", callback_data="help:progression")],
             [types.InlineKeyboardButton("ℹ️ Info & Stats", callback_data="help:info")],
             [types.InlineKeyboardButton("⤾ Main Menu", callback_data="st:b")]
         ]
@@ -46,7 +48,7 @@ HELP_DATA = {
 🔹 `/seal <name>` - Catch a spawned character
 🔹 `/harem` - View your character collection
 🔹 `/fav <id>` - Set a favorite character
-🔹 `/trade <my_id> <their_id>` - Trade with others
+🔹 `/trade <user> <amount>` - Trade characters/items
 🔹 `/gift <id>` - Gift a character to a user
 🔹 `/quiz` - Test your anime knowledge & have fun!
 """,
@@ -59,7 +61,6 @@ HELP_DATA = {
 🔹 `/mypet` - Manage active pet & view stats
 🔹 `/hunt` - Send pet to find loot, Shards & eggs
 🔹 `/eggs` - Manage and hatch your eggs
-
 """,
     },
     "BATTLE": {
@@ -69,9 +70,9 @@ HELP_DATA = {
 🔹 `/battle <amount>` - PvP duel (Turn-based strategy!)
 🔹 `/balance` - Check your Shards & Zenith
 🔹 `/shop` - Universal Shop Hub (Chars, Pets, Items)
-🔹 `/daily` - Claim daily rewards
-🔹 `/top` - Global leaderboard
-
+🔹 `/daily` - Claim daily rewards (Streaks!)
+🔹 `/weekly` - Claim weekly bonus (Every 7 days)
+🔹 `/top` - Global leaderboard (Harem, Shards, Level)
 """,
     },
     "INFO": {
@@ -80,6 +81,7 @@ HELP_DATA = {
 
 🔹 `/stats` - Global bot statistics
 🔹 `/rarities` - Character counts by rarity
+🔹 `/ctop` - Top chat members (Chat Leaderboard)
 🔹 `/ping` - Real-time system status
 🔹 `/help` - Show this interactive menu
 """,
