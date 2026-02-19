@@ -1,0 +1,32 @@
+from pydantic import BaseModel, Field
+from typing import List, Optional
+
+class User(BaseModel):
+    id: int
+    first_name: str
+    username: Optional[str] = None
+    balance: int = 0
+    characters: List[dict] = []
+    
+    # Daily Streak
+    daily_streak: int = 0
+    last_daily_date: Optional[str] = None
+    
+    # Weekly
+    last_weekly_date: Optional[str] = None
+    
+    # Hunting
+    last_hunt_date: Optional[str] = None
+    
+    # Progression
+    xp: int = 0
+    level: int = 0
+    claimed_levels: List[int] = []
+    pass_type: str = "free" # free, premium, elite
+
+class Character(BaseModel):
+    id: str
+    name: str
+    anime: str
+    rarity: str
+    img_url: str
