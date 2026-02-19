@@ -19,9 +19,15 @@ async def harem_handler(_, message: types.Message):
     user_id = message.from_user.id
     await show_harem(message, user_id, 0)
 
-@app.on_callback_query(filters.regex(r"^harem_view$"))
+@app.on_callback_query(filters.regex(r"^harem_view"))
 async def harem_view_btn_handler(_, query: types.CallbackQuery):
-    await show_harem(query, query.from_user.id, 0)
+    data = query.data.split(":")
+    owner_id = int(data[1]) if len(data) > 1 else query.from_user.id
+    
+    if query.from_user.id != owner_id:
+        return await query.answer("❌ This is not your profile!", show_alert=True)
+        
+    await show_harem(query, owner_id, 0)
     await query.answer()
 
 async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], user_id: int, page: int):

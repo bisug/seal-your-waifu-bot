@@ -32,27 +32,42 @@ async def get_active_pet(user_id: int) -> dict:
     return next((p for p in pets if p["name"] == current_pet_name), None)
 
 async def add_pet_xp(user_id: int, pet_name: str, xp_amount: int):
-                                                             
-    user = await user_collection.find_one({"id": user_id})
+    """
+    Adds XP to a pet atomically where possible.
+    Note: Level-ups still require multi-step logic but we reduce the race window.
+    """
+    user = await user_collection.find_one({"id": user_id, "pets.name": pet_name})
     if not user:
         return
 
-    pets = user.get("pets", [])
-    for pet in pets:
-        if pet["name"] == pet_name:
-            xp = pet.get("xp", 0) + xp_amount
-            level = pet.get("level", 1)
-            
-                                                            
-            xp_needed = level * 100
-            if xp >= xp_needed:
-                xp -= xp_needed
-                level += 1
-                                                      
-                pet["luck"] = round(pet.get("luck", 0.1) + 0.002, 3)
-            
-            pet["xp"] = xp
-            pet["level"] = level
-            break
+    # 1. Atomic XP increment
+    await user_collection.update_one(
+        {"id": user_id, "pets.name": pet_name},
+        {"$inc": {"pets.$.xp": xp_amount}}
+    )
+
+    # 2. Re-fetch to check for level up
+    user = await user_collection.find_one({"id": user_id, "pets.name": pet_name})
+    pet = next((p for p in user['pets'] if p['name'] == pet_name), None)
     
-    await user_collection.update_one({"id": user_id}, {"$set": {"pets": pets}})
+    if pet:
+        level = pet.get("level", 1)
+        xp = pet.get("xp", 0)
+        xp_needed = level * 100
+        
+        if xp >= xp_needed:
+            # Level Up!
+            new_xp = xp - xp_needed
+            new_level = level + 1
+            new_luck = round(pet.get("luck", 0.1) + 0.002, 3)
+            
+            await user_collection.update_one(
+                {"id": user_id, "pets.name": pet_name},
+                {
+                    "$set": {
+                        "pets.$.xp": new_xp,
+                        "pets.$.level": new_level,
+                        "pets.$.luck": new_luck
+                    }
+                }
+            )

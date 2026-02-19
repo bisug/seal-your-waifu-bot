@@ -88,7 +88,7 @@ async def profile_handler(_, message: types.Message):
 
              
     buttons = [
-        [types.InlineKeyboardButton("🎒 Harem", callback_data="harem_view")]
+        [types.InlineKeyboardButton("🎒 Harem", callback_data=f"harem_view:{user_id}")]
     ]
 
                             
