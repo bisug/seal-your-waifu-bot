@@ -62,16 +62,19 @@ async def main():
     """Main entry point using Pyrogram's startup sequence."""
     LOGGER.info("Initializing Seal-Bot...")
     
+    # Register the message counter handler
+    # Note: filters.group & ~filters.command(...) is efficient enough.
     app.add_handler(MessageHandler(message_counter, filters.group & ~filters.command(["seal", "messagecount"])), group=1)
     
-    # 1. Start App first to connect
+    # Start the Client
     await app.start()
     
-    # 2. Fetch Bot Identity
+    # Fetch Bot Identity
     me = await app.get_me()
     LOGGER.info(f"Started as {me.first_name} (@{me.username})")
     
-    # 3. Update Config & Global Variables
+    # Update Config & Global Variables
+    # We should move this to a proper config manager later, but keeping for compatibility.
     from Grabber import config
     import Grabber
     
@@ -83,16 +86,16 @@ async def main():
     Grabber.BOT_ID = me.id
     Grabber.BOT_NAME = me.first_name
     
-    # 4. Load Plugins (Now they will see correct BOT_USERNAME)
+    # Load Plugins
     load_plugins()
 
+    # Set Commands
     await set_bot_commands(app)
+    
     LOGGER.info("Bot is now online and active!")
     
-                          
     await idle()
     
-                   
     await app.stop()
     LOGGER.info("Bot shut down cleanly.")
 

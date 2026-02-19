@@ -60,6 +60,7 @@ async def send_shop_hub(message_or_query):
 
     try:
         if isinstance(message_or_query, types.CallbackQuery):
+            LOGGER.info("DEBUG: Calling edit_message_media for shop hub")
             await message_or_query.edit_message_media(
                 media=types.InputMediaPhoto(media=SHOP_BANNER, caption=text),
                 reply_markup=reply_markup
@@ -154,6 +155,7 @@ async def send_shop_message(message, user_id):
 
     try:
         if isinstance(message, types.CallbackQuery):
+            LOGGER.info("DEBUG: Calling edit_message_media for shop")
             await message.edit_message_media(
                 media=types.InputMediaPhoto(media=char.img_url, caption=text),
                 reply_markup=markup
