@@ -30,7 +30,7 @@ async def get_daily_shop_characters():
 async def cshop_cmd(_, message: types.Message):
     chars = await get_daily_shop_characters()
     if not chars:
-        await message.reply_text("🚫 No shop characters available.")
+        await message.reply_text("🚫 No shop characters available.", parse_mode=enums.ParseMode.MARKDOWN)
         return
 
     user_id = message.from_user.id
@@ -60,25 +60,24 @@ async def send_shop_hub(message_or_query):
 
     try:
         if isinstance(message_or_query, types.CallbackQuery):
-            LOGGER.info("DEBUG: Calling edit_message_media for shop hub")
             await message_or_query.edit_message_media(
                 media=types.InputMediaPhoto(media=SHOP_BANNER, caption=text),
                 reply_markup=reply_markup
             )
         else:
             await message_or_query.reply_photo(
-                photo=SHOP_BANNER, caption=text, reply_markup=reply_markup
+                photo=SHOP_BANNER, caption=text, reply_markup=reply_markup, parse_mode=enums.ParseMode.MARKDOWN
             )
     except Exception as e:
         LOGGER.error(f"Error in send_shop_hub: {e}")
                                                                   
         if isinstance(message_or_query, types.CallbackQuery):
             try:
-                await message_or_query.message.edit_text(text, reply_markup=reply_markup)
+                await message_or_query.message.edit_text(text, reply_markup=reply_markup, parse_mode=enums.ParseMode.MARKDOWN)
             except:
                 pass
         else:
-            await message_or_query.reply_text(text, reply_markup=reply_markup)
+            await message_or_query.reply_text(text, reply_markup=reply_markup, parse_mode=enums.ParseMode.MARKDOWN)
 
 @app.on_callback_query(filters.regex(r"^hub_(char|pet|pass|egg|main)$"))
 async def hub_callback_handler(_, query: types.CallbackQuery):
@@ -155,7 +154,6 @@ async def send_shop_message(message, user_id):
 
     try:
         if isinstance(message, types.CallbackQuery):
-            LOGGER.info("DEBUG: Calling edit_message_media for shop")
             await message.edit_message_media(
                 media=types.InputMediaPhoto(media=char.img_url, caption=text),
                 reply_markup=markup

@@ -5,13 +5,6 @@ import time
 StartTime = time.time()
 
                 
-logging.basicConfig(
-    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
-    handlers=[logging.FileHandler("log.txt"), logging.StreamHandler()],
-    level=logging.INFO,
-)
-
-
 LOGGER = logging.getLogger(__name__)
 
                              

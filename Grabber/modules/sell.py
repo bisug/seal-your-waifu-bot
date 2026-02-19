@@ -41,8 +41,8 @@ async def sell_handler(_, message: types.Message):
 
     buttons = [
         [
-            types.InlineKeyboardButton("✅ Confirm", callback_data=f"sell_c_{char_id}"),
-            types.InlineKeyboardButton("❌ Cancel", callback_data="sell_a")
+            types.InlineKeyboardButton("✅ Confirm", callback_data=f"sell_c_{char_id}:{user_id}"),
+            types.InlineKeyboardButton("❌ Cancel", callback_data=f"sell_a:{user_id}")
         ]
     ]
     
@@ -67,15 +67,25 @@ async def sell_handler(_, message: types.Message):
 
 @app.on_callback_query(filters.regex(r"^sell_"))
 async def sell_callback_handler(_, query: types.CallbackQuery):
-    user_id = query.from_user.id
     data = query.data.split("_")
     action = data[1]
+    
+    # Handle both sell_c_{id}:{user_id} and sell_a:{user_id}
+    parts = data[2].split(":") if len(data) > 2 else []
+    if action == "a":
+        owner_id = int(data[2].split(":")[1]) if ":" in data[2] else 0 # Fallback for old buttons
+    else:
+        owner_id = int(parts[1]) if len(parts) > 1 else 0
+
+    if owner_id and query.from_user.id != owner_id:
+        return await query.answer("❌ This is not your menu!", show_alert=True)
 
     if action == "a":
         await query.message.edit_text("❌ **Selling cancelled.**", parse_mode=enums.ParseMode.MARKDOWN)
         return
-
-    char_id = data[2]
+        
+    char_id = parts[0]
+    user_id = query.from_user.id
     
                                                                 
     user = await get_user_data(user_id)

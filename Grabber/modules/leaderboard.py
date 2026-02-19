@@ -63,7 +63,7 @@ def build_leaderboard_text(metric: str, users: list):
     text += "\n━━━━━━━━━━━━━━━━━━━━━"
     return text
 
-def build_leaderboard_keyboard(current_metric: str):
+def build_leaderboard_keyboard(current_metric: str, user_id: int):
                                                              
     idx = METRIC_ORDER.index(current_metric)
     prev_metric = METRIC_ORDER[(idx - 1) % len(METRIC_ORDER)]
@@ -71,12 +71,12 @@ def build_leaderboard_keyboard(current_metric: str):
     
     buttons = [
         [
-            types.InlineKeyboardButton("⬅️", callback_data=f"top_switch:{prev_metric}"),
+            types.InlineKeyboardButton("⬅️", callback_data=f"top_switch:{prev_metric}:{user_id}"),
             types.InlineKeyboardButton(METRICS[current_metric]['label'], callback_data="top_info"),
-            types.InlineKeyboardButton("➡️", callback_data=f"top_switch:{next_metric}"),
+            types.InlineKeyboardButton("➡️", callback_data=f"top_switch:{next_metric}:{user_id}"),
         ],
         [
-            types.InlineKeyboardButton("❌ Close", callback_data="top_close")
+            types.InlineKeyboardButton("❌ Close", callback_data=f"top_close:{user_id}")
         ]
     ]
     return types.InlineKeyboardMarkup(buttons)
@@ -88,17 +88,22 @@ async def global_leaderboard_handler(_, message: types.Message):
                                   
     users = await get_top_users("harem")
     text = build_leaderboard_text("harem", users)
-    keyboard = build_leaderboard_keyboard("harem")
+    keyboard = build_leaderboard_keyboard("harem", message.from_user.id)
     
     await message.reply_text(text, reply_markup=keyboard, parse_mode=enums.ParseMode.MARKDOWN)
 
 @app.on_callback_query(filters.regex(r"^top_switch:"))
 async def leaderboard_callback(_, query: types.CallbackQuery):
-    metric = query.data.split(":")[1]
+    data = query.data.split(":")
+    metric = data[1]
+    owner_id = int(data[2])
+    
+    if query.from_user.id != owner_id:
+        return await query.answer("❌ This is not your leaderboard!", show_alert=True)
     
     users = await get_top_users(metric)
     text = build_leaderboard_text(metric, users)
-    keyboard = build_leaderboard_keyboard(metric)
+    keyboard = build_leaderboard_keyboard(metric, owner_id)
     
     try:
         await query.message.edit_text(text, reply_markup=keyboard, parse_mode=enums.ParseMode.MARKDOWN)
@@ -106,8 +111,12 @@ async def leaderboard_callback(_, query: types.CallbackQuery):
         pass
     await query.answer()
 
-@app.on_callback_query(filters.regex(r"^top_close$"))
+@app.on_callback_query(filters.regex(r"^top_close:"))
 async def leaderboard_close_callback(_, query: types.CallbackQuery):
+    owner_id = int(query.data.split(":")[1])
+    if query.from_user.id != owner_id:
+        return await query.answer("❌ This is not your leaderboard!", show_alert=True)
+        
     await query.message.delete()
     await query.answer("Leaderboard closed.")
 

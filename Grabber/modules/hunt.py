@@ -51,7 +51,7 @@ async def hunt_cmd(_, message: types.Message):
     cooldown_active, seconds_left = is_on_cooldown(user_id)
 
     if cooldown_active:
-        return await message.reply_text(f"⏳ Please wait {seconds_left}s before hunting again.")
+        return await message.reply_text(f"⏳ Please wait {seconds_left}s before hunting again.", parse_mode=enums.ParseMode.MARKDOWN)
                       
     user = await user_collection.find_one({"id": user_id}) or {}
     pets = user.get("pets", [DEFAULT_PET])
@@ -277,12 +277,13 @@ async def egg_incubate_callback(_, query: types.CallbackQuery):
                       
     ready_time = datetime.now() + timedelta(minutes=wait_min)
     
+    # Use ID-based update to be safe from positional shifts
     await user_collection.update_one(
-        {"id": user_id},
+        {"id": user_id, "eggs.id": egg["id"]},
         {
             "$set": {
-                f"eggs.{page}.status": "incubating",
-                f"eggs.{page}.hatch_time": ready_time
+                "eggs.$.status": "incubating",
+                "eggs.$.hatch_time": ready_time
             }
         }
     )
@@ -402,7 +403,7 @@ async def crack_open_egg(message, user_id, egg, index):
                                
         await add_xp(user_id, 15, "egg_hatch")
         
-        await msg.edit_text("🎉 Success! Sending details...")
+        await msg.edit_text("🎉 Success! Sending details...", parse_mode=enums.ParseMode.MARKDOWN)
         await message.reply_photo(
             photo=character["img_url"],
             caption=f"🐣 **Hatched Successfully!**\n\n"
@@ -412,4 +413,4 @@ async def crack_open_egg(message, user_id, egg, index):
             parse_mode=enums.ParseMode.MARKDOWN
         )
     else:
-        await msg.edit_text("⚠️ The egg was empty (Database error: No chars for this rarity).")
+        await msg.edit_text("⚠️ The egg was empty (Database error: No chars for this rarity).", parse_mode=enums.ParseMode.MARKDOWN)

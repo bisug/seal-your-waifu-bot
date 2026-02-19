@@ -60,7 +60,6 @@ async def send_petshop_page(message_or_query_obj, page: int, user_id: int):
 
     try:
         if isinstance(message_or_query_obj, types.CallbackQuery):
-            LOGGER.info("DEBUG: Calling edit_message_media for petshop")
             await message_or_query_obj.edit_message_media(
                 media=types.InputMediaPhoto(media=pet["img"], caption=caption),
                 reply_markup=reply_markup
@@ -140,7 +139,7 @@ async def buypet_cmd(_, message: types.Message):
     try:
         pet_id = int(message.command[1])
     except ValueError:
-        return await message.reply_text("❌ Invalid pet ID.")
+        return await message.reply_text("❌ Invalid pet ID.", parse_mode=enums.ParseMode.MARKDOWN)
 
     result = await perform_pet_purchase(message.from_user.id, pet_id)
     if result is True:
@@ -151,7 +150,7 @@ async def buypet_cmd(_, message: types.Message):
             parse_mode=enums.ParseMode.MARKDOWN
         )
     else:
-        await message.reply_text(result)
+        await message.reply_text(result, parse_mode=enums.ParseMode.MARKDOWN)
 
                                 
 async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
@@ -162,9 +161,9 @@ async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
     if not pets:
         text = "You have no pets. Use /petshop to buy one."
         if isinstance(message_or_query_obj, types.CallbackQuery):
-            await message_or_query_obj.message.edit_text(text)
+            await message_or_query_obj.message.edit_text(text, parse_mode=enums.ParseMode.MARKDOWN)
         else:
-            await message_or_query_obj.reply_text(text)
+            await message_or_query_obj.reply_text(text, parse_mode=enums.ParseMode.MARKDOWN)
         return
 
     page = page % len(pets)
