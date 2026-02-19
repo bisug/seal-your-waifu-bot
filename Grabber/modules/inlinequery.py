@@ -182,7 +182,7 @@ async def gallery_view_callback(_, query: types.CallbackQuery):
         ]
         
         await query.message.edit_media(
-            media=types.InputMediaPhoto(media=img_url, caption=caption, parse_mode=enums.ParseMode.MARKDOWN),
+            media=types.InputMediaPhoto(media=img_url, caption=caption),
             reply_markup=types.InlineKeyboardMarkup(buttons)
         )
         await query.answer()
