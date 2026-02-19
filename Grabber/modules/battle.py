@@ -116,13 +116,13 @@ def simulate_battle(p1_stats, p2_stats, p1_name, p2_name):
 @app.on_message(filters.command("battle") & filters.group)
 async def battle_challenge_handler(_, message: types.Message):
     if not message.reply_to_message:
-        return await message.reply_text("⚠️ Challenge someone by replying to their message!")
+        return await message.reply_text("⚠️ Challenge someone by replying to their message!", parse_mode=enums.ParseMode.MARKDOWN)
 
     attacker = message.from_user
     defender = message.reply_to_message.from_user
 
     if attacker.id == defender.id:
-        return await message.reply_text("⚠️ You can't fight yourself!")
+        return await message.reply_text("⚠️ You can't fight yourself!", parse_mode=enums.ParseMode.MARKDOWN)
 
                               
     pair_key = tuple(sorted((attacker.id, defender.id)))
@@ -260,4 +260,7 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
 
     except Exception as e:
         LOGGER.error(f"Battle Error: {e}")
-        await query.message.reply_text("❌ A technical error occurred during battle.", parse_mode=enums.ParseMode.MARKDOWN)
+        try:
+            await query.message.reply_text("❌ A technical error occurred during battle.", parse_mode=enums.ParseMode.MARKDOWN)
+        except:
+            pass

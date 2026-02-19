@@ -53,12 +53,12 @@ async def view_pass(_, message: types.Message):
                                        
     buttons = []
     if pass_type == "free":
-        buttons.append([types.InlineKeyboardButton("⭐ Upgrade to Premium", callback_data="buypass_premium")])
-        buttons.append([types.InlineKeyboardButton("💎 Upgrade to Elite", callback_data="buypass_elite")])
+        buttons.append([types.InlineKeyboardButton("⭐ Upgrade to Premium", callback_data=f"buyask_premium:{user_id}")])
+        buttons.append([types.InlineKeyboardButton("💎 Upgrade to Elite", callback_data=f"buyask_elite:{user_id}")])
     elif pass_type == "premium":
-        buttons.append([types.InlineKeyboardButton("💎 Upgrade to Elite", callback_data="buypass_elite")])
+        buttons.append([types.InlineKeyboardButton("💎 Upgrade to Elite", callback_data=f"buyask_elite:{user_id}")])
     
-    buttons.append([types.InlineKeyboardButton("🎁 View Rewards", callback_data="pass_rewards")])
+    buttons.append([types.InlineKeyboardButton("🎁 View Rewards", callback_data=f"pass_rewards:{user_id}")])
     
     markup = types.InlineKeyboardMarkup(buttons)
     await message.reply_text(text, parse_mode=enums.ParseMode.MARKDOWN, reply_markup=markup)
@@ -88,33 +88,45 @@ async def view_pass_inline(query: types.CallbackQuery):
     
     buttons = []
     if pass_type == "free":
-        buttons.append([types.InlineKeyboardButton("⭐ Upgrade to Premium", callback_data="buyask_premium")])
-        buttons.append([types.InlineKeyboardButton("💎 Upgrade to Elite", callback_data="buyask_elite")])
+        buttons.append([types.InlineKeyboardButton("⭐ Upgrade to Premium", callback_data=f"buyask_premium:{user_id}")])
+        buttons.append([types.InlineKeyboardButton("💎 Upgrade to Elite", callback_data=f"buyask_elite:{user_id}")])
     elif pass_type == "premium":
-        buttons.append([types.InlineKeyboardButton("💎 Upgrade to Elite", callback_data="buyask_elite")])
+        buttons.append([types.InlineKeyboardButton("💎 Upgrade to Elite", callback_data=f"buyask_elite:{user_id}")])
     
-    buttons.append([types.InlineKeyboardButton("🎁 View Rewards", callback_data="pass_rewards")])
+    buttons.append([types.InlineKeyboardButton("🎁 View Rewards", callback_data=f"pass_rewards:{user_id}")])
     buttons.append([types.InlineKeyboardButton("⤾ Back to Hub", callback_data="hub_main")])
     
     await query.message.edit_text(text, parse_mode=enums.ParseMode.MARKDOWN, reply_markup=types.InlineKeyboardMarkup(buttons))
 
                                   
-@app.on_callback_query(filters.regex(r"^buyask_(premium|elite)$"))
+@app.on_callback_query(filters.regex(r"^buyask_(premium|elite):"))
 async def buypass_ask_callback(_, query: types.CallbackQuery):
-    tier = query.data.split("_")[1]
+    data = query.data.split(":")
+    tier = data[0].split("_")[1]
+    owner_id = int(data[1])
+    
+    if query.from_user.id != owner_id:
+        return await query.answer("❌ This is not your menu!", show_alert=True)
+        
     price = PASS_PRICES[tier]
     text = f"⚠️ **Confirm Upgrade**\n\nUpgrade to **{tier.capitalize()} Pass** for **{price} ⧫**?"
     keyboard = [[
-        types.InlineKeyboardButton("Confirm ✅", callback_data=f"buypass_{tier}"),
-        types.InlineKeyboardButton("Cancel ❌", callback_data="hub_pass")
+        types.InlineKeyboardButton("Confirm ✅", callback_data=f"buypass_{tier}:{owner_id}"),
+        types.InlineKeyboardButton("Cancel ❌", callback_data=f"pass_back:{owner_id}")
     ]]
     await query.message.edit_text(text, parse_mode=enums.ParseMode.MARKDOWN, reply_markup=types.InlineKeyboardMarkup(keyboard))
 
                                             
-@app.on_callback_query(filters.regex(r"^buypass_(premium|elite)$"))
+@app.on_callback_query(filters.regex(r"^buypass_(premium|elite):"))
 async def buypass_callback(_, query: types.CallbackQuery):
+    data = query.data.split(":")
+    tier = data[0].split("_")[1]
+    owner_id = int(data[1])
+    
+    if query.from_user.id != owner_id:
+        return await query.answer("❌ This is not your menu!", show_alert=True)
+        
     user_id = query.from_user.id
-    tier = query.data.split("_")[1]
     price = PASS_PRICES[tier]
     
     user = await user_collection.find_one({"id": user_id})
@@ -165,9 +177,9 @@ async def buypass_callback(_, query: types.CallbackQuery):
         f"✨ _Upgraded rewards active!_"
     )
     
-    buttons = [[types.InlineKeyboardButton("🎁 View Rewards", callback_data="pass_rewards")]]
+    buttons = [[types.InlineKeyboardButton("🎁 View Rewards", callback_data=f"pass_rewards:{user_id}")]]
     if tier == "premium":
-        buttons.insert(0, [types.InlineKeyboardButton("💎 Upgrade to Elite", callback_data="buypass_elite")])
+        buttons.insert(0, [types.InlineKeyboardButton("💎 Upgrade to Elite", callback_data=f"buypass_elite:{user_id}")])
     
     try:
         await query.message.edit_text(text, parse_mode=enums.ParseMode.MARKDOWN, reply_markup=types.InlineKeyboardMarkup(buttons))
@@ -175,8 +187,14 @@ async def buypass_callback(_, query: types.CallbackQuery):
         pass
 
                         
-@app.on_callback_query(filters.regex(r"^pass_rewards$"))
+@app.on_callback_query(filters.regex(r"^pass_rewards:"))
 async def view_rewards_callback(_, query: types.CallbackQuery):
+    data = query.data.split(":")
+    owner_id = int(data[1])
+    
+    if query.from_user.id != owner_id:
+        return await query.answer("❌ This is not your menu!", show_alert=True)
+        
     user_id = query.from_user.id
     progress = await get_user_progress(user_id)
     
@@ -208,11 +226,16 @@ async def view_rewards_callback(_, query: types.CallbackQuery):
         
         text += f"{status} **Level {milestone}:** {reward_text}\n"
     
-    buttons = [[types.InlineKeyboardButton("⤾ Back", callback_data="pass_back")]]
+    buttons = [[types.InlineKeyboardButton("⤾ Back", callback_data=f"pass_back:{user_id}")]]
     await query.message.edit_text(text, parse_mode=enums.ParseMode.MARKDOWN, reply_markup=types.InlineKeyboardMarkup(buttons))
 
-@app.on_callback_query(filters.regex(r"^pass_back$"))
+@app.on_callback_query(filters.regex(r"^pass_back:"))
 async def pass_back_callback(_, query: types.CallbackQuery):
+    data = query.data.split(":")
+    owner_id = int(data[1])
+    
+    if query.from_user.id != owner_id:
+        return await query.answer("❌ This is not your menu!", show_alert=True)
                               
     user_id = query.from_user.id
     progress = await get_user_progress(user_id)
@@ -237,12 +260,12 @@ async def pass_back_callback(_, query: types.CallbackQuery):
     
     buttons = []
     if pass_type == "free":
-        buttons.append([types.InlineKeyboardButton("⭐ Upgrade to Premium", callback_data="buypass_premium")])
-        buttons.append([types.InlineKeyboardButton("💎 Upgrade to Elite", callback_data="buypass_elite")])
+        buttons.append([types.InlineKeyboardButton("⭐ Upgrade to Premium", callback_data=f"buypass_premium:{user_id}")])
+        buttons.append([types.InlineKeyboardButton("💎 Upgrade to Elite", callback_data=f"buypass_elite:{user_id}")])
     elif pass_type == "premium":
-        buttons.append([types.InlineKeyboardButton("💎 Upgrade to Elite", callback_data="buypass_elite")])
+        buttons.append([types.InlineKeyboardButton("💎 Upgrade to Elite", callback_data=f"buypass_elite:{user_id}")])
     
-    buttons.append([types.InlineKeyboardButton("🎁 View Rewards", callback_data="pass_rewards")])
+    buttons.append([types.InlineKeyboardButton("🎁 View Rewards", callback_data=f"pass_rewards:{user_id}")])
     
     await query.message.edit_text(text, parse_mode=enums.ParseMode.MARKDOWN, reply_markup=types.InlineKeyboardMarkup(buttons))
 
