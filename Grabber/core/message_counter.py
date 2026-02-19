@@ -72,7 +72,8 @@ async def message_counter(_, message: types.Message):
     elif active_count >= 3:
         base_freq = 75
     else:
-        base_freq = await get_chat_frequency(chat_id)
+        freq = await get_chat_frequency(chat_id)
+        base_freq = freq if freq is not None else 100
 
     if count % int(base_freq * multiplier) == 0:
                                    
