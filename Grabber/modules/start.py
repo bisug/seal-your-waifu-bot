@@ -26,7 +26,7 @@ START_TEXT = """
 _Add me to your group and start your journey today!_
 """
 
-# Help Categories
+                 
 HELP_DATA = {
     "MAIN": {
         "text": "**📚 Seal Bot - Help Menu**\n\nSelect a category below to see available commands:",
@@ -104,8 +104,8 @@ _🎁 Unlock rewards at levels 5, 10, 25, and 50_
 async def start_handler(_, message: types.Message):
     user_id = message.from_user.id
     
-    # Track new users & Referrals
-    # Check if user exists in MAIN collection (not just pm_users)
+                                 
+                                                                 
     existing_user = await user_collection.find_one({"id": user_id})
     
     await total_pm_users.update_one(
@@ -114,11 +114,11 @@ async def start_handler(_, message: types.Message):
         upsert=True
     )
     
-    # Referral Logic
+                    
     if len(message.command) > 1:
         param = message.command[1]
         
-        # Deep Linking for Character Location
+                                             
         if param.startswith("locate_"):
             try:
                 char_id = param.split("_")[1]
@@ -138,7 +138,7 @@ async def start_handler(_, message: types.Message):
                         caption=response_message,
                         parse_mode=enums.ParseMode.MARKDOWN
                     )
-                    return # Stop further start message processing
+                    return                                        
                 else:
                     await message.reply_text("❌ Character not found.")
                     return
@@ -150,11 +150,11 @@ async def start_handler(_, message: types.Message):
             try:
                 referrer_id = int(param.split("_")[1])
                 if referrer_id != user_id:
-                    # Grant Rewards
-                    # 1. New User Bonus (1500 Coins + Lvl 10 Pet)
+                                   
+                                                                 
                     upgraded_pet = DEFAULT_PET.copy()
                     upgraded_pet["level"] = 10
-                    upgraded_pet["hp"] += 45 # +5 per level * 9 levels
+                    upgraded_pet["hp"] += 45                          
                     upgraded_pet["atk"] += 18
                     upgraded_pet["spd"] += 9
                     
@@ -171,7 +171,7 @@ async def start_handler(_, message: types.Message):
                         upsert=True
                     )
                     
-                    # 2. Inviter Reward
+                                       
                     await user_collection.update_one(
                         {"id": referrer_id},
                         {
@@ -181,7 +181,7 @@ async def start_handler(_, message: types.Message):
                     await add_xp(referrer_id, 50, "referral")
                     await check_achievements(referrer_id)
                     
-                    # Notify Inviter
+                                    
                     try:
                         await app.send_message(
                             referrer_id,
@@ -205,7 +205,8 @@ async def start_handler(_, message: types.Message):
         ])
         
         first_name = md_escape(message.from_user.first_name)
-        text = START_TEXT.format(first_name=first_name, bot_name=app.name)
+        from Grabber import BOT_NAME
+        text = START_TEXT.format(first_name=first_name, bot_name=BOT_NAME)
 
         await message.reply_photo(
             photo=random_photo(),
@@ -215,7 +216,7 @@ async def start_handler(_, message: types.Message):
     else:
         await message.reply_text("✅ **I'm active and ready to drop characters!**")
 
-# Handle Start Menu & Back
+                          
 @app.on_callback_query(filters.regex(r"^st:(h|b)"))
 async def start_callback_handler(_, query: types.CallbackQuery):
     action = query.data.split(":")[1]
@@ -228,7 +229,8 @@ async def start_callback_handler(_, query: types.CallbackQuery):
     ])
     
     first_name = md_escape(query.from_user.first_name)
-    text = START_TEXT.format(first_name=first_name, bot_name=app.name)
+    from Grabber import BOT_NAME
+    text = START_TEXT.format(first_name=first_name, bot_name=BOT_NAME)
     
     try:
         if query.message.photo:
@@ -240,7 +242,7 @@ async def start_callback_handler(_, query: types.CallbackQuery):
     
     await query.answer()
 
-# Handle Interactive Help
+                         
 @app.on_callback_query(filters.regex(r"^help:(.+)"))
 async def help_callback_handler(_, query: types.CallbackQuery):
     module = query.data.split(":")[1].upper()

@@ -41,18 +41,18 @@ async def give_cmd(_, message: types.Message) -> None:
 
     character_id = message.command[1]
 
-    # Retrieve character from the collection based on the provided ID
+                                                                     
     character = await collection.find_one({'id': character_id})
     if not character:
         await message.reply_text('Character not found.')
         return
 
-    # Check if the user already has the character in their harem
+                                                                
     existing_user = await user_collection.find_one({'id': user_id, 'characters.id': character_id})
     if existing_user:
         await message.reply_text(f'You already have {character["name"]} in your harem!')
         return
 
-    # Update the user's harem with the character
+                                                
     await user_collection.update_one({'id': user_id}, {'$push': {'characters': character}})
     await message.reply_text(f'Character {character["name"]} added to your harem!')

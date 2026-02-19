@@ -3,11 +3,11 @@ import random
 from pyrogram import filters, types, enums
 from Grabber import app, user_collection
 
-CURRENCY_SYMBOL = "⬪"  # Shards symbol
+CURRENCY_SYMBOL = "⬪"                 
 
 @app.on_message(filters.command("bet"))
 async def bet_cmd(_, message: types.Message):
-    """Handles the /bet command for coin flipping."""
+                                                     
     user_id = message.from_user.id
     
     if len(message.command) < 3:
@@ -20,8 +20,8 @@ async def bet_cmd(_, message: types.Message):
         return
 
     try:
-        amount = int(message.command[1])  # Bet amount
-        choice = message.command[2].lower()  # "h" for heads, "t" for tails
+        amount = int(message.command[1])              
+        choice = message.command[2].lower()                                
     except ValueError:
         await message.reply_text("❌ Please enter a valid number for the amount.")
         return
@@ -34,7 +34,7 @@ async def bet_cmd(_, message: types.Message):
         await message.reply_text("❌ Amount must be a **positive number**.", parse_mode=enums.ParseMode.MARKDOWN)
         return
 
-    # Fetch user balance
+                        
     user_data = await user_collection.find_one({'id': user_id}, projection={'balance': 1})
 
     if not user_data:
@@ -67,13 +67,13 @@ async def bet_cmd(_, message: types.Message):
     user_choice_name = "Heads" if choice == "h" else "Tails"
     await message.reply_text(f"🎰 **Placing Bet:** {amount:,} ⬪\n🪙 **You Chose:** {user_choice_name}", parse_mode=enums.ParseMode.MARKDOWN)  
 
-    await asyncio.sleep(2)  # Suspense delay
+    await asyncio.sleep(2)                  
 
-    # 40% win chance as per original logic
+                                          
     is_win = random.randint(1, 100) <= 40
 
     if is_win:
-        win_multiplier = 2 # 2x as per original winning = amount * 2
+        win_multiplier = 2                                          
         winnings = amount * win_multiplier
         new_balance = balance_amount + winnings  
         result_text = (
@@ -92,7 +92,7 @@ async def bet_cmd(_, message: types.Message):
             f"🏦 **New Balance:** {new_balance:,} ⬪"
         )
 
-    # Update user balance
+                         
     await user_collection.update_one({'id': user_id}, {'$set': {'balance': new_balance}})
 
     await message.reply_text(result_text, parse_mode=enums.ParseMode.MARKDOWN)

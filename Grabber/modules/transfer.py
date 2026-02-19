@@ -3,10 +3,10 @@ from pyrogram import filters, types, enums
 from Grabber import app, user_collection, LOGGER
 from config import config
 
-# Constants
+           
 EXTOL_API_KEY =""
 
-# Get Extol balance (used for receiver address)
+                                               
 async def get_extol_balance(api_key):
     async with httpx.AsyncClient() as client:
         resp = await client.get(
@@ -16,7 +16,7 @@ async def get_extol_balance(api_key):
         )
         return resp.json()
 
-# Transfer Extols using the static API key
+                                          
 async def transfer_extol(amount, to_address):
     async with httpx.AsyncClient() as client:
         resp = await client.get(
@@ -27,7 +27,7 @@ async def transfer_extol(amount, to_address):
         )
         return resp.json()
 
-# /tr <amount> <user_id>
+                        
 @app.on_message(filters.command("tr"))
 async def transfer_command(_, message: types.Message):
     if len(message.command) != 3:
@@ -47,7 +47,7 @@ async def transfer_command(_, message: types.Message):
         await message.reply_text("❌ Target user is not registered or missing Extol key.")
         return
 
-    # Get receiver Extol address
+                                
     try:
         recv_data = await get_extol_balance(receiver["extol_key"])
         receiver_address = recv_data.get("address")
@@ -60,7 +60,7 @@ async def transfer_command(_, message: types.Message):
         await message.reply_text("❌ Could not fetch receiver's Extol address.")
         return
 
-    # Perform transfer
+                      
     try:
         result = await transfer_extol(amount, receiver_address)
     except Exception as e:

@@ -1,118 +1,307 @@
-from pyrogram import filters, types, enums
-from Grabber import app, user_collection, OWNER_ID, sudo_users
+import random
+import httpx
+from pyrogram import filters, types, enums, errors
+from Grabber import app, collection, user_collection, sudo_users, OWNER_ID, LOGGER
+from Grabber.models import Character, User
+from config import config
+from Grabber.core.sessions import create_session, get_session
+from Grabber.modules.rarities import RARITY_MAP
+from Grabber.modules.quests import update_quest_progress
+from Grabber.modules.achievements import check_achievements
 
-AUTHORIZED_CONSOLES = set(sudo_users + [OWNER_ID])
+                       
+SHOP_RARITY = RARITY_MAP[8]         
+DEFAULT_ZENITH_PRICE = 5                        
+SHOP_PAGE_SIZE = 5
+SHOP_LIMIT = 20                             
+ADMINS = list(set(sudo_users + [OWNER_ID]))
+SHOP_BANNER = config.PHOTO_URL[0]
 
-async def get_target_user(message: types.Message):
-    """Helper to get user_id and amount from a command (ID/Reply)."""
-    if message.reply_to_message:
-        try:
-            amount = int(message.command[1])
-            return message.reply_to_message.from_user.id, amount, message.reply_to_message.from_user.first_name
-        except (IndexError, ValueError):
-            return None, None, None
-    else:
-        try:
-            target_id = int(message.command[1])
-            amount = int(message.command[2])
-            # Try to get user name
-            try:
-                user = await app.get_users(target_id)
-                name = user.first_name
-            except Exception:
-                name = f"ID: {target_id}"
-            return target_id, amount, name
-        except (IndexError, ValueError):
-            return None, None, None
+                        
+async def get_daily_shop_characters():
+    cursor = collection.find({"rarity": SHOP_RARITY})
+    characters_raw = await cursor.to_list(None)
+    if not characters_raw:
+        return []
+    characters = [Character(**c) for c in characters_raw]
+    return random.sample(characters, min(len(characters), SHOP_PAGE_SIZE))
 
-@app.on_message(filters.command("givecoin"))
-async def give_coin_handler(_, message: types.Message):
-    if message.from_user.id not in AUTHORIZED_CONSOLES:
-        return await message.reply_text("❌ **Unauthorized. Only for Admins.**", parse_mode=enums.ParseMode.MARKDOWN)
-
-    user_id, amount, name = await get_target_user(message)
-    if not user_id or amount <= 0:
-        return await message.reply_text(
-            "❌ **Invalid Format!**\n\n"
-            "1️⃣ **Reply:** `/givecoin <amount>`\n"
-            "2️⃣ **Direct:** `/givecoin <user_id> <amount>`",
-            parse_mode=enums.ParseMode.MARKDOWN
-        )
-
-    buttons = [[
-        types.InlineKeyboardButton("✅ Confirm Give", callback_data=f"admin_coin_give_{user_id}_{amount}"),
-        types.InlineKeyboardButton("❌ Cancel", callback_data="admin_coin_cancel")
-    ]]
-
-    await message.reply_text(
-        f"**🏦 Admin Transfer**\n\n"
-        f"**Action:** GIVING Shards\n"
-        f"**Target:** {name}\n"
-        f"**Amount:** {amount:,} ⬪\n\n"
-        "_Confirm this action?_",
-        reply_markup=types.InlineKeyboardMarkup(buttons),
-        parse_mode=enums.ParseMode.MARKDOWN
-    )
-
-@app.on_message(filters.command("takecoin"))
-async def take_coin_handler(_, message: types.Message):
-    if message.from_user.id not in AUTHORIZED_CONSOLES:
-        return await message.reply_text("❌ **Unauthorized. Only for Admins.**", parse_mode=enums.ParseMode.MARKDOWN)
-
-    user_id, amount, name = await get_target_user(message)
-    if not user_id or amount <= 0:
-        return await message.reply_text(
-            "❌ **Invalid Format!**\n\n"
-            "1️⃣ **Reply:** `/takecoin <amount>`\n"
-            "2️⃣ **Direct:** `/takecoin <user_id> <amount>`",
-            parse_mode=enums.ParseMode.MARKDOWN
-        )
-
-    buttons = [[
-        types.InlineKeyboardButton("✅ Confirm Take", callback_data=f"admin_coin_take_{user_id}_{amount}"),
-        types.InlineKeyboardButton("❌ Cancel", callback_data="admin_coin_cancel")
-    ]]
-
-    await message.reply_text(
-        f"**🏦 Admin Deduction**\n\n"
-        f"**Action:** TAKING Shards\n"
-        f"**Target:** {name}\n"
-        f"**Amount:** {amount:,} ⬪\n\n"
-        "_Confirm this action?_",
-        reply_markup=types.InlineKeyboardMarkup(buttons),
-        parse_mode=enums.ParseMode.MARKDOWN
-    )
-
-@app.on_callback_query(filters.regex(r"^admin_coin_"))
-async def admin_coin_callback(_, query: types.CallbackQuery):
-    if query.from_user.id not in AUTHORIZED_CONSOLES:
-        return await query.answer("❌ This is not for you!", show_alert=True)
-
-    data = query.data.split("_")
-    action = data[2] # give or take or cancel
-
-    if action == "cancel":
-        await query.message.edit_text("❌ **Admin action cancelled.**", parse_mode=enums.ParseMode.MARKDOWN)
+@app.on_message(filters.command("cshop"))
+async def cshop_cmd(_, message: types.Message):
+    chars = await get_daily_shop_characters()
+    if not chars:
+        await message.reply_text("🚫 No shop characters available.")
         return
 
-    target_id = int(data[3])
-    amount = int(data[4])
+    user_id = message.from_user.id
+                                   
+    await create_session(f"shop_{user_id}", {"shop": chars, "page": 0})
+    await send_shop_message(message, user_id)
+
+                      
+@app.on_message(filters.command("shop"))
+async def shop_hub(_, message: types.Message):
+    await send_shop_hub(message)
+
+async def send_shop_hub(message_or_query):
+    text = (
+        "🏪 **Seal Shop Central**\n\n"
+        "Welcome to the marketplace! Choose a category below to start browsing."
+    )
+    keyboard = [
+        [types.InlineKeyboardButton("👤 Character Shop", callback_data="hub_char")],
+        [types.InlineKeyboardButton("🐾 Pet Shop", callback_data="hub_pet")],
+        [types.InlineKeyboardButton("🎫 Battle Pass", callback_data="hub_pass")],
+        [types.InlineKeyboardButton("🥚 Egg Shop", callback_data="hub_egg")]
+    ]
+    reply_markup = types.InlineKeyboardMarkup(keyboard)
+
+    try:
+        if isinstance(message_or_query, types.CallbackQuery):
+            await message_or_query.message.edit_media(
+                media=types.InputMediaPhoto(media=SHOP_BANNER, caption=text),
+                reply_markup=reply_markup
+            )
+        else:
+            await message_or_query.reply_photo(
+                photo=SHOP_BANNER, caption=text, reply_markup=reply_markup
+            )
+    except Exception as e:
+        LOGGER.error(f"Error in send_shop_hub: {e}")
+                                                                  
+        if isinstance(message_or_query, types.CallbackQuery):
+            try:
+                await message_or_query.message.edit_text(text, reply_markup=reply_markup)
+            except:
+                pass
+        else:
+            await message_or_query.reply_text(text, reply_markup=reply_markup)
+
+@app.on_callback_query(filters.regex(r"^hub_(char|pet|pass|egg|main)$"))
+async def hub_callback_handler(_, query: types.CallbackQuery):
+    choice = query.data.split("_")[1]
     
-    if action == "give":
-        await user_collection.update_one({"id": target_id}, {"$inc": {"balance": amount}}, upsert=True)
-        text = f"✅ **Successfully added {amount:,} ⬪!**"
-    else: # take
-        await user_collection.update_one({"id": target_id}, {"$inc": {"balance": -amount}}, upsert=True)
-        text = f"✅ **Successfully removed {amount:,} ⬪!**"
+    if choice == "main":
+        await send_shop_hub(query)
+    elif choice == "char":
+        chars = await get_daily_shop_characters()
+        if not chars:
+            return await query.answer("🚫 No shop characters available.", show_alert=True)
+        await create_session(f"shop_{query.from_user.id}", {"shop": chars, "page": 0})
+        await send_shop_message(query, query.from_user.id)
+    elif choice == "pet":
+        import Grabber.modules.pet as pet_module
+        await pet_module.send_petshop_page(query, 0, query.from_user.id)
+    elif choice == "pass":
+        import Grabber.modules.battlepass as pass_module
+        await pass_module.view_pass_inline(query)
+    elif choice == "egg":
+        import Grabber.modules.hunt as hunt_module
+        await hunt_module.show_egg_page(query, 0, query.from_user.id)
+    
+    await query.answer()
 
-    # Get new balance
-    user = await user_collection.find_one({"id": target_id}, {"balance": 1, "first_name": 1})
-    bal = user.get("balance", 0)
-    name = user.get("first_name", f"ID: {target_id}")
+async def send_shop_message(message, user_id):
+    session = await get_session(f"shop_{user_id}")
+    if not session:
+        return
 
-    await query.message.edit_text(
-        f"{text}\n\n"
-        f"**User:** {name}\n"
-        f"**Final Balance:** {bal:,} ⬪",
+    page = session.get("page", 0)
+    chars = session.get("shop", [])
+    
+    char = chars[page]
+    price = getattr(char, "zenith_price", DEFAULT_ZENITH_PRICE)
+    
+                               
+    user_raw = await user_collection.find_one({"id": user_id})
+    user = User(**user_raw) if user_raw else None
+    zenith_balance = user.zenith if user else 0
+
+                 
+    sold_count = getattr(char, "sold_count", 0)
+    stock_display = f"{sold_count}/{SHOP_LIMIT}"
+    if sold_count >= SHOP_LIMIT:
+        stock_display = "❌ SOLD OUT"
+
+    text = (
+        f"🛍️ **Character Shop**\n"
+        f"⧫ **Zenith Balance:** {zenith_balance:,}\n\n"
+        f"🆔 **ID:** {char.id}\n"
+        f"📛 **Name:** {char.name}\n"
+        f"📺 **Anime:** {char.anime}\n"
+        f"🏷 **Rarity:** {char.rarity}\n"
+        f"� **Stock:** {stock_display}\n"
+        f"�💲 **Price:** {price} ⧫"
+    )
+
+    keyboard = [
+        [types.InlineKeyboardButton("💰 Buy", callback_data=f"ask_buy_char_{char.id}")],
+        [
+            types.InlineKeyboardButton("⬅️ Prev", callback_data=f"shop_prev:{user_id}"),
+            types.InlineKeyboardButton("➡️ Next", callback_data=f"shop_next:{user_id}")
+        ],
+        [types.InlineKeyboardButton("⤾ Back to Hub", callback_data="hub_main")]
+    ]
+
+    markup = types.InlineKeyboardMarkup(keyboard)
+
+    try:
+        if isinstance(message, types.CallbackQuery):
+            await message.message.edit_media(
+                media=types.InputMediaPhoto(media=char.img_url, caption=text, parse_mode=enums.ParseMode.MARKDOWN),
+                reply_markup=markup
+            )
+        else:
+            await message.reply_photo(
+                photo=char.img_url, caption=text,
+                reply_markup=markup, parse_mode=enums.ParseMode.MARKDOWN
+            )
+    except errors.MessageNotModified:
+        pass
+    except Exception as e:
+        LOGGER.error(f"Error in send_shop_message: {e}")
+
+@app.on_callback_query(filters.regex(r"^shop_(prev|next):(\d+)$"))
+async def shop_navigation(_, query: types.CallbackQuery):
+    action, user_id_str = query.data.split(":")
+    user_id = int(user_id_str)
+
+    if query.from_user.id != user_id:
+        await query.answer("❌ This shop session is not for you!", show_alert=True)
+        return
+
+    session = await get_session(f"shop_{user_id}")
+    if not session:
+        await query.answer("🚫 Shop session expired. Use /shop again.", show_alert=True)
+        return
+
+    page = session["page"]
+    chars = session["shop"]
+
+    if "prev" in action:
+        new_page = max(0, page - 1)
+    else:
+        new_page = min(len(chars) - 1, page + 1)
+
+                               
+    session["page"] = new_page
+    await create_session(f"shop_{user_id}", session)
+
+    await send_shop_message(query, user_id)
+    await query.answer()
+
+@app.on_callback_query(filters.regex(r"^ask_buy_char_(.+)"))
+async def ask_buy_character(_, query: types.CallbackQuery):
+    char_id = query.data.split("_")[3]
+    char_raw = await collection.find_one({"id": char_id})
+    char = Character(**char_raw) if char_raw else None
+    if not char:
+        return await query.answer("❌ Character not found.")
+    
+    price = getattr(char, "zenith_price", DEFAULT_ZENITH_PRICE)
+    
+    sold_count = getattr(char, "sold_count", 0)
+    stock_status = "✅ In Stock" if sold_count < SHOP_LIMIT else "❌ SOLD OUT"
+    
+    text = (
+        f"⚠️ **Confirm Purchase**\n\n"
+        f"👤 **Name:** {char.name}\n"
+        f"📺 **Anime:** {char.anime}\n"
+        f"🏷 **Rarity:** {char.rarity}\n"
+        f"🆔 **ID:** `{char_id}`\n"
+        f"📦 **Stock:** {sold_count}/{SHOP_LIMIT}\n\n"
+        f"💰 **Price:** {price} ⧫\n"
+        f"Are you sure you want to buy this character?"
+    )
+    keyboard = [
+        [
+            types.InlineKeyboardButton("Confirm ✅", callback_data=f"confirm_buy_char_{char_id}"),
+            types.InlineKeyboardButton("Cancel ❌", callback_data="hub_char")
+        ]
+    ]
+    await query.message.edit_caption(text, reply_markup=types.InlineKeyboardMarkup(keyboard))
+
+@app.on_callback_query(filters.regex(r"^confirm_buy_char_(.+)"))
+async def buy_character(_, query: types.CallbackQuery):
+    user_id = query.from_user.id
+    char_id = query.data.split("_")[3]
+
+    user_raw = await user_collection.find_one({"id": user_id})
+    user_data = User(**user_raw) if user_raw else None
+    owned = user_data.characters if user_data else []
+
+    char_raw = await collection.find_one({"id": char_id})
+    char = Character(**char_raw) if char_raw else None
+    if not char or char.rarity != SHOP_RARITY:
+        await query.answer("❌ Character not available.", show_alert=True)
+        return
+
+    owned_ids = [c.id if hasattr(c, "id") else (c["id"] if isinstance(c, dict) else c) for c in owned]
+    if char_id in owned_ids:
+        await query.answer("✅ You already own this character.", show_alert=True)
+        return
+
+    price = getattr(char, "zenith_price", DEFAULT_ZENITH_PRICE)
+    
+                          
+    user_zenith = user_data.zenith if user_data else 0
+    if user_zenith < price:
+        await query.answer(
+            f"❌ Insufficient Zenith!\n\nYou have: {user_zenith} ⧫\nNeed: {price} ⧫",
+            show_alert=True
+        )
+        return
+    
+                                      
+                                                               
+                                                                                  
+    update_result = await collection.update_one(
+        {
+            "id": char_id,
+            "$or": [
+                {"sold_count": {"$lt": SHOP_LIMIT}},
+                {"sold_count": {"$exists": False}}
+            ]
+        },
+        {"$inc": {"sold_count": 1}}
+    )
+
+    if update_result.modified_count == 0:
+        await query.answer("❌ SOLD OUT! This character has reached the purchase limit.", show_alert=True)
+        await query.message.edit_caption(f"❌ **SOLD OUT**\n\nSomeone bought the last copy of {char.name}!")
+        return
+
+                   
+    await user_collection.update_one(
+        {"id": user_id},
+        {"$inc": {"zenith": -price}}
+    )
+
+    await user_collection.update_one(
+        {"id": user_id},
+        {
+            "$set": {"id": user_id},
+            "$push": {"characters": {
+                "id": char.id,
+                "name": char.name,
+                "anime": char.anime,
+                "rarity": char.rarity,
+                "img_url": char.img_url
+            }}
+        },
+        upsert=True
+    )
+    
+                  
+    await update_quest_progress(user_id, "big_spender", price)
+    
+                        
+    await check_achievements(user_id)
+
+    await query.message.reply_text(
+        f"✅ **Purchase Successful!**\n🎉 You now own **{char.name}**!\n📦 Stock: {getattr(char, 'sold_count', 0) + 1}/{SHOP_LIMIT}",
         parse_mode=enums.ParseMode.MARKDOWN
     )
+    await query.answer("Success!")
+
+

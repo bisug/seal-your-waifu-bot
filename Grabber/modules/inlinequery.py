@@ -3,21 +3,21 @@ from html import escape
 from pyrogram import filters, types, enums, errors
 from Grabber import app, collection, user_collection, LOGGER
 
-# Constants
+           
 RESULTS_PER_PAGE = 50
 
-# ─── Inline Query Handler ───────────────────────────────────────────────────
+                                                                              
 @app.on_inline_query()
 async def inline_query_handler(_, query: types.InlineQuery) -> None:
     query_text = query.query.strip()
     offset = int(query.offset) if query.offset else 0
     results = []
     
-    # Context for pagination (collection.<id> vs global)
-    # We will pass this minimal context in callback data
+                                                        
+                                                        
     search_context = "global" 
     
-    # ─── Collection Search ─────────────────────────────────────────────────
+                                                                             
     if query_text.startswith("collection."):
         try:
             parts = query_text.split(" ", 1)
@@ -37,7 +37,7 @@ async def inline_query_handler(_, query: types.InlineQuery) -> None:
                 {"$replaceRoot": {"newRoot": "$characters"}}
             ]
             
-            # Apply search filter if provided
+                                             
             if search_text:
                 pipeline.append({
                     "$match": {
@@ -64,7 +64,7 @@ async def inline_query_handler(_, query: types.InlineQuery) -> None:
             
             characters = await user_collection.aggregate(pipeline).to_list(length=RESULTS_PER_PAGE)
             
-            # Pack results with gallery markup
+                                              
             for i, char in enumerate(characters):
                 neighbors = get_neighbors(characters, i)
                 res = create_inline_result(char, neighbors, offset, search_context)
@@ -80,10 +80,10 @@ async def inline_query_handler(_, query: types.InlineQuery) -> None:
             LOGGER.error(f"Inline collection error: {e}")
             return await query.answer([], cache_time=1)
 
-    # ─── Global Character Search ───────────────────────────────────────────
+                                                                             
     filter_query = {}
     if query_text:
-        search_context = f"q_{query_text[:10]}" # Short hash context
+        search_context = f"q_{query_text[:10]}"                     
         filter_query = {
             "$or": [
                 {"name": {"$regex": query_text, "$options": "i"}},
@@ -91,7 +91,7 @@ async def inline_query_handler(_, query: types.InlineQuery) -> None:
             ]
         }
 
-    # Fetch with ascending ID sort and pagination
+                                                 
     cursor = collection.find(filter_query).sort("id", 1).skip(offset).limit(RESULTS_PER_PAGE)
     characters = await cursor.to_list(length=RESULTS_PER_PAGE)
 
@@ -104,22 +104,22 @@ async def inline_query_handler(_, query: types.InlineQuery) -> None:
     await query.answer(results, cache_time=1, next_offset=next_offset)
 
 
-# ─── Helpers ───────────────────────────────────────────────────────────────
+                                                                             
 def get_neighbors(char_list, index):
-    """Get 4 surrounding characters for the navigation grid."""
+                                                               
     start = max(0, index - 2)
     end = min(len(char_list), index + 3)
     return char_list[start:end]
 
 def create_gallery_keyboard(current_char_id, neighbors, offset, context):
-    """Generate the keyboard with only the Owners Count button."""
+                                                                  
     buttons = [
         [types.InlineKeyboardButton("📊 Owners Count", callback_data=f"character_count:{current_char_id}")]
     ]
     return types.InlineKeyboardMarkup(buttons)
 
 def create_inline_result(character: dict, neighbors: list, offset: int, context: str) -> types.InlineQueryResultPhoto:
-    """Create inline result with interactive gallery keyboard attached to the message."""
+                                                                                         
     if not character.get("img_url"):
         return None
 
@@ -136,7 +136,7 @@ def create_inline_result(character: dict, neighbors: list, offset: int, context:
         f"🆔 **ID:** `{char_id}`"
     )
     
-    # The message sent to chat will have this keyboard
+                                                      
     reply_markup = create_gallery_keyboard(char_id, neighbors, offset, context)
 
     return types.InlineQueryResultPhoto(
@@ -151,13 +151,13 @@ def create_inline_result(character: dict, neighbors: list, offset: int, context:
     )
 
 
-# ─── Callbacks ─────────────────────────────────────────────────────────────
+                                                                             
 @app.on_callback_query(filters.regex(r"^gal:view:"))
 async def gallery_view_callback(_, query: types.CallbackQuery):
     try:
         char_id = query.data.split(":")[2]
         
-        # Fetch character details
+                                 
         character = await collection.find_one({"id": char_id})
         if not character:
             return await query.answer("❌ Character data not found.", show_alert=True)
@@ -174,9 +174,9 @@ async def gallery_view_callback(_, query: types.CallbackQuery):
             f"🆔 **ID:** `{char_id}`"
         )
         
-        # We need to reconstruct neighbors logic ideally, but for now 
-        # a simple "Owners" button is enough to prove the concept without heavy context passing
-        # or we could pass context via the click if needed.
+                                                                      
+                                                                                               
+                                                           
         buttons = [
             [types.InlineKeyboardButton("📊 Owners Count", callback_data=f"character_count:{char_id}")]
         ]
@@ -198,7 +198,7 @@ async def guessed_callback(_, query: types.CallbackQuery) -> None:
     char_id = query.data.split("character_count:")[1]
 
     try:
-        # Optimized count check with aggregation
+                                                
         result = await user_collection.aggregate([
             {"$match": {"characters.id": char_id}},
             {"$count": "user_count"}

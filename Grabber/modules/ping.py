@@ -41,22 +41,22 @@ async def ping(_, message: types.Message) -> None:
     start_time = time.time()
     sent_msg = await message.reply_text("**⚡ Pinging...**", parse_mode=enums.ParseMode.MARKDOWN)
     
-    # Bot Latency
+                 
     end_time = time.time()
     msg_ping = (end_time - start_time) * 1000
     
-    # DB Latency
+                
     db_start = time.time()
     await db.command("ping")
     db_end = time.time()
     db_ping = (db_end - db_start) * 1000
     
-    # System Stats
+                  
     uptime = get_readable_time(time.time() - StartTime)
     cpu = psutil.cpu_percent()
     ram = psutil.virtual_memory()
     proc = psutil.Process(os.getpid())
-    proc_mem = proc.memory_info().rss / 1024 / 1024  # MB
+    proc_mem = proc.memory_info().rss / 1024 / 1024      
     threads = proc.num_threads()
     
     caption = (

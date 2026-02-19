@@ -1,4 +1,6 @@
 import httpx
+import random
+from typing import Dict, List
 from Grabber.database import collection, db
 from Grabber import LOGGER
 from config import config
@@ -63,3 +65,14 @@ async def add_character_to_db(char_data: dict) -> str:
 
 async def get_character_by_id(char_id: str) -> dict or None:
     return await collection.find_one({'id': char_id})
+
+                                                                              
+characters_by_rarity: Dict[str, list] = {}
+
+async def get_or_load_characters(rarity: str) -> list:
+    if rarity not in characters_by_rarity:
+        cursor = collection.find({"rarity": rarity})
+        chars = await cursor.to_list(length=None)
+        random.shuffle(chars)
+        characters_by_rarity[rarity] = chars
+    return characters_by_rarity[rarity]

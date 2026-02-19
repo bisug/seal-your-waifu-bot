@@ -2,20 +2,20 @@ from pyrogram import filters, types, enums
 from Grabber import user_collection, app
 from Grabber.core.progression import get_user_progress, get_progress_bar, LEVEL_REWARDS
 
-# Pass Tier Prices (Zenith)
+                           
 PASS_PRICES = {
     "premium": 25,
     "elite": 60
 }
 
-# Pass Tier Emojis
+                  
 PASS_EMOJI = {
     "free": "🆓",
     "premium": "⭐",
     "elite": "💎"
 }
 
-# /pass command - View status with visual progress
+                                                  
 @app.on_message(filters.command("pass"))
 async def view_pass(_, message: types.Message):
     user_id = message.from_user.id
@@ -27,11 +27,11 @@ async def view_pass(_, message: types.Message):
     pass_type = progress["pass_type"]
     season = progress["season"]
     
-    # Visual progress bar
+                         
     progress_bar = get_progress_bar(xp_current, xp_needed, 10)
     percentage = int((xp_current / xp_needed) * 100) if xp_needed > 0 else 100
     
-    # Next milestone
+                    
     next_milestone = None
     for milestone_level in sorted(LEVEL_REWARDS.keys()):
         if milestone_level > level:
@@ -50,7 +50,7 @@ async def view_pass(_, message: types.Message):
     if next_milestone:
         text += f"🎯 **Next Milestone:** Level {next_milestone}\n"
     
-    # Show upgrade options if not elite
+                                       
     buttons = []
     if pass_type == "free":
         buttons.append([types.InlineKeyboardButton("⭐ Upgrade to Premium", callback_data="buypass_premium")])
@@ -63,7 +63,7 @@ async def view_pass(_, message: types.Message):
     markup = types.InlineKeyboardMarkup(buttons)
     await message.reply_text(text, parse_mode=enums.ParseMode.MARKDOWN, reply_markup=markup)
 
-# Helper for hub integration
+                            
 async def view_pass_inline(query: types.CallbackQuery):
     user_id = query.from_user.id
     progress = await get_user_progress(user_id)
@@ -98,7 +98,7 @@ async def view_pass_inline(query: types.CallbackQuery):
     
     await query.message.edit_text(text, parse_mode=enums.ParseMode.MARKDOWN, reply_markup=types.InlineKeyboardMarkup(buttons))
 
-# Callback for asking confirmation
+                                  
 @app.on_callback_query(filters.regex(r"^buyask_(premium|elite)$"))
 async def buypass_ask_callback(_, query: types.CallbackQuery):
     tier = query.data.split("_")[1]
@@ -110,7 +110,7 @@ async def buypass_ask_callback(_, query: types.CallbackQuery):
     ]]
     await query.message.edit_text(text, parse_mode=enums.ParseMode.MARKDOWN, reply_markup=types.InlineKeyboardMarkup(keyboard))
 
-# Callback for buying pass tiers (Confirmed)
+                                            
 @app.on_callback_query(filters.regex(r"^buypass_(premium|elite)$"))
 async def buypass_callback(_, query: types.CallbackQuery):
     user_id = query.from_user.id
@@ -124,17 +124,17 @@ async def buypass_callback(_, query: types.CallbackQuery):
     
     current_tier = user.get("pass_type", "free")
     
-    # Check if already owned or higher
+                                      
     tiers_order = ["free", "premium", "elite"]
     if tiers_order.index(current_tier) >= tiers_order.index(tier):
         return await query.answer(f"✅ You already have {current_tier.capitalize()} or better!", show_alert=True)
     
-    # Check balance (Zenith)
+                            
     user_zenith = user.get("zenith", 0)
     if user_zenith < price:
         return await query.answer(f"❌ Insufficient Zenith! Need {price} ⧫.", show_alert=True)
     
-    # Purchase
+              
     await user_collection.update_one(
         {"id": user_id},
         {
@@ -145,7 +145,7 @@ async def buypass_callback(_, query: types.CallbackQuery):
     
     await query.answer(f"🎉 {tier.capitalize()} Pass activated!", show_alert=True)
     
-    # Refresh display
+                     
     progress = await get_user_progress(user_id)
     level = progress["level"]
     xp_current = progress["xp_current"]
@@ -174,7 +174,7 @@ async def buypass_callback(_, query: types.CallbackQuery):
     except:
         pass
 
-# View available rewards
+                        
 @app.on_callback_query(filters.regex(r"^pass_rewards$"))
 async def view_rewards_callback(_, query: types.CallbackQuery):
     user_id = query.from_user.id
@@ -189,7 +189,7 @@ async def view_rewards_callback(_, query: types.CallbackQuery):
     for milestone in sorted(LEVEL_REWARDS.keys()):
         reward = LEVEL_REWARDS[milestone].get(pass_type, "None")
         
-        # Format reward
+                       
         if isinstance(reward, int):
             reward_text = f"{reward:,} ⬪"
         elif isinstance(reward, str) and reward.startswith("egg_"):
@@ -198,7 +198,7 @@ async def view_rewards_callback(_, query: types.CallbackQuery):
         else:
             reward_text = "Special Reward"
         
-        # Status
+                
         if milestone in claimed:
             status = "✅"
         elif level >= milestone:
@@ -213,7 +213,7 @@ async def view_rewards_callback(_, query: types.CallbackQuery):
 
 @app.on_callback_query(filters.regex(r"^pass_back$"))
 async def pass_back_callback(_, query: types.CallbackQuery):
-    # Re-show main pass screen
+                              
     user_id = query.from_user.id
     progress = await get_user_progress(user_id)
     
@@ -246,7 +246,7 @@ async def pass_back_callback(_, query: types.CallbackQuery):
     
     await query.message.edit_text(text, parse_mode=enums.ParseMode.MARKDOWN, reply_markup=types.InlineKeyboardMarkup(buttons))
 
-# /level command - Quick level check
+                                    
 @app.on_message(filters.command("level"))
 async def level_cmd(_, message: types.Message):
     user_id = message.from_user.id

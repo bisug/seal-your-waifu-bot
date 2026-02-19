@@ -15,7 +15,7 @@ async def fav_handler(_, message: types.Message):
     if not user or not user.get('characters'):
         return await message.reply_text("❌ Your collection is empty.")
 
-    # Business logic: Ownership check
+                                     
     character = next((c for c in user['characters'] if isinstance(c, dict) and str(c.get('id')) == str(char_id)), None)
     
     if not character:

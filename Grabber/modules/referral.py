@@ -10,11 +10,11 @@ async def referrals_cmd(_, message: types.Message):
         await message.reply_text("❌ You need to start the bot first!")
         return
 
-    # Get stats
+               
     referrals_count = user.get("referrals_count", 0)
     earned_coins = user.get("referrals_earned", 0)
     
-    # Generate Link
+                   
     ref_link = f"https://t.me/{BOT_USERNAME}?start=ref_{user_id}"
     
     text = (

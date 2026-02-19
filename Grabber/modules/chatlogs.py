@@ -6,14 +6,14 @@ from Grabber import (
 
 group_collection = db['total_groups']
 
-# **Function to Send Log Messages**
+                                   
 async def send_log(chat_id: str, message: str):
     try:
         await app.send_message(chat_id=chat_id, text=message, parse_mode=enums.ParseMode.MARKDOWN)
     except Exception as e:
         LOGGER.error(f"Error sending log message: {e}")
 
-# **Auto-Add New Group to Database**
+                                    
 @app.on_message(filters.new_chat_members)
 async def on_new_chat_members(_, message: types.Message):
     me = await app.get_me()
@@ -26,12 +26,12 @@ async def on_new_chat_members(_, message: types.Message):
         chat_username = f"@{message.chat.username}" if message.chat.username else "Private Chat"
         added_by = message.from_user.mention if message.from_user else "Unknown User"
 
-        # **Check if group already exists in database**
+                                                       
         existing_group = await group_collection.find_one({"group_id": chat_id})
         if not existing_group:
             await group_collection.insert_one({"group_id": chat_id, "group_name": chat_title})
 
-        # **Log Message**
+                         
         log_text = (
             f"✫ #NEW_GROUP ✫\n"
             f"✫ **Group:** {chat_title}\n"
@@ -41,7 +41,7 @@ async def on_new_chat_members(_, message: types.Message):
         )
         await send_log(JOINLOGS, log_text)
 
-# **Auto-Remove Group from Database if Bot is Removed**
+                                                       
 @app.on_message(filters.left_chat_member)
 async def on_left_chat_member(_, message: types.Message):
     me = await app.get_me()
@@ -52,10 +52,10 @@ async def on_left_chat_member(_, message: types.Message):
         remove_by = message.from_user.mention if message.from_user else "Unknown User"
         chat_username = f"@{message.chat.username}" if message.chat.username else "Private Chat"
 
-        # **Remove Group from Database**
+                                        
         await group_collection.delete_one({"group_id": chat_id})
 
-        # **Log Message**
+                         
         log_text = (
             f"✫ #LEFT_GROUP ✫\n"
             f"✫ **Group:** {chat_title}\n"

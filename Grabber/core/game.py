@@ -13,7 +13,7 @@ async def update_user_balance(user_id: int, amount: int):
     )
 
 async def check_and_deduct(user_id: int, amount: int) -> bool:
-    """Atomic balance check and deduction."""
+                                             
     result = await user_collection.update_one(
         {"id": user_id, "balance": {"$gte": amount}},
         {"$inc": {"balance": -amount}}
