@@ -89,6 +89,9 @@ async def get_chat_frequency(chat_id: int) -> int:
         {"chat_id": str(chat_id)},
         projection={"message_frequency": 1}
     )
+    if not doc or not doc.get("message_frequency"):
+        return 100
+    return int(doc["message_frequency"])
 
                                                                               
 async def send_character(chat_id: int, rarity: str):

@@ -61,7 +61,7 @@ async def send_petshop_page(message_or_query_obj, page: int, user_id: int):
     try:
         if isinstance(message_or_query_obj, types.CallbackQuery):
             await message_or_query_obj.message.edit_media(
-                media=types.InputMediaPhoto(media=pet["img"], caption=caption, parse_mode=enums.ParseMode.MARKDOWN),
+                media=types.InputMediaPhoto(media=pet["img"], caption=caption),
                 reply_markup=reply_markup
             )
         else:
@@ -198,7 +198,7 @@ async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
     try:
         if isinstance(message_or_query_obj, types.CallbackQuery):
             await message_or_query_obj.message.edit_media(
-                media=types.InputMediaPhoto(media=photo, caption=caption, parse_mode=enums.ParseMode.MARKDOWN),
+                media=types.InputMediaPhoto(media=photo, caption=caption),
                 reply_markup=reply_markup
             )
         else:

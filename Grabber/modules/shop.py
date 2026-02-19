@@ -35,7 +35,9 @@ async def cshop_cmd(_, message: types.Message):
 
     user_id = message.from_user.id
                                    
-    await create_session(f"shop_{user_id}", {"shop": chars, "page": 0})
+    # Serialize Character objects to dicts for MongoDB
+    chars_data = [c.dict() for c in chars]
+    await create_session(f"shop_{user_id}", {"shop": chars_data, "page": 0})
     await send_shop_message(message, user_id)
 
                       
@@ -87,7 +89,9 @@ async def hub_callback_handler(_, query: types.CallbackQuery):
         chars = await get_daily_shop_characters()
         if not chars:
             return await query.answer("🚫 No shop characters available.", show_alert=True)
-        await create_session(f"shop_{query.from_user.id}", {"shop": chars, "page": 0})
+        # Serialize Character objects to dicts for MongoDB
+        chars_data = [c.dict() for c in chars]
+        await create_session(f"shop_{query.from_user.id}", {"shop": chars_data, "page": 0})
         await send_shop_message(query, query.from_user.id)
     elif choice == "pet":
         import Grabber.modules.pet as pet_module
@@ -107,7 +111,10 @@ async def send_shop_message(message, user_id):
         return
 
     page = session.get("page", 0)
-    chars = session.get("shop", [])
+    page = session.get("page", 0)
+    chars_data = session.get("shop", [])
+    # Deserialize back to Character objects
+    chars = [Character(**c) for c in chars_data]
     
     char = chars[page]
     price = getattr(char, "zenith_price", DEFAULT_ZENITH_PRICE)
@@ -148,7 +155,7 @@ async def send_shop_message(message, user_id):
     try:
         if isinstance(message, types.CallbackQuery):
             await message.message.edit_media(
-                media=types.InputMediaPhoto(media=char.img_url, caption=text, parse_mode=enums.ParseMode.MARKDOWN),
+                media=types.InputMediaPhoto(media=char.img_url, caption=text),
                 reply_markup=markup
             )
         else:
@@ -176,7 +183,10 @@ async def shop_navigation(_, query: types.CallbackQuery):
         return
 
     page = session["page"]
-    chars = session["shop"]
+    page = session["page"]
+    chars_data = session["shop"]
+    # Deserialize back to Character objects
+    chars = [Character(**c) for c in chars_data]
 
     if "prev" in action:
         new_page = max(0, page - 1)
