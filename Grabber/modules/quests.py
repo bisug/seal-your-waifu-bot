@@ -5,7 +5,7 @@ from pyrogram import filters, types, enums
 from Grabber import user_collection, app
 from Grabber.core.progression import add_xp, get_progress_bar
 
-# --- Daily Quests ---
+                      
 QUEST_POOL = {
     "catch_master": {
         "name": "Catch Master",
@@ -51,7 +51,7 @@ QUEST_POOL = {
     }
 }
 
-# --- Weekly Quests ---
+                       
 WEEKLY_POOL = {
     "weekly_catch": {
         "name": "Master Collector",
@@ -77,17 +77,17 @@ WEEKLY_POOL = {
 }
 
 async def get_user_quests(user_id: int) -> dict:
-    """Get user's quest progress, handling Daily and Weekly resets."""
+                                                                      
     user = await user_collection.find_one({"id": user_id})
     now = datetime.utcnow()
     today = now.date().isoformat()
-    # ISO Calendar: (Year, Week Number, Weekday)
+                                                
     current_week = f"{now.isocalendar()[0]}-W{now.isocalendar()[1]}" 
     
     if not user:
-        # Initialize
+                    
         daily_keys = random.sample(list(QUEST_POOL.keys()), 3)
-        weekly_keys = list(WEEKLY_POOL.keys()) # All weekly quests active
+        weekly_keys = list(WEEKLY_POOL.keys())                           
         
         quests_data = {
             **{k: {"progress": 0, "claimed": False} for k in daily_keys},
@@ -110,22 +110,22 @@ async def get_user_quests(user_id: int) -> dict:
     quests_data = user.get("quests", {})
     updates = {}
     
-    # 1. Daily Reset Check
+                          
     last_reset = user.get("quests_reset_date")
     if last_reset != today:
         daily_keys = random.sample(list(QUEST_POOL.keys()), 3)
-        # Remove old daily quests from data (keep weekly)
+                                                         
         quests_data = {k: v for k, v in quests_data.items() if k in WEEKLY_POOL}
-        # Add new daily quests
+                              
         quests_data.update({k: {"progress": 0, "claimed": False} for k in daily_keys})
         
         updates["quests_reset_date"] = today
         
-    # 2. Weekly Reset Check
+                           
     last_week = user.get("quests_week")
     if last_week != current_week:
         weekly_keys = list(WEEKLY_POOL.keys())
-        # Reset weekly progress
+                               
         for k in weekly_keys:
             quests_data[k] = {"progress": 0, "claimed": False}
             
@@ -138,18 +138,18 @@ async def get_user_quests(user_id: int) -> dict:
     return quests_data
 
 async def update_quest_progress(user_id: int, quest_id: str, increment: int = 1):
-    """Update progress for a specific quest (Daily or Weekly)."""
+                                                                 
     quests = await get_user_quests(user_id)
     
-    # Check mappings (Allow triggering daily & weekly sharing same logic if needed)
-    # For now, explicit IDs are used.
+                                                                                   
+                                     
     
     if quest_id not in quests:
         return
     
     quest = quests[quest_id]
     
-    # Identify Pool
+                   
     if quest_id in QUEST_POOL:
         target = QUEST_POOL[quest_id]["target"]
     elif quest_id in WEEKLY_POOL:
@@ -157,7 +157,7 @@ async def update_quest_progress(user_id: int, quest_id: str, increment: int = 1)
     else:
         return
 
-    # Only update if not completed
+                                  
     if quest["progress"] < target:
         new_progress = min(quest["progress"] + increment, target)
         await user_collection.update_one(
@@ -177,7 +177,7 @@ async def view_quests(_, message: types.Message):
     text = "📋 **Quest Log**\n\n"
     buttons = []
     
-    # -- Daily Section --
+                         
     text += "📅 **Daily Quests**\n"
     has_daily = False
     for qid, qdata in quests.items():
@@ -206,7 +206,7 @@ async def view_quests(_, message: types.Message):
     if not has_daily: text += "_No daily quests active._\n"
     text += "\n"
     
-    # -- Weekly Section --
+                          
     text += "🗓️ **Weekly Challenges**\n"
     has_weekly = False
     for qid, qdata in quests.items():
@@ -232,14 +232,14 @@ async def view_quests(_, message: types.Message):
             
         text += f"{info['icon']} **{info['name']}**: {bar} {status}\n"
 
-    # Timers
+            
     now = datetime.utcnow()
     tmrw = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
     d_left = tmrw - now
     
-    # Days until Monday
+                       
     days_until_mon = (7 - now.weekday()) % 7
-    if days_until_mon == 0 and d_left.total_seconds() < 86400: days_until_mon = 7 # Reset next week if today is Monday
+    if days_until_mon == 0 and d_left.total_seconds() < 86400: days_until_mon = 7                                     
     
     text += f"\n⏰ **Daily Reset:** `{int(d_left.total_seconds()//3600)}h`\n"
     text += f"🗓️ **Weekly Reset:** `{days_until_mon} days`"
@@ -255,7 +255,7 @@ async def claim_quest_callback(_, query: types.CallbackQuery):
     quests = await get_user_quests(user_id)
     quest_data = quests.get(quest_id, {})
     
-    # Determine Info Source
+                           
     if quest_id in QUEST_POOL:
         quest_info = QUEST_POOL[quest_id]
     elif quest_id in WEEKLY_POOL:
@@ -269,7 +269,7 @@ async def claim_quest_callback(_, query: types.CallbackQuery):
     if quest_data.get("progress", 0) < quest_info["target"]:
         return await query.answer("❌ Quest not completed yet!", show_alert=True)
     
-    # Reward
+            
     reward_xp = quest_info["reward_xp"]
     await add_xp(user_id, reward_xp, f"quest_{quest_id}")
     
@@ -280,5 +280,5 @@ async def claim_quest_callback(_, query: types.CallbackQuery):
     
     await query.answer(f"🎉 +{reward_xp} XP!", show_alert=True)
     
-    # Refresh UI (Simple re-call)
+                                 
     await view_quests(None, query.message)

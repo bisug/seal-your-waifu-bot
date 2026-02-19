@@ -2,11 +2,11 @@ from typing import Optional, Dict, Any
 from Grabber.database import sessions_collection
 
 async def create_session(session_id: str, data: Dict[str, Any], expire_after: int = 3600):
-    """
-    Create a temporary session in MongoDB.
-    session_id: uniquely identifying the session (e.g., "battle_uid1_uid2")
-    expire_after: seconds after which the session might be considered stale (manual check or TTL index)
-    """
+\
+\
+\
+\
+       
     import time
     data["_id"] = session_id
     data["created_at"] = time.time()

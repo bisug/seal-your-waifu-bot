@@ -7,7 +7,7 @@ load_dotenv()
 class Config:
     # Bot identity
     TOKEN = os.getenv("TOKEN", "7888451649:AAGqpCops8LxBCs54h23SmD771TKRMucGh8")
-    BOT_USERNAME = os.getenv("BOT_USERNAME", "Seal_Your_Waifu_Bot")
+    BOT_USERNAME = None  # Fetched automatically at startup
     
     # Telegram API credentials
     API_ID = int(os.getenv("API_ID", "25635673"))
@@ -41,7 +41,6 @@ class Config:
     IMGBB_API_KEY = os.getenv("IMGBB_API_KEY", "21786e21eb0369339a3c2a2d9c561190")
     EXTOL_API_KEY = os.getenv("EXTOL_API_KEY", "IAC-49ZENKUeYt")
     EXTOL_RECEIVER = os.getenv("EXTOL_RECEIVER", "EXTAF9VYPP67bpFWJmw301503c4")
-    GOOGLE_SEARCH_ENDPOINT = os.getenv("GOOGLE_SEARCH_ENDPOINT", "https://sasta-api.vercel.app/googleImageSearch")
     
     # Batch Processing
     BATCH_MONGO_URI = os.getenv("BATCH_MONGO_URI", "mongodb+srv://riyu:riyu@cluster0.kduyo99.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")

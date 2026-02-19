@@ -78,11 +78,11 @@ async def pay_callback_handler(_, query: types.CallbackQuery):
     recipient_id = int(data[2])
     amount = int(data[3])
 
-    # Atomic check and deduct
+                             
     if await check_and_deduct(sender_id, amount):
         await update_user_balance(recipient_id, amount)
         
-        # Get user info for better message
+                                          
         try:
             recipient = await app.get_users(recipient_id)
             mention = recipient.mention

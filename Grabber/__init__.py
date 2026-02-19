@@ -10,10 +10,10 @@ from Grabber.database import (
     spawns_collection, sessions_collection, quiz_questions_collection
 )
 
-# Global StartTime
+                  
 StartTime = time.time()
 
-# Setup logging
+               
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
     handlers=[logging.FileHandler("log.txt"), logging.StreamHandler()],
@@ -25,7 +25,7 @@ logging.getLogger("pyrogram").setLevel(logging.WARNING)
 
 LOGGER = logging.getLogger(__name__)
 
-# Constants from config for direct access
+                                         
 OWNER_ID = config.OWNER_ID
 sudo_users = config.SUDO_USERS
 GROUP_ID = config.GROUP_ID
@@ -36,9 +36,11 @@ PHOTO_URL = config.PHOTO_URL
 SUPPORT_CHAT = config.SUPPORT_CHAT
 UPDATE_CHAT = config.UPDATE_CHAT
 BOT_USERNAME = config.BOT_USERNAME
+BOT_ID = None
+BOT_NAME = None
 CHARA_CHANNEL_ID = config.CHARA_CHANNEL_ID
 JOINLOGS = config.JOINLOGS
 LEAVELOGS = config.LEAVELOGS
 
-# For backward compatibility if any module still uses Grabberu
+                                                              
 Grabberu = app

@@ -33,16 +33,16 @@ async def tgm_cmd(_, message: types.Message) -> None:
     status_msg = await message.reply_text("⏳ Uploading to ImgBB...")
     
     try:
-        # Pyrogram doesn't give direct file URL easily without a bot server or downloading.
-        # However, we can download it to memory or use a direct link if it's already on TG servers.
-        # Standard approach: Download and upload.
+                                                                                           
+                                                                                                   
+                                                 
         
         file_path = await target_msg.download()
         
         with open(file_path, "rb") as f:
             image_data = f.read()
         
-        # Uploading raw bytes is better than URL if we just downloaded it
+                                                                         
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 "https://api.imgbb.com/1/upload",

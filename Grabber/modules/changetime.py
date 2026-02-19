@@ -8,7 +8,7 @@ async def change_time(_, message: types.Message) -> None:
     chat = message.chat
 
     try:
-        # Check if user is admin/creator in Pyrogram
+                                                    
         member = await app.get_chat_member(chat.id, user.id)
         if member.status not in (enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER):
             await message.reply_text('You do not have permission to use this command.')
@@ -24,7 +24,7 @@ async def change_time(_, message: types.Message) -> None:
             await message.reply_text('Please provide a valid number.')
             return
 
-        if new_frequency < 50: # Adjusting min slightly for better flexibility
+        if new_frequency < 50:                                                
             await message.reply_text('The message frequency must be at least 50.')
             return
         

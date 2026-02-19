@@ -13,7 +13,7 @@ async def broadcast_handler(_, message: types.Message):
     send_users = "-u" in cmd_parts
     send_groups = "-g" in cmd_parts
     
-    # Default to both if no flags
+                                 
     if not send_users and not send_groups:
         send_users = send_groups = True
 
@@ -28,7 +28,7 @@ async def broadcast_handler(_, message: types.Message):
             try:
                 await msg.forward(user_id)
                 success_u += 1
-                await asyncio.sleep(0.05) # Tiny delay to prevent spam trigger
+                await asyncio.sleep(0.05)                                     
             except errors.FloodWait as e:
                 await asyncio.sleep(e.value)
                 await msg.forward(user_id)

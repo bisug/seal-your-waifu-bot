@@ -2,7 +2,7 @@ from Grabber import user_collection, app, LOGGER
 from Grabber.core.progression import add_xp
 from pyrogram import enums
 
-# Achievement Definitions
+                         
 ACHIEVEMENTS = {
     "novice_collector": {
         "name": "Novice Collector",
@@ -42,7 +42,7 @@ ACHIEVEMENTS = {
 }
 
 async def check_achievements(user_id: int):
-    """Check if user qualifies for any new achievements."""
+                                                           
     user = await user_collection.find_one({"id": user_id})
     if not user: return
     
@@ -53,22 +53,22 @@ async def check_achievements(user_id: int):
         if ach_id in user_achievements:
             continue
             
-        # Check condition
+                         
         try:
             if data["condition"](user):
                 new_unlocks.append(ach_id)
-                # Grant Reward
+                              
                 await add_xp(user_id, data["reward_xp"], f"ach_{ach_id}")
                 
-                # Notify User (via log for now, can add DM)
+                                                           
                 LOGGER.info(f"User {user_id} unlocked {data['name']}")
                 
-                # Store Logic
+                             
                 await user_collection.update_one(
                     {"id": user_id},
                     {
                         "$push": {"achievements": ach_id},
-                        "$addToSet": {"titles": data["title"]} # Unlock title
+                        "$addToSet": {"titles": data["title"]}               
                     }
                 )
         except Exception as e:

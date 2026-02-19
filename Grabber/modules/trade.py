@@ -27,7 +27,7 @@ async def trade_handler(_, message: types.Message):
     if not sender or not receiver:
         return await message.reply_text("❌ Database error.")
 
-    # Business logic: Ownership check
+                                     
     s_char = next((c for c in sender.get('characters', []) if str(c.get('id')) == s_char_id), None)
     r_char = next((c for c in receiver.get('characters', []) if str(c.get('id')) == r_char_id), None)
 
@@ -36,7 +36,7 @@ async def trade_handler(_, message: types.Message):
     if not r_char:
         return await message.reply_text("❌ They don't own that character.")
 
-    # Store trade in MongoDB
+                            
     trade_id = f"tr_{sender_id}_{receiver_id}"
     await create_session(trade_id, {"s_char": s_char, "r_char": r_char, "s_id": sender_id, "r_id": receiver_id})
 
@@ -56,7 +56,7 @@ async def trade_handler(_, message: types.Message):
 async def trade_callback_handler(_, query: types.CallbackQuery):
     action, trade_id = query.data.split(":")
     
-    # Fetch from MongoDB
+                        
     trade_info = await get_session(trade_id)
 
     if not trade_info:
@@ -79,7 +79,7 @@ async def trade_callback_handler(_, query: types.CallbackQuery):
 
     s_char, r_char = trade_info["s_char"], trade_info["r_char"]
     
-    # Final ownership check before exchange
+                                           
     sender = await get_user_data(sender_id)
     receiver = await get_user_data(receiver_id)
     
@@ -88,13 +88,13 @@ async def trade_callback_handler(_, query: types.CallbackQuery):
         await delete_session(trade_id)
         return await query.message.edit_text("❌ One of the characters is no longer available.")
 
-    # Instant Feedback
+                      
     await query.answer("Processing trade...", cache_time=1)
 
-    # Remove session from DB immediately
+                                        
     await delete_session(trade_id)
 
-    # Perform exchange
+                      
     await update_user(sender_id, {
         "$pull": {"characters": {"id": s_char['id']}},
         "$push": {"characters": r_char}
@@ -104,7 +104,7 @@ async def trade_callback_handler(_, query: types.CallbackQuery):
         "$push": {"characters": s_char}
     })
 
-    # Update Quest Progress for both users
+                                          
     await update_quest_progress(sender_id, "trader", 1)
     await update_quest_progress(receiver_id, "trader", 1)
 

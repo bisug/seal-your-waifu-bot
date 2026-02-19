@@ -3,13 +3,13 @@ from config import config
 
 mongo_url = config.MONGO_URL
 
-# Client and Database initialization
+                                    
 client = AsyncIOMotorClient(mongo_url)
 db = client['Character_catchers']
 
 
 
-# Collections
+             
 collection = db['anime_characterss']
 group_collection = db['total_groups']
 user_totals_collection = db['user_totalssss']
