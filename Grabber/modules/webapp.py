@@ -4,8 +4,8 @@ from Grabber import app
 @app.on_message(filters.command("webapp"))
 async def webapp_command(_, message):
     user_id = message.from_user.id
-    # Replace with your actual deployed URL or local IP for testing
-    # For now, using a placeholder that user can update
+                                                                   
+                                                       
     web_app_url = f"https://sealbotweb-dd92cdbb6105.herokuapp.com/?user_id={user_id}" 
     
     keyboard = types.InlineKeyboardMarkup([

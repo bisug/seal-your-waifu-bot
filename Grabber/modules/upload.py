@@ -29,8 +29,8 @@ import os
 
 @app.on_message(filters.command("upload") & filters.user(sudo_users + [OWNER_ID]))
 async def upload_waifu_handler(_, message: types.Message):
-    # Support both /upload <url> <name> <anime> <rarity> 
-    # AND reply to image + /upload <name> <anime> <rarity>
+                                                         
+                                                          
     
     if message.reply_to_message and (message.reply_to_message.photo or message.reply_to_message.document):
         if len(message.command) < 4:
@@ -58,7 +58,7 @@ async def upload_waifu_handler(_, message: types.Message):
             await status.edit_text("📥 Downloading image...")
             temp_path = await message.reply_to_message.download()
         else:
-            # For URL uploads, we'll download it first to support Catbox properly
+                                                                                 
             import httpx
             async with httpx.AsyncClient() as client:
                 resp = await client.get(img_url)

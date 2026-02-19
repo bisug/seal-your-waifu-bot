@@ -14,7 +14,7 @@ METRICS = {
 }
 
 async def get_top_users(metric: str, limit: int = 10):
-    """Fetch top users based on the specified metric."""
+                                                        
     if metric == "harem":
         pipeline = [
             {"$project": {"first_name": 1, "id": 1, "char_count": {"$size": {"$ifNull": ["$characters", []]}}}},
@@ -33,7 +33,7 @@ async def get_top_users(metric: str, limit: int = 10):
     return await cursor.to_list(length=limit)
 
 def build_leaderboard_text(metric: str, users: list):
-    """Build the leaderboard message text."""
+                                             
     info = METRICS[metric]
     text = f"🌐 **Global Leaderboard**\n"
     text += f"📊 **Category:** {info['label']}\n"
@@ -47,7 +47,7 @@ def build_leaderboard_text(metric: str, users: list):
         name = html.escape(user.get('first_name', 'User'))
         value = user.get(info['field'], 0)
         
-        # Format the value based on metric
+                                          
         if metric == "level":
             lvl = get_level_from_xp(value)
             display_value = f"Lvl {lvl}"
@@ -55,7 +55,7 @@ def build_leaderboard_text(metric: str, users: list):
             display_value = f"{value:,} ⬪"
         elif metric == "zenith":
             display_value = f"{value:,} ⧫"
-        else: # harem
+        else:        
             display_value = f"{value:,} Chars"
             
         text += f"{i}. {name} ➾ **{display_value}**\n"
@@ -64,7 +64,7 @@ def build_leaderboard_text(metric: str, users: list):
     return text
 
 def build_leaderboard_keyboard(current_metric: str):
-    """Build the inline keyboard for switching categories."""
+                                                             
     idx = METRIC_ORDER.index(current_metric)
     prev_metric = METRIC_ORDER[(idx - 1) % len(METRIC_ORDER)]
     next_metric = METRIC_ORDER[(idx + 1) % len(METRIC_ORDER)]
@@ -85,7 +85,7 @@ def build_leaderboard_keyboard(current_metric: str):
 async def global_leaderboard_handler(_, message: types.Message):
     await app.send_chat_action(message.chat.id, enums.ChatAction.TYPING)
     
-    # Default to Harem leaderboard
+                                  
     users = await get_top_users("harem")
     text = build_leaderboard_text("harem", users)
     keyboard = build_leaderboard_keyboard("harem")

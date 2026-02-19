@@ -4,11 +4,11 @@ from pyrogram import filters, enums, types
 from Grabber import app, user_collection, collection, OWNER_ID, SUPPORT_ID, LOGGER
 from Grabber.core.sessions import create_session, get_session, delete_session
 
-# Function to generate a random string of length 5 composed of random letters
+                                                                             
 def generate_random_code():
     return ''.join(random.choices(string.ascii_lowercase + string.digits, k=5))
 
-# Function to handle the waifugen command
+                                         
 @app.on_message(filters.command("waifugen") & filters.user(OWNER_ID))
 async def waifugen(_, message: types.Message):
     if len(message.command) != 3:
@@ -29,8 +29,8 @@ async def waifugen(_, message: types.Message):
 
     code = generate_random_code()
 
-    # Store in MongoDB
-    await create_session(f"gen_{code}", {'waifu': waifu, 'quantity': quantity}, expire_after=86400 * 7) # Keep for a week
+                      
+    await create_session(f"gen_{code}", {'waifu': waifu, 'quantity': quantity}, expire_after=86400 * 7)                  
 
     response_text = (
         f"Generated waifu:\n`{code}`\n\n"
@@ -54,7 +54,7 @@ async def waifugen(_, message: types.Message):
     except Exception as e:
         LOGGER.error(f"Log sending failed: {e}")
 
-# Function to claim a generated waifu
+                                     
 @app.on_message(filters.command("claimwaifu"))
 async def claimwaifu(_, message: types.Message):
     if len(message.command) < 2:
@@ -64,7 +64,7 @@ async def claimwaifu(_, message: types.Message):
     code = message.command[1]
     user_id = message.from_user.id
 
-    # Fetch from MongoDB
+                        
     details = await get_session(f"gen_{code}")
 
     if details:
@@ -77,7 +77,7 @@ async def claimwaifu(_, message: types.Message):
                 upsert=True
             )
 
-            # Atomic decrement in DB logic
+                                          
             new_quantity = details['quantity'] - 1
             if new_quantity == 0:
                 await delete_session(f"gen_{code}")

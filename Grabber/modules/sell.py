@@ -31,7 +31,7 @@ async def sell_handler(_, message: types.Message):
     if not user or not user.get('characters'):
         return await message.reply_text("❌ **Your collection is empty.**", parse_mode=enums.ParseMode.MARKDOWN)
 
-    # Find character to get details
+                                   
     char = next((c for c in user['characters'] if str(c.get('id')) == char_id), None)
     if not char:
         return await message.reply_text("❌ **You don't own this character.**", parse_mode=enums.ParseMode.MARKDOWN)
@@ -77,7 +77,7 @@ async def sell_callback_handler(_, query: types.CallbackQuery):
 
     char_id = data[2]
     
-    # Re-verify ownership to prevent race conditions or exploits
+                                                                
     user = await get_user_data(user_id)
     if not user or not user.get('characters'):
         return await query.answer("❌ Your collection is empty.", show_alert=True)
@@ -92,7 +92,7 @@ async def sell_callback_handler(_, query: types.CallbackQuery):
     current_shards = user.get('balance', 0)
     new_shards = current_shards + price
 
-    # Atomic removal
+                    
     if await remove_char_from_user(user_id, char_id):
         await update_user_balance(user_id, price)
         await query.message.edit_text(

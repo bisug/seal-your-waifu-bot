@@ -35,13 +35,13 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
 
         all_chars = user['characters']
         
-        # Count occurrences of each character ID efficiently
+                                                            
         char_counts = Counter(c.get('id') for c in all_chars)
         
-        # Sort characters: Anime Name -> Character ID
+                                                     
         sorted_chars = sorted(all_chars, key=lambda x: (x.get('anime', ''), x.get('id', '')))
 
-        # Deduplicate while preserving sort order
+                                                 
         unique_chars: List[Dict[str, Any]] = []
         seen_ids = set()
         for char in sorted_chars:
@@ -59,7 +59,7 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
 
         first_name = user.get('first_name', 'User')
         
-        # Header construction
+                             
         header_lines = [
             f"🎒 **{escape(first_name)}'s Collection**",
             "━━━━━━━━━━━━━━━━━━━━━",
@@ -69,7 +69,7 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
         ]
         harem_text = "\n".join(header_lines)
 
-        # Get current page slice
+                                
         start_idx = page * per_page
         end_idx = start_idx + per_page
         current_slice = unique_chars[start_idx:end_idx]
@@ -88,14 +88,14 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
 
         harem_text += "━━━━━━━━━━━━━━━━━━━━━\n"
 
-        # Navigation buttons
+                            
         markup = _build_harem_markup(page, total_pages, user_id)
 
-        # Select random image for cover
+                                       
         try:
             pic = random.choice(all_chars).get('img_url')
         except (IndexError, KeyError):
-            # Fallback if image selection fails
+                                               
             pic = None 
 
         if isinstance(message_obj, types.CallbackQuery):
@@ -121,12 +121,12 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
         pass
     except Exception as e:
         LOGGER.error(f"Error in show_harem: {e}", exc_info=True)
-        # Inform user if it's a message, stay silent if it's a callback to avoid spam
+                                                                                     
         if isinstance(message_obj, types.Message):
              await message_obj.reply_text("An error occurred while fetching your harem.")
 
 def _build_harem_markup(page: int, total_pages: int, user_id: int) -> types.InlineKeyboardMarkup:
-    """Helper to build navigation keyboard."""
+                                              
     nav_buttons = []
     if total_pages > 1:
         prev_btn = types.InlineKeyboardButton("⬅️ Prev", callback_data=f"h:p:{page-1}:{user_id}")
@@ -143,14 +143,14 @@ def _build_harem_markup(page: int, total_pages: int, user_id: int) -> types.Inli
         [types.InlineKeyboardButton("🔍 Search Harem", switch_inline_query_current_chat=f"collection.{user_id} ")],
         [types.InlineKeyboardButton("🌐 Global Search", switch_inline_query_current_chat="")]
     ]
-    # Filter out empty rows (e.g. if nav_buttons is empty)
+                                                          
     return types.InlineKeyboardMarkup([row for row in keyboard if row])
 
 @app.on_callback_query(filters.regex(r"^h:(p|n):"))
 async def harem_nav_handler(_, query: types.CallbackQuery):
     try:
         data_parts = query.data.split(":")
-        # Expected format: h:p:page:user_id or h:n:page:user_id
+                                                               
         if len(data_parts) != 4:
             return await query.answer("❌ Invalid data!", show_alert=True)
             

@@ -11,15 +11,15 @@ from Grabber.core.progression import add_xp
 from Grabber.modules.quests import update_quest_progress
 from Grabber.modules.achievements import check_achievements
 
-# Cooldown Storage
-battle_cooldowns = {} # {(user1, user2): timestamp}
+                  
+battle_cooldowns = {}                              
 
-# --- Battle Engine ---
+                       
 
 def calculate_stats(pet_data):
-    """Calculate total stats based on base values and level."""
+                                                               
     if not pet_data:
-        # Fallback "Hand-to-Hand" stats
+                                       
         return {
             "name": "Fists",
             "hp": 100,
@@ -45,14 +45,14 @@ def calculate_stats(pet_data):
     }
 
 def simulate_battle(p1_stats, p2_stats, p1_name, p2_name):
-    """
-    Simulate a turn-based battle.
-    Returns: (winner_index, battle_log)
-    winner_index: 1 for p1, 2 for p2
-    """
+\
+\
+\
+\
+       
     log = []
     
-    # Determine Initiative
+                          
     if p1_stats["spd"] >= p2_stats["spd"]:
         attacker, defender = p1_stats, p2_stats
         a_name, d_name = p1_name, p2_name
@@ -70,15 +70,15 @@ def simulate_battle(p1_stats, p2_stats, p1_name, p2_name):
     log.append(f"⏱️ **Initiative:** {a_icon} **{a_name}** ({attacker['spd']} SPD) goes first!")
     
     while attacker["hp"] > 0 and defender["hp"] > 0 and turn <= max_turns:
-        # -- Attacker Turn --
-        # Crit check
+                             
+                    
         crit_mult = 1.0
         is_crit = False
         if random.random() < attacker["luck"]:
             crit_mult = 1.5
             is_crit = True
             
-        # Damage variance +/- 10%
+                                 
         variance = random.uniform(0.9, 1.1)
         damage = int(attacker["atk"] * variance * crit_mult)
         
@@ -86,14 +86,14 @@ def simulate_battle(p1_stats, p2_stats, p1_name, p2_name):
         
         crit_text = " 💥 **CRIT!**" if is_crit else ""
         
-        # Simplified Log Entry
+                              
         hp_bar = "▓" * int((max(0, defender['hp']) / defender['max_hp']) * 5)
         log.append(f"{a_icon} **{a_name}** hits for `{damage}`{crit_text} (HP: {max(0, defender['hp'])})")
         
         if defender["hp"] <= 0:
             break
             
-        # Swap for next turn (Counter-attack)
+                                             
         attacker, defender = defender, attacker
         a_name, d_name = d_name, a_name
         a_idx, d_idx = d_idx, a_idx
@@ -111,7 +111,7 @@ def simulate_battle(p1_stats, p2_stats, p1_name, p2_name):
             
     return winner, "\n".join(log)
 
-# --- Handlers ---
+                  
 
 @app.on_message(filters.command("battle") & filters.group)
 async def battle_challenge_handler(_, message: types.Message):
@@ -124,12 +124,12 @@ async def battle_challenge_handler(_, message: types.Message):
     if attacker.id == defender.id:
         return await message.reply_text("⚠️ You can't fight yourself!")
 
-    # Check Anti-Farm Cooldown
+                              
     pair_key = tuple(sorted((attacker.id, defender.id)))
     now = time.time()
     if pair_key in battle_cooldowns:
         last_battle = battle_cooldowns[pair_key]
-        if now - last_battle < 300: # 5 minutes
+        if now - last_battle < 300:            
             remain = int(300 - (now - last_battle))
             return await message.reply_text(f"⏳ **Cooldown!** Wait {remain}s before battling this user again.", parse_mode=enums.ParseMode.MARKDOWN)
 
@@ -139,14 +139,14 @@ async def battle_challenge_handler(_, message: types.Message):
     except (IndexError, ValueError):
         return await message.reply_text("❌ Usage: `/battle <bet_amount>`", parse_mode=enums.ParseMode.MARKDOWN)
 
-    # Fast balance check
+                        
     if await get_user_balance(attacker.id) < bet:
         return await message.reply_text("❌ You don't have enough Shards!", parse_mode=enums.ParseMode.MARKDOWN)
     
     if await get_user_balance(defender.id) < bet:
         return await message.reply_text(f"❌ {defender.first_name} doesn't have enough Shards!", parse_mode=enums.ParseMode.MARKDOWN)
 
-    # Store challenge
+                     
     battle_id = f"bt_{attacker.id}_{defender.id}"
     await create_session(battle_id, {"attacker": attacker.id, "defender": defender.id, "bet": bet})
 
@@ -174,7 +174,7 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
     bet = battle_info["bet"]
     attacker_id, defender_id = battle_info["attacker"], battle_info["defender"]
 
-    # Atomic deduction
+                      
     if not await check_and_deduct(attacker_id, bet):
         await delete_session(battle_id)
         try:
@@ -194,7 +194,7 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
 
     await delete_session(battle_id)
     
-    # Set Cooldown
+                  
     pair_key = tuple(sorted((attacker_id, defender_id)))
     battle_cooldowns[pair_key] = time.time()
     
@@ -202,14 +202,14 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
         a_user = await app.get_users(attacker_id)
         d_user = await app.get_users(defender_id)
         
-        # Fetch Pets
+                    
         a_pet_data = await get_active_pet(attacker_id)
         d_pet_data = await get_active_pet(defender_id)
         
         a_stats = calculate_stats(a_pet_data)
         d_stats = calculate_stats(d_pet_data)
         
-        # Intro
+               
         text = (
             f"⚔️ **Battle Started!**\n"
             f"🔴 [{a_user.first_name}](tg://user?id={a_user.id}) - **{a_stats['name']}** (Lvl {a_stats['level']})\n"
@@ -226,28 +226,28 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
         
         await asyncio.sleep(2)
         
-        # Simulate
+                  
         winner_idx, battle_log = simulate_battle(a_stats.copy(), d_stats.copy(), a_stats['name'], d_stats['name'])
         
         winner_id = attacker_id if winner_idx == 1 else defender_id
         winner_user = a_user if winner_idx == 1 else d_user
         
-        # Payout Logic (10% Tax on Pot)
+                                       
         total_pot = bet * 2
         tax = int(total_pot * 0.10)
         winnings = total_pot - tax
         
         await update_user_balance(winner_id, winnings)
         
-        # Rewards
+                 
         await add_xp(winner_id, 30, "battle_win")
         await update_quest_progress(winner_id, "battle_veteran", 1)
         await update_quest_progress(winner_id, "weekly_battle", 1)
         
-        # Check Achievements
+                            
         await check_achievements(winner_id)
         
-        # Final Message
+                       
         result_text = (
             f"📜 **Battle Log**:\n{battle_log}\n\n"
             f"🏆 **Winner:** [{winner_user.first_name}](tg://user?id={winner_user.id})\n"
