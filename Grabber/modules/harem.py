@@ -101,7 +101,7 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
         if isinstance(message_obj, types.CallbackQuery):
             if pic:
                  await message_obj.edit_message_media(
-                    media=types.InputMediaPhoto(media=pic, caption=harem_text, parse_mode=enums.ParseMode.MARKDOWN),
+                    media=types.InputMediaPhoto(media=pic, caption=harem_text),
                     reply_markup=markup
                 )
             else:
