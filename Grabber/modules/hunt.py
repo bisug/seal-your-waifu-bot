@@ -3,6 +3,8 @@ import random
 import time
 from datetime import datetime, timedelta
 from pyrogram import filters, types, enums
+from pyrogram.enums import ParseMode
+from Grabber.core.utils import md_escape
 from Grabber import user_collection, collection, app
 from Grabber.core.user import add_pet_xp
 from Grabber.core.progression import add_xp
@@ -51,7 +53,7 @@ async def hunt_cmd(_, message: types.Message):
     cooldown_active, seconds_left = is_on_cooldown(user_id)
 
     if cooldown_active:
-        return await message.reply_text(f"⏳ Please wait {seconds_left}s before hunting again.", parse_mode=enums.ParseMode.MARKDOWN)
+        return await message.reply_text(f"⏳ Please wait {seconds_left}s before hunting again.", parse_mode=ParseMode.MARKDOWN_V2)
                       
     user = await user_collection.find_one({"id": user_id}) or {}
     pets = user.get("pets", [DEFAULT_PET])
@@ -74,7 +76,7 @@ async def hunt_cmd(_, message: types.Message):
              
     hunt_cooldowns[user_id] = now
 
-    msg = await message.reply_text(f"🦊 **{pet['name']}** is going hunting...", parse_mode=enums.ParseMode.MARKDOWN)
+    msg = await message.reply_text(f"🦊 **{md_escape(pet['name'])}** is going hunting...", parse_mode=ParseMode.MARKDOWN_V2)
     await asyncio.sleep(2)
 
     shards = random.randint(100, 300)
@@ -135,18 +137,18 @@ async def hunt_cmd(_, message: types.Message):
 
         await msg.edit_text(
             f"🎁 **Loot Found!**\n\n"
-            f"🥚 **{tier_data['name']}** discovered!\n"
+            f"🥚 **{md_escape(tier_data['name'])}** discovered!\n"
             f"**+{shards} Shards** ⬪{bonus_text}\n"
-            f"🆙 **+{xp_gain} XP** for {pet['name']}",
-            parse_mode=enums.ParseMode.MARKDOWN
+            f"🆙 **+{xp_gain} XP** for {md_escape(pet['name'])}",
+            parse_mode=ParseMode.MARKDOWN_V2
         )
     else:
         await msg.edit_text(
             f"🌲 **Hunt Complete!**\n\n"
             f"**+{shards} Shards** ⬪{bonus_text}\n"
-            f"🆙 **+{xp_gain} XP** for {pet['name']}\n"
+            f"🆙 **+{xp_gain} XP** for {md_escape(pet['name'])}\n"
             f"_No eggs found this time._",
-            parse_mode=enums.ParseMode.MARKDOWN
+            parse_mode=ParseMode.MARKDOWN_V2
         )
 
 @app.on_message(filters.command("eggs"))
@@ -162,11 +164,11 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
         text = "❌ **No eggs found!**\n\nUse `/hunt` to find eggs."
         if isinstance(message_or_query, types.CallbackQuery):
             try:
-                await message_or_query.message.edit_text(text, parse_mode=enums.ParseMode.MARKDOWN)
+                await message_or_query.message.edit_text(text, parse_mode=ParseMode.MARKDOWN_V2)
             except:
                 pass
         else:
-            await message_or_query.reply_text(text, parse_mode=enums.ParseMode.MARKDOWN)
+            await message_or_query.reply_text(text, parse_mode=ParseMode.MARKDOWN_V2)
         return
     
                 
@@ -226,9 +228,9 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
     
     try:
         if isinstance(message_or_query, types.CallbackQuery):
-            await message_or_query.message.edit_text(text, parse_mode=enums.ParseMode.MARKDOWN, reply_markup=markup)
+            await message_or_query.message.edit_text(text, parse_mode=ParseMode.MARKDOWN_V2, reply_markup=markup)
         else:
-            await message_or_query.reply_text(text, parse_mode=enums.ParseMode.MARKDOWN, reply_markup=markup)
+            await message_or_query.reply_text(text, parse_mode=ParseMode.MARKDOWN_V2, reply_markup=markup)
     except errors.MessageNotModified:
         pass
     except Exception as e:
@@ -330,13 +332,13 @@ async def crack_open_egg_inline(query: types.CallbackQuery, user_id: int, egg: d
                                
     await user_collection.update_one({"id": user_id}, {"$pull": {"eggs": {"id": egg["id"]}}})
     
-    await query.message.edit_text("🥚 **Cracking open...**", parse_mode=enums.ParseMode.MARKDOWN)
+    await query.message.edit_text("🥚 **Cracking open...**", parse_mode=ParseMode.MARKDOWN_V2)
     await asyncio.sleep(2)
     
                      
     if egg.get("is_corrupted", False):
         if random.random() < 0.5:
-            await query.message.edit_text("💥 **The egg exploded!**\nIt was corrupted...", parse_mode=enums.ParseMode.MARKDOWN)
+            await query.message.edit_text("💥 **The egg exploded!**\nIt was corrupted...", parse_mode=ParseMode.MARKDOWN_V2)
             return
         else:
             rarity = RARITY_MAP[9]          
@@ -353,19 +355,19 @@ async def crack_open_egg_inline(query: types.CallbackQuery, user_id: int, egg: d
                   
         await add_xp(user_id, 15, "egg_hatch")
         
-        await query.message.edit_text("🎉 **Success! Sending details...**", parse_mode=enums.ParseMode.MARKDOWN)
+        await query.message.edit_text("🎉 **Success! Sending details...**", parse_mode=ParseMode.MARKDOWN_V2)
         await query.message.reply_photo(
             photo=character["img_url"],
             caption=(
                 f"🐣 **Hatched Successfully!**\n\n"
-                f"📛 **{character['name']}**\n"
-                f"✨ **{rarity}**\n"
-                f"🎬 {character['anime']}"
+                f"📛 **{md_escape(character['name'])}**\n"
+                f"✨ **{md_escape(rarity)}**\n"
+                f"🎬 {md_escape(character['anime'])}"
             ),
-            parse_mode=enums.ParseMode.MARKDOWN
+            parse_mode=ParseMode.MARKDOWN_V2
         )
     else:
-        await query.message.edit_text("⚠️ The egg was empty (DB error).", parse_mode=enums.ParseMode.MARKDOWN)
+        await query.message.edit_text("⚠️ The egg was empty (DB error).", parse_mode=ParseMode.MARKDOWN_V2)
 
                                                                             
 
@@ -378,13 +380,13 @@ async def crack_open_egg(message, user_id, egg, index):
                  
     await user_collection.update_one({"id": user_id}, {"$pull": {"eggs": {"id": egg["id"]}}})
     
-    msg = await message.reply_text("🥚 **Cracking open...**", parse_mode=enums.ParseMode.MARKDOWN)
+    msg = await message.reply_text("🥚 **Cracking open...**", parse_mode=ParseMode.MARKDOWN_V2)
     await asyncio.sleep(2)
     
                      
     if egg.get("is_corrupted", False):
         if random.random() < 0.5:
-            await msg.edit_text("💥 **The egg exploded!**\nIt was corrupted... You got nothing.", parse_mode=enums.ParseMode.MARKDOWN)
+            await msg.edit_text("💥 **The egg exploded!**\nIt was corrupted... You got nothing.", parse_mode=ParseMode.MARKDOWN_V2)
             return
         else:
                      
@@ -403,14 +405,14 @@ async def crack_open_egg(message, user_id, egg, index):
                                
         await add_xp(user_id, 15, "egg_hatch")
         
-        await msg.edit_text("🎉 Success! Sending details...", parse_mode=enums.ParseMode.MARKDOWN)
+        await msg.edit_text("🎉 Success! Sending details...", parse_mode=ParseMode.MARKDOWN_V2)
         await message.reply_photo(
             photo=character["img_url"],
             caption=f"🐣 **Hatched Successfully!**\n\n"
-                    f"📛 **{character['name']}**\n"
-                    f"✨ **{rarity}**\n"
-                    f"🎬 {character['anime']}",
-            parse_mode=enums.ParseMode.MARKDOWN
+                    f"📛 **{md_escape(character['name'])}**\n"
+                    f"✨ **{md_escape(rarity)}**\n"
+                    f"🎬 {md_escape(character['anime'])}",
+            parse_mode=ParseMode.MARKDOWN_V2
         )
     else:
         await msg.edit_text("⚠️ The egg was empty (Database error: No chars for this rarity).", parse_mode=enums.ParseMode.MARKDOWN)

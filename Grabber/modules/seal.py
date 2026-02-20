@@ -1,4 +1,6 @@
 from pyrogram import filters, types, enums
+from pyrogram.enums import ParseMode
+from Grabber.core.utils import md_escape
 from Grabber.app import app
 from Grabber import group_user_totals_collection, LOGGER
 from Grabber.core.user import add_char_to_user
@@ -23,7 +25,7 @@ async def seal_handler(_, message: types.Message):
         return                 
 
     if len(message.command) < 2:
-        return await message.reply_text("❌ Provide the character's name! Usage: `/seal <name>`", parse_mode=enums.ParseMode.MARKDOWN)
+        return await message.reply_text("❌ Provide the character's name! Usage: `/seal <name>`", parse_mode=ParseMode.MARKDOWN_V2)
 
     guess = " ".join(message.command[1:]).strip().lower()
     correct_name = character['name'].strip().lower()
@@ -62,9 +64,9 @@ async def seal_handler(_, message: types.Message):
 
         caption = (
             f"🎉 **[{message.from_user.first_name}](tg://user?id={message.from_user.id}) caught the character!**\n\n"
-            f"📛 **Name:** {character['name']}\n"
-            f"✨ **Rarity:** {character['rarity']}\n"
-            f"🎬 **Anime:** {character['anime']}\n"
+            f"📛 **Name:** {md_escape(character['name'])}\n"
+            f"✨ **Rarity:** {md_escape(character['rarity'])}\n"
+            f"🎬 **Anime:** {md_escape(character['anime'])}\n"
             f"🧤 Added to your harem!"
         )
         

@@ -4,6 +4,7 @@ import textwrap
 import traceback
 from contextlib import redirect_stdout
 from pyrogram import filters, types, enums
+from pyrogram.enums import ParseMode
 from Grabber import app, LOGGER, OWNER_ID, sudo_users
 from config import config
 
@@ -32,7 +33,7 @@ async def send_result(result, message: types.Message):
             out_file.name = "output.txt"
             await message.reply_document(document=out_file)
     else:
-        await message.reply_text(f"```python\n{result}```", parse_mode=enums.ParseMode.MARKDOWN)
+        await message.reply_text(f"```python\n{result}```", parse_mode=ParseMode.MARKDOWN_V2)
 
 def cleanup_code(code):
     if code.startswith("```") and code.endswith("```"):

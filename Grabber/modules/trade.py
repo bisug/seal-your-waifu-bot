@@ -1,4 +1,5 @@
-from pyrogram import filters, types, enums, errors
+from pyrogram import filters, types, errors
+from pyrogram.enums import ParseMode, enums
 from Grabber.app import app
 from Grabber import LOGGER
 from Grabber.core.user import get_user_data, update_user
@@ -8,16 +9,16 @@ from Grabber.modules.quests import update_quest_progress
 @app.on_message(filters.command("trade") & filters.group)
 async def trade_handler(_, message: types.Message):
     if not message.reply_to_message:
-        return await message.reply_text("⚠️ Reply to a user to trade!", parse_mode=enums.ParseMode.MARKDOWN)
+        return await message.reply_text("⚠️ Reply to a user to trade!", parse_mode=ParseMode.MARKDOWN_V2)
 
     sender_id = message.from_user.id
     receiver_id = message.reply_to_message.from_user.id
 
     if sender_id == receiver_id:
-        return await message.reply_text("⚠️ No self-trading!", parse_mode=enums.ParseMode.MARKDOWN)
+        return await message.reply_text("⚠️ No self-trading!", parse_mode=ParseMode.MARKDOWN_V2)
 
     if len(message.command) != 3:
-        return await message.reply_text("❌ Usage: `/trade <your_char_id> <their_char_id>`", parse_mode=enums.ParseMode.MARKDOWN)
+        return await message.reply_text("❌ Usage: `/trade <your_char_id> <their_char_id>`", parse_mode=ParseMode.MARKDOWN_V2)
 
     s_char_id, r_char_id = message.command[1], message.command[2]
 
@@ -25,16 +26,16 @@ async def trade_handler(_, message: types.Message):
     receiver = await get_user_data(receiver_id)
 
     if not sender or not receiver:
-        return await message.reply_text("❌ Database error.", parse_mode=enums.ParseMode.MARKDOWN)
+        return await message.reply_text("❌ Database error.", parse_mode=ParseMode.MARKDOWN_V2)
 
                                      
     s_char = next((c for c in sender.get('characters', []) if str(c.get('id')) == s_char_id), None)
     r_char = next((c for c in receiver.get('characters', []) if str(c.get('id')) == r_char_id), None)
 
     if not s_char:
-        return await message.reply_text("❌ You don't own that character.", parse_mode=enums.ParseMode.MARKDOWN)
+        return await message.reply_text("❌ You don't own that character.", parse_mode=ParseMode.MARKDOWN_V2)
     if not r_char:
-        return await message.reply_text("❌ They don't own that character.", parse_mode=enums.ParseMode.MARKDOWN)
+        return await message.reply_text("❌ They don't own that character.", parse_mode=ParseMode.MARKDOWN_V2)
 
                             
     trade_id = f"tr_{sender_id}_{receiver_id}"
@@ -47,10 +48,10 @@ async def trade_handler(_, message: types.Message):
 
     await message.reply_to_message.reply_text(
         f"🤝 [{message.reply_to_message.from_user.first_name}](tg://user?id={message.reply_to_message.from_user.id}), accept trade?\n\n"
-        f"📤 **Give:** {s_char['name']}\n"
-        f"📥 **Take:** {r_char['name']}",
+        f"📤 **Give:** {md_escape(s_char['name'])}\n"
+        f"📥 **Take:** {md_escape(r_char['name'])}",
         reply_markup=markup,
-        parse_mode=enums.ParseMode.MARKDOWN
+        parse_mode=ParseMode.MARKDOWN_V2
     )
 
 @app.on_callback_query(filters.regex(r"^tr_(c|x):"))
@@ -70,7 +71,7 @@ async def trade_callback_handler(_, query: types.CallbackQuery):
             return await query.answer("❌ Not yours!", show_alert=True)
         await delete_session(trade_id)
         try:
-            await query.message.edit_text("❌ Trade canceled.")
+            await query.message.edit_text("❌ Trade canceled.", parse_mode=ParseMode.MARKDOWN_V2)
         except errors.MessageNotModified:
             pass
         return
@@ -91,7 +92,7 @@ async def trade_callback_handler(_, query: types.CallbackQuery):
         await delete_session(trade_id)
         return await query.message.edit_text(
             "❌ One of the characters is no longer available.",
-            parse_mode=enums.ParseMode.MARKDOWN
+            parse_mode=ParseMode.MARKDOWN_V2
         )
 
     # 1. Processing trade - delete session first to prevent double-click race
@@ -114,14 +115,14 @@ async def trade_callback_handler(_, query: types.CallbackQuery):
         # but atomic ops on characters list is second best.
     except Exception as e:
         LOGGER.error(f"Trade DB Error: {e}")
-        return await query.message.edit_text("❌ Database error during trade.")
+        return await query.message.edit_text("❌ Database error during trade.", parse_mode=ParseMode.MARKDOWN_V2)
 
     # 3. Quests & Achievements
     await update_quest_progress(sender_id, "trader", 1)
     await update_quest_progress(receiver_id, "trader", 1)
 
     await query.message.edit_text(
-        f"✅ Trade successful between {sender_id} and {receiver_id}!",
-        parse_mode=enums.ParseMode.MARKDOWN
+        f"✅ Trade successful between `{sender_id}` and `{receiver_id}`!",
+        parse_mode=ParseMode.MARKDOWN_V2
     )
     LOGGER.info(f"Trade complete: {sender_id} <-> {receiver_id}")

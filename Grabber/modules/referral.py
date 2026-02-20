@@ -1,4 +1,5 @@
 from pyrogram import filters, types, enums
+from pyrogram.enums import ParseMode
 from Grabber import app, user_collection, BOT_USERNAME
 
 @app.on_message(filters.command("referrals"))
@@ -27,4 +28,4 @@ async def referrals_cmd(_, message: types.Message):
         f"🔹 They get: **1,500 ⬪** + **Level 10 Pet!** 🦊"
     )
     
-    await message.reply_text(text, parse_mode=enums.ParseMode.MARKDOWN)
+    await message.reply_text(text, parse_mode=ParseMode.MARKDOWN_V2)

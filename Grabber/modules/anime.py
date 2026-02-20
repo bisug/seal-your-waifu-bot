@@ -1,4 +1,6 @@
 from pyrogram import filters, types, enums
+from pyrogram.enums import ParseMode
+from Grabber.core.utils import md_escape
 from Grabber import app, collection, LOGGER
 
 @app.on_message(filters.command("animes"))
@@ -13,7 +15,7 @@ async def anime_list(_, message: types.Message) -> None:
             return
 
                                                 
-        anime_list_text = "\n".join(f"• {anime}" for anime in sorted(anime_names))
+        anime_list_text = "\n".join(f"• {md_escape(anime)}" for anime in sorted(anime_names))
 
                                                            
         if len(anime_list_text) > 4000:
@@ -22,7 +24,7 @@ async def anime_list(_, message: types.Message) -> None:
 
         await message.reply_text(
             f"📜 **Anime List in Database:**\n\n{anime_list_text}",
-            parse_mode=enums.ParseMode.MARKDOWN
+            parse_mode=ParseMode.MARKDOWN_V2
         )
 
     except Exception as e:

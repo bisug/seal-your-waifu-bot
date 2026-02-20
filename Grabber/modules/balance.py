@@ -2,6 +2,8 @@ import asyncio
 import random
 from datetime import datetime, timezone
 from pyrogram import filters, enums, types
+from pyrogram.enums import ParseMode
+from Grabber.core.utils import md_escape
 from Grabber.app import app
 from Grabber import collection, OWNER_ID, SUPPORT_GROUP_ID, LOGGER
 from Grabber.core.game import get_user_balance, update_user_balance, check_and_deduct
@@ -27,7 +29,7 @@ async def balance_cmd(_, message: types.Message):
         f"_Use /exchange to convert Shards to Zenith_"
     )
     
-    await message.reply_text(text, parse_mode=enums.ParseMode.MARKDOWN)
+    await message.reply_text(text, parse_mode=ParseMode.MARKDOWN_V2)
 
 @app.on_message(filters.command("pay") & filters.reply)
 async def pay_cmd(_, message: types.Message):
@@ -37,17 +39,17 @@ async def pay_cmd(_, message: types.Message):
     recipient_id = recipient.id
 
     if recipient_id == sender_id:
-        return await message.reply_text("❌ **You cannot pay yourself.**", parse_mode=enums.ParseMode.MARKDOWN)
+        return await message.reply_text("❌ **You cannot pay yourself.**", parse_mode=ParseMode.MARKDOWN_V2)
 
     try:
         amount = int(message.command[1])
         if amount <= 0: raise ValueError
     except (IndexError, ValueError):
-        return await message.reply_text("❌ **Usage:** `/pay <amount>` (reply to user)", parse_mode=enums.ParseMode.MARKDOWN)
+        return await message.reply_text("❌ **Usage:** `/pay <amount>` (reply to user)", parse_mode=ParseMode.MARKDOWN_V2)
 
     balance = await get_user_balance(sender_id)
     if balance < amount:
-        return await message.reply_text("❌ **Insufficient balance!**", parse_mode=enums.ParseMode.MARKDOWN)
+        return await message.reply_text("❌ **Insufficient balance!**", parse_mode=ParseMode.MARKDOWN_V2)
 
     buttons = [
         [
@@ -62,7 +64,7 @@ async def pay_cmd(_, message: types.Message):
         f"**Amount:** {amount:,} ⬪\n\n"
         f"_Are you sure you want to send these Shards?_",
         reply_markup=types.InlineKeyboardMarkup(buttons),
-        parse_mode=enums.ParseMode.MARKDOWN
+        parse_mode=ParseMode.MARKDOWN_V2
     )
 
 @app.on_callback_query(filters.regex(r"^pay_"))
@@ -72,7 +74,7 @@ async def pay_callback_handler(_, query: types.CallbackQuery):
     action = data[1]
 
     if action == "a":
-        await query.message.edit_text("❌ **Payment cancelled.**", parse_mode=enums.ParseMode.MARKDOWN)
+        await query.message.edit_text("❌ **Payment cancelled.**", parse_mode=ParseMode.MARKDOWN_V2)
         return
 
     recipient_id = int(data[2])
@@ -93,7 +95,7 @@ async def pay_callback_handler(_, query: types.CallbackQuery):
             f"✅ **Payment Successful!**\n\n"
             f"**Sent:** {amount:,} ⬪\n"
             f"**To:** {mention}",
-            parse_mode=enums.ParseMode.MARKDOWN
+            parse_mode=ParseMode.MARKDOWN_V2
         )
     else:
         await query.answer("❌ Insufficient balance or transaction failed.", show_alert=True)
@@ -130,5 +132,5 @@ async def mtop_cmd(_, message: types.Message):
     cursor = user_collection.find({}, {"id": 1, "first_name": 1, "balance": 1}).sort("balance", -1).limit(10)
     top_users = await cursor.to_list(length=10)
     
-    lines = [f"{i+1}. {u.get('first_name', 'User')} - 💵 {u.get('balance', 0)}" for i, u in enumerate(top_users)]
-    await message.reply_text("🏆 **Top 10 Rich Users**\n\n" + "\n".join(lines))
+    lines = [f"{i+1}. {md_escape(u.get('first_name', 'User'))} \\- 💵 {u.get('balance', 0)}" for i, u in enumerate(top_users)]
+    await message.reply_text("🏆 **Top 10 Rich Users**\n\n" + "\n".join(lines), parse_mode=ParseMode.MARKDOWN_V2)

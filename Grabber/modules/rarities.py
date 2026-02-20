@@ -1,4 +1,5 @@
 from pyrogram import filters, types, enums
+from pyrogram.enums import ParseMode
 from Grabber.app import app
 from Grabber.database import collection
 
@@ -45,4 +46,4 @@ async def rarities_handler(_, message: types.Message):
             count = rarity_counts.get(rarity_name, 0)
             response += f"{rarity_name}: `{count}`\n"
     
-    await message.reply_text(response, parse_mode=enums.ParseMode.MARKDOWN)
+    await message.reply_text(response, parse_mode=ParseMode.MARKDOWN_V2)

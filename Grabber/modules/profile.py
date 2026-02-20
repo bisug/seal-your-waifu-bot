@@ -1,5 +1,6 @@
 import math
 from pyrogram import filters, types, enums
+from pyrogram.enums import ParseMode
 from Grabber import app, user_collection, PHOTO_URL, LOGGER
 from Grabber.core.utils import md_escape
 from Grabber.core.user import get_user_data, get_active_pet
@@ -19,7 +20,7 @@ async def profile_handler(_, message: types.Message):
     user_data = await get_user_data(user_id)
     
     if not user_data:
-        return await message.reply_text("🚨 **No profile found!** Try collecting a character first.")
+        return await message.reply_text("🚨 **No profile found!** Try collecting a character first.", parse_mode=ParseMode.MARKDOWN_V2)
 
     await app.send_chat_action(message.chat.id, enums.ChatAction.TYPING)
     
@@ -49,12 +50,12 @@ async def profile_handler(_, message: types.Message):
     
                 
     active_pet = await get_active_pet(user_id)
-    pet_text = f"{active_pet['name']} (Lvl {active_pet.get('level', 1)})" if active_pet else "None"
+    pet_text = md_escape(f"{active_pet['name']} (Lvl {active_pet.get('level', 1)})") if active_pet else "None"
     
                         
     fav_id = user_data.get('favorites', [None])[0]
     fav_char = next((c for c in chars if str(c.get('id')) == str(fav_id)), None)
-    fav_name = fav_char['name'] if fav_char else "None"
+    fav_name = md_escape(fav_char['name']) if fav_char else "None"
     
                   
     rarity_stats = {}
@@ -97,8 +98,9 @@ async def profile_handler(_, message: types.Message):
         await message.reply_photo(
             photo=pic,
             caption=profile_text,
-            reply_markup=types.InlineKeyboardMarkup(buttons)
+            reply_markup=types.InlineKeyboardMarkup(buttons),
+            parse_mode=ParseMode.MARKDOWN_V2
         )
     except Exception as e:
         LOGGER.error(f"Profile Photo Error: {e}")
-        await message.reply_text(profile_text, reply_markup=types.InlineKeyboardMarkup(buttons))
+        await message.reply_text(profile_text, reply_markup=types.InlineKeyboardMarkup(buttons), parse_mode=ParseMode.MARKDOWN_V2)

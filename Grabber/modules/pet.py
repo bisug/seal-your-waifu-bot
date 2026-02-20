@@ -1,4 +1,6 @@
 from pyrogram import filters, types, enums, errors
+from pyrogram.enums import ParseMode
+from Grabber.core.utils import md_escape
 from Grabber import app, user_collection, PHOTO_URL, LOGGER
 
              
@@ -66,7 +68,7 @@ async def send_petshop_page(message_or_query_obj, page: int, user_id: int):
             )
         else:
             await message_or_query_obj.reply_photo(
-                photo=pet["img"], caption=caption, parse_mode=enums.ParseMode.MARKDOWN, reply_markup=reply_markup
+                photo=pet["img"], caption=caption, parse_mode=ParseMode.MARKDOWN_V2, reply_markup=reply_markup
             )
     except errors.MessageNotModified:
         pass
@@ -134,12 +136,12 @@ async def perform_pet_purchase(user_id, pet_index: int):
 @app.on_message(filters.command("buypet"))
 async def buypet_cmd(_, message: types.Message):
     if len(message.command) < 2:
-        return await message.reply_text("❌ Usage: `/buypet <pet_id>`", parse_mode=enums.ParseMode.MARKDOWN)
+        return await message.reply_text("❌ Usage: `/buypet <pet_id>`", parse_mode=ParseMode.MARKDOWN_V2)
     
     try:
         pet_id = int(message.command[1])
     except ValueError:
-        return await message.reply_text("❌ Invalid pet ID.", parse_mode=enums.ParseMode.MARKDOWN)
+        return await message.reply_text("❌ Invalid pet ID.", parse_mode=ParseMode.MARKDOWN_V2)
 
     result = await perform_pet_purchase(message.from_user.id, pet_id)
     if result is True:
@@ -147,10 +149,10 @@ async def buypet_cmd(_, message: types.Message):
         await message.reply_photo(
             photo=pet["img"],
             caption=f"✅ You bought **{pet['name']}** with {int(pet['luck']*100)}% luck!",
-            parse_mode=enums.ParseMode.MARKDOWN
+            parse_mode=ParseMode.MARKDOWN_V2
         )
     else:
-        await message.reply_text(result, parse_mode=enums.ParseMode.MARKDOWN)
+        await message.reply_text(result, parse_mode=ParseMode.MARKDOWN_V2)
 
                                 
 async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
@@ -161,9 +163,9 @@ async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
     if not pets:
         text = "You have no pets. Use /petshop to buy one."
         if isinstance(message_or_query_obj, types.CallbackQuery):
-            await message_or_query_obj.message.edit_text(text, parse_mode=enums.ParseMode.MARKDOWN)
+            await message_or_query_obj.message.edit_text(text, parse_mode=ParseMode.MARKDOWN_V2)
         else:
-            await message_or_query_obj.reply_text(text, parse_mode=enums.ParseMode.MARKDOWN)
+            await message_or_query_obj.reply_text(text, parse_mode=ParseMode.MARKDOWN_V2)
         return
 
     page = page % len(pets)
@@ -203,7 +205,7 @@ async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
             )
         else:
             await message_or_query_obj.reply_photo(
-                photo=photo, caption=caption, parse_mode=enums.ParseMode.MARKDOWN, reply_markup=reply_markup
+                photo=photo, caption=caption, parse_mode=ParseMode.MARKDOWN_V2, reply_markup=reply_markup
             )
     except errors.MessageNotModified:
         pass
