@@ -2,6 +2,8 @@ import asyncio
 import random
 import time
 from pyrogram import filters, types, enums, errors
+from pyrogram.enums import ParseMode
+from Grabber.core.utils import md_escape
 from Grabber.app import app
 from Grabber import LOGGER
 from Grabber.core.game import get_user_balance, update_user_balance, check_and_deduct
@@ -116,13 +118,13 @@ def simulate_battle(p1_stats, p2_stats, p1_name, p2_name):
 @app.on_message(filters.command("battle") & filters.group)
 async def battle_challenge_handler(_, message: types.Message):
     if not message.reply_to_message:
-        return await message.reply_text("⚠️ Challenge someone by replying to their message!", parse_mode=enums.ParseMode.MARKDOWN)
+        return await message.reply_text("⚠️ Challenge someone by replying to their message!", parse_mode=ParseMode.MARKDOWN_V2)
 
     attacker = message.from_user
     defender = message.reply_to_message.from_user
 
     if attacker.id == defender.id:
-        return await message.reply_text("⚠️ You can't fight yourself!", parse_mode=enums.ParseMode.MARKDOWN)
+        return await message.reply_text("⚠️ You can't fight yourself!", parse_mode=ParseMode.MARKDOWN_V2)
 
                               
     pair_key = tuple(sorted((attacker.id, defender.id)))
@@ -131,20 +133,20 @@ async def battle_challenge_handler(_, message: types.Message):
         last_battle = battle_cooldowns[pair_key]
         if now - last_battle < 300:            
             remain = int(300 - (now - last_battle))
-            return await message.reply_text(f"⏳ **Cooldown!** Wait {remain}s before battling this user again.", parse_mode=enums.ParseMode.MARKDOWN)
+            return await message.reply_text(f"⏳ **Cooldown!** Wait {remain}s before battling this user again.", parse_mode=ParseMode.MARKDOWN_V2)
 
     try:
         bet = int(message.command[1])
         if bet <= 0: raise ValueError
     except (IndexError, ValueError):
-        return await message.reply_text("❌ Usage: `/battle <bet_amount>`", parse_mode=enums.ParseMode.MARKDOWN)
+        return await message.reply_text("❌ Usage: `/battle <bet_amount>`", parse_mode=ParseMode.MARKDOWN_V2)
 
                         
     if await get_user_balance(attacker.id) < bet:
-        return await message.reply_text("❌ You don't have enough Shards!", parse_mode=enums.ParseMode.MARKDOWN)
+        return await message.reply_text("❌ You don't have enough Shards!", parse_mode=ParseMode.MARKDOWN_V2)
     
     if await get_user_balance(defender.id) < bet:
-        return await message.reply_text(f"❌ {defender.first_name} doesn't have enough Shards!", parse_mode=enums.ParseMode.MARKDOWN)
+        return await message.reply_text(f"❌ {defender.first_name} doesn't have enough Shards!", parse_mode=ParseMode.MARKDOWN_V2)
 
                      
     battle_id = f"bt_{attacker.id}_{defender.id}"
@@ -157,7 +159,7 @@ async def battle_challenge_handler(_, message: types.Message):
     await message.reply_to_message.reply_text(
         f"⚔ [{attacker.first_name}](tg://user?id={attacker.id}) challenged you to a battle for {bet} ⬪!",
         reply_markup=markup,
-        parse_mode=enums.ParseMode.MARKDOWN
+        parse_mode=ParseMode.MARKDOWN_V2
     )
 
 @app.on_callback_query(filters.regex(r"^abt_acc:"))
@@ -178,7 +180,7 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
     if not await check_and_deduct(attacker_id, bet):
         await delete_session(battle_id)
         try:
-            await query.message.edit_text("❌ Attacker no longer has enough balance.", parse_mode=enums.ParseMode.MARKDOWN)
+            await query.message.edit_text("❌ Attacker no longer has enough balance.", parse_mode=ParseMode.MARKDOWN_V2)
         except errors.MessageNotModified:
             pass
         return
@@ -187,7 +189,7 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
         await update_user_balance(attacker_id, bet)
         await delete_session(battle_id)
         try:
-            await query.message.edit_text("❌ You no longer have enough balance.", parse_mode=enums.ParseMode.MARKDOWN)
+            await query.message.edit_text("❌ You no longer have enough balance.", parse_mode=ParseMode.MARKDOWN_V2)
         except errors.MessageNotModified:
             pass
         return
@@ -212,15 +214,15 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
                
         text = (
             f"⚔️ **Battle Started!**\n"
-            f"🔴 [{a_user.first_name}](tg://user?id={a_user.id}) - **{a_stats['name']}** (Lvl {a_stats['level']})\n"
+            f"🔴 [{md_escape(a_user.first_name)}](tg://user?id={a_user.id}) \\- **{md_escape(a_stats['name'])}** (Lvl {a_stats['level']})\n"
             f"   ❤️ {a_stats['hp']} | ⚔️ {a_stats['atk']} | ⚡ {a_stats['spd']}\n"
             f" 🆚 \n"
-            f"🔵 [{d_user.first_name}](tg://user?id={d_user.id}) - **{d_stats['name']}** (Lvl {d_stats['level']})\n"
+            f"🔵 [{md_escape(d_user.first_name)}](tg://user?id={d_user.id}) \\- **{md_escape(d_stats['name'])}** (Lvl {d_stats['level']})\n"
             f"   ❤️ {d_stats['hp']} | ⚔️ {d_stats['atk']} | ⚡ {d_stats['spd']}\n\n"
             f"🔥 **Fighting...**"
         )
         try:
-            await query.message.edit_text(text, parse_mode=enums.ParseMode.MARKDOWN)
+            await query.message.edit_text(text, parse_mode=ParseMode.MARKDOWN_V2)
         except errors.MessageNotModified:
             pass
         
@@ -250,17 +252,17 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
                        
         result_text = (
             f"📜 **Battle Log**:\n{battle_log}\n\n"
-            f"🏆 **Winner:** [{winner_user.first_name}](tg://user?id={winner_user.id})\n"
+            f"🏆 **Winner:** [{md_escape(winner_user.first_name)}](tg://user?id={winner_user.id})\n"
             f"**Winnings:** {winnings} ⬪\n"
             f"**Tax:** {tax} ⬪\n"
-            f"📈 **+30 XP** for {winner_user.first_name}"
+            f"📈 **+30 XP** for {md_escape(winner_user.first_name)}"
         )
         
-        await query.message.edit_text(result_text, parse_mode=enums.ParseMode.MARKDOWN)
+        await query.message.edit_text(result_text, parse_mode=ParseMode.MARKDOWN_V2)
 
     except Exception as e:
         LOGGER.error(f"Battle Error: {e}")
         try:
-            await query.message.reply_text("❌ A technical error occurred during battle.", parse_mode=enums.ParseMode.MARKDOWN)
+            await query.message.reply_text("❌ A technical error occurred during battle.", parse_mode=ParseMode.MARKDOWN_V2)
         except:
             pass

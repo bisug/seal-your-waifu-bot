@@ -1,5 +1,7 @@
 from pyrogram import filters, types, enums
+from pyrogram.enums import ParseMode
 from Grabber.app import app
+from Grabber.core.utils import md_escape
 from Grabber.core.user import get_user_data, remove_char_from_user
 from Grabber.core.game import update_user_balance
 
@@ -21,7 +23,7 @@ async def sell_handler(_, message: types.Message):
         return await message.reply_text(
             f"❌ **Usage:** `/sell <id>`\n\n"
             f"💰 **Sell Rates:**\n{rates}",
-            parse_mode=enums.ParseMode.MARKDOWN
+            parse_mode=ParseMode.MARKDOWN_V2
         )
 
     char_id = message.command[1]
@@ -29,12 +31,12 @@ async def sell_handler(_, message: types.Message):
     
     user = await get_user_data(user_id)
     if not user or not user.get('characters'):
-        return await message.reply_text("❌ **Your collection is empty.**", parse_mode=enums.ParseMode.MARKDOWN)
+        return await message.reply_text("❌ **Your collection is empty.**", parse_mode=ParseMode.MARKDOWN_V2)
 
                                    
     char = next((c for c in user['characters'] if str(c.get('id')) == char_id), None)
     if not char:
-        return await message.reply_text("❌ **You don't own this character.**", parse_mode=enums.ParseMode.MARKDOWN)
+        return await message.reply_text("❌ **You don't own this character.**", parse_mode=ParseMode.MARKDOWN_V2)
 
     rarity = char.get('rarity', '⚪ Common')
     price = SELL_PRICES.get(rarity, 50)
@@ -51,7 +53,7 @@ async def sell_handler(_, message: types.Message):
     
     confirmation_text = (
         f"💰 **Sell Confirmation**\n\n"
-        f"**Character:** {char['name']}\n"
+        f"**Character:** {md_escape(char['name'])}\n"
         f"**Rarity:** {rarity}\n"
         f"**Value:** {price:,} ⬪\n\n"
         f"**Current Balance:** {current_shards:,} ⬪\n"
@@ -62,7 +64,7 @@ async def sell_handler(_, message: types.Message):
     await message.reply_text(
         confirmation_text,
         reply_markup=types.InlineKeyboardMarkup(buttons),
-        parse_mode=enums.ParseMode.MARKDOWN
+        parse_mode=ParseMode.MARKDOWN_V2
     )
 
 @app.on_callback_query(filters.regex(r"^sell_"))
@@ -81,7 +83,7 @@ async def sell_callback_handler(_, query: types.CallbackQuery):
         return await query.answer("❌ This is not your menu!", show_alert=True)
 
     if action == "a":
-        await query.message.edit_text("❌ **Selling cancelled.**", parse_mode=enums.ParseMode.MARKDOWN)
+        await query.message.edit_text("❌ **Selling cancelled.**", parse_mode=ParseMode.MARKDOWN_V2)
         return
         
     char_id = parts[0]
@@ -107,10 +109,10 @@ async def sell_callback_handler(_, query: types.CallbackQuery):
         await update_user_balance(user_id, price)
         await query.message.edit_text(
             f"✅ **Successfully Sold!**\n\n"
-            f"**Character:** {char['name']}\n"
+            f"**Character:** {md_escape(char['name'])}\n"
             f"**Price:** {price:,} ⬪\n\n"
             f"**Your New Balance:** {new_shards:,} ⬪",
-            parse_mode=enums.ParseMode.MARKDOWN
+            parse_mode=ParseMode.MARKDOWN_V2
         )
     else:
         await query.answer("❌ Failed to sell character.", show_alert=True)

@@ -2,6 +2,8 @@ import random
 import asyncio
 from datetime import datetime, timezone
 from pyrogram import filters, types, enums
+from pyrogram.enums import ParseMode
+from Grabber.core.utils import md_escape
 from Grabber.app import app
 from Grabber import collection, user_collection
 from Grabber.core.user import get_user_data, add_char_to_user, update_user
@@ -52,14 +54,14 @@ async def propose_command(_, message: types.Message):
                        
     now_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     if user and user.get('last_propose_date') == now_date:
-        return await message.reply_text("⏳ You have already proposed today! Come back tomorrow.")
+        return await message.reply_text("⏳ You have already proposed today! Come back tomorrow.", parse_mode=ParseMode.MARKDOWN_V2)
 
                           
     start_msg = random.choice(start_messages)
     roll_text = random.choice(["Proposing her....💍", "Getting down on one knee....💍", "Popping the question....💍"])
     
                                
-    await message.reply_text(f"{start_msg}\n\n{roll_text}")
+    await message.reply_text(f"{start_msg}\n\n{roll_text}", parse_mode=ParseMode.MARKDOWN_V2)
     await asyncio.sleep(2)           
 
                        
@@ -76,35 +78,35 @@ async def propose_command(_, message: types.Message):
             await add_char_to_user(user_id, char)
             caption = (
                 f"💍 **Proposal Accepted!** 💍\n\n"
-                f"<b>{char['name']}</b> has accepted your proposal! 😇\n"
-                f"Slave Name: {char['name']}\n"
-                f"Rarity: {char['rarity']}\n"
-                f"Anime: {char['anime']}"
+                f"**{md_escape(char['name'])}** has accepted your proposal! 😇\n"
+                f"Slave Name: {md_escape(char['name'])}\n"
+                f"Rarity: {md_escape(char['rarity'])}\n"
+                f"Anime: {md_escape(char['anime'])}"
             )
             img_url = char['img_url']
-            await message.reply_photo(photo=img_url, caption=caption)
+            await message.reply_photo(photo=img_url, caption=caption, parse_mode=ParseMode.MARKDOWN_V2)
         else:
                                                   
             await update_user_balance(user_id, 2000)
-            await message.reply_text("💍 **Proposal Accepted!**\nHowever, she was too shy to appear. You found 2000 Shards instead!")
+            await message.reply_text("💍 **Proposal Accepted!**\nHowever, she was too shy to appear. You found 2000 Shards instead!", parse_mode=ParseMode.MARKDOWN_V2)
 
     elif roll < 13:
                          
         await update_user_balance(user_id, 2000)
         img = random.choice(acceptance_images)
-        await message.reply_photo(photo=img, caption="💍 **Proposal Accepted!**\nShe was flattered but busy. She sent you **2,000 Shards** as a gift!")
+        await message.reply_photo(photo=img, caption="💍 **Proposal Accepted!**\nShe was flattered but busy. She sent you **2,000 Shards** as a gift!", parse_mode=ParseMode.MARKDOWN_V2)
 
     elif roll < 43:
                         
         await update_user_balance(user_id, 500)
         img = random.choice(acceptance_images)
-        await message.reply_photo(photo=img, caption="💍 **Proposal Accepted!**\nShe smiled and gave you **500 Shards** for your effort!")
+        await message.reply_photo(photo=img, caption="💍 **Proposal Accepted!**\nShe smiled and gave you **500 Shards** for your effort!", parse_mode=ParseMode.MARKDOWN_V2)
 
     else:
                    
         img = random.choice(rejection_images)
         caption = random.choice(rejection_captions)
-        await message.reply_photo(photo=img, caption=f"💔 **Rejection!**\n{caption}")
+        await message.reply_photo(photo=img, caption=f"💔 **Rejection!**\n{caption}", parse_mode=ParseMode.MARKDOWN_V2)
 
                             
     await update_user(user_id, {"$set": {"last_propose_date": now_date}})

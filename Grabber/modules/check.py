@@ -1,11 +1,13 @@
 from pyrogram import filters, types, enums
+from pyrogram.enums import ParseMode
+from Grabber.core.utils import md_escape
 from Grabber import app, collection, user_collection, OWNER_ID, LOGGER
 
 @app.on_message(filters.command("check"))
 async def check_character(_, message: types.Message) -> None:
     try:
         if len(message.command) < 2:
-            await message.reply_text('Incorrect format. Please use: `/check character_id`', parse_mode=enums.ParseMode.MARKDOWN)
+            await message.reply_text('Incorrect format. Please use: `/check character_id`', parse_mode=ParseMode.MARKDOWN_V2)
             return
 
         character_id = message.command[1]
@@ -13,16 +15,16 @@ async def check_character(_, message: types.Message) -> None:
 
         if character:
             response_message = (
-                f"**Character Name:** {character['name']}\n"
-                f"**Anime:** {character['anime']}\n"
-                f"**Rarity:** {character['rarity']}\n"
+                f"**Character Name:** {md_escape(character['name'])}\n"
+                f"**Anime:** {md_escape(character['anime'])}\n"
+                f"**Rarity:** {md_escape(character['rarity'])}\n"
                 f"**Character ID:** `{character['id']}`\n"
             )
 
             await message.reply_photo(
                 photo=character['img_url'],
                 caption=response_message,
-                parse_mode=enums.ParseMode.MARKDOWN
+                parse_mode=ParseMode.MARKDOWN_V2
             )
         else:
             await message.reply_text('Character not found.')

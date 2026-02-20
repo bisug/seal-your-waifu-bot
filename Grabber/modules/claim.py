@@ -1,5 +1,7 @@
 import random
 from pyrogram import filters, types, enums, errors
+from pyrogram.enums import ParseMode
+from Grabber.core.utils import md_escape
 from Grabber.app import app
 from Grabber import LOGGER
 from Grabber.database import collection, user_collection
@@ -40,7 +42,7 @@ async def claim_handler(_, message: types.Message):
     user = await get_user_data(user_id)
 
     if user and user.get('claimed_waifu'):
-        return await message.reply_text("🎖️ **You already claimed your free waifu!**")
+        return await message.reply_text("🎖️ **You already claimed your free waifu!**", parse_mode=ParseMode.MARKDOWN_V2)
 
     if not await check_groups_joined(user_id):
         markup = types.InlineKeyboardMarkup([
@@ -50,7 +52,8 @@ async def claim_handler(_, message: types.Message):
         ])
         return await message.reply_text(
             "🔒 **Join our channels to unlock your free waifu!**",
-            reply_markup=markup
+            reply_markup=markup,
+            parse_mode=ParseMode.MARKDOWN_V2
         )
 
                                            
@@ -72,9 +75,9 @@ async def show_preview(message_or_query, user_id):
     preview_text = (
         f"🎁 **Your Free Character Preview!**\n\n"
         f"🆔 **ID:** `{char['id']}`\n"
-        f"📛 **Name:** {char['name']}\n"
-        f"🎬 **Anime:** {char['anime']}\n"
-        f"✨ **Rarity:** {char['rarity']}\n\n"
+        f"📛 **Name:** {md_escape(char['name'])}\n"
+        f"🎬 **Anime:** {md_escape(char['anime'])}\n"
+        f"✨ **Rarity:** {md_escape(char['rarity'])}\n\n"
         f"💰 **Bonus:** +{DAILY_SHARD_REWARD} Shards ⬪\n\n"
         f"_Click below to claim this character!_"
     )
@@ -90,13 +93,15 @@ async def show_preview(message_or_query, user_id):
                 message_or_query.message.chat.id,
                 char['img_url'],
                 caption=preview_text,
-                reply_markup=markup
+                reply_markup=markup,
+                parse_mode=ParseMode.MARKDOWN_V2
             )
         else:
             await message_or_query.reply_photo(
                 char['img_url'],
                 caption=preview_text,
-                reply_markup=markup
+                reply_markup=markup,
+                parse_mode=ParseMode.MARKDOWN_V2
             )
     except Exception as e:
         LOGGER.error(f"Error in show_preview: {e}")
@@ -136,16 +141,16 @@ async def claim_confirm_handler(_, query: types.CallbackQuery):
     })
 
     caption = (
-        f"🎉 **{query.from_user.mention} claimed their free waifu!**\n\n"
+        f"🎉 {query.from_user.mention} claimed their free waifu\!\n\n"
         f"🆔 **ID:** `{char['id']}`\n"
-        f"📛 **Name:** {char['name']}\n"
-        f"🎬 **Anime:** {char['anime']}\n"
-        f"✨ **Rarity:** {char['rarity']}\n\n"
+        f"📛 **Name:** {md_escape(char['name'])}\n"
+        f"🎬 **Anime:** {md_escape(char['anime'])}\n"
+        f"✨ **Rarity:** {md_escape(char['rarity'])}\n\n"
         f"💰 **Bonus Received:** +{DAILY_SHARD_REWARD} Shards ⬪"
     )
 
     try:
-        await query.message.edit_caption(caption=caption)
+        await query.message.edit_caption(caption=caption, parse_mode=ParseMode.MARKDOWN_V2)
         await query.answer("✅ Successfully claimed!", show_alert=True)
     except Exception as e:
         LOGGER.error(f"Error in claim_confirm: {e}")
