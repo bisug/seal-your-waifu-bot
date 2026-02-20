@@ -3,7 +3,7 @@ import re
 import asyncio
 from pyrogram import filters, types, errors
 from pyrogram.enums import ParseMode, ReturnDocument
-from Grabber.app import app
+from Grabber import app
 from Grabber import collection, user_collection, sessions_collection, nguess_enabled_groups_collection, LOGGER, OWNER_ID
 from Grabber.core.game import update_user_balance
 

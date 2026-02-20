@@ -4,7 +4,7 @@ import time
 from pyrogram import filters, types, enums, errors
 from pyrogram.enums import ParseMode
 from Grabber.core.utils import md_escape
-from Grabber.app import app
+from Grabber import app
 from Grabber import LOGGER
 from Grabber.core.game import get_user_balance, update_user_balance, check_and_deduct
 from Grabber.core.sessions import create_session, get_session, delete_session

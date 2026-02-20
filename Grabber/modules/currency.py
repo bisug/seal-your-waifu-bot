@@ -1,7 +1,7 @@
 from pyrogram import filters, enums, types
 from pyrogram.enums import ParseMode
 from Grabber.core.utils import md_escape
-from Grabber.app import app
+from Grabber import app
 from Grabber.database import user_collection
 
                                             

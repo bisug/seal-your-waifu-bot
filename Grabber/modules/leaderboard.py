@@ -2,7 +2,7 @@ import html
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
 from Grabber.core.utils import md_escape
-from Grabber.app import app
+from Grabber import app
 from Grabber import user_collection, top_global_groups_collection, group_user_totals_collection
 from Grabber.core.progression import get_level_from_xp
 
