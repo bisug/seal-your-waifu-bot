@@ -28,4 +28,4 @@ async def referrals_cmd(_, message: types.Message):
         f"🔹 They get: **1,500 ⬪** + **Level 10 Pet!** 🦊"
     )
     
-    await message.reply_text(text, parse_mode=ParseMode.MARKDOWN_V2)
+    await message.reply_text(text, parse_mode=ParseMode.MARKDOWN)

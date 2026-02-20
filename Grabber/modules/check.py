@@ -7,7 +7,7 @@ from Grabber import app, collection, user_collection, OWNER_ID, LOGGER
 async def check_character(_, message: types.Message) -> None:
     try:
         if len(message.command) < 2:
-            await message.reply_text('Incorrect format. Please use: `/check character_id`', parse_mode=ParseMode.MARKDOWN_V2)
+            await message.reply_text('Incorrect format. Please use: `/check character_id`', parse_mode=ParseMode.MARKDOWN)
             return
 
         character_id = message.command[1]
@@ -24,7 +24,7 @@ async def check_character(_, message: types.Message) -> None:
             await message.reply_photo(
                 photo=character['img_url'],
                 caption=response_message,
-                parse_mode=ParseMode.MARKDOWN_V2
+                parse_mode=ParseMode.MARKDOWN
             )
         else:
             await message.reply_text('Character not found.')

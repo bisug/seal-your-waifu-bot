@@ -35,23 +35,23 @@ async def upload_waifu_handler(_, message: types.Message):
     
     if message.reply_to_message and (message.reply_to_message.photo or message.reply_to_message.document):
         if len(message.command) < 4:
-            return await message.reply_text(md_escape(WRONG_FORMAT_TEXT), parse_mode=ParseMode.MARKDOWN_V2)
+            return await message.reply_text(md_escape(WRONG_FORMAT_TEXT), parse_mode=ParseMode.MARKDOWN)
         name, anime, rarity_num = message.command[1], message.command[2], message.command[3]
         is_reply = True
     elif len(message.command) == 5:
         img_url, name, anime, rarity_num = message.command[1], message.command[2], message.command[3], message.command[4]
         is_reply = False
     else:
-        return await message.reply_text(md_escape(WRONG_FORMAT_TEXT), parse_mode=ParseMode.MARKDOWN_V2)
+        return await message.reply_text(md_escape(WRONG_FORMAT_TEXT), parse_mode=ParseMode.MARKDOWN)
 
     try:
         rarity_num = int(rarity_num)
         if rarity_num not in RARITY_MAP:
             raise ValueError
     except ValueError:
-        return await message.reply_text("❌ Rarity must be between 1 and 10.", parse_mode=ParseMode.MARKDOWN_V2)
+        return await message.reply_text("❌ Rarity must be between 1 and 10.", parse_mode=ParseMode.MARKDOWN)
 
-    status = await message.reply_text("⏳ Processing upload...", parse_mode=ParseMode.MARKDOWN_V2)
+    status = await message.reply_text("⏳ Processing upload...", parse_mode=ParseMode.MARKDOWN)
     temp_path = None
 
     try:
@@ -98,7 +98,7 @@ async def upload_waifu_handler(_, message: types.Message):
             chat_id=CHARA_CHANNEL_ID,
             photo=final_url,
             caption=caption,
-            parse_mode=ParseMode.MARKDOWN_V2
+            parse_mode=ParseMode.MARKDOWN
         )
 
         char_data = {
@@ -110,7 +110,7 @@ async def upload_waifu_handler(_, message: types.Message):
         }
         
         char_id = await add_character_to_db(char_data)
-        await status.edit_text(f"✅ **Waifu Uploaded!**\nID: `{char_id}`\nHost: {'Catbox' if 'catbox' in final_url else 'ImgBB'}", parse_mode=ParseMode.MARKDOWN_V2)
+        await status.edit_text(f"✅ **Waifu Uploaded!**\nID: `{char_id}`\nHost: {'Catbox' if 'catbox' in final_url else 'ImgBB'}", parse_mode=ParseMode.MARKDOWN)
 
     except errors.FloodWait as e:
         await asyncio.sleep(e.value)
@@ -125,7 +125,7 @@ async def upload_waifu_handler(_, message: types.Message):
 @app.on_message(filters.command(["delete", "delhete"]) & filters.user(sudo_users + [OWNER_ID]))
 async def delete_waifu_handler(_, message: types.Message):
     if len(message.command) < 2:
-        return await message.reply_text("❌ Usage: `/delete <id>`", parse_mode=ParseMode.MARKDOWN_V2)
+        return await message.reply_text("❌ Usage: `/delete <id>`", parse_mode=ParseMode.MARKDOWN)
 
     char_id = message.command[1]
     character = await collection.find_one_and_delete({'id': char_id})
@@ -136,6 +136,6 @@ async def delete_waifu_handler(_, message: types.Message):
                 await app.delete_messages(CHARA_CHANNEL_ID, character['message_id'])
             except Exception:
                 pass
-        await message.reply_text(f"✅ Deleted ID: `{char_id}`", parse_mode=ParseMode.MARKDOWN_V2)
+        await message.reply_text(f"✅ Deleted ID: `{char_id}`", parse_mode=ParseMode.MARKDOWN)
     else:
-        await message.reply_text("❌ Character not found.", parse_mode=ParseMode.MARKDOWN_V2)
+        await message.reply_text("❌ Character not found.", parse_mode=ParseMode.MARKDOWN)

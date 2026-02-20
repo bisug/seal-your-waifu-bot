@@ -32,7 +32,7 @@ async def fav_handler(_, message: types.Message):
         photo=character.get('img_url'),
         caption=f"Set **{md_escape(character.get('name'))}** as your favorite?",
         reply_markup=markup,
-        parse_mode=ParseMode.MARKDOWN_V2
+        parse_mode=ParseMode.MARKDOWN
     )
 
 @app.on_callback_query(filters.regex(r"^fav_set:"))
@@ -43,7 +43,7 @@ async def fav_set_handler(_, query: types.CallbackQuery):
 
     await update_user(int(user_id), {"$set": {"favorites": [char_id]}})
     try:
-        await query.message.edit_caption(f"✅ Character `{char_id}` is now your favorite!", parse_mode=ParseMode.MARKDOWN_V2)
+        await query.message.edit_caption(f"✅ Character `{char_id}` is now your favorite!", parse_mode=ParseMode.MARKDOWN)
     except errors.MessageNotModified:
         pass
     await query.answer("Favorites updated.")

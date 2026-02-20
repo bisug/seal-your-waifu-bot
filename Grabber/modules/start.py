@@ -139,11 +139,11 @@ async def start_handler(_, message: types.Message):
                     await message.reply_photo(
                         photo=character['img_url'],
                         caption=response_message,
-                        parse_mode=ParseMode.MARKDOWN_V2
+                        parse_mode=ParseMode.MARKDOWN
                     )
                     return                                        
                 else:
-                    await message.reply_text("❌ Character not found.", parse_mode=ParseMode.MARKDOWN_V2)
+                    await message.reply_text("❌ Character not found.", parse_mode=ParseMode.MARKDOWN)
                     return
             except Exception as e:
                 LOGGER.error(f"Locate Error: {e}")
@@ -189,12 +189,12 @@ async def start_handler(_, message: types.Message):
                         await app.send_message(
                             referrer_id,
                             fr"🎉 **New Referral!**\n\n{md_escape(message.from_user.first_name)} joined using your link\.\n+500 ⬪ | +50 XP",
-                            parse_mode=ParseMode.MARKDOWN_V2
+                            parse_mode=ParseMode.MARKDOWN
                         )
                     except:
                         pass
                         
-                    await message.reply_text(r"🎁 **Welcome Bonus!**\nYou received **1,500 ⬪** and a **Level 10 Pet** for using a referral link\! 🚀", parse_mode=ParseMode.MARKDOWN_V2)
+                    await message.reply_text(r"🎁 **Welcome Bonus!**\nYou received **1,500 ⬪** and a **Level 10 Pet** for using a referral link\! 🚀", parse_mode=ParseMode.MARKDOWN)
                     
             except ValueError:
                 pass
@@ -216,10 +216,10 @@ async def start_handler(_, message: types.Message):
             photo=random_photo(),
             caption=text,
             reply_markup=markup,
-            parse_mode=ParseMode.MARKDOWN_V2
+            parse_mode=ParseMode.MARKDOWN
         )
     else:
-        await message.reply_text("✅ **I'm active and ready to drop characters!**", parse_mode=ParseMode.MARKDOWN_V2)
+        await message.reply_text("✅ **I'm active and ready to drop characters!**", parse_mode=ParseMode.MARKDOWN)
 
                           
 @app.on_callback_query(filters.regex(r"^st:(h|b)"))
@@ -239,9 +239,9 @@ async def start_callback_handler(_, query: types.CallbackQuery):
     
     try:
         if query.message.photo:
-            await query.message.edit_caption(text, reply_markup=markup, parse_mode=ParseMode.MARKDOWN_V2)
+            await query.message.edit_caption(text, reply_markup=markup, parse_mode=ParseMode.MARKDOWN)
         else:
-            await query.message.edit_text(text, reply_markup=markup, parse_mode=ParseMode.MARKDOWN_V2)
+            await query.message.edit_text(text, reply_markup=markup, parse_mode=ParseMode.MARKDOWN)
     except errors.MessageNotModified:
         pass
     
@@ -265,9 +265,9 @@ async def help_callback_handler(_, query: types.CallbackQuery):
 
     try:
         if query.message.photo:
-            await query.message.edit_caption(text, reply_markup=markup, parse_mode=ParseMode.MARKDOWN_V2)
+            await query.message.edit_caption(text, reply_markup=markup, parse_mode=ParseMode.MARKDOWN)
         else:
-            await query.message.edit_text(text, reply_markup=markup, parse_mode=ParseMode.MARKDOWN_V2)
+            await query.message.edit_text(text, reply_markup=markup, parse_mode=ParseMode.MARKDOWN)
     except errors.MessageNotModified:
         pass
     

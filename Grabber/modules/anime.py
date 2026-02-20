@@ -24,7 +24,7 @@ async def anime_list(_, message: types.Message) -> None:
 
         await message.reply_text(
             f"📜 **Anime List in Database:**\n\n{anime_list_text}",
-            parse_mode=ParseMode.MARKDOWN_V2
+            parse_mode=ParseMode.MARKDOWN
         )
 
     except Exception as e:

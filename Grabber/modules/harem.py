@@ -38,7 +38,7 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
             text = "❌ **You don't have any characters yet!**\n\n_Go catch some waifus first!_"
             if isinstance(message_obj, types.CallbackQuery):
                 return await message_obj.answer(text, show_alert=True)
-            return await message_obj.reply_text(text, parse_mode=ParseMode.MARKDOWN_V2)
+            return await message_obj.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
         all_chars = user['characters']
         
@@ -112,17 +112,17 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
                     reply_markup=markup
                 )
             else:
-                await message_obj.edit_message_text(text=harem_text, reply_markup=markup, parse_mode=ParseMode.MARKDOWN_V2)
+                await message_obj.edit_message_text(text=harem_text, reply_markup=markup, parse_mode=ParseMode.MARKDOWN)
         else:
             if pic:
                 await message_obj.reply_photo(
                     photo=pic,
                     caption=harem_text,
                     reply_markup=markup,
-                    parse_mode=ParseMode.MARKDOWN_V2
+                    parse_mode=ParseMode.MARKDOWN
                 )
             else:
-                 await message_obj.reply_text(harem_text, reply_markup=markup, parse_mode=ParseMode.MARKDOWN_V2)
+                 await message_obj.reply_text(harem_text, reply_markup=markup, parse_mode=ParseMode.MARKDOWN)
 
     except errors.MessageNotModified:
         pass

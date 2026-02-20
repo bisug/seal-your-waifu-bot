@@ -42,7 +42,7 @@ async def claim_handler(_, message: types.Message):
     user = await get_user_data(user_id)
 
     if user and user.get('claimed_waifu'):
-        return await message.reply_text("🎖️ **You already claimed your free waifu!**", parse_mode=ParseMode.MARKDOWN_V2)
+        return await message.reply_text("🎖️ **You already claimed your free waifu!**", parse_mode=ParseMode.MARKDOWN)
 
     if not await check_groups_joined(user_id):
         markup = types.InlineKeyboardMarkup([
@@ -53,7 +53,7 @@ async def claim_handler(_, message: types.Message):
         return await message.reply_text(
             "🔒 **Join our channels to unlock your free waifu!**",
             reply_markup=markup,
-            parse_mode=ParseMode.MARKDOWN_V2
+            parse_mode=ParseMode.MARKDOWN
         )
 
                                            
@@ -94,14 +94,14 @@ async def show_preview(message_or_query, user_id):
                 char['img_url'],
                 caption=preview_text,
                 reply_markup=markup,
-                parse_mode=ParseMode.MARKDOWN_V2
+                parse_mode=ParseMode.MARKDOWN
             )
         else:
             await message_or_query.reply_photo(
                 char['img_url'],
                 caption=preview_text,
                 reply_markup=markup,
-                parse_mode=ParseMode.MARKDOWN_V2
+                parse_mode=ParseMode.MARKDOWN
             )
     except Exception as e:
         LOGGER.error(f"Error in show_preview: {e}")
@@ -150,7 +150,7 @@ async def claim_confirm_handler(_, query: types.CallbackQuery):
     )
 
     try:
-        await query.message.edit_caption(caption=caption, parse_mode=ParseMode.MARKDOWN_V2)
+        await query.message.edit_caption(caption=caption, parse_mode=ParseMode.MARKDOWN)
         await query.answer("✅ Successfully claimed!", show_alert=True)
     except Exception as e:
         LOGGER.error(f"Error in claim_confirm: {e}")

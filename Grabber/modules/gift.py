@@ -20,7 +20,7 @@ async def gift_command(_, message: types.Message):
         return
 
     if len(message.command) < 2:
-        await message.reply_text("⚠️ Usage: `/gift <character_id>`", parse_mode=ParseMode.MARKDOWN_V2)
+        await message.reply_text("⚠️ Usage: `/gift <character_id>`", parse_mode=ParseMode.MARKDOWN)
         return
 
     character_id = message.command[1]
@@ -64,7 +64,7 @@ async def gift_command(_, message: types.Message):
         ]
     ])
 
-    await message.reply_text(caption, reply_markup=markup, parse_mode=ParseMode.MARKDOWN_V2)
+    await message.reply_text(caption, reply_markup=markup, parse_mode=ParseMode.MARKDOWN)
 
 
 @app.on_callback_query(filters.regex(r"^gift_(confirm|cancel):(.+)"))
@@ -133,6 +133,6 @@ async def gift_callback(_, query: types.CallbackQuery):
     await query.message.edit_text(
         f"✅ **Gift Sent!**\n\n"
         f"You successfully gifted **{character['name']}** to the user!",
-        parse_mode=ParseMode.MARKDOWN_V2
+        parse_mode=ParseMode.MARKDOWN
     )
     LOGGER.info(f"Gift: {sender_id} -> {receiver_id} | Char: {char_id}")
