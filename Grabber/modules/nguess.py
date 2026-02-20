@@ -15,13 +15,7 @@ from Grabber.core.utils import md_escape
 # Alias for backward compatibility within this file
 escape_markdown_v2 = md_escape
 
-async def delete_after(message, delay: int):
-    """Wait for delay seconds and then delete the message."""
-    await asyncio.sleep(delay)
-    try:
-        await message.delete()
-    except Exception:
-        pass
+from Grabber.core.deletion import schedule_deletion
 
 async def send_message_safe(chat_id, text=None, photo=None, caption=None, parse_mode=ParseMode.MARKDOWN, reply_markup=None, auto_delete=False):
     """Sends a message or photo while handling FloodWait professionally."""
@@ -32,7 +26,7 @@ async def send_message_safe(chat_id, text=None, photo=None, caption=None, parse_
             msg = await app.send_message(chat_id, text, parse_mode=parse_mode, reply_markup=reply_markup)
         
         if msg and auto_delete:
-            asyncio.create_task(delete_after(msg, 300)) # 5 minutes
+            await schedule_deletion(chat_id, msg.id, 300) # 5 minutes
         return msg
     except errors.FloodWait as e:
         LOGGER.warning(f"FloodWait detected: Sleeping for {e.value} seconds")
