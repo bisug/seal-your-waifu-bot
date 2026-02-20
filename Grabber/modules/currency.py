@@ -16,7 +16,7 @@ async def exchange_command(_, message: types.Message):
             "**Example:** `/exchange 50000`\n\n"
             "**Rate:** 10,000 ⬪ = 1 ⧫\n"
             "**Minimum:** 10,000 Shards",
-            parse_mode=ParseMode.MARKDOWN_V2
+            parse_mode=ParseMode.MARKDOWN
         )
     
     try:
@@ -70,7 +70,7 @@ async def exchange_command(_, message: types.Message):
     await message.reply_text(
         confirmation_text,
         reply_markup=types.InlineKeyboardMarkup(buttons),
-        parse_mode=ParseMode.MARKDOWN_V2
+        parse_mode=ParseMode.MARKDOWN
     )
 
                        
@@ -112,7 +112,7 @@ async def exchange_confirm_callback(_, query: types.CallbackQuery):
         f"**Your New Balance:**\n"
         f"Shards: {new_shards:,} ⬪\n"
         f"Zenith: {new_zenith:,} ⧫",
-        parse_mode=ParseMode.MARKDOWN_V2
+        parse_mode=ParseMode.MARKDOWN
     )
     await query.answer("Exchange completed!")
 
@@ -122,6 +122,6 @@ async def exchange_cancel_callback(_, query: types.CallbackQuery):
     await query.message.edit_text(
         "❌ **Exchange Cancelled**\n\n"
         "Your balance remains unchanged.",
-        parse_mode=ParseMode.MARKDOWN_V2
+        parse_mode=ParseMode.MARKDOWN
     )
     await query.answer("Cancelled")

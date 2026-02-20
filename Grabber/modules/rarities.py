@@ -46,4 +46,4 @@ async def rarities_handler(_, message: types.Message):
             count = rarity_counts.get(rarity_name, 0)
             response += f"{rarity_name}: `{count}`\n"
     
-    await message.reply_text(response, parse_mode=ParseMode.MARKDOWN_V2)
+    await message.reply_text(response, parse_mode=ParseMode.MARKDOWN)

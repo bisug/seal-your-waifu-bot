@@ -173,7 +173,7 @@ async def view_quests(_, message: types.Message):
     quests = await get_user_quests(user_id)
     
     if not quests:
-        await message.reply_text("🚫 No quests available right now.", parse_mode=ParseMode.MARKDOWN_V2)
+        await message.reply_text("🚫 No quests available right now.", parse_mode=ParseMode.MARKDOWN)
         return
 
     text = "📋 **Quest Log**\n\n"
@@ -247,7 +247,7 @@ async def view_quests(_, message: types.Message):
     text += f"🗓️ **Weekly Reset:** `{days_until_mon} days`"
     
     markup = types.InlineKeyboardMarkup(buttons) if buttons else None
-    await message.reply_text(text, parse_mode=ParseMode.MARKDOWN_V2, reply_markup=markup)
+    await message.reply_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=markup)
 
 @app.on_callback_query(filters.regex(r"^quest_claim:"))
 async def claim_quest_callback(_, query: types.CallbackQuery):

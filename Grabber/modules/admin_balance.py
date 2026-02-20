@@ -30,7 +30,7 @@ async def get_target_user(message: types.Message):
 @app.on_message(filters.command("givecoin"))
 async def give_coin_handler(_, message: types.Message):
     if message.from_user.id not in AUTHORIZED_CONSOLES:
-        return await message.reply_text("❌ **Unauthorized. Only for Admins.**", parse_mode=ParseMode.MARKDOWN_V2)
+        return await message.reply_text("❌ **Unauthorized. Only for Admins.**", parse_mode=ParseMode.MARKDOWN)
 
     user_id, amount, name = await get_target_user(message)
     if not user_id or amount <= 0:
@@ -38,7 +38,7 @@ async def give_coin_handler(_, message: types.Message):
             "❌ **Invalid Format!**\n\n"
             "1️⃣ **Reply:** `/givecoin <amount>`\n"
             "2️⃣ **Direct:** `/givecoin <user_id> <amount>`",
-            parse_mode=ParseMode.MARKDOWN_V2
+            parse_mode=ParseMode.MARKDOWN
         )
 
     buttons = [[
@@ -53,13 +53,13 @@ async def give_coin_handler(_, message: types.Message):
         f"**Amount:** {amount:,} ⬪\n\n"
         "_Confirm this action?_",
         reply_markup=types.InlineKeyboardMarkup(buttons),
-        parse_mode=ParseMode.MARKDOWN_V2
+        parse_mode=ParseMode.MARKDOWN
     )
 
 @app.on_message(filters.command("takecoin"))
 async def take_coin_handler(_, message: types.Message):
     if message.from_user.id not in AUTHORIZED_CONSOLES:
-        return await message.reply_text("❌ **Unauthorized. Only for Admins.**", parse_mode=ParseMode.MARKDOWN_V2)
+        return await message.reply_text("❌ **Unauthorized. Only for Admins.**", parse_mode=ParseMode.MARKDOWN)
 
     user_id, amount, name = await get_target_user(message)
     if not user_id or amount <= 0:
@@ -67,7 +67,7 @@ async def take_coin_handler(_, message: types.Message):
             "❌ **Invalid Format!**\n\n"
             "1️⃣ **Reply:** `/takecoin <amount>`\n"
             "2️⃣ **Direct:** `/takecoin <user_id> <amount>`",
-            parse_mode=ParseMode.MARKDOWN_V2
+            parse_mode=ParseMode.MARKDOWN
         )
 
     buttons = [[
@@ -82,7 +82,7 @@ async def take_coin_handler(_, message: types.Message):
         f"**Amount:** {amount:,} ⬪\n\n"
         "_Confirm this action?_",
         reply_markup=types.InlineKeyboardMarkup(buttons),
-        parse_mode=ParseMode.MARKDOWN_V2
+        parse_mode=ParseMode.MARKDOWN
     )
 
 @app.on_callback_query(filters.regex(r"^admin_coin_"))
@@ -94,7 +94,7 @@ async def admin_coin_callback(_, query: types.CallbackQuery):
     action = data[2]                         
 
     if action == "cancel":
-        await query.message.edit_text("❌ **Admin action cancelled.**", parse_mode=ParseMode.MARKDOWN_V2)
+        await query.message.edit_text("❌ **Admin action cancelled.**", parse_mode=ParseMode.MARKDOWN)
         return
 
     target_id = int(data[3])
@@ -116,5 +116,5 @@ async def admin_coin_callback(_, query: types.CallbackQuery):
         f"{text}\n\n"
         f"**User:** {name}\n"
         f"**Final Balance:** {bal:,} ⬪",
-        parse_mode=ParseMode.MARKDOWN_V2
+        parse_mode=ParseMode.MARKDOWN
     )

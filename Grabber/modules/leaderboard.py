@@ -95,7 +95,7 @@ async def global_leaderboard_handler(_, message: types.Message):
     text = build_leaderboard_text("harem", users)
     keyboard = build_leaderboard_keyboard("harem", message.from_user.id)
     
-    await message.reply_text(text, reply_markup=keyboard, parse_mode=ParseMode.MARKDOWN_V2)
+    await message.reply_text(text, reply_markup=keyboard, parse_mode=ParseMode.MARKDOWN)
 
 @app.on_callback_query(filters.regex(r"^top_switch:"))
 async def leaderboard_callback(_, query: types.CallbackQuery):
@@ -111,7 +111,7 @@ async def leaderboard_callback(_, query: types.CallbackQuery):
     keyboard = build_leaderboard_keyboard(metric, owner_id)
     
     try:
-        await query.message.edit_text(text, reply_markup=keyboard, parse_mode=ParseMode.MARKDOWN_V2)
+        await query.message.edit_text(text, reply_markup=keyboard, parse_mode=ParseMode.MARKDOWN)
     except Exception:
         pass
     await query.answer()
@@ -153,4 +153,4 @@ async def chat_leaderboard_handler(_, message: types.Message):
         
         text += f"{i}. {md_escape(name)} ➾ **{member['count']}**\n"
         
-    await message.reply_text(text, parse_mode=ParseMode.MARKDOWN_V2)
+    await message.reply_text(text, parse_mode=ParseMode.MARKDOWN)

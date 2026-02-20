@@ -20,7 +20,7 @@ async def profile_handler(_, message: types.Message):
     user_data = await get_user_data(user_id)
     
     if not user_data:
-        return await message.reply_text("🚨 **No profile found!** Try collecting a character first.", parse_mode=ParseMode.MARKDOWN_V2)
+        return await message.reply_text("🚨 **No profile found!** Try collecting a character first.", parse_mode=ParseMode.MARKDOWN)
 
     await app.send_chat_action(message.chat.id, enums.ChatAction.TYPING)
     
@@ -99,8 +99,8 @@ async def profile_handler(_, message: types.Message):
             photo=pic,
             caption=profile_text,
             reply_markup=types.InlineKeyboardMarkup(buttons),
-            parse_mode=ParseMode.MARKDOWN_V2
+            parse_mode=ParseMode.MARKDOWN
         )
     except Exception as e:
         LOGGER.error(f"Profile Photo Error: {e}")
-        await message.reply_text(profile_text, reply_markup=types.InlineKeyboardMarkup(buttons), parse_mode=ParseMode.MARKDOWN_V2)
+        await message.reply_text(profile_text, reply_markup=types.InlineKeyboardMarkup(buttons), parse_mode=ParseMode.MARKDOWN)

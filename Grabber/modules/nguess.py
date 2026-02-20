@@ -21,7 +21,7 @@ async def delete_after(message, delay: int):
     except Exception:
         pass
 
-async def send_message_safe(chat_id, text=None, photo=None, caption=None, parse_mode=ParseMode.MARKDOWN_V2, reply_markup=None, auto_delete=False):
+async def send_message_safe(chat_id, text=None, photo=None, caption=None, parse_mode=ParseMode.MARKDOWN, reply_markup=None, auto_delete=False):
     """Sends a message or photo while handling FloodWait professionally."""
     try:
         if photo:

@@ -87,7 +87,7 @@ async def quiz_cmd(_, message: types.Message):
         await message.reply_text(
             text,
             reply_markup=types.InlineKeyboardMarkup(buttons),
-            parse_mode=ParseMode.MARKDOWN_V2
+            parse_mode=ParseMode.MARKDOWN
         )
         
     except Exception as e:
@@ -132,6 +132,6 @@ async def quiz_callback_handler(_, query: types.CallbackQuery):
         
     await query.message.edit_text(
         f"{query.message.text.split('⏱')[0]}\n\n{result_text}",
-        parse_mode=ParseMode.MARKDOWN_V2
+        parse_mode=ParseMode.MARKDOWN
     )
     await query.answer()

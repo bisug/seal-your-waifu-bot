@@ -26,7 +26,7 @@ async def give_balance(_, message: types.Message):
         if amount <= 0:
             raise ValueError("Amount must be positive")
     except (IndexError, ValueError):
-        await message.reply_text("⚠️ Usage: `/givebalance <amount>` (Reply to user)", parse_mode=ParseMode.MARKDOWN_V2)
+        await message.reply_text("⚠️ Usage: `/givebalance <amount>` (Reply to user)", parse_mode=ParseMode.MARKDOWN)
         return
 
                                        
@@ -80,7 +80,7 @@ async def take_balance(_, message: types.Message):
         if amount <= 0:
             raise ValueError("Amount must be positive")
     except (IndexError, ValueError):
-        await message.reply_text("⚠️ Usage: `/takebalance <amount>` (Reply to user)", parse_mode=ParseMode.MARKDOWN_V2)
+        await message.reply_text("⚠️ Usage: `/takebalance <amount>` (Reply to user)", parse_mode=ParseMode.MARKDOWN)
         return
 
     await user_collection.update_one({'id': recipient_id}, {'$inc': {'balance': -amount}})

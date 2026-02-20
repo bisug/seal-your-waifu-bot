@@ -62,7 +62,7 @@ async def view_pass(_, message: types.Message):
     buttons.append([types.InlineKeyboardButton("🎁 View Rewards", callback_data=f"pass_rewards:{user_id}")])
     
     markup = types.InlineKeyboardMarkup(buttons)
-    await message.reply_text(text, parse_mode=ParseMode.MARKDOWN_V2, reply_markup=markup)
+    await message.reply_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=markup)
 
                             
 async def view_pass_inline(query: types.CallbackQuery):
@@ -97,7 +97,7 @@ async def view_pass_inline(query: types.CallbackQuery):
     buttons.append([types.InlineKeyboardButton("🎁 View Rewards", callback_data=f"pass_rewards:{user_id}")])
     buttons.append([types.InlineKeyboardButton("⤾ Back to Hub", callback_data="hub_main")])
     
-    await query.message.edit_text(text, parse_mode=ParseMode.MARKDOWN_V2, reply_markup=types.InlineKeyboardMarkup(buttons))
+    await query.message.edit_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=types.InlineKeyboardMarkup(buttons))
 
                                   
 @app.on_callback_query(filters.regex(r"^buyask_(premium|elite):"))
@@ -115,7 +115,7 @@ async def buypass_ask_callback(_, query: types.CallbackQuery):
         types.InlineKeyboardButton("Confirm ✅", callback_data=f"buypass_{tier}:{owner_id}"),
         types.InlineKeyboardButton("Cancel ❌", callback_data=f"pass_back:{owner_id}")
     ]]
-    await query.message.edit_text(text, parse_mode=ParseMode.MARKDOWN_V2, reply_markup=types.InlineKeyboardMarkup(keyboard))
+    await query.message.edit_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=types.InlineKeyboardMarkup(keyboard))
 
                                             
 @app.on_callback_query(filters.regex(r"^buypass_(premium|elite):"))
@@ -183,7 +183,7 @@ async def buypass_callback(_, query: types.CallbackQuery):
         buttons.insert(0, [types.InlineKeyboardButton("💎 Upgrade to Elite", callback_data=f"buypass_elite:{user_id}")])
     
     try:
-        await query.message.edit_text(text, parse_mode=ParseMode.MARKDOWN_V2, reply_markup=types.InlineKeyboardMarkup(buttons))
+        await query.message.edit_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=types.InlineKeyboardMarkup(buttons))
     except:
         pass
 
@@ -228,7 +228,7 @@ async def view_rewards_callback(_, query: types.CallbackQuery):
         text += f"{status} **Level {milestone}:** {reward_text}\n"
     
     buttons = [[types.InlineKeyboardButton("⤾ Back", callback_data=f"pass_back:{user_id}")]]
-    await query.message.edit_text(text, parse_mode=ParseMode.MARKDOWN_V2, reply_markup=types.InlineKeyboardMarkup(buttons))
+    await query.message.edit_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=types.InlineKeyboardMarkup(buttons))
 
 @app.on_callback_query(filters.regex(r"^pass_back:"))
 async def pass_back_callback(_, query: types.CallbackQuery):
@@ -268,7 +268,7 @@ async def pass_back_callback(_, query: types.CallbackQuery):
     
     buttons.append([types.InlineKeyboardButton("🎁 View Rewards", callback_data=f"pass_rewards:{user_id}")])
     
-    await query.message.edit_text(text, parse_mode=ParseMode.MARKDOWN_V2, reply_markup=types.InlineKeyboardMarkup(buttons))
+    await query.message.edit_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=types.InlineKeyboardMarkup(buttons))
 
                                     
 @app.on_message(filters.command("level"))
@@ -288,4 +288,4 @@ async def level_cmd(_, message: types.Message):
         f"⚡ {xp_current} / {xp_needed} XP"
     )
     
-    await message.reply_text(text, parse_mode=ParseMode.MARKDOWN_V2)
+    await message.reply_text(text, parse_mode=ParseMode.MARKDOWN)

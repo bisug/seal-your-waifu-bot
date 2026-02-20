@@ -11,7 +11,7 @@ group_collection = db['total_groups']
                                    
 async def send_log(chat_id: str, message: str):
     try:
-        await app.send_message(chat_id=chat_id, text=message, parse_mode=ParseMode.MARKDOWN_V2)
+        await app.send_message(chat_id=chat_id, text=message, parse_mode=ParseMode.MARKDOWN)
     except Exception as e:
         LOGGER.error(f"Error sending log message: {e}")
 

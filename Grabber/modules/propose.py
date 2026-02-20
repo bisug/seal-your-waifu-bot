@@ -54,14 +54,14 @@ async def propose_command(_, message: types.Message):
                        
     now_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     if user and user.get('last_propose_date') == now_date:
-        return await message.reply_text("⏳ You have already proposed today! Come back tomorrow.", parse_mode=ParseMode.MARKDOWN_V2)
+        return await message.reply_text("⏳ You have already proposed today! Come back tomorrow.", parse_mode=ParseMode.MARKDOWN)
 
                           
     start_msg = random.choice(start_messages)
     roll_text = random.choice(["Proposing her....💍", "Getting down on one knee....💍", "Popping the question....💍"])
     
                                
-    await message.reply_text(f"{start_msg}\n\n{roll_text}", parse_mode=ParseMode.MARKDOWN_V2)
+    await message.reply_text(f"{start_msg}\n\n{roll_text}", parse_mode=ParseMode.MARKDOWN)
     await asyncio.sleep(2)           
 
                        
@@ -84,29 +84,29 @@ async def propose_command(_, message: types.Message):
                 f"Anime: {md_escape(char['anime'])}"
             )
             img_url = char['img_url']
-            await message.reply_photo(photo=img_url, caption=caption, parse_mode=ParseMode.MARKDOWN_V2)
+            await message.reply_photo(photo=img_url, caption=caption, parse_mode=ParseMode.MARKDOWN)
         else:
                                                   
             await update_user_balance(user_id, 2000)
-            await message.reply_text("💍 **Proposal Accepted!**\nHowever, she was too shy to appear. You found 2000 Shards instead!", parse_mode=ParseMode.MARKDOWN_V2)
+            await message.reply_text("💍 **Proposal Accepted!**\nHowever, she was too shy to appear. You found 2000 Shards instead!", parse_mode=ParseMode.MARKDOWN)
 
     elif roll < 13:
                          
         await update_user_balance(user_id, 2000)
         img = random.choice(acceptance_images)
-        await message.reply_photo(photo=img, caption="💍 **Proposal Accepted!**\nShe was flattered but busy. She sent you **2,000 Shards** as a gift!", parse_mode=ParseMode.MARKDOWN_V2)
+        await message.reply_photo(photo=img, caption="💍 **Proposal Accepted!**\nShe was flattered but busy. She sent you **2,000 Shards** as a gift!", parse_mode=ParseMode.MARKDOWN)
 
     elif roll < 43:
                         
         await update_user_balance(user_id, 500)
         img = random.choice(acceptance_images)
-        await message.reply_photo(photo=img, caption="💍 **Proposal Accepted!**\nShe smiled and gave you **500 Shards** for your effort!", parse_mode=ParseMode.MARKDOWN_V2)
+        await message.reply_photo(photo=img, caption="💍 **Proposal Accepted!**\nShe smiled and gave you **500 Shards** for your effort!", parse_mode=ParseMode.MARKDOWN)
 
     else:
                    
         img = random.choice(rejection_images)
         caption = random.choice(rejection_captions)
-        await message.reply_photo(photo=img, caption=f"💔 **Rejection!**\n{caption}", parse_mode=ParseMode.MARKDOWN_V2)
+        await message.reply_photo(photo=img, caption=f"💔 **Rejection!**\n{caption}", parse_mode=ParseMode.MARKDOWN)
 
                             
     await update_user(user_id, {"$set": {"last_propose_date": now_date}})

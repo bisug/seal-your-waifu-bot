@@ -63,4 +63,4 @@ async def broadcast_handler(_, message: types.Message):
         f"👤 **Users:** `{success_u}` successful / `{failed_u}` failed\n"
         f"👥 **Groups:** `{success_g}` successful / `{failed_g}` failed"
     )
-    await status.edit_text(summary, parse_mode=ParseMode.MARKDOWN_V2)
+    await status.edit_text(summary, parse_mode=ParseMode.MARKDOWN)
