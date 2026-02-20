@@ -98,6 +98,7 @@ async def weekly_command_handler(_, message: types.Message):
     
     now = datetime.now(timezone.utc)
     now_str = now.strftime("%Y-%m-%d")
+    last_weekly = user.get('last_weekly_date')
     if last_weekly:
         last_date = datetime.strptime(last_weekly, "%Y-%m-%d").replace(tzinfo=timezone.utc)
         days_diff = (now - last_date).days
