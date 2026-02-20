@@ -1,8 +1,5 @@
-import time
-import psutil
-import platform
-import os
 from pyrogram import filters, types, enums
+from pyrogram.enums import ParseMode
 from Grabber import app, StartTime, db
 
 def get_readable_time(seconds: int) -> str:
@@ -39,7 +36,7 @@ def status_emoji(percent):
 @app.on_message(filters.command("ping"))
 async def ping(_, message: types.Message) -> None:
     start_time = time.time()
-    sent_msg = await message.reply_text("**⚡ Pinging...**", parse_mode=enums.ParseMode.MARKDOWN)
+    sent_msg = await message.reply_text("**⚡ Pinging...**", parse_mode=ParseMode.MARKDOWN_V2)
     
                  
     end_time = time.time()
@@ -72,4 +69,4 @@ async def ping(_, message: types.Message) -> None:
         f"**🐍 Python:** `{platform.python_version()}`"
     )
     
-    await sent_msg.edit_text(caption, parse_mode=enums.ParseMode.MARKDOWN)
+    await sent_msg.edit_text(caption, parse_mode=ParseMode.MARKDOWN_V2)

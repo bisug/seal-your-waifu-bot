@@ -1,5 +1,6 @@
 
 from pyrogram import filters, types, enums
+from pyrogram.enums import ParseMode
 from Grabber import app, user_totals_collection, LOGGER
 
 @app.on_message(filters.command("changetime") & filters.group)
@@ -15,7 +16,7 @@ async def change_time(_, message: types.Message) -> None:
             return
 
         if len(message.command) != 2:
-            await message.reply_text('Incorrect format. Please use: `/changetime <number>`', parse_mode=enums.ParseMode.MARKDOWN)
+            await message.reply_text('Incorrect format. Please use: `/changetime <number>`', parse_mode=ParseMode.MARKDOWN_V2)
             return
 
         try:

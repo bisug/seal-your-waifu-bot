@@ -1,4 +1,5 @@
-from pyrogram import filters, types, enums, errors
+from pyrogram import filters, types, errors
+from pyrogram.enums import ParseMode, enums
 from Grabber.core.utils import md_escape
 from Grabber.app import app
 from Grabber import PHOTO_URL, BOT_USERNAME, SUPPORT_CHAT, UPDATE_CHAT, LOGGER
@@ -138,11 +139,11 @@ async def start_handler(_, message: types.Message):
                     await message.reply_photo(
                         photo=character['img_url'],
                         caption=response_message,
-                        parse_mode=enums.ParseMode.MARKDOWN
+                        parse_mode=ParseMode.MARKDOWN_V2
                     )
                     return                                        
                 else:
-                    await message.reply_text("❌ Character not found.")
+                    await message.reply_text("❌ Character not found.", parse_mode=ParseMode.MARKDOWN_V2)
                     return
             except Exception as e:
                 LOGGER.error(f"Locate Error: {e}")
@@ -187,12 +188,13 @@ async def start_handler(_, message: types.Message):
                     try:
                         await app.send_message(
                             referrer_id,
-                            f"🎉 **New Referral!**\n\n{md_escape(message.from_user.first_name)} joined using your link.\n+500 ⬪ | +50 XP"
+                            f"🎉 **New Referral!**\n\n{md_escape(message.from_user.first_name)} joined using your link\.\n+500 ⬪ | +50 XP",
+                            parse_mode=ParseMode.MARKDOWN_V2
                         )
                     except:
                         pass
                         
-                    await message.reply_text("🎁 **Welcome Bonus!**\nYou received **1,500 ⬪** and a **Level 10 Pet** for using a referral link! 🚀")
+                    await message.reply_text("🎁 **Welcome Bonus!**\nYou received **1,500 ⬪** and a **Level 10 Pet** for using a referral link\! 🚀", parse_mode=ParseMode.MARKDOWN_V2)
                     
             except ValueError:
                 pass
@@ -213,10 +215,11 @@ async def start_handler(_, message: types.Message):
         await message.reply_photo(
             photo=random_photo(),
             caption=text,
-            reply_markup=markup
+            reply_markup=markup,
+            parse_mode=ParseMode.MARKDOWN_V2
         )
     else:
-        await message.reply_text("✅ **I'm active and ready to drop characters!**")
+        await message.reply_text("✅ **I'm active and ready to drop characters!**", parse_mode=ParseMode.MARKDOWN_V2)
 
                           
 @app.on_callback_query(filters.regex(r"^st:(h|b)"))
@@ -236,9 +239,9 @@ async def start_callback_handler(_, query: types.CallbackQuery):
     
     try:
         if query.message.photo:
-            await query.message.edit_caption(text, reply_markup=markup)
+            await query.message.edit_caption(text, reply_markup=markup, parse_mode=ParseMode.MARKDOWN_V2)
         else:
-            await query.message.edit_text(text, reply_markup=markup)
+            await query.message.edit_text(text, reply_markup=markup, parse_mode=ParseMode.MARKDOWN_V2)
     except errors.MessageNotModified:
         pass
     
@@ -262,9 +265,9 @@ async def help_callback_handler(_, query: types.CallbackQuery):
 
     try:
         if query.message.photo:
-            await query.message.edit_caption(text, reply_markup=markup)
+            await query.message.edit_caption(text, reply_markup=markup, parse_mode=ParseMode.MARKDOWN_V2)
         else:
-            await query.message.edit_text(text, reply_markup=markup)
+            await query.message.edit_text(text, reply_markup=markup, parse_mode=ParseMode.MARKDOWN_V2)
     except errors.MessageNotModified:
         pass
     

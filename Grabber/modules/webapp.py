@@ -1,4 +1,5 @@
-from pyrogram import filters, types
+from pyrogram import filters, types, enums
+from pyrogram.enums import ParseMode
 from Grabber import app
 
 @app.on_message(filters.command("webapp"))
@@ -17,5 +18,6 @@ async def webapp_command(_, message):
     await message.reply_text(
         "**Seal Bot Web Gallery**\n\n"
         "Click the button below to view the full character gallery and your collection!",
-        reply_markup=keyboard
+        reply_markup=keyboard,
+        parse_mode=ParseMode.MARKDOWN_V2
     )

@@ -3,6 +3,8 @@ import time
 import html
 import httpx
 from pyrogram import filters, types, enums
+from pyrogram.enums import ParseMode
+from Grabber.core.utils import md_escape
 from Grabber.app import app
 from Grabber import LOGGER, quiz_questions_collection
 from Grabber.core.game import update_user_balance, get_user_balance
@@ -41,8 +43,8 @@ async def quiz_cmd(_, message: types.Message):
                 upsert=True
             )
             
-        question = html.unescape(result["question"])
-        correct_answer = html.unescape(result["correct_answer"])
+        question = md_escape(html.unescape(result["question"]))
+        correct_answer = html.unescape(result["correct_answer"]) # No escape here since it's for buttons or logic
         incorrect_answers = [html.unescape(ans) for ans in result["incorrect_answers"]]
         
         all_answers = incorrect_answers + [correct_answer]
@@ -85,7 +87,7 @@ async def quiz_cmd(_, message: types.Message):
         await message.reply_text(
             text,
             reply_markup=types.InlineKeyboardMarkup(buttons),
-            parse_mode=enums.ParseMode.MARKDOWN
+            parse_mode=ParseMode.MARKDOWN_V2
         )
         
     except Exception as e:
@@ -130,6 +132,6 @@ async def quiz_callback_handler(_, query: types.CallbackQuery):
         
     await query.message.edit_text(
         f"{query.message.text.split('⏱')[0]}\n\n{result_text}",
-        parse_mode=enums.ParseMode.MARKDOWN
+        parse_mode=ParseMode.MARKDOWN_V2
     )
     await query.answer()

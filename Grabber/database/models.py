@@ -22,6 +22,9 @@ class User(BaseModel):
     xp: int = 0
     level: int = 0
     claimed_levels: List[int] = []
+    # Name Guessing Game
+    guess_count: int = 0
+
     pass_type: str = "free" # free, premium, elite
 
 class Character(BaseModel):

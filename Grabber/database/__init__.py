@@ -23,6 +23,7 @@ class Database:
         self.spawns = self.db['active_spawns']
         self.sessions = self.db['active_sessions']
         self.quiz_questions = self.db['quiz_questions']
+        self.nguess_enabled_groups = self.db['nguess_enabled_groups']
 
 # Initialize Database
 try:
@@ -47,3 +48,4 @@ sudo_collection = seal_db.sudo_users
 spawns_collection = seal_db.spawns
 sessions_collection = seal_db.sessions
 quiz_questions_collection = seal_db.quiz_questions
+nguess_enabled_groups_collection = seal_db.nguess_enabled_groups

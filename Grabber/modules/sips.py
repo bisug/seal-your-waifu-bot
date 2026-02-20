@@ -1,5 +1,6 @@
 from pyrogram import filters, types, enums
-from html import escape
+from pyrogram.enums import ParseMode
+from Grabber.core.utils import md_escape as escape
 from Grabber import app, collection, LOGGER
 
 @app.on_message(filters.command("sips"))
@@ -32,7 +33,7 @@ async def search_character(_, message: types.Message):
     if len(found_characters) > 20:
         response_message += f"_...and {len(found_characters) - 20} more._"
 
-    await message.reply_text(response_message, parse_mode=enums.ParseMode.MARKDOWN)
+    await message.reply_text(response_message, parse_mode=ParseMode.MARKDOWN_V2)
 
 @app.on_message(filters.command("sani"))
 async def search_anime(_, message: types.Message):
@@ -64,4 +65,4 @@ async def search_anime(_, message: types.Message):
     if len(found_characters) > 20:
         response_message += f"_...and {len(found_characters) - 20} more._"
 
-    await message.reply_text(response_message, parse_mode=enums.ParseMode.MARKDOWN)
+    await message.reply_text(response_message, parse_mode=ParseMode.MARKDOWN_V2)

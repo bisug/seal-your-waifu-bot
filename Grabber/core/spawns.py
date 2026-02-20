@@ -3,6 +3,8 @@ import random
 import datetime
 from typing import Optional, Dict, Any
 from pyrogram import enums
+from pyrogram.enums import ParseMode
+from Grabber.core.utils import md_escape
 from Grabber.database import spawns_collection, message_counts_collection, user_totals_collection
 from Grabber import app, LOGGER, config
 from Grabber.core.waifu import get_or_load_characters
@@ -120,7 +122,7 @@ async def send_character(chat_id: int, rarity: str):
             chat_id=chat_id,
             photo=character['img_url'],
             caption=caption,
-            parse_mode=enums.ParseMode.MARKDOWN
+            parse_mode=ParseMode.MARKDOWN_V2
         )
         await set_active_spawn(chat_id, character, msg.id)
         
@@ -131,7 +133,8 @@ async def send_character(chat_id: int, rarity: str):
         try:
             await app.send_message(
                 ROYAL_NOTIFY_USER_ID,
-                f"👑 **Royal Spawn!**\nID: `{character['id']}`\nName: {character['name']}"
+                f"👑 **Royal Spawn!**\nID: `{character['id']}`\nName: {md_escape(character['name'])}",
+                parse_mode=ParseMode.MARKDOWN_V2
             )
         except Exception:
             pass

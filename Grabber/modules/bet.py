@@ -1,6 +1,7 @@
 import asyncio
 import random
 from pyrogram import filters, types, enums
+from pyrogram.enums import ParseMode
 from Grabber import app, user_collection
 
 CURRENCY_SYMBOL = "⬪"                 
@@ -15,7 +16,7 @@ async def bet_cmd(_, message: types.Message):
             f"🚨 **Invalid Usage!**\n"
             f"🎲 Format: `/bet <amount> <h/t>`\n"
             f"🎭 Example: `/bet 500 h`",
-            parse_mode=enums.ParseMode.MARKDOWN
+            parse_mode=ParseMode.MARKDOWN_V2
         )
         return
 
@@ -27,11 +28,11 @@ async def bet_cmd(_, message: types.Message):
         return
 
     if choice not in ['h', 't']:
-        await message.reply_text("❌ Invalid choice! Use `h` for Heads or `t` for Tails.", parse_mode=enums.ParseMode.MARKDOWN)
+        await message.reply_text("❌ Invalid choice! Use `h` for Heads or `t` for Tails.", parse_mode=ParseMode.MARKDOWN_V2)
         return
 
     if amount <= 0:
-        await message.reply_text("❌ Amount must be a **positive number**.", parse_mode=enums.ParseMode.MARKDOWN)
+        await message.reply_text("❌ Amount must be a **positive number**.", parse_mode=ParseMode.MARKDOWN_V2)
         return
 
                         
@@ -41,7 +42,7 @@ async def bet_cmd(_, message: types.Message):
         await message.reply_text(
             f"💰 **You don't have an account yet!**\n"
             f"🔥 Use `/bonus` to claim free Shards & start betting!",
-            parse_mode=enums.ParseMode.MARKDOWN
+            parse_mode=ParseMode.MARKDOWN_V2
         )
         return
 
@@ -51,7 +52,7 @@ async def bet_cmd(_, message: types.Message):
         await message.reply_text(
             f"💰 **You're out of Shards!**\n"
             f"🔥 Use `/bonus` to claim free Shards & try again!",
-            parse_mode=enums.ParseMode.MARKDOWN
+            parse_mode=ParseMode.MARKDOWN_V2
         )
         return
 
@@ -60,12 +61,12 @@ async def bet_cmd(_, message: types.Message):
             f"❌ **Not Enough Shards!**\n"
             f"🏦 Your Balance: **{balance_amount:,} ⬪**\n\n"
             f"🔥 Use `/bonus` to get free Shards!",
-            parse_mode=enums.ParseMode.MARKDOWN
+            parse_mode=ParseMode.MARKDOWN_V2
         )
         return
 
     user_choice_name = "Heads" if choice == "h" else "Tails"
-    await message.reply_text(f"🎰 **Placing Bet:** {amount:,} ⬪\n🪙 **You Chose:** {user_choice_name}", parse_mode=enums.ParseMode.MARKDOWN)  
+    await message.reply_text(f"🎰 **Placing Bet:** {amount:,} ⬪\n🪙 **You Chose:** {user_choice_name}", parse_mode=ParseMode.MARKDOWN_V2)  
 
     await asyncio.sleep(2)                  
 
@@ -95,4 +96,4 @@ async def bet_cmd(_, message: types.Message):
                          
     await user_collection.update_one({'id': user_id}, {'$set': {'balance': new_balance}})
 
-    await message.reply_text(result_text, parse_mode=enums.ParseMode.MARKDOWN)
+    await message.reply_text(result_text, parse_mode=ParseMode.MARKDOWN_V2)

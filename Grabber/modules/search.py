@@ -1,4 +1,5 @@
 from pyrogram import filters, types, enums
+from pyrogram.enums import ParseMode
 from Grabber import app, BOT_USERNAME
 
 @app.on_message(filters.command("search"))
@@ -12,5 +13,5 @@ async def search_waifu(_, message: types.Message):
     await message.reply_text(
         "🪄 To search for a waifu, click the button below!",
         reply_markup=reply_markup,
-        parse_mode=enums.ParseMode.MARKDOWN
+        parse_mode=ParseMode.MARKDOWN_V2
     )
