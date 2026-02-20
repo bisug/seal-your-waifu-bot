@@ -19,5 +19,5 @@ async def webapp_command(_, message):
         "**Seal Bot Web Gallery**\n\n"
         "Click the button below to view the full character gallery and your collection!",
         reply_markup=keyboard,
-        parse_mode=ParseMode.MARKDOWN_V2
+        parse_mode=ParseMode.MARKDOWN
     )

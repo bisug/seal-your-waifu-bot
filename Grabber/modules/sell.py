@@ -23,7 +23,7 @@ async def sell_handler(_, message: types.Message):
         return await message.reply_text(
             f"❌ **Usage:** `/sell <id>`\n\n"
             f"💰 **Sell Rates:**\n{rates}",
-            parse_mode=ParseMode.MARKDOWN_V2
+            parse_mode=ParseMode.MARKDOWN
         )
 
     char_id = message.command[1]
@@ -31,12 +31,12 @@ async def sell_handler(_, message: types.Message):
     
     user = await get_user_data(user_id)
     if not user or not user.get('characters'):
-        return await message.reply_text("❌ **Your collection is empty.**", parse_mode=ParseMode.MARKDOWN_V2)
+        return await message.reply_text("❌ **Your collection is empty.**", parse_mode=ParseMode.MARKDOWN)
 
                                    
     char = next((c for c in user['characters'] if str(c.get('id')) == char_id), None)
     if not char:
-        return await message.reply_text("❌ **You don't own this character.**", parse_mode=ParseMode.MARKDOWN_V2)
+        return await message.reply_text("❌ **You don't own this character.**", parse_mode=ParseMode.MARKDOWN)
 
     rarity = char.get('rarity', '⚪ Common')
     price = SELL_PRICES.get(rarity, 50)
@@ -64,7 +64,7 @@ async def sell_handler(_, message: types.Message):
     await message.reply_text(
         confirmation_text,
         reply_markup=types.InlineKeyboardMarkup(buttons),
-        parse_mode=ParseMode.MARKDOWN_V2
+        parse_mode=ParseMode.MARKDOWN
     )
 
 @app.on_callback_query(filters.regex(r"^sell_"))
@@ -83,7 +83,7 @@ async def sell_callback_handler(_, query: types.CallbackQuery):
         return await query.answer("❌ This is not your menu!", show_alert=True)
 
     if action == "a":
-        await query.message.edit_text("❌ **Selling cancelled.**", parse_mode=ParseMode.MARKDOWN_V2)
+        await query.message.edit_text("❌ **Selling cancelled.**", parse_mode=ParseMode.MARKDOWN)
         return
         
     char_id = parts[0]
@@ -112,7 +112,7 @@ async def sell_callback_handler(_, query: types.CallbackQuery):
             f"**Character:** {md_escape(char['name'])}\n"
             f"**Price:** {price:,} ⬪\n\n"
             f"**Your New Balance:** {new_shards:,} ⬪",
-            parse_mode=ParseMode.MARKDOWN_V2
+            parse_mode=ParseMode.MARKDOWN
         )
     else:
         await query.answer("❌ Failed to sell character.", show_alert=True)

@@ -33,7 +33,7 @@ async def search_character(_, message: types.Message):
     if len(found_characters) > 20:
         response_message += f"_...and {len(found_characters) - 20} more._"
 
-    await message.reply_text(response_message, parse_mode=ParseMode.MARKDOWN_V2)
+    await message.reply_text(response_message, parse_mode=ParseMode.MARKDOWN)
 
 @app.on_message(filters.command("sani"))
 async def search_anime(_, message: types.Message):
@@ -65,4 +65,4 @@ async def search_anime(_, message: types.Message):
     if len(found_characters) > 20:
         response_message += f"_...and {len(found_characters) - 20} more._"
 
-    await message.reply_text(response_message, parse_mode=ParseMode.MARKDOWN_V2)
+    await message.reply_text(response_message, parse_mode=ParseMode.MARKDOWN)

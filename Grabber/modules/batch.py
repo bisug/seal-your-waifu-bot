@@ -33,10 +33,10 @@ async def batch_fetch(_, message: types.Message):
                                                       
     links = message.text.split()[1:]                          
     if not links:
-        await message.reply("❌ Provide post links. Example:\n/batchid https://t.me/channel/1234 https://t.me/channel/5678", parse_mode=ParseMode.MARKDOWN_V2)
+        await message.reply("❌ Provide post links. Example:\n/batchid https://t.me/channel/1234 https://t.me/channel/5678", parse_mode=ParseMode.MARKDOWN)
         return
 
-    processing_msg = await message.reply("⏳ Processing... Please wait!", parse_mode=ParseMode.MARKDOWN_V2)
+    processing_msg = await message.reply("⏳ Processing... Please wait!", parse_mode=ParseMode.MARKDOWN)
     saved_count = 0
     
     try:
@@ -44,13 +44,13 @@ async def batch_fetch(_, message: types.Message):
             for link in links:
                 channel, post_id = extract_post_info(link)
                 if not channel:
-                    await message.reply(f"⚠️ Invalid link: {md_escape(link)}", parse_mode=ParseMode.MARKDOWN_V2)
+                    await message.reply(f"⚠️ Invalid link: {md_escape(link)}", parse_mode=ParseMode.MARKDOWN)
                     continue
                 
                 try:
                     post = await userbot.get_messages(channel, post_id)
                     if not post.photo or not post.caption:
-                        await message.reply(f"⚠️ No image or caption found in post: {md_escape(link)}", parse_mode=ParseMode.MARKDOWN_V2)
+                        await message.reply(f"⚠️ No image or caption found in post: {md_escape(link)}", parse_mode=ParseMode.MARKDOWN)
                         continue
                     
                                                          
@@ -65,7 +65,7 @@ async def batch_fetch(_, message: types.Message):
                             break
                     
                     if not character_name:
-                        await message.reply(f"⚠️ Character name missing in post: {md_escape(link)}", parse_mode=ParseMode.MARKDOWN_V2)
+                        await message.reply(f"⚠️ Character name missing in post: {md_escape(link)}", parse_mode=ParseMode.MARKDOWN)
                         continue
 
                     file_id = post.photo.file_id
@@ -73,7 +73,7 @@ async def batch_fetch(_, message: types.Message):
                     
                                           
                     if await collection.find_one({"unique_id": unique_id}):
-                        await message.reply(f"🔄 Already saved: {md_escape(character_name)}", parse_mode=ParseMode.MARKDOWN_V2)
+                        await message.reply(f"🔄 Already saved: {md_escape(character_name)}", parse_mode=ParseMode.MARKDOWN)
                         continue
                     
                                 
@@ -86,11 +86,11 @@ async def batch_fetch(_, message: types.Message):
                     saved_count += 1
 
                 except Exception as e:
-                    await message.reply(f"❌ Error fetching post {md_escape(link)}: {md_escape(str(e))}", parse_mode=ParseMode.MARKDOWN_V2)
+                    await message.reply(f"❌ Error fetching post {md_escape(link)}: {md_escape(str(e))}", parse_mode=ParseMode.MARKDOWN)
                     LOGGER.error(f"Batch fetch error for {link}: {e}")
 
     except Exception as e:
-        await message.reply(f"❌ Userbot failed to start: {md_escape(str(e))}", parse_mode=ParseMode.MARKDOWN_V2)
+        await message.reply(f"❌ Userbot failed to start: {md_escape(str(e))}", parse_mode=ParseMode.MARKDOWN)
         LOGGER.error(f"Userbot failed to start: {e}")
 
-    await processing_msg.edit(f"✅ Batch Processing Completed!\n\nSaved Characters: {saved_count}", parse_mode=ParseMode.MARKDOWN_V2)
+    await processing_msg.edit(f"✅ Batch Processing Completed!\n\nSaved Characters: {saved_count}", parse_mode=ParseMode.MARKDOWN)

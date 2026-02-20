@@ -13,5 +13,5 @@ async def search_waifu(_, message: types.Message):
     await message.reply_text(
         "🪄 To search for a waifu, click the button below!",
         reply_markup=reply_markup,
-        parse_mode=ParseMode.MARKDOWN_V2
+        parse_mode=ParseMode.MARKDOWN
     )

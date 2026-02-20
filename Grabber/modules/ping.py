@@ -36,7 +36,7 @@ def status_emoji(percent):
 @app.on_message(filters.command("ping"))
 async def ping(_, message: types.Message) -> None:
     start_time = time.time()
-    sent_msg = await message.reply_text("**⚡ Pinging...**", parse_mode=ParseMode.MARKDOWN_V2)
+    sent_msg = await message.reply_text("**⚡ Pinging...**", parse_mode=ParseMode.MARKDOWN)
     
                  
     end_time = time.time()
@@ -69,4 +69,4 @@ async def ping(_, message: types.Message) -> None:
         f"**🐍 Python:** `{platform.python_version()}`"
     )
     
-    await sent_msg.edit_text(caption, parse_mode=ParseMode.MARKDOWN_V2)
+    await sent_msg.edit_text(caption, parse_mode=ParseMode.MARKDOWN)

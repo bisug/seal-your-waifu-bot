@@ -122,7 +122,7 @@ async def send_character(chat_id: int, rarity: str):
             chat_id=chat_id,
             photo=character['img_url'],
             caption=caption,
-            parse_mode=ParseMode.MARKDOWN_V2
+            parse_mode=ParseMode.MARKDOWN
         )
         await set_active_spawn(chat_id, character, msg.id)
         
@@ -134,7 +134,7 @@ async def send_character(chat_id: int, rarity: str):
             await app.send_message(
                 ROYAL_NOTIFY_USER_ID,
                 f"👑 **Royal Spawn!**\nID: `{character['id']}`\nName: {md_escape(character['name'])}",
-                parse_mode=ParseMode.MARKDOWN_V2
+                parse_mode=ParseMode.MARKDOWN
             )
         except Exception:
             pass

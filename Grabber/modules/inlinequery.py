@@ -149,7 +149,7 @@ def create_inline_result(character: dict, neighbors: list, offset: int, context:
         description=f"🎬 {anime}\n✨ {rarity} | 🆔 {char_id}",
         caption=caption,
         reply_markup=reply_markup,
-        parse_mode=ParseMode.MARKDOWN_V2
+        parse_mode=ParseMode.MARKDOWN
     )
 
 
@@ -184,7 +184,7 @@ async def gallery_view_callback(_, query: types.CallbackQuery):
         ]
         
         await query.message.edit_media(
-            media=types.InputMediaPhoto(media=img_url, caption=caption, parse_mode=ParseMode.MARKDOWN_V2),
+            media=types.InputMediaPhoto(media=img_url, caption=caption, parse_mode=ParseMode.MARKDOWN),
             reply_markup=types.InlineKeyboardMarkup(buttons)
         )
         await query.answer()
