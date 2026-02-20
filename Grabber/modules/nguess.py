@@ -11,7 +11,9 @@ from Grabber.core.game import update_user_balance
 # Local cache is no longer used for character data to ensure persistence
 # Active sessions are stored in sessions_collection with ID: "nguess:{chat_id}"
 
-from Grabber.core.utils import md_escape as escape_markdown_v2
+from Grabber.core.utils import md_escape
+# Alias for backward compatibility within this file
+escape_markdown_v2 = md_escape
 
 async def delete_after(message, delay: int):
     """Wait for delay seconds and then delete the message."""
@@ -40,6 +42,40 @@ async def send_message_safe(chat_id, text=None, photo=None, caption=None, parse_
         LOGGER.error(f"Error in send_message_safe: {e}")
         return None
 
+async def start_nguess_game(chat_id):
+    """Fetches a character and starts a new game session."""
+    # Fetch a random character
+    cursor = collection.aggregate([{"$sample": {"size": 1}}])
+    res = await cursor.to_list(length=1)
+    if not res:
+        return await send_message_safe(chat_id, text=md_escape("DATABASE ERROR: No target profiles available."), auto_delete=True)
+    
+    char = res[0]
+    
+    # Create/Update session in DB
+    await sessions_collection.update_one(
+        {"_id": f"nguess:{chat_id}"},
+        {"$set": {
+            "char": char,
+            "players": []
+        }},
+        upsert=True
+    )
+
+    anime_name = char['anime']
+    briefing = f"Identify this character from the series **{md_escape(anime_name)}**"
+    
+    sent = await send_message_safe(
+        chat_id,
+        photo=char['img_url'],
+        caption=briefing,
+        auto_delete=True
+    )
+    
+    if not sent:
+        await sessions_collection.delete_one({"_id": f"nguess:{chat_id}"})
+        await send_message_safe(chat_id, text=md_escape("CRITICAL FAILURE: Transponder link lost."), auto_delete=True)
+
 def get_name_variants(name: str):
     """Generates possible name variants for matching."""
     name = name.lower().strip()
@@ -59,39 +95,8 @@ async def nguess_start_handler(_, message: types.Message):
     if not is_enabled and chat_id not in [OWNER_ID]:
         return
     
-    # Check if a game is already active in DB
-    existing_session = await sessions_collection.find_one({"_id": f"nguess:{chat_id}"})
-    if existing_session:
-        return await send_message_safe(chat_id, text=escape_markdown_v2("ONGOING MISSION\nAn identification request is already active in this sector."), auto_delete=True)
-
-    # Fetch a random character
-    cursor = collection.aggregate([{"$sample": {"size": 1}}])
-    res = await cursor.to_list(length=1)
-    if not res:
-        return await send_message_safe(chat_id, text=escape_markdown_v2("DATABASE ERROR: No target profiles available."), auto_delete=True)
-    
-    char = res[0]
-    
-    # Create session in DB
-    await sessions_collection.insert_one({
-        "_id": f"nguess:{chat_id}",
-        "char": char,
-        "players": []
-    })
-
-    anime_name = escape_markdown_v2(char['anime'])
-    briefing = f"Identify this character from the series **{md_escape(anime_name)}**"
-    
-    sent = await send_message_safe(
-        chat_id,
-        photo=char['img_url'],
-        caption=briefing,
-        auto_delete=True
-    )
-    
-    if not sent:
-        await sessions_collection.delete_one({"_id": f"nguess:{chat_id}"})
-        await send_message_safe(chat_id, text=escape_markdown_v2("CRITICAL FAILURE: Transponder link lost."), auto_delete=True)
+    # If a game is active, we just proceed to start a new one (per user request: "send next instead")
+    await start_nguess_game(chat_id)
 
 @app.on_message(filters.command("ngon") & filters.user(OWNER_ID))
 async def ngon_handler(_, message: types.Message):
