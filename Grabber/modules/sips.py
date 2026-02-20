@@ -1,6 +1,6 @@
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
-from Grabber.core.utils import md_escape as escape
+from Grabber.core.utils import html_escape as escape
 from Grabber import app, collection, LOGGER
 
 @app.on_message(filters.command("sips"))
@@ -24,16 +24,16 @@ async def search_character(_, message: types.Message):
         return
 
                                                         
-    response_message = "**🔍 Found Characters:**\n\n"
+    response_message = "<b>🔍 Found Characters:</b>\n\n"
     for character in found_characters[:20]:                                         
-        response_message += f"🆔 `ID: {character['id']}`\n"
+        response_message += f"🆔 <code>ID: {character['id']}</code>\n"
         response_message += f"📛 Name: {escape(character['name'])}\n"
         response_message += f"🔮 Rarity: {escape(character['rarity'])}\n\n"
 
     if len(found_characters) > 20:
-        response_message += f"_...and {len(found_characters) - 20} more._"
+        response_message += f"<i>...and {len(found_characters) - 20} more.</i>"
 
-    await message.reply_text(response_message, parse_mode=ParseMode.MARKDOWN)
+    await message.reply_text(response_message, parse_mode=ParseMode.HTML)
 
 @app.on_message(filters.command("sani"))
 async def search_anime(_, message: types.Message):
@@ -56,13 +56,13 @@ async def search_anime(_, message: types.Message):
         return
 
                                                         
-    response_message = f"**🎬 Characters from Anime '{escape(anime_title)}':**\n\n"
+    response_message = f"<b>🎬 Characters from Anime '{escape(anime_title)}':</b>\n\n"
     for character in found_characters[:20]:
-        response_message += f"🆔 `ID: {character['id']}`\n"
+        response_message += f"🆔 <code>ID: {character['id']}</code>\n"
         response_message += f"📛 Name: {escape(character['name'])}\n"
         response_message += f"🔮 Rarity: {escape(character['rarity'])}\n\n"
 
     if len(found_characters) > 20:
-        response_message += f"_...and {len(found_characters) - 20} more._"
+        response_message += f"<i>...and {len(found_characters) - 20} more.</i>"
 
-    await message.reply_text(response_message, parse_mode=ParseMode.MARKDOWN)
+    await message.reply_text(response_message, parse_mode=ParseMode.HTML)

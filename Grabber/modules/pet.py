@@ -1,6 +1,6 @@
 from pyrogram import filters, types, enums, errors
 from pyrogram.enums import ParseMode
-from Grabber.core.utils import md_escape
+from Grabber.core.utils import html_escape
 from Grabber import app, user_collection, PHOTO_URL, LOGGER
 
              
@@ -37,16 +37,16 @@ async def send_petshop_page(message_or_query_obj, page: int, user_id: int):
     is_locked = user_level < req_level
     
     caption = (
-        f"**{pet['name']}**\n"
-        f"✨ Ability: **{pet.get('ability', 'None')}**\n"
-        f"📖 _{pet.get('desc', 'No ability')}_\n"
+        f"<b>{html_escape(pet['name'])}</b>\n"
+        f"✨ Ability: <b>{html_escape(pet.get('ability', 'None'))}</b>\n"
+        f"📖 <i>{html_escape(pet.get('desc', 'No ability'))}</i>\n"
         f"❤️ HP: {pet.get('hp', 100)} | ⚔️ ATK: {pet.get('atk', 10)} | ⚡ SPD: {pet.get('spd', 10)}\n"
         f"🍀 Luck: {int(pet['luck'] * 100)}%\n"
-        f"💰 Price: **{pet['zenith_price']} ⧫**"
+        f"💰 Price: <b>{pet['zenith_price']} ⧫</b>"
     )
     
     if is_locked:
-        caption += f"\n\n🔒 **Requires Level {req_level}** (You: {user_level})"
+        caption += f"\n\n🔒 <b>Requires Level {req_level}</b> (You: {user_level})"
     
                                       
     buy_button_text = f"🔒 Locked (Lvl {req_level})" if is_locked else "Buy Now"
@@ -68,7 +68,7 @@ async def send_petshop_page(message_or_query_obj, page: int, user_id: int):
             )
         else:
             await message_or_query_obj.reply_photo(
-                photo=pet["img"], caption=caption, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup
+                photo=pet["img"], caption=caption, parse_mode=ParseMode.HTML, reply_markup=reply_markup
             )
     except errors.MessageNotModified:
         pass
@@ -104,7 +104,7 @@ async def perform_pet_purchase(user_id, pet_index: int):
     req_level = pet.get("req_level", 0)
     
     if user_level < req_level:
-        return f"🔒 You need to reach **Level {req_level}** to purchase this pet! (Current: {user_level})"
+        return f"🔒 You need to reach <b>Level {req_level}</b> to purchase this pet! (Current: {user_level})"
 
     user = await user_collection.find_one({"id": user_id})
     if not user:
@@ -115,7 +115,7 @@ async def perform_pet_purchase(user_id, pet_index: int):
     price = pet["zenith_price"]
     
     if user_zenith < price:
-        return f"❌ You need **{price} ⧫ Zenith** to purchase this pet! (You have: {user_zenith} ⧫)"
+        return f"❌ You need <b>{price} ⧫ Zenith</b> to purchase this pet! (You have: {user_zenith} ⧫)"
     
                    
     await user_collection.update_one(
@@ -136,23 +136,23 @@ async def perform_pet_purchase(user_id, pet_index: int):
 @app.on_message(filters.command("buypet"))
 async def buypet_cmd(_, message: types.Message):
     if len(message.command) < 2:
-        return await message.reply_text("❌ Usage: `/buypet <pet_id>`", parse_mode=ParseMode.MARKDOWN)
+        return await message.reply_text("❌ Usage: <code>/buypet &lt;pet_id&gt;</code>", parse_mode=ParseMode.HTML)
     
     try:
         pet_id = int(message.command[1])
     except ValueError:
-        return await message.reply_text("❌ Invalid pet ID.", parse_mode=ParseMode.MARKDOWN)
+        return await message.reply_text("❌ Invalid pet ID.", parse_mode=ParseMode.HTML)
 
     result = await perform_pet_purchase(message.from_user.id, pet_id)
     if result is True:
         pet = PET_SHOP[pet_id]
         await message.reply_photo(
             photo=pet["img"],
-            caption=f"✅ You bought **{pet['name']}** with {int(pet['luck']*100)}% luck!",
-            parse_mode=ParseMode.MARKDOWN
+            caption=f"✅ You bought <b>{html_escape(pet['name'])}</b> with {int(pet['luck']*100)}% luck!",
+            parse_mode=ParseMode.HTML
         )
     else:
-        await message.reply_text(result, parse_mode=ParseMode.MARKDOWN)
+        await message.reply_text(result, parse_mode=ParseMode.HTML)
 
                                 
 async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
@@ -163,9 +163,9 @@ async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
     if not pets:
         text = "You have no pets. Use /petshop to buy one."
         if isinstance(message_or_query_obj, types.CallbackQuery):
-            await message_or_query_obj.message.edit_text(text, parse_mode=ParseMode.MARKDOWN)
+            await message_or_query_obj.message.edit_text(text, parse_mode=ParseMode.HTML)
         else:
-            await message_or_query_obj.reply_text(text, parse_mode=ParseMode.MARKDOWN)
+            await message_or_query_obj.reply_text(text, parse_mode=ParseMode.HTML)
         return
 
     page = page % len(pets)
@@ -177,13 +177,13 @@ async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
     needed = level * 100
     
     caption = (
-        f"🐾 **Your Pet**\n"
-        f"📛 Name: **{pet['name']}**\n"
-        f"⚡ Ability: **{pet.get('ability', 'None')}**\n"
-        f"📊 Level: `{level}` | XP: `{xp}/{needed}`\n"
-        f"❤️ HP: `{pet.get('hp', 100)}` | ⚔️ ATK: `{pet.get('atk', 10)}` | ⚡ SPD: `{pet.get('spd', 10)}`\n"
-        f"🍀 Luck: `{int(pet['luck'] * 100)}%`\n\n"
-        f"{'✅ **Active Pet**' if is_active else '⚠️ _Inactive_'}"
+        f"🐾 <b>Your Pet</b>\n"
+        f"📛 Name: <b>{html_escape(pet['name'])}</b>\n"
+        f"⚡ Ability: <b>{html_escape(pet.get('ability', 'None'))}</b>\n"
+        f"📊 Level: <code>{level}</code> | XP: <code>{xp}/{needed}</code>\n"
+        f"❤️ HP: <code>{pet.get('hp', 100)}</code> | ⚔️ ATK: <code>{pet.get('atk', 10)}</code> | ⚡ SPD: <code>{pet.get('spd', 10)}</code>\n"
+        f"🍀 Luck: <code>{int(pet['luck'] * 100)}%</code>\n\n"
+        f"{'✅ <b>Active Pet</b>' if is_active else '⚠️ <i>Inactive</i>'}"
     )
 
     buttons = [
@@ -205,7 +205,7 @@ async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
             )
         else:
             await message_or_query_obj.reply_photo(
-                photo=photo, caption=caption, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup
+                photo=photo, caption=caption, parse_mode=ParseMode.HTML, reply_markup=reply_markup
             )
     except errors.MessageNotModified:
         pass
@@ -235,7 +235,7 @@ async def shop_mypet_navigation(_, query: types.CallbackQuery):
             page = (page - 1) % len(PET_SHOP)
         elif action == "buy":
             pet = PET_SHOP[page]
-            text = f"⚠️ **Confirm Purchase**\n\nBuy **{pet['name']}** for **{pet['zenith_price']} ⧫**?"
+            text = f"⚠️ <b>Confirm Purchase</b>\n\nBuy <b>{html_escape(pet['name'])}</b> for <b>{pet['zenith_price']} ⧫</b>?"
             keyboard = [[
                 types.InlineKeyboardButton("Confirm ✅", callback_data=f"petconfirm_{page}_{owner_id}"),
                 types.InlineKeyboardButton("Cancel ❌", callback_data=f"shop_next_{page}_{owner_id}")

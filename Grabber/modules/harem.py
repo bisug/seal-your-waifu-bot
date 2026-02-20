@@ -1,6 +1,6 @@
 import math
 import random
-from Grabber.core.utils import md_escape as escape
+from Grabber.core.utils import html_escape as escape
 from collections import Counter
 from typing import List, Dict, Union, Any
 
@@ -11,8 +11,8 @@ from Grabber import LOGGER
 from Grabber.core.user import get_user_data
 
 FORMATS = [
-    "⧉ {anime} [🎮] ⦋{page}/{total_pages}⦌\n⤷〔**{rarity}**〕 {name} (ID: `{id}`) ×{count}",
-    "⧉ {anime} [🎮] ⦋{page}/{total_pages}⦌\n⤷ ᴷᴱʸ: `{id}` - {name} [Rarity: **{rarity}**] ×{count}",
+    "⧉ {anime} [🎮] ⦋{page}/{total_pages}⦌\n⤷〔<b>{rarity}</b>〕 {name} (ID: <code>{id}</code>) ×{count}",
+    "⧉ {anime} [🎮] ⦋{page}/{total_pages}⦌\n⤷ ᴷᴱʸ: <code>{id}</code> - {name} [Rarity: <b>{rarity}</b>] ×{count}",
 ]
 
 @app.on_message(filters.command(["harem", "collection"]))
@@ -35,10 +35,10 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
     try:
         user = await get_user_data(user_id)
         if not user or not user.get('characters'):
-            text = "❌ **You don't have any characters yet!**\n\n_Go catch some waifus first!_"
+            text = "❌ <b>You don't have any characters yet!</b>\n\n<i>Go catch some waifus first!</i>"
             if isinstance(message_obj, types.CallbackQuery):
                 return await message_obj.answer(text, show_alert=True)
-            return await message_obj.reply_text(text, parse_mode=ParseMode.MARKDOWN)
+            return await message_obj.reply_text(text, parse_mode=ParseMode.HTML)
 
         all_chars = user['characters']
         
@@ -68,10 +68,10 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
         
                              
         header_lines = [
-            f"🎒 **{escape(first_name)}'s Collection**",
+            f"🎒 <b>{escape(first_name)}'s Collection</b>",
             "━━━━━━━━━━━━━━━━━━━━━",
-            f"📑 **Page:** `{page + 1}/{total_pages}`",
-            f"✨ **Characters:** `{len(all_chars)}` total",
+            f"📑 <b>Page:</b> <code>{page + 1}/{total_pages}</code>",
+            f"✨ <b>Characters:</b> <code>{len(all_chars)}</code> total",
             ""
         ]
         harem_text = "\n".join(header_lines)
@@ -108,21 +108,21 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
         if isinstance(message_obj, types.CallbackQuery):
             if pic:
                  await message_obj.edit_message_media(
-                    media=types.InputMediaPhoto(media=pic, caption=harem_text),
+                    media=types.InputMediaPhoto(media=pic, caption=harem_text, parse_mode=ParseMode.HTML),
                     reply_markup=markup
                 )
             else:
-                await message_obj.edit_message_text(text=harem_text, reply_markup=markup, parse_mode=ParseMode.MARKDOWN)
+                await message_obj.edit_message_text(text=harem_text, reply_markup=markup, parse_mode=ParseMode.HTML)
         else:
             if pic:
                 await message_obj.reply_photo(
                     photo=pic,
                     caption=harem_text,
                     reply_markup=markup,
-                    parse_mode=ParseMode.MARKDOWN
+                    parse_mode=ParseMode.HTML
                 )
             else:
-                 await message_obj.reply_text(harem_text, reply_markup=markup, parse_mode=ParseMode.MARKDOWN)
+                 await message_obj.reply_text(harem_text, reply_markup=markup, parse_mode=ParseMode.HTML)
 
     except errors.MessageNotModified:
         pass

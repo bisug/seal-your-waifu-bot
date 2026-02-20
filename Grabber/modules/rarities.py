@@ -37,13 +37,13 @@ async def rarities_handler(_, message: types.Message):
     async for doc in cursor:
         rarity_counts[doc["_id"]] = doc["count"]
     
-    response = "**Character Counts by Rarity:**\n\n"
+    response = "<b>Character Counts by Rarity:</b>\n\n"
     
                                               
     for i in range(1, 11):
         rarity_name = RARITY_MAP.get(i)
         if rarity_name:
             count = rarity_counts.get(rarity_name, 0)
-            response += f"{rarity_name}: `{count}`\n"
+            response += f"{rarity_name}: <code>{count}</code>\n"
     
-    await message.reply_text(response, parse_mode=ParseMode.MARKDOWN)
+    await message.reply_text(response, parse_mode=ParseMode.HTML)

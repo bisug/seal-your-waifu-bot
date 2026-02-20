@@ -11,13 +11,13 @@ from Grabber.core.game import update_user_balance
 # Local cache is no longer used for character data to ensure persistence
 # Active sessions are stored in sessions_collection with ID: "nguess:{chat_id}"
 
-from Grabber.core.utils import md_escape
-# Alias for backward compatibility within this file
-escape_markdown_v2 = md_escape
+from Grabber.core.utils import html_escape
+# Alias for backward compatibility within this file if needed, but better to use it directly
+escape_html = html_escape
 
 from Grabber.core.deletion import schedule_deletion
 
-async def send_message_safe(chat_id, text=None, photo=None, caption=None, parse_mode=ParseMode.MARKDOWN, reply_markup=None, auto_delete=False):
+async def send_message_safe(chat_id, text=None, photo=None, caption=None, parse_mode=ParseMode.HTML, reply_markup=None, auto_delete=False):
     """Sends a message or photo while handling FloodWait professionally."""
     try:
         if photo:
@@ -42,7 +42,7 @@ async def start_nguess_game(chat_id):
     cursor = collection.aggregate([{"$sample": {"size": 1}}])
     res = await cursor.to_list(length=1)
     if not res:
-        return await send_message_safe(chat_id, text=md_escape("DATABASE ERROR: No target profiles available."), auto_delete=True)
+        return await send_message_safe(chat_id, text=html_escape("DATABASE ERROR: No target profiles available."), auto_delete=True)
     
     char = res[0]
     
@@ -57,7 +57,7 @@ async def start_nguess_game(chat_id):
     )
 
     anime_name = char['anime']
-    briefing = f"Identify this character from the series **{md_escape(anime_name)}**"
+    briefing = f"Identify this character from the series <b>{html_escape(anime_name)}</b>"
     
     sent = await send_message_safe(
         chat_id,
@@ -68,7 +68,7 @@ async def start_nguess_game(chat_id):
     
     if not sent:
         await sessions_collection.delete_one({"_id": f"nguess:{chat_id}"})
-        await send_message_safe(chat_id, text=md_escape("CRITICAL FAILURE: Transponder link lost."), auto_delete=True)
+        await send_message_safe(chat_id, text=html_escape("CRITICAL FAILURE: Transponder link lost."), auto_delete=True)
 
 def get_name_variants(name: str):
     """Generates possible name variants for matching."""
@@ -103,10 +103,10 @@ async def ngon_handler(_, message: types.Message):
             {"$set": {"enabled": True}},
             upsert=True
         )
-        msg_text = escape_markdown_v2(f"SECTOR AUTHORIZED: /nguess is now active for sector {chat_id}.")
+        msg_text = f"SECTOR AUTHORIZED: /nguess is now active for sector {chat_id}."
         await send_message_safe(message.chat.id, text=msg_text, auto_delete=True)
     except ValueError:
-        await send_message_safe(message.chat.id, text=escape_markdown_v2("ERROR: Invalid Chat ID format."), auto_delete=True)
+        await send_message_safe(message.chat.id, text="ERROR: Invalid Chat ID format.", auto_delete=True)
 
 @app.on_message(filters.command("ngoff") & filters.user(OWNER_ID))
 async def ngoff_handler(_, message: types.Message):
@@ -115,20 +115,20 @@ async def ngoff_handler(_, message: types.Message):
         chat_id = int(args[1]) if len(args) > 1 else message.chat.id
         
         await nguess_enabled_groups_collection.delete_one({"chat_id": chat_id})
-        msg_text = escape_markdown_v2(f"AUTHORIZATION REVOKED: /nguess is now disabled for sector {chat_id}.")
+        msg_text = f"AUTHORIZATION REVOKED: /nguess is now disabled for sector {chat_id}."
         await send_message_safe(message.chat.id, text=msg_text, auto_delete=True)
     except ValueError:
-        await send_message_safe(message.chat.id, text=escape_markdown_v2("ERROR: Invalid Chat ID format."), auto_delete=True)
+        await send_message_safe(message.chat.id, text="ERROR: Invalid Chat ID format.", auto_delete=True)
 
 @app.on_message(filters.command("nglist") & filters.user(OWNER_ID))
 async def nglist_handler(_, message: types.Message):
     enabled_groups = await nguess_enabled_groups_collection.find().to_list(length=100)
     if not enabled_groups:
-        return await send_message_safe(message.chat.id, text=escape_markdown_v2("REGISTRY EMPTY: No sectors are currently authorized."), auto_delete=True)
+        return await send_message_safe(message.chat.id, text="REGISTRY EMPTY: No sectors are currently authorized.", auto_delete=True)
     
-    text = "**AUTHORIZED SECTORS FOR /NGUESS**\n\n"
+    text = "<b>AUTHORIZED SECTORS FOR /NGUESS</b>\n\n"
     for group in enabled_groups:
-        text += f"• `{group['chat_id']}`\n"
+        text += f"• <code>{group['chat_id']}</code>\n"
     
     await send_message_safe(message.chat.id, text=text, auto_delete=True)
 
@@ -169,11 +169,11 @@ async def nguess_check_handler(_, message: types.Message):
         
         if total_guesses % 100 == 0:
             bonus = 1000
-            milestone_text = escape_markdown_v2(f"\n\n**ELITE MILESTONE ACHIEVED**\nYou are the 100th guesser! Granted 1,000 bonus Shards.")
+            milestone_text = f"\n\n<b>ELITE MILESTONE ACHIEVED</b>\nYou are the 100th guesser! Granted 1,000 bonus Shards."
             await sessions_collection.update_one({"id": "nguess_global_stats"}, {"$set": {"total_guesses": 0}})
         elif total_guesses % 100 == 50:
             bonus = 500
-            milestone_text = escape_markdown_v2(f"\n\n**MILESTONE REACHED**\nYou are the 50th guesser! Granted 500 bonus Shards.")
+            milestone_text = f"\n\n<b>MILESTONE REACHED</b>\nYou are the 50th guesser! Granted 500 bonus Shards."
 
         total_reward = reward + bonus
         
@@ -192,13 +192,13 @@ async def nguess_check_handler(_, message: types.Message):
         
         display_progress = total_guesses % 100 if total_guesses % 100 != 0 else 100
         
-        mention = f"[{md_escape(message.from_user.first_name)}](tg://user?id={message.from_user.id})"
-        target_name = md_escape(char['name'])
+        mention = f'<a href="tg://user?id={message.from_user.id}">{html_escape(message.from_user.first_name)}</a>'
+        target_name = html_escape(char['name'])
         
         success_msg = (
-            fr"✅ {mention} identified **{target_name}**\!\n"
-            f"💰 **Bounty:** +{reward} Shards\n"
-            f"🔥 **Progress:** {display_progress}/100{milestone_text}"
+            f"✅ {mention} identified <b>{target_name}</b>!\n"
+            f"💰 <b>Bounty:</b> +{reward} Shards\n"
+            f"🔥 <b>Progress:</b> {display_progress}/100{milestone_text}"
         )
         
         await send_message_safe(chat_id, text=success_msg, auto_delete=True)

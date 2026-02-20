@@ -16,8 +16,8 @@ async def webapp_command(_, message):
     ])
     
     await message.reply_text(
-        "**Seal Bot Web Gallery**\n\n"
+        "<b>Seal Bot Web Gallery</b>\n\n"
         "Click the button below to view the full character gallery and your collection!",
         reply_markup=keyboard,
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.HTML
     )

@@ -1,6 +1,6 @@
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
-from Grabber.core.utils import md_escape
+from Grabber.core.utils import html_escape
 from Grabber import app
 from Grabber import group_user_totals_collection, LOGGER
 from Grabber.core.user import add_char_to_user
@@ -25,7 +25,7 @@ async def seal_handler(_, message: types.Message):
         return                 
 
     if len(message.command) < 2:
-        return await message.reply_text("❌ Provide the character's name! Usage: `/seal <name>`", parse_mode=ParseMode.MARKDOWN)
+        return await message.reply_text("❌ Provide the character's name! Usage: <code>/seal &lt;name&gt;</code>", parse_mode=ParseMode.HTML)
 
     guess = " ".join(message.command[1:]).strip().lower()
     correct_name = character['name'].strip().lower()
@@ -63,18 +63,18 @@ async def seal_handler(_, message: types.Message):
                 pass
 
         caption = (
-            f"🎉 **[{message.from_user.first_name}](tg://user?id={message.from_user.id}) caught the character!**\n\n"
-            f"📛 **Name:** {md_escape(character['name'])}\n"
-            f"✨ **Rarity:** {md_escape(character['rarity'])}\n"
-            f"🎬 **Anime:** {md_escape(character['anime'])}\n"
+            f"🎉 <b><a href=\"tg://user?id={message.from_user.id}\">{html_escape(message.from_user.first_name)}</a> caught the character!</b>\n\n"
+            f"📛 <b>Name:</b> {html_escape(character['name'])}\n"
+            f"✨ <b>Rarity:</b> {html_escape(character['rarity'])}\n"
+            f"🎬 <b>Anime:</b> {html_escape(character['anime'])}\n"
             f"🧤 Added to your harem!"
         )
         
-        await message.reply_photo(character['img_url'], caption=caption)
+        await message.reply_photo(character['img_url'], caption=caption, parse_mode=ParseMode.HTML)
     else:
         await message.reply_text("❌ Wrong name! Try again.")
 
 @app.on_message(filters.command("messagecount") & filters.group)
 async def messagecount_handler(_, message: types.Message):
     count = await get_message_count(message.chat.id)
-    await message.reply_text(f"📊 **Total messages in this chat:** `{count}`")
+    await message.reply_text(f"📊 <b>Total messages in this chat:</b> <code>{count}</code>", parse_mode=ParseMode.HTML)

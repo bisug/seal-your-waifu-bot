@@ -28,10 +28,10 @@ async def tgm_cmd(_, message: types.Message) -> None:
     target_msg = message.reply_to_message if message.reply_to_message else message
     
     if not target_msg.photo:
-        await message.reply_text("❌ Please send or reply to an image with this command.", parse_mode=ParseMode.MARKDOWN)
+        await message.reply_text("❌ <b>Please send or reply to an image with this command.</b>", parse_mode=ParseMode.HTML)
         return
 
-    status_msg = await message.reply_text("⏳ Uploading to ImgBB...", parse_mode=ParseMode.MARKDOWN)
+    status_msg = await message.reply_text("⏳ <b>Uploading to ImgBB...</b>", parse_mode=ParseMode.HTML)
     
     try:
                                                                                            
@@ -59,10 +59,10 @@ async def tgm_cmd(_, message: types.Message) -> None:
         if response_data.get('success'):
             imgbb_url = response_data['data']['url']
             await status_msg.delete()
-            await message.reply_photo(photo=imgbb_url, caption=f"✅ **Image uploaded successfully!**\n🔗 `{imgbb_url}`", parse_mode=ParseMode.MARKDOWN)
+            await message.reply_photo(photo=imgbb_url, caption=f"✅ <b>Image uploaded successfully!</b>\n🔗 <code>{imgbb_url}</code>", parse_mode=ParseMode.HTML)
         else:
-            await status_msg.edit_text(f"❌ Failed to upload image: {response_data.get('error', {}).get('message', 'Unknown error')}", parse_mode=ParseMode.MARKDOWN)
+            await status_msg.edit_text(f"❌ <b>Failed to upload image:</b> <code>{response_data.get('error', {}).get('message', 'Unknown error')}</code>", parse_mode=ParseMode.HTML)
 
     except Exception as e:
         LOGGER.error(f"Error in tgm_cmd: {e}")
-        await status_msg.edit_text(f"❌ An error occurred during upload.", parse_mode=ParseMode.MARKDOWN)
+        await status_msg.edit_text(f"❌ <b>An error occurred during upload.</b>", parse_mode=ParseMode.HTML)
