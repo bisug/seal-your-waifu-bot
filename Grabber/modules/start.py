@@ -1,7 +1,7 @@
 from pyrogram import filters, types, errors
 from pyrogram.enums import ParseMode, enums
 from Grabber.core.utils import md_escape
-from Grabber.app import app
+from Grabber import app
 from Grabber import PHOTO_URL, BOT_USERNAME, SUPPORT_CHAT, UPDATE_CHAT, LOGGER
 from Grabber.database import total_pm_users
 from Grabber import user_collection

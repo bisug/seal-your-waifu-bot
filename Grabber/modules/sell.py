@@ -1,6 +1,6 @@
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
-from Grabber.app import app
+from Grabber import app
 from Grabber.core.utils import md_escape
 from Grabber.core.user import get_user_data, remove_char_from_user
 from Grabber.core.game import update_user_balance

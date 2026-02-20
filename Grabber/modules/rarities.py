@@ -1,6 +1,6 @@
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
-from Grabber.app import app
+from Grabber import app
 from Grabber.database import collection
 
 RARITY_MAP = {

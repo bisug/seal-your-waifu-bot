@@ -1,6 +1,6 @@
 from pyrogram import filters, types, errors
 from pyrogram.enums import ParseMode, enums
-from Grabber.app import app
+from Grabber import app
 from Grabber import LOGGER
 from Grabber.core.user import get_user_data, update_user
 from Grabber.core.sessions import create_session, get_session, delete_session

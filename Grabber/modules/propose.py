@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
 from Grabber.core.utils import md_escape
-from Grabber.app import app
+from Grabber import app
 from Grabber import collection, user_collection
 from Grabber.core.user import get_user_data, add_char_to_user, update_user
 from Grabber.core.game import update_user_balance

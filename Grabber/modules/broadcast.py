@@ -1,7 +1,7 @@
 import asyncio
 from pyrogram import filters, types, enums, errors
 from pyrogram.enums import ParseMode
-from Grabber.app import app
+from Grabber import app
 from Grabber import OWNER_ID, LOGGER
 from Grabber.database import total_pm_users, group_collection
 

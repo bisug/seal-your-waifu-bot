@@ -5,7 +5,7 @@ import httpx
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
 from Grabber.core.utils import md_escape
-from Grabber.app import app
+from Grabber import app
 from Grabber import LOGGER, quiz_questions_collection
 from Grabber.core.game import update_user_balance, get_user_balance
 
