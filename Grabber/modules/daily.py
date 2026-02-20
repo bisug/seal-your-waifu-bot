@@ -78,7 +78,7 @@ async def daily_command_handler(_, message: types.Message):
     })
 
     caption = (
-        fr"🎊 {message.from_user.mention} claimed their daily reward\!\n\n"
+        fr"🎊 [{md_escape(message.from_user.first_name)}](tg://user?id={message.from_user.id}) claimed their daily reward\!\n\n"
         f"📛 **Character:** {md_escape(char['name'])}\n"
         f"✨ **Rarity:** {md_escape(char['rarity'])}\n"
         f"🎬 **Anime:** {md_escape(char['anime'])}\n\n"

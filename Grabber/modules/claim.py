@@ -141,7 +141,7 @@ async def claim_confirm_handler(_, query: types.CallbackQuery):
     })
 
     caption = (
-        fr"🎉 {query.from_user.mention} claimed their free waifu\!\n\n"
+        fr"🎉 [{md_escape(query.from_user.first_name)}](tg://user?id={query.from_user.id}) claimed their free waifu\!\n\n"
         f"🆔 **ID:** `{char['id']}`\n"
         f"📛 **Name:** {md_escape(char['name'])}\n"
         f"🎬 **Anime:** {md_escape(char['anime'])}\n"
