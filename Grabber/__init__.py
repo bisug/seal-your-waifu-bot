@@ -10,7 +10,8 @@ from Grabber.database import (
     user_totals_collection, message_counts_collection, 
     user_collection, group_user_totals_collection, 
     top_global_groups_collection, total_pm_users, sudo_collection,
-    spawns_collection, sessions_collection, quiz_questions_collection
+    spawns_collection, sessions_collection, quiz_questions_collection,
+    nguess_enabled_groups_collection
 )
 
                   
