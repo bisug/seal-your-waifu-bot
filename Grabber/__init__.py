@@ -62,8 +62,8 @@ class SealClient(Client):
             workdir="Grabber",
         )
 
-    async def start(self):
-        await super().start()
+    async def start(self, *args, **kwargs):
+        await super().start(*args, **kwargs)
         
         # 1. Fetch identity and update config
         me = await self.get_me()
