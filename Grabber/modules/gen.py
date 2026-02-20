@@ -88,7 +88,7 @@ async def claimwaifu(_, message: types.Message):
                 await create_session(f"gen_{code}", details)
 
             response_text = (
-                f"Congratulations {message.from_user.mention}! You have received a new waifu for your harem 💍\!\n"
+                fr"Congratulations {message.from_user.mention}! You have received a new waifu for your harem 💍\!\n"
                 f"Name: {md_escape(waifu['name'])}\n"
                 f"Anime: {md_escape(waifu['anime'])}\n"
                 f"Rarity: {md_escape(waifu['rarity'])}\n"

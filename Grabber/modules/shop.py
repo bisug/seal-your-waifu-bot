@@ -280,7 +280,7 @@ async def buy_character(_, query: types.CallbackQuery):
 
     if update_result.modified_count == 0:
         await query.answer("❌ SOLD OUT! This character has reached the purchase limit.", show_alert=True)
-        await query.message.edit_caption(f"❌ **SOLD OUT**\n\nSomeone bought the last copy of {md_escape(char.name)}\!", parse_mode=ParseMode.MARKDOWN_V2)
+        await query.message.edit_caption(fr"❌ **SOLD OUT**\n\nSomeone bought the last copy of {md_escape(char.name)}\!", parse_mode=ParseMode.MARKDOWN_V2)
         return
 
                    

@@ -1,5 +1,5 @@
-from pyrogram import filters, types, errors
-from pyrogram.enums import ParseMode, enums
+from pyrogram import enums, filters, types, errors
+from pyrogram.enums import ParseMode
 from Grabber.core.utils import md_escape
 from Grabber import app
 from Grabber import PHOTO_URL, BOT_USERNAME, SUPPORT_CHAT, UPDATE_CHAT, LOGGER
@@ -188,13 +188,13 @@ async def start_handler(_, message: types.Message):
                     try:
                         await app.send_message(
                             referrer_id,
-                            f"🎉 **New Referral!**\n\n{md_escape(message.from_user.first_name)} joined using your link\.\n+500 ⬪ | +50 XP",
+                            fr"🎉 **New Referral!**\n\n{md_escape(message.from_user.first_name)} joined using your link\.\n+500 ⬪ | +50 XP",
                             parse_mode=ParseMode.MARKDOWN_V2
                         )
                     except:
                         pass
                         
-                    await message.reply_text("🎁 **Welcome Bonus!**\nYou received **1,500 ⬪** and a **Level 10 Pet** for using a referral link\! 🚀", parse_mode=ParseMode.MARKDOWN_V2)
+                    await message.reply_text(r"🎁 **Welcome Bonus!**\nYou received **1,500 ⬪** and a **Level 10 Pet** for using a referral link\! 🚀", parse_mode=ParseMode.MARKDOWN_V2)
                     
             except ValueError:
                 pass
