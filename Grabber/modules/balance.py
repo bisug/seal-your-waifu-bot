@@ -60,7 +60,7 @@ async def pay_cmd(_, message: types.Message):
 
     await message.reply_text(
         f"**💸 Payment Confirmation**\n\n"
-        f"**To:** {recipient.mention}\n"
+        f"**To:** [{md_escape(recipient.first_name)}](tg://user?id={recipient.id})\n"
         f"**Amount:** {amount:,} ⬪\n\n"
         f"_Are you sure you want to send these Shards?_",
         reply_markup=types.InlineKeyboardMarkup(buttons),
@@ -87,7 +87,7 @@ async def pay_callback_handler(_, query: types.CallbackQuery):
                                           
         try:
             recipient = await app.get_users(recipient_id)
-            mention = recipient.mention
+            mention = f"[{md_escape(recipient.first_name)}](tg://user?id={recipient.id})"
         except Exception:
             mention = f"User ID: {recipient_id}"
 
