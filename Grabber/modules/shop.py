@@ -2,7 +2,7 @@ import random
 import httpx
 from pyrogram.enums import ParseMode
 from pyrogram import filters, types, errors, enums
-from Grabber.core.utils import md_escape
+from Grabber.core.utils import html_escape
 from Grabber import app, collection, user_collection, sudo_users, OWNER_ID, LOGGER
 from Grabber.models import Character, User
 from config import config
@@ -32,7 +32,7 @@ async def get_daily_shop_characters():
 async def cshop_cmd(_, message: types.Message):
     chars = await get_daily_shop_characters()
     if not chars:
-        await message.reply_text("🚫 No shop characters available.", parse_mode=ParseMode.MARKDOWN)
+        await message.reply_text("🚫 <b>No shop characters available.</b>", parse_mode=ParseMode.HTML)
         return
 
     user_id = message.from_user.id
@@ -49,7 +49,7 @@ async def shop_hub(_, message: types.Message):
 
 async def send_shop_hub(message_or_query):
     text = (
-        "🏪 **Seal Shop Central**\n\n"
+        "🏪 <b>Seal Shop Central</b>\n\n"
         "Welcome to the marketplace! Choose a category below to start browsing."
     )
     keyboard = [
@@ -63,23 +63,23 @@ async def send_shop_hub(message_or_query):
     try:
         if isinstance(message_or_query, types.CallbackQuery):
             await message_or_query.edit_message_media(
-                media=types.InputMediaPhoto(media=SHOP_BANNER, caption=text, parse_mode=ParseMode.MARKDOWN),
+                media=types.InputMediaPhoto(media=SHOP_BANNER, caption=text, parse_mode=ParseMode.HTML),
                 reply_markup=reply_markup
             )
         else:
             await message_or_query.reply_photo(
-                photo=SHOP_BANNER, caption=text, reply_markup=reply_markup, parse_mode=ParseMode.MARKDOWN
+                photo=SHOP_BANNER, caption=text, reply_markup=reply_markup, parse_mode=ParseMode.HTML
             )
     except Exception as e:
         LOGGER.error(f"Error in send_shop_hub: {e}")
                                                                   
         if isinstance(message_or_query, types.CallbackQuery):
             try:
-                await message_or_query.message.edit_text(text, reply_markup=reply_markup, parse_mode=ParseMode.MARKDOWN)
+                await message_or_query.message.edit_text(text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
             except:
                 pass
         else:
-            await message_or_query.reply_text(text, reply_markup=reply_markup, parse_mode=ParseMode.MARKDOWN)
+            await message_or_query.reply_text(text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
 
 @app.on_callback_query(filters.regex(r"^hub_(char|pet|pass|egg|main)$"))
 async def hub_callback_handler(_, query: types.CallbackQuery):
@@ -113,7 +113,6 @@ async def send_shop_message(message, user_id):
         return
 
     page = session.get("page", 0)
-    page = session.get("page", 0)
     chars_data = session.get("shop", [])
     # Deserialize back to Character objects
     chars = [Character(**c) for c in chars_data]
@@ -133,14 +132,14 @@ async def send_shop_message(message, user_id):
         stock_display = "❌ SOLD OUT"
 
     text = (
-        f"🛍️ **Character Shop**\n"
-        f"⧫ **Zenith Balance:** {zenith_balance:,}\n\n"
-        f"🆔 **ID:** {char.id}\n"
-        f"📛 **Name:** {char.name}\n"
-        f"📺 **Anime:** {char.anime}\n"
-        f"🏷 **Rarity:** {char.rarity}\n"
-        f"� **Stock:** {stock_display}\n"
-        f"�💲 **Price:** {price} ⧫"
+        f"🛍️ <b>Character Shop</b>\n"
+        f"⧫ <b>Zenith Balance:</b> <code>{zenith_balance:,}</code>\n\n"
+        f"🆔 <b>ID:</b> <code>{char.id}</code>\n"
+        f"📛 <b>Name:</b> {html_escape(char.name)}\n"
+        f"📺 <b>Anime:</b> {html_escape(char.anime)}\n"
+        f"🏷 <b>Rarity:</b> {html_escape(char.rarity)}\n"
+        f"📦 <b>Stock:</b> {stock_display}\n"
+        f"💰 <b>Price:</b> <code>{price}</code> ⧫"
     )
 
     keyboard = [
@@ -157,13 +156,13 @@ async def send_shop_message(message, user_id):
     try:
         if isinstance(message, types.CallbackQuery):
             await message.edit_message_media(
-                media=types.InputMediaPhoto(media=char.img_url, caption=text, parse_mode=ParseMode.MARKDOWN),
+                media=types.InputMediaPhoto(media=char.img_url, caption=text, parse_mode=ParseMode.HTML),
                 reply_markup=markup
             )
         else:
             await message.reply_photo(
                 photo=char.img_url, caption=text,
-                reply_markup=markup, parse_mode=ParseMode.MARKDOWN
+                reply_markup=markup, parse_mode=ParseMode.HTML
             )
     except errors.MessageNotModified:
         pass
@@ -184,7 +183,6 @@ async def shop_navigation(_, query: types.CallbackQuery):
         await query.answer("🚫 Shop session expired. Use /shop again.", show_alert=True)
         return
 
-    page = session["page"]
     page = session["page"]
     chars_data = session["shop"]
     # Deserialize back to Character objects
@@ -213,16 +211,15 @@ async def ask_buy_character(_, query: types.CallbackQuery):
     price = getattr(char, "zenith_price", DEFAULT_ZENITH_PRICE)
     
     sold_count = getattr(char, "sold_count", 0)
-    stock_status = "✅ In Stock" if sold_count < SHOP_LIMIT else "❌ SOLD OUT"
     
     text = (
-        f"⚠️ **Confirm Purchase**\n\n"
-        f"👤 **Name:** {md_escape(char.name)}\n"
-        f"📺 **Anime:** {md_escape(char.anime)}\n"
-        f"🏷 **Rarity:** {md_escape(char.rarity)}\n"
-        f"🆔 **ID:** `{char_id}`\n"
-        f"📦 **Stock:** {sold_count}/{SHOP_LIMIT}\n\n"
-        f"💰 **Price:** {price} ⧫\n"
+        f"⚠️ <b>Confirm Purchase</b>\n\n"
+        f"👤 <b>Name:</b> {html_escape(char.name)}\n"
+        f"📺 <b>Anime:</b> {html_escape(char.anime)}\n"
+        f"🏷 <b>Rarity:</b> {html_escape(char.rarity)}\n"
+        f"🆔 <b>ID:</b> <code>{char_id}</code>\n"
+        f"📦 <b>Stock:</b> <code>{sold_count}</code>/{SHOP_LIMIT}\n\n"
+        f"💰 <b>Price:</b> <code>{price}</code> ⧫\n"
         f"Are you sure you want to buy this character?"
     )
     keyboard = [
@@ -231,7 +228,7 @@ async def ask_buy_character(_, query: types.CallbackQuery):
             types.InlineKeyboardButton("Cancel ❌", callback_data="hub_char")
         ]
     ]
-    await query.message.edit_caption(text, reply_markup=types.InlineKeyboardMarkup(keyboard), parse_mode=ParseMode.MARKDOWN)
+    await query.message.edit_caption(text, reply_markup=types.InlineKeyboardMarkup(keyboard), parse_mode=ParseMode.HTML)
 
 @app.on_callback_query(filters.regex(r"^confirm_buy_char_(.+)"))
 async def buy_character(_, query: types.CallbackQuery):
@@ -280,7 +277,7 @@ async def buy_character(_, query: types.CallbackQuery):
 
     if update_result.modified_count == 0:
         await query.answer("❌ SOLD OUT! This character has reached the purchase limit.", show_alert=True)
-        await query.message.edit_caption(fr"❌ **SOLD OUT**\n\nSomeone bought the last copy of {md_escape(char.name)}\!", parse_mode=ParseMode.MARKDOWN)
+        await query.message.edit_caption(f"❌ <b>SOLD OUT</b>\n\nSomeone bought the last copy of {html_escape(char.name)}!", parse_mode=ParseMode.HTML)
         return
 
                    
@@ -311,9 +308,7 @@ async def buy_character(_, query: types.CallbackQuery):
     await check_achievements(user_id)
 
     await query.message.reply_text(
-        f"✅ **Purchase Successful!**\n🎉 You now own **{char.name}**!\n📦 Stock: {getattr(char, 'sold_count', 0) + 1}/{SHOP_LIMIT}",
-        parse_mode=ParseMode.MARKDOWN
+        f"✅ <b>Purchase Successful!</b>\n🎉 You now own <b>{char.name}</b>!\n📦 Stock: <code>{getattr(char, 'sold_count', 0) + 1}</code>/{SHOP_LIMIT}",
+        parse_mode=ParseMode.HTML
     )
     await query.answer("Success!")
-
-

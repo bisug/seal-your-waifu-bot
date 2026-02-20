@@ -4,7 +4,7 @@ import datetime
 from typing import Optional, Dict, Any
 from pyrogram import enums
 from pyrogram.enums import ParseMode
-from Grabber.core.utils import md_escape
+from Grabber.core.utils import html_escape
 from Grabber.database import spawns_collection, message_counts_collection, user_totals_collection
 from Grabber import app, LOGGER, config
 from Grabber.core.waifu import get_or_load_characters
@@ -107,11 +107,11 @@ async def send_character(chat_id: int, rarity: str):
     now = datetime.datetime.now(datetime.timezone.utc)
     golden_text = ""
     if 20 <= now.hour <= 22:
-        golden_text = "\n🌟 **Golden Hour is Active!**"
+        golden_text = "\n🌟 <b>Golden Hour is Active!</b>"
 
     caption = (
-        "🪽 **A new character appeared!**\n"
-        "🦋 Use /seal <name> to collect them!\n"
+        "🪽 <b>A new character appeared!</b>\n"
+        "🦋 Use <code>/seal &lt;name&gt;</code> to collect them!\n"
         "👑 Rarity is secret until caught!"
         f"{golden_text}"
     )
@@ -122,7 +122,7 @@ async def send_character(chat_id: int, rarity: str):
             chat_id=chat_id,
             photo=character['img_url'],
             caption=caption,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
         await set_active_spawn(chat_id, character, msg.id)
         
@@ -133,8 +133,8 @@ async def send_character(chat_id: int, rarity: str):
         try:
             await app.send_message(
                 ROYAL_NOTIFY_USER_ID,
-                f"👑 **Royal Spawn!**\nID: `{character['id']}`\nName: {md_escape(character['name'])}",
-                parse_mode=ParseMode.MARKDOWN
+                f"👑 <b>Royal Spawn!</b>\nID: <code>{character['id']}</code>\nName: {html_escape(character['name'])}",
+                parse_mode=ParseMode.HTML
             )
         except Exception:
             pass

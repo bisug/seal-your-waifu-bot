@@ -1,7 +1,7 @@
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
 from Grabber import app
-from Grabber.core.utils import md_escape
+from Grabber.core.utils import html_escape
 from Grabber.core.user import get_user_data, remove_char_from_user
 from Grabber.core.game import update_user_balance
 
@@ -19,11 +19,11 @@ SELL_PRICES = {
 @app.on_message(filters.command("sell"))
 async def sell_handler(_, message: types.Message):
     if len(message.command) < 2:
-        rates = "\n".join([f"{rarity}: **{price:,} ⬪**" for rarity, price in SELL_PRICES.items()])
+        rates = "\n".join([f"{rarity}: <b>{price:,} ⬪</b>" for rarity, price in SELL_PRICES.items()])
         return await message.reply_text(
-            f"❌ **Usage:** `/sell <id>`\n\n"
-            f"💰 **Sell Rates:**\n{rates}",
-            parse_mode=ParseMode.MARKDOWN
+            f"❌ <b>Usage:</b> <code>/sell &lt;id&gt;</code>\n\n"
+            f"💰 <b>Sell Rates:</b>\n{rates}",
+            parse_mode=ParseMode.HTML
         )
 
     char_id = message.command[1]
@@ -31,12 +31,12 @@ async def sell_handler(_, message: types.Message):
     
     user = await get_user_data(user_id)
     if not user or not user.get('characters'):
-        return await message.reply_text("❌ **Your collection is empty.**", parse_mode=ParseMode.MARKDOWN)
+        return await message.reply_text("❌ <b>Your collection is empty.</b>", parse_mode=ParseMode.HTML)
 
                                    
     char = next((c for c in user['characters'] if str(c.get('id')) == char_id), None)
     if not char:
-        return await message.reply_text("❌ **You don't own this character.**", parse_mode=ParseMode.MARKDOWN)
+        return await message.reply_text("❌ <b>You don't own this character.</b>", parse_mode=ParseMode.HTML)
 
     rarity = char.get('rarity', '⚪ Common')
     price = SELL_PRICES.get(rarity, 50)
@@ -52,19 +52,19 @@ async def sell_handler(_, message: types.Message):
     new_shards = current_shards + price
     
     confirmation_text = (
-        f"💰 **Sell Confirmation**\n\n"
-        f"**Character:** {md_escape(char['name'])}\n"
-        f"**Rarity:** {rarity}\n"
-        f"**Value:** {price:,} ⬪\n\n"
-        f"**Current Balance:** {current_shards:,} ⬪\n"
-        f"**New Balance:** {new_shards:,} ⬪\n\n"
-        f"_Are you sure you want to sell this character?_"
+        f"💰 <b>Sell Confirmation</b>\n\n"
+        f"<b>Character:</b> {html_escape(char['name'])}\n"
+        f"<b>Rarity:</b> {html_escape(rarity)}\n"
+        f"<b>Value:</b> <code>{price:,}</code> ⬪\n\n"
+        f"<b>Current Balance:</b> <code>{current_shards:,}</code> ⬪\n"
+        f"<b>New Balance:</b> <code>{new_shards:,}</code> ⬪\n\n"
+        f"<i>Are you sure you want to sell this character?</i>"
     )
     
     await message.reply_text(
         confirmation_text,
         reply_markup=types.InlineKeyboardMarkup(buttons),
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.HTML
     )
 
 @app.on_callback_query(filters.regex(r"^sell_"))
@@ -83,7 +83,7 @@ async def sell_callback_handler(_, query: types.CallbackQuery):
         return await query.answer("❌ This is not your menu!", show_alert=True)
 
     if action == "a":
-        await query.message.edit_text("❌ **Selling cancelled.**", parse_mode=ParseMode.MARKDOWN)
+        await query.message.edit_text("❌ <b>Selling cancelled.</b>", parse_mode=ParseMode.HTML)
         return
         
     char_id = parts[0]
@@ -108,11 +108,11 @@ async def sell_callback_handler(_, query: types.CallbackQuery):
     if await remove_char_from_user(user_id, char_id):
         await update_user_balance(user_id, price)
         await query.message.edit_text(
-            f"✅ **Successfully Sold!**\n\n"
-            f"**Character:** {md_escape(char['name'])}\n"
-            f"**Price:** {price:,} ⬪\n\n"
-            f"**Your New Balance:** {new_shards:,} ⬪",
-            parse_mode=ParseMode.MARKDOWN
+            f"✅ <b>Successfully Sold!</b>\n\n"
+            f"<b>Character:</b> {html_escape(char['name'])}\n"
+            f"<b>Price:</b> <code>{price:,}</code> ⬪\n\n"
+            f"<b>Your New Balance:</b> <code>{new_shards:,}</code> ⬪",
+            parse_mode=ParseMode.HTML
         )
     else:
         await query.answer("❌ Failed to sell character.", show_alert=True)

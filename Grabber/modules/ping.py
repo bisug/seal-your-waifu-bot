@@ -1,3 +1,7 @@
+import time
+import os
+import psutil
+import platform
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
 from Grabber import app, StartTime, db
@@ -36,7 +40,7 @@ def status_emoji(percent):
 @app.on_message(filters.command("ping"))
 async def ping(_, message: types.Message) -> None:
     start_time = time.time()
-    sent_msg = await message.reply_text("**⚡ Pinging...**", parse_mode=ParseMode.MARKDOWN)
+    sent_msg = await message.reply_text("<b>⚡ Pinging...</b>", parse_mode=ParseMode.HTML)
     
                  
     end_time = time.time()
@@ -57,16 +61,16 @@ async def ping(_, message: types.Message) -> None:
     threads = proc.num_threads()
     
     caption = (
-        f"**🚀 System Status**\n\n"
-        f"**📡 Ping:** `{msg_ping:.2f} ms`\n"
-        f"**🗄️ DB Latency:** `{db_ping:.2f} ms`\n"
-        f"**⏳ Uptime:** `{uptime}`\n\n"
-        f"**🧠 RAM:** `{ram.percent}%` {status_emoji(ram.percent)}\n"
-        f"**🖥️ CPU:** `{cpu}%` {status_emoji(cpu)}\n\n"
-        f"**⚙️ Bot Memory:** `{proc_mem:.2f} MB`\n"
-        f"**🧵 Threads:** `{threads}`\n\n"
-        f"**🧰 OS:** `{platform.system()} {platform.release()}`\n"
-        f"**🐍 Python:** `{platform.python_version()}`"
+        f"<b>🚀 System Status</b>\n\n"
+        f"<b>📡 Ping:</b> <code>{msg_ping:.2f} ms</code>\n"
+        f"<b>🗄️ DB Latency:</b> <code>{db_ping:.2f} ms</code>\n"
+        f"<b>⏳ Uptime:</b> <code>{uptime}</code>\n\n"
+        f"<b>🧠 RAM:</b> <code>{ram.percent}%</code> {status_emoji(ram.percent)}\n"
+        f"<b>🖥️ CPU:</b> <code>{cpu}%</code> {status_emoji(cpu)}\n\n"
+        f"<b>⚙️ Bot Memory:</b> <code>{proc_mem:.2f} MB</code>\n"
+        f"<b>🧵 Threads:</b> <code>{threads}</code>\n\n"
+        f"<b>🧰 OS:</b> <code>{platform.system()} {platform.release()}</code>\n"
+        f"<b>🐍 Python:</b> <code>{platform.python_version()}</code>"
     )
     
-    await sent_msg.edit_text(caption, parse_mode=ParseMode.MARKDOWN)
+    await sent_msg.edit_text(caption, parse_mode=ParseMode.HTML)

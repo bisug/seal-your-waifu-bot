@@ -2,7 +2,7 @@ import math
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
 from Grabber import app, user_collection, PHOTO_URL, LOGGER
-from Grabber.core.utils import md_escape
+from Grabber.core.utils import html_escape
 from Grabber.core.user import get_user_data, get_active_pet
 from Grabber.core.progression import get_user_progress, get_progress_bar
 from Grabber.database import collection
@@ -20,12 +20,12 @@ async def profile_handler(_, message: types.Message):
     user_data = await get_user_data(user_id)
     
     if not user_data:
-        return await message.reply_text("🚨 **No profile found!** Try collecting a character first.", parse_mode=ParseMode.MARKDOWN)
+        return await message.reply_text("🚨 <b>No profile found!</b> Try collecting a character first.", parse_mode=ParseMode.HTML)
 
     await app.send_chat_action(message.chat.id, enums.ChatAction.TYPING)
     
                 
-    user_name = md_escape(message.from_user.first_name)
+    user_name = html_escape(message.from_user.first_name)
     user_balance = user_data.get('balance', 0)
     zenith = user_data.get('zenith', 0)
     
@@ -50,12 +50,12 @@ async def profile_handler(_, message: types.Message):
     
                 
     active_pet = await get_active_pet(user_id)
-    pet_text = md_escape(f"{active_pet['name']} (Lvl {active_pet.get('level', 1)})") if active_pet else "None"
+    pet_text = html_escape(f"{active_pet['name']} (Lvl {active_pet.get('level', 1)})") if active_pet else "None"
     
                         
     fav_id = user_data.get('favorites', [None])[0]
     fav_char = next((c for c in chars if str(c.get('id')) == str(fav_id)), None)
-    fav_name = md_escape(fav_char['name']) if fav_char else "None"
+    fav_name = html_escape(fav_char['name']) if fav_char else "None"
     
                   
     rarity_stats = {}
@@ -65,21 +65,21 @@ async def profile_handler(_, message: types.Message):
 
                            
     profile_text = (
-        f"**🌟 {user_name}'s Profile 🌟**\n"
+        f"<b>🌟 {user_name}'s Profile 🌟</b>\n"
         f"━━━━━━━━━━━━━━━━━━━━━\n"
-        f"🆔 **ID:** `{user_id}`\n"
-        f"🎫 **Battle Pass:** {pass_type}\n\n"
-        f"⭐ **Level:** `{level}`\n"
-        f"📊 **XP:** {xp_bar} `{xp_current}/{xp_needed}`\n"
+        f"🆔 <b>ID:</b> <code>{user_id}</code>\n"
+        f"🎫 <b>Battle Pass:</b> {pass_type}\n\n"
+        f"⭐ <b>Level:</b> <code>{level}</code>\n"
+        f"📊 <b>XP:</b> {xp_bar} <code>{xp_current}/{xp_needed}</code>\n"
         f"━━━━━━━━━━━━━━━━━━━━━\n"
-        f"**Shards:** {user_balance:,} ⬪\n"
-        f"**Zenith:** {zenith:,} ⧫\n"
+        f"<b>Shards:</b> {user_balance:,} ⬪\n"
+        f"<b>Zenith:</b> {zenith:,} ⧫\n"
         f"━━━━━━━━━━━━━━━━━━━━━\n"
-        f"🍱 **Collected:** {char_count}/{total_db_chars}\n"
-        f"❤️ **Favorite:** `{fav_name}`\n"
-        f"🐾 **Active Pet:** `{pet_text}`\n"
+        f"🍱 <b>Collected:</b> {char_count}/{total_db_chars}\n"
+        f"❤️ <b>Favorite:</b> <code>{fav_name}</code>\n"
+        f"🐾 <b>Active Pet:</b> <code>{pet_text}</code>\n"
         f"━━━━━━━━━━━━━━━━━━━━━\n"
-        f"**📚 Collection By Rarity**\n"
+        f"<b>📚 Collection By Rarity</b>\n"
     )
     
     for rarity, icon in RARITY_ICONS.items():
@@ -99,8 +99,8 @@ async def profile_handler(_, message: types.Message):
             photo=pic,
             caption=profile_text,
             reply_markup=types.InlineKeyboardMarkup(buttons),
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
     except Exception as e:
         LOGGER.error(f"Profile Photo Error: {e}")
-        await message.reply_text(profile_text, reply_markup=types.InlineKeyboardMarkup(buttons), parse_mode=ParseMode.MARKDOWN)
+        await message.reply_text(profile_text, reply_markup=types.InlineKeyboardMarkup(buttons), parse_mode=ParseMode.HTML)

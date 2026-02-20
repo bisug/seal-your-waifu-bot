@@ -1,7 +1,7 @@
 import html
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
-from Grabber.core.utils import md_escape
+from Grabber.core.utils import html_escape
 from Grabber import app
 from Grabber import user_collection, top_global_groups_collection, group_user_totals_collection
 from Grabber.core.progression import get_level_from_xp
@@ -38,16 +38,16 @@ async def get_top_users(metric: str, limit: int = 10):
 def build_leaderboard_text(metric: str, users: list):
                                              
     info = METRICS[metric]
-    text = f"🌐 **Global Leaderboard**\n"
-    text += f"📊 **Category:** {info['label']}\n"
+    text = f"🌐 <b>Global Leaderboard</b>\n"
+    text += f"📊 <b>Category:</b> {info['label']}\n"
     text += "━━━━━━━━━━━━━━━━━━━━━\n\n"
     
     if not users:
-        text += "_No data available yet._"
+        text += "<i>No data available yet.</i>"
         return text
 
     for i, user in enumerate(users, 1):
-        name = md_escape(user.get('first_name', 'User'))
+        name = html_escape(user.get('first_name', 'User'))
         value = user.get(info['field'], 0)
         
                                           
@@ -63,7 +63,7 @@ def build_leaderboard_text(metric: str, users: list):
         else:        
             display_value = f"{value:,} Chars"
             
-        text += f"{i}. {name} ➾ **{display_value}**\n"
+        text += f"{i}. {name} ➾ <b>{display_value}</b>\n"
     
     text += "\n━━━━━━━━━━━━━━━━━━━━━"
     return text
@@ -95,7 +95,7 @@ async def global_leaderboard_handler(_, message: types.Message):
     text = build_leaderboard_text("harem", users)
     keyboard = build_leaderboard_keyboard("harem", message.from_user.id)
     
-    await message.reply_text(text, reply_markup=keyboard, parse_mode=ParseMode.MARKDOWN)
+    await message.reply_text(text, reply_markup=keyboard, parse_mode=ParseMode.HTML)
 
 @app.on_callback_query(filters.regex(r"^top_switch:"))
 async def leaderboard_callback(_, query: types.CallbackQuery):
@@ -111,7 +111,7 @@ async def leaderboard_callback(_, query: types.CallbackQuery):
     keyboard = build_leaderboard_keyboard(metric, owner_id)
     
     try:
-        await query.message.edit_text(text, reply_markup=keyboard, parse_mode=ParseMode.MARKDOWN)
+        await query.message.edit_text(text, reply_markup=keyboard, parse_mode=ParseMode.HTML)
     except Exception:
         pass
     await query.answer()
@@ -142,7 +142,7 @@ async def chat_leaderboard_handler(_, message: types.Message):
     
     top_members = await cursor.to_list(length=10)
     
-    text = f"🏆 **Top Members in {message.chat.title}**\n\n"
+    text = f"🏆 <b>Top Members in {html_escape(message.chat.title)}</b>\n\n"
     for i, member in enumerate(top_members, 1):
         user_id = member['user_id']
         try:
@@ -151,6 +151,6 @@ async def chat_leaderboard_handler(_, message: types.Message):
         except Exception:
             name = f"User {user_id}"
         
-        text += f"{i}. {md_escape(name)} ➾ **{member['count']}**\n"
+        text += f"{i}. {html_escape(name)} ➾ <b>{member['count']}</b>\n"
         
-    await message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
+    await message.reply_text(text, parse_mode=ParseMode.HTML)

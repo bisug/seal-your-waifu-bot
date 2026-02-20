@@ -32,20 +32,20 @@ async def transfer_extol(amount, to_address):
 @app.on_message(filters.command("tr"))
 async def transfer_command(_, message: types.Message):
     if len(message.command) != 3:
-        await message.reply_text("❌ Usage: `/tr <amount> <user_id>`", parse_mode=ParseMode.MARKDOWN)
+        await message.reply_text("❌ Usage: <code>/tr &lt;amount&gt; &lt;user_id&gt;</code>", parse_mode=ParseMode.HTML)
         return
 
     try:
         amount = float(message.command[1])
         target_id = int(message.command[2])
     except ValueError:
-        await message.reply_text("❌ Invalid input format. Amount must be a number and User ID must be an integer.", parse_mode=ParseMode.MARKDOWN)
+        await message.reply_text("❌ Invalid input format. Amount must be a number and User ID must be an integer.", parse_mode=ParseMode.HTML)
         return
 
     receiver = await user_collection.find_one({"id": target_id})
 
     if not receiver or "extol_key" not in receiver:
-        await message.reply_text("❌ Target user is not registered or missing Extol key.", parse_mode=ParseMode.MARKDOWN)
+        await message.reply_text("❌ Target user is not registered or missing Extol key.", parse_mode=ParseMode.HTML)
         return
 
                                 
@@ -54,11 +54,11 @@ async def transfer_command(_, message: types.Message):
         receiver_address = recv_data.get("address")
     except Exception as e:
         LOGGER.error(f"Error fetching extol address: {e}")
-        await message.reply_text("❌ Connection to Extol API failed.", parse_mode=ParseMode.MARKDOWN)
+        await message.reply_text("❌ Connection to Extol API failed.", parse_mode=ParseMode.HTML)
         return
 
     if not receiver_address:
-        await message.reply_text("❌ Could not fetch receiver's Extol address.", parse_mode=ParseMode.MARKDOWN)
+        await message.reply_text("❌ Could not fetch receiver's Extol address.", parse_mode=ParseMode.HTML)
         return
 
                       
@@ -66,13 +66,13 @@ async def transfer_command(_, message: types.Message):
         result = await transfer_extol(amount, receiver_address)
     except Exception as e:
         LOGGER.error(f"Error transferring extol: {e}")
-        await message.reply_text("❌ Transfer failed due to API connection error.", parse_mode=ParseMode.MARKDOWN)
+        await message.reply_text("❌ Transfer failed due to API connection error.", parse_mode=ParseMode.HTML)
         return
 
     if result.get("ok"):
         await message.reply_text(
-            f"✅ Sent **{amount} EXT** to user `{target_id}` successfully.",
-            parse_mode=ParseMode.MARKDOWN
+            f"✅ Sent <b>{amount} EXT</b> to user <code>{target_id}</code> successfully.",
+            parse_mode=ParseMode.HTML
         )
     else:
-        await message.reply_text(f"❌ Transfer failed: {md_escape(result.get('error', 'Unknown error'))}", parse_mode=ParseMode.MARKDOWN)
+        await message.reply_text(f"❌ Transfer failed: {html_escape(result.get('error', 'Unknown error'))}", parse_mode=ParseMode.HTML)

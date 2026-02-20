@@ -16,7 +16,7 @@ async def change_time(_, message: types.Message) -> None:
             return
 
         if len(message.command) != 2:
-            await message.reply_text('Incorrect format. Please use: `/changetime <number>`', parse_mode=ParseMode.MARKDOWN)
+            await message.reply_text('Incorrect format. Please use: <code>/changetime &lt;number&gt;</code>', parse_mode=ParseMode.HTML)
             return
 
         try:

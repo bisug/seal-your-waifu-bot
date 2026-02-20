@@ -2,7 +2,7 @@ import re
 from html import escape
 from pyrogram import filters, types, enums, errors
 from pyrogram.enums import ParseMode
-from Grabber.core.utils import md_escape as md_escape_v2
+from Grabber.core.utils import html_escape as html_escape_v2
 from Grabber import app, collection, user_collection, LOGGER
 
            
@@ -132,10 +132,10 @@ def create_inline_result(character: dict, neighbors: list, offset: int, context:
     img_url = character["img_url"]
 
     caption = (
-        f"🌸 **{md_escape_v2(name)}**\n"
-        f"🎬 **Anime:** {md_escape_v2(anime)}\n"
-        f"🔮 **Rarity:** {md_escape_v2(rarity)}\n"
-        f"🆔 **ID:** `{char_id}`"
+        f"🌸 <b>{html_escape_v2(name)}</b>\n"
+        f"🎬 <b>Anime:</b> {html_escape_v2(anime)}\n"
+        f"🔮 <b>Rarity:</b> {html_escape_v2(rarity)}\n"
+        f"🆔 <b>ID:</b> <code>{char_id}</code>"
     )
     
                                                       
@@ -149,7 +149,7 @@ def create_inline_result(character: dict, neighbors: list, offset: int, context:
         description=f"🎬 {anime}\n✨ {rarity} | 🆔 {char_id}",
         caption=caption,
         reply_markup=reply_markup,
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.HTML
     )
 
 
@@ -170,10 +170,10 @@ async def gallery_view_callback(_, query: types.CallbackQuery):
         img_url = character["img_url"]
 
         caption = (
-            f"🌸 **{md_escape_v2(character['name'])}**\n"
-            f"🎬 **Anime:** {md_escape_v2(character['anime'])}\n"
-            f"🔮 **Rarity:** {md_escape_v2(character['rarity'])}\n"
-            f"🆔 **ID:** `{char_id}`"
+            f"🌸 <b>{html_escape_v2(character['name'])}</b>\n"
+            f"🎬 <b>Anime:</b> {html_escape_v2(character['anime'])}\n"
+            f"🔮 <b>Rarity:</b> {html_escape_v2(character['rarity'])}\n"
+            f"🆔 <b>ID:</b> <code>{char_id}</code>"
         )
         
                                                                       
@@ -184,7 +184,7 @@ async def gallery_view_callback(_, query: types.CallbackQuery):
         ]
         
         await query.message.edit_media(
-            media=types.InputMediaPhoto(media=img_url, caption=caption, parse_mode=ParseMode.MARKDOWN),
+            media=types.InputMediaPhoto(media=img_url, caption=caption, parse_mode=ParseMode.HTML),
             reply_markup=types.InlineKeyboardMarkup(buttons)
         )
         await query.answer()

@@ -19,13 +19,13 @@ async def referrals_cmd(_, message: types.Message):
     ref_link = f"https://t.me/{BOT_USERNAME}?start=ref_{user_id}"
     
     text = (
-        f"🤝 **Your Referral Stats**\n\n"
-        f"👥 **Invited Users:** `{referrals_count}`\n"
-        f"**Shards Earned:** {earned_coins} ⬪\n\n"
-        f"🔗 **Your Link:**\n`{ref_link}`\n\n"
-        f"**Rewards:**\n"
-        f"🔸 You get: **500 ⬪** + **50 XP**\n"
-        f"🔹 They get: **1,500 ⬪** + **Level 10 Pet!** 🦊"
+        f"🤝 <b>Your Referral Stats</b>\n\n"
+        f"👥 <b>Invited Users:</b> <code>{referrals_count}</code>\n"
+        f"<b>Shards Earned:</b> <code>{earned_coins}</code> ⬪\n\n"
+        f"🔗 <b>Your Link:</b>\n<code>{ref_link}</code>\n\n"
+        f"<b>Rewards:</b>\n"
+        f"🔸 You get: <b>500 ⬪</b> + <b>50 XP</b>\n"
+        f"🔹 They get: <b>1,500 ⬪</b> + <b>Level 10 Pet!</b> 🦊"
     )
     
-    await message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
+    await message.reply_text(text, parse_mode=ParseMode.HTML)

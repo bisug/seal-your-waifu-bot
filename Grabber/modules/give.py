@@ -1,6 +1,6 @@
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
-from Grabber.core.utils import md_escape
+from Grabber.core.utils import html_escape
 from Grabber import app, user_collection, OWNER_ID, sudo_users, LOGGER
 from Grabber.modules.quests import update_quest_progress
 from Grabber.modules.achievements import check_achievements
@@ -26,13 +26,13 @@ async def give_balance(_, message: types.Message):
         if amount <= 0:
             raise ValueError("Amount must be positive")
     except (IndexError, ValueError):
-        await message.reply_text("⚠️ Usage: `/givebalance <amount>` (Reply to user)", parse_mode=ParseMode.MARKDOWN)
+        await message.reply_text("⚠️ Usage: <code>/givebalance &lt;amount&gt;</code> (Reply to user)", parse_mode=ParseMode.HTML)
         return
 
                                        
     if sender_id in AUTHORIZED_ADMINS:
         await user_collection.update_one({'id': recipient_id}, {'$inc': {'balance': amount}}, upsert=True)
-        await message.reply_text(f"✅ {amount} ⬪ given to {md_escape(recipient.first_name)}!")
+        await message.reply_text(f"✅ {amount} ⬪ given to {html_escape(recipient.first_name)}!")
         LOGGER.info(f"ADMIN {sender_id} gave {amount} to {recipient_id}")
         return
 
@@ -48,7 +48,7 @@ async def give_balance(_, message: types.Message):
     await user_collection.update_one({'id': sender_id}, {'$inc': {'balance': -amount}})
     await user_collection.update_one({'id': recipient_id}, {'$inc': {'balance': amount}}, upsert=True)
 
-    await message.reply_text(f"✅ You gave {amount} ⬪ to {md_escape(recipient.first_name)}!")
+    await message.reply_text(f"✅ You gave {amount} ⬪ to {html_escape(recipient.first_name)}!")
     LOGGER.info(f"User {sender_id} gave {amount} to {recipient_id}")
     
                   
@@ -80,9 +80,9 @@ async def take_balance(_, message: types.Message):
         if amount <= 0:
             raise ValueError("Amount must be positive")
     except (IndexError, ValueError):
-        await message.reply_text("⚠️ Usage: `/takebalance <amount>` (Reply to user)", parse_mode=ParseMode.MARKDOWN)
+        await message.reply_text("⚠️ Usage: <code>/takebalance &lt;amount&gt;</code> (Reply to user)", parse_mode=ParseMode.HTML)
         return
 
     await user_collection.update_one({'id': recipient_id}, {'$inc': {'balance': -amount}})
-    await message.reply_text(f"✅ {amount} ⬪ taken from {md_escape(recipient.first_name)}!")
+    await message.reply_text(f"✅ {amount} ⬪ taken from {html_escape(recipient.first_name)}!")
     LOGGER.info(f"ADMIN {sender_id} took {amount} from {recipient_id}")

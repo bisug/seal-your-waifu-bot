@@ -1,4 +1,5 @@
 import io
+import html
 import os
 import textwrap
 import traceback
@@ -33,7 +34,7 @@ async def send_result(result, message: types.Message):
             out_file.name = "output.txt"
             await message.reply_document(document=out_file)
     else:
-        await message.reply_text(f"```python\n{result}```", parse_mode=ParseMode.MARKDOWN)
+        await message.reply_text(f"<pre language=\"python\">{html.escape(result)}</pre>", parse_mode=ParseMode.HTML)
 
 def cleanup_code(code):
     if code.startswith("```") and code.endswith("```"):
@@ -90,4 +91,4 @@ async def clear_locals(_, message: types.Message):
     global namespaces
     if message.chat.id in namespaces:
         del namespaces[message.chat.id]
-    await message.reply_text("Cleared locales for this chat.")
+    await message.reply_text("Cleared locales for this chat.", parse_mode=ParseMode.HTML)

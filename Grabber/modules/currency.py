@@ -1,6 +1,6 @@
 from pyrogram import filters, enums, types
 from pyrogram.enums import ParseMode
-from Grabber.core.utils import md_escape
+from Grabber.core.utils import html_escape
 from Grabber import app
 from Grabber.database import user_collection
 
@@ -11,12 +11,12 @@ async def exchange_command(_, message: types.Message):
     
     if len(message.command) < 2:
         return await message.reply_text(
-            "💱 **Shards → Zenith Exchange**\n\n"
-            "**Usage:** `/exchange <amount>`\n"
-            "**Example:** `/exchange 50000`\n\n"
-            "**Rate:** 10,000 ⬪ = 1 ⧫\n"
-            "**Minimum:** 10,000 Shards",
-            parse_mode=ParseMode.MARKDOWN
+            "💱 <b>Shards → Zenith Exchange</b>\n\n"
+            "<b>Usage:</b> <code>/exchange &lt;amount&gt;</code>\n"
+            "<b>Example:</b> <code>/exchange 50000</code>\n\n"
+            "<b>Rate:</b> 10,000 ⬪ = 1 ⧫\n"
+            "<b>Minimum:</b> 10,000 Shards",
+            parse_mode=ParseMode.HTML
         )
     
     try:
@@ -49,15 +49,15 @@ async def exchange_command(_, message: types.Message):
     
                                        
     confirmation_text = (
-        f"💱 **Exchange Confirmation**\n\n"
-        f"**Converting:** {shards_amount:,} ⬪ → {zenith_amount:,} ⧫\n\n"
-        f"**Current Balance:**\n"
-        f"Shards: {current_shards:,} ⬪\n"
-        f"Zenith: {current_zenith:,} ⧫\n\n"
-        f"**New Balance:**\n"
-        f"Shards: {new_shards:,} ⬪\n"
-        f"Zenith: {new_zenith:,} ⧫\n\n"
-        f"_Proceed with exchange?_"
+        f"💱 <b>Exchange Confirmation</b>\n\n"
+        f"<b>Converting:</b> <code>{shards_amount:,}</code> ⬪ → <code>{zenith_amount:,}</code> ⧫\n\n"
+        f"<b>Current Balance:</b>\n"
+        f"Shards: <code>{current_shards:,}</code> ⬪\n"
+        f"Zenith: <code>{current_zenith:,}</code> ⧫\n\n"
+        f"<b>New Balance:</b>\n"
+        f"Shards: <code>{new_shards:,}</code> ⬪\n"
+        f"Zenith: <code>{new_zenith:,}</code> ⧫\n\n"
+        f"<i>Proceed with exchange?</i>"
     )
     
     buttons = [
@@ -70,7 +70,7 @@ async def exchange_command(_, message: types.Message):
     await message.reply_text(
         confirmation_text,
         reply_markup=types.InlineKeyboardMarkup(buttons),
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.HTML
     )
 
                        
@@ -107,12 +107,12 @@ async def exchange_confirm_callback(_, query: types.CallbackQuery):
     new_zenith = current_zenith + zenith_amount
     
     await query.message.edit_text(
-        f"✅ **Exchange Successful!**\n\n"
-        f"Converted: {shards_amount:,} ⬪ → {zenith_amount:,} ⧫\n\n"
-        f"**Your New Balance:**\n"
-        f"Shards: {new_shards:,} ⬪\n"
-        f"Zenith: {new_zenith:,} ⧫",
-        parse_mode=ParseMode.MARKDOWN
+        f"✅ <b>Exchange Successful!</b>\n\n"
+        f"Converted: <code>{shards_amount:,}</code> ⬪ → <code>{zenith_amount:,}</code> ⧫\n\n"
+        f"<b>Your New Balance:</b>\n"
+        f"Shards: <code>{new_shards:,}</code> ⬪\n"
+        f"Zenith: <code>{new_zenith:,}</code> ⧫",
+        parse_mode=ParseMode.HTML
     )
     await query.answer("Exchange completed!")
 
@@ -120,8 +120,8 @@ async def exchange_confirm_callback(_, query: types.CallbackQuery):
 @app.on_callback_query(filters.regex(r"^exchange_cancel$"))
 async def exchange_cancel_callback(_, query: types.CallbackQuery):
     await query.message.edit_text(
-        "❌ **Exchange Cancelled**\n\n"
+        "❌ <b>Exchange Cancelled</b>\n\n"
         "Your balance remains unchanged.",
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.HTML
     )
     await query.answer("Cancelled")

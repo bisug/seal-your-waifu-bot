@@ -1,6 +1,6 @@
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
-from Grabber.core.utils import md_escape
+from Grabber.core.utils import html_escape
 from Grabber import app, user_collection, OWNER_ID, sudo_users
 
 AUTHORIZED_CONSOLES = set(sudo_users + [OWNER_ID])
@@ -30,15 +30,15 @@ async def get_target_user(message: types.Message):
 @app.on_message(filters.command("givecoin"))
 async def give_coin_handler(_, message: types.Message):
     if message.from_user.id not in AUTHORIZED_CONSOLES:
-        return await message.reply_text("❌ **Unauthorized. Only for Admins.**", parse_mode=ParseMode.MARKDOWN)
+        return await message.reply_text("❌ <b>Unauthorized. Only for Admins.</b>", parse_mode=ParseMode.HTML)
 
     user_id, amount, name = await get_target_user(message)
     if not user_id or amount <= 0:
         return await message.reply_text(
-            "❌ **Invalid Format!**\n\n"
-            "1️⃣ **Reply:** `/givecoin <amount>`\n"
-            "2️⃣ **Direct:** `/givecoin <user_id> <amount>`",
-            parse_mode=ParseMode.MARKDOWN
+            "❌ <b>Invalid Format!</b>\n\n"
+            "1️⃣ <b>Reply:</b> <code>/givecoin &lt;amount&gt;</code>\n"
+            "2️⃣ <b>Direct:</b> <code>/givecoin &lt;user_id&gt; &lt;amount&gt;</code>",
+            parse_mode=ParseMode.HTML
         )
 
     buttons = [[
@@ -47,27 +47,27 @@ async def give_coin_handler(_, message: types.Message):
     ]]
 
     await message.reply_text(
-        f"**🏦 Admin Transfer**\n\n"
-        f"**Action:** GIVING Shards\n"
-        f"**Target:** {name}\n"
-        f"**Amount:** {amount:,} ⬪\n\n"
-        "_Confirm this action?_",
+        f"<b>🏦 Admin Transfer</b>\n\n"
+        f"<b>Action:</b> GIVING Shards\n"
+        f"<b>Target:</b> {html_escape(name)}\n"
+        f"<b>Amount:</b> {amount:,} ⬪\n\n"
+        f"<i>Confirm this action?</i>",
         reply_markup=types.InlineKeyboardMarkup(buttons),
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.HTML
     )
 
 @app.on_message(filters.command("takecoin"))
 async def take_coin_handler(_, message: types.Message):
     if message.from_user.id not in AUTHORIZED_CONSOLES:
-        return await message.reply_text("❌ **Unauthorized. Only for Admins.**", parse_mode=ParseMode.MARKDOWN)
+        return await message.reply_text("❌ <b>Unauthorized. Only for Admins.</b>", parse_mode=ParseMode.HTML)
 
     user_id, amount, name = await get_target_user(message)
     if not user_id or amount <= 0:
         return await message.reply_text(
-            "❌ **Invalid Format!**\n\n"
-            "1️⃣ **Reply:** `/takecoin <amount>`\n"
-            "2️⃣ **Direct:** `/takecoin <user_id> <amount>`",
-            parse_mode=ParseMode.MARKDOWN
+            "❌ <b>Invalid Format!</b>\n\n"
+            "1️⃣ <b>Reply:</b> <code>/takecoin &lt;amount&gt;</code>\n"
+            "2️⃣ <b>Direct:</b> <code>/takecoin &lt;user_id&gt; &lt;amount&gt;</code>",
+            parse_mode=ParseMode.HTML
         )
 
     buttons = [[
@@ -76,13 +76,13 @@ async def take_coin_handler(_, message: types.Message):
     ]]
 
     await message.reply_text(
-        f"**🏦 Admin Deduction**\n\n"
-        f"**Action:** TAKING Shards\n"
-        f"**Target:** {name}\n"
-        f"**Amount:** {amount:,} ⬪\n\n"
-        "_Confirm this action?_",
+        f"<b>🏦 Admin Deduction</b>\n\n"
+        f"<b>Action:</b> TAKING Shards\n"
+        f"<b>Target:</b> {html_escape(name)}\n"
+        f"<b>Amount:</b> {amount:,} ⬪\n\n"
+        f"<i>Confirm this action?</i>",
         reply_markup=types.InlineKeyboardMarkup(buttons),
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.HTML
     )
 
 @app.on_callback_query(filters.regex(r"^admin_coin_"))
@@ -94,7 +94,7 @@ async def admin_coin_callback(_, query: types.CallbackQuery):
     action = data[2]                         
 
     if action == "cancel":
-        await query.message.edit_text("❌ **Admin action cancelled.**", parse_mode=ParseMode.MARKDOWN)
+        await query.message.edit_text("❌ <b>Admin action cancelled.</b>", parse_mode=ParseMode.HTML)
         return
 
     target_id = int(data[3])
@@ -102,10 +102,10 @@ async def admin_coin_callback(_, query: types.CallbackQuery):
     
     if action == "give":
         await user_collection.update_one({"id": target_id}, {"$inc": {"balance": amount}}, upsert=True)
-        text = f"✅ **Successfully added {amount:,} ⬪!**"
+        text = f"✅ <b>Successfully added {amount:,} ⬪!</b>"
     else:       
         await user_collection.update_one({"id": target_id}, {"$inc": {"balance": -amount}}, upsert=True)
-        text = f"✅ **Successfully removed {amount:,} ⬪!**"
+        text = f"✅ <b>Successfully removed {amount:,} ⬪!</b>"
 
                      
     user = await user_collection.find_one({"id": target_id}, {"balance": 1, "first_name": 1})
@@ -114,7 +114,7 @@ async def admin_coin_callback(_, query: types.CallbackQuery):
 
     await query.message.edit_text(
         f"{text}\n\n"
-        f"**User:** {name}\n"
-        f"**Final Balance:** {bal:,} ⬪",
-        parse_mode=ParseMode.MARKDOWN
+        f"<b>User:</b> {html_escape(name)}\n"
+        f"<b>Final Balance:</b> {bal:,} ⬪",
+        parse_mode=ParseMode.HTML
     )
