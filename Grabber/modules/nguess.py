@@ -197,7 +197,7 @@ async def nguess_check_handler(_, message: types.Message):
         target_name = md_escape(char['name'])
         
         success_msg = (
-            f"✅ {mention} identified **{target_name}**\!\n"
+            fr"✅ {mention} identified **{target_name}**\!\n"
             f"💰 **Bounty:** +{reward} Shards\n"
             f"🔥 **Progress:** {display_progress}/100{milestone_text}"
         )
