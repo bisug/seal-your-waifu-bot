@@ -415,4 +415,4 @@ async def crack_open_egg(message, user_id, egg, index):
             parse_mode=ParseMode.MARKDOWN_V2
         )
     else:
-        await msg.edit_text("⚠️ The egg was empty (Database error: No chars for this rarity).", parse_mode=enums.ParseMode.MARKDOWN)
+        await msg.edit_text("⚠️ The egg was empty (Database error: No chars for this rarity).", parse_mode=ParseMode.MARKDOWN_V2)
