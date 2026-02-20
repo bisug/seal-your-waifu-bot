@@ -13,10 +13,10 @@ async def bet_cmd(_, message: types.Message):
     
     if len(message.command) < 3:
         await message.reply_text(
-            f"🚨 **Invalid Usage!**\n"
-            f"🎲 Format: `/bet <amount> <h/t>`\n"
-            f"🎭 Example: `/bet 500 h`",
-            parse_mode=ParseMode.MARKDOWN
+            f"🚨 <b>Invalid Usage!</b>\n"
+            f"🎲 Format: <code>/bet &lt;amount&gt; &lt;h/t&gt;</code>\n"
+            f"🎭 Example: <code>/bet 500 h</code>",
+            parse_mode=ParseMode.HTML
         )
         return
 
@@ -28,11 +28,11 @@ async def bet_cmd(_, message: types.Message):
         return
 
     if choice not in ['h', 't']:
-        await message.reply_text("❌ Invalid choice! Use `h` for Heads or `t` for Tails.", parse_mode=ParseMode.MARKDOWN)
+        await message.reply_text("❌ Invalid choice! Use <code>h</code> for Heads or <code>t</code> for Tails.", parse_mode=ParseMode.HTML)
         return
 
     if amount <= 0:
-        await message.reply_text("❌ Amount must be a **positive number**.", parse_mode=ParseMode.MARKDOWN)
+        await message.reply_text("❌ Amount must be a <b>positive number</b>.", parse_mode=ParseMode.HTML)
         return
 
                         
@@ -40,9 +40,9 @@ async def bet_cmd(_, message: types.Message):
 
     if not user_data:
         await message.reply_text(
-            f"💰 **You don't have an account yet!**\n"
-            f"🔥 Use `/bonus` to claim free Shards & start betting!",
-            parse_mode=ParseMode.MARKDOWN
+            f"💰 <b>You don't have an account yet!</b>\n"
+            f"🔥 Use <code>/bonus</code> to claim free Shards &amp; start betting!",
+            parse_mode=ParseMode.HTML
         )
         return
 
@@ -50,23 +50,23 @@ async def bet_cmd(_, message: types.Message):
 
     if balance_amount == 0:
         await message.reply_text(
-            f"💰 **You're out of Shards!**\n"
-            f"🔥 Use `/bonus` to claim free Shards & try again!",
-            parse_mode=ParseMode.MARKDOWN
+            f"💰 <b>You're out of Shards!</b>\n"
+            f"🔥 Use <code>/bonus</code> to claim free Shards &amp; try again!",
+            parse_mode=ParseMode.HTML
         )
         return
 
     if balance_amount < amount:
         await message.reply_text(
-            f"❌ **Not Enough Shards!**\n"
-            f"🏦 Your Balance: **{balance_amount:,} ⬪**\n\n"
-            f"🔥 Use `/bonus` to get free Shards!",
-            parse_mode=ParseMode.MARKDOWN
+            f"❌ <b>Not Enough Shards!</b>\n"
+            f"🏦 Your Balance: <b>{balance_amount:,} ⬪</b>\n\n"
+            f"🔥 Use <code>/bonus</code> to get free Shards!",
+            parse_mode=ParseMode.HTML
         )
         return
 
     user_choice_name = "Heads" if choice == "h" else "Tails"
-    await message.reply_text(f"🎰 **Placing Bet:** {amount:,} ⬪\n🪙 **You Chose:** {user_choice_name}", parse_mode=ParseMode.MARKDOWN)  
+    await message.reply_text(f"🎰 <b>Placing Bet:</b> {amount:,} ⬪\n🪙 <b>You Chose:</b> {user_choice_name}", parse_mode=ParseMode.HTML)  
 
     await asyncio.sleep(2)                  
 
@@ -78,22 +78,22 @@ async def bet_cmd(_, message: types.Message):
         winnings = amount * win_multiplier
         new_balance = balance_amount + winnings  
         result_text = (
-            f"🎉 **YOU WIN!** 🎉\n"
-            f"🪙 The coin landed on **{user_choice_name}**!\n"
-            f"💰 **You Earned:** {winnings:,} ⬪\n\n"
-            f"🏦 **New Balance:** {new_balance:,} ⬪"
+            f"🎉 <b>YOU WIN!</b> 🎉\n"
+            f"🪙 The coin landed on <b>{user_choice_name}</b>!\n"
+            f"💰 <b>You Earned:</b> {winnings:,} ⬪\n\n"
+            f"🏦 <b>New Balance:</b> {new_balance:,} ⬪"
         )
     else:
         new_balance = balance_amount - amount  
         comp_choice = "Heads" if user_choice_name == "Tails" else "Tails"
         result_text = (
-            f"💔 **YOU LOST!**\n"
-            f"🪙 The coin landed on **{comp_choice}**.\n"
-            f"💸 **You Lost:** {amount:,} ⬪\n\n"
-            f"🏦 **New Balance:** {new_balance:,} ⬪"
+            f"💔 <b>YOU LOST!</b>\n"
+            f"🪙 The coin landed on <b>{comp_choice}</b>.\n"
+            f"💸 <b>You Lost:</b> {amount:,} ⬪\n\n"
+            f"🏦 <b>New Balance:</b> {new_balance:,} ⬪"
         )
 
                          
     await user_collection.update_one({'id': user_id}, {'$set': {'balance': new_balance}})
 
-    await message.reply_text(result_text, parse_mode=ParseMode.MARKDOWN)
+    await message.reply_text(result_text, parse_mode=ParseMode.HTML)

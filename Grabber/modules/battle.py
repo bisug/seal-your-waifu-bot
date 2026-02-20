@@ -3,7 +3,7 @@ import random
 import time
 from pyrogram import filters, types, enums, errors
 from pyrogram.enums import ParseMode
-from Grabber.core.utils import md_escape
+from Grabber.core.utils import html_escape
 from Grabber import app
 from Grabber import LOGGER
 from Grabber.core.game import get_user_balance, update_user_balance, check_and_deduct
@@ -69,7 +69,7 @@ def simulate_battle(p1_stats, p2_stats, p1_name, p2_name):
     turn = 1
     max_turns = 15
     
-    log.append(f"⏱️ **Initiative:** {a_icon} **{a_name}** ({attacker['spd']} SPD) goes first!")
+    log.append(f"⏱️ <b>Initiative:</b> {a_icon} <b>{a_name}</b> ({attacker['spd']} SPD) goes first!")
     
     while attacker["hp"] > 0 and defender["hp"] > 0 and turn <= max_turns:
                              
@@ -86,11 +86,11 @@ def simulate_battle(p1_stats, p2_stats, p1_name, p2_name):
         
         defender["hp"] -= damage
         
-        crit_text = " 💥 **CRIT!**" if is_crit else ""
+        crit_text = " 💥 <b>CRIT!</b>" if is_crit else ""
         
                               
         hp_bar = "▓" * int((max(0, defender['hp']) / defender['max_hp']) * 5)
-        log.append(f"{a_icon} **{a_name}** hits for `{damage}`{crit_text} (HP: {max(0, defender['hp'])})")
+        log.append(f"{a_icon} <b>{a_name}</b> hits for <code>{damage}</code>{crit_text} (HP: {max(0, defender['hp'])})")
         
         if defender["hp"] <= 0:
             break
@@ -105,7 +105,7 @@ def simulate_battle(p1_stats, p2_stats, p1_name, p2_name):
     winner = a_idx if attacker["hp"] > 0 else d_idx
     
     if turn > max_turns:
-        log.append("\n⚠️ **Time Limit Reached!** Draw decided by HP.")
+        log.append(f"\n⚠️ <b>Time Limit Reached!</b> Draw decided by HP.")
         if p1_stats["hp"] > p2_stats["hp"]:
             winner = 1
         else:
@@ -118,13 +118,13 @@ def simulate_battle(p1_stats, p2_stats, p1_name, p2_name):
 @app.on_message(filters.command("battle") & filters.group)
 async def battle_challenge_handler(_, message: types.Message):
     if not message.reply_to_message:
-        return await message.reply_text("⚠️ Challenge someone by replying to their message!", parse_mode=ParseMode.MARKDOWN)
+        return await message.reply_text("⚠️ Challenge someone by replying to their message!", parse_mode=ParseMode.HTML)
 
     attacker = message.from_user
     defender = message.reply_to_message.from_user
 
     if attacker.id == defender.id:
-        return await message.reply_text("⚠️ You can't fight yourself!", parse_mode=ParseMode.MARKDOWN)
+        return await message.reply_text("⚠️ You can't fight yourself!", parse_mode=ParseMode.HTML)
 
                               
     pair_key = tuple(sorted((attacker.id, defender.id)))
@@ -133,20 +133,20 @@ async def battle_challenge_handler(_, message: types.Message):
         last_battle = battle_cooldowns[pair_key]
         if now - last_battle < 300:            
             remain = int(300 - (now - last_battle))
-            return await message.reply_text(f"⏳ **Cooldown!** Wait {remain}s before battling this user again.", parse_mode=ParseMode.MARKDOWN)
+            return await message.reply_text(f"⏳ <b>Cooldown!</b> Wait {remain}s before battling this user again.", parse_mode=ParseMode.HTML)
 
     try:
         bet = int(message.command[1])
         if bet <= 0: raise ValueError
     except (IndexError, ValueError):
-        return await message.reply_text("❌ Usage: `/battle <bet_amount>`", parse_mode=ParseMode.MARKDOWN)
+        return await message.reply_text("❌ Usage: <code>/battle &lt;bet_amount&gt;</code>", parse_mode=ParseMode.HTML)
 
                         
     if await get_user_balance(attacker.id) < bet:
-        return await message.reply_text("❌ You don't have enough Shards!", parse_mode=ParseMode.MARKDOWN)
+        return await message.reply_text("❌ You don't have enough Shards!", parse_mode=ParseMode.HTML)
     
     if await get_user_balance(defender.id) < bet:
-        return await message.reply_text(f"❌ {defender.first_name} doesn't have enough Shards!", parse_mode=ParseMode.MARKDOWN)
+        return await message.reply_text(f"❌ {defender.first_name} doesn't have enough Shards!", parse_mode=ParseMode.HTML)
 
                      
     battle_id = f"bt_{attacker.id}_{defender.id}"
@@ -157,9 +157,9 @@ async def battle_challenge_handler(_, message: types.Message):
     ]])
 
     await message.reply_to_message.reply_text(
-        f"⚔ [{attacker.first_name}](tg://user?id={attacker.id}) challenged you to a battle for {bet} ⬪!",
+        f"⚔ <a href=\"tg://user?id={attacker.id}\">{html_escape(attacker.first_name)}</a> challenged you to a battle for {bet} ⬪!",
         reply_markup=markup,
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.HTML
     )
 
 @app.on_callback_query(filters.regex(r"^abt_acc:"))
@@ -180,7 +180,7 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
     if not await check_and_deduct(attacker_id, bet):
         await delete_session(battle_id)
         try:
-            await query.message.edit_text("❌ Attacker no longer has enough balance.", parse_mode=ParseMode.MARKDOWN)
+            await query.message.edit_text("❌ Attacker no longer has enough balance.", parse_mode=ParseMode.HTML)
         except errors.MessageNotModified:
             pass
         return
@@ -189,7 +189,7 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
         await update_user_balance(attacker_id, bet)
         await delete_session(battle_id)
         try:
-            await query.message.edit_text("❌ You no longer have enough balance.", parse_mode=ParseMode.MARKDOWN)
+            await query.message.edit_text("❌ You no longer have enough balance.", parse_mode=ParseMode.HTML)
         except errors.MessageNotModified:
             pass
         return
@@ -213,16 +213,16 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
         
                
         text = (
-            f"⚔️ **Battle Started!**\n"
-            f"🔴 [{md_escape(a_user.first_name)}](tg://user?id={a_user.id}) \\- **{md_escape(a_stats['name'])}** (Lvl {a_stats['level']})\n"
+            f"⚔️ <b>Battle Started!</b>\n"
+            f"🔴 <a href=\"tg://user?id={a_user.id}\">{html_escape(a_user.first_name)}</a> - <b>{html_escape(a_stats['name'])}</b> (Lvl {a_stats['level']})\n"
             f"   ❤️ {a_stats['hp']} | ⚔️ {a_stats['atk']} | ⚡ {a_stats['spd']}\n"
             f" 🆚 \n"
-            f"🔵 [{md_escape(d_user.first_name)}](tg://user?id={d_user.id}) \\- **{md_escape(d_stats['name'])}** (Lvl {d_stats['level']})\n"
+            f"🔵 <a href=\"tg://user?id={d_user.id}\">{html_escape(d_user.first_name)}</a> - <b>{html_escape(d_stats['name'])}</b> (Lvl {d_stats['level']})\n"
             f"   ❤️ {d_stats['hp']} | ⚔️ {d_stats['atk']} | ⚡ {d_stats['spd']}\n\n"
-            f"🔥 **Fighting...**"
+            f"🔥 <b>Fighting...</b>"
         )
         try:
-            await query.message.edit_text(text, parse_mode=ParseMode.MARKDOWN)
+            await query.message.edit_text(text, parse_mode=ParseMode.HTML)
         except errors.MessageNotModified:
             pass
         
@@ -251,18 +251,18 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
         
                        
         result_text = (
-            f"📜 **Battle Log**:\n{battle_log}\n\n"
-            f"🏆 **Winner:** [{md_escape(winner_user.first_name)}](tg://user?id={winner_user.id})\n"
-            f"**Winnings:** {winnings} ⬪\n"
-            f"**Tax:** {tax} ⬪\n"
-            f"📈 **+30 XP** for {md_escape(winner_user.first_name)}"
+            f"📜 <b>Battle Log</b>:\n{battle_log}\n\n"
+            f"🏆 <b>Winner:</b> <a href=\"tg://user?id={winner_user.id}\">{html_escape(winner_user.first_name)}</a>\n"
+            f"<b>Winnings:</b> <code>{winnings}</code> ⬪\n"
+            f"<b>Tax:</b> <code>{tax}</code> ⬪\n"
+            f"📈 <b>+30 XP</b> for {html_escape(winner_user.first_name)}"
         )
         
-        await query.message.edit_text(result_text, parse_mode=ParseMode.MARKDOWN)
+        await query.message.edit_text(result_text, parse_mode=ParseMode.HTML)
 
     except Exception as e:
         LOGGER.error(f"Battle Error: {e}")
         try:
-            await query.message.reply_text("❌ A technical error occurred during battle.", parse_mode=ParseMode.MARKDOWN)
+            await query.message.reply_text("❌ A technical error occurred during battle.", parse_mode=ParseMode.HTML)
         except:
             pass

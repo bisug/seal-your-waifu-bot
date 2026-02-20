@@ -2,7 +2,7 @@ import random
 from datetime import datetime, timedelta, timezone
 from pyrogram import filters, enums, types
 from pyrogram.enums import ParseMode
-from Grabber.core.utils import md_escape
+from Grabber.core.utils import html_escape
 from Grabber import app
 from Grabber import SUPPORT_GROUP_ID, LOGGER
 from Grabber.core.user import get_user_data, add_char_to_user, update_user
@@ -35,7 +35,7 @@ async def get_daily_waifu():
 @app.on_message(filters.command("daily") & filters.group)
 async def daily_command_handler(_, message: types.Message):
     if message.chat.id != SUPPORT_GROUP_ID:
-        return await message.reply_text("❌ This command only works in the support group.", parse_mode=ParseMode.MARKDOWN)
+        return await message.reply_text("❌ This command only works in the support group.", parse_mode=ParseMode.HTML)
 
     user_id = message.from_user.id
     user = await get_user_data(user_id)
@@ -44,7 +44,7 @@ async def daily_command_handler(_, message: types.Message):
     last_claim_date = user.get('last_daily_date')
     
     if last_claim_date == now_date:
-        return await message.reply_text("⏳ You've already claimed your daily reward today!", parse_mode=ParseMode.MARKDOWN)
+        return await message.reply_text("⏳ You've already claimed your daily reward today!", parse_mode=ParseMode.HTML)
     
     # Calculate Streak
     streak = user.get('daily_streak', 0)
@@ -68,7 +68,7 @@ async def daily_command_handler(_, message: types.Message):
     char = await get_daily_waifu()
     
     if not char:
-        return await message.reply_text("⚠️ No characters available currently.", parse_mode=ParseMode.MARKDOWN)
+        return await message.reply_text("⚠️ No characters available currently.", parse_mode=ParseMode.HTML)
 
     # Update User
     await add_char_to_user(user_id, char)
@@ -78,20 +78,20 @@ async def daily_command_handler(_, message: types.Message):
     })
 
     caption = (
-        fr"🎊 [{md_escape(message.from_user.first_name)}](tg://user?id={message.from_user.id}) claimed their daily reward\!\n\n"
-        f"📛 **Character:** {md_escape(char['name'])}\n"
-        f"✨ **Rarity:** {md_escape(char['rarity'])}\n"
-        f"🎬 **Anime:** {md_escape(char['anime'])}\n\n"
-        f"💰 **Coins:** +{reward_coins} ⬪\n"
-        f"🔥 **Streak:** {streak}/7 Days"
+        f'🎊 <a href="tg://user?id={message.from_user.id}">{html_escape(message.from_user.first_name)}</a> claimed their daily reward!\n\n'
+        f"📛 <b>Character:</b> {html_escape(char['name'])}\n"
+        f"✨ <b>Rarity:</b> {html_escape(char['rarity'])}\n"
+        f"🎬 <b>Anime:</b> {html_escape(char['anime'])}\n\n"
+        f"💰 <b>Coins:</b> +{reward_coins} ⬪\n"
+        f"🔥 <b>Streak:</b> {streak}/7 Days"
     )
 
-    await message.reply_photo(char['img_url'], caption=caption, parse_mode=ParseMode.MARKDOWN)
+    await message.reply_photo(char['img_url'], caption=caption, parse_mode=ParseMode.HTML)
 
 @app.on_message(filters.command("weekly") & filters.group)
 async def weekly_command_handler(_, message: types.Message):
     if message.chat.id != SUPPORT_GROUP_ID:
-        return await message.reply_text("❌ This command only works in the support group.", parse_mode=ParseMode.MARKDOWN)
+        return await message.reply_text("❌ This command only works in the support group.", parse_mode=ParseMode.HTML)
 
     user_id = message.from_user.id
     user = await get_user_data(user_id)
@@ -103,7 +103,7 @@ async def weekly_command_handler(_, message: types.Message):
         last_date = datetime.strptime(last_weekly, "%Y-%m-%d").replace(tzinfo=timezone.utc)
         days_diff = (now - last_date).days
         if days_diff < 7:
-            return await message.reply_text(f"⏳ You can claim your weekly reward again in {7 - days_diff} days.", parse_mode=ParseMode.MARKDOWN)
+            return await message.reply_text(f"⏳ You can claim your weekly reward again in {7 - days_diff} days.", parse_mode=ParseMode.HTML)
     
     # Weekly Rewards: 2000 Coins + 1 Rare Character (guaranteed?)
     # or just random better loot.
@@ -119,9 +119,9 @@ async def weekly_command_handler(_, message: types.Message):
     await add_xp(user_id, 500, "weekly_claim")
     
     await message.reply_text(
-        f"🎁 **Weekly Reward Claimed!**\n\n"
-        f"💰 **Coins:** +2,000 ⬪\n"
-        f"🆙 **XP:** +500 XP\n"
+        f"🎁 <b>Weekly Reward Claimed!</b>\n\n"
+        f"💰 <b>Coins:</b> +2,000 ⬪\n"
+        f"🆙 <b>XP:</b> +500 XP\n"
         f"✅ Come back in 7 days!",
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.HTML
     )

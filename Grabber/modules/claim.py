@@ -1,7 +1,7 @@
 import random
 from pyrogram import filters, types, enums, errors
 from pyrogram.enums import ParseMode
-from Grabber.core.utils import md_escape
+from Grabber.core.utils import html_escape
 from Grabber import app
 from Grabber import LOGGER
 from Grabber.database import collection, user_collection
@@ -42,7 +42,7 @@ async def claim_handler(_, message: types.Message):
     user = await get_user_data(user_id)
 
     if user and user.get('claimed_waifu'):
-        return await message.reply_text("🎖️ **You already claimed your free waifu!**", parse_mode=ParseMode.MARKDOWN)
+        return await message.reply_text("🎖️ <b>You already claimed your free waifu!</b>", parse_mode=ParseMode.HTML)
 
     if not await check_groups_joined(user_id):
         markup = types.InlineKeyboardMarkup([
@@ -51,9 +51,9 @@ async def claim_handler(_, message: types.Message):
             [types.InlineKeyboardButton("🔄 Verify & Claim", callback_data=f"clm_v:{user_id}")]
         ])
         return await message.reply_text(
-            "🔒 **Join our channels to unlock your free waifu!**",
+            "🔒 <b>Join our channels to unlock your free waifu!</b>",
             reply_markup=markup,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
 
                                            
@@ -73,13 +73,13 @@ async def show_preview(message_or_query, user_id):
     await create_session(f"claim_{user_id}", {"character": char})
 
     preview_text = (
-        f"🎁 **Your Free Character Preview!**\n\n"
-        f"🆔 **ID:** `{char['id']}`\n"
-        f"📛 **Name:** {md_escape(char['name'])}\n"
-        f"🎬 **Anime:** {md_escape(char['anime'])}\n"
-        f"✨ **Rarity:** {md_escape(char['rarity'])}\n\n"
-        f"💰 **Bonus:** +{DAILY_SHARD_REWARD} Shards ⬪\n\n"
-        f"_Click below to claim this character!_"
+        f"🎁 <b>Your Free Character Preview!</b>\n\n"
+        f"🆔 <b>ID:</b> <code>{char['id']}</code>\n"
+        f"📛 <b>Name:</b> {html_escape(char['name'])}\n"
+        f"🎬 <b>Anime:</b> {html_escape(char['anime'])}\n"
+        f"✨ <b>Rarity:</b> {html_escape(char['rarity'])}\n\n"
+        f"💰 <b>Bonus:</b> +{DAILY_SHARD_REWARD} Shards ⬪\n\n"
+        f"<i>Click below to claim this character!</i>"
     )
 
     markup = types.InlineKeyboardMarkup([
@@ -94,14 +94,14 @@ async def show_preview(message_or_query, user_id):
                 char['img_url'],
                 caption=preview_text,
                 reply_markup=markup,
-                parse_mode=ParseMode.MARKDOWN
+                parse_mode=ParseMode.HTML
             )
         else:
             await message_or_query.reply_photo(
                 char['img_url'],
                 caption=preview_text,
                 reply_markup=markup,
-                parse_mode=ParseMode.MARKDOWN
+                parse_mode=ParseMode.HTML
             )
     except Exception as e:
         LOGGER.error(f"Error in show_preview: {e}")
@@ -141,16 +141,16 @@ async def claim_confirm_handler(_, query: types.CallbackQuery):
     })
 
     caption = (
-        fr"🎉 [{md_escape(query.from_user.first_name)}](tg://user?id={query.from_user.id}) claimed their free waifu\!\n\n"
-        f"🆔 **ID:** `{char['id']}`\n"
-        f"📛 **Name:** {md_escape(char['name'])}\n"
-        f"🎬 **Anime:** {md_escape(char['anime'])}\n"
-        f"✨ **Rarity:** {md_escape(char['rarity'])}\n\n"
-        f"💰 **Bonus Received:** +{DAILY_SHARD_REWARD} Shards ⬪"
+        f'🎉 <a href="tg://user?id={query.from_user.id}">{html_escape(query.from_user.first_name)}</a> claimed their free waifu!\n\n'
+        f"🆔 <b>ID:</b> <code>{char['id']}</code>\n"
+        f"📛 <b>Name:</b> {html_escape(char['name'])}\n"
+        f"🎬 <b>Anime:</b> {html_escape(char['anime'])}\n"
+        f"✨ <b>Rarity:</b> {html_escape(char['rarity'])}\n\n"
+        f"💰 <b>Bonus Received:</b> +{DAILY_SHARD_REWARD} Shards ⬪"
     )
 
     try:
-        await query.message.edit_caption(caption=caption, parse_mode=ParseMode.MARKDOWN)
+        await query.message.edit_caption(caption=caption, parse_mode=ParseMode.HTML)
         await query.answer("✅ Successfully claimed!", show_alert=True)
     except Exception as e:
         LOGGER.error(f"Error in claim_confirm: {e}")

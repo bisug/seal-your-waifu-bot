@@ -4,13 +4,13 @@ import html
 import httpx
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
-from Grabber.core.utils import md_escape
+from Grabber.core.utils import html_escape
 from Grabber import app
 from Grabber import LOGGER, quiz_questions_collection
 from Grabber.core.game import update_user_balance, get_user_balance
 
                                                                               
-QUIZ_API_URL = "https://opentdb.com/api.php?amount=1&category=31&difficulty=easy"
+QUIZ_API_URL = "https://opentdb.com/api.php?amount=1&category=31"
 
 @app.on_message(filters.command("quiz"))
 async def quiz_cmd(_, message: types.Message):
@@ -34,7 +34,7 @@ async def quiz_cmd(_, message: types.Message):
             if questions:
                 result = questions[0]
             else:
-                return await message.reply_text("❌ **Failed to fetch a quiz question and no cache available.**")
+                return await message.reply_text("❌ <b>Failed to fetch a quiz question and no cache available.</b>", parse_mode=ParseMode.HTML)
         else:
                                                                     
             await quiz_questions_collection.update_one(
@@ -43,7 +43,7 @@ async def quiz_cmd(_, message: types.Message):
                 upsert=True
             )
             
-        question = md_escape(html.unescape(result["question"]))
+        question = html_escape(html.unescape(result["question"]))
         correct_answer = html.unescape(result["correct_answer"]) # No escape here since it's for buttons or logic
         incorrect_answers = [html.unescape(ans) for ans in result["incorrect_answers"]]
         
@@ -79,20 +79,20 @@ async def quiz_cmd(_, message: types.Message):
             buttons.append(row)
             
         text = (
-            f"🧠 **Quiz Time!**\n\n"
-            f"**Question:** {question}\n\n"
-            f"⏱ _You have 30 seconds to answer!_"
+            f"🧠 <b>Quiz Time!</b>\n\n"
+            f"<b>Question:</b> {question}\n\n"
+            f"⏱ <i>You have 30 seconds to answer!</i>"
         )
         
         await message.reply_text(
             text,
             reply_markup=types.InlineKeyboardMarkup(buttons),
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
         
     except Exception as e:
         LOGGER.error(f"Quiz Error: {e}")
-        await message.reply_text("❌ **An error occurred while starting the quiz.**")
+        await message.reply_text("❌ <b>An error occurred while starting the quiz.</b>", parse_mode=ParseMode.HTML)
 
 @app.on_callback_query(filters.regex(r"^qz:"))
 async def quiz_callback_handler(_, query: types.CallbackQuery):
@@ -107,16 +107,16 @@ async def quiz_callback_handler(_, query: types.CallbackQuery):
         return await query.answer("❌ This quiz is not for you!", show_alert=True)
         
     if time.time() - timestamp > 30:
-        await query.message.edit_text("⏱ **Time's up!** The quiz has expired.")
+        await query.message.edit_text("⏱ <b>Time's up!</b> The quiz has expired.", parse_mode=ParseMode.HTML)
         return await query.answer("Too late!")
         
     if pressed_idx == correct_idx:
         await update_user_balance(user_id, 100)
         new_balance = await get_user_balance(user_id)
         result_text = (
-            f"✅ **Correct!**\n\n"
-            f"💰 **Reward:** 100 Shards\n"
-            f"💳 **New Balance:** {new_balance:,} Shards\n\n"
+            f"✅ <b>Correct!</b>\n\n"
+            f"💰 <b>Reward:</b> 100 Shards\n"
+            f"💳 <b>New Balance:</b> {new_balance:,} Shards\n\n"
             "Well done! 🎉"
         )
     else:
@@ -128,10 +128,10 @@ async def quiz_callback_handler(_, query: types.CallbackQuery):
                     correct_answer_text = btn.text
                     break
         
-        result_text = f"❌ **Wrong!**\n\nThe correct answer was: **{correct_answer_text}**"
+        result_text = f"❌ <b>Wrong!</b>\n\nThe correct answer was: <b>{html_escape(correct_answer_text)}</b>"
         
     await query.message.edit_text(
         f"{query.message.text.split('⏱')[0]}\n\n{result_text}",
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.HTML
     )
     await query.answer()

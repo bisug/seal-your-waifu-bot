@@ -8,7 +8,7 @@ from Grabber.database import total_pm_users, group_collection
 @app.on_message(filters.command("broadcast") & filters.user(OWNER_ID))
 async def broadcast_handler(_, message: types.Message):
     if not message.reply_to_message:
-        return await message.reply_text("❌ **Reply to a message to broadcast.**")
+        return await message.reply_text("❌ <b>Reply to a message to broadcast.</b>", parse_mode=ParseMode.HTML)
 
     cmd_parts = message.text.split()
     send_users = "-u" in cmd_parts
@@ -19,7 +19,7 @@ async def broadcast_handler(_, message: types.Message):
         send_users = send_groups = True
 
     msg = message.reply_to_message
-    status = await message.reply_text("🚀 **Broadcast started...**")
+    status = await message.reply_text("🚀 <b>Broadcast started...</b>", parse_mode=ParseMode.HTML)
     
     success_u = failed_u = success_g = failed_g = 0
 
@@ -59,8 +59,8 @@ async def broadcast_handler(_, message: types.Message):
                 LOGGER.error(f"Broadcast Group Error ({group_id}): {e}")
 
     summary = (
-        "📊 **Broadcast Complete**\n\n"
-        f"👤 **Users:** `{success_u}` successful / `{failed_u}` failed\n"
-        f"👥 **Groups:** `{success_g}` successful / `{failed_g}` failed"
+        "📊 <b>Broadcast Complete</b>\n\n"
+        f"👤 <b>Users:</b> <code>{success_u}</code> successful / <code>{failed_u}</code> failed\n"
+        f"👥 <b>Groups:</b> <code>{success_g}</code> successful / <code>{failed_g}</code> failed"
     )
-    await status.edit_text(summary, parse_mode=ParseMode.MARKDOWN)
+    await status.edit_text(summary, parse_mode=ParseMode.HTML)

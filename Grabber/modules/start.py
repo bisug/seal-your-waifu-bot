@@ -1,6 +1,6 @@
 from pyrogram import enums, filters, types, errors
 from pyrogram.enums import ParseMode
-from Grabber.core.utils import md_escape
+from Grabber.core.utils import html_escape
 from Grabber import app
 from Grabber import PHOTO_URL, BOT_USERNAME, SUPPORT_CHAT, UPDATE_CHAT, LOGGER
 from Grabber.database import total_pm_users
@@ -12,27 +12,27 @@ from Grabber.modules.achievements import check_achievements
 LOGGER.info("Loading Start module...")
 
 START_TEXT = """
-**✨ Welcome to {bot_name}! ✨**
+<b>✨ Welcome to {bot_name}! ✨</b>
 
-**Hey {first_name}!** 👋
-I’m your ultimate companion for **Anime Character Collecting & PvP Battles!**
+<b>Hey {first_name}!</b> 👋
+I’m your ultimate companion for <b>Anime Character Collecting & PvP Battles!</b>
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
-**🔥 What can I do?**
-🌸 **Catch** thousands of anime characters.
-⚔️ **Battle** friends in strategic duels.
-🐣 **Hatch** eggs & raise powerful pets.
-🎫 **Rank Up** & unlock exclusive rewards.
-🏰 **Build** your Harem & dominate the leaderboard!
+<b>🔥 What can I do?</b>
+🌸 <b>Catch</b> thousands of anime characters.
+⚔️ <b>Battle</b> friends in strategic duels.
+🐣 <b>Hatch</b> eggs & raise powerful pets.
+🎫 <b>Rank Up</b> & unlock exclusive rewards.
+🏰 <b>Build</b> your Harem & dominate the leaderboard!
 ━━━━━━━━━━━━━━━━━━━━━━━━
 
-_Add me to your group & start your adventure!_ 🚀
+<i>Add me to your group & start your adventure!</i> 🚀
 """
 
                  
 HELP_DATA = {
     "MAIN": {
-        "text": "**📚 Seal Bot - Help Menu**\n\nSelect a category below to see available commands:",
+        "text": "<b>📚 Seal Bot - Help Menu</b>\n\nSelect a category below to see available commands:",
         "buttons": [
             [types.InlineKeyboardButton("🎮 Core Basics", callback_data="help:core"),
              types.InlineKeyboardButton("🐾 Pet System", callback_data="help:pet")],
@@ -44,61 +44,61 @@ HELP_DATA = {
     },
     "CORE": {
         "text": """
-**🎮 Core Commands**
+<b>🎮 Core Commands</b>
 
-🔹 `/seal <name>` - Catch a spawned character
-🔹 `/harem` - View your character collection
-🔹 `/fav <id>` - Set a favorite character
-🔹 `/trade <user> <amount>` - Trade characters/items
-🔹 `/gift <id>` - Gift a character to a user
-🔹 `/quiz` - Test your anime knowledge & have fun!
+🔹 <code>/seal &lt;name&gt;</code> - Catch a spawned character
+🔹 <code>/harem</code> - View your character collection
+🔹 <code>/fav &lt;id&gt;</code> - Set a favorite character
+🔹 <code>/trade &lt;user&gt; &lt;amount&gt;</code> - Trade characters/items
+🔹 <code>/gift &lt;id&gt;</code> - Gift a character to a user
+🔹 <code>/quiz</code> - Test your anime knowledge &amp; have fun!
 """,
     },
     "PET": {
         "text": """
-**🐾 Pet System**
+<b>🐾 Pet System</b>
 
-🔹 `/petshop` - Buy powerful pets with unique stats
-🔹 `/mypet` - Manage active pet & view stats
-🔹 `/hunt` - Send pet to find loot, Shards & eggs
-🔹 `/eggs` - Manage and hatch your eggs
+🔹 <code>/petshop</code> - Buy powerful pets with unique stats
+🔹 <code>/mypet</code> - Manage active pet &amp; view stats
+🔹 <code>/hunt</code> - Send pet to find loot, Shards &amp; eggs
+🔹 <code>/eggs</code> - Manage and hatch your eggs
 """,
     },
     "BATTLE": {
         "text": """
-**⚔️ Battle & Economy**
+<b>⚔️ Battle &amp; Economy</b>
 
-🔹 `/battle <amount>` - PvP duel (Turn-based strategy!)
-🔹 `/balance` - Check your Shards & Zenith
-🔹 `/shop` - Universal Shop Hub (Chars, Pets, Items)
-🔹 `/daily` - Claim daily rewards (Streaks!)
-🔹 `/weekly` - Claim weekly bonus (Every 7 days)
-🔹 `/top` - Global leaderboard (Harem, Shards, Level)
+🔹 <code>/battle &lt;amount&gt;</code> - PvP duel (Turn-based strategy!)
+🔹 <code>/balance</code> - Check your Shards &amp; Zenith
+🔹 <code>/shop</code> - Universal Shop Hub (Chars, Pets, Items)
+🔹 <code>/daily</code> - Claim daily rewards (Streaks!)
+🔹 <code>/weekly</code> - Claim weekly bonus (Every 7 days)
+🔹 <code>/top</code> - Global leaderboard (Harem, Shards, Level)
 """,
     },
     "INFO": {
         "text": """
-**ℹ️ Info & Stats**
+<b>ℹ️ Info &amp; Stats</b>
 
-🔹 `/stats` - Global bot statistics
-🔹 `/rarities` - Character counts by rarity
-🔹 `/ctop` - Top chat members (Chat Leaderboard)
-🔹 `/ping` - Real-time system status
-🔹 `/help` - Show this interactive menu
+🔹 <code>/stats</code> - Global bot statistics
+🔹 <code>/rarities</code> - Character counts by rarity
+🔹 <code>/ctop</code> - Top chat members (Chat Leaderboard)
+🔹 <code>/ping</code> - Real-time system status
+🔹 <code>/help</code> - Show this interactive menu
 """,
     },
     "PROGRESSION": {
         "text": """
-**🎫 Battle Pass & Progression**
+<b>🎫 Battle Pass &amp; Progression</b>
 
-🔹 `/pass` - View your Battle Pass (Free/Premium/Elite)
-🔹 `/quests` - Daily & Weekly Quests (Earn XP!)
-🔹 `/referrals` - Invite friends & earn rewards
-🔹 `/achievements` - View lifetime milestones & titles
-🔹 `/level` - Check your level progress
+🔹 <code>/pass</code> - View your Battle Pass (Free/Premium/Elite)
+🔹 <code>/quests</code> - Daily &amp; Weekly Quests (Earn XP!)
+🔹 <code>/referrals</code> - Invite friends &amp; earn rewards
+🔹 <code>/achievements</code> - View lifetime milestones &amp; titles
+🔹 <code>/level</code> - Check your level progress
 
-_💡 Gain XP by catching, battling, and completing quests!_
-_🎁 Unlock rewards at levels 5, 10, 25, and 50_
+<i>💡 Gain XP by catching, battling, and completing quests!</i>
+<i>🎁 Unlock rewards at levels 5, 10, 25, and 50</i>
 """,
     }
 }
@@ -130,20 +130,20 @@ async def start_handler(_, message: types.Message):
                 
                 if character:
                     response_message = (
-                        f"**Character Name:** {character['name']}\n"
-                        f"**Anime:** {character['anime']}\n"
-                        f"**Rarity:** {character['rarity']}\n"
-                        f"**Character ID:** `{character['id']}`\n"
+                        f"<b>Character Name:</b> {html_escape(character['name'])}\n"
+                        f"<b>Anime:</b> {html_escape(character['anime'])}\n"
+                        f"<b>Rarity:</b> {html_escape(character['rarity'])}\n"
+                        f"<b>Character ID:</b> <code>{character['id']}</code>\n"
                     )
 
                     await message.reply_photo(
                         photo=character['img_url'],
                         caption=response_message,
-                        parse_mode=ParseMode.MARKDOWN
+                        parse_mode=ParseMode.HTML
                     )
                     return                                        
                 else:
-                    await message.reply_text("❌ Character not found.", parse_mode=ParseMode.MARKDOWN)
+                    await message.reply_text("❌ Character not found.", parse_mode=ParseMode.HTML)
                     return
             except Exception as e:
                 LOGGER.error(f"Locate Error: {e}")
@@ -188,13 +188,13 @@ async def start_handler(_, message: types.Message):
                     try:
                         await app.send_message(
                             referrer_id,
-                            fr"🎉 **New Referral!**\n\n{md_escape(message.from_user.first_name)} joined using your link\.\n+500 ⬪ | +50 XP",
-                            parse_mode=ParseMode.MARKDOWN
+                            f'🎉 <b>New Referral!</b>\n\n<a href="tg://user?id={message.from_user.id}">{html_escape(message.from_user.first_name)}</a> joined using your link.\n+500 ⬪ | +50 XP',
+                            parse_mode=ParseMode.HTML
                         )
                     except:
                         pass
                         
-                    await message.reply_text(r"🎁 **Welcome Bonus!**\nYou received **1,500 ⬪** and a **Level 10 Pet** for using a referral link\! 🚀", parse_mode=ParseMode.MARKDOWN)
+                    await message.reply_text("🎁 <b>Welcome Bonus!</b>\nYou received <b>1,500 ⬪</b> and a <b>Level 10 Pet</b> for using a referral link! 🚀", parse_mode=ParseMode.HTML)
                     
             except ValueError:
                 pass
@@ -208,7 +208,7 @@ async def start_handler(_, message: types.Message):
             [types.InlineKeyboardButton("❓ Help & Commands", callback_data="help:main")]
         ])
         
-        first_name = md_escape(message.from_user.first_name)
+        first_name = html_escape(message.from_user.first_name)
         from Grabber import BOT_NAME
         text = START_TEXT.format(first_name=first_name, bot_name=BOT_NAME)
 
@@ -216,10 +216,10 @@ async def start_handler(_, message: types.Message):
             photo=random_photo(),
             caption=text,
             reply_markup=markup,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
     else:
-        await message.reply_text("✅ **I'm active and ready to drop characters!**", parse_mode=ParseMode.MARKDOWN)
+        await message.reply_text("✅ <b>I'm active and ready to drop characters!</b>", parse_mode=ParseMode.HTML)
 
                           
 @app.on_callback_query(filters.regex(r"^st:(h|b)"))
@@ -233,15 +233,15 @@ async def start_callback_handler(_, query: types.CallbackQuery):
         [types.InlineKeyboardButton("❓ Help & Commands", callback_data="help:main")]
     ])
     
-    first_name = md_escape(query.from_user.first_name)
+    first_name = html_escape(query.from_user.first_name)
     from Grabber import BOT_NAME
     text = START_TEXT.format(first_name=first_name, bot_name=BOT_NAME)
     
     try:
         if query.message.photo:
-            await query.message.edit_caption(text, reply_markup=markup, parse_mode=ParseMode.MARKDOWN)
+            await query.message.edit_caption(text, reply_markup=markup, parse_mode=ParseMode.HTML)
         else:
-            await query.message.edit_text(text, reply_markup=markup, parse_mode=ParseMode.MARKDOWN)
+            await query.message.edit_text(text, reply_markup=markup, parse_mode=ParseMode.HTML)
     except errors.MessageNotModified:
         pass
     
@@ -265,9 +265,9 @@ async def help_callback_handler(_, query: types.CallbackQuery):
 
     try:
         if query.message.photo:
-            await query.message.edit_caption(text, reply_markup=markup, parse_mode=ParseMode.MARKDOWN)
+            await query.message.edit_caption(text, reply_markup=markup, parse_mode=ParseMode.HTML)
         else:
-            await query.message.edit_text(text, reply_markup=markup, parse_mode=ParseMode.MARKDOWN)
+            await query.message.edit_text(text, reply_markup=markup, parse_mode=ParseMode.HTML)
     except errors.MessageNotModified:
         pass
     

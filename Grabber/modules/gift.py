@@ -1,6 +1,6 @@
 from pyrogram import filters, types, enums, errors
 from pyrogram.enums import ParseMode
-from Grabber.core.utils import md_escape
+from Grabber.core.utils import html_escape
 from Grabber import app, user_collection, LOGGER
 from Grabber.core.user import get_user_data, update_user
 from Grabber.core.sessions import create_session, get_session, delete_session
@@ -20,7 +20,7 @@ async def gift_command(_, message: types.Message):
         return
 
     if len(message.command) < 2:
-        await message.reply_text("⚠️ Usage: `/gift <character_id>`", parse_mode=ParseMode.MARKDOWN)
+        await message.reply_text("⚠️ Usage: <code>/gift &lt;character_id&gt;</code>", parse_mode=ParseMode.HTML)
         return
 
     character_id = message.command[1]
@@ -51,9 +51,9 @@ async def gift_command(_, message: types.Message):
 
     receiver_name = message.reply_to_message.from_user.first_name
     caption = (
-        f"🎁 **Gift Confirmation**\n\n"
-        f"Are you sure you want to gift **{md_escape(character_to_gift['name'])}** to **{md_escape(receiver_name)}**?\n"
-        f"🆔 ID: `{character_id}`\n"
+        f"🎁 <b>Gift Confirmation</b>\n\n"
+        f"Are you sure you want to gift <b>{html_escape(character_to_gift['name'])}</b> to <b>{html_escape(receiver_name)}</b>?\n"
+        f"🆔 ID: <code>{character_id}</code>\n"
         f"⚠️ This action cannot be undone."
     )
 
@@ -64,7 +64,7 @@ async def gift_command(_, message: types.Message):
         ]
     ])
 
-    await message.reply_text(caption, reply_markup=markup, parse_mode=ParseMode.MARKDOWN)
+    await message.reply_text(caption, reply_markup=markup, parse_mode=ParseMode.HTML)
 
 
 @app.on_callback_query(filters.regex(r"^gift_(confirm|cancel):(.+)"))
@@ -131,8 +131,8 @@ async def gift_callback(_, query: types.CallbackQuery):
     await delete_session(session_id)
     
     await query.message.edit_text(
-        f"✅ **Gift Sent!**\n\n"
-        f"You successfully gifted **{character['name']}** to the user!",
-        parse_mode=ParseMode.MARKDOWN
+        f"✅ <b>Gift Sent!</b>\n\n"
+        f"You successfully gifted <b>{html_escape(character['name'])}</b> to the user!",
+        parse_mode=ParseMode.HTML
     )
     LOGGER.info(f"Gift: {sender_id} -> {receiver_id} | Char: {char_id}")

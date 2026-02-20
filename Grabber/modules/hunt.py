@@ -4,7 +4,7 @@ import time
 from datetime import datetime, timedelta
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
-from Grabber.core.utils import md_escape
+from Grabber.core.utils import html_escape
 from Grabber import user_collection, collection, app
 from Grabber.core.user import add_pet_xp
 from Grabber.core.progression import add_xp
@@ -53,7 +53,7 @@ async def hunt_cmd(_, message: types.Message):
     cooldown_active, seconds_left = is_on_cooldown(user_id)
 
     if cooldown_active:
-        return await message.reply_text(f"⏳ Please wait {seconds_left}s before hunting again.", parse_mode=ParseMode.MARKDOWN)
+        return await message.reply_text(f"⏳ Please wait {seconds_left}s before hunting again.", parse_mode=ParseMode.HTML)
                       
     user = await user_collection.find_one({"id": user_id}) or {}
     pets = user.get("pets", [DEFAULT_PET])
@@ -76,7 +76,7 @@ async def hunt_cmd(_, message: types.Message):
              
     hunt_cooldowns[user_id] = now
 
-    msg = await message.reply_text(f"🦊 **{md_escape(pet['name'])}** is going hunting...", parse_mode=ParseMode.MARKDOWN)
+    msg = await message.reply_text(f"🦊 <b>{html_escape(pet['name'])}</b> is going hunting...", parse_mode=ParseMode.HTML)
     await asyncio.sleep(2)
 
     shards = random.randint(100, 300)
@@ -85,7 +85,7 @@ async def hunt_cmd(_, message: types.Message):
     bonus_text = ""
     if ability == "Scavenger" and random.random() < 0.2:
         shards *= 2
-        bonus_text += "\n**Double Shards!** (Scavenger)"
+        bonus_text += "\n<b>Double Shards!</b> (Scavenger)"
         
     await user_collection.update_one({"id": user_id}, {"$inc": {"balance": shards}}, upsert=True)
     
@@ -130,25 +130,25 @@ async def hunt_cmd(_, message: types.Message):
             extra_egg["tier"] = "common"
             extra_egg["name"] = "🥚 Bonus Common Egg"
             await user_collection.update_one({"id": user_id}, {"$push": {"eggs": extra_egg}}, upsert=True)
-            bonus_text += "\n🥚 **Bonus Egg Found!** (Hoarder)"
+            bonus_text += "\n🥚 <b>Bonus Egg Found!</b> (Hoarder)"
         
                           
         await update_quest_progress(user_id, "egg_hunter", 1)
 
         await msg.edit_text(
-            f"🎁 **Loot Found!**\n\n"
-            f"🥚 **{md_escape(tier_data['name'])}** discovered!\n"
-            f"**+{shards} Shards** ⬪{bonus_text}\n"
-            f"🆙 **+{xp_gain} XP** for {md_escape(pet['name'])}",
-            parse_mode=ParseMode.MARKDOWN
+            f"🎁 <b>Loot Found!</b>\n\n"
+            f"🥚 <b>{html_escape(tier_data['name'])}</b> discovered!\n"
+            f"<b>+{shards} Shards</b> ⬪{bonus_text}\n"
+            f"🆙 <b>+{xp_gain} XP</b> for {html_escape(pet['name'])}",
+            parse_mode=ParseMode.HTML
         )
     else:
         await msg.edit_text(
-            f"🌲 **Hunt Complete!**\n\n"
-            f"**+{shards} Shards** ⬪{bonus_text}\n"
-            f"🆙 **+{xp_gain} XP** for {md_escape(pet['name'])}\n"
-            f"_No eggs found this time._",
-            parse_mode=ParseMode.MARKDOWN
+            f"🌲 <b>Hunt Complete!</b>\n\n"
+            f"<b>+{shards} Shards</b> ⬪{bonus_text}\n"
+            f"🆙 <b>+{xp_gain} XP</b> for {html_escape(pet['name'])}\n"
+            f"<i>No eggs found this time.</i>",
+            parse_mode=ParseMode.HTML
         )
 
 @app.on_message(filters.command("eggs"))
@@ -161,14 +161,14 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
     eggs = user.get("eggs", [])
     
     if not eggs:
-        text = "❌ **No eggs found!**\n\nUse `/hunt` to find eggs."
+        text = "❌ <b>No eggs found!</b>\n\nUse <code>/hunt</code> to find eggs."
         if isinstance(message_or_query, types.CallbackQuery):
             try:
-                await message_or_query.message.edit_text(text, parse_mode=ParseMode.MARKDOWN)
+                await message_or_query.message.edit_text(text, parse_mode=ParseMode.HTML)
             except:
                 pass
         else:
-            await message_or_query.reply_text(text, parse_mode=ParseMode.MARKDOWN)
+            await message_or_query.reply_text(text, parse_mode=ParseMode.HTML)
         return
     
                 
@@ -182,24 +182,24 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
     status_display = ""
     
     if status == "fresh":
-        status_display = f"🛑 **Status:** Not incubated\n⏱️ **Required:** {tier_info['wait_min']} minutes"
+        status_display = f"🛑 <b>Status:</b> Not incubated\n⏱️ <b>Required:</b> {tier_info['wait_min']} minutes"
         action_button = types.InlineKeyboardButton("🌡️ Start Incubation", callback_data=f"egg_incubate:{page}")                             
     elif status == "incubating":
         hatch_time = egg.get("hatch_time")
         if hatch_time and datetime.now() < hatch_time:
             remaining = hatch_time - datetime.now()
             mins_left = int(remaining.total_seconds() / 60)
-            status_display = f"⏳ **Status:** Incubating\n⏱️ **Time Left:** {mins_left} minutes"
+            status_display = f"⏳ <b>Status:</b> Incubating\n⏱️ <b>Time Left:</b> {mins_left} minutes"
             action_button = types.InlineKeyboardButton("⏳ Incubating...", callback_data="egg_wait")
         else:
-            status_display = "✅ **Status:** Ready to hatch!"
+            status_display = "✅ <b>Status:</b> Ready to hatch!"
             action_button = types.InlineKeyboardButton("🎁 Hatch Now!", callback_data=f"egg_hatch:{page}")
     
     text = (
-        f"🥚 **Egg Inventory**\n\n"
-        f"**{egg.get('name', 'Unknown Egg')}**\n"
+        f"🥚 <b>Egg Inventory</b>\n\n"
+        f"<b>{html_escape(egg.get('name', 'Unknown Egg'))}</b>\n"
         f"{status_display}\n\n"
-        f"_Egg {page + 1} of {len(eggs)}_"
+        f"<i>Egg {page + 1} of {len(eggs)}</i>"
     )
     
                    
@@ -228,9 +228,9 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
     
     try:
         if isinstance(message_or_query, types.CallbackQuery):
-            await message_or_query.message.edit_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=markup)
+            await message_or_query.message.edit_text(text, parse_mode=ParseMode.HTML, reply_markup=markup)
         else:
-            await message_or_query.reply_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=markup)
+            await message_or_query.reply_text(text, parse_mode=ParseMode.HTML, reply_markup=markup)
     except errors.MessageNotModified:
         pass
     except Exception as e:
@@ -332,13 +332,13 @@ async def crack_open_egg_inline(query: types.CallbackQuery, user_id: int, egg: d
                                
     await user_collection.update_one({"id": user_id}, {"$pull": {"eggs": {"id": egg["id"]}}})
     
-    await query.message.edit_text("🥚 **Cracking open...**", parse_mode=ParseMode.MARKDOWN)
+    await query.message.edit_text("🥚 <b>Cracking open...</b>", parse_mode=ParseMode.HTML)
     await asyncio.sleep(2)
     
                      
     if egg.get("is_corrupted", False):
         if random.random() < 0.5:
-            await query.message.edit_text("💥 **The egg exploded!**\nIt was corrupted...", parse_mode=ParseMode.MARKDOWN)
+            await query.message.edit_text("💥 <b>The egg exploded!</b>\nIt was corrupted...", parse_mode=ParseMode.HTML)
             return
         else:
             rarity = RARITY_MAP[9]          
@@ -355,19 +355,19 @@ async def crack_open_egg_inline(query: types.CallbackQuery, user_id: int, egg: d
                   
         await add_xp(user_id, 15, "egg_hatch")
         
-        await query.message.edit_text("🎉 **Success! Sending details...**", parse_mode=ParseMode.MARKDOWN)
+        await query.message.edit_text("🎉 <b>Success! Sending details...</b>", parse_mode=ParseMode.HTML)
         await query.message.reply_photo(
             photo=character["img_url"],
             caption=(
-                f"🐣 **Hatched Successfully!**\n\n"
-                f"📛 **{md_escape(character['name'])}**\n"
-                f"✨ **{md_escape(rarity)}**\n"
-                f"🎬 {md_escape(character['anime'])}"
+                f"🐣 <b>Hatched Successfully!</b>\n\n"
+                f"📛 <b>{html_escape(character['name'])}</b>\n"
+                f"✨ <b>{html_escape(rarity)}</b>\n"
+                f"🎬 {html_escape(character['anime'])}"
             ),
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
     else:
-        await query.message.edit_text("⚠️ The egg was empty (DB error).", parse_mode=ParseMode.MARKDOWN)
+        await query.message.edit_text("⚠️ The egg was empty (DB error).", parse_mode=ParseMode.HTML)
 
                                                                             
 
@@ -380,13 +380,13 @@ async def crack_open_egg(message, user_id, egg, index):
                  
     await user_collection.update_one({"id": user_id}, {"$pull": {"eggs": {"id": egg["id"]}}})
     
-    msg = await message.reply_text("🥚 **Cracking open...**", parse_mode=ParseMode.MARKDOWN)
+    msg = await message.reply_text("🥚 <b>Cracking open...</b>", parse_mode=ParseMode.HTML)
     await asyncio.sleep(2)
     
                      
     if egg.get("is_corrupted", False):
         if random.random() < 0.5:
-            await msg.edit_text("💥 **The egg exploded!**\nIt was corrupted... You got nothing.", parse_mode=ParseMode.MARKDOWN)
+            await msg.edit_text("💥 <b>The egg exploded!</b>\nIt was corrupted... You got nothing.", parse_mode=ParseMode.HTML)
             return
         else:
                      
@@ -405,14 +405,14 @@ async def crack_open_egg(message, user_id, egg, index):
                                
         await add_xp(user_id, 15, "egg_hatch")
         
-        await msg.edit_text("🎉 Success! Sending details...", parse_mode=ParseMode.MARKDOWN)
+        await msg.edit_text("🎉 Success! Sending details...", parse_mode=ParseMode.HTML)
         await message.reply_photo(
             photo=character["img_url"],
-            caption=f"🐣 **Hatched Successfully!**\n\n"
-                    f"📛 **{md_escape(character['name'])}**\n"
-                    f"✨ **{md_escape(rarity)}**\n"
-                    f"🎬 {md_escape(character['anime'])}",
-            parse_mode=ParseMode.MARKDOWN
+            caption=f"🐣 <b>Hatched Successfully!</b>\n\n"
+                    f"📛 <b>{html_escape(character['name'])}</b>\n"
+                    f"✨ <b>{html_escape(rarity)}</b>\n"
+                    f"🎬 {html_escape(character['anime'])}",
+            parse_mode=ParseMode.HTML
         )
     else:
-        await msg.edit_text("⚠️ The egg was empty (Database error: No chars for this rarity).", parse_mode=ParseMode.MARKDOWN)
+        await msg.edit_text("⚠️ The egg was empty (Database error: No chars for this rarity).", parse_mode=ParseMode.HTML)

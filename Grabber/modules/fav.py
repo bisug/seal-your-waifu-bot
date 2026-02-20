@@ -1,6 +1,6 @@
 from pyrogram import filters, types, enums, errors
 from pyrogram.enums import ParseMode
-from Grabber.core.utils import md_escape
+from Grabber.core.utils import html_escape
 from Grabber import app
 from Grabber import LOGGER
 from Grabber.core.user import get_user_data, update_user
@@ -30,9 +30,9 @@ async def fav_handler(_, message: types.Message):
 
     await message.reply_photo(
         photo=character.get('img_url'),
-        caption=f"Set **{md_escape(character.get('name'))}** as your favorite?",
+        caption=f"Set <b>{html_escape(character.get('name'))}</b> as your favorite?",
         reply_markup=markup,
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.HTML
     )
 
 @app.on_callback_query(filters.regex(r"^fav_set:"))
@@ -43,7 +43,7 @@ async def fav_set_handler(_, query: types.CallbackQuery):
 
     await update_user(int(user_id), {"$set": {"favorites": [char_id]}})
     try:
-        await query.message.edit_caption(f"✅ Character `{char_id}` is now your favorite!", parse_mode=ParseMode.MARKDOWN)
+        await query.message.edit_caption(f"✅ Character <code>{char_id}</code> is now your favorite!", parse_mode=ParseMode.HTML)
     except errors.MessageNotModified:
         pass
     await query.answer("Favorites updated.")

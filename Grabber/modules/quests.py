@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import random
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
-from Grabber.core.utils import md_escape
+from Grabber.core.utils import html_escape
 from Grabber import user_collection, app
 from Grabber.core.progression import add_xp, get_progress_bar
 
@@ -173,14 +173,14 @@ async def view_quests(_, message: types.Message):
     quests = await get_user_quests(user_id)
     
     if not quests:
-        await message.reply_text("🚫 No quests available right now.", parse_mode=ParseMode.MARKDOWN)
+        await message.reply_text("🚫 No quests available right now.", parse_mode=ParseMode.HTML)
         return
 
-    text = "📋 **Quest Log**\n\n"
+    text = "📋 <b>Quest Log</b>\n\n"
     buttons = []
     
                          
-    text += "📅 **Daily Quests**\n"
+    text += "📅 <b>Daily Quests</b>\n"
     has_daily = False
     for qid, qdata in quests.items():
         if qid not in QUEST_POOL: continue
@@ -201,15 +201,15 @@ async def view_quests(_, message: types.Message):
             btn_txt = f"{info['icon']} Claim {info['name']}"
             buttons.append([types.InlineKeyboardButton(btn_txt, callback_data=f"quest_claim:{qid}")])
         else:
-            status = f"`{prog}/{targ}`"
+            status = f"<code>{prog}/{targ}</code>"
             
-        text += f"{info['icon']} **{info['name']}**: {bar} {status}\n"
+        text += f"{info['icon']} <b>{info['name']}</b>: {bar} {status}\n"
     
-    if not has_daily: text += "_No daily quests active._\n"
+    if not has_daily: text += "<i>No daily quests active.</i>\n"
     text += "\n"
     
                           
-    text += "🗓️ **Weekly Challenges**\n"
+    text += "🗓️ <b>Weekly Challenges</b>\n"
     has_weekly = False
     for qid, qdata in quests.items():
         if qid not in WEEKLY_POOL: continue
@@ -230,9 +230,9 @@ async def view_quests(_, message: types.Message):
             btn_txt = f"{info['icon']} Claim {info['name']}"
             buttons.append([types.InlineKeyboardButton(btn_txt, callback_data=f"quest_claim:{qid}")])
         else:
-            status = f"`{prog}/{targ}`"
+            status = f"<code>{prog}/{targ}</code>"
             
-        text += f"{info['icon']} **{info['name']}**: {bar} {status}\n"
+        text += f"{info['icon']} <b>{info['name']}</b>: {bar} {status}\n"
 
             
     now = datetime.utcnow()
@@ -243,11 +243,11 @@ async def view_quests(_, message: types.Message):
     days_until_mon = (7 - now.weekday()) % 7
     if days_until_mon == 0 and d_left.total_seconds() < 86400: days_until_mon = 7                                     
     
-    text += f"\n⏰ **Daily Reset:** `{int(d_left.total_seconds()//3600)}h`\n"
-    text += f"🗓️ **Weekly Reset:** `{days_until_mon} days`"
+    text += f"\n⏰ <b>Daily Reset:</b> <code>{int(d_left.total_seconds()//3600)}h</code>\n"
+    text += f"🗓️ <b>Weekly Reset:</b> <code>{days_until_mon} days</code>"
     
     markup = types.InlineKeyboardMarkup(buttons) if buttons else None
-    await message.reply_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=markup)
+    await message.reply_text(text, parse_mode=ParseMode.HTML, reply_markup=markup)
 
 @app.on_callback_query(filters.regex(r"^quest_claim:"))
 async def claim_quest_callback(_, query: types.CallbackQuery):

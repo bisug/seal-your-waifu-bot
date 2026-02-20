@@ -3,7 +3,7 @@ import random
 from datetime import datetime, timezone
 from pyrogram import filters, enums, types
 from pyrogram.enums import ParseMode
-from Grabber.core.utils import md_escape
+from Grabber.core.utils import html_escape
 from Grabber import app
 from Grabber import collection, OWNER_ID, SUPPORT_GROUP_ID, LOGGER
 from Grabber.core.game import get_user_balance, update_user_balance, check_and_deduct
@@ -22,14 +22,14 @@ async def balance_cmd(_, message: types.Message):
         zenith = user.get("zenith", 0)
     
     text = (
-        f"💳 **Your Balance**\n\n"
-        f"**Shards:** {shards:,} ⬪\n"
-        f"**Zenith:** {zenith:,} ⧫\n\n"
-        f"_Exchange: 10,000 ⬪ = 1 ⧫_\n"
-        f"_Use /exchange to convert Shards to Zenith_"
+        f"💳 <b>Your Balance</b>\n\n"
+        f"<b>Shards:</b> {shards:,} ⬪\n"
+        f"<b>Zenith:</b> {zenith:,} ⧫\n\n"
+        f"<i>Exchange: 10,000 ⬪ = 1 ⧫</i>\n"
+        f"<i>Use <code>/exchange</code> to convert Shards to Zenith</i>"
     )
     
-    await message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
+    await message.reply_text(text, parse_mode=ParseMode.HTML)
 
 @app.on_message(filters.command("pay") & filters.reply)
 async def pay_cmd(_, message: types.Message):
@@ -39,17 +39,17 @@ async def pay_cmd(_, message: types.Message):
     recipient_id = recipient.id
 
     if recipient_id == sender_id:
-        return await message.reply_text("❌ **You cannot pay yourself.**", parse_mode=ParseMode.MARKDOWN)
+        return await message.reply_text("❌ <b>You cannot pay yourself.</b>", parse_mode=ParseMode.HTML)
 
     try:
         amount = int(message.command[1])
         if amount <= 0: raise ValueError
     except (IndexError, ValueError):
-        return await message.reply_text("❌ **Usage:** `/pay <amount>` (reply to user)", parse_mode=ParseMode.MARKDOWN)
+        return await message.reply_text("❌ <b>Usage:</b> <code>/pay &lt;amount&gt;</code> (reply to user)", parse_mode=ParseMode.HTML)
 
     balance = await get_user_balance(sender_id)
     if balance < amount:
-        return await message.reply_text("❌ **Insufficient balance!**", parse_mode=ParseMode.MARKDOWN)
+        return await message.reply_text("❌ <b>Insufficient balance!</b>", parse_mode=ParseMode.HTML)
 
     buttons = [
         [
@@ -59,12 +59,12 @@ async def pay_cmd(_, message: types.Message):
     ]
 
     await message.reply_text(
-        f"**💸 Payment Confirmation**\n\n"
-        f"**To:** [{md_escape(recipient.first_name)}](tg://user?id={recipient.id})\n"
-        f"**Amount:** {amount:,} ⬪\n\n"
-        f"_Are you sure you want to send these Shards?_",
+        f"<b>💸 Payment Confirmation</b>\n\n"
+        f'<b>To:</b> <a href="tg://user?id={recipient.id}">{html_escape(recipient.first_name)}</a>\n'
+        f"<b>Amount:</b> {amount:,} ⬪\n\n"
+        f"<i>Are you sure you want to send these Shards?</i>",
         reply_markup=types.InlineKeyboardMarkup(buttons),
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.HTML
     )
 
 @app.on_callback_query(filters.regex(r"^pay_"))
@@ -74,7 +74,7 @@ async def pay_callback_handler(_, query: types.CallbackQuery):
     action = data[1]
 
     if action == "a":
-        await query.message.edit_text("❌ **Payment cancelled.**", parse_mode=ParseMode.MARKDOWN)
+        await query.message.edit_text("❌ <b>Payment cancelled.</b>", parse_mode=ParseMode.HTML)
         return
 
     recipient_id = int(data[2])
@@ -87,15 +87,15 @@ async def pay_callback_handler(_, query: types.CallbackQuery):
                                           
         try:
             recipient = await app.get_users(recipient_id)
-            mention = f"[{md_escape(recipient.first_name)}](tg://user?id={recipient.id})"
+            mention = f'<a href="tg://user?id={recipient.id}">{html_escape(recipient.first_name)}</a>'
         except Exception:
             mention = f"User ID: {recipient_id}"
 
         await query.message.edit_text(
-            f"✅ **Payment Successful!**\n\n"
-            f"**Sent:** {amount:,} ⬪\n"
-            f"**To:** {mention}",
-            parse_mode=ParseMode.MARKDOWN
+            f"✅ <b>Payment Successful!</b>\n\n"
+            f"<b>Sent:</b> {amount:,} ⬪\n"
+            f"<b>To:</b> {mention}",
+            parse_mode=ParseMode.HTML
         )
     else:
         await query.answer("❌ Insufficient balance or transaction failed.", show_alert=True)
@@ -132,5 +132,5 @@ async def mtop_cmd(_, message: types.Message):
     cursor = user_collection.find({}, {"id": 1, "first_name": 1, "balance": 1}).sort("balance", -1).limit(10)
     top_users = await cursor.to_list(length=10)
     
-    lines = [f"{i+1}. {md_escape(u.get('first_name', 'User'))} \\- 💵 {u.get('balance', 0)}" for i, u in enumerate(top_users)]
-    await message.reply_text("🏆 **Top 10 Rich Users**\n\n" + "\n".join(lines), parse_mode=ParseMode.MARKDOWN)
+    lines = [f"{i+1}. {html_escape(u.get('first_name', 'User'))} - 💵 {u.get('balance', 0)}" for i, u in enumerate(top_users)]
+    await message.reply_text("🏆 <b>Top 10 Rich Users</b>\n\n" + "\n".join(lines), parse_mode=ParseMode.HTML)

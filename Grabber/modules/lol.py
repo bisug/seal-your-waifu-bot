@@ -11,13 +11,13 @@ async def mongo_backup(_, message: types.Message) -> None:
                                                            
                                         
     if len(message.command) != 4:
-        await message.reply_text("❌ Invalid command usage.\nUse: `/mongobackup <source_mongo> <destination_mongo> <db_name>`", parse_mode=ParseMode.MARKDOWN)
+        await message.reply_text("❌ <b>Invalid command usage.</b>\nUse: <code>/mongobackup &lt;source_mongo&gt; &lt;destination_mongo&gt; &lt;db_name&gt;</code>", parse_mode=ParseMode.HTML)
         return
 
     source_mongo, destination_mongo, db_name = message.command[1], message.command[2], message.command[3]
 
     try:
-        status_msg = await message.reply_text(f"⏳ Starting backup of `{db_name}` from `{source_mongo}` to `{destination_mongo}`...", parse_mode=ParseMode.MARKDOWN)
+        status_msg = await message.reply_text(f"⏳ Starting backup of <code>{db_name}</code> from <code>{source_mongo}</code> to <code>{destination_mongo}</code>...", parse_mode=ParseMode.HTML)
 
                                                    
         source_client = AsyncIOMotorClient(source_mongo)
@@ -38,8 +38,8 @@ async def mongo_backup(_, message: types.Message) -> None:
             if documents:
                 await dest_collection.insert_many(documents)
 
-        await status_msg.edit_text(f"✅ Backup completed successfully for `{db_name}`!", parse_mode=ParseMode.MARKDOWN)
+        await status_msg.edit_text(f"✅ <b>Backup completed successfully for <code>{db_name}</code>!</b>", parse_mode=ParseMode.HTML)
 
     except Exception as e:
         LOGGER.error(f"Backup Error: {e}")
-        await message.reply_text(f"❌ Backup failed! Error: `{e}`", parse_mode=ParseMode.MARKDOWN)
+        await message.reply_text(f"❌ <b>Backup failed!</b> Error: <code>{e}</code>", parse_mode=ParseMode.HTML)
