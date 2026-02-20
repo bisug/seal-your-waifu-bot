@@ -93,6 +93,10 @@ class SealClient(Client):
         # 4. Set Bot Commands
         await self._set_commands_internal()
         
+        # 5. Start Persistent Deletion Worker
+        from Grabber.core.deletion import deletion_worker
+        asyncio.create_task(deletion_worker())
+        
         LOGGER.info(f"SealClient started as {me.first_name} (@{me.username}).")
 
     async def _set_commands_internal(self):
