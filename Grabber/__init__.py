@@ -2,6 +2,7 @@ import importlib
 import re
 import time
 import logging
+import asyncio
 from pyrogram import Client, enums, types, filters
 from pyrogram.handlers import MessageHandler
 from config import config
