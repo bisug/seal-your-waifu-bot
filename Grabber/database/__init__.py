@@ -24,6 +24,7 @@ class Database:
         self.sessions = self.db['active_sessions']
         self.quiz_questions = self.db['quiz_questions']
         self.nguess_enabled_groups = self.db['nguess_enabled_groups']
+        self.deletion_queue = self.db['deletion_queue']
 
 # Initialize Database
 try:
@@ -49,3 +50,4 @@ spawns_collection = seal_db.spawns
 sessions_collection = seal_db.sessions
 quiz_questions_collection = seal_db.quiz_questions
 nguess_enabled_groups_collection = seal_db.nguess_enabled_groups
+deletion_queue_collection = seal_db.deletion_queue
