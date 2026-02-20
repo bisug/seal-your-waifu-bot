@@ -6,7 +6,7 @@ from typing import List, Dict, Union, Any
 
 from pyrogram import filters, types, enums, errors
 from pyrogram.enums import ParseMode
-from Grabber.app import app
+from Grabber import app
 from Grabber import LOGGER
 from Grabber.core.user import get_user_data
 

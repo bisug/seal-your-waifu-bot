@@ -1,6 +1,6 @@
 from pyrogram import filters, types, errors
 from pyrogram.enums import ParseMode, enums
-from Grabber.app import app
+from Grabber import app
 from Grabber import sudo_users, OWNER_ID, CHARA_CHANNEL_ID, LOGGER
 from Grabber.core.waifu import upload_image_to_imgbb, add_character_to_db, get_character_by_id
 from Grabber.database import collection

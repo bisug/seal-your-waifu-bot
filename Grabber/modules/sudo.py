@@ -1,6 +1,6 @@
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
-from Grabber.app import app
+from Grabber import app
 from Grabber import OWNER_ID, sudo_users, LOGGER
 from Grabber.database import sudo_collection
 
