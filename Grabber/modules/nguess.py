@@ -80,12 +80,7 @@ async def nguess_start_handler(_, message: types.Message):
     })
 
     anime_name = escape_markdown_v2(char['anime'])
-    briefing = (
-        "**IDENTIFY THE TARGET**\n\n"
-        f"**Origin:** {anime_name}\n"
-        "**Rarity:** Classified\n\n"
-        "**Instruction:** Type the name in chat to win shards"
-    )
+    briefing = f"Identify this character from the series **{md_escape(anime_name)}**"
     
     sent = await send_message_safe(
         chat_id,
@@ -198,18 +193,18 @@ async def nguess_check_handler(_, message: types.Message):
         
         display_progress = total_guesses % 100 if total_guesses % 100 != 0 else 100
         
-        mention = message.from_user.mention
-        target_name = escape_markdown_v2(char['name'])
+        mention = f"[{md_escape(message.from_user.first_name)}](tg://user?id={message.from_user.id})"
+        target_name = md_escape(char['name'])
         
         success_msg = (
-            f"**TARGET IDENTIFIED**\n\n"
-            f"**Agent:** {mention}\n"
-            f"**Name:** {target_name}\n"
-            f"**Bounty:** {reward} Shards\n"
-            f"**Progress:** {display_progress}/100{milestone_text}"
+            f"✅ {mention} identified **{target_name}**\!\n"
+            f"💰 **Bounty:** +{reward} Shards\n"
+            f"🔥 **Progress:** {display_progress}/100{milestone_text}"
         )
         
         await send_message_safe(chat_id, text=success_msg, auto_delete=True)
+        # Recursive start
+        await start_nguess_game(chat_id)
     else:
         # Silently ignore wrong guesses
         pass

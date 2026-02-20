@@ -91,7 +91,7 @@ async def upload_waifu_handler(_, message: types.Message):
             f"**Character Name:** {char_name}\n"
             f"**Anime Name:** {anime_name}\n"
             f"**Rarity:** {rarity_text}\n"
-            f"Added by {message.from_user.mention}"
+            f"Added by [{md_escape(message.from_user.first_name)}](tg://user?id={message.from_user.id})"
         )
 
         sent_msg = await app.send_photo(
