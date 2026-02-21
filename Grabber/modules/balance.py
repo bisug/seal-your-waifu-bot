@@ -53,8 +53,8 @@ async def pay_cmd(_, message: types.Message):
 
     buttons = [
         [
-            types.InlineKeyboardButton("✅ Confirm", callback_data=f"pay_c_{recipient_id}_{amount}", style=ButtonStyle.SUCCESS),
-            types.InlineKeyboardButton("❌ Cancel", callback_data="pay_a", style=ButtonStyle.DANGER)
+            types.InlineKeyboardButton("✅ Confirm", callback_data=f"pay_c_{recipient_id}_{amount}_{sender_id}", style=ButtonStyle.SUCCESS),
+            types.InlineKeyboardButton("❌ Cancel", callback_data=f"pay_a_{sender_id}", style=ButtonStyle.DANGER)
         ]
     ]
 
@@ -72,13 +72,21 @@ async def pay_callback_handler(_, query: types.CallbackQuery):
     sender_id = query.from_user.id
     data = query.data.split("_")
     action = data[1]
-
+    
+    # Handle payment cancellation
     if action == "a":
+        owner_id = int(data[2]) if len(data) > 2 else 0
+        if owner_id and sender_id != owner_id:
+            return await query.answer("❌ This is not your payment!", show_alert=True)
         await query.message.edit_text("❌ <b>Payment cancelled.</b>", parse_mode=ParseMode.HTML)
         return
 
     recipient_id = int(data[2])
     amount = int(data[3])
+    owner_id = int(data[4]) if len(data) > 4 else 0
+
+    if owner_id and sender_id != owner_id:
+        return await query.answer("❌ This is not your payment!", show_alert=True)
 
                              
     if await check_and_deduct(sender_id, amount):
