@@ -104,7 +104,7 @@ class SealClient(Client):
         try:
             from Grabber.modules.start import HELP_DATA
             commands = []
-            command_pattern = re.compile(r"🔹\s+[`]?/(?P<cmd>\w+)[^`]*[`]?\s+-\s+(?P<desc>.+)")
+            command_pattern = re.compile(r"🔹\s+.*?/(?P<cmd>\w+).*?\s+-\s+(?P<desc>.+)")
             seen_commands = set()
             
             for category in HELP_DATA.values():

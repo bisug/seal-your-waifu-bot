@@ -41,14 +41,12 @@ async def seal_handler(_, message: types.Message):
                                                                                                        
         await clear_active_spawn(chat_id, user_id)
         
-        # Send successful reactions in the background to avoid slowness
+        # Send one random big positive reaction
         async def send_reactions():
             try:
-                # Some versions of Pyrogram/Kurigram might not support a list. 
-                # We'll send the primary one first, then others if possible.
-                await app.send_reaction(chat_id, message_id=message.id, emoji="🔥")
-                # Try sending a multiple reactions if the client supports it
-                # await app.send_reaction(chat_id, message_id=message.id, emoji=["❤️", "🎉", "🤩", "👍"])
+                emojis = ["🔥", "❤️", "🎉", "🤩", "👍", "🎁", "✨", "🙌", "🥳", "🌈"]
+                selected = random.choice(emojis)
+                await app.send_reaction(chat_id, message_id=message.id, emoji=selected, big=True)
             except Exception as e:
                 LOGGER.error(f"Failed to send reaction: {e}")
 
