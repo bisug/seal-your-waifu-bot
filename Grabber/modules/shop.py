@@ -1,7 +1,7 @@
 import random
 import httpx
-from pyrogram.enums import ParseMode
 from pyrogram import filters, types, errors, enums
+from pyrogram.enums import ButtonStyle, ParseMode
 from Grabber.core.utils import html_escape
 from Grabber import app, collection, user_collection, sudo_users, OWNER_ID, LOGGER
 from Grabber.models import Character, User
@@ -224,8 +224,8 @@ async def ask_buy_character(_, query: types.CallbackQuery):
     )
     keyboard = [
         [
-            types.InlineKeyboardButton("Confirm ✅", callback_data=f"confirm_buy_char_{char_id}"),
-            types.InlineKeyboardButton("Cancel ❌", callback_data="hub_char")
+            types.InlineKeyboardButton("Confirm ✅", callback_data=f"confirm_buy_char_{char_id}", style=ButtonStyle.SUCCESS),
+            types.InlineKeyboardButton("Cancel ❌", callback_data="hub_char", style=ButtonStyle.DANGER)
         ]
     ]
     await query.message.edit_caption(text, reply_markup=types.InlineKeyboardMarkup(keyboard), parse_mode=ParseMode.HTML)

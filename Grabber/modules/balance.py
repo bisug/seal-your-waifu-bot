@@ -2,7 +2,7 @@ import asyncio
 import random
 from datetime import datetime, timezone
 from pyrogram import filters, enums, types
-from pyrogram.enums import ParseMode
+from pyrogram.enums import ButtonStyle, ParseMode
 from Grabber.core.utils import html_escape
 from Grabber import app
 from Grabber import collection, OWNER_ID, SUPPORT_GROUP_ID, LOGGER
@@ -53,8 +53,8 @@ async def pay_cmd(_, message: types.Message):
 
     buttons = [
         [
-            types.InlineKeyboardButton("✅ Confirm", callback_data=f"pay_c_{recipient_id}_{amount}"),
-            types.InlineKeyboardButton("❌ Cancel", callback_data="pay_a")
+            types.InlineKeyboardButton("✅ Confirm", callback_data=f"pay_c_{recipient_id}_{amount}", style=ButtonStyle.SUCCESS),
+            types.InlineKeyboardButton("❌ Cancel", callback_data="pay_a", style=ButtonStyle.DANGER)
         ]
     ]
 

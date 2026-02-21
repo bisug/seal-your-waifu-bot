@@ -1,5 +1,5 @@
 from pyrogram import filters, types, enums, errors
-from pyrogram.enums import ParseMode
+from pyrogram.enums import ButtonStyle, ParseMode
 from Grabber.core.utils import html_escape
 from Grabber import app, user_collection, LOGGER
 from Grabber.core.user import get_user_data, update_user
@@ -59,8 +59,8 @@ async def gift_command(_, message: types.Message):
 
     markup = types.InlineKeyboardMarkup([
         [
-            types.InlineKeyboardButton("✅ Confirm", callback_data=f"gift_confirm:{session_id}"),
-            types.InlineKeyboardButton("❌ Cancel", callback_data=f"gift_cancel:{session_id}")
+            types.InlineKeyboardButton("✅ Confirm", callback_data=f"gift_confirm:{session_id}", style=ButtonStyle.SUCCESS),
+            types.InlineKeyboardButton("❌ Cancel", callback_data=f"gift_cancel:{session_id}", style=ButtonStyle.DANGER)
         ]
     ])
 

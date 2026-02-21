@@ -1,5 +1,5 @@
 from pyrogram import filters, enums, types
-from pyrogram.enums import ParseMode
+from pyrogram.enums import ButtonStyle, ParseMode
 from Grabber.core.utils import html_escape
 from Grabber import app
 from Grabber.database import user_collection
@@ -62,8 +62,8 @@ async def exchange_command(_, message: types.Message):
     
     buttons = [
         [
-            types.InlineKeyboardButton("✅ Confirm", callback_data=f"exchange_confirm_{shards_amount}"),
-            types.InlineKeyboardButton("❌ Cancel", callback_data="exchange_cancel")
+            types.InlineKeyboardButton("✅ Confirm", callback_data=f"exchange_confirm_{shards_amount}", style=ButtonStyle.SUCCESS),
+            types.InlineKeyboardButton("❌ Cancel", callback_data="exchange_cancel", style=ButtonStyle.DANGER)
         ]
     ]
     

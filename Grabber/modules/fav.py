@@ -1,5 +1,5 @@
 from pyrogram import filters, types, enums, errors
-from pyrogram.enums import ParseMode
+from pyrogram.enums import ButtonStyle, ParseMode
 from Grabber.core.utils import html_escape
 from Grabber import app
 from Grabber import LOGGER
@@ -24,8 +24,8 @@ async def fav_handler(_, message: types.Message):
         return await message.reply_text("❌ You don't own this character.")
 
     markup = types.InlineKeyboardMarkup([[
-        types.InlineKeyboardButton("✅ Set as Favorite", callback_data=f"fav_set:{char_id}:{user_id}"),
-        types.InlineKeyboardButton("❌ Cancel", callback_data="fav_cancel")
+        types.InlineKeyboardButton("✅ Set as Favorite", callback_data=f"fav_set:{char_id}:{user_id}", style=ButtonStyle.SUCCESS),
+        types.InlineKeyboardButton("❌ Cancel", callback_data="fav_cancel", style=ButtonStyle.DANGER)
     ]])
 
     await message.reply_photo(
