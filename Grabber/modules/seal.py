@@ -9,6 +9,7 @@ from Grabber.core.progression import add_xp
 from Grabber.modules.quests import update_quest_progress
 from Grabber.modules.achievements import check_achievements
 import random
+import asyncio
 from Grabber.modules.rarities import RARITY_WEIGHTS
 
 AUTHORIZED_USERS = set(sudo_users + [OWNER_ID])
@@ -40,11 +41,18 @@ async def seal_handler(_, message: types.Message):
                                                                                                        
         await clear_active_spawn(chat_id, user_id)
         
-        # Send successful reactions
-        try:
-            await app.send_reaction(chat_id, message_id=message.id, emoji=["🔥", "❤️", "🎉", "🤩", "👍"])
-        except:
-            pass
+        # Send successful reactions in the background to avoid slowness
+        async def send_reactions():
+            try:
+                # Some versions of Pyrogram/Kurigram might not support a list. 
+                # We'll send the primary one first, then others if possible.
+                await app.send_reaction(chat_id, message_id=message.id, emoji="🔥")
+                # Try sending a multiple reactions if the client supports it
+                # await app.send_reaction(chat_id, message_id=message.id, emoji=["❤️", "🎉", "🤩", "👍"])
+            except Exception as e:
+                LOGGER.error(f"Failed to send reaction: {e}")
+
+        asyncio.create_task(send_reactions())
         
                            
         await add_char_to_user(user_id, character)
