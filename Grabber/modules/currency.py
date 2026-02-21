@@ -62,8 +62,8 @@ async def exchange_command(_, message: types.Message):
     
     buttons = [
         [
-            types.InlineKeyboardButton("✅ Confirm", callback_data=f"exchange_confirm_{shards_amount}", style=ButtonStyle.SUCCESS),
-            types.InlineKeyboardButton("❌ Cancel", callback_data="exchange_cancel", style=ButtonStyle.DANGER)
+            types.InlineKeyboardButton("✅ Confirm", callback_data=f"exchange_confirm_{shards_amount}_{user_id}", style=ButtonStyle.SUCCESS),
+            types.InlineKeyboardButton("❌ Cancel", callback_data=f"exchange_cancel_{user_id}", style=ButtonStyle.DANGER)
         ]
     ]
     
@@ -74,10 +74,15 @@ async def exchange_command(_, message: types.Message):
     )
 
                        
-@app.on_callback_query(filters.regex(r"^exchange_confirm_(\d+)$"))
+@app.on_callback_query(filters.regex(r"^exchange_confirm_(\d+)_(\d+)$"))
 async def exchange_confirm_callback(_, query: types.CallbackQuery):
-    shards_amount = int(query.data.split("_")[2])
+    data = query.data.split("_")
+    shards_amount = int(data[2])
+    owner_id = int(data[3])
     user_id = query.from_user.id
+    
+    if owner_id and user_id != owner_id:
+        return await query.answer("❌ This is not your exchange!", show_alert=True)
     
     user = await user_collection.find_one({"id": user_id})
     current_shards = user.get("balance", 0) if user else 0
@@ -117,8 +122,11 @@ async def exchange_confirm_callback(_, query: types.CallbackQuery):
     await query.answer("Exchange completed!")
 
                  
-@app.on_callback_query(filters.regex(r"^exchange_cancel$"))
+@app.on_callback_query(filters.regex(r"^exchange_cancel_(\d+)$"))
 async def exchange_cancel_callback(_, query: types.CallbackQuery):
+    owner_id = int(query.data.split("_")[2])
+    if query.from_user.id != owner_id:
+        return await query.answer("❌ This is not your exchange!", show_alert=True)
     await query.message.edit_text(
         "❌ <b>Exchange Cancelled</b>\n\n"
         "Your balance remains unchanged.",

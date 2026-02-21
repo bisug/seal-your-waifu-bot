@@ -25,7 +25,7 @@ async def fav_handler(_, message: types.Message):
 
     markup = types.InlineKeyboardMarkup([[
         types.InlineKeyboardButton("✅ Set as Favorite", callback_data=f"fav_set:{char_id}:{user_id}", style=ButtonStyle.SUCCESS),
-        types.InlineKeyboardButton("❌ Cancel", callback_data="fav_cancel", style=ButtonStyle.DANGER)
+        types.InlineKeyboardButton("❌ Cancel", callback_data=f"fav_cancel:{user_id}", style=ButtonStyle.DANGER)
     ]])
 
     await message.reply_photo(
@@ -50,4 +50,8 @@ async def fav_set_handler(_, query: types.CallbackQuery):
 
 @app.on_callback_query(filters.regex(r"fav_cancel"))
 async def fav_cancel_handler(_, query: types.CallbackQuery):
+    data = query.data.split(":")
+    owner_id = int(data[1]) if len(data) > 1 else 0
+    if owner_id and query.from_user.id != owner_id:
+        return await query.answer("❌ This is not your menu!", show_alert=True)
     await query.message.delete()

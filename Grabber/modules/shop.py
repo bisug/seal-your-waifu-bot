@@ -104,8 +104,17 @@ async def hub_callback_handler(_, query: types.CallbackQuery):
     elif choice == "egg":
         import Grabber.modules.hunt as hunt_module
         await hunt_module.show_egg_page(query, 0, query.from_user.id)
+    elif choice == "main":
+        await send_shop_hub(query)
     
     await query.answer()
+
+@app.on_callback_query(filters.regex(r"^shop_back_(\d+)$"))
+async def shop_back_handler(_, query: types.CallbackQuery):
+    owner_id = int(query.data.split("_")[2])
+    if query.from_user.id != owner_id:
+        return await query.answer("❌ Not yours!", show_alert=True)
+    await send_shop_message(query, owner_id)
 
 async def send_shop_message(message, user_id):
     session = await get_session(f"shop_{user_id}")
@@ -143,7 +152,7 @@ async def send_shop_message(message, user_id):
     )
 
     keyboard = [
-        [types.InlineKeyboardButton("💰 Buy", callback_data=f"ask_buy_char_{char.id}")],
+        [types.InlineKeyboardButton("💰 Buy", callback_data=f"ask_buy_char_{char.id}_{user_id}", style=ButtonStyle.PRIMARY)],
         [
             types.InlineKeyboardButton("⬅️ Prev", callback_data=f"shop_prev:{user_id}"),
             types.InlineKeyboardButton("➡️ Next", callback_data=f"shop_next:{user_id}")
@@ -202,7 +211,12 @@ async def shop_navigation(_, query: types.CallbackQuery):
 
 @app.on_callback_query(filters.regex(r"^ask_buy_char_(.+)"))
 async def ask_buy_character(_, query: types.CallbackQuery):
-    char_id = query.data.split("_")[3]
+    data = query.data.split("_")
+    char_id = data[3]
+    owner_id = int(data[4]) if len(data) > 4 else 0
+
+    if owner_id and query.from_user.id != owner_id:
+        return await query.answer("❌ This is not your shop session!", show_alert=True)
     char_raw = await collection.find_one({"id": char_id})
     char = Character(**char_raw) if char_raw else None
     if not char:
@@ -224,8 +238,8 @@ async def ask_buy_character(_, query: types.CallbackQuery):
     )
     keyboard = [
         [
-            types.InlineKeyboardButton("Confirm ✅", callback_data=f"confirm_buy_char_{char_id}", style=ButtonStyle.SUCCESS),
-            types.InlineKeyboardButton("Cancel ❌", callback_data="hub_char", style=ButtonStyle.DANGER)
+            types.InlineKeyboardButton("Confirm ✅", callback_data=f"confirm_buy_char_{char_id}_{query.from_user.id}", style=ButtonStyle.SUCCESS),
+            types.InlineKeyboardButton("Cancel ❌", callback_data=f"shop_back_{query.from_user.id}", style=ButtonStyle.DANGER)
         ]
     ]
     await query.message.edit_caption(text, reply_markup=types.InlineKeyboardMarkup(keyboard), parse_mode=ParseMode.HTML)
@@ -233,7 +247,12 @@ async def ask_buy_character(_, query: types.CallbackQuery):
 @app.on_callback_query(filters.regex(r"^confirm_buy_char_(.+)"))
 async def buy_character(_, query: types.CallbackQuery):
     user_id = query.from_user.id
-    char_id = query.data.split("_")[3]
+    data = query.data.split("_")
+    char_id = data[3]
+    owner_id = int(data[4]) if len(data) > 4 else 0
+
+    if owner_id and user_id != owner_id:
+        return await query.answer("❌ This is not your purchase!", show_alert=True)
 
     user_raw = await user_collection.find_one({"id": user_id})
     user_data = User(**user_raw) if user_raw else None
