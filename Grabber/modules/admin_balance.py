@@ -1,5 +1,5 @@
 from pyrogram import filters, types, enums
-from pyrogram.enums import ParseMode
+from pyrogram.enums import ButtonStyle, ParseMode
 from Grabber.core.utils import html_escape
 from Grabber import app, user_collection, OWNER_ID, sudo_users
 
@@ -42,8 +42,8 @@ async def give_coin_handler(_, message: types.Message):
         )
 
     buttons = [[
-        types.InlineKeyboardButton("✅ Confirm Give", callback_data=f"admin_coin_give_{user_id}_{amount}"),
-        types.InlineKeyboardButton("❌ Cancel", callback_data="admin_coin_cancel")
+        types.InlineKeyboardButton("✅ Confirm Give", callback_data=f"admin_coin_give_{user_id}_{amount}", style=ButtonStyle.SUCCESS),
+        types.InlineKeyboardButton("❌ Cancel", callback_data="admin_coin_cancel", style=ButtonStyle.DANGER)
     ]]
 
     await message.reply_text(
@@ -71,8 +71,8 @@ async def take_coin_handler(_, message: types.Message):
         )
 
     buttons = [[
-        types.InlineKeyboardButton("✅ Confirm Take", callback_data=f"admin_coin_take_{user_id}_{amount}"),
-        types.InlineKeyboardButton("❌ Cancel", callback_data="admin_coin_cancel")
+        types.InlineKeyboardButton("✅ Confirm Take", callback_data=f"admin_coin_take_{user_id}_{amount}", style=ButtonStyle.SUCCESS),
+        types.InlineKeyboardButton("❌ Cancel", callback_data="admin_coin_cancel", style=ButtonStyle.DANGER)
     ]]
 
     await message.reply_text(
