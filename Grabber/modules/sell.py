@@ -1,5 +1,5 @@
 from pyrogram import filters, types, enums
-from pyrogram.enums import ParseMode
+from pyrogram.enums import ButtonStyle, ParseMode
 from Grabber import app
 from Grabber.core.utils import html_escape
 from Grabber.core.user import get_user_data, remove_char_from_user
@@ -43,8 +43,8 @@ async def sell_handler(_, message: types.Message):
 
     buttons = [
         [
-            types.InlineKeyboardButton("✅ Confirm", callback_data=f"sell_c_{char_id}:{user_id}"),
-            types.InlineKeyboardButton("❌ Cancel", callback_data=f"sell_a:{user_id}")
+            types.InlineKeyboardButton("✅ Confirm", callback_data=f"sell_c_{char_id}:{user_id}", style=ButtonStyle.SUCCESS),
+            types.InlineKeyboardButton("❌ Cancel", callback_data=f"sell_a:{user_id}", style=ButtonStyle.DANGER)
         ]
     ]
     

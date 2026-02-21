@@ -1,5 +1,5 @@
 from pyrogram import filters, types, enums
-from pyrogram.enums import ParseMode
+from pyrogram.enums import ButtonStyle, ParseMode
 from Grabber import user_collection, app
 from Grabber.core.progression import get_user_progress, get_progress_bar, LEVEL_REWARDS
 
@@ -112,8 +112,8 @@ async def buypass_ask_callback(_, query: types.CallbackQuery):
     price = PASS_PRICES[tier]
     text = f"⚠️ <b>Confirm Upgrade</b>\n\nUpgrade to <b>{tier.capitalize()} Pass</b> for <b>{price} ⧫</b>?"
     keyboard = [[
-        types.InlineKeyboardButton("Confirm ✅", callback_data=f"buypass_{tier}:{owner_id}"),
-        types.InlineKeyboardButton("Cancel ❌", callback_data=f"pass_back:{owner_id}")
+        types.InlineKeyboardButton("Confirm ✅", callback_data=f"buypass_{tier}:{owner_id}", style=ButtonStyle.SUCCESS),
+        types.InlineKeyboardButton("Cancel ❌", callback_data=f"pass_back:{owner_id}", style=ButtonStyle.DANGER)
     ]]
     await query.message.edit_text(text, parse_mode=ParseMode.HTML, reply_markup=types.InlineKeyboardMarkup(keyboard))
 
