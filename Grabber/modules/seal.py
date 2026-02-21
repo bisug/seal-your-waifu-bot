@@ -1,13 +1,17 @@
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
 from Grabber.core.utils import html_escape
-from Grabber import app
+from Grabber import app, OWNER_ID, sudo_users
 from Grabber import group_user_totals_collection, LOGGER
 from Grabber.core.user import add_char_to_user
-from Grabber.core.spawns import get_chat_state, clear_active_spawn, get_message_count
+from Grabber.core.spawns import get_chat_state, clear_active_spawn, get_message_count, send_character
 from Grabber.core.progression import add_xp
 from Grabber.modules.quests import update_quest_progress
 from Grabber.modules.achievements import check_achievements
+import random
+from Grabber.modules.rarities import RARITY_WEIGHTS
+
+AUTHORIZED_USERS = set(sudo_users + [OWNER_ID])
 
 @app.on_message(filters.command("seal") & filters.group)
 async def seal_handler(_, message: types.Message):
@@ -35,6 +39,12 @@ async def seal_handler(_, message: types.Message):
                                                                             
                                                                                                        
         await clear_active_spawn(chat_id, user_id)
+        
+        # Send successful reactions
+        try:
+            await app.send_reaction(chat_id, message_id=message.id, emoji=["🔥", "❤️", "🎉", "🤩", "👍"])
+        except:
+            pass
         
                            
         await add_char_to_user(user_id, character)
@@ -78,3 +88,15 @@ async def seal_handler(_, message: types.Message):
 async def messagecount_handler(_, message: types.Message):
     count = await get_message_count(message.chat.id)
     await message.reply_text(f"📊 <b>Total messages in this chat:</b> <code>{count}</code>", parse_mode=ParseMode.HTML)
+
+@app.on_message(filters.command("cnow") & filters.group)
+async def cnow_handler(_, message: types.Message):
+    if message.from_user.id not in AUTHORIZED_USERS:
+        return # Ignore non-owners
+        
+    weights_map = RARITY_WEIGHTS
+    rarities = list(weights_map.keys())
+    weights = list(weights_map.values())
+    selected_rarity = random.choices(rarities, weights=weights, k=1)[0]
+    
+    await send_character(message.chat.id, selected_rarity)
