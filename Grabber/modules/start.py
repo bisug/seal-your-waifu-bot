@@ -52,6 +52,7 @@ HELP_DATA = {
 🔹 <code>/trade &lt;user&gt; &lt;amount&gt;</code> - Trade characters/items
 🔹 <code>/gift &lt;id&gt;</code> - Gift a character to a user
 🔹 <code>/quiz</code> - Test your anime knowledge &amp; have fun!
+🔹 <code>/cnow</code> - [OWNER] Spawn a character immediately
 """,
     },
     "PET": {
