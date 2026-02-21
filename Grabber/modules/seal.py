@@ -44,8 +44,11 @@ async def seal_handler(_, message: types.Message):
         # Send one random big positive reaction
         async def send_reactions():
             try:
-                emojis = ["🔥", "❤️", "🎉", "🤩", "👍", "🎁", "✨", "🙌", "🥳", "🌈"]
+                # Using only standard reactions that are widely enabled
+                emojis = ["🔥", "❤️", "🎉", "🤩", "👍", "🥰", "👏"]
                 selected = random.choice(emojis)
+                # Note: Some clients/forks use 'big', some use 'is_big', 
+                # but if the error was REACTION_INVALID, it's the emoji itself.
                 await app.send_reaction(chat_id, message_id=message.id, emoji=selected, big=True)
             except Exception as e:
                 LOGGER.error(f"Failed to send reaction: {e}")
