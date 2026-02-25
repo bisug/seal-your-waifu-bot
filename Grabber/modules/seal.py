@@ -35,11 +35,11 @@ async def seal_handler(_, message: types.Message):
     guess = " ".join(message.command[1:]).strip().lower()
     correct_name = character['name'].strip().lower()
 
-                 
+    # guess name logic
     if guess == correct_name or any(part in guess for part in correct_name.split() if len(part) > 2):
-                                                                            
-                                                                                                       
-        await clear_active_spawn(chat_id, user_id)
+        # Atomically try to claim the character
+        if not await clear_active_spawn(chat_id, user_id):
+            return # Someone else caught it already
         
         # Send one random big positive reaction
         async def send_reactions():
