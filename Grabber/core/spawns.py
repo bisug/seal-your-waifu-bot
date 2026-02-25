@@ -51,15 +51,24 @@ async def set_active_spawn(chat_id: int, character: Dict[str, Any], message_id: 
         upsert=True
     )
 
-async def clear_active_spawn(chat_id: int, user_id: int):
-                                                            
-    await spawns_collection.update_one(
-        {"chat_id": chat_id},
+async def clear_active_spawn(chat_id: int, user_id: int) -> bool:
+    """
+    Atomically clear the active spawn and set the first correct guesser.
+    Returns True if the update was successful (i.e., this user was the first to guess),
+    False otherwise (e.g., character already claimed or no active spawn).
+    """
+    result = await spawns_collection.update_one(
+        {
+            "chat_id": chat_id,
+            "last_character": {"$ne": None},
+            "first_correct_guess": None
+        },
         {
             "$set": {"first_correct_guess": user_id},
             "$unset": {"last_character": "", "message_id": ""}
         }
     )
+    return result.modified_count > 0
 
 async def get_message_count(chat_id: int) -> int:
     doc = await message_counts_collection.find_one({"chat_id": str(chat_id)})
