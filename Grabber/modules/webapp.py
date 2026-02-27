@@ -11,7 +11,7 @@ async def webapp_command(_, message):
     
     keyboard = types.InlineKeyboardMarkup([
         [
-            types.InlineKeyboardButton("🌐 Open Web Gallery", url=web_app_url)
+            types.InlineKeyboardButton("Open Web Gallery", url=web_app_url)
         ]
     ])
     

@@ -6,3 +6,4 @@ httpx
 psutil
 pydantic
 orjson
+redis

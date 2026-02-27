@@ -15,6 +15,7 @@ class Config:
     
     # Database
     MONGO_URL =""
+    REDIS_URL =""
     
     # User IDs and Group IDs
     OWNER_ID = int(os.getenv("OWNER_ID", "6574393060"))
