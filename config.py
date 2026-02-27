@@ -15,6 +15,7 @@ class Config:
     
     # Database
     MONGO_URL = os.getenv("MONGO_URL", "mongodb+srv://botmaker9675208:botmaker9675208@cluster0.sc9mq8b.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+    REDIS_URL = os.getenv("REDIS_URL", "rediss://default:AY_bAAIncDEwNWNkODM3NjgxN2M0Y2ZhODZlMDAzYTI4MzY2M2U1M3AxMzY4Mjc@civil-monster-36827.upstash.io:6379")
     
     # User IDs and Group IDs
     OWNER_ID = int(os.getenv("OWNER_ID", "6574393060"))

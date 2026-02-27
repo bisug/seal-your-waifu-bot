@@ -1,4 +1,5 @@
 from motor.motor_asyncio import AsyncIOMotorClient
+import redis.asyncio as redis
 from config import config
 
 class Database:
@@ -32,6 +33,18 @@ try:
 except Exception as e:
     print(f"Failed to connect to MongoDB: {e}")
     raise e
+
+# Initialize Redis
+try:
+    redis_url = config.REDIS_URL
+    if not redis_url:
+        print("Warning: REDIS_URL not found in environment. Redis features will fail.")
+        r = None
+    else:
+        r = redis.from_url(redis_url, decode_responses=True)
+except Exception as e:
+    print(f"Failed to initialize Redis: {e}")
+    r = None
 
 # Export variables for backward compatibility
 client = seal_db.client
