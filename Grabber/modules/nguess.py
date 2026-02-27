@@ -134,6 +134,8 @@ async def nglist_handler(_, message: types.Message):
 
 @app.on_message(filters.text & filters.group & ~filters.command(["nguess", "top", "ctop"]), group=10)
 async def nguess_check_handler(_, message: types.Message):
+    if not message.from_user:
+        return
     chat_id = message.chat.id
     
     # Update player list atomically
