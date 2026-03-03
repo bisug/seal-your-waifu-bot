@@ -29,7 +29,7 @@ I’m your ultimate companion for <b>Anime Character Collecting & PvP Battles!</
 <i>Add me to your group & start your adventure!</i> 🚀
 """
 
-                 
+
 HELP_DATA = {
     "MAIN": {
         "text": "<b>📚 Seal Bot - Help Menu</b>\n\nSelect a category below to see available commands:",
@@ -107,28 +107,24 @@ HELP_DATA = {
 @app.on_message(filters.command("start"))
 async def start_handler(_, message: types.Message):
     user_id = message.from_user.id
-    
-                                 
-                                                                 
+
     existing_user = await user_collection.find_one({"id": user_id})
-    
+
     await total_pm_users.update_one(
         {"_id": user_id},
         {"$set": {"first_name": message.from_user.first_name, "username": message.from_user.username}},
         upsert=True
     )
-    
-                    
+
     if len(message.command) > 1:
         param = message.command[1]
-        
-                                             
+
         if param.startswith("locate_"):
             try:
                 char_id = param.split("_")[1]
                 from Grabber.database import collection
                 character = await collection.find_one({'id': char_id})
-                
+
                 if character:
                     response_message = (
                         f"<b>Character Name:</b> {html_escape(character['name'])}\n"
@@ -142,7 +138,7 @@ async def start_handler(_, message: types.Message):
                         caption=response_message,
                         parse_mode=ParseMode.HTML
                     )
-                    return                                        
+                    return
                 else:
                     await message.reply_text("❌ Character not found.", parse_mode=ParseMode.HTML)
                     return
@@ -154,14 +150,12 @@ async def start_handler(_, message: types.Message):
             try:
                 referrer_id = int(param.split("_")[1])
                 if referrer_id != user_id:
-                                   
-                                                                 
                     upgraded_pet = DEFAULT_PET.copy()
                     upgraded_pet["level"] = 10
-                    upgraded_pet["hp"] += 45                          
+                    upgraded_pet["hp"] += 45
                     upgraded_pet["atk"] += 18
                     upgraded_pet["spd"] += 9
-                    
+
                     await user_collection.update_one(
                         {"id": user_id},
                         {
@@ -174,8 +168,8 @@ async def start_handler(_, message: types.Message):
                         },
                         upsert=True
                     )
-                    
-                                       
+
+
                     await user_collection.update_one(
                         {"id": referrer_id},
                         {
@@ -184,8 +178,7 @@ async def start_handler(_, message: types.Message):
                     )
                     await add_xp(referrer_id, 50, "referral")
                     await check_achievements(referrer_id)
-                    
-                                    
+
                     try:
                         await app.send_message(
                             referrer_id,
@@ -194,9 +187,9 @@ async def start_handler(_, message: types.Message):
                         )
                     except:
                         pass
-                        
+
                     await message.reply_text("🎁 <b>Welcome Bonus!</b>\nYou received <b>1,500 ⬪</b> and a <b>Level 10 Pet</b> for using a referral link! 🚀", parse_mode=ParseMode.HTML)
-                    
+
             except ValueError:
                 pass
 
@@ -208,7 +201,7 @@ async def start_handler(_, message: types.Message):
              types.InlineKeyboardButton("📢 Latest Updates", url=f"https://t.me/{UPDATE_CHAT}")],
             [types.InlineKeyboardButton("❓ Help & Commands", callback_data="help:main")]
         ])
-        
+
         first_name = html_escape(message.from_user.first_name)
         from Grabber import BOT_NAME
         text = START_TEXT.format(first_name=first_name, bot_name=BOT_NAME)
@@ -222,22 +215,21 @@ async def start_handler(_, message: types.Message):
     else:
         await message.reply_text("✅ <b>I'm active and ready to drop characters!</b>", parse_mode=ParseMode.HTML)
 
-                          
 @app.on_callback_query(filters.regex(r"^st:(h|b)"))
 async def start_callback_handler(_, query: types.CallbackQuery):
     action = query.data.split(":")[1]
-    
+
     markup = types.InlineKeyboardMarkup([
         [types.InlineKeyboardButton("➕ Add to Group", url=f"https://t.me/{BOT_USERNAME}?startgroup=true")],
         [types.InlineKeyboardButton("💬 Contact Support", url=f"https://t.me/{SUPPORT_CHAT}"),
             types.InlineKeyboardButton("📢 Latest Updates", url=f"https://t.me/{UPDATE_CHAT}")],
         [types.InlineKeyboardButton("❓ Help & Commands", callback_data="help:main")]
     ])
-    
+
     first_name = html_escape(query.from_user.first_name)
     from Grabber import BOT_NAME
     text = START_TEXT.format(first_name=first_name, bot_name=BOT_NAME)
-    
+
     try:
         if query.message.photo:
             await query.message.edit_caption(text, reply_markup=markup, parse_mode=ParseMode.HTML)
@@ -245,14 +237,13 @@ async def start_callback_handler(_, query: types.CallbackQuery):
             await query.message.edit_text(text, reply_markup=markup, parse_mode=ParseMode.HTML)
     except errors.MessageNotModified:
         pass
-    
+
     await query.answer()
 
-                         
 @app.on_callback_query(filters.regex(r"^help:(.+)"))
 async def help_callback_handler(_, query: types.CallbackQuery):
     module = query.data.split(":")[1].upper()
-    
+
     if module == "MAIN":
         data = HELP_DATA["MAIN"]
         markup = types.InlineKeyboardMarkup(data["buttons"])
@@ -271,7 +262,7 @@ async def help_callback_handler(_, query: types.CallbackQuery):
             await query.message.edit_text(text, reply_markup=markup, parse_mode=ParseMode.HTML)
     except errors.MessageNotModified:
         pass
-    
+
     await query.answer()
 
 def random_photo():

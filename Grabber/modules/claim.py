@@ -10,7 +10,7 @@ from Grabber.core.sessions import create_session, get_session
 
 MUST_JOIN = "TNJBotSupport"
 SECOND_JOIN = "SEAL_UPDATE"
-DAILY_SHARD_REWARD = 200                                  
+DAILY_SHARD_REWARD = 200
 
 RARITY_WEIGHTS = {
     '⚪ Common': 60,
@@ -56,11 +56,11 @@ async def claim_handler(_, message: types.Message):
             parse_mode=ParseMode.HTML
         )
 
-                                           
+
     await show_preview(message, user_id)
 
 async def show_preview(message_or_query, user_id):
-                                                 
+
     char = await get_weighted_rarity_character()
     if not char:
         error_msg = "⚠️ No characters found."
@@ -69,7 +69,7 @@ async def show_preview(message_or_query, user_id):
         else:
             return await message_or_query.reply_text(error_msg)
 
-                                                 
+
     await create_session(f"claim_{user_id}", {"character": char})
 
     preview_text = (
@@ -115,7 +115,7 @@ async def claim_verify_handler(_, query: types.CallbackQuery):
     await query.answer("Verifying...", cache_time=1)
 
     if await check_groups_joined(user_id):
-                                         
+
         await show_preview(query, user_id)
     else:
         await query.answer("❌ You haven't joined yet!", show_alert=True)
@@ -126,14 +126,14 @@ async def claim_confirm_handler(_, query: types.CallbackQuery):
     if query.from_user.id != user_id:
         return await query.answer("❌ Not for you!", show_alert=True)
 
-                                     
+
     session = await get_session(f"claim_{user_id}")
     if not session or "character" not in session:
         return await query.answer("⚠️ Session expired. Use /claim again.", show_alert=True)
 
     char = session["character"]
 
-                                       
+
     await add_char_to_user(user_id, char)
     await update_user(user_id, {
         "$set": {"claimed_waifu": True},

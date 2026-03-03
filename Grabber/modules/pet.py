@@ -3,13 +3,13 @@ from pyrogram.enums import ButtonStyle, ParseMode
 from Grabber.core.utils import html_escape
 from Grabber import app, user_collection, PHOTO_URL, LOGGER
 
-             
+
 DEFAULT_PET = {
     "name": "Fluffy Fox 🦊",
     "luck": 0.10,
-    "hp": 195,                             
-    "atk": 38,           
-    "spd": 29,          
+    "hp": 195,
+    "atk": 38,
+    "spd": 29,
     "level": 10,
     "xp": 0,
     "owned": True,
@@ -18,7 +18,7 @@ DEFAULT_PET = {
     "img": PHOTO_URL[0]
 }
 
-               
+
 PET_SHOP = [
     {"name": "Blaze Fang 🐺", "luck": 0.15, "hp": 180, "atk": 30, "spd": 15, "level": 1, "xp": 0, "zenith_price": 2, "req_level": 0, "ability": "Scavenger", "desc": "20% Chance for Double Shards", "img": "https://i.ibb.co/fd1qPVJs/file-89.jpg"},
     {"name": "Shadow Panther 🐆", "luck": 0.25, "hp": 140, "atk": 40, "spd": 35, "level": 1, "xp": 0, "zenith_price": 5, "req_level": 10, "ability": "Speedster", "desc": "-10s Hunt Cooldown", "img": "https://i.ibb.co/8CdC5QG/file-86.jpg"},
@@ -26,16 +26,16 @@ PET_SHOP = [
     {"name": "Mystic Dragon 🐲", "luck": 0.50, "hp": 300, "atk": 45, "spd": 10, "level": 1, "xp": 0, "zenith_price": 25, "req_level": 20, "ability": "Hoarder", "desc": "5% Chance for Bonus Egg", "img": "https://files.catbox.moe/7kvcqj.jpg"},
 ]
 
-                    
+
 async def send_petshop_page(message_or_query_obj, page: int, user_id: int):
     from Grabber.core.progression import get_user_progress
-    
+
     pet = PET_SHOP[page]
     user_progress = await get_user_progress(user_id)
     user_level = user_progress["level"]
     req_level = pet.get("req_level", 0)
     is_locked = user_level < req_level
-    
+
     caption = (
         f"<b>{html_escape(pet['name'])}</b>\n"
         f"✨ Ability: <b>{html_escape(pet.get('ability', 'None'))}</b>\n"
@@ -44,11 +44,11 @@ async def send_petshop_page(message_or_query_obj, page: int, user_id: int):
         f"🍀 Luck: {int(pet['luck'] * 100)}%\n"
         f"💰 Price: <b>{pet['zenith_price']} ⧫</b>"
     )
-    
+
     if is_locked:
         caption += f"\n\n🔒 <b>Requires Level {req_level}</b> (You: {user_level})"
-    
-                                      
+
+
     buy_button_text = f"🔒 Locked (Lvl {req_level})" if is_locked else "Buy Now"
     keyboard = [
         [
@@ -75,7 +75,7 @@ async def send_petshop_page(message_or_query_obj, page: int, user_id: int):
     except Exception as e:
         LOGGER.error(f"Error in send_petshop_page: {e}")
 
-                  
+
 @app.on_message(filters.command("petshop"))
 async def petshop(_, message: types.Message):
     user_id = message.from_user.id
@@ -89,20 +89,20 @@ async def petshop(_, message: types.Message):
         })
     await send_petshop_page(message, 0, user_id)
 
-                       
+
 async def perform_pet_purchase(user_id, pet_index: int):
     from Grabber.core.progression import get_user_progress
-    
+
     try:
         pet = PET_SHOP[pet_index]
     except IndexError:
         return "❌ Invalid pet selection."
-    
-                             
+
+
     user_progress = await get_user_progress(user_id)
     user_level = user_progress["level"]
     req_level = pet.get("req_level", 0)
-    
+
     if user_level < req_level:
         return f"🔒 You need to reach <b>Level {req_level}</b> to purchase this pet! (Current: {user_level})"
 
@@ -110,14 +110,14 @@ async def perform_pet_purchase(user_id, pet_index: int):
     if not user:
         user = {"id": user_id, "balance": 0, "zenith": 0, "pets": [DEFAULT_PET.copy()], "current_pet": DEFAULT_PET["name"]}
         await user_collection.insert_one(user)
-    
+
     user_zenith = user.get("zenith", 0)
     price = pet["zenith_price"]
-    
+
     if user_zenith < price:
         return f"❌ You need <b>{price} ⧫ Zenith</b> to purchase this pet! (You have: {user_zenith} ⧫)"
-    
-                   
+
+
     await user_collection.update_one(
         {"id": user_id},
         {"$inc": {"zenith": -price}}
@@ -132,12 +132,12 @@ async def perform_pet_purchase(user_id, pet_index: int):
     })
     return True
 
-                 
+
 @app.on_message(filters.command("buypet"))
 async def buypet_cmd(_, message: types.Message):
     if len(message.command) < 2:
         return await message.reply_text("❌ Usage: <code>/buypet &lt;pet_id&gt;</code>", parse_mode=ParseMode.HTML)
-    
+
     try:
         pet_id = int(message.command[1])
     except ValueError:
@@ -154,7 +154,7 @@ async def buypet_cmd(_, message: types.Message):
     else:
         await message.reply_text(result, parse_mode=ParseMode.HTML)
 
-                                
+
 async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
     user = await user_collection.find_one({"id": user_id})
     pets = user.get("pets", [DEFAULT_PET])
@@ -171,11 +171,11 @@ async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
     page = page % len(pets)
     pet = pets[page]
     is_active = pet["name"] == current
-    
+
     level = pet.get("level", 1)
     xp = pet.get("xp", 0)
     needed = level * 100
-    
+
     caption = (
         f"🐾 <b>Your Pet</b>\n"
         f"📛 Name: <b>{html_escape(pet['name'])}</b>\n"
@@ -212,7 +212,7 @@ async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
     except Exception as e:
         LOGGER.error(f"Error in send_mypet_page: {e}")
 
-                
+
 @app.on_message(filters.command(["mypet", "pet", "pets"]))
 async def mypet_cmd(_, message: types.Message):
     await send_mypet_page(message, 0, message.from_user.id)
@@ -220,14 +220,14 @@ async def mypet_cmd(_, message: types.Message):
 @app.on_callback_query(filters.regex(r"^(shop|mypet)_(next|prev|buy)_(\d+)_(\d+)$"))
 async def shop_mypet_navigation(_, query: types.CallbackQuery):
     data = query.data.split("_")
-    action_type = data[0]                
-    action = data[1]                
+    action_type = data[0]
+    action = data[1]
     page = int(data[2])
     owner_id = int(data[3])
-    
+
     if query.from_user.id != owner_id:
         return await query.answer("❌ This is not your menu!", show_alert=True)
-    
+
     if action_type == "shop":
         if action == "next":
             page = (page + 1) % len(PET_SHOP)
@@ -242,9 +242,9 @@ async def shop_mypet_navigation(_, query: types.CallbackQuery):
             ]]
             await query.message.edit_caption(text, reply_markup=types.InlineKeyboardMarkup(keyboard))
             return
- 
+
         await send_petshop_page(query, page, owner_id)
-    
+
     elif action_type == "mypet":
         user_id = owner_id
         user = await user_collection.find_one({"id": user_id})
@@ -254,7 +254,7 @@ async def shop_mypet_navigation(_, query: types.CallbackQuery):
         else:
             page = (page - 1) % total
         await send_mypet_page(query, page, user_id)
-    
+
     await query.answer()
 
 @app.on_callback_query(filters.regex(r"^petconfirm_(\d+)_(\d+)$"))
@@ -262,7 +262,7 @@ async def pet_confirm_callback(_, query: types.CallbackQuery):
     data = query.data.split("_")
     page = int(data[1])
     owner_id = int(data[2])
-    
+
     if query.from_user.id != owner_id:
         return await query.answer("❌ This is not your menu!", show_alert=True)
 
@@ -279,14 +279,14 @@ async def setpet_callback(_, query: types.CallbackQuery):
     data = query.data.split("_")
     index = int(data[1])
     owner_id = int(data[2])
-    
+
     if query.from_user.id != owner_id:
         return await query.answer("❌ This is not your menu!", show_alert=True)
-    
+
     user_id = owner_id
     user = await user_collection.find_one({"id": user_id})
     pets = user.get("pets", [DEFAULT_PET])
-    
+
     if index >= len(pets):
         await query.answer("Invalid pet index.", show_alert=True)
         return

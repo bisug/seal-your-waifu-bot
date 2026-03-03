@@ -4,10 +4,10 @@ import time
 
 StartTime = time.time()
 
-                
+
 LOGGER = logging.getLogger(__name__)
 
-                             
+
 if sys.version_info[0] < 3 or sys.version_info[1] < 13:
     LOGGER.error(
         "You MUST have a python version of at least 3.13! Multiple features depend on this. Bot quitting."
@@ -21,7 +21,7 @@ def __list_all_modules():
     import glob
     from os.path import basename, dirname, isfile
 
-                                                                                    
+
     mod_paths = glob.glob(dirname(__file__) + "/*.py")
     all_modules = [
         basename(f)[:-3]
