@@ -6,13 +6,13 @@ import re
 from Grabber import LOGGER
 from config import config
 
-                                
+
 MONGO_URI = config.BATCH_MONGO_URI
 mongo_client = AsyncIOMotorClient(MONGO_URI)
 db = mongo_client["CharacterDB"]
 collection = db["Characters"]
 
-                         
+
 STRING_SESSION =""
 API_ID = config.API_ID
 API_HASH =""
@@ -22,7 +22,7 @@ userbot = Client("userbot", api_id=API_ID, api_hash=API_HASH, session_string=STR
 app = Client("batch_bot", api_id=API_ID, api_hash=API_HASH, bot_token=TOKEN)
 
 def extract_post_info(text: str):
-                                                                     
+
     match = re.match(r"https://t\.me/([^/]+)/(\d+)", text)
     if match:
         return match.group(1), int(match.group(2))
@@ -30,15 +30,15 @@ def extract_post_info(text: str):
 
 @app.on_message(filters.command("batchids"))
 async def batch_fetch(_, message: types.Message):
-                                                      
-    links = message.text.split()[1:]                          
+
+    links = message.text.split()[1:]
     if not links:
         await message.reply("❌ <b>Provide post links.</b> Example:\n<code>/batchid https://t.me/channel/1234 https://t.me/channel/5678</code>", parse_mode=ParseMode.HTML)
         return
 
     processing_msg = await message.reply("⏳ <b>Processing... Please wait!</b>", parse_mode=ParseMode.HTML)
     saved_count = 0
-    
+
     try:
         async with userbot:
             for link in links:
@@ -46,14 +46,14 @@ async def batch_fetch(_, message: types.Message):
                 if not channel:
                     await message.reply(f"⚠️ Invalid link: <code>{html_escape(link)}</code>", parse_mode=ParseMode.HTML)
                     continue
-                
+
                 try:
                     post = await userbot.get_messages(channel, post_id)
                     if not post.photo or not post.caption:
                         await message.reply(f"⚠️ No image or caption found in post: <code>{html_escape(link)}</code>", parse_mode=ParseMode.HTML)
                         continue
-                    
-                                                         
+
+
                     character_name = None
                     formats = ["☘️ Name:", "🔸𝙽𝙰𝙼𝙴:", "🌟 Name:", "Character Name:", "◈𝗡𝗔𝗠𝗘:"]
                     for fmt in formats:
@@ -63,24 +63,24 @@ async def batch_fetch(_, message: types.Message):
                                 break
                         if character_name:
                             break
-                    
+
                     if not character_name:
                         await message.reply(f"⚠️ Character name missing in post: <code>{html_escape(link)}</code>", parse_mode=ParseMode.HTML)
                         continue
 
                     file_id = post.photo.file_id
                     unique_id = post.photo.file_unique_id
-                    
-                                          
+
+
                     if await collection.find_one({"unique_id": unique_id}):
                         await message.reply(f"🔄 Already saved: <b>{html_escape(character_name)}</b>", parse_mode=ParseMode.HTML)
                         continue
-                    
-                                
+
+
                     await collection.insert_one({
-                        "file_id": file_id, 
-                        "unique_id": unique_id, 
-                        "name": character_name, 
+                        "file_id": file_id,
+                        "unique_id": unique_id,
+                        "name": character_name,
                         "source": link
                     })
                     saved_count += 1

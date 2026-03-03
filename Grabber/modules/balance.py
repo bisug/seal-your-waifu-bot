@@ -13,14 +13,14 @@ from Grabber.database import user_collection
 async def balance_cmd(_, message: types.Message):
     user_id = message.from_user.id
     user = await user_collection.find_one({"id": user_id})
-    
+
     if not user:
         shards = 0
         zenith = 0
     else:
         shards = user.get("balance", 0)
         zenith = user.get("zenith", 0)
-    
+
     text = (
         f"💳 <b>Your Balance</b>\n\n"
         f"<b>Shards:</b> {shards:,} ⬪\n"
@@ -28,7 +28,7 @@ async def balance_cmd(_, message: types.Message):
         f"<i>Exchange: 10,000 ⬪ = 1 ⧫</i>\n"
         f"<i>Use <code>/exchange</code> to convert Shards to Zenith</i>"
     )
-    
+
     await message.reply_text(text, parse_mode=ParseMode.HTML)
 
 @app.on_message(filters.command("pay") & filters.reply)
@@ -72,7 +72,7 @@ async def pay_callback_handler(_, query: types.CallbackQuery):
     sender_id = query.from_user.id
     data = query.data.split("_")
     action = data[1]
-    
+
     # Handle payment cancellation
     if action == "a":
         owner_id = int(data[2]) if len(data) > 2 else 0
@@ -88,11 +88,11 @@ async def pay_callback_handler(_, query: types.CallbackQuery):
     if owner_id and sender_id != owner_id:
         return await query.answer("❌ This is not your payment!", show_alert=True)
 
-                             
+
     if await check_and_deduct(sender_id, amount):
         await update_user_balance(recipient_id, amount)
-        
-                                          
+
+
         try:
             recipient = await app.get_users(recipient_id)
             mention = f'<a href="tg://user?id={recipient.id}">{html_escape(recipient.first_name)}</a>'
@@ -139,6 +139,6 @@ async def bonus_cmd(_, message: types.Message):
 async def mtop_cmd(_, message: types.Message):
     cursor = user_collection.find({}, {"id": 1, "first_name": 1, "balance": 1}).sort("balance", -1).limit(10)
     top_users = await cursor.to_list(length=10)
-    
+
     lines = [f"{i+1}. {html_escape(u.get('first_name', 'User'))} - 💵 {u.get('balance', 0)}" for i, u in enumerate(top_users)]
     await message.reply_text("🏆 <b>Top 10 Rich Users</b>\n\n" + "\n".join(lines), parse_mode=ParseMode.HTML)

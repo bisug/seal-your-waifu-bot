@@ -12,16 +12,16 @@ img_url character-name anime-name rarity-number
 
 use rarity number accordingly rarity Map
 
-rarity_map = 
-(⚪ Common=1)  
-(🟠 Rare=2) 
+rarity_map =
+(⚪ Common=1)
+(🟠 Rare=2)
 (🟡 Legendary=3)
-(🟢 Medium=4) 
-(💠 Cosmic=5) 
-(💮 Exclusive=6) 
-(🔮 Limited Edition=7) 
-(🪽 Shop=8) 
-(🫧 royal=9) 
+(🟢 Medium=4)
+(💠 Cosmic=5)
+(💮 Exclusive=6)
+(🔮 Limited Edition=7)
+(🪽 Shop=8)
+(🫧 royal=9)
 (💎 Antique=10)
 """
 
@@ -30,9 +30,9 @@ import os
 
 @app.on_message(filters.command("upload") & filters.user(sudo_users + [OWNER_ID]))
 async def upload_waifu_handler(_, message: types.Message):
-                                                         
-                                                          
-    
+
+
+
     if message.reply_to_message and (message.reply_to_message.photo or message.reply_to_message.document):
         if len(message.command) < 4:
             return await message.reply_text(WRONG_FORMAT_TEXT, parse_mode=ParseMode.HTML)
@@ -59,7 +59,7 @@ async def upload_waifu_handler(_, message: types.Message):
             await status.edit_text("📥 Downloading image...")
             temp_path = await message.reply_to_message.download()
         else:
-                                                                                 
+
             import httpx
             async with httpx.AsyncClient() as client:
                 resp = await client.get(img_url)
@@ -73,9 +73,9 @@ async def upload_waifu_handler(_, message: types.Message):
 
         await status.edit_text("☁️ Uploading to Catbox (Primary)...")
         from Grabber.core.waifu import upload_image_to_catbox, upload_image_to_imgbb
-        
+
         final_url = await upload_image_to_catbox(temp_path)
-        
+
         if not final_url:
             await status.edit_text("⚠️ Catbox failed. Using ImgBB backup...")
             final_url = await upload_image_to_imgbb(temp_path)
@@ -108,7 +108,7 @@ async def upload_waifu_handler(_, message: types.Message):
             'rarity': rarity_text,
             'message_id': sent_msg.id
         }
-        
+
         char_id = await add_character_to_db(char_data)
         await status.edit_text(f"✅ <b>Waifu Uploaded!</b>\nID: <code>{char_id}</code>\nHost: {'Catbox' if 'catbox' in final_url else 'ImgBB'}", parse_mode=ParseMode.HTML)
 

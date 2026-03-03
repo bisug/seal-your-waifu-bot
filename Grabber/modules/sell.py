@@ -28,12 +28,12 @@ async def sell_handler(_, message: types.Message):
 
     char_id = message.command[1]
     user_id = message.from_user.id
-    
+
     user = await get_user_data(user_id)
     if not user or not user.get('characters'):
         return await message.reply_text("❌ <b>Your collection is empty.</b>", parse_mode=ParseMode.HTML)
 
-                                   
+
     char = next((c for c in user['characters'] if str(c.get('id')) == char_id), None)
     if not char:
         return await message.reply_text("❌ <b>You don't own this character.</b>", parse_mode=ParseMode.HTML)
@@ -47,10 +47,10 @@ async def sell_handler(_, message: types.Message):
             types.InlineKeyboardButton("❌ Cancel", callback_data=f"sell_a:{user_id}", style=ButtonStyle.DANGER)
         ]
     ]
-    
+
     current_shards = user.get('balance', 0)
     new_shards = current_shards + price
-    
+
     confirmation_text = (
         f"💰 <b>Sell Confirmation</b>\n\n"
         f"<b>Character:</b> {html_escape(char['name'])}\n"
@@ -60,7 +60,7 @@ async def sell_handler(_, message: types.Message):
         f"<b>New Balance:</b> <code>{new_shards:,}</code> ⬪\n\n"
         f"<i>Are you sure you want to sell this character?</i>"
     )
-    
+
     await message.reply_text(
         confirmation_text,
         reply_markup=types.InlineKeyboardMarkup(buttons),
@@ -71,7 +71,7 @@ async def sell_handler(_, message: types.Message):
 async def sell_callback_handler(_, query: types.CallbackQuery):
     data = query.data.split("_")
     action = data[1]
-    
+
     # Handle both sell_c_{id}:{user_id} and sell_a:{user_id}
     parts = data[2].split(":") if len(data) > 2 else []
     if action == "a":
@@ -85,11 +85,11 @@ async def sell_callback_handler(_, query: types.CallbackQuery):
     if action == "a":
         await query.message.edit_text("❌ <b>Selling cancelled.</b>", parse_mode=ParseMode.HTML)
         return
-        
+
     char_id = parts[0]
     user_id = query.from_user.id
-    
-                                                                
+
+
     user = await get_user_data(user_id)
     if not user or not user.get('characters'):
         return await query.answer("❌ Your collection is empty.", show_alert=True)
@@ -104,7 +104,7 @@ async def sell_callback_handler(_, query: types.CallbackQuery):
     current_shards = user.get('balance', 0)
     new_shards = current_shards + price
 
-                    
+
     if await remove_char_from_user(user_id, char_id):
         await update_user_balance(user_id, price)
         await query.message.edit_text(

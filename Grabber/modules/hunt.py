@@ -12,16 +12,16 @@ from Grabber.modules.quests import update_quest_progress
 from Grabber.modules.achievements import check_achievements
 from Grabber.modules.rarities import RARITY_MAP
 
-                        
+
 EGG_TIERS = {
     "common": {"name": "🥚 Common Egg", "chance": 70, "pool": [RARITY_MAP[4], RARITY_MAP[2]], "wait_min": 5},
     "gold":   {"name": "🌟 Golden Egg", "chance": 25, "pool": [RARITY_MAP[3], RARITY_MAP[5]], "wait_min": 30},
     "void":   {"name": "🌌 Void Egg",   "chance": 5,  "pool": [RARITY_MAP[6], RARITY_MAP[7]], "wait_min": 180}
 }
 
-               
-CORRUPTED_EGG_CHANCE = 5 
-                                                                        
+
+CORRUPTED_EGG_CHANCE = 5
+
 
 from Grabber.modules.pet import DEFAULT_PET
 hunt_cooldowns = {}
@@ -36,13 +36,13 @@ def is_on_cooldown(user_id):
     return False, 0
 
 def get_egg_roll(luck_multiplier):
-                                                               
+
     roll = random.uniform(0, 100)
-    
-                                                 
+
+
     void_c = EGG_TIERS["void"]["chance"] * (1 + luck_multiplier)
     gold_c = EGG_TIERS["gold"]["chance"] * (1 + luck_multiplier)
-    
+
     if roll <= void_c: return "void"
     if roll <= (void_c + gold_c): return "gold"
     return "common"
@@ -54,85 +54,85 @@ async def hunt_cmd(_, message: types.Message):
 
     if cooldown_active:
         return await message.reply_text(f"⏳ Please wait {seconds_left}s before hunting again.", parse_mode=ParseMode.HTML)
-                      
+
     user = await user_collection.find_one({"id": user_id}) or {}
     pets = user.get("pets", [DEFAULT_PET])
     current = user.get("current_pet", DEFAULT_PET["name"])
     pet = next((p for p in pets if p["name"] == current), DEFAULT_PET)
-    
-                 
+
+
     ability = pet.get("ability", None)
     luck = pet.get("luck", 0.1)
-    
-                                
+
+
     cooldown_time = 50 if ability == "Speedster" else 60
-    
-                                                         
+
+
     now = time.time()
     if user_id in hunt_cooldowns:
         if now - hunt_cooldowns[user_id] < cooldown_time:
-                                                                                 
-             return 
-             
+
+             return
+
     hunt_cooldowns[user_id] = now
 
     msg = await message.reply_text(f"🦊 <b>{html_escape(pet['name'])}</b> is going hunting...", parse_mode=ParseMode.HTML)
     await asyncio.sleep(2)
 
     shards = random.randint(100, 300)
-    
-                                     
+
+
     bonus_text = ""
     if ability == "Scavenger" and random.random() < 0.2:
         shards *= 2
         bonus_text += "\n<b>Double Shards!</b> (Scavenger)"
-        
+
     await user_collection.update_one({"id": user_id}, {"$inc": {"balance": shards}}, upsert=True)
-    
-              
+
+
     xp_gain = random.randint(10, 20)
     if ability == "Beginner's Luck":
         xp_gain = int(xp_gain * 1.05)
     await add_pet_xp(user_id, pet["name"], xp_gain)
 
-                                      
+
     await check_achievements(user_id)
 
-                    
-    base_drop_chance = 15 * (1 + luck)                     
-    
-                                       
+
+    base_drop_chance = 15 * (1 + luck)
+
+
     extra_drop = False
     if ability == "Hoarder" and random.random() < 0.05:
         extra_drop = True
-    
+
     if random.uniform(0, 100) <= base_drop_chance or extra_drop:
         tier_key = get_egg_roll(luck)
         tier_data = EGG_TIERS[tier_key]
-        
-                                
+
+
         is_corrupted = random.uniform(0, 100) <= CORRUPTED_EGG_CHANCE
-        
+
         egg_data = {
             "id": f"egg_{random.randint(10000, 99999)}",
-            "tier": tier_key, 
+            "tier": tier_key,
             "name": tier_data["name"],
             "obtained_at": datetime.now(),
-            "status": "fresh",                               
+            "status": "fresh",
             "is_corrupted": is_corrupted
         }
-        
+
         await user_collection.update_one({"id": user_id}, {"$push": {"eggs": egg_data}}, upsert=True)
         if extra_drop:
-                                        
+
             extra_egg = egg_data.copy()
             extra_egg["id"] = f"egg_{random.randint(10000, 99999)}"
             extra_egg["tier"] = "common"
             extra_egg["name"] = "🥚 Bonus Common Egg"
             await user_collection.update_one({"id": user_id}, {"$push": {"eggs": extra_egg}}, upsert=True)
             bonus_text += "\n🥚 <b>Bonus Egg Found!</b> (Hoarder)"
-        
-                          
+
+
         await update_quest_progress(user_id, "egg_hunter", 1)
 
         await msg.edit_text(
@@ -156,10 +156,10 @@ async def eggs_cmd(_, message: types.Message):
     await show_egg_page(message, 0, message.from_user.id)
 
 async def show_egg_page(message_or_query, page: int, user_id: int):
-                                                         
+
     user = await user_collection.find_one({"id": user_id}) or {}
     eggs = user.get("eggs", [])
-    
+
     if not eggs:
         text = "❌ <b>No eggs found!</b>\n\nUse <code>/hunt</code> to find eggs."
         if isinstance(message_or_query, types.CallbackQuery):
@@ -170,20 +170,20 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
         else:
             await message_or_query.reply_text(text, parse_mode=ParseMode.HTML)
         return
-    
-                
+
+
     page = page % len(eggs)
     egg = eggs[page]
     tier_info = EGG_TIERS.get(egg.get("tier", "common"))
     status = egg.get("status", "fresh")
-    
-                             
+
+
     action_button = None
     status_display = ""
-    
+
     if status == "fresh":
         status_display = f"🛑 <b>Status:</b> Not incubated\n⏱️ <b>Required:</b> {tier_info['wait_min']} minutes"
-        action_button = types.InlineKeyboardButton("🌡️ Start Incubation", callback_data=f"egg_incubate:{page}")                             
+        action_button = types.InlineKeyboardButton("🌡️ Start Incubation", callback_data=f"egg_incubate:{page}")
     elif status == "incubating":
         hatch_time = egg.get("hatch_time")
         if hatch_time and datetime.now() < hatch_time:
@@ -194,38 +194,38 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
         else:
             status_display = "✅ <b>Status:</b> Ready to hatch!"
             action_button = types.InlineKeyboardButton("🎁 Hatch Now!", callback_data=f"egg_hatch:{page}")
-    
+
     text = (
         f"🥚 <b>Egg Inventory</b>\n\n"
         f"<b>{html_escape(egg.get('name', 'Unknown Egg'))}</b>\n"
         f"{status_display}\n\n"
         f"<i>Egg {page + 1} of {len(eggs)}</i>"
     )
-    
-                   
+
+
     buttons = []
-    
-                    
+
+
     nav_row = []
     if len(eggs) > 1:
         nav_row.append(types.InlineKeyboardButton("⬅️", callback_data=f"egg_page:{page - 1}:{user_id}"))
         nav_row.append(types.InlineKeyboardButton(f"{page + 1}/{len(eggs)}", callback_data="egg_noop"))
         nav_row.append(types.InlineKeyboardButton("➡️", callback_data=f"egg_page:{page + 1}:{user_id}"))
         buttons.append(nav_row)
-    
-                   
+
+
     if action_button:
-                                                 
+
         if "egg_incubate" in action_button.callback_data:
              action_button.callback_data = f"egg_incubate:{page}:{user_id}"
         elif "egg_hatch" in action_button.callback_data:
              action_button = types.InlineKeyboardButton("🎁 Hatch Now!", callback_data=f"egg_hatch:{page}:{user_id}")
         buttons.append([action_button])
-    
+
     buttons.append([types.InlineKeyboardButton("⤾ Back to Hub", callback_data="hub_main")])
-    
+
     markup = types.InlineKeyboardMarkup(buttons) if buttons else None
-    
+
     try:
         if isinstance(message_or_query, types.CallbackQuery):
             await message_or_query.message.edit_text(text, parse_mode=ParseMode.HTML, reply_markup=markup)
@@ -236,16 +236,16 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
     except Exception as e:
         LOGGER.error(f"Egg page error: {e}")
 
-                   
+
 @app.on_callback_query(filters.regex(r"^egg_page:"))
 async def egg_page_callback(_, query: types.CallbackQuery):
     data = query.data.split(":")
     page = int(data[1])
     owner_id = int(data[2])
-    
+
     if query.from_user.id != owner_id:
         return await query.answer("❌ This is not your inventory!", show_alert=True)
-        
+
     await show_egg_page(query, page, owner_id)
     await query.answer()
 
@@ -254,31 +254,31 @@ async def egg_incubate_callback(_, query: types.CallbackQuery):
     data = query.data.split(":")
     page = int(data[1])
     owner_id = int(data[2])
-    
+
     if query.from_user.id != owner_id:
         return await query.answer("❌ This is not your egg!", show_alert=True)
-        
+
     user_id = owner_id
     user = await user_collection.find_one({"id": user_id}) or {}
     eggs = user.get("eggs", [])
-    
+
     if page >= len(eggs):
         return await query.answer("❌ Egg not found!", show_alert=True)
-    
+
     egg = eggs[page]
     tier_info = EGG_TIERS.get(egg.get("tier", "common"))
-    
-                                          
+
+
     pets = user.get("pets", [DEFAULT_PET])
     active_pet = next((p for p in pets if p["name"] == user.get("current_pet")), {})
-    
+
     wait_min = tier_info["wait_min"]
     if active_pet.get("ability") == "Caregiver":
         wait_min = int(wait_min * 0.5)
-    
-                      
+
+
     ready_time = datetime.now() + timedelta(minutes=wait_min)
-    
+
     # Use ID-based update to be safe from positional shifts
     await user_collection.update_one(
         {"id": user_id, "eggs.id": egg["id"]},
@@ -289,7 +289,7 @@ async def egg_incubate_callback(_, query: types.CallbackQuery):
             }
         }
     )
-    
+
     await query.answer(f"🌡️ Incubation started! Come back in {wait_min} minutes.", show_alert=True)
     await show_egg_page(query, page, user_id)
 
@@ -298,29 +298,29 @@ async def egg_hatch_callback(_, query: types.CallbackQuery):
     data = query.data.split(":")
     page = int(data[1])
     owner_id = int(data[2])
-    
+
     if query.from_user.id != owner_id:
         return await query.answer("❌ This is not your egg!", show_alert=True)
-        
+
     user_id = owner_id
     user = await user_collection.find_one({"id": user_id}) or {}
     eggs = user.get("eggs", [])
-    
+
     if page >= len(eggs):
         return await query.answer("❌ Egg not found!", show_alert=True)
-    
+
     egg = eggs[page]
-    
-                       
+
+
     if egg.get("status") != "incubating":
         return await query.answer("❌ Egg is not incubating!", show_alert=True)
-    
+
     ready_time = egg.get("hatch_time")
     if ready_time and datetime.now() < ready_time:
         remaining = int((ready_time - datetime.now()).total_seconds() / 60)
         return await query.answer(f"⏳ Still incubating! {remaining}m left.", show_alert=True)
-    
-                   
+
+
     await crack_open_egg_inline(query, user_id, egg)
 
 @app.on_callback_query(filters.regex(r"^egg_(wait|noop)$"))
@@ -328,33 +328,33 @@ async def egg_noop_callback(_, query: types.CallbackQuery):
     await query.answer()
 
 async def crack_open_egg_inline(query: types.CallbackQuery, user_id: int, egg: dict):
-                                          
-                               
+
+
     await user_collection.update_one({"id": user_id}, {"$pull": {"eggs": {"id": egg["id"]}}})
-    
+
     await query.message.edit_text("🥚 <b>Cracking open...</b>", parse_mode=ParseMode.HTML)
     await asyncio.sleep(2)
-    
-                     
+
+
     if egg.get("is_corrupted", False):
         if random.random() < 0.5:
             await query.message.edit_text("💥 <b>The egg exploded!</b>\nIt was corrupted...", parse_mode=ParseMode.HTML)
             return
         else:
-            rarity = RARITY_MAP[9]          
+            rarity = RARITY_MAP[9]
     else:
         rarity_pool = EGG_TIERS[egg["tier"]]["pool"]
         rarity = random.choice(rarity_pool)
-    
-                     
+
+
     waifus = await collection.find({"rarity": rarity}).to_list(length=None)
     if waifus:
         character = random.choice(waifus)
         await user_collection.update_one({"id": user_id}, {"$push": {"characters": character}}, upsert=True)
-        
-                  
+
+
         await add_xp(user_id, 15, "egg_hatch")
-        
+
         await query.message.edit_text("🎉 <b>Success! Sending details...</b>", parse_mode=ParseMode.HTML)
         await query.message.reply_photo(
             photo=character["img_url"],
@@ -369,42 +369,42 @@ async def crack_open_egg_inline(query: types.CallbackQuery, user_id: int, egg: d
     else:
         await query.message.edit_text("⚠️ The egg was empty (DB error).", parse_mode=ParseMode.HTML)
 
-                                                                            
+
 
 @app.on_message(filters.command("hatch"))
 async def hatch_cmd(_, message: types.Message):
-                                    
+
     await show_egg_page(message, 0, message.from_user.id)
 
 async def crack_open_egg(message, user_id, egg, index):
-                 
+
     await user_collection.update_one({"id": user_id}, {"$pull": {"eggs": {"id": egg["id"]}}})
-    
+
     msg = await message.reply_text("🥚 <b>Cracking open...</b>", parse_mode=ParseMode.HTML)
     await asyncio.sleep(2)
-    
-                     
+
+
     if egg.get("is_corrupted", False):
         if random.random() < 0.5:
             await msg.edit_text("💥 <b>The egg exploded!</b>\nIt was corrupted... You got nothing.", parse_mode=ParseMode.HTML)
             return
         else:
-                     
-            rarity = RARITY_MAP[9]          
+
+            rarity = RARITY_MAP[9]
     else:
-                       
+
         rarity_pool = EGG_TIERS[egg["tier"]]["pool"]
         rarity = random.choice(rarity_pool)
 
-                     
+
     waifus = await collection.find({"rarity": rarity}).to_list(length=None)
     if waifus:
         character = random.choice(waifus)
         await user_collection.update_one({"id": user_id}, {"$push": {"characters": character}}, upsert=True)
-        
-                               
+
+
         await add_xp(user_id, 15, "egg_hatch")
-        
+
         await msg.edit_text("🎉 Success! Sending details...", parse_mode=ParseMode.HTML)
         await message.reply_photo(
             photo=character["img_url"],

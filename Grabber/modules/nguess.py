@@ -24,7 +24,7 @@ async def send_message_safe(chat_id, text=None, photo=None, caption=None, parse_
             msg = await app.send_photo(chat_id, photo, caption=caption, parse_mode=parse_mode, reply_markup=reply_markup)
         else:
             msg = await app.send_message(chat_id, text, parse_mode=parse_mode, reply_markup=reply_markup)
-        
+
         if msg and auto_delete:
             await schedule_deletion(chat_id, msg.id, 300) # 5 minutes
         return msg
@@ -43,9 +43,9 @@ async def start_nguess_game(chat_id):
     res = await cursor.to_list(length=1)
     if not res:
         return await send_message_safe(chat_id, text=html_escape("DATABASE ERROR: No target profiles available."), auto_delete=True)
-    
+
     char = res[0]
-    
+
     # Create/Update session in DB
     await sessions_collection.update_one(
         {"_id": f"nguess:{chat_id}"},
@@ -58,14 +58,14 @@ async def start_nguess_game(chat_id):
 
     anime_name = char['anime']
     briefing = f"Identify this character from the series <b>{html_escape(anime_name)}</b>"
-    
+
     sent = await send_message_safe(
         chat_id,
         photo=char['img_url'],
         caption=briefing,
         auto_delete=True
     )
-    
+
     if not sent:
         await sessions_collection.delete_one({"_id": f"nguess:{chat_id}"})
         await send_message_safe(chat_id, text=html_escape("CRITICAL FAILURE: Transponder link lost."), auto_delete=True)
@@ -83,12 +83,12 @@ def get_name_variants(name: str):
 @app.on_message(filters.command("nguess"))
 async def nguess_start_handler(_, message: types.Message):
     chat_id = message.chat.id
-    
+
     # Check if group is enabled
     is_enabled = await nguess_enabled_groups_collection.find_one({"chat_id": chat_id})
     if not is_enabled and chat_id not in [OWNER_ID]:
         return
-    
+
     # If a game is active, we just proceed to start a new one (per user request: "send next instead")
     await start_nguess_game(chat_id)
 
@@ -97,7 +97,7 @@ async def ngon_handler(_, message: types.Message):
     try:
         args = message.text.split()
         chat_id = int(args[1]) if len(args) > 1 else message.chat.id
-        
+
         await nguess_enabled_groups_collection.update_one(
             {"chat_id": chat_id},
             {"$set": {"enabled": True}},
@@ -113,7 +113,7 @@ async def ngoff_handler(_, message: types.Message):
     try:
         args = message.text.split()
         chat_id = int(args[1]) if len(args) > 1 else message.chat.id
-        
+
         await nguess_enabled_groups_collection.delete_one({"chat_id": chat_id})
         msg_text = f"AUTHORIZATION REVOKED: /nguess is now disabled for sector {chat_id}."
         await send_message_safe(message.chat.id, text=msg_text, auto_delete=True)
@@ -125,11 +125,11 @@ async def nglist_handler(_, message: types.Message):
     enabled_groups = await nguess_enabled_groups_collection.find().to_list(length=100)
     if not enabled_groups:
         return await send_message_safe(message.chat.id, text="REGISTRY EMPTY: No sectors are currently authorized.", auto_delete=True)
-    
+
     text = "<b>AUTHORIZED SECTORS FOR /NGUESS</b>\n\n"
     for group in enabled_groups:
         text += f"• <code>{group['chat_id']}</code>\n"
-    
+
     await send_message_safe(message.chat.id, text=text, auto_delete=True)
 
 @app.on_message(filters.text & filters.group & ~filters.command(["nguess", "top", "ctop"]), group=10)
@@ -137,26 +137,26 @@ async def nguess_check_handler(_, message: types.Message):
     if not message.from_user:
         return
     chat_id = message.chat.id
-    
+
     # Update player list atomically
     session = await sessions_collection.find_one_and_update(
         {"_id": f"nguess:{chat_id}"},
         {"$addToSet": {"players": message.from_user.id}},
         return_document=ReturnDocument.AFTER
     )
-    
+
     if not session:
         return
 
     guess = message.text.lower().strip()
     char = session["char"]
     name_variants = get_name_variants(char['name'])
-    
+
     if guess in name_variants:
         # Correct guess!
         player_count = len(session.get("players", []))
         reward = min(10 + (player_count - 1) * 5, 50)
-        
+
         # Increment global counter
         stats = await sessions_collection.find_one_and_update(
             {"id": "nguess_global_stats"},
@@ -165,10 +165,10 @@ async def nguess_check_handler(_, message: types.Message):
             return_document=ReturnDocument.AFTER
         )
         total_guesses = stats.get("total_guesses", 1)
-        
+
         bonus = 0
         milestone_text = ""
-        
+
         if total_guesses % 100 == 0:
             bonus = 1000
             milestone_text = f"\n\n<b>ELITE MILESTONE ACHIEVED</b>\nYou are the 100th guesser! Granted 1,000 bonus Shards."
@@ -178,7 +178,7 @@ async def nguess_check_handler(_, message: types.Message):
             milestone_text = f"\n\n<b>MILESTONE REACHED</b>\nYou are the 50th guesser! Granted 500 bonus Shards."
 
         total_reward = reward + bonus
-        
+
         # Update user
         await user_collection.update_one(
             {"id": message.from_user.id},
@@ -188,21 +188,21 @@ async def nguess_check_handler(_, message: types.Message):
             },
             upsert=True
         )
-        
+
         # Delete session
         await sessions_collection.delete_one({"_id": f"nguess:{chat_id}"})
-        
+
         display_progress = total_guesses % 100 if total_guesses % 100 != 0 else 100
-        
+
         mention = f'<a href="tg://user?id={message.from_user.id}">{html_escape(message.from_user.first_name)}</a>'
         target_name = html_escape(char['name'])
-        
+
         success_msg = (
             f"✅ {mention} identified <b>{target_name}</b>!\n"
             f"💰 <b>Bounty:</b> +{reward} Shards\n"
             f"🔥 <b>Progress:</b> {display_progress}/100{milestone_text}"
         )
-        
+
         await send_message_safe(chat_id, text=success_msg, auto_delete=True)
         # Recursive start
         await start_nguess_game(chat_id)
