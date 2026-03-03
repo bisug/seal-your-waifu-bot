@@ -9,7 +9,7 @@ from Grabber import collection, user_collection
 from Grabber.core.user import get_user_data, add_char_to_user, update_user
 from Grabber.core.game import update_user_balance
 
-                                                    
+
 start_messages = [
     "✨ Finally the time has come ✨",
     "💫 The moment you've been waiting for 💫",
@@ -20,7 +20,7 @@ rejection_captions = [
     "She rejected you outright! 😂",
     "You got a harsh 'NO!' 😂"
 ]
-                            
+
 acceptance_images = [
     "https://te.legra.ph/file/4fe133737bee4866a3549.png",
     "https://te.legra.ph/file/28d46e4656ee2c3e7dd8f.png",
@@ -32,7 +32,7 @@ rejection_images = [
     "https://te.legra.ph/file/81d011398da3a6f49fa7f.png"
 ]
 
-                                                                  
+
 RARITY_WEIGHTS = {
     '⚪ Common': 60,
     '🟢 Medium': 30,
@@ -50,29 +50,29 @@ async def get_random_waifu():
 async def propose_command(_, message: types.Message):
     user_id = message.from_user.id
     user = await get_user_data(user_id)
-    
-                       
+
+
     now_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     if user and user.get('last_propose_date') == now_date:
         return await message.reply_text("⏳ <b>You have already proposed today! Come back tomorrow.</b>", parse_mode=ParseMode.HTML)
 
-                          
+
     start_msg = random.choice(start_messages)
     roll_text = random.choice(["Proposing her....💍", "Getting down on one knee....💍", "Popping the question....💍"])
-    
-                               
-    await message.reply_text(f"{start_msg}\n\n<b>{roll_text}</b>", parse_mode=ParseMode.HTML)
-    await asyncio.sleep(2)           
 
-                       
-                         
-                             
-                             
-                             
+
+    await message.reply_text(f"{start_msg}\n\n<b>{roll_text}</b>", parse_mode=ParseMode.HTML)
+    await asyncio.sleep(2)
+
+
+
+
+
+
     roll = random.uniform(0, 100)
 
     if roll < 3:
-                       
+
         char = await get_random_waifu()
         if char:
             await add_char_to_user(user_id, char)
@@ -86,29 +86,29 @@ async def propose_command(_, message: types.Message):
             img_url = char['img_url']
             await message.reply_photo(photo=img_url, caption=caption, parse_mode=ParseMode.HTML)
         else:
-                                                  
+
             await update_user_balance(user_id, 2000)
             await message.reply_text("💍 <b>Proposal Accepted!</b>\nHowever, she was too shy to appear. You found <code>2,000</code> Shards instead!", parse_mode=ParseMode.HTML)
 
     elif roll < 13:
-                         
+
         await update_user_balance(user_id, 2000)
         img = random.choice(acceptance_images)
         await message.reply_photo(photo=img, caption="💍 <b>Proposal Accepted!</b>\nShe was flattered but busy. She sent you <b>2,000 Shards</b> as a gift!", parse_mode=ParseMode.HTML)
 
     elif roll < 43:
-                        
+
         await update_user_balance(user_id, 500)
         img = random.choice(acceptance_images)
         await message.reply_photo(photo=img, caption="💍 <b>Proposal Accepted!</b>\nShe smiled and gave you <b>500 Shards</b> for your effort!", parse_mode=ParseMode.HTML)
 
     else:
-                   
+
         img = random.choice(rejection_images)
         caption = random.choice(rejection_captions)
         await message.reply_photo(photo=img, caption=f"💔 <b>Rejection!</b>\n{caption}", parse_mode=ParseMode.HTML)
 
-                            
+
     await update_user(user_id, {"$set": {"last_propose_date": now_date}})
 
 

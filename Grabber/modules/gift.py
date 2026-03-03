@@ -7,7 +7,7 @@ from Grabber.core.sessions import create_session, get_session, delete_session
 
 @app.on_message(filters.command("gift"))
 async def gift_command(_, message: types.Message):
-                   
+
     if not message.reply_to_message:
         await message.reply_text("⚠️ Please reply to the user you want to gift to.")
         return
@@ -25,7 +25,7 @@ async def gift_command(_, message: types.Message):
 
     character_id = message.command[1]
 
-                        
+
     sender_data = await get_user_data(sender_id)
     if not sender_data:
         await message.reply_text("❌ You don't have any characters.")
@@ -38,15 +38,15 @@ async def gift_command(_, message: types.Message):
         await message.reply_text("❌ You don't own this character.")
         return
 
-                                 
+
     session_id = f"gift_{sender_id}_{receiver_id}_{character_id}"
     session_data = {
         "sender_id": sender_id,
         "receiver_id": receiver_id,
         "character": character_to_gift
     }
-    
-                                                                                               
+
+
     await create_session(session_id, session_data)
 
     receiver_name = message.reply_to_message.from_user.first_name
@@ -70,7 +70,7 @@ async def gift_command(_, message: types.Message):
 @app.on_callback_query(filters.regex(r"^gift_(confirm|cancel):(.+)"))
 async def gift_callback(_, query: types.CallbackQuery):
     action, session_id = query.data.split(":", 1)
-    
+
     session = await get_session(session_id)
     if not session:
         await query.answer("❌ Session expired or invalid.", show_alert=True)
@@ -88,48 +88,48 @@ async def gift_callback(_, query: types.CallbackQuery):
         await query.answer("Cancelled.")
         return
 
-                                 
-    
+
+
     receiver_id = session["receiver_id"]
     character = session["character"]
     char_id = character["id"]
 
-                                                                                         
+
     sender_db = await get_user_data(sender_id)
     if not sender_db or not sender_db.get("characters"):
         await query.answer("❌ You no longer own this character.", show_alert=True)
         await delete_session(session_id)
         return
 
-                                  
+
     sender_chars = sender_db["characters"]
-    
-                                         
+
+
     index_to_remove = -1
     for i, char in enumerate(sender_chars):
         if str(char.get("id")) == str(char_id):
             index_to_remove = i
             break
-    
+
     if index_to_remove == -1:
         await query.answer("❌ You no longer own this character.", show_alert=True)
         await delete_session(session_id)
         return
 
-                    
+
     removed_char = sender_chars.pop(index_to_remove)
 
-                                         
-                                                                                                                 
-                                                                                            
+
+
+
     await update_user(sender_id, {"$set": {"characters": sender_chars}})
 
-                                             
+
     await update_user(receiver_id, {"$push": {"characters": removed_char}})
 
-                
+
     await delete_session(session_id)
-    
+
     await query.message.edit_text(
         f"✅ <b>Gift Sent!</b>\n\n"
         f"You successfully gifted <b>{html_escape(character['name'])}</b> to the user!",

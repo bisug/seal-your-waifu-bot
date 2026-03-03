@@ -3,7 +3,7 @@ from Grabber.core.progression import add_xp
 from pyrogram import enums
 from pyrogram.enums import ParseMode
 
-                         
+
 ACHIEVEMENTS = {
     "novice_collector": {
         "name": "Novice Collector",
@@ -43,36 +43,36 @@ ACHIEVEMENTS = {
 }
 
 async def check_achievements(user_id: int):
-                                                           
+
     user = await user_collection.find_one({"id": user_id})
     if not user: return
-    
+
     user_achievements = user.get("achievements", [])
     new_unlocks = []
-    
+
     for ach_id, data in ACHIEVEMENTS.items():
         if ach_id in user_achievements:
             continue
-            
-                         
+
+
         try:
             if data["condition"](user):
                 new_unlocks.append(ach_id)
-                              
+
                 await add_xp(user_id, data["reward_xp"], f"ach_{ach_id}")
-                
-                                                           
+
+
                 LOGGER.info(f"User {user_id} unlocked {data['name']}")
-                
-                             
+
+
                 await user_collection.update_one(
                     {"id": user_id},
                     {
                         "$push": {"achievements": ach_id},
-                        "$addToSet": {"titles": data["title"]}               
+                        "$addToSet": {"titles": data["title"]}
                     }
                 )
         except Exception as e:
             LOGGER.error(f"Error checking achievement {ach_id}: {e}")
-            
+
     return new_unlocks

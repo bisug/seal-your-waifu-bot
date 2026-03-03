@@ -41,25 +41,25 @@ def status_emoji(percent):
 async def ping(_, message: types.Message) -> None:
     start_time = time.time()
     sent_msg = await message.reply_text("<b>⚡ Pinging...</b>", parse_mode=ParseMode.HTML)
-    
-                 
+
+
     end_time = time.time()
     msg_ping = (end_time - start_time) * 1000
-    
-                
+
+
     db_start = time.time()
     await db.command("ping")
     db_end = time.time()
     db_ping = (db_end - db_start) * 1000
-    
-                  
+
+
     uptime = get_readable_time(time.time() - StartTime)
     cpu = psutil.cpu_percent()
     ram = psutil.virtual_memory()
     proc = psutil.Process(os.getpid())
-    proc_mem = proc.memory_info().rss / 1024 / 1024      
+    proc_mem = proc.memory_info().rss / 1024 / 1024
     threads = proc.num_threads()
-    
+
     caption = (
         f"<b>🚀 System Status</b>\n\n"
         f"<b>📡 Ping:</b> <code>{msg_ping:.2f} ms</code>\n"
@@ -72,5 +72,5 @@ async def ping(_, message: types.Message) -> None:
         f"<b>🧰 OS:</b> <code>{platform.system()} {platform.release()}</code>\n"
         f"<b>🐍 Python:</b> <code>{platform.python_version()}</code>"
     )
-    
+
     await sent_msg.edit_text(caption, parse_mode=ParseMode.HTML)
