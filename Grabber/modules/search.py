@@ -4,7 +4,7 @@ from Grabber import app, BOT_USERNAME
 
 @app.on_message(filters.command("search"))
 async def search_waifu(_, message: types.Message):
-                                                            
+
     keyboard = [
         [types.InlineKeyboardButton("🔍 Search Waifu", switch_inline_query_current_chat="")]
     ]

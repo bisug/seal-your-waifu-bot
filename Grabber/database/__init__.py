@@ -10,7 +10,7 @@ class Database:
     def __init__(self, uri):
         self.client = AsyncIOMotorClient(uri)
         self.db = self.client['Character_catchers']
-        
+
         # Initialize collections
         self.anime_characters = self.db['anime_characterss']
         self.groups = self.db['total_groups']

@@ -11,15 +11,15 @@ from Grabber.modules.rarities import RARITY_MAP
 from Grabber.modules.quests import update_quest_progress
 from Grabber.modules.achievements import check_achievements
 
-                       
-SHOP_RARITY = RARITY_MAP[8]         
-DEFAULT_ZENITH_PRICE = 5                        
+
+SHOP_RARITY = RARITY_MAP[8]
+DEFAULT_ZENITH_PRICE = 5
 SHOP_PAGE_SIZE = 5
-SHOP_LIMIT = 20                             
+SHOP_LIMIT = 20
 ADMINS = list(set(sudo_users + [OWNER_ID]))
 SHOP_BANNER = config.PHOTO_URL[0]
 
-                        
+
 async def get_daily_shop_characters():
     cursor = collection.find({"rarity": SHOP_RARITY})
     characters_raw = await cursor.to_list(None)
@@ -36,13 +36,13 @@ async def cshop_cmd(_, message: types.Message):
         return
 
     user_id = message.from_user.id
-                                   
+
     # Serialize Character objects to dicts for MongoDB
     chars_data = [c.dict() for c in chars]
     await create_session(f"shop_{user_id}", {"shop": chars_data, "page": 0})
     await send_shop_message(message, user_id)
 
-                      
+
 @app.on_message(filters.command("shop"))
 async def shop_hub(_, message: types.Message):
     await send_shop_hub(message)
@@ -72,7 +72,7 @@ async def send_shop_hub(message_or_query):
             )
     except Exception as e:
         LOGGER.error(f"Error in send_shop_hub: {e}")
-                                                                  
+
         if isinstance(message_or_query, types.CallbackQuery):
             try:
                 await message_or_query.message.edit_text(text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
@@ -84,7 +84,7 @@ async def send_shop_hub(message_or_query):
 @app.on_callback_query(filters.regex(r"^hub_(char|pet|pass|egg|main)$"))
 async def hub_callback_handler(_, query: types.CallbackQuery):
     choice = query.data.split("_")[1]
-    
+
     if choice == "main":
         await send_shop_hub(query)
     elif choice == "char":
@@ -106,7 +106,7 @@ async def hub_callback_handler(_, query: types.CallbackQuery):
         await hunt_module.show_egg_page(query, 0, query.from_user.id)
     elif choice == "main":
         await send_shop_hub(query)
-    
+
     await query.answer()
 
 @app.on_callback_query(filters.regex(r"^shop_back_(\d+)$"))
@@ -125,16 +125,16 @@ async def send_shop_message(message, user_id):
     chars_data = session.get("shop", [])
     # Deserialize back to Character objects
     chars = [Character(**c) for c in chars_data]
-    
+
     char = chars[page]
     price = getattr(char, "zenith_price", DEFAULT_ZENITH_PRICE)
-    
-                               
+
+
     user_raw = await user_collection.find_one({"id": user_id})
     user = User(**user_raw) if user_raw else None
     zenith_balance = user.zenith if user else 0
 
-                 
+
     sold_count = getattr(char, "sold_count", 0)
     stock_display = f"{sold_count}/{SHOP_LIMIT}"
     if sold_count >= SHOP_LIMIT:
@@ -202,7 +202,7 @@ async def shop_navigation(_, query: types.CallbackQuery):
     else:
         new_page = min(len(chars) - 1, page + 1)
 
-                               
+
     session["page"] = new_page
     await create_session(f"shop_{user_id}", session)
 
@@ -221,11 +221,11 @@ async def ask_buy_character(_, query: types.CallbackQuery):
     char = Character(**char_raw) if char_raw else None
     if not char:
         return await query.answer("❌ Character not found.")
-    
+
     price = getattr(char, "zenith_price", DEFAULT_ZENITH_PRICE)
-    
+
     sold_count = getattr(char, "sold_count", 0)
-    
+
     text = (
         f"⚠️ <b>Confirm Purchase</b>\n\n"
         f"👤 <b>Name:</b> {html_escape(char.name)}\n"
@@ -270,8 +270,8 @@ async def buy_character(_, query: types.CallbackQuery):
         return
 
     price = getattr(char, "zenith_price", DEFAULT_ZENITH_PRICE)
-    
-                          
+
+
     user_zenith = user_data.zenith if user_data else 0
     if user_zenith < price:
         await query.answer(
@@ -279,10 +279,10 @@ async def buy_character(_, query: types.CallbackQuery):
             show_alert=True
         )
         return
-    
-                                      
-                                                               
-                                                                                  
+
+
+
+
     update_result = await collection.update_one(
         {
             "id": char_id,
@@ -299,7 +299,7 @@ async def buy_character(_, query: types.CallbackQuery):
         await query.message.edit_caption(f"❌ <b>SOLD OUT</b>\n\nSomeone bought the last copy of {html_escape(char.name)}!", parse_mode=ParseMode.HTML)
         return
 
-                   
+
     await user_collection.update_one(
         {"id": user_id},
         {"$inc": {"zenith": -price}}
@@ -319,11 +319,11 @@ async def buy_character(_, query: types.CallbackQuery):
         },
         upsert=True
     )
-    
-                  
+
+
     await update_quest_progress(user_id, "big_spender", price)
-    
-                        
+
+
     await check_achievements(user_id)
 
     await query.message.reply_text(

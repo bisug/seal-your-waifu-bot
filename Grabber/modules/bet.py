@@ -4,13 +4,13 @@ from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
 from Grabber import app, user_collection
 
-CURRENCY_SYMBOL = "⬪"                 
+CURRENCY_SYMBOL = "⬪"
 
 @app.on_message(filters.command("bet"))
 async def bet_cmd(_, message: types.Message):
-                                                     
+
     user_id = message.from_user.id
-    
+
     if len(message.command) < 3:
         await message.reply_text(
             f"🚨 <b>Invalid Usage!</b>\n"
@@ -21,8 +21,8 @@ async def bet_cmd(_, message: types.Message):
         return
 
     try:
-        amount = int(message.command[1])              
-        choice = message.command[2].lower()                                
+        amount = int(message.command[1])
+        choice = message.command[2].lower()
     except ValueError:
         await message.reply_text("❌ Please enter a valid number for the amount.")
         return
@@ -35,7 +35,7 @@ async def bet_cmd(_, message: types.Message):
         await message.reply_text("❌ Amount must be a <b>positive number</b>.", parse_mode=ParseMode.HTML)
         return
 
-                        
+
     user_data = await user_collection.find_one({'id': user_id}, projection={'balance': 1})
 
     if not user_data:
@@ -66,17 +66,17 @@ async def bet_cmd(_, message: types.Message):
         return
 
     user_choice_name = "Heads" if choice == "h" else "Tails"
-    await message.reply_text(f"🎰 <b>Placing Bet:</b> {amount:,} ⬪\n🪙 <b>You Chose:</b> {user_choice_name}", parse_mode=ParseMode.HTML)  
+    await message.reply_text(f"🎰 <b>Placing Bet:</b> {amount:,} ⬪\n🪙 <b>You Chose:</b> {user_choice_name}", parse_mode=ParseMode.HTML)
 
-    await asyncio.sleep(2)                  
+    await asyncio.sleep(2)
 
-                                          
+
     is_win = random.randint(1, 100) <= 40
 
     if is_win:
-        win_multiplier = 2                                          
+        win_multiplier = 2
         winnings = amount * win_multiplier
-        new_balance = balance_amount + winnings  
+        new_balance = balance_amount + winnings
         result_text = (
             f"🎉 <b>YOU WIN!</b> 🎉\n"
             f"🪙 The coin landed on <b>{user_choice_name}</b>!\n"
@@ -84,7 +84,7 @@ async def bet_cmd(_, message: types.Message):
             f"🏦 <b>New Balance:</b> {new_balance:,} ⬪"
         )
     else:
-        new_balance = balance_amount - amount  
+        new_balance = balance_amount - amount
         comp_choice = "Heads" if user_choice_name == "Tails" else "Tails"
         result_text = (
             f"💔 <b>YOU LOST!</b>\n"
@@ -93,7 +93,7 @@ async def bet_cmd(_, message: types.Message):
             f"🏦 <b>New Balance:</b> {new_balance:,} ⬪"
         )
 
-                         
+
     await user_collection.update_one({'id': user_id}, {'$set': {'balance': new_balance}})
 
     await message.reply_text(result_text, parse_mode=ParseMode.HTML)
