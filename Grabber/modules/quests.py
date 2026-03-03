@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import random
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
@@ -81,7 +81,7 @@ WEEKLY_POOL = {
 async def get_user_quests(user_id: int) -> dict:
                                                                       
     user = await user_collection.find_one({"id": user_id})
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     today = now.date().isoformat()
                                                 
     current_week = f"{now.isocalendar()[0]}-W{now.isocalendar()[1]}" 
@@ -235,7 +235,7 @@ async def view_quests(_, message: types.Message):
         text += f"{info['icon']} <b>{info['name']}</b>: {bar} {status}\n"
 
             
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     tmrw = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
     d_left = tmrw - now
     
