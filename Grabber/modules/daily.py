@@ -39,34 +39,34 @@ async def daily_command_handler(_, message: types.Message):
 
     user_id = message.from_user.id
     user = await get_user_data(user_id)
-    
+
     now_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     last_claim_date = user.get('last_daily_date')
-    
+
     if last_claim_date == now_date:
         return await message.reply_text("⏳ You've already claimed your daily reward today!", parse_mode=ParseMode.HTML)
-    
+
     # Calculate Streak
     streak = user.get('daily_streak', 0)
     yesterday_date = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d")
-    
+
     if last_claim_date == yesterday_date:
         streak += 1
     else:
         streak = 1
-        
+
     if streak > 7:
         streak = 1 # Reset after 7 days? Or Cap at 7? Let's Cap at 7 for max rewards but keep counting?
         # Actually user requested "Adjust Daily Streak Cap to 7 days" in task.md
-        # If user misses a day, streak resets. If user maintains, it cycles? 
+        # If user misses a day, streak resets. If user maintains, it cycles?
         # Typically games cycle 1-7. Let's cycle.
-    
+
     reward_coins = STREAK_REWARDS.get(streak, 100)
-    
+
     # Give Rewards
     await app.send_chat_action(message.chat.id, enums.ChatAction.UPLOAD_PHOTO)
     char = await get_daily_waifu()
-    
+
     if not char:
         return await message.reply_text("⚠️ No characters available currently.", parse_mode=ParseMode.HTML)
 
@@ -95,7 +95,7 @@ async def weekly_command_handler(_, message: types.Message):
 
     user_id = message.from_user.id
     user = await get_user_data(user_id)
-    
+
     now = datetime.now(timezone.utc)
     now_str = now.strftime("%Y-%m-%d")
     last_weekly = user.get('last_weekly_date')
@@ -104,20 +104,20 @@ async def weekly_command_handler(_, message: types.Message):
         days_diff = (now - last_date).days
         if days_diff < 7:
             return await message.reply_text(f"⏳ You can claim your weekly reward again in {7 - days_diff} days.", parse_mode=ParseMode.HTML)
-    
+
     # Weekly Rewards: 2000 Coins + 1 Rare Character (guaranteed?)
     # or just random better loot.
     # Let's give 2000 coins + 500 XP
-    
+
     await update_user(user_id, {
         "$set": {"last_weekly_date": now_str},
         "$inc": {"balance": 2000}
     })
-    
+
     # Also give XP
     from Grabber.core.progression import add_xp
     await add_xp(user_id, 500, "weekly_claim")
-    
+
     await message.reply_text(
         f"🎁 <b>Weekly Reward Claimed!</b>\n\n"
         f"💰 <b>Coins:</b> +2,000 ⬪\n"

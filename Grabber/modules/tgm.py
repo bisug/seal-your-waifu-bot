@@ -26,24 +26,24 @@ async def upload_to_imgbb(image_url: str):
 @app.on_message(filters.command("tgm"))
 async def tgm_cmd(_, message: types.Message) -> None:
     target_msg = message.reply_to_message if message.reply_to_message else message
-    
+
     if not target_msg.photo:
         await message.reply_text("❌ <b>Please send or reply to an image with this command.</b>", parse_mode=ParseMode.HTML)
         return
 
     status_msg = await message.reply_text("⏳ <b>Uploading to ImgBB...</b>", parse_mode=ParseMode.HTML)
-    
+
     try:
-                                                                                           
-                                                                                                   
-                                                 
-        
+
+
+
+
         file_path = await target_msg.download()
-        
+
         with open(file_path, "rb") as f:
             image_data = f.read()
-        
-                                                                         
+
+
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 "https://api.imgbb.com/1/upload",
@@ -51,7 +51,7 @@ async def tgm_cmd(_, message: types.Message) -> None:
                 timeout=60
             )
             response_data = response.json()
-            
+
         import os
         if os.path.exists(file_path):
             os.remove(file_path)

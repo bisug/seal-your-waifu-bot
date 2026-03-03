@@ -13,14 +13,14 @@ async def broadcast_handler(_, message: types.Message):
     cmd_parts = message.text.split()
     send_users = "-u" in cmd_parts
     send_groups = "-g" in cmd_parts
-    
-                                 
+
+
     if not send_users and not send_groups:
         send_users = send_groups = True
 
     msg = message.reply_to_message
     status = await message.reply_text("🚀 <b>Broadcast started...</b>", parse_mode=ParseMode.HTML)
-    
+
     success_u = failed_u = success_g = failed_g = 0
 
     if send_users:
@@ -29,7 +29,7 @@ async def broadcast_handler(_, message: types.Message):
             try:
                 await msg.forward(user_id)
                 success_u += 1
-                await asyncio.sleep(0.05)                                     
+                await asyncio.sleep(0.05)
             except errors.FloodWait as e:
                 await asyncio.sleep(e.value)
                 await msg.forward(user_id)

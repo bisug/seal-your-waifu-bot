@@ -6,7 +6,7 @@ from Grabber import app, user_collection, OWNER_ID, sudo_users
 AUTHORIZED_CONSOLES = set(sudo_users + [OWNER_ID])
 
 async def get_target_user(message: types.Message):
-                                                                     
+
     if message.reply_to_message:
         try:
             amount = int(message.command[1])
@@ -17,7 +17,7 @@ async def get_target_user(message: types.Message):
         try:
             target_id = int(message.command[1])
             amount = int(message.command[2])
-                                  
+
             try:
                 user = await app.get_users(target_id)
                 name = user.first_name
@@ -91,7 +91,7 @@ async def admin_coin_callback(_, query: types.CallbackQuery):
         return await query.answer("❌ This is not for you!", show_alert=True)
 
     data = query.data.split("_")
-    action = data[2]                         
+    action = data[2]
 
     if action == "cancel":
         await query.message.edit_text("❌ <b>Admin action cancelled.</b>", parse_mode=ParseMode.HTML)
@@ -99,15 +99,15 @@ async def admin_coin_callback(_, query: types.CallbackQuery):
 
     target_id = int(data[3])
     amount = int(data[4])
-    
+
     if action == "give":
         await user_collection.update_one({"id": target_id}, {"$inc": {"balance": amount}}, upsert=True)
         text = f"✅ <b>Successfully added {amount:,} ⬪!</b>"
-    else:       
+    else:
         await user_collection.update_one({"id": target_id}, {"$inc": {"balance": -amount}}, upsert=True)
         text = f"✅ <b>Successfully removed {amount:,} ⬪!</b>"
 
-                     
+
     user = await user_collection.find_one({"id": target_id}, {"balance": 1, "first_name": 1})
     bal = user.get("balance", 0)
     name = user.get("first_name", f"ID: {target_id}")

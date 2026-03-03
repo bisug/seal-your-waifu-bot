@@ -7,18 +7,16 @@ from pyrogram import Client, enums, types, filters
 from pyrogram.handlers import MessageHandler
 from config import config
 from Grabber.database import (
-    client, db, collection, group_collection, 
-    user_totals_collection, message_counts_collection, 
-    user_collection, group_user_totals_collection, 
+    client, db, collection, group_collection,
+    user_totals_collection, message_counts_collection,
+    user_collection, group_user_totals_collection,
     top_global_groups_collection, total_pm_users, sudo_collection,
     spawns_collection, sessions_collection, quiz_questions_collection,
     nguess_enabled_groups_collection
 )
 
-                  
 StartTime = time.time()
 
-               
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
     handlers=[logging.FileHandler("log.txt"), logging.StreamHandler()],
@@ -30,7 +28,6 @@ logging.getLogger("pyrogram").setLevel(logging.WARNING)
 
 LOGGER = logging.getLogger(__name__)
 
-                                         
 OWNER_ID = config.OWNER_ID
 sudo_users = config.SUDO_USERS
 GROUP_ID = config.GROUP_ID
@@ -66,13 +63,13 @@ class SealClient(Client):
 
     async def start(self, *args, **kwargs):
         await super().start(*args, **kwargs)
-        
+
         # 1. Fetch identity and update config
         me = await self.get_me()
         config.BOT_USERNAME = me.username
         config.BOT_ID = me.id
         config.BOT_NAME = me.first_name
-        
+
         global BOT_USERNAME, BOT_ID, BOT_NAME
         BOT_USERNAME = me.username
         BOT_ID = me.id
@@ -93,11 +90,11 @@ class SealClient(Client):
 
         # 4. Set Bot Commands
         await self._set_commands_internal()
-        
+
         # 5. Start Persistent Deletion Worker
         from Grabber.core.deletion import deletion_worker
         asyncio.create_task(deletion_worker())
-        
+
         LOGGER.info(f"SealClient started as {me.first_name} (@{me.username}).")
 
     async def _set_commands_internal(self):
@@ -106,7 +103,7 @@ class SealClient(Client):
             commands = []
             command_pattern = re.compile(r"🔹\s+.*?/(?P<cmd>\w+).*?\s+-\s+(?P<desc>.+)")
             seen_commands = set()
-            
+
             for category in HELP_DATA.values():
                 if "text" in category:
                     for line in category["text"].split("\n"):
@@ -117,10 +114,10 @@ class SealClient(Client):
                             if cmd not in seen_commands:
                                 commands.append(types.BotCommand(command=cmd, description=desc[:100]))
                                 seen_commands.add(cmd)
-            
+
             if "start" not in seen_commands:
                 commands.append(types.BotCommand("start", "Start the bot"))
-                
+
             if commands:
                 await self.set_bot_commands(commands)
                 LOGGER.info(f"Registered {len(commands)} commands.")
@@ -131,6 +128,5 @@ class SealClient(Client):
         await super().stop()
         LOGGER.info("SealClient stopped.")
 
-                                                              
 app = SealClient()
 Grabberu = app

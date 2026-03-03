@@ -31,11 +31,11 @@ async def deletion_worker():
             # Find messages where delete_at is less than or equal to current time
             cursor = deletion_queue_collection.find({"delete_at": {"$lte": now}})
             expired_messages = await cursor.to_list(length=100)
-            
+
             for msg in expired_messages:
                 chat_id = msg["chat_id"]
                 message_id = msg["message_id"]
-                
+
                 try:
                     await app.delete_messages(chat_id, message_id)
                 except errors.Forbidden:
@@ -45,11 +45,11 @@ async def deletion_worker():
                 except Exception as e:
                     # Message might already be deleted or other error
                     pass
-                
+
                 # Remove from queue regardless of success (to prevent retrying forever)
                 await deletion_queue_collection.delete_one({"_id": msg["_id"]})
-                
+
         except Exception as e:
             LOGGER.error(f"Error in deletion_worker loop: {e}")
-            
+
         await asyncio.sleep(60)

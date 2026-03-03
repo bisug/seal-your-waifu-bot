@@ -7,17 +7,17 @@ class User(BaseModel):
     username: Optional[str] = None
     balance: int = 0
     characters: List[dict] = []
-    
+
     # Daily Streak
     daily_streak: int = 0
     last_daily_date: Optional[str] = None
-    
+
     # Weekly
     last_weekly_date: Optional[str] = None
-    
+
     # Hunting
     last_hunt_date: Optional[str] = None
-    
+
     # Progression
     xp: int = 0
     level: int = 0
