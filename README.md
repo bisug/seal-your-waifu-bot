@@ -5,8 +5,8 @@
 
 ### The Ultimate Anime Character Collection (Waifu Grabber) Bot
 
-[![Python](https://img.shields.io/badge/Python-3.9%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
-[![Pyrogram](https://img.shields.io/badge/Pyrogram-v2.0-orange?logo=telegram&logoColor=white)](https://docs.pyrogram.org/)
+[![Python](https://img.shields.io/badge/Python-3.13%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
+[![Kurigram](https://img.shields.io/badge/Kurigram-v2.2-orange?logo=telegram&logoColor=white)](https://pypi.org/project/Kurigram/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-green?logo=mongodb&logoColor=white)](https://www.mongodb.com/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -36,8 +36,8 @@
 
 ## 🛠️ Tech Stack
 
-- **Language**: Python 3.12+
-- **Framework**: [Pyrogram](https://github.com/pyrogram/pyrogram) (MTProto)
+- **Language**: Python 3.13+
+- **Framework**: [Kurigram](https://github.com/Kurigram/Kurigram) (MTProto)
 - **Database**: [MongoDB](https://www.mongodb.com/) (Motor)
 - **APIs**: ImgBB (Image Hosting), Extol (Special APIs)
 - **Environment**: Docker, Heroku
@@ -46,7 +46,7 @@
 
 ### Prerequisites
 
-- Python 3.9 or higher
+- Python 3.13 or higher
 - MongoDB Instance (Atlas recommended)
 - Telegram `API_ID` and `API_HASH` (get from [my.telegram.org](https://my.telegram.org))
 - Telegram `BOT_TOKEN` (get from [@BotFather](https://t.me/BotFather))
@@ -64,7 +64,7 @@ docker run seal-bot
 
 This repository is optimized for Heroku via the included `Procfile` and `heroku.yml`.
 
-- Set `PYTHON_VERSION` to `3.12`
+- Set `PYTHON_VERSION` to `3.13`
 - Add MongoDB addon or use external Atlas URI.
 - Set `SUDO_USERS` and other environment variables.
 
