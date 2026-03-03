@@ -4,10 +4,10 @@ from pyrogram.enums import ParseMode
 from Grabber import app, user_collection, LOGGER
 from config import config
 
-           
+
 EXTOL_API_KEY =""
 
-                                               
+
 async def get_extol_balance(api_key):
     async with httpx.AsyncClient() as client:
         resp = await client.get(
@@ -17,7 +17,7 @@ async def get_extol_balance(api_key):
         )
         return resp.json()
 
-                                          
+
 async def transfer_extol(amount, to_address):
     async with httpx.AsyncClient() as client:
         resp = await client.get(
@@ -28,7 +28,7 @@ async def transfer_extol(amount, to_address):
         )
         return resp.json()
 
-                        
+
 @app.on_message(filters.command("tr"))
 async def transfer_command(_, message: types.Message):
     if len(message.command) != 3:
@@ -48,7 +48,7 @@ async def transfer_command(_, message: types.Message):
         await message.reply_text("❌ Target user is not registered or missing Extol key.", parse_mode=ParseMode.HTML)
         return
 
-                                
+
     try:
         recv_data = await get_extol_balance(receiver["extol_key"])
         receiver_address = recv_data.get("address")
@@ -61,7 +61,7 @@ async def transfer_command(_, message: types.Message):
         await message.reply_text("❌ Could not fetch receiver's Extol address.", parse_mode=ParseMode.HTML)
         return
 
-                      
+
     try:
         result = await transfer_extol(amount, receiver_address)
     except Exception as e:

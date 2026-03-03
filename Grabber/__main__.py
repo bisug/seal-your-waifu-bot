@@ -11,8 +11,6 @@ from Grabber import (
 from Grabber.modules import ALL_MODULES
 from Grabber.core.message_counter import message_counter
 
-                                                                              
 
-                                                                              
 if __name__ == "__main__":
     app.run()

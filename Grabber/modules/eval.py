@@ -27,7 +27,7 @@ def namespace_of(chat_id, message):
 async def send_result(result, message: types.Message):
     if not result:
         return
-    
+
     result = str(result)
     if len(result) > 2000:
         with io.BytesIO(str.encode(result)) as out_file:
@@ -46,10 +46,10 @@ async def evaluate_or_execute(_, message: types.Message):
     content = message.text.split(None, 1)
     if len(content) < 2:
         return
-    
+
     body = cleanup_code(content[1])
     env = namespace_of(message.chat.id, message)
-    
+
     stdout = io.StringIO()
     to_compile = f'async def func():\n{textwrap.indent(body, "  ")}'
 
@@ -80,7 +80,7 @@ async def evaluate_or_execute(_, message: types.Message):
                     pass
         else:
             result = f"{value}{func_return}"
-        
+
         if result:
             await send_result(result, message)
         elif value:

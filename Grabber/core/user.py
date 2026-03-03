@@ -1,12 +1,21 @@
 from Grabber.database import user_collection
 
 async def get_user_data(user_id: int) -> dict or None:
+    """
+    Fetch all data associated with a user from the database.
+    """
     return await user_collection.find_one({"id": user_id})
 
 async def update_user(user_id: int, update_query: dict):
+    """
+    Apply a MongoDB update query to a user's document.
+    """
     await user_collection.update_one({"id": user_id}, update_query, upsert=True)
 
 async def add_char_to_user(user_id: int, character: dict):
+    """
+    Add a character object to the user's collection.
+    """
     await user_collection.update_one(
         {"id": user_id},
         {"$push": {"characters": character}},
@@ -14,7 +23,10 @@ async def add_char_to_user(user_id: int, character: dict):
     )
 
 async def remove_char_from_user(user_id: int, char_id: str) -> bool:
-                                                        
+    """
+    Remove a character from the user's collection by its ID.
+    Returns True if the character was found and removed.
+    """
     res = await user_collection.update_one(
         {"id": user_id, "characters.id": char_id},
         {"$pull": {"characters": {"id": char_id}}}
@@ -22,11 +34,13 @@ async def remove_char_from_user(user_id: int, char_id: str) -> bool:
     return res.modified_count > 0
 
 async def get_active_pet(user_id: int) -> dict:
-                                                  
+    """
+    Retrieve the data for the user's currently active pet.
+    """
     user = await user_collection.find_one({"id": user_id})
     if not user or "current_pet" not in user:
         return None
-    
+
     current_pet_name = user["current_pet"]
     pets = user.get("pets", [])
     return next((p for p in pets if p["name"] == current_pet_name), None)
@@ -49,18 +63,18 @@ async def add_pet_xp(user_id: int, pet_name: str, xp_amount: int):
     # 2. Re-fetch to check for level up
     user = await user_collection.find_one({"id": user_id, "pets.name": pet_name})
     pet = next((p for p in user['pets'] if p['name'] == pet_name), None)
-    
+
     if pet:
         level = pet.get("level", 1)
         xp = pet.get("xp", 0)
         xp_needed = level * 100
-        
+
         if xp >= xp_needed:
             # Level Up!
             new_xp = xp - xp_needed
             new_level = level + 1
             new_luck = round(pet.get("luck", 0.1) + 0.002, 3)
-            
+
             await user_collection.update_one(
                 {"id": user_id, "pets.name": pet_name},
                 {

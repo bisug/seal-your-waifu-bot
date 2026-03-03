@@ -13,15 +13,18 @@ from Grabber.core.progression import add_xp
 from Grabber.modules.quests import update_quest_progress
 from Grabber.modules.achievements import check_achievements
 
-                  
-battle_cooldowns = {}                              
 
-                       
+battle_cooldowns = {}
+
+
 
 def calculate_stats(pet_data):
-                                                               
+    """
+    Calculate derived combat stats from pet base stats and level.
+    Provides default stats if no pet is active.
+    """
     if not pet_data:
-                                       
+
         return {
             "name": "Fists",
             "hp": 100,
@@ -30,12 +33,12 @@ def calculate_stats(pet_data):
             "luck": 0.05,
             "level": 1
         }
-    
+
     level = pet_data.get("level", 1)
     base_hp = pet_data.get("hp", 150)
     base_atk = pet_data.get("atk", 20)
     base_spd = pet_data.get("spd", 15)
-    
+
     return {
         "name": pet_data["name"],
         "hp": base_hp + (level * 5),
@@ -47,14 +50,14 @@ def calculate_stats(pet_data):
     }
 
 def simulate_battle(p1_stats, p2_stats, p1_name, p2_name):
-\
-\
-\
-\
-       
+    """
+    Simulate a turn-based battle between two pets.
+    Determines initiative based on speed and iterates through attacks
+    until one pet's HP reaches zero or the turn limit is hit.
+    """
     log = []
-    
-                          
+
+
     if p1_stats["spd"] >= p2_stats["spd"]:
         attacker, defender = p1_stats, p2_stats
         a_name, d_name = p1_name, p2_name
@@ -65,58 +68,62 @@ def simulate_battle(p1_stats, p2_stats, p1_name, p2_name):
         a_name, d_name = p2_name, p1_name
         a_idx, d_idx = 2, 1
         a_icon, d_icon = "🔵", "🔴"
-        
+
     turn = 1
     max_turns = 15
-    
+
     log.append(f"⏱️ <b>Initiative:</b> {a_icon} <b>{a_name}</b> ({attacker['spd']} SPD) goes first!")
-    
+
     while attacker["hp"] > 0 and defender["hp"] > 0 and turn <= max_turns:
-                             
-                    
+
+
         crit_mult = 1.0
         is_crit = False
         if random.random() < attacker["luck"]:
             crit_mult = 1.5
             is_crit = True
-            
-                                 
+
+
         variance = random.uniform(0.9, 1.1)
         damage = int(attacker["atk"] * variance * crit_mult)
-        
+
         defender["hp"] -= damage
-        
+
         crit_text = " 💥 <b>CRIT!</b>" if is_crit else ""
-        
-                              
+
+
         hp_bar = "▓" * int((max(0, defender['hp']) / defender['max_hp']) * 5)
         log.append(f"{a_icon} <b>{a_name}</b> hits for <code>{damage}</code>{crit_text} (HP: {max(0, defender['hp'])})")
-        
+
         if defender["hp"] <= 0:
             break
-            
-                                             
+
+
         attacker, defender = defender, attacker
         a_name, d_name = d_name, a_name
         a_idx, d_idx = d_idx, a_idx
         a_icon, d_icon = d_icon, a_icon
         turn += 1
-        
+
     winner = a_idx if attacker["hp"] > 0 else d_idx
-    
+
     if turn > max_turns:
         log.append(f"\n⚠️ <b>Time Limit Reached!</b> Draw decided by HP.")
         if p1_stats["hp"] > p2_stats["hp"]:
             winner = 1
         else:
             winner = 2
-            
+
     return winner, "\n".join(log)
 
-                  
+
 
 @app.on_message(filters.command("battle") & filters.group)
 async def battle_challenge_handler(_, message: types.Message):
+    """
+    Handle the /battle command to challenge another user.
+    Validates the bet and creates a temporary session for the challenge.
+    """
     if not message.reply_to_message:
         return await message.reply_text("⚠️ Challenge someone by replying to their message!", parse_mode=ParseMode.HTML)
 
@@ -126,12 +133,12 @@ async def battle_challenge_handler(_, message: types.Message):
     if attacker.id == defender.id:
         return await message.reply_text("⚠️ You can't fight yourself!", parse_mode=ParseMode.HTML)
 
-                              
+
     pair_key = tuple(sorted((attacker.id, defender.id)))
     now = time.time()
     if pair_key in battle_cooldowns:
         last_battle = battle_cooldowns[pair_key]
-        if now - last_battle < 300:            
+        if now - last_battle < 300:
             remain = int(300 - (now - last_battle))
             return await message.reply_text(f"⏳ <b>Cooldown!</b> Wait {remain}s before battling this user again.", parse_mode=ParseMode.HTML)
 
@@ -141,14 +148,14 @@ async def battle_challenge_handler(_, message: types.Message):
     except (IndexError, ValueError):
         return await message.reply_text("❌ Usage: <code>/battle &lt;bet_amount&gt;</code>", parse_mode=ParseMode.HTML)
 
-                        
+
     if await get_user_balance(attacker.id) < bet:
         return await message.reply_text("❌ You don't have enough Shards!", parse_mode=ParseMode.HTML)
-    
+
     if await get_user_balance(defender.id) < bet:
         return await message.reply_text(f"❌ {defender.first_name} doesn't have enough Shards!", parse_mode=ParseMode.HTML)
 
-                     
+
     battle_id = f"bt_{attacker.id}_{defender.id}"
     await create_session(battle_id, {"attacker": attacker.id, "defender": defender.id, "bet": bet})
 
@@ -164,6 +171,10 @@ async def battle_challenge_handler(_, message: types.Message):
 
 @app.on_callback_query(filters.regex(r"^abt_acc:"))
 async def battle_accept_handler(_, query: types.CallbackQuery):
+    """
+    Handle the callback when a user accepts a battle challenge.
+    Deducts shards, performs the simulation, and awards the winner.
+    """
     battle_id = query.data.split(":")[1]
     battle_info = await get_session(battle_id)
 
@@ -176,7 +187,7 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
     bet = battle_info["bet"]
     attacker_id, defender_id = battle_info["attacker"], battle_info["defender"]
 
-                      
+
     if not await check_and_deduct(attacker_id, bet):
         await delete_session(battle_id)
         try:
@@ -184,7 +195,7 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
         except errors.MessageNotModified:
             pass
         return
-    
+
     if not await check_and_deduct(defender_id, bet):
         await update_user_balance(attacker_id, bet)
         await delete_session(battle_id)
@@ -195,23 +206,23 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
         return
 
     await delete_session(battle_id)
-    
-                  
+
+
     pair_key = tuple(sorted((attacker_id, defender_id)))
     battle_cooldowns[pair_key] = time.time()
-    
+
     try:
         a_user = await app.get_users(attacker_id)
         d_user = await app.get_users(defender_id)
-        
-                    
+
+
         a_pet_data = await get_active_pet(attacker_id)
         d_pet_data = await get_active_pet(defender_id)
-        
+
         a_stats = calculate_stats(a_pet_data)
         d_stats = calculate_stats(d_pet_data)
-        
-               
+
+
         text = (
             f"⚔️ <b>Battle Started!</b>\n"
             f"🔴 <a href=\"tg://user?id={a_user.id}\">{html_escape(a_user.first_name)}</a> - <b>{html_escape(a_stats['name'])}</b> (Lvl {a_stats['level']})\n"
@@ -225,31 +236,31 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
             await query.message.edit_text(text, parse_mode=ParseMode.HTML)
         except errors.MessageNotModified:
             pass
-        
+
         await asyncio.sleep(2)
-        
-                  
+
+
         winner_idx, battle_log = simulate_battle(a_stats.copy(), d_stats.copy(), a_stats['name'], d_stats['name'])
-        
+
         winner_id = attacker_id if winner_idx == 1 else defender_id
         winner_user = a_user if winner_idx == 1 else d_user
-        
-                                       
+
+
         total_pot = bet * 2
         tax = int(total_pot * 0.10)
         winnings = total_pot - tax
-        
+
         await update_user_balance(winner_id, winnings)
-        
-                 
+
+
         await add_xp(winner_id, 30, "battle_win")
         await update_quest_progress(winner_id, "battle_veteran", 1)
         await update_quest_progress(winner_id, "weekly_battle", 1)
-        
-                            
+
+
         await check_achievements(winner_id)
-        
-                       
+
+
         result_text = (
             f"📜 <b>Battle Log</b>:\n{battle_log}\n\n"
             f"🏆 <b>Winner:</b> <a href=\"tg://user?id={winner_user.id}\">{html_escape(winner_user.first_name)}</a>\n"
@@ -257,7 +268,7 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
             f"<b>Tax:</b> <code>{tax}</code> ⬪\n"
             f"📈 <b>+30 XP</b> for {html_escape(winner_user.first_name)}"
         )
-        
+
         await query.message.edit_text(result_text, parse_mode=ParseMode.HTML)
 
     except Exception as e:

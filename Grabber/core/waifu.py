@@ -9,6 +9,10 @@ from config import config
 IMGBB_API_KEY = config.IMGBB_API_KEY
 
 async def get_next_sequence_number(sequence_name: str) -> int:
+    """
+    Get the next sequence number for a given sequence name from the database.
+    Used primarily for generating unique character IDs.
+    """
     sequence_collection = db.sequences
     sequence_document = await sequence_collection.find_one_and_update(
         {'_id': sequence_name},
@@ -19,6 +23,9 @@ async def get_next_sequence_number(sequence_name: str) -> int:
     return sequence_document['sequence_value']
 
 async def upload_image_to_catbox(file_path: str) -> str or None:
+    """
+    Upload an image file to Catbox.moe and return the URL.
+    """
     try:
         async with httpx.AsyncClient() as client:
             with open(file_path, 'rb') as f:
@@ -38,6 +45,9 @@ async def upload_image_to_catbox(file_path: str) -> str or None:
         return None
 
 async def upload_image_to_imgbb(file_path: str) -> str or None:
+    """
+    Upload an image file to ImgBB and return the URL.
+    """
     try:
         async with httpx.AsyncClient() as client:
             with open(file_path, 'rb') as f:
@@ -58,18 +68,28 @@ async def upload_image_to_imgbb(file_path: str) -> str or None:
         return None
 
 async def add_character_to_db(char_data: dict) -> str:
+    """
+    Add a new character to the database with a unique generated ID.
+    """
     char_id = str(await get_next_sequence_number('character_id')).zfill(2)
     char_data['id'] = char_id
     await collection.insert_one(char_data)
     return char_id
 
 async def get_character_by_id(char_id: str) -> dict or None:
+    """
+    Fetch character data from the database using its ID.
+    """
     return await collection.find_one({'id': char_id})
 
-                                                                              
+
+# Cache for characters grouped by rarity to improve spawn performance
 characters_by_rarity: Dict[str, list] = {}
 
 async def get_or_load_characters(rarity: str) -> list:
+    """
+    Get a list of characters for a specific rarity, loading from DB into cache if needed.
+    """
     if rarity not in characters_by_rarity:
         cursor = collection.find({"rarity": rarity})
         chars = await cursor.to_list(length=None)
