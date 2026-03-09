@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Grabber WebApp</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+
+<body>
+    <div id="app-container">
+        <!-- Profile Page -->
+        <div id="page-profile" class="page active">
+            <div class="user-card">
+                <div id="user-avatar" class="avatar"></div>
+                <div>
+                    <h2 id="user-name" style="margin:0">Loading...</h2>
+                    <div id="user-title" class="stat-label">Rookie</div>
+                </div>
+            </div>
+
+            <div class="xp-container">
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px">
+                    <span class="stat-label">XP Progress</span>
+                    <span id="user-xp-val" class="stat-label">0 / 0</span>
+                </div>
+                <div class="xp-bar">
+                    <div id="xp-bar-fill" class="xp-bar-fill"></div>
+                </div>
+            </div>
+
+            <div class="stats-grid" style="margin-top: 20px">
+                <div class="stat-item">
+                    <span id="stat-rank" class="stat-val">?</span>
+                    <span class="stat-label">Rank</span>
+                </div>
+                <div class="stat-item">
+                    <span id="stat-balance" class="stat-val">0</span>
+                    <span class="stat-label">Shards</span>
+                </div>
+                <div class="stat-item">
+                    <span id="stat-zenith" class="stat-val">0</span>
+                    <span class="stat-label">Zenith</span>
+                </div>
+            </div>
+
+            <div id="achievements-section">
+                <h3>Achievements</h3>
+                <div id="achievements-list" style="display:flex; gap:8px; overflow-x:auto; padding-bottom:8px">
+                    <!-- Achievements here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Harem Page -->
+        <div id="page-harem" class="page">
+            <h3>🎒 My Harem</h3>
+            <div class="filter-bar" style="display:flex; gap:8px; margin-bottom:12px">
+                <input type="text" id="harem-search" placeholder="Search..."
+                    style="flex:2; padding:10px; border-radius:8px; border:none; background:var(--secondary-bg-color); color:white;">
+                <select id="harem-filter-rarity"
+                    style="flex:1; padding:10px; border-radius:8px; border:none; background:var(--secondary-bg-color); color:white;">
+                    <option value="">All</option>
+                    <option value="Common">Common</option>
+                    <option value="Rare">Rare</option>
+                    <option value="Epic">Epic</option>
+                    <option value="Legendary">Legendary</option>
+                </select>
+            </div>
+            <div id="harem-scroll-container" style="height: calc(100vh - 200px); overflow-y: auto;">
+                <div id="harem-grid" class="char-grid">
+                    <!-- Character cards here -->
+                </div>
+                <div id="harem-loading" style="text-align:center; padding:10px; display:none;">Loading more...</div>
+            </div>
+        </div>
+
+        <!-- Global Gallery Page -->
+        <div id="page-gallery" class="page">
+            <h3>🌐 Global Gallery</h3>
+            <div class="filter-bar" style="display:flex; gap:8px; margin-bottom:12px">
+                <input type="text" id="gallery-search" placeholder="Search..."
+                    style="flex:2; padding:10px; border-radius:8px; border:none; background:var(--secondary-bg-color); color:white;">
+                <select id="gallery-filter-rarity"
+                    style="flex:1; padding:10px; border-radius:8px; border:none; background:var(--secondary-bg-color); color:white;">
+                    <option value="">Rarity</option>
+                    <option value="Common">Common</option>
+                    <option value="Rare">Rare</option>
+                    <option value="Epic">Epic</option>
+                    <option value="Legendary">Legendary</option>
+                </select>
+            </div>
+            <div id="gallery-scroll-container" style="height: calc(100vh - 200px); overflow-y: auto;">
+                <div id="gallery-grid" class="char-grid">
+                    <!-- Gallery cards here -->
+                </div>
+                <div id="gallery-loading" style="text-align:center; padding:10px; display:none;">Loading more...</div>
+            </div>
+        </div>
+
+        <!-- Leaderboard Page -->
+        <div id="page-leaderboard" class="page">
+            <h3>🏆 Global Leaderboard</h3>
+            <div class="podium" id="leaderboard-podium">
+                <!-- Podium here -->
+            </div>
+            <div id="leaderboard-list">
+                <!-- Leaderboard items -->
+            </div>
+        </div>
+
+        <!-- Quests Page -->
+        <div id="page-quests" class="page">
+            <h3>📑 Quest Log</h3>
+            <div id="daily-quests-list">
+                <h4>Daily</h4>
+                <!-- Daily quests -->
+            </div>
+            <div id="weekly-quests-list" style="margin-top:20px">
+                <h4>Weekly</h4>
+                <!-- Weekly quests -->
+            </div>
+        </div>
+
+        <!-- Navigation Tab Bar -->
+        <div class="tab-bar">
+            <div class="tab-item active" onclick="navigate('profile')">
+                <span class="tab-icon">👤</span>
+                Profile
+            </div>
+            <div class="tab-item" onclick="navigate('harem')">
+                <span class="tab-icon">🎒</span>
+                Harem
+            </div>
+            <div class="tab-item" onclick="navigate('gallery')">
+                <span class="tab-icon">🔍</span>
+                Gallery
+            </div>
+            <div class="tab-item" onclick="navigate('quests')">
+                <span class="tab-icon">📑</span>
+                Quests
+            </div>
+            <div class="tab-item" onclick="navigate('leaderboard')">
+                <span class="tab-icon">🏆</span>
+                Top
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

@@ -7,11 +7,12 @@ async def webapp_command(_, message):
     user_id = message.from_user.id
 
 
-    web_app_url = f"https://sealbotweb-dd92cdbb6105.herokuapp.com/?user_id={user_id}"
+    # Replace with your Heroku domain
+    web_app_url = "https://your-heroku-app.herokuapp.com/"
 
     keyboard = types.InlineKeyboardMarkup([
         [
-            types.InlineKeyboardButton("Open Web Gallery", url=web_app_url)
+            types.InlineKeyboardButton("Open Mini App", web_app=types.WebAppInfo(url=web_app_url))
         ]
     ])
 
