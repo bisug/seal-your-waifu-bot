@@ -2,27 +2,27 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 
 class StatsModel(BaseModel):
-    level: int
-    xp: int
-    xp_current: int
-    xp_needed: int
-    streak: int
-    points: int
-    zenith: int
-    badges: List[str]
-    total_characters: int
+    level: int = 0
+    xp: int = 0
+    xp_current: int = 0
+    xp_needed: int = 100
+    streak: int = 0
+    points: int = 0
+    zenith: int = 0
+    badges: List[str] = Field(default_factory=list)
+    total_characters: int = 0
 
 class TitlesModel(BaseModel):
-    current: str
-    all: List[str]
+    current: str = "Rookie"
+    all: List[str] = Field(default_factory=lambda: ["Rookie"])
 
 class UserProfileResponse(BaseModel):
     id: int
-    first_name: str
-    username: Optional[str]
-    avatar: Optional[str]
+    first_name: str = "User"
+    username: Optional[str] = None
+    avatar: Optional[str] = None
     stats: StatsModel
-    achievements: List[str]
+    achievements: List[str] = Field(default_factory=list)
     titles: TitlesModel
 
 class CharacterModel(BaseModel):

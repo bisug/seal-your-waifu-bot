@@ -70,6 +70,9 @@ function setupControls() {
         searchTimeout = setTimeout(() => onFilterChange('gallery'), 500);
     };
     document.getElementById('gallery-filter-rarity').onchange = () => onFilterChange('gallery');
+
+    // Leaderboard Metric Switcher
+    document.getElementById('lb-metric-select').onchange = (e) => loadLeaderboard(e.target.value);
 }
 
 // --- Navigation ---
@@ -197,24 +200,25 @@ function renderCharCard(char, isHarem) {
 
 async function loadQuests() {
     const data = await apiFetch('/quests');
+    if (!data) return;
     const renderQuest = (q) => `
         <div class="quest-card">
-            <div class="quest-icon">${q.icon}</div>
+            <div class="quest-icon">${q.icon || '❔'}</div>
             <div class="quest-details">
-                <div class="quest-title">${q.name}</div>
-                <div class="quest-desc">${q.description}</div>
+                <div class="quest-title">${q.name || 'Unknown Quest'}</div>
+                <div class="quest-desc">${q.description || 'No description available.'}</div>
                 <div style="font-size:10px; color:var(--button-color); margin-top:4px">
-                    ${q.progress}/${q.target} | +${q.reward_xp} XP
+                    ${q.progress || 0}/${q.target || 1} | +${q.reward_xp || 0} XP
                 </div>
             </div>
-            ${q.progress >= q.target && !q.claimed ?
+            ${(q.progress || 0) >= (q.target || 1) && !q.claimed ?
             `<button onclick="claimQuest('${q.id}')" style="width:auto; padding:6px 12px; margin:0">Claim</button>` :
             (q.claimed ? '✅' : '')}
         </div>
     `;
 
-    document.getElementById('daily-quests-list').innerHTML = '<h4>Daily</h4>' + data.daily.map(renderQuest).join('');
-    document.getElementById('weekly-quests-list').innerHTML = '<h4>Weekly</h4>' + data.weekly.map(renderQuest).join('');
+    document.getElementById('daily-quests-list').innerHTML = '<h4>Daily</h4>' + (data.daily || []).map(renderQuest).join('');
+    document.getElementById('weekly-quests-list').innerHTML = '<h4>Weekly</h4>' + (data.weekly || []).map(renderQuest).join('');
 }
 
 async function claimQuest(qid) {
@@ -229,33 +233,40 @@ async function claimQuest(qid) {
     }
 }
 
-async function loadLeaderboard() {
-    const data = await apiFetch('/leaderboard?metric=level');
+async function loadLeaderboard(metric = 'level') {
+    const data = await apiFetch(`/leaderboard?metric=${metric}`);
     const list = document.getElementById('leaderboard-list');
+    const podiumEl = document.getElementById('leaderboard-podium');
+
+    if (!data || data.length === 0) {
+        podiumEl.innerHTML = '';
+        list.innerHTML = '<div style="text-align:center; padding:20px; color:var(--hint-color)">No rankings available yet.</div>';
+        return;
+    }
 
     // Top 3 for Podium
     const top3 = data.slice(0, 3);
-    const podiumHtml = `
-        <div class="podium-item rank-2">
-            <div class="podium-avatar" style="background-image:url('${top3[1]?.avatar || ''}'); background-size:cover"></div>
-            <div style="font-size:12px">${top3[1]?.name || ''}</div>
-        </div>
-        <div class="podium-item rank-1">
-            <div class="podium-avatar" style="background-image:url('${top3[0]?.avatar || ''}'); background-size:cover"></div>
-            <div style="font-size:14px; font-weight:bold">${top3[0]?.name || ''}</div>
-        </div>
-        <div class="podium-item rank-3">
-            <div class="podium-avatar" style="background-image:url('${top3[2]?.avatar || ''}'); background-size:cover"></div>
-            <div style="font-size:12px">${top3[2]?.name || ''}</div>
+    const renderPodiumItem = (user, rank) => `
+        <div class="podium-item rank-${rank}">
+            <div class="podium-avatar" style="background-image:url('${user?.avatar || 'https://files.catbox.moe/2hsawz.jpg'}'); background-size:cover"></div>
+            <div style="font-size:${rank === 1 ? '14px' : '12px'}; font-weight:${rank === 1 ? 'bold' : 'normal'}">
+                ${user?.name || 'TBA'}
+            </div>
+            <div style="font-size:10px; color:var(--button-color)">
+                ${metric === 'level' ? `Lvl ${user?.level || 0}` : (user?.value?.toLocaleString() || '0')}
+            </div>
         </div>
     `;
-    document.getElementById('leaderboard-podium').innerHTML = podiumHtml;
+
+    podiumEl.innerHTML = renderPodiumItem(top3[1], 2) + renderPodiumItem(top3[0], 1) + renderPodiumItem(top3[2], 3);
 
     list.innerHTML = data.slice(3).map(entry => `
         <div class="list-item">
             <span style="color:var(--hint-color); width:20px">#${entry.rank}</span>
             <span style="flex:1; margin-left:12px">${entry.name}</span>
-            <span style="font-weight:bold">Lvl ${entry.level || 0}</span>
+            <span style="font-weight:bold">
+                ${metric === 'level' ? `Lvl ${entry.level || 0}` : entry.value.toLocaleString()}
+            </span>
         </div>
     `).join('');
 }

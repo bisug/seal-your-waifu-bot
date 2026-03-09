@@ -102,12 +102,22 @@
 
         <!-- Leaderboard Page -->
         <div id="page-leaderboard" class="page">
-            <h3>🏆 Global Leaderboard</h3>
-            <div class="podium" id="leaderboard-podium">
-                <!-- Podium here -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
+                <h3 style="margin:0">🏆 Rankings</h3>
+                <select id="lb-metric-select"
+                    style="padding:8px; border-radius:8px; border:none; background:var(--secondary-bg-color); color:white; font-size:12px">
+                    <option value="level">Level</option>
+                    <option value="harem">Harem</option>
+                    <option value="shards">Shards</option>
+                    <option value="zenith">Zenith</option>
+                    <option value="guesses">Guesses</option>
+                </select>
+            </div>
+            <div id="leaderboard-podium" class="podium-container">
+                <!-- Top 3 -->
             </div>
             <div id="leaderboard-list">
-                <!-- Leaderboard items -->
+                <!-- List items -->
             </div>
         </div>
 
