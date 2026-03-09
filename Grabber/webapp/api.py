@@ -18,6 +18,7 @@ async def get_me(user_id: int = Depends(get_current_user)):
     achievements = user.get("achievements") or []
     titles_list = user.get("titles") or ["Rookie"]
     characters = user.get("characters") or []
+    progress = await get_user_progress(user_id)
     
     return {
         "id": user_id,
