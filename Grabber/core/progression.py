@@ -49,34 +49,31 @@ def get_progress_bar(current: int, total: int, length: int = 10) -> str:
 
 async def add_xp(user_id: int, amount: int, source: str = "unknown"):
     """
-    Add XP to a user's profile and handle level-ups.
+    Add XP to a user's profile and handle level-ups atomically.
     """
-    user = await user_collection.find_one({"id": user_id})
-    if not user:
+    user = await user_collection.find_one_and_update(
+        {"id": user_id},
+        {
+            "$inc": {"xp": amount},
+            "$setOnInsert": {
+                "pass_type": "free",
+                "claimed_levels": [],
+                "season": 1
+            }
+        },
+        upsert=True,
+        return_document=True
+    )
 
-        await user_collection.insert_one({
-            "id": user_id,
-            "xp": amount,
-            "pass_type": "free",
-            "claimed_levels": [],
-            "season": 1
-        })
-        LOGGER.info(f"User {user_id} gained {amount} XP from {source} (new profile)")
+    if not user:
         return
 
-    old_xp = user.get("xp", 0)
-    new_xp = old_xp + amount
+    new_xp = user.get("xp", 0)
+    old_xp = new_xp - amount
     old_level = get_level_from_xp(old_xp)
     new_level = get_level_from_xp(new_xp)
 
-
-    await user_collection.update_one(
-        {"id": user_id},
-        {"$set": {"xp": new_xp}}
-    )
-
     LOGGER.info(f"User {user_id} gained {amount} XP from {source}. Level: {old_level} -> {new_level}")
-
 
     if new_level > old_level:
         await check_and_grant_rewards(user_id, old_level, new_level)
