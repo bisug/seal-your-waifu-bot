@@ -9,7 +9,12 @@ from config import config
 import os
 import logging
 
-app = FastAPI(title="Telegram WebApp API")
+app = FastAPI(
+    title="Telegram WebApp API",
+    docs_url=None, 
+    redoc_url=None, 
+    openapi_url=None
+)
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -28,7 +33,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.post("/api/auth")
+@api_router.post("/secure_init")
 async def auth(request: Request):
     data = await request.json()
     init_data = data.get("initData")
@@ -48,9 +53,10 @@ async def auth(request: Request):
     
     return {"token": token}
 
-# Include routers
-app.include_router(api_router, prefix="/api")
-app.include_router(ws_router, prefix="/api")
+# Include routers with obfuscated prefix
+api_version_prefix = os.getenv("API_VERSION_PREFIX", "v1_7b82")
+app.include_router(api_router, prefix=f"/api/{api_version_prefix}")
+app.include_router(ws_router, prefix=f"/api/{api_version_prefix}")
 
 # Mount static files for frontend
 frontend_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")

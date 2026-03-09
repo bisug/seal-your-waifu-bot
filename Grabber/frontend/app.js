@@ -22,7 +22,7 @@ const containers = {
 
 async function init() {
     try {
-        const response = await fetch('/api/auth', {
+        const response = await fetch('/api/v1_7b82/secure_init', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ initData: tg.initData })
@@ -104,7 +104,7 @@ function refreshData(pageId) {
 // --- Data Fetching & Rendering ---
 
 async function apiFetch(endpoint) {
-    const res = await fetch(`/api${endpoint}`, {
+    const res = await fetch(`/api/v1_7b82${endpoint}`, {
         headers: { 'Authorization': `Bearer ${sessionToken}` }
     });
     if (res.status === 401) { init(); return null; }
@@ -222,7 +222,7 @@ async function loadQuests() {
 }
 
 async function claimQuest(qid) {
-    const res = await fetch(`/api/quests/claim/${qid}`, {
+    const res = await fetch(`/api/v1_7b82/quests/claim/${qid}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${sessionToken}` }
     });
