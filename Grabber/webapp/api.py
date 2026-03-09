@@ -11,7 +11,7 @@ router = APIRouter()
 
 @router.get("/me", response_model=UserProfileResponse)
 async def get_me(user_id: int = Depends(get_current_user)):
-    user = await user_collection.find_one({"id": user_id})
+    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
@@ -51,7 +51,7 @@ async def get_harem(
     search: str = None,
     rarity: str = None
 ):
-    user = await user_collection.find_one({"id": user_id})
+    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
         
@@ -115,7 +115,7 @@ async def get_gallery(
     total = await collection.count_documents(query)
     
     # Check "Owned" status
-    user = await user_collection.find_one({"id": user_id})
+    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
     owned_ids = set(c.get("id") for c in (user.get("characters") or [])) if user else set()
     
     for item in items:
@@ -215,7 +215,7 @@ async def get_leaderboard(
 
 @router.get("/stats")
 async def get_stats(user_id: int = Depends(get_current_user)):
-    user = await user_collection.find_one({"id": user_id})
+    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
         
