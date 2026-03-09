@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 from Grabber.webapp.auth import validate_init_data, create_session, r
 from Grabber.webapp.api import router as api_router
 from Grabber.webapp.ws import router as ws_router
+from config import config
 import os
 import logging
 
@@ -21,7 +22,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 # CORS Configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://web.telegram.org", "https://example-app-01-seal-6d4f0ddd98e4.herokuapp.com"],
+    allow_origins=["https://web.telegram.org", config.WEB_APP_URL],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
