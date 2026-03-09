@@ -15,7 +15,9 @@ async def get_me(user_id: int = Depends(get_current_user)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    progress = await get_user_progress(user_id)
+    achievements = user.get("achievements") or []
+    titles_list = user.get("titles") or ["Rookie"]
+    characters = user.get("characters") or []
     
     return {
         "id": user_id,
@@ -30,13 +32,13 @@ async def get_me(user_id: int = Depends(get_current_user)):
             "streak": user.get("streak", 0),
             "points": user.get("balance", 0),
             "zenith": user.get("zenith", 0),
-            "badges": user.get("badges", []),
-            "total_characters": len(user.get("characters", []))
+            "badges": user.get("badges") or [],
+            "total_characters": len(characters)
         },
-        "achievements": user.get("achievements", []),
+        "achievements": achievements,
         "titles": {
             "current": user.get("title", "Rookie"),
-            "all": user.get("titles", ["Rookie"])
+            "all": titles_list
         }
     }
 
@@ -52,7 +54,7 @@ async def get_harem(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
         
-    chars = user.get("characters", [])
+    chars = user.get("characters") or []
     
     # Filtering
     if search:
@@ -113,7 +115,7 @@ async def get_gallery(
     
     # Check "Owned" status
     user = await user_collection.find_one({"id": user_id})
-    owned_ids = set(c.get("id") for c in user.get("characters", [])) if user else set()
+    owned_ids = set(c.get("id") for c in (user.get("characters") or [])) if user else set()
     
     for item in items:
         item["_id"] = str(item["_id"])
@@ -177,12 +179,21 @@ async def get_leaderboard(
     limit: int = Query(50, ge=1, le=100)
 ):
     cache_key = f"leaderboard:{metric}:{limit}"
-    cached = await r.get(cache_key)
+    cached = await r.get(cache_key) if r else None
     if cached:
         return json.loads(cached)
         
     from Grabber.modules.leaderboard import get_top_users
     users = await get_top_users(metric, limit)
+    
+    metric_map = {
+        "harem": "char_count",
+        "shards": "balance",
+        "zenith": "zenith",
+        "level": "xp",
+        "guesses": "guess_count"
+    }
+    field = metric_map.get(metric, "xp")
     
     response_data = []
     for i, user in enumerate(users, 1):
@@ -190,13 +201,15 @@ async def get_leaderboard(
             "rank": i,
             "id": user.get("id"),
             "name": user.get("first_name", "User"),
-            "value": user.get(metric if metric != "level" else "xp", 0)
+            "value": user.get(field, 0),
+            "avatar": user.get("avatar") # Support avatars in LB if available
         }
         if metric == "level":
             processed["level"] = get_level_from_xp(processed["value"])
         response_data.append(processed)
         
-    await r.setex(cache_key, 60, json.dumps(response_data))
+    if r:
+        await r.setex(cache_key, 60, json.dumps(response_data))
     return response_data
 
 @router.get("/stats")
