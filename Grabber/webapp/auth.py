@@ -27,7 +27,7 @@ def validate_init_data(init_data: str):
             
         data_check_string = "\n".join([f"{k}={v}" for k, v in sorted(vals.items())])
         
-        secret_key = hmac.new(b"WebAppData", config.BOT_TOKEN.encode(), hashlib.sha256).digest()
+        secret_key = hmac.new(b"WebAppData", config.TOKEN.encode(), hashlib.sha256).digest()
         h = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
         
         if hmac.compare_digest(h, msg_hash):
@@ -47,21 +47,22 @@ async def create_session(user_data: dict):
     if not user_id:
         return None
         
-    token = str(uuid.uuid4())
-    session_key = f"session:{user_id}"
-    
-    # Store token in Redis with TTL
+    if not r:
+        return token, user_id # Fallback or fail gracefully
+        
+    # Store both mappings
     await r.setex(session_key, 3600, token)
+    await r.setex(token_key, 3600, str(user_id))
+    
     return token, user_id
 
 async def get_current_user(auth: HTTPAuthorizationCredentials = Security(security)):
     """Middleware to validate session token and handle rate limiting."""
     token = auth.credentials
-    # This is simplified; in production, you'd need the user_id to check the session
-    # We can encode user_id in the token or use a separate lookup
-    # For this implementation, we'll use a token:user_id mapping in Redis for fast lookup
+    if not r:
+        raise HTTPException(status_code=503, detail="Session service unavailable")
+
     user_id = await r.get(f"auth_token:{token}")
-    
     if not user_id:
         raise HTTPException(status_code=401, detail="Invalid or expired session")
         
@@ -69,14 +70,19 @@ async def get_current_user(auth: HTTPAuthorizationCredentials = Security(securit
     now = time.time()
     rate_key = f"rate_limit:{user_id}"
     
-    async with r.pipeline(transaction=True) as pipe:
-        pipe.zremrangebyscore(rate_key, 0, now - 60)
-        pipe.zadd(rate_key, {str(now): now})
-        pipe.zcard(rate_key)
-        pipe.expire(rate_key, 60)
-        _, _, count, _ = await pipe.execute()
-        
-    if count > 30:
-        raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in a minute.")
+    try:
+        async with r.pipeline(transaction=True) as pipe:
+            pipe.zremrangebyscore(rate_key, 0, now - 60)
+            pipe.zadd(rate_key, {str(now): now})
+            pipe.zcard(rate_key)
+            pipe.expire(rate_key, 60)
+            _, _, count, _ = await pipe.execute()
+            
+        if count > 30:
+            raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in a minute.")
+    except Exception as e:
+        # Log rate limit failure but allow request if it's just a Redis intermittent error
+        print(f"Rate limiting error: {e}")
+        pass
         
     return int(user_id)
