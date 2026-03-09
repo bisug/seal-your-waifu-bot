@@ -47,8 +47,12 @@ async def create_session(user_data: dict):
     if not user_id:
         return None
         
+    token = str(uuid.uuid4())
+    session_key = f"user_session:{user_id}"
+    token_key = f"auth_token:{token}"
+    
     if not r:
-        return token, user_id # Fallback or fail gracefully
+        return token, user_id
         
     # Store both mappings
     await r.setex(session_key, 3600, token)
