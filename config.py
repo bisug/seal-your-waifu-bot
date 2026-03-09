@@ -43,6 +43,9 @@ class Config:
     EXTOL_API_KEY = os.getenv("EXTOL_API_KEY", "IAC-49ZENKUeYt")
     EXTOL_RECEIVER = os.getenv("EXTOL_RECEIVER", "EXTAF9VYPP67bpFWJmw301503c4")
 
+    # WebApp
+    WEB_APP_URL = os.getenv("WEB_APP_URL", "https://dear-project-01-seal-6d4f0ddd98e4.herokuapp.com")
+
     # Batch Processing
     BATCH_MONGO_URI = os.getenv("BATCH_MONGO_URI", "mongodb+srv://riyu:riyu@cluster0.kduyo99.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
     BATCH_STRING_SESSION = os.getenv("BATCH_STRING_SESSION", "BQGrPU8AXHUix6jIMWTz9xp5ZT7MZcozFawIKPIWgy63stW3UYp77MXSHmfLTHmpqXycrCCJqXYE7qj6fU5wZK7MVyqFUFogETZX7Qfzk8s7z_zUXMNVomTnYImRVQ0jR5T8UWattvz3mFFu0l5M5QhPWxabk7N2DTu5ZGgJ8ZWIfXZL_A1ZjGmiT_BZOlrvG5meVMpOuc_Sti3MPp6hYOpXA-tBwVAMh075Ty1yVyoCx61ODmbi6PYPBjcDF0r3KihyGsnaPJg8mgeYgca6WvpqwdsQDud2xUD1TRn6RqqTeC575kZZNn2CERd-35brznfH5Yy1rmVpe-fXT_m-maWB8nGypQAAAAFtzc3-AA")
