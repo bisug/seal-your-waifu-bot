@@ -7,8 +7,8 @@ async def webapp_command(_, message):
     user_id = message.from_user.id
 
 
-    # Replace with your Heroku domain
-    web_app_url = "https://your-heroku-app.herokuapp.com/"
+    from config import config
+    web_app_url = config.WEB_APP_URL
 
     keyboard = types.InlineKeyboardMarkup([
         [
