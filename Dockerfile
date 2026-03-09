@@ -1,15 +1,9 @@
-# Use Python 3.13 slim image as base
-FROM python:3.13-slim
+# Stage 1: Builder
+FROM python:3.13-slim AS builder
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1
-
-# Set working directory
 WORKDIR /app
 
-# Install system dependencies
+# Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libffi-dev \
@@ -17,22 +11,33 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Upgrade pip and install dependencies
+RUN pip install --upgrade pip
+COPY requirements.txt .
+RUN pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels -r requirements.txt
+
+# Stage 2: Final
+FROM python:3.13-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/home/botuser/.local/bin:${PATH}"
+
+WORKDIR /app
+
+# Copy wheels from builder and install
+COPY --from=builder /app/wheels /wheels
+RUN pip install --upgrade pip && \
+    pip install --no-cache /wheels/*
+
 # Create a non-root user
 RUN useradd -m -u 1000 botuser && \
     chown -R botuser:botuser /app
-
-# Switch to non-root user
 USER botuser
 
-# Copy and install Python dependencies
-COPY --chown=botuser:botuser requirements.txt .
-RUN pip install --user --no-warn-script-location -r requirements.txt
-
-# Add user's bin to PATH
-ENV PATH="/home/botuser/.local/bin:${PATH}"
-
-# Copy the rest of the application
+# Copy application code
 COPY --chown=botuser:botuser . .
 
-# Run the application
+# Default command (will be overridden by Procfile/heroku.yml)
 CMD ["python", "-m", "Grabber"]
