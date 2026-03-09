@@ -49,8 +49,8 @@ async def auth(request: Request):
     return {"token": token}
 
 # Include routers
-app.include_router(api_router)
-app.include_router(ws_router)
+app.include_router(api_router, prefix="/api")
+app.include_router(ws_router, prefix="/api")
 
 # Mount static files for frontend
 frontend_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
