@@ -4,20 +4,20 @@ async def get_user_data(user_id: int) -> dict or None:
     """
     Fetch all data associated with a user from the database.
     """
-    return await user_collection.find_one({"id": user_id})
+    return await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
 
 async def update_user(user_id: int, update_query: dict):
     """
     Apply a MongoDB update query to a user's document.
     """
-    await user_collection.update_one({"id": user_id}, update_query, upsert=True)
+    await user_collection.update_one({"id": {"$in": [user_id, str(user_id)]}}, update_query, upsert=True)
 
 async def add_char_to_user(user_id: int, character: dict):
     """
     Add a character object to the user's collection.
     """
     await user_collection.update_one(
-        {"id": user_id},
+        {"id": {"$in": [user_id, str(user_id)]}},
         {"$push": {"characters": character}},
         upsert=True
     )
@@ -28,7 +28,7 @@ async def remove_char_from_user(user_id: int, char_id: str) -> bool:
     Returns True if the character was found and removed.
     """
     res = await user_collection.update_one(
-        {"id": user_id, "characters.id": char_id},
+        {"id": {"$in": [user_id, str(user_id)]}, "characters.id": char_id},
         {"$pull": {"characters": {"id": char_id}}}
     )
     return res.modified_count > 0
@@ -37,7 +37,7 @@ async def get_active_pet(user_id: int) -> dict:
     """
     Retrieve the data for the user's currently active pet.
     """
-    user = await user_collection.find_one({"id": user_id})
+    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
     if not user or "current_pet" not in user:
         return None
 
@@ -50,18 +50,18 @@ async def add_pet_xp(user_id: int, pet_name: str, xp_amount: int):
     Adds XP to a pet atomically where possible.
     Note: Level-ups still require multi-step logic but we reduce the race window.
     """
-    user = await user_collection.find_one({"id": user_id, "pets.name": pet_name})
+    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}, "pets.name": pet_name})
     if not user:
         return
 
     # 1. Atomic XP increment
     await user_collection.update_one(
-        {"id": user_id, "pets.name": pet_name},
+        {"id": {"$in": [user_id, str(user_id)]}, "pets.name": pet_name},
         {"$inc": {"pets.$.xp": xp_amount}}
     )
 
     # 2. Re-fetch to check for level up
-    user = await user_collection.find_one({"id": user_id, "pets.name": pet_name})
+    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}, "pets.name": pet_name})
     pet = next((p for p in user['pets'] if p['name'] == pet_name), None)
 
     if pet:
@@ -76,7 +76,7 @@ async def add_pet_xp(user_id: int, pet_name: str, xp_amount: int):
             new_luck = round(pet.get("luck", 0.1) + 0.002, 3)
 
             await user_collection.update_one(
-                {"id": user_id, "pets.name": pet_name},
+                {"id": {"$in": [user_id, str(user_id)]}, "pets.name": pet_name},
                 {
                     "$set": {
                         "pets.$.xp": new_xp,

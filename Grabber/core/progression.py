@@ -150,7 +150,7 @@ async def get_user_progress(user_id: int) -> dict:
     """
     Retrieve a comprehensive summary of a user's progression state.
     """
-    user = await user_collection.find_one({"id": user_id})
+    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
 
     if not user:
         return {

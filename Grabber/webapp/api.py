@@ -43,6 +43,11 @@ async def get_me(user_id: int = Depends(get_current_user)):
         }
     }
 
+@router.get("/profile", response_model=UserProfileResponse)
+async def get_profile_legacy(user_id: int = Depends(get_current_user)):
+    """Backward compatibility for old client versions."""
+    return await get_me(user_id)
+
 @router.get("/harem", response_model=PaginatedResponse)
 async def get_harem(
     user_id: int = Depends(get_current_user),
