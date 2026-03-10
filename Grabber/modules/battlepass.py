@@ -1,6 +1,6 @@
 from pyrogram import filters, types, enums
 from pyrogram.enums import ButtonStyle, ParseMode
-from Grabber import user_collection, app
+from Grabber import user_collection, app, WEB_APP_URL
 from Grabber.core.progression import get_user_progress, get_progress_bar, LEVEL_REWARDS
 
 
@@ -60,7 +60,7 @@ async def view_pass(_, message: types.Message):
         buttons.append([types.InlineKeyboardButton("💎 Upgrade to Elite", callback_data=f"buyask_elite:{user_id}")])
 
     buttons.append([types.InlineKeyboardButton("🎁 View Rewards", callback_data=f"pass_rewards:{user_id}")])
-
+    buttons.append([types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))])
     markup = types.InlineKeyboardMarkup(buttons)
     await message.reply_text(text, parse_mode=ParseMode.HTML, reply_markup=markup)
 
@@ -95,6 +95,7 @@ async def view_pass_inline(query: types.CallbackQuery):
         buttons.append([types.InlineKeyboardButton("💎 Upgrade to Elite", callback_data=f"buyask_elite:{user_id}")])
 
     buttons.append([types.InlineKeyboardButton("🎁 View Rewards", callback_data=f"pass_rewards:{user_id}")])
+    buttons.append([types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))])
     buttons.append([types.InlineKeyboardButton("⤾ Back to Hub", callback_data="hub_main")])
 
     await query.message.edit_text(text, parse_mode=ParseMode.HTML, reply_markup=types.InlineKeyboardMarkup(buttons))

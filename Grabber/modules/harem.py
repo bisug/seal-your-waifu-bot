@@ -6,7 +6,7 @@ from typing import List, Dict, Union, Any
 
 from pyrogram import filters, types, enums, errors
 from pyrogram.enums import ParseMode
-from Grabber import app
+from Grabber import app, WEB_APP_URL
 from Grabber import LOGGER
 from Grabber.core.user import get_user_data
 
@@ -147,6 +147,7 @@ def _build_harem_markup(page: int, total_pages: int, user_id: int) -> types.Inli
 
     keyboard = [
         nav_buttons,
+        [types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))],
         [types.InlineKeyboardButton("🔍 Search Harem", switch_inline_query_current_chat=f"collection.{user_id} ")],
         [types.InlineKeyboardButton("🌐 Global Search", switch_inline_query_current_chat="")]
     ]

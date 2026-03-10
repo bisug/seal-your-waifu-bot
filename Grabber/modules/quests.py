@@ -4,7 +4,7 @@ import random
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
 from Grabber.core.utils import html_escape
-from Grabber import user_collection, app
+from Grabber import user_collection, app, WEB_APP_URL
 from Grabber.core.progression import add_xp, get_progress_bar
 
 
@@ -246,7 +246,11 @@ async def view_quests(_, message: types.Message):
     text += f"\n⏰ <b>Daily Reset:</b> <code>{int(d_left.total_seconds()//3600)}h</code>\n"
     text += f"🗓️ <b>Weekly Reset:</b> <code>{days_until_mon} days</code>"
 
-    markup = types.InlineKeyboardMarkup(buttons) if buttons else None
+    if not buttons:
+        buttons = []
+    buttons.append([types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))])
+    
+    markup = types.InlineKeyboardMarkup(buttons)
     await message.reply_text(text, parse_mode=ParseMode.HTML, reply_markup=markup)
 
 @app.on_callback_query(filters.regex(r"^quest_claim:"))

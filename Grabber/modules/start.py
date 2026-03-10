@@ -2,7 +2,7 @@ from pyrogram import enums, filters, types, errors
 from pyrogram.enums import ParseMode
 from Grabber.core.utils import html_escape
 from Grabber import app
-from Grabber import PHOTO_URL, BOT_USERNAME, SUPPORT_CHAT, UPDATE_CHAT, LOGGER
+from Grabber import PHOTO_URL, BOT_USERNAME, SUPPORT_CHAT, UPDATE_CHAT, LOGGER, WEB_APP_URL
 from Grabber.database import total_pm_users
 from Grabber import user_collection
 from Grabber.modules.pet import DEFAULT_PET
@@ -197,6 +197,7 @@ async def start_handler(_, message: types.Message):
     if message.chat.type == enums.ChatType.PRIVATE:
         markup = types.InlineKeyboardMarkup([
             [types.InlineKeyboardButton("➕ Add to Group", url=f"https://t.me/{BOT_USERNAME}?startgroup=true")],
+            [types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))],
             [types.InlineKeyboardButton("💬 Contact Support", url=f"https://t.me/{SUPPORT_CHAT}"),
              types.InlineKeyboardButton("📢 Latest Updates", url=f"https://t.me/{UPDATE_CHAT}")],
             [types.InlineKeyboardButton("❓ Help & Commands", callback_data="help:main")]
@@ -221,6 +222,7 @@ async def start_callback_handler(_, query: types.CallbackQuery):
 
     markup = types.InlineKeyboardMarkup([
         [types.InlineKeyboardButton("➕ Add to Group", url=f"https://t.me/{BOT_USERNAME}?startgroup=true")],
+        [types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))],
         [types.InlineKeyboardButton("💬 Contact Support", url=f"https://t.me/{SUPPORT_CHAT}"),
             types.InlineKeyboardButton("📢 Latest Updates", url=f"https://t.me/{UPDATE_CHAT}")],
         [types.InlineKeyboardButton("❓ Help & Commands", callback_data="help:main")]

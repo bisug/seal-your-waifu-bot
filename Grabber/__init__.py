@@ -43,6 +43,7 @@ BOT_NAME = None
 CHARA_CHANNEL_ID = config.CHARA_CHANNEL_ID
 JOINLOGS = config.JOINLOGS
 LEAVELOGS = config.LEAVELOGS
+WEB_APP_URL = config.WEB_APP_URL
 
 class SealClient(Client):
     """
