@@ -20,6 +20,26 @@ async def get_bot_info():
         "avatar": config.PHOTO_URL[0] if config.PHOTO_URL else "https://files.catbox.moe/2hsawz.jpg"
     }
 
+@router.get("/rarities")
+async def get_rarities():
+    """Fetch distinct rarities from the database character collection."""
+    from Grabber.database import collection
+    rarities = await collection.distinct("rarity")
+    # Filter out None and sort if possible
+    rarities = [r for r in rarities if r]
+    return sorted(rarities)
+
+@router.get("/character/{char_id}")
+async def get_character(char_id: str):
+    """Fetch details for a specific character."""
+    from Grabber.database import collection
+    char = await collection.find_one({"id": char_id})
+    if not char:
+        raise HTTPException(status_code=404, detail="Character not found")
+    
+    char["_id"] = str(char["_id"])
+    return char
+
 @router.get("/me", response_model=UserProfileResponse)
 async def get_me(user_id: int = Depends(get_current_user)):
     user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
