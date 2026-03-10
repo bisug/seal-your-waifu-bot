@@ -336,9 +336,10 @@ async function loadLeaderboard(metric = 'level') {
 
     list.innerHTML = data.slice(3).map(entry => `
         <div class="list-item">
-            <span style="color:var(--hint-color); width:20px">#${entry.rank}</span>
-            <span style="flex:1; margin-left:12px">${entry.name}</span>
-            <span style="font-weight:bold">
+            <span style="color:var(--hint-color); width:24px; font-size:11px">#${entry.rank}</span>
+            <div class="list-item-avatar" style="background-image:url('${entry.avatar || 'https://files.catbox.moe/2hsawz.jpg'}')"></div>
+            <span style="flex:1; font-weight:700">${entry.name}</span>
+            <span style="font-weight:900; color:var(--button-color)">
                 ${metric === 'level' ? `Lvl ${entry.level || 0}` : entry.value.toLocaleString()}
             </span>
         </div>
