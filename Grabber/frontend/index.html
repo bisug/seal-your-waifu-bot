@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Grabber WebApp</title>
-    <link rel="stylesheet" href="style.css?v=2.2">
+    <link rel="stylesheet" href="style.css?v=2.3">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 
@@ -35,7 +35,11 @@
                     <div id="user-title" class="title-chip">Rookie</div>
                 </div>
                 <div id="user-streak" class="streak-pill">
-                    <span class="fire-icon">🔥</span>
+                    <svg class="svg-icon-small flame" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path
+                            d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+                    </svg>
                     <span id="streak-val">0</span>
                 </div>
             </div>
@@ -52,24 +56,51 @@
 
             <div class="stats-grid-luxury">
                 <div class="stat-card">
-                    <span class="stat-icon">🏆</span>
+                    <svg class="svg-icon stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+                        <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+                        <path d="M4 22h16" />
+                        <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+                        <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+                        <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+                    </svg>
                     <span id="stat-rank" class="stat-val">?</span>
-                    <span class="stat-label">Rank</span>
+                    <span class="stat-label">Global Rank</span>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-icon">💎</span>
+                    <svg class="svg-icon stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M6 3h12l4 6-10 13L2 9l4-6z" />
+                        <path d="M11 22 2 9" />
+                        <path d="M13 22 22 9" />
+                        <path d="M2 9h20" />
+                        <path d="m11 22-3-13" />
+                        <path d="m13 22 3-13" />
+                        <path d="m5 3 3 6" />
+                        <path d="m19 3-3 6" />
+                    </svg>
                     <span id="stat-balance" class="stat-val">0</span>
                     <span class="stat-label">Shards</span>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-icon">✨</span>
+                    <svg class="svg-icon stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path
+                            d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+                    </svg>
                     <span id="stat-zenith" class="stat-val">0</span>
                     <span class="stat-label">Zenith</span>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-icon">🎒</span>
+                    <svg class="svg-icon stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect width="18" height="18" x="3" y="3" rx="2" />
+                        <path d="M3 9h18" />
+                        <path d="M9 21V9" />
+                    </svg>
                     <span id="stat-collection" class="stat-val">0</span>
-                    <span class="stat-label">Harem</span>
+                    <span class="stat-label">Collection</span>
                 </div>
             </div>
 
@@ -85,17 +116,13 @@
 
         <!-- Harem Page -->
         <div id="page-harem" class="page">
-            <h3>🎒 My Harem</h3>
+            <h3>My Collection</h3>
             <div class="filter-bar" style="display:flex; gap:8px; margin-bottom:12px">
                 <input type="text" id="harem-search" placeholder="Search..."
                     style="flex:2; padding:10px; border-radius:8px; border:none; background:var(--secondary-bg-color); color:white;">
                 <select id="harem-filter-rarity"
                     style="flex:1; padding:10px; border-radius:8px; border:none; background:var(--secondary-bg-color); color:white;">
-                    <option value="">All</option>
-                    <option value="Common">Common</option>
-                    <option value="Rare">Rare</option>
-                    <option value="Epic">Epic</option>
-                    <option value="Legendary">Legendary</option>
+                    <option value="">Rarity (All)</option>
                 </select>
             </div>
             <div id="harem-scroll-container">
@@ -108,17 +135,13 @@
 
         <!-- Global Gallery Page -->
         <div id="page-gallery" class="page">
-            <h3>🌐 Global Gallery</h3>
+            <h3>Global Archive</h3>
             <div class="filter-bar" style="display:flex; gap:8px; margin-bottom:12px">
                 <input type="text" id="gallery-search" placeholder="Search..."
                     style="flex:2; padding:10px; border-radius:8px; border:none; background:var(--secondary-bg-color); color:white;">
                 <select id="gallery-filter-rarity"
                     style="flex:1; padding:10px; border-radius:8px; border:none; background:var(--secondary-bg-color); color:white;">
-                    <option value="">Rarity</option>
-                    <option value="Common">Common</option>
-                    <option value="Rare">Rare</option>
-                    <option value="Epic">Epic</option>
-                    <option value="Legendary">Legendary</option>
+                    <option value="">Rarity (All)</option>
                 </select>
             </div>
             <div id="gallery-scroll-container">
@@ -132,7 +155,7 @@
         <!-- Leaderboard Page -->
         <div id="page-leaderboard" class="page">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
-                <h3 style="margin:0">🏆 Rankings</h3>
+                <h3 style="margin:0">Hall of Fame</h3>
                 <select id="lb-metric-select"
                     style="padding:8px; border-radius:8px; border:none; background:var(--secondary-bg-color); color:white; font-size:12px">
                     <option value="level">Level</option>
@@ -152,7 +175,7 @@
 
         <!-- Quests Page -->
         <div id="page-quests" class="page">
-            <h3>📑 Quest Log</h3>
+            <h3>Assignments</h3>
             <div id="daily-quests-list">
                 <h4>Daily</h4>
                 <!-- Daily quests -->
@@ -166,29 +189,73 @@
         <!-- Navigation Tab Bar -->
         <div class="tab-bar">
             <div class="tab-item active" onclick="navigate('profile')">
-                <span class="tab-icon">👤</span>
-                Profile
+                <svg class="tab-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                </svg>
+                <span>Profile</span>
             </div>
             <div class="tab-item" onclick="navigate('harem')">
-                <span class="tab-icon">🎒</span>
-                Harem
+                <svg class="tab-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="18" height="18" x="3" y="3" rx="2" />
+                    <path d="M3 9h18" />
+                    <path d="M9 21V9" />
+                </svg>
+                <span>Collection</span>
             </div>
             <div class="tab-item" onclick="navigate('gallery')">
-                <span class="tab-icon">🔍</span>
-                Gallery
+                <svg class="tab-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="m21 21-4.3-4.3" />
+                </svg>
+                <span>Archive</span>
             </div>
             <div class="tab-item" onclick="navigate('quests')">
-                <span class="tab-icon">📑</span>
-                Quests
+                <svg class="tab-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2H2v10c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V2h-4" />
+                    <path d="M2 8h16" />
+                    <path d="M6 14v6" />
+                    <path d="M10 14v6" />
+                    <path d="M14 14v6" />
+                </svg>
+                <span>Tasks</span>
             </div>
             <div class="tab-item" onclick="navigate('leaderboard')">
-                <span class="tab-icon">🏆</span>
-                Top
+                <svg class="tab-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+                    <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+                    <path d="M4 22h16" />
+                    <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+                    <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+                    <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+                </svg>
+                <span>Top</span>
             </div>
         </div>
     </div>
 
-    <script src="app.js?v=2.2"></script>
+    <!-- Character Detail Modal -->
+    <div id="char-detail-modal" class="modal-overlay hidden" onclick="closeModal(event)">
+        <div class="modal-content-glass" onclick="event.stopPropagation()">
+            <div id="modal-char-img" class="modal-img"></div>
+            <div class="modal-info-box">
+                <div id="modal-char-rarity" class="rarity-badge-detail">RARITY</div>
+                <h2 id="modal-char-name">Character Name</h2>
+                <p id="modal-char-anime">Anime Source</p>
+                <div class="modal-footer-stats">
+                    <span id="modal-char-id">ID: 00</span>
+                </div>
+            </div>
+            <button class="modal-close-btn" onclick="closeModal()">CLOSE</button>
+        </div>
+    </div>
+
+    <script src="app.js?v=2.3"></script>
 </body>
 
 </html>
