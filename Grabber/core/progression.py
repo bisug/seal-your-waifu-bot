@@ -117,7 +117,7 @@ async def check_and_grant_rewards(user_id: int, old_level: int, new_level: int):
                 egg_data = {
                     "id": f"reward_egg_{level}",
                     "tier": tier,
-                    "name": f"🎁 Level {level} Reward Egg",
+                    "name": f"Level {level} Reward Egg",
                     "status": "fresh"
                 }
                 await user_collection.update_one(
