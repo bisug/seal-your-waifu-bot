@@ -722,6 +722,38 @@ body {
     width: auto;
 }
 
+/* Premium Empty States */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--hint-color);
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 20px;
+    border: 1px dashed var(--glass-border);
+    margin: 20px 0;
+}
+
+.empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    filter: grayscale(0.5) opacity(0.5);
+}
+
+.empty-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-color);
+    margin-bottom: 4px;
+}
+
+.empty-desc {
+    font-size: 12px;
+}
+
 /* Modal System */
 .modal-overlay {
     position: fixed;
@@ -745,14 +777,17 @@ body {
 }
 
 .modal-content-glass {
-    width: 90%;
+    width: 92%;
     max-width: 360px;
-    background: rgba(255, 255, 255, 0.05);
+    max-height: 90vh;
+    background: rgba(25, 25, 26, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 30px;
-    overflow: hidden;
+    overflow-y: auto;
     position: relative;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
     animation: modal-pop 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);
 }
 
