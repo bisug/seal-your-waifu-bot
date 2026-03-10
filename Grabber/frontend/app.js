@@ -253,6 +253,94 @@ async function loadProfile() {
     } else {
         badgeList.innerHTML = '<div style="color:var(--hint-color); font-size:12px; padding:10px; font-weight:500;">No achievements earned.</div>';
     }
+
+    // Render Pet & Eggs
+    renderPet(data.current_pet);
+    renderEggs(data.eggs);
+}
+
+function renderPet(pet) {
+    const section = document.getElementById('pet-section');
+    const container = document.getElementById('active-pet-card');
+    if (!pet) {
+        section.style.display = 'none';
+        return;
+    }
+    section.style.display = 'block';
+    container.innerHTML = `
+        <div class="pet-img-container" style="background-image: url('${pet.img || 'https://files.catbox.moe/2hsawz.jpg'}')"></div>
+        <div class="pet-info-mini">
+            <div class="pet-name-line">${pet.name} <span style="font-size:10px; color:var(--hint-color)">Lvl ${pet.level}</span></div>
+            <div class="pet-ability-line">✨ ${pet.ability}</div>
+            <div class="pet-stats-line">HP: ${pet.hp} | ATK: ${pet.atk} | SPD: ${pet.spd} | Luck: ${Math.round(pet.luck * 100)}%</div>
+            <div class="xp-track" style="height:4px; margin-top:8px">
+                <div class="xp-fill-glow" style="width:${(pet.xp / pet.xp_needed) * 100}%"></div>
+            </div>
+        </div>
+    `;
+}
+
+function renderEggs(eggs) {
+    const section = document.getElementById('eggs-section');
+    const list = document.getElementById('eggs-list');
+    if (!eggs || eggs.length === 0) {
+        section.style.display = 'none';
+        return;
+    }
+    section.style.display = 'block';
+    list.innerHTML = eggs.map(egg => `
+        <div class="egg-item">
+            <div class="egg-icon-large">🥚</div>
+            <div class="egg-name-tiny">${egg.name}</div>
+            <div class="egg-status-pill">${egg.status}</div>
+            ${egg.status === 'fresh' ? `
+                <button class="egg-btn-action" onclick="incubateEgg('${egg.id}')">Incubate</button>
+            ` : ''}
+            ${egg.status === 'incubating' && egg.remaining_mins <= 0 ? `
+                <button class="egg-btn-action" style="background:var(--success-color)" onclick="hatchEgg('${egg.id}')">Hatch!</button>
+            ` : ''}
+            ${egg.status === 'incubating' && egg.remaining_mins > 0 ? `
+                <div style="font-size:9px; margin-top:8px; color:var(--button-color)">${egg.remaining_mins}m left</div>
+            ` : ''}
+        </div>
+    `).join('');
+}
+
+async function incubateEgg(eggId) {
+    if (tg) tg.HapticFeedback.impactOccurred('medium');
+    const res = await fetch(`/api/v1_7b82/eggs/incubate/${eggId}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${sessionToken}` }
+    });
+    if (res.ok) {
+        tg?.showAlert("Incubation started!");
+        loadProfile();
+    } else {
+        const err = await res.json();
+        tg?.showAlert(err.detail || "Failed to start incubation");
+    }
+}
+
+async function hatchEgg(eggId) {
+    if (tg) tg.HapticFeedback.notificationOccurred('success');
+    const res = await fetch(`/api/v1_7b82/eggs/hatch/${eggId}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${sessionToken}` }
+    });
+    if (res.ok) {
+        const result = await res.json();
+        if (result.status === 'success') {
+            showCharDetails(result.character.id);
+            loadProfile();
+            loadHarem(false);
+        } else if (result.status === 'exploded') {
+            tg?.showAlert("💥 " + result.message);
+            loadProfile();
+        }
+    } else {
+        const err = await res.json();
+        tg?.showAlert(err.detail || "Failed to hatch egg");
+    }
 }
 
 async function loadHarem(append = false) {

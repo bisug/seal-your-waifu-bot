@@ -12,6 +12,29 @@ class StatsModel(BaseModel):
     badges: List[str] = Field(default_factory=list)
     total_characters: int = 0
 
+class PetModel(BaseModel):
+    name: str
+    level: int
+    xp: int
+    xp_needed: int
+    hp: int
+    atk: int
+    spd: int
+    luck: float
+    ability: str
+    desc: str
+    img: str
+    is_active: bool
+
+class EggModel(BaseModel):
+    id: str
+    tier: str
+    name: str
+    status: str
+    is_corrupted: bool
+    hatch_time: Optional[str] = None
+    remaining_mins: Optional[int] = None
+
 class AchievementModel(BaseModel):
     id: str
     name: str
@@ -29,6 +52,8 @@ class UserProfileResponse(BaseModel):
     stats: StatsModel
     achievements: List[AchievementModel] = Field(default_factory=list)
     titles: TitlesModel
+    current_pet: Optional[PetModel] = None
+    eggs: List[EggModel] = Field(default_factory=list)
 
 class CharacterModel(BaseModel):
     id: str
