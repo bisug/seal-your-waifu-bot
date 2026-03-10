@@ -281,12 +281,100 @@ body {
     align-items: center;
     justify-content: center;
     z-index: 9999;
-    transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 #loading-overlay.hidden {
     opacity: 0;
+    transform: scale(1.1);
     pointer-events: none;
+}
+
+.loading-content {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.loading-logo {
+    width: 100px;
+    height: 100px;
+    border-radius: 30px;
+    background-size: cover;
+    background-position: center;
+    box-shadow: 0 0 30px rgba(72, 165, 255, 0.3);
+    animation: pulse-logo 2s infinite ease-in-out;
+    background-image: url('https://files.catbox.moe/2hsawz.jpg');
+}
+
+@keyframes pulse-logo {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 20px rgba(72, 165, 255, 0.2);
+    }
+
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 40px rgba(72, 165, 255, 0.5);
+    }
+
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 20px rgba(72, 165, 255, 0.2);
+    }
+}
+
+#loading-bot-name {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    background: linear-gradient(to bottom, #fff, var(--hint-color));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.loading-bar-container {
+    width: 140px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.loading-bar-fill {
+    height: 100%;
+    width: 30%;
+    background: var(--button-color);
+    box-shadow: 0 0 10px var(--button-color);
+    animation: loader-slide 1.5s infinite ease-in-out;
+}
+
+@keyframes loader-slide {
+    0% {
+        transform: translateX(-100%);
+        width: 30%;
+    }
+
+    50% {
+        width: 60%;
+    }
+
+    100% {
+        transform: translateX(200%);
+        width: 30%;
+    }
+}
+
+.loading-status {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: var(--hint-color);
+    margin: 0;
 }
 
 .spinner {
