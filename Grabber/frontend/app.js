@@ -41,7 +41,26 @@ const containers = {
     leaderboard: document.getElementById('page-leaderboard')
 };
 
+const modal = document.getElementById('char-detail-modal');
+
 // --- Initialization ---
+
+async function fetchRarities() {
+    try {
+        const response = await fetch('/api/v1_7b82/rarities');
+        if (response.ok) {
+            const rarities = await response.json();
+            const haremSelect = document.getElementById('harem-filter-rarity');
+            const gallerySelect = document.getElementById('gallery-filter-rarity');
+
+            const options = rarities.map(r => `<option value="${r}">${r}</option>`).join('');
+            haremSelect.innerHTML += options;
+            gallerySelect.innerHTML += options;
+        }
+    } catch (e) {
+        console.error("Failed to fetch rarities", e);
+    }
+}
 
 async function loadBotInfo() {
     try {
@@ -78,6 +97,7 @@ async function init() {
 
             // 3. Setup and load initial data
             setupControls();
+            fetchRarities();
             document.querySelector('.loading-status').innerText = 'LOADING PROFILE...';
             await loadProfile();
 
@@ -221,11 +241,11 @@ async function loadProfile() {
     if (data.achievements && data.achievements.length > 0) {
         badgeList.innerHTML = data.achievements.map(ach => `
             <div class="badge-item" title="${ach.name}">
-                ${ach.icon || '🏅'}
+                <span class="professional-badge">${ach.icon || '✦'}</span>
             </div>
         `).join('');
     } else {
-        badgeList.innerHTML = '<div style="color:var(--hint-color); font-size:12px; padding:10px">No badges yet.</div>';
+        badgeList.innerHTML = '<div style="color:var(--hint-color); font-size:12px; padding:10px; font-weight:500;">No achievements earned.</div>';
     }
 }
 
@@ -286,11 +306,12 @@ async function loadGallery(append = false) {
 function renderCharCard(char, isHarem) {
     const rarityColor = `var(--rarity-${char.rarity.toLowerCase()})`;
     return `
-        <div class="char-card" style="border-bottom: 2px solid ${rarityColor}">
+        <div class="char-card" style="border-bottom: 2px solid ${rarityColor}" onclick="showCharDetails('${char.id}')">
             <img src="${char.img_url}" class="char-img" loading="lazy">
             <span class="rarity-pill" style="background:${rarityColor}">${char.rarity}</span>
             ${isHarem ? `<span class="count-badge">x${char.count}</span>` : ''}
-            ${!isHarem && char.owned ? '<span class="count-badge" style="background:var(--button-color)">Owned</span>' : ''}
+            ${!isHarem && char.owned ? '<span class="count-badge" style="background:var(--button-color); font-size:8px; letter-spacing:0.5px;">COLLECTED</span>' : ''}
+            ${!isHarem && !char.owned ? '<div class="lock-overlay"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>' : ''}
             <div class="char-info">
                 <div class="char-name">${char.name}</div>
                 <div style="font-size:9px; color:var(--hint-color)">${char.anime}</div>
@@ -304,7 +325,9 @@ async function loadQuests() {
     if (!data) return;
     const renderQuest = (q) => `
         <div class="quest-card">
-            <div class="quest-icon">${q.icon || '❔'}</div>
+            <div class="quest-icon">
+                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2H2v10c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V2h-4"/><path d="M2 8h16"/><path d="M6 14v6"/><path d="M10 14v6"/><path d="M14 14v6"/></svg>
+            </div>
             <div class="quest-details">
                 <div class="quest-title">${q.name || 'Unknown Quest'}</div>
                 <div class="quest-desc">${q.description || 'No description available.'}</div>
@@ -314,7 +337,7 @@ async function loadQuests() {
             </div>
             ${(q.progress || 0) >= (q.target || 1) && !q.claimed ?
             `<button onclick="claimQuest('${q.id}')" style="width:auto; padding:6px 12px; margin:0">Claim</button>` :
-            (q.claimed ? '✅' : '')}
+            (q.claimed ? '<span style="color:var(--success-color)">COMPLETED</span>' : '')}
         </div>
     `;
 
@@ -380,6 +403,40 @@ function updateBackButton(pageId) {
     } else {
         tg.BackButton.show();
     }
+}
+
+// --- Detail Modal ---
+
+async function showCharDetails(charId) {
+    if (tg) tg.HapticFeedback.impactOccurred('medium');
+
+    // Show modal with loading state
+    modal.classList.remove('hidden');
+    document.getElementById('modal-char-name').innerText = "Loading...";
+    document.getElementById('modal-char-anime').innerText = "";
+    document.getElementById('modal-char-rarity').innerText = "???";
+    document.getElementById('modal-char-img').style.backgroundImage = 'none';
+
+    try {
+        const response = await fetch(`/api/v1_7b82/character/${charId}`);
+        if (response.ok) {
+            const char = await response.json();
+            document.getElementById('modal-char-name').innerText = char.name;
+            document.getElementById('modal-char-anime').innerText = char.anime;
+            document.getElementById('modal-char-rarity').innerText = char.rarity;
+            document.getElementById('modal-char-img').style.backgroundImage = `url('${char.img_url}')`;
+            document.getElementById('modal-char-id').innerText = `ID: ${char.id}`;
+        }
+    } catch (e) {
+        console.error("Error loading character details", e);
+        closeModal();
+    }
+}
+
+function closeModal(e) {
+    if (e && e.target !== modal) return;
+    modal.classList.add('hidden');
+    if (tg) tg.HapticFeedback.impactOccurred('light');
 }
 
 // Start
