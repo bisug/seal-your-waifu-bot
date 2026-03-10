@@ -69,7 +69,7 @@ async def get_me(user_id: int = Depends(get_current_user)):
     # Performance: Pass existing user document to avoid redundant DB lookup
     progress = await get_user_progress(user_id, user_data=user)
     
-    return {
+    resp_data = {
         "id": user_id,
         "first_name": user.get("first_name", "User"),
         "username": user.get("username"),
