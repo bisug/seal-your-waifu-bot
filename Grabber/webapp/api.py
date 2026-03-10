@@ -49,7 +49,8 @@ async def get_me(user_id: int = Depends(get_current_user)):
     achievements = user.get("achievements") or []
     titles_list = user.get("titles") or ["Rookie"]
     characters = user.get("characters") or []
-    progress = await get_user_progress(user_id)
+    # Performance: Pass existing user document to avoid redundant DB lookup
+    progress = await get_user_progress(user_id, user_data=user)
     
     return {
         "id": user_id,
