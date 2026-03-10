@@ -174,14 +174,32 @@ async function loadProfile() {
     currentUser = data;
     document.getElementById('user-name').innerText = data.first_name;
     document.getElementById('user-title').innerText = data.titles.current;
-    document.getElementById('user-xp-val').innerText = `${data.stats.xp_current} / ${data.stats.xp_needed}`;
+    document.getElementById('user-avatar').style.backgroundImage = `url('${data.avatar || 'https://files.catbox.moe/2hsawz.jpg'}')`;
 
-    const xpPercent = (data.stats.xp_current / data.stats.xp_needed) * 100;
+    // Level & XP
+    document.getElementById('user-level-badge').innerText = data.stats.level || 1;
+    document.getElementById('user-xp-val').innerText = `${data.stats.xp_current.toLocaleString()} / ${data.stats.xp_needed.toLocaleString()}`;
+    const xpPercent = Math.min(100, (data.stats.xp_current / data.stats.xp_needed) * 100);
     document.getElementById('xp-bar-fill').style.width = `${xpPercent}%`;
 
+    // Luxury Stats
+    document.getElementById('streak-val').innerText = data.stats.streak || 0;
     document.getElementById('stat-rank').innerText = `#${data.stats.rank || '?'}`;
     document.getElementById('stat-balance').innerText = data.stats.points.toLocaleString();
     document.getElementById('stat-zenith').innerText = data.stats.zenith.toLocaleString();
+    document.getElementById('stat-collection').innerText = data.stats.total_characters.toLocaleString();
+
+    // Badges/Achievements
+    const badgeList = document.getElementById('achievements-list');
+    if (data.achievements && data.achievements.length > 0) {
+        badgeList.innerHTML = data.achievements.map(ach => `
+            <div class="badge-item" title="${ach.name}">
+                ${ach.icon || '🏅'}
+            </div>
+        `).join('');
+    } else {
+        badgeList.innerHTML = '<div style="color:var(--hint-color); font-size:12px; padding:10px">No badges yet.</div>';
+    }
 }
 
 async function loadHarem(append = false) {
