@@ -115,9 +115,8 @@ body {
     padding-bottom: 24px;
 }
 
-#harem-scroll-container,
 #gallery-scroll-container {
-    height: calc(100dvh - 210px);
+    height: calc(100dvh - 180px);
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
 }

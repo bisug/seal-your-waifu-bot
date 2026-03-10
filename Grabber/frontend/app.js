@@ -31,11 +31,12 @@ let haremPage = 1, galleryPage = 1;
 let haremLoading = false, galleryLoading = false;
 let haremHasMore = true, galleryHasMore = true;
 
+// Harem logic now integrated into main container scroll
+
 // DOM Elements
-const pages = ['profile', 'harem', 'gallery', 'quests', 'leaderboard'];
+const pages = ['profile', 'gallery', 'quests', 'leaderboard'];
 const containers = {
     profile: document.getElementById('page-profile'),
-    harem: document.getElementById('page-harem'),
     gallery: document.getElementById('page-gallery'),
     quests: document.getElementById('page-quests'),
     leaderboard: document.getElementById('page-leaderboard')
@@ -100,6 +101,7 @@ async function init() {
             fetchRarities();
             document.querySelector('.loading-status').innerText = 'LOADING PROFILE...';
             await loadProfile();
+            await loadHarem(false);
 
             // 4. Finalize
             await botPromise; // Ensure bot info is also done
@@ -134,13 +136,15 @@ function setupControls() {
     });
 
     // Scroll Listeners
-    document.getElementById('harem-scroll-container').onscroll = (e) => {
-        const { scrollTop, scrollHeight, clientHeight } = e.target;
-        if (scrollHeight - scrollTop <= clientHeight + 100) loadHarem(true);
-    };
-    document.getElementById('gallery-scroll-container').onscroll = (e) => {
-        const { scrollTop, scrollHeight, clientHeight } = e.target;
-        if (scrollHeight - scrollTop <= clientHeight + 100) loadGallery(true);
+    window.onscroll = (e) => {
+        // Handle infinite scroll for the profile (harem) and others if they use window scroll
+        const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+        const activePage = document.querySelector('.page.active').id;
+        
+        if (scrollHeight - scrollTop <= clientHeight + 100) {
+            if (activePage === 'page-profile') loadHarem(true);
+            if (activePage === 'page-gallery') loadGallery(true);
+        }
     };
 
     // Filter Listeners (with debounce for search)
@@ -170,9 +174,9 @@ function setupControls() {
 // --- Navigation ---
 
 function navigate(pageId) {
+    const navPages = ['profile', 'gallery', 'quests', 'leaderboard'];
     document.querySelectorAll('.tab-item').forEach((item, idx) => {
-        const pages = ['profile', 'harem', 'gallery', 'quests', 'leaderboard'];
-        item.classList.toggle('active', pages[idx] === pageId);
+        item.classList.toggle('active', navPages[idx] === pageId);
     });
 
     document.querySelectorAll('.page').forEach(el => {
@@ -196,8 +200,10 @@ function updateBackButton(pageId) {
 function refreshData(pageId) {
     if (!sessionToken) return;
     switch (pageId) {
-        case 'profile': loadProfile(); break;
-        case 'harem': loadHarem(false); break;
+        case 'profile': 
+            loadProfile(); 
+            loadHarem(false);
+            break;
         case 'gallery': loadGallery(false); break;
         case 'quests': loadQuests(); break;
         case 'leaderboard': loadLeaderboard(); break;
