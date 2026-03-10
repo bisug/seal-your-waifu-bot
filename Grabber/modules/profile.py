@@ -1,7 +1,7 @@
 import math
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
-from Grabber import app, user_collection, PHOTO_URL, LOGGER
+from Grabber import app, user_collection, PHOTO_URL, LOGGER, WEB_APP_URL
 from Grabber.core.utils import html_escape
 from Grabber.core.user import get_user_data, get_active_pet
 from Grabber.core.progression import get_user_progress, get_progress_bar
@@ -89,7 +89,8 @@ async def profile_handler(_, message: types.Message):
 
 
     buttons = [
-        [types.InlineKeyboardButton("🎒 Harem", callback_data=f"harem_view:{user_id}")]
+        [types.InlineKeyboardButton("🎒 Harem", callback_data=f"harem_view:{user_id}")],
+        [types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))]
     ]
 
 

@@ -3,7 +3,7 @@ import httpx
 from pyrogram import filters, types, errors, enums
 from pyrogram.enums import ButtonStyle, ParseMode
 from Grabber.core.utils import html_escape
-from Grabber import app, collection, user_collection, sudo_users, OWNER_ID, LOGGER
+from Grabber import app, collection, user_collection, sudo_users, OWNER_ID, LOGGER, WEB_APP_URL
 from Grabber.models import Character, User
 from config import config
 from Grabber.core.sessions import create_session, get_session
@@ -56,7 +56,8 @@ async def send_shop_hub(message_or_query):
         [types.InlineKeyboardButton("👤 Character Shop", callback_data="hub_char")],
         [types.InlineKeyboardButton("🐾 Pet Shop", callback_data="hub_pet")],
         [types.InlineKeyboardButton("🎫 Battle Pass", callback_data="hub_pass")],
-        [types.InlineKeyboardButton("🥚 Egg Shop", callback_data="hub_egg")]
+        [types.InlineKeyboardButton("🥚 Egg Shop", callback_data="hub_egg")],
+        [types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))]
     ]
     reply_markup = types.InlineKeyboardMarkup(keyboard)
 
