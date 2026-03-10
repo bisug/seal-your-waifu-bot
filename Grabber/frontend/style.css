@@ -77,10 +77,12 @@ body {
 .tab-item {
     color: var(--hint-color);
     text-align: center;
-    font-size: 11px;
     text-decoration: none;
     cursor: pointer;
     flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     transition: color 0.2s, transform 0.2s;
 }
 
@@ -93,11 +95,10 @@ body {
 }
 
 .tab-icon-svg {
-    width: 22px;
-    height: 22px;
-    margin-bottom: 4px;
+    width: 28px;
+    height: 28px;
     opacity: 0.5;
-    transition: all 0.3s;
+    transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
 }
 
 .tab-item.active .tab-icon-svg {
