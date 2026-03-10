@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
 from Grabber.core.utils import html_escape
-from Grabber import user_collection, collection, app
+from Grabber import user_collection, collection, app, WEB_APP_URL
 from Grabber.core.user import add_pet_xp
 from Grabber.core.progression import add_xp
 from Grabber.modules.quests import update_quest_progress
@@ -222,6 +222,7 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
              action_button = types.InlineKeyboardButton("🎁 Hatch Now!", callback_data=f"egg_hatch:{page}:{user_id}")
         buttons.append([action_button])
 
+    buttons.append([types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))])
     buttons.append([types.InlineKeyboardButton("⤾ Back to Hub", callback_data="hub_main")])
 
     markup = types.InlineKeyboardMarkup(buttons) if buttons else None

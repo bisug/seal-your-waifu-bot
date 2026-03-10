@@ -2,7 +2,7 @@ import html
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
 from Grabber.core.utils import html_escape
-from Grabber import app
+from Grabber import app, WEB_APP_URL
 from Grabber import user_collection, top_global_groups_collection, group_user_totals_collection
 from Grabber.core.progression import get_level_from_xp
 
@@ -79,6 +79,9 @@ def build_leaderboard_keyboard(current_metric: str, user_id: int):
             types.InlineKeyboardButton("⬅️", callback_data=f"top_switch:{prev_metric}:{user_id}"),
             types.InlineKeyboardButton(METRICS[current_metric]['label'], callback_data="top_info"),
             types.InlineKeyboardButton("➡️", callback_data=f"top_switch:{next_metric}:{user_id}"),
+        ],
+        [
+            types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))
         ],
         [
             types.InlineKeyboardButton("❌ Close", callback_data=f"top_close:{user_id}")
