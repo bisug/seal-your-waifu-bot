@@ -7,6 +7,7 @@ import json
 import logging
 from Grabber.webapp.auth import r
 from config import config
+import re
 
 router = APIRouter()
 
@@ -46,8 +47,21 @@ async def get_me(user_id: int = Depends(get_current_user)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    achievements = user.get("achievements") or []
+    from Grabber.modules.achievements import ACHIEVEMENTS
+    raw_achievements = user.get("achievements") or []
+    enriched_achievements = []
+    for ach_id in raw_achievements:
+        if ach_id in ACHIEVEMENTS:
+            enriched_achievements.append({
+                "id": ach_id,
+                "name": ACHIEVEMENTS[ach_id]["name"],
+                "icon": ACHIEVEMENTS[ach_id].get("symbol", "✦")
+            })
+
     titles_list = user.get("titles") or ["Rookie"]
+    # Remove emojis from titles for WebApp
+    clean_titles = [re.sub(r'[^\x00-\x7F]+', '', t).strip() for t in titles_list]
+    current_title = re.sub(r'[^\x00-\x7F]+', '', user.get("title", "Rookie")).strip()
     characters = user.get("characters") or []
     # Performance: Pass existing user document to avoid redundant DB lookup
     progress = await get_user_progress(user_id, user_data=user)
@@ -68,10 +82,10 @@ async def get_me(user_id: int = Depends(get_current_user)):
             "badges": user.get("badges") or [],
             "total_characters": len(characters)
         },
-        "achievements": achievements,
+        "achievements": enriched_achievements,
         "titles": {
-            "current": user.get("title", "Rookie"),
-            "all": titles_list
+            "current": current_title,
+            "all": clean_titles
         }
     }
 
@@ -96,8 +110,10 @@ async def get_harem(
     
     # Filtering
     if search:
+        search = search.strip()
         chars = [c for c in chars if search.lower() in c.get("name", "").lower() or search.lower() in c.get("anime", "").lower()]
     if rarity:
+        rarity = rarity.strip()
         chars = [c for c in chars if c.get("rarity") == rarity]
         
     # Grouping and counting duplicates
@@ -140,11 +156,13 @@ async def get_gallery(
     from Grabber.database import collection
     query = {}
     if search:
+        search = search.strip()
         query["$or"] = [
             {"name": {"$regex": search, "$options": "i"}},
             {"anime": {"$regex": search, "$options": "i"}}
         ]
     if rarity:
+        rarity = rarity.strip()
         query["rarity"] = rarity
         
     cursor = collection.find(query).skip((page - 1) * limit).limit(limit)
