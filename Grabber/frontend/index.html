@@ -17,43 +17,61 @@
     <div id="app-container">
         <!-- Profile Page -->
         <div id="page-profile" class="page active">
-            <div class="user-card">
-                <div id="user-avatar" class="avatar"></div>
-                <div>
-                    <h2 id="user-name" style="margin:0">Loading...</h2>
-                    <div id="user-title" class="stat-label">Rookie</div>
+            <div id="profile-banner"></div>
+            <div class="user-card-luxury">
+                <div class="avatar-container">
+                    <div id="user-avatar" class="avatar-luxury"></div>
+                    <div id="user-level-badge" class="level-badge">1</div>
+                </div>
+                <div class="user-info-main">
+                    <h2 id="user-name">Loading...</h2>
+                    <div id="user-title" class="title-chip">Rookie</div>
+                </div>
+                <div id="user-streak" class="streak-pill">
+                    <span class="fire-icon">🔥</span>
+                    <span id="streak-val">0</span>
                 </div>
             </div>
 
-            <div class="xp-container">
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px">
-                    <span class="stat-label">XP Progress</span>
-                    <span id="user-xp-val" class="stat-label">0 / 0</span>
+            <div class="xp-section-luxury">
+                <div class="xp-meta">
+                    <span class="xp-label">EXPERIENCE</span>
+                    <span id="user-xp-val" class="xp-values">0 / 0</span>
                 </div>
-                <div class="xp-bar">
-                    <div id="xp-bar-fill" class="xp-bar-fill"></div>
+                <div class="xp-track">
+                    <div id="xp-bar-fill" class="xp-fill-glow"></div>
                 </div>
             </div>
 
-            <div class="stats-grid" style="margin-top: 20px">
-                <div class="stat-item">
+            <div class="stats-grid-luxury">
+                <div class="stat-card">
+                    <span class="stat-icon">🏆</span>
                     <span id="stat-rank" class="stat-val">?</span>
                     <span class="stat-label">Rank</span>
                 </div>
-                <div class="stat-item">
+                <div class="stat-card">
+                    <span class="stat-icon">💎</span>
                     <span id="stat-balance" class="stat-val">0</span>
                     <span class="stat-label">Shards</span>
                 </div>
-                <div class="stat-item">
+                <div class="stat-card">
+                    <span class="stat-icon">✨</span>
                     <span id="stat-zenith" class="stat-val">0</span>
                     <span class="stat-label">Zenith</span>
                 </div>
+                <div class="stat-card">
+                    <span class="stat-icon">🎒</span>
+                    <span id="stat-collection" class="stat-val">0</span>
+                    <span class="stat-label">Harem</span>
+                </div>
             </div>
 
-            <div id="achievements-section">
-                <h3>Achievements</h3>
-                <div id="achievements-list" style="display:flex; gap:8px; overflow-x:auto; padding-bottom:8px">
-                    <!-- Achievements here -->
+            <div id="achievements-section" class="glass-section">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
+                    <h3 style="margin:0">Badges & Achievements</h3>
+                </div>
+                <div id="achievements-list" class="badge-row">
+                    <!-- Badges populated by JS -->
                 </div>
             </div>
         </div>
