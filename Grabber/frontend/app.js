@@ -73,9 +73,18 @@ function setupControls() {
     // Back Button Global Listener
     if (tg && tg.BackButton) {
         tg.BackButton.onClick(() => {
+            if (tg) tg.HapticFeedback.impactOccurred('light');
             navigate('profile');
         });
     }
+
+    // Glass Card Interaction (Haptics)
+    document.getElementById('app-container').addEventListener('click', (e) => {
+        const card = e.target.closest('.char-card, .quest-card, .list-item');
+        if (card && tg) {
+            tg.HapticFeedback.impactOccurred('light');
+        }
+    });
 
     // Scroll Listeners
     document.getElementById('harem-scroll-container').onscroll = (e) => {
@@ -90,6 +99,7 @@ function setupControls() {
     // Filter Listeners (with debounce for search)
     let searchTimeout;
     const onFilterChange = (type) => {
+        if (tg) tg.HapticFeedback.selectionChanged();
         if (type === 'harem') loadHarem(false);
         else loadGallery(false);
     };
@@ -124,6 +134,7 @@ function navigate(pageId) {
 
     refreshData(pageId);
     updateBackButton(pageId);
+    if (tg) tg.HapticFeedback.impactOccurred('light');
 }
 
 function updateBackButton(pageId) {
