@@ -213,7 +213,7 @@ async def claim_quest(quest_id: str, user_id: int = Depends(get_current_user)):
 
 @router.get("/leaderboard")
 async def get_leaderboard(
-    metric: str = Query("harem", regex="^(harem|shards|zenith|level|guesses)$"),
+    metric: str = Query("harem", pattern="^(harem|shards|zenith|level|guesses)$"),
     limit: int = Query(50, ge=1, le=100)
 ):
     cache_key = f"leaderboard:{metric}:{limit}"
