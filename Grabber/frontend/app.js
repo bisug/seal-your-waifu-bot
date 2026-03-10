@@ -1,5 +1,28 @@
-const tg = window.Telegram.WebApp;
-tg.expand();
+const tg = window.Telegram?.WebApp;
+
+// Global Error Handler for Android Debugging
+window.onerror = function (msg, url, lineNo, columnNo, error) {
+    const string = msg.toLowerCase();
+    const substring = "script error";
+    if (string.indexOf(substring) > -1) {
+        tg?.showAlert('Script Error: See Browser Console for Detail');
+    } else {
+        const message = [
+            'Message: ' + msg,
+            'URL: ' + url,
+            'Line: ' + lineNo,
+            'Column: ' + columnNo,
+            'Error object: ' + JSON.stringify(error)
+        ].join(' - ');
+        tg?.showAlert(message);
+    }
+    return false;
+};
+
+if (tg) {
+    tg.expand();
+    tg.ready();
+}
 
 let sessionToken = null;
 let currentUser = null;
@@ -33,15 +56,27 @@ async function init() {
             sessionToken = data.token;
             refreshData('profile');
             setupControls();
+
+            // Hide loading screen
+            setTimeout(() => {
+                document.getElementById('loading-overlay').classList.add('hidden');
+            }, 500);
         } else {
             tg.showAlert("Auth failed. Please restart.");
         }
     } catch (e) {
-        tg.showAlert("Server connection error.");
+        tg.showAlert("Server connection error: " + e.message);
     }
 }
 
 function setupControls() {
+    // Back Button Global Listener
+    if (tg && tg.BackButton) {
+        tg.BackButton.onClick(() => {
+            navigate('profile');
+        });
+    }
+
     // Scroll Listeners
     document.getElementById('harem-scroll-container').onscroll = (e) => {
         const { scrollTop, scrollHeight, clientHeight } = e.target;
@@ -88,6 +123,16 @@ function navigate(pageId) {
     });
 
     refreshData(pageId);
+    updateBackButton(pageId);
+}
+
+function updateBackButton(pageId) {
+    if (!tg) return;
+    if (pageId === 'profile') {
+        tg.BackButton.hide();
+    } else {
+        tg.BackButton.show();
+    }
 }
 
 function refreshData(pageId) {
@@ -271,5 +316,18 @@ async function loadLeaderboard(metric = 'level') {
     `).join('');
 }
 
+function updateBackButton(pageId) {
+    if (!tg) return;
+    if (pageId === 'profile') {
+        tg.BackButton.hide();
+    } else {
+        tg.BackButton.show();
+    }
+}
+
 // Start
-init();
+if (typeof tg !== 'undefined') {
+    init();
+} else {
+    console.error("Telegram WebApp script not loaded");
+}

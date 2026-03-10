@@ -10,6 +10,10 @@
 </head>
 
 <body>
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <p style="margin-top:15px; color:var(--hint-color); font-size:14px">Initializing...</p>
+    </div>
     <div id="app-container">
         <!-- Profile Page -->
         <div id="page-profile" class="page active">
@@ -69,7 +73,7 @@
                     <option value="Legendary">Legendary</option>
                 </select>
             </div>
-            <div id="harem-scroll-container" style="height: calc(100vh - 200px); overflow-y: auto;">
+            <div id="harem-scroll-container">
                 <div id="harem-grid" class="char-grid">
                     <!-- Character cards here -->
                 </div>
@@ -92,7 +96,7 @@
                     <option value="Legendary">Legendary</option>
                 </select>
             </div>
-            <div id="gallery-scroll-container" style="height: calc(100vh - 200px); overflow-y: auto;">
+            <div id="gallery-scroll-container">
                 <div id="gallery-grid" class="char-grid">
                     <!-- Gallery cards here -->
                 </div>
