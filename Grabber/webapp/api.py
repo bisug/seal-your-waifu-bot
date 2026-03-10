@@ -6,8 +6,19 @@ from Grabber.webapp.models import UserProfileResponse, PaginatedResponse, Quests
 import json
 import logging
 from Grabber.webapp.auth import r
+from config import config
 
 router = APIRouter()
+
+@router.get("/bot/info")
+async def get_bot_info():
+    """Public endpoint to get bot identity for branding."""
+    return {
+        "name": getattr(config, "BOT_NAME", "SEAL YOUR WAIFU"),
+        "username": getattr(config, "BOT_USERNAME", "Seal_Your_WaifuBot"),
+        "id": getattr(config, "BOT_ID", None),
+        "avatar": config.PHOTO_URL[0] if config.PHOTO_URL else "https://files.catbox.moe/2hsawz.jpg"
+    }
 
 @router.get("/me", response_model=UserProfileResponse)
 async def get_me(user_id: int = Depends(get_current_user)):
