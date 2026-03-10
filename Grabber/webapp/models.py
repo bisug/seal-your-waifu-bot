@@ -12,6 +12,11 @@ class StatsModel(BaseModel):
     badges: List[str] = Field(default_factory=list)
     total_characters: int = 0
 
+class AchievementModel(BaseModel):
+    id: str
+    name: str
+    icon: str
+
 class TitlesModel(BaseModel):
     current: str = "Rookie"
     all: List[str] = Field(default_factory=lambda: ["Rookie"])
@@ -22,7 +27,7 @@ class UserProfileResponse(BaseModel):
     username: Optional[str] = None
     avatar: Optional[str] = None
     stats: StatsModel
-    achievements: List[str] = Field(default_factory=list)
+    achievements: List[AchievementModel] = Field(default_factory=list)
     titles: TitlesModel
 
 class CharacterModel(BaseModel):
@@ -44,6 +49,7 @@ class QuestModel(BaseModel):
     name: str
     description: str
     icon: str
+    symbol: Optional[str] = "✦"
     progress: int
     target: int
     reward_xp: int
