@@ -47,31 +47,39 @@ const modal = document.getElementById('char-detail-modal');
 // --- Initialization ---
 
 async function fetchRarities() {
+    const cached = sessionStorage.getItem('rarities');
+    if (cached) {
+        populateRaritySelects(JSON.parse(cached));
+        return;
+    }
     try {
         const response = await fetch('/api/v1_7b82/rarities');
         if (response.ok) {
             const rarities = await response.json();
-            const haremSelect = document.getElementById('harem-filter-rarity');
-            const gallerySelect = document.getElementById('gallery-filter-rarity');
-
-            const options = rarities.map(r => `<option value="${r}">${r}</option>`).join('');
-            haremSelect.innerHTML += options;
-            gallerySelect.innerHTML += options;
+            sessionStorage.setItem('rarities', JSON.stringify(rarities));
+            populateRaritySelects(rarities);
         }
     } catch (e) {
         console.error("Failed to fetch rarities", e);
     }
 }
 
+function populateRaritySelects(rarities) {
+    const haremSelect = document.getElementById('harem-filter-rarity');
+    const gallerySelect = document.getElementById('gallery-filter-rarity');
+    const options = rarities.map(r => `<option value="${r}">${r}</option>`).join('');
+    haremSelect.innerHTML = '<option value="">All Rarities</option>' + options;
+    gallerySelect.innerHTML = '<option value="">All Rarities</option>' + options;
+}
+
 async function loadBotInfo() {
+    const cached = sessionStorage.getItem('botInfo');
+    if (cached) return JSON.parse(cached);
     try {
         const response = await fetch('/api/v1_7b82/bot/info');
         if (response.ok) {
             const bot = await response.json();
-            document.getElementById('loading-bot-name').innerText = bot.name;
-            if (bot.avatar) {
-                document.getElementById('loading-logo').style.backgroundImage = `url('${bot.avatar}')`;
-            }
+            sessionStorage.setItem('botInfo', JSON.stringify(bot));
             return bot;
         }
     } catch (e) {
@@ -104,11 +112,16 @@ async function init() {
             await loadHarem(false);
 
             // 4. Finalize
-            await botPromise; // Ensure bot info is also done
+            const bot = await botPromise; 
+            if (bot) {
+                document.getElementById('loading-bot-name').innerText = bot.name;
+                if (bot.avatar) document.getElementById('loading-logo').style.backgroundImage = `url('${bot.avatar}')`;
+            }
             document.querySelector('.loading-status').innerText = 'READY!';
 
             setTimeout(() => {
                 document.getElementById('loading-overlay').classList.add('hidden');
+                document.getElementById('app-container').style.opacity = '1';
             }, 800);
         } else {
             tg.showAlert("Authentication failed. Please restart the app.");
@@ -361,6 +374,17 @@ async function loadHarem(append = false) {
     if (!data) return;
 
     const grid = document.getElementById('harem-grid');
+    if (!append && data.items.length === 0) {
+        grid.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">📇</div>
+                <div class="empty-title">Collection Empty</div>
+                <div class="empty-desc">You haven't captured any characters yet that match your search.</div>
+            </div>
+        `;
+        return;
+    }
+
     const html = data.items.map(char => renderCharCard(char, true)).join('');
 
     if (append) grid.innerHTML += html;
@@ -388,6 +412,17 @@ async function loadGallery(append = false) {
     if (!data) return;
 
     const grid = document.getElementById('gallery-grid');
+    if (!append && data.items.length === 0) {
+        grid.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">🖼️</div>
+                <div class="empty-title">Gallery Empty</div>
+                <div class="empty-desc">No characters found matching your filters.</div>
+            </div>
+        `;
+        return;
+    }
+
     const html = data.items.map(char => renderCharCard(char, false)).join('');
 
     if (append) grid.innerHTML += html;
@@ -432,8 +467,17 @@ async function loadQuests() {
             ${(q.progress || 0) >= (q.target || 1) && !q.claimed ?
             `<button onclick="claimQuest('${q.id}')" style="width:auto; padding:6px 12px; margin:0">Claim</button>` :
             (q.claimed ? '<span style="color:var(--success-color)">COMPLETED</span>' : '')}
-        </div>
     `;
+
+    if (!data.daily?.length && !data.weekly?.length) {
+        document.getElementById('page-quests').innerHTML += `
+             <div class="empty-state">
+                <div class="empty-icon">📜</div>
+                <div class="empty-title">No Quests</div>
+                <div class="empty-desc">Check back later for new missions!</div>
+            </div>
+        `;
+    }
 
     document.getElementById('daily-quests-list').innerHTML = '<h4>Daily</h4>' + (data.daily || []).map(renderQuest).join('');
     document.getElementById('weekly-quests-list').innerHTML = '<h4>Weekly</h4>' + (data.weekly || []).map(renderQuest).join('');
@@ -458,7 +502,13 @@ async function loadLeaderboard(metric = 'level') {
 
     if (!data || data.length === 0) {
         podiumEl.innerHTML = '';
-        list.innerHTML = '<div style="text-align:center; padding:20px; color:var(--hint-color)">No rankings available yet.</div>';
+        list.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">🏆</div>
+                <div class="empty-title">No Rankings</div>
+                <div class="empty-desc">The leaderboard is currently empty for this metric.</div>
+            </div>
+        `;
         return;
     }
 
