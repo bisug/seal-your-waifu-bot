@@ -10,9 +10,16 @@
 </head>
 
 <body>
+    <!-- Branded Loading Screen -->
     <div id="loading-overlay">
-        <div class="spinner"></div>
-        <p style="margin-top:15px; color:var(--hint-color); font-size:14px">Initializing...</p>
+        <div class="loading-content">
+            <div id="loading-logo" class="loading-logo"></div>
+            <h2 id="loading-bot-name">Seal Grabber</h2>
+            <div class="loading-bar-container">
+                <div class="loading-bar-fill"></div>
+            </div>
+            <p class="loading-status">INITIALIZING SYSTEMS...</p>
+        </div>
     </div>
     <div id="app-container">
         <!-- Profile Page -->

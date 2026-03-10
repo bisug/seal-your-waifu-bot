@@ -43,26 +43,53 @@ const containers = {
 
 // --- Initialization ---
 
-async function init() {
+async function loadBotInfo() {
     try {
-        const response = await fetch('/api/v1_7b82/secure_init', {
+        const response = await fetch('/api/v1_7b82/bot/info');
+        if (response.ok) {
+            const bot = await response.json();
+            document.getElementById('loading-bot-name').innerText = bot.name;
+            if (bot.avatar) {
+                document.getElementById('loading-logo').style.backgroundImage = `url('${bot.avatar}')`;
+            }
+            return bot;
+        }
+    } catch (e) {
+        console.warn("Could not fetch bot info", e);
+    }
+    return null;
+}
+
+async function init() {
+    // 1. Start loading bot info immediately
+    const botPromise = loadBotInfo();
+
+    try {
+        // 2. Authenticate
+        const authResponse = await fetch('/api/v1_7b82/secure_init', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ initData: tg.initData })
         });
 
-        if (response.ok) {
-            const data = await response.json();
-            sessionToken = data.token;
-            refreshData('profile');
-            setupControls();
+        if (authResponse.ok) {
+            const authData = await authResponse.json();
+            sessionToken = authData.token;
 
-            // Hide loading screen
+            // 3. Setup and load initial data
+            setupControls();
+            document.querySelector('.loading-status').innerText = 'LOADING PROFILE...';
+            await loadProfile();
+
+            // 4. Finalize
+            await botPromise; // Ensure bot info is also done
+            document.querySelector('.loading-status').innerText = 'READY!';
+
             setTimeout(() => {
                 document.getElementById('loading-overlay').classList.add('hidden');
-            }, 500);
+            }, 800);
         } else {
-            tg.showAlert("Auth failed. Please restart.");
+            tg.showAlert("Authentication failed. Please restart the app.");
         }
     } catch (e) {
         tg.showAlert("Server connection error: " + e.message);
