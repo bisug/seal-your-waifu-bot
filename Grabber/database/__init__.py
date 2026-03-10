@@ -27,6 +27,13 @@ class Database:
         self.nguess_enabled_groups = self.db['nguess_enabled_groups']
         self.deletion_queue = self.db['deletion_queue']
 
+    async def ensure_indexes(self):
+        """Create necessary indexes for performance."""
+        await self.users.create_index("id", unique=True)
+        await self.anime_characters.create_index("id", unique=True)
+        await self.anime_characters.create_index("rarity")
+        print("Database indexes ensured.")
+
 # Initialize Database
 try:
     seal_db = Database(config.MONGO_URL)

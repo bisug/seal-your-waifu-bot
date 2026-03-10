@@ -146,11 +146,15 @@ async def check_and_grant_rewards(user_id: int, old_level: int, new_level: int):
         {"$set": {"claimed_levels": list(claimed_levels)}}
     )
 
-async def get_user_progress(user_id: int) -> dict:
+async def get_user_progress(user_id: int, user_data: dict = None) -> dict:
     """
     Retrieve a comprehensive summary of a user's progression state.
+    Supports lazy loading by passing existing user_data to avoid DB lookup.
     """
-    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
+    if user_data is None:
+        user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
+    else:
+        user = user_data
 
     if not user:
         return {
@@ -167,8 +171,8 @@ async def get_user_progress(user_id: int) -> dict:
     level = get_level_from_xp(total_xp)
     xp_needed = get_xp_for_next_level(level)
 
-
-    xp_for_previous_levels = sum([100 * (i + 1) for i in range(level)])
+    # Optimized formula for sum of arithmetic progression: 100 * (1 + 2 + ... + n) = 50 * n * (n + 1)
+    xp_for_previous_levels = 50 * level * (level + 1)
     xp_current = total_xp - xp_for_previous_levels
 
     return {
