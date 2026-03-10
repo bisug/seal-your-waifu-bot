@@ -14,42 +14,48 @@ QUEST_POOL = {
         "description": "Catch 5 characters",
         "target": 5,
         "reward_xp": 50,
-        "icon": "🎯"
+        "icon": "🎯",
+        "symbol": "◉"
     },
     "battle_veteran": {
         "name": "Battle Veteran",
         "description": "Win 2 battles",
         "target": 2,
         "reward_xp": 75,
-        "icon": "⚔️"
+        "icon": "⚔️",
+        "symbol": "⚔"
     },
     "egg_hunter": {
         "name": "Egg Hunter",
         "description": "Find 2 eggs while hunting",
         "target": 2,
         "reward_xp": 60,
-        "icon": "🥚"
+        "icon": "🥚",
+        "symbol": "◈"
     },
     "generous_soul": {
         "name": "Generous Soul",
         "description": "Gift Shards to a player",
         "target": 1,
         "reward_xp": 40,
-        "icon": "🎁"
+        "icon": "🎁",
+        "symbol": "◆"
     },
     "trader": {
         "name": "Trader",
         "description": "Complete a trade",
         "target": 1,
         "reward_xp": 50,
-        "icon": "🤝"
+        "icon": "🤝",
+        "symbol": "▨"
     },
     "big_spender": {
         "name": "Big Spender",
         "description": "Spend 1,000 Shards / 5 Zenith",
         "target": 5,
         "reward_xp": 100,
-        "icon": "💸"
+        "icon": "💸",
+        "symbol": "⬪"
     }
 }
 
@@ -60,21 +66,24 @@ WEEKLY_POOL = {
         "description": "Catch 50 characters this week",
         "target": 50,
         "reward_xp": 500,
-        "icon": "🏆"
+        "icon": "🏆",
+        "symbol": "❂"
     },
     "weekly_battle": {
         "name": "Warlord",
         "description": "Win 20 battles this week",
         "target": 20,
         "reward_xp": 600,
-        "icon": "⚔️"
+        "icon": "⚔️",
+        "symbol": "⚔"
     },
     "weekly_spender": {
         "name": "Tycoon",
         "description": "Spend 50,000 Shards this week",
         "target": 50000,
         "reward_xp": 800,
-        "icon": "⬪"
+        "icon": "⬪",
+        "symbol": "⬪"
     }
 }
 

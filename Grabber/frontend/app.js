@@ -260,7 +260,7 @@ async function loadHarem(append = false) {
     const search = document.getElementById('harem-search').value;
     const rarity = document.getElementById('harem-filter-rarity').value;
 
-    const data = await apiFetch(`/harem?page=${haremPage}&search=${search}&rarity=${rarity}`);
+    const data = await apiFetch(`/harem?page=${haremPage}&search=${encodeURIComponent(search)}&rarity=${encodeURIComponent(rarity)}`);
     haremLoading = false;
     loader.style.display = 'none';
 
@@ -287,7 +287,7 @@ async function loadGallery(append = false) {
     const search = document.getElementById('gallery-search').value;
     const rarity = document.getElementById('gallery-filter-rarity').value;
 
-    const data = await apiFetch(`/gallery?page=${galleryPage}&search=${search}&rarity=${rarity}`);
+    const data = await apiFetch(`/gallery?page=${galleryPage}&search=${encodeURIComponent(search)}&rarity=${encodeURIComponent(rarity)}`);
     galleryLoading = false;
     loader.style.display = 'none';
 
@@ -325,8 +325,8 @@ async function loadQuests() {
     if (!data) return;
     const renderQuest = (q) => `
         <div class="quest-card">
-            <div class="quest-icon">
-                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2H2v10c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V2h-4"/><path d="M2 8h16"/><path d="M6 14v6"/><path d="M10 14v6"/><path d="M14 14v6"/></svg>
+            <div class="quest-icon" style="font-size:24px; color:var(--button-color)">
+                ${q.symbol || '✦'}
             </div>
             <div class="quest-details">
                 <div class="quest-title">${q.name || 'Unknown Quest'}</div>

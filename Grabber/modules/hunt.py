@@ -14,9 +14,9 @@ from Grabber.modules.rarities import RARITY_MAP
 
 
 EGG_TIERS = {
-    "common": {"name": "🥚 Common Egg", "chance": 70, "pool": [RARITY_MAP[4], RARITY_MAP[2]], "wait_min": 5},
-    "gold":   {"name": "🌟 Golden Egg", "chance": 25, "pool": [RARITY_MAP[3], RARITY_MAP[5]], "wait_min": 30},
-    "void":   {"name": "🌌 Void Egg",   "chance": 5,  "pool": [RARITY_MAP[6], RARITY_MAP[7]], "wait_min": 180}
+    "common": {"name": "Common Egg", "chance": 70, "pool": [RARITY_MAP[4], RARITY_MAP[2]], "wait_min": 5},
+    "gold":   {"name": "Golden Egg", "chance": 25, "pool": [RARITY_MAP[3], RARITY_MAP[5]], "wait_min": 30},
+    "void":   {"name": "Void Egg",   "chance": 5,  "pool": [RARITY_MAP[6], RARITY_MAP[7]], "wait_min": 180}
 }
 
 
