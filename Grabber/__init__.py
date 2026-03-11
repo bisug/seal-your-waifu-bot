@@ -153,7 +153,7 @@ class SealClient(Client):
         LOGGER.info(f"{self.name} stopped.")
 
 app = SealClient(name="MainBot", bot_token=config.TOKEN)
-nguess_bot = SealClient(name="NguessBot", bot_token=config.TOKEN) # Fallback to main token if only one is used
+nguess_bot = SealClient(name="NguessBot", bot_token=config.SUB_TOKEN)
 
 # For backward compatibility and modularity
 Grabberu = app

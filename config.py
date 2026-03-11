@@ -7,6 +7,7 @@ load_dotenv()
 class Config:
     # --- BOT IDENTITY ---
     TOKEN =""
+    SUB_TOKEN =""
     BOT_USERNAME = None  # Fetched automatically at startup
     BOT_ID = None        # Fetched automatically at startup
     BOT_NAME = None      # Fetched automatically at startup
