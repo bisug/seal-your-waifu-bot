@@ -467,8 +467,9 @@ body {
 
 .filter-bar-luxury {
     display: flex;
-    gap: 12px;
+    gap: 8px; /* Reduced gap for mobile */
     margin-bottom: 16px;
+    flex-wrap: wrap; /* Wrap on narrow screens to prevent overlap */
 }
 
 .search-wrapper {
@@ -524,6 +525,7 @@ body {
     transform: translateY(-50%);
     color: var(--hint-color);
     pointer-events: none;
+    z-index: 5;
 }
 
 .filter-bar-luxury select {
@@ -600,6 +602,38 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+/* --- Phase 10: Performance & Optimization --- */
+
+/* Reduce layout thrashing by skipping rendering of off-screen pages */
+.page:not(.active) {
+    content-visibility: hidden;
+    pointer-events: none;
+}
+
+.page.active {
+    content-visibility: visible;
+}
+
+/* Optimization for long lists */
+#harem-grid, #gallery-grid, #leaderboard-list {
+    content-visibility: auto;
+    contain-intrinsic-size: 1000px;
+}
+
+/* Smoothness for interactions */
+.char-card {
+    will-change: transform, opacity;
+}
+
+.char-card:hover {
+    transform: translateY(-4px) scale(1.02);
+}
+
+/* Fix for Android/Low-end lag */
+* {
+    -webkit-tap-highlight-color: transparent;
 }
 
 .quest-desc {
