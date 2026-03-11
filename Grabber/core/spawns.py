@@ -124,15 +124,21 @@ async def increment_spawn_order(chat_id: int):
 async def get_chat_frequency(chat_id: int) -> int:
     """
     Retrieve the configured message frequency for spawns in a chat.
+    Cached in CHAT_STATE_CACHE after the first DB lookup — frequency rarely
+    changes, so this eliminates repeated DB queries on every group message.
     Defaults to 100 if not set.
     """
+    await load_chat_state_if_needed(chat_id)
+    cached = CHAT_STATE_CACHE[chat_id].get("_cached_frequency")
+    if cached is not None:
+        return cached
     doc = await user_totals_collection.find_one(
         {"chat_id": str(chat_id)},
         projection={"message_frequency": 1}
     )
-    if not doc or not doc.get("message_frequency"):
-        return 100
-    return int(doc["message_frequency"])
+    freq = int(doc["message_frequency"]) if doc and doc.get("message_frequency") else 100
+    CHAT_STATE_CACHE[chat_id]["_cached_frequency"] = freq
+    return freq
 
 async def flush_cache_to_db():
     """
@@ -191,7 +197,6 @@ async def send_character(chat_id: int, rarity: str):
     )
 
     try:
-        await app.send_chat_action(chat_id, enums.ChatAction.UPLOAD_PHOTO)
         msg = await app.send_photo(
             chat_id=chat_id,
             photo=character['img_url'],

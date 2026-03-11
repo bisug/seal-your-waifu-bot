@@ -149,18 +149,11 @@ async def get_user_quests(user_id: int) -> dict:
     return quests_data
 
 async def update_quest_progress(user_id: int, quest_id: str, increment: int = 1):
-
-    quests = await get_user_quests(user_id)
-
-
-
-
-    if quest_id not in quests:
-        return
-
-    quest = quests[quest_id]
-
-
+    """
+    Fast-path quest progress update: attempts a direct $inc without calling get_user_quests.
+    Falls back to the full read only when the quest key isn't present yet (new day / new user).
+    """
+    # Determine target without a DB read
     if quest_id in QUEST_POOL:
         target = QUEST_POOL[quest_id]["target"]
     elif quest_id in WEEKLY_POOL:
@@ -168,13 +161,24 @@ async def update_quest_progress(user_id: int, quest_id: str, increment: int = 1)
     else:
         return
 
+    # Try direct update — only touches the document if the quest key exists and isn't claimed
+    result = await user_collection.update_one(
+        {
+            "id": user_id,
+            f"quests.{quest_id}.claimed": False,
+            f"quests.{quest_id}.progress": {"$lt": target}
+        },
+        {"$inc": {f"quests.{quest_id}.progress": increment}}
+    )
 
-    if quest["progress"] < target:
-        new_progress = min(quest["progress"] + increment, target)
-        await user_collection.update_one(
-            {"id": user_id},
-            {"$set": {f"quests.{quest_id}.progress": new_progress}}
-        )
+    if result.matched_count == 0:
+        # Quest key is missing (new user/day reset) — fall back to slow initializer
+        quests = await get_user_quests(user_id)
+        if quest_id in quests and quests[quest_id]["progress"] < target:
+            await user_collection.update_one(
+                {"id": user_id},
+                {"$set": {f"quests.{quest_id}.progress": min(quests[quest_id]["progress"] + increment, target)}}
+            )
 
 @app.on_message(filters.command("quests"))
 async def view_quests(_, message: types.Message):

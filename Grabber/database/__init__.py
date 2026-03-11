@@ -41,7 +41,12 @@ class Database:
             (self.message_counts,    lambda c: c.create_index("chat_id")),
             (self.deletion_queue,    lambda c: c.create_index("delete_at")),
             (self.group_user_totals, lambda c: c.create_index([("group_id", 1), ("user_id", 1)])),
+            (self.group_user_totals, lambda c: c.create_index([("group_id", 1), ("count", -1)])),
             (self.groups,            lambda c: c.create_index("group_id", unique=True)),
+            # Previously missing indexes — added for query performance
+            (self.user_totals,       lambda c: c.create_index("chat_id")),
+            (self.nguess_enabled_groups, lambda c: c.create_index("chat_id", unique=True, sparse=True)),
+            (self.total_pm_users,    lambda c: c.create_index("_id")),
         ]
         failed = 0
         for collection, idx_fn in indexes:
