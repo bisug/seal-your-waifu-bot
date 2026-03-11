@@ -11,10 +11,41 @@
     --glass-bg: rgba(255, 255, 255, 0.03);
     --glass-border: rgba(255, 255, 255, 0.08);
     --accent-color: #48a5ff;
+    
+    /* Dynamic Rarities */
     --rarity-common: #8e8e93;
+    --rarity-glow-common: rgba(142, 142, 147, 0.4);
     --rarity-rare: #007aff;
+    --rarity-glow-rare: rgba(0, 122, 255, 0.4);
     --rarity-epic: #af52de;
+    --rarity-glow-epic: rgba(175, 82, 222, 0.4);
     --rarity-legendary: #ff9f0a;
+    --rarity-glow-legendary: rgba(255, 159, 10, 0.4);
+    --rarity-mythical: #ff2d55;
+    --rarity-glow-mythical: rgba(255, 45, 85, 0.4);
+}
+
+/* Skeleton Loading Animation */
+@keyframes skeleton-loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.skeleton {
+    background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.05) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite linear;
+}
+
+/* Staggered Grid Animation */
+.anim-stagger {
+    opacity: 0;
+    animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideUpFade {
+    from { opacity: 0; transform: translateY(15px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 body {
@@ -129,18 +160,31 @@ body {
     overflow: hidden;
     position: relative;
     border: 0.5px solid var(--glass-border);
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: transform 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28), box-shadow 0.3s ease;
+    /* This variable will be set by JS dynamically based on rarity */
+    box-shadow: 0 4px 15px var(--card-glow, rgba(0,0,0,0.2)); 
 }
 
 .char-card:active {
-    transform: scale(0.96);
+    transform: scale(0.92);
 }
 
 .char-img {
     width: 100%;
     aspect-ratio: 1/1;
     object-fit: cover;
-    background: #000;
+    background: #111;
+    transition: opacity 0.3s ease-in;
+    opacity: 0; /* Starts hidden, JS applies opacity:1 onload */
+}
+
+/* Add support for image wrapper skeleton */
+.char-img-wrapper {
+    width: 100%;
+    aspect-ratio: 1/1;
+    position: relative;
+    overflow: hidden;
+    background: var(--glass-bg);
 }
 
 .char-info {
@@ -777,30 +821,36 @@ body {
 }
 
 .modal-content-glass {
-    width: 92%;
-    max-width: 360px;
-    max-height: 90vh;
-    background: rgba(25, 25, 26, 0.95);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 30px;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(28, 28, 29, 0.85);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border-radius: 24px 24px 0 0;
+    padding: 24px;
+    padding-bottom: env(safe-area-inset-bottom, 24px);
+    transform: translateY(100%);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
+    border-top: 1px solid var(--glass-border);
+    touch-action: pan-y; /* For swipe-to-close */
+    max-height: 85vh;
     overflow-y: auto;
-    position: relative;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
-    animation: modal-pop 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);
 }
 
-@keyframes modal-pop {
-    from {
-        transform: scale(0.8) translateY(20px);
-        opacity: 0;
-    }
+.modal.active .modal-content-glass {
+    transform: translateY(0);
+}
 
-    to {
-        transform: scale(1) translateY(0);
-        opacity: 1;
-    }
+/* Modal Swipe Handle */
+.modal-swipe-handle {
+    width: 40px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    margin: -10px auto 16px;
 }
 
 .modal-img {
