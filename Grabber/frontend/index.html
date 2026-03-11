@@ -25,93 +25,59 @@
     <div id="app-container">
         <!-- Profile Page -->
         <div id="page-profile" class="page active">
-            <div class="meta-banner bg-profile">
-                <div class="banner-overlay">
-                    <h3 id="banner-user-name" class="banner-title">DASHBOARD</h3>
-                    <p id="banner-user-title" class="banner-subtitle">Seal Trainer Elite</p>
-                </div>
-            </div>
-            
-            <div class="user-card-luxury">
-                <div class="avatar-container">
-                    <div id="user-avatar" class="avatar-luxury"></div>
-                    <div id="user-level-badge" class="level-badge">1</div>
-                </div>
-                <div class="user-info-main">
-                    <h2 id="user-name">Loading...</h2>
-                    <div id="user-title" class="title-chip">Rookie</div>
-                </div>
-                <div id="user-streak" class="streak-pill">
-                    <svg class="svg-icon-small flame" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path
-                            d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
-                    </svg>
-                    <span id="streak-val">0</span>
-                </div>
-            </div>
-
-            <div class="xp-section-luxury">
-                <div class="xp-meta">
-                    <span class="xp-label">EXPERIENCE</span>
-                    <span id="user-xp-val" class="xp-values">0 / 0</span>
-                </div>
-                <div class="xp-track">
-                    <div id="xp-bar-fill" class="xp-fill-glow"></div>
+            <!-- Unified Identity Header -->
+            <div class="meta-banner bg-profile" style="height: 180px; margin-bottom: 30px;">
+                <div class="banner-overlay-luxury">
+                    <div class="header-main-info">
+                        <div class="avatar-wrapper">
+                            <div id="user-avatar" class="avatar-luxury-small"></div>
+                            <div id="user-level-badge" class="level-badge-tiny">1</div>
+                        </div>
+                        <div class="user-text-info">
+                            <h2 id="user-name">Loading...</h2>
+                            <div id="user-title" class="title-chip-light">Rookie</div>
+                        </div>
+                        <div id="user-streak" class="streak-pill-mini">
+                            <span id="streak-val">0</span>🔥
+                        </div>
+                    </div>
+                    
+                    <div class="banner-progression">
+                        <div class="xp-meta-tiny">
+                            <span id="user-xp-val" class="xp-values-tiny">0 / 0 XP</span>
+                        </div>
+                        <div class="xp-track-mini">
+                            <div id="xp-bar-fill" class="xp-fill-glow"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="stats-grid-luxury">
-                <div class="stat-card">
-                    <svg class="svg-icon stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
-                        <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
-                        <path d="M4 22h16" />
-                        <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
-                        <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
-                        <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
-                    </svg>
-                    <span id="stat-rank" class="stat-val">?</span>
-                    <span class="stat-label">Global Rank</span>
+            <!-- Compact Stat Strip -->
+            <div class="stat-strip-luxury">
+                <div class="stat-tile">
+                    <span class="stat-tile-label">RANK</span>
+                    <span id="stat-rank" class="stat-tile-val">?</span>
                 </div>
-                <div class="stat-card">
-                    <svg class="svg-icon stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M6 3h12l4 6-10 13L2 9l4-6z" />
-                        <path d="M11 22 2 9" />
-                        <path d="M13 22 22 9" />
-                        <path d="M2 9h20" />
-                        <path d="m11 22-3-13" />
-                        <path d="m13 22 3-13" />
-                        <path d="m5 3 3 6" />
-                        <path d="m19 3-3 6" />
-                    </svg>
-                    <span id="stat-balance" class="stat-val">0</span>
-                    <span class="stat-label">Shards</span>
+                <div class="stat-divider"></div>
+                <div class="stat-tile">
+                    <span class="stat-tile-label">SHARDS</span>
+                    <span id="stat-balance" class="stat-tile-val">0</span>
                 </div>
-                <div class="stat-card">
-                    <svg class="svg-icon stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path
-                            d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
-                    </svg>
-                    <span id="stat-zenith" class="stat-val">0</span>
-                    <span class="stat-label">Zenith</span>
+                <div class="stat-divider"></div>
+                <div class="stat-tile">
+                    <span class="stat-tile-label">ZENITH</span>
+                    <span id="stat-zenith" class="stat-tile-val">0</span>
                 </div>
-                <div class="stat-card">
-                    <svg class="svg-icon stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect width="18" height="18" x="3" y="3" rx="2" />
-                        <path d="M3 9h18" />
-                        <path d="M9 21V9" />
-                    </svg>
-                    <span id="stat-collection" class="stat-val">0</span>
-                    <span class="stat-label">Collection</span>
+                <div class="stat-divider"></div>
+                <div class="stat-tile">
+                    <span class="stat-tile-label">CARDS</span>
+                    <span id="stat-collection" class="stat-tile-val">0</span>
                 </div>
             </div>
 
-            <div id="pet-section" class="quest-section" style="display:none;">
+            <!-- Active Companion -->
+            <div id="pet-section" class="quest-section" style="display:none; margin-top: 10px;">
                 <div class="section-header">
                     <span class="header-line"></span>
                     <h4>ACTIVE COMPANION</h4>
@@ -122,6 +88,32 @@
                 </div>
             </div>
 
+            <!-- My Collection (Elevated) -->
+            <div id="harem-section" class="quest-section" style="margin-top: 20px;">
+                <div class="section-header">
+                    <span class="header-line"></span>
+                    <h4>MY COLLECTION</h4>
+                    <span class="header-line"></span>
+                </div>
+                
+                <div class="filter-bar-luxury">
+                    <div class="search-wrapper">
+                        <input type="text" id="harem-search" placeholder="Search collection...">
+                    </div>
+                    <select id="harem-filter-rarity">
+                        <option value="">Rarity (All)</option>
+                    </select>
+                </div>
+
+                <div id="harem-grid" class="char-grid">
+                    <!-- Cards here -->
+                </div>
+                <div id="harem-loading" style="text-align:center; padding:10px; display:none;">
+                    <div class="spinner-mini"></div>
+                </div>
+            </div>
+
+            <!-- Secondary Operations -->
             <div id="eggs-section" class="quest-section" style="display:none;">
                  <div class="section-header">
                     <span class="header-line"></span>
@@ -136,7 +128,7 @@
             <div id="achievements-section" class="quest-section">
                 <div class="section-header">
                     <span class="header-line"></span>
-                    <h4>BADGES & ACHIEVEMENTS</h4>
+                    <h4>ACHIEVEMENTS</h4>
                     <span class="header-line"></span>
                 </div>
                 <div id="achievements-list" class="badge-row">
