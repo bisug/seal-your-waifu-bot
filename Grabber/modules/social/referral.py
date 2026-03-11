@@ -1,6 +1,7 @@
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
-from Grabber import app, user_collection, BOT_USERNAME
+from Grabber import app, user_collection
+from config import config
 
 @app.on_message(filters.command("referrals"))
 async def referrals_cmd(_, message: types.Message):
@@ -16,7 +17,7 @@ async def referrals_cmd(_, message: types.Message):
     earned_coins = user.get("referrals_earned", 0)
 
 
-    ref_link = f"https://t.me/{BOT_USERNAME}?start=ref_{user_id}"
+    ref_link = f"https://t.me/{config.BOT_USERNAME}?start=ref_{user_id}"
 
     text = (
         f"🤝 <b>Your Referral Stats</b>\n\n"

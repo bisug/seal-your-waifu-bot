@@ -1,7 +1,7 @@
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
 from Grabber.core.utils import html_escape
-from Grabber import app, OWNER_ID, sudo_users, BOT_USERNAME, group_user_totals_collection, LOGGER
+from Grabber import app, OWNER_ID, sudo_users, group_user_totals_collection, LOGGER
 from Grabber.core.user import add_char_to_user
 from Grabber.core.spawns import get_chat_state, clear_active_spawn, get_message_count, send_character
 from Grabber.core.progression import add_xp
