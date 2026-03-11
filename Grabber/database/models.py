@@ -6,6 +6,7 @@ class User(BaseModel):
     first_name: str
     username: Optional[str] = None
     balance: int = 0
+    zenith: int = 0
     characters: List[dict] = []
 
     # Daily Streak

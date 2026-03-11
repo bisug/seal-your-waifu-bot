@@ -299,6 +299,205 @@ body {
     margin-bottom: 20px;
 }
 
+/* --- Phase 4: Unified Identity Header & Stat Strip --- */
+.banner-overlay-luxury {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.6));
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 20px;
+    backdrop-filter: blur(1px);
+}
+
+.header-main-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.avatar-wrapper {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.avatar-luxury-small {
+    width: 64px;
+    height: 64px;
+    border-radius: 18px;
+    border: 2px solid rgba(255,255,255,0.2);
+    background-size: cover;
+    background-position: center;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+}
+
+.level-badge-tiny {
+    position: absolute;
+    bottom: -6px;
+    right: -6px;
+    background: var(--button-color);
+    color: white;
+    font-size: 10px;
+    font-weight: 900;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--bg-color);
+}
+
+.user-text-info {
+    flex: 1;
+}
+
+.user-text-info h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    color: white;
+}
+
+.title-chip-light {
+    display: inline-block;
+    color: rgba(255,255,255,0.7);
+    font-size: 11px;
+    font-weight: 600;
+    margin-top: 2px;
+}
+
+.streak-pill-mini {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    border: 0.5px solid rgba(255,255,255,0.15);
+}
+
+.banner-progression {
+    width: 100%;
+}
+
+.xp-meta-tiny {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 4px;
+}
+
+.xp-values-tiny {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    color: rgba(255,255,255,0.6);
+}
+
+.xp-track-mini {
+    height: 4px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+/* Stat Strip Luxury */
+.stat-strip-luxury {
+    display: flex;
+    background: var(--glass-bg);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 0.5px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 12px 0;
+    margin: -15px 0 20px 0;
+    position: relative;
+    z-index: 10;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+
+.stat-tile {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.stat-tile-label {
+    font-size: 8px;
+    font-weight: 800;
+    color: var(--hint-color);
+    letter-spacing: 1px;
+}
+
+.stat-tile-val {
+    font-size: 14px;
+    font-weight: 900;
+    color: white;
+}
+
+.stat-divider {
+    width: 1px;
+    background: var(--glass-border);
+    align-self: stretch;
+    margin: 4px 0;
+}
+
+.filter-bar-luxury {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.search-wrapper {
+    flex: 1;
+    position: relative;
+}
+
+.search-wrapper input {
+    width: 100%;
+    background: var(--glass-bg);
+    border: 0.5px solid var(--glass-border);
+    padding: 10px 16px;
+    border-radius: 14px;
+    color: white;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.search-wrapper input:focus {
+    border-color: var(--button-color);
+}
+
+.filter-bar-luxury select {
+    background: var(--glass-bg);
+    border: 0.5px solid var(--glass-border);
+    padding: 0 12px;
+    border-radius: 14px;
+    color: white;
+    font-size: 12px;
+    outline: none;
+}
+
+.spinner-mini {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255,255,255,0.1);
+    border-top-color: var(--button-color);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    display: inline-block;
+}
+
+
 /* Quests Specific Card Styling (Stay as is but use shared icon look) */
 .quest-card {
     background: var(--glass-bg);
@@ -604,176 +803,9 @@ body {
     display: none; /* Replaced by meta-banner */
 }
 
-.user-card-luxury {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-top: -60px;
-    position: relative;
-    padding: 10px 0;
-}
-
-.avatar-container {
-    position: relative;
-}
-
-.avatar-luxury {
-    width: 90px;
-    height: 90px;
-    border-radius: 24px;
-    border: 3px solid var(--bg-color);
-    background-size: cover;
-    background-position: center;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
-}
-
-.level-badge {
-    position: absolute;
-    bottom: -8px;
-    right: -8px;
-    background: var(--accent-color);
-    color: #000;
-    font-weight: 900;
-    font-size: 14px;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 3px solid var(--bg-color);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-}
-
-.user-info-main {
-    flex: 1;
-}
-
-.user-info-main h2 {
-    margin: 0;
-    font-size: 22px;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-}
-
-.title-chip {
-    display: inline-block;
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--button-color);
-    padding: 2px 10px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 700;
-    margin-top: 4px;
-    border: 0.5px solid rgba(255, 255, 255, 0.1);
-}
-
-.streak-pill {
-    background: rgba(255, 69, 58, 0.15);
-    border: 1px solid rgba(255, 69, 58, 0.3);
-    padding: 6px 12px;
-    border-radius: 16px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    color: #ff453a;
-    font-weight: 800;
-}
-
-.fire-icon {
-    font-size: 16px;
-    animation: flicker 1.5s infinite alternate;
-}
-
-@keyframes flicker {
-    from {
-        opacity: 0.8;
-        transform: scale(1);
-    }
-
-    to {
-        opacity: 1;
-        transform: scale(1.2);
-    }
-}
-
-.xp-section-luxury {
-    margin-top: 24px;
-}
-
-.xp-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    margin-bottom: 8px;
-}
-
-.xp-label {
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 1px;
-    color: var(--hint-color);
-}
-
-.xp-values {
-    font-size: 12px;
-    font-weight: 700;
-    font-family: monospace;
-}
-
-.xp-track {
-    height: 10px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 5px;
-    overflow: hidden;
-    border: 0.5px solid rgba(255, 255, 255, 0.1);
-}
-
-.xp-fill-glow {
-    height: 100%;
-    background: linear-gradient(90deg, var(--button-color), #82c4ff);
-    box-shadow: 0 0 10px var(--button-color);
-    width: 0%;
-    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.stats-grid-luxury {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    margin-top: 16px;
-}
-
-.stat-card {
-    background: var(--glass-bg);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    padding: 16px;
-    border-radius: 20px;
-    border: 0.5px solid var(--glass-border);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-}
-
-.stat-icon {
-    font-size: 24px;
-    margin-bottom: 8px;
-}
-
-.stat-card .stat-val {
-    font-size: 18px;
-    font-weight: 800;
-    margin-bottom: 2px;
-}
-
-.stat-card .stat-label {
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--hint-color);
+/* Deprecated - Replaced by Stat Strip */
+.stats-grid-luxury, .xp-section-luxury, .user-card-luxury {
+    display: none !important;
 }
 
 /* Deprecated glass-section margin, handled by standard margin-top or section spacing */
