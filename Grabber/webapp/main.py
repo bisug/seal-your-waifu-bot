@@ -2,6 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
+from fastapi.middleware.gzip import GZipMiddleware
 from Grabber.webapp.auth import validate_init_data, create_session, r
 from Grabber.webapp.api import router as api_router
 from Grabber.webapp.ws import router as ws_router
@@ -43,6 +44,18 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"])
+
+# Add GZip Compression Middleware
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    """Inject basic security headers into every API response."""
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
 
 @api_router.post("/secure_init")
 async def auth(request: Request):

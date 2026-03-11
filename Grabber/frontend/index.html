@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#1c1c1d">
+    <!-- Content Security Policy: Mitgates XSS and unauthorized resource loading -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://telegram.org https://files.catbox.moe; img-src 'self' data: https://* http://*; script-src 'self' 'unsafe-inline' https://telegram.org; style-src 'self' 'unsafe-inline'; font-src 'self' data:;">
     <title>Grabber WebApp</title>
     <link rel="stylesheet" href="style.css?v=2.7">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
