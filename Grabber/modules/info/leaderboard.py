@@ -93,11 +93,10 @@ def build_leaderboard_keyboard(current_metric: str, user_id: int, is_private: bo
         ]
     ]
 
-    if is_private:
-        buttons.append([types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))])
-    else:
-        bot_username = getattr(config, "BOT_USERNAME", "Seal_Your_Waifu_Bot")
-        buttons.append([types.InlineKeyboardButton("🌐 Launch Web App (DM)", url=f"https://t.me/{bot_username}?start=webapp")])
+    from Grabber.core.keyboard import get_webapp_button
+    webapp_btn = get_webapp_button(is_private)
+    if webapp_btn:
+        buttons.append([webapp_btn])
 
     buttons.append([
         types.InlineKeyboardButton("❌ Close", callback_data=f"top_close:{user_id}")

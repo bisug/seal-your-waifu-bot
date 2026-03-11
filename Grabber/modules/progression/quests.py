@@ -266,11 +266,11 @@ async def view_quests(_, message: types.Message, edit_message=False):
     if not buttons:
         buttons = []
         
-    if message.chat.type == enums.ChatType.PRIVATE:
-        buttons.append([types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))])
-    else:
-        bot_username = getattr(config, "BOT_USERNAME", "Seal_Your_Waifu_Bot")
-        buttons.append([types.InlineKeyboardButton("🌐 Launch Web App (DM)", url=f"https://t.me/{bot_username}?start=webapp")])
+    from Grabber.core.keyboard import get_webapp_button
+    is_private = message.chat.type == enums.ChatType.PRIVATE
+    webapp_btn = get_webapp_button(is_private)
+    if webapp_btn:
+        buttons.append([webapp_btn])
     
     markup = types.InlineKeyboardMarkup(buttons)
     if edit_message:
