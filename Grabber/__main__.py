@@ -1,8 +1,12 @@
 import asyncio
+import nest_asyncio
 
-# CRITICAL: Create and set the event loop BEFORE importing Grabber.
-# Pyrogram stores self.loop = asyncio.get_event_loop() when Client.__init__ runs.
-# If the loop is created after import, clients bind to a different loop than main() runs on.
+# Apply nest_asyncio FIRST — before any other imports.
+# kurigram (Pyrogram fork) internally uses asyncio.get_event_loop() in its Session
+# class, which on Python 3.13 can reference a different loop than the one running main().
+# nest_asyncio patches asyncio to be re-entrant and loop-agnostic, fixing this.
+nest_asyncio.apply()
+
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
 

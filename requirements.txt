@@ -12,3 +12,4 @@ uvicorn
 python-multipart
 websockets
 dnspython
+nest_asyncio
