@@ -187,15 +187,35 @@
 
         <!-- Quests Page -->
         <div id="page-quests" class="page">
-            <h3>Assignments</h3>
-            <div id="daily-quests-list">
-                <h4>Daily</h4>
-                <!-- Daily quests -->
+            <div class="quests-meta-banner">
+                <div class="banner-overlay">
+                    <h3 class="banner-title">ASSIGNMENTS</h3>
+                    <p class="banner-subtitle">Complete missions to earn XP and rewards</p>
+                </div>
             </div>
-            <div id="weekly-quests-list" style="margin-top:20px">
-                <h4>Weekly</h4>
-                <!-- Weekly quests -->
+
+            <div class="quest-section">
+                <div class="section-header">
+                    <span class="header-line"></span>
+                    <h4>DAILY MISSIONS</h4>
+                    <span class="header-line"></span>
+                </div>
+                <div id="daily-quests-list">
+                    <!-- Daily quests populated by JS -->
+                </div>
             </div>
+
+            <div class="quest-section" style="margin-top:24px">
+                <div class="section-header">
+                    <span class="header-line"></span>
+                    <h4>WEEKLY OBJECTIVES</h4>
+                    <span class="header-line"></span>
+                </div>
+                <div id="weekly-quests-list">
+                    <!-- Weekly quests populated by JS -->
+                </div>
+            </div>
+            <div style="padding-bottom: 20px;"></div>
         </div>
 
         <!-- Navigation Tab Bar -->
