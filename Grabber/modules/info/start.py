@@ -231,13 +231,20 @@ async def start_handler(_, message: types.Message):
 async def start_callback_handler(_, query: types.CallbackQuery):
     action = query.data.split(":")[1]
 
-    markup = types.InlineKeyboardMarkup([
-        [types.InlineKeyboardButton("➕ Add to Group", url=f"https://t.me/{BOT_USERNAME}?startgroup=true")],
-        [types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))],
+    buttons = [
+        [types.InlineKeyboardButton("➕ Add to Group", url=f"https://t.me/{BOT_USERNAME}?startgroup=true")]
+    ]
+    if query.message.chat.type == enums.ChatType.PRIVATE:
+        buttons.append([types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))])
+    else:
+        buttons.append([types.InlineKeyboardButton("🌐 Launch Web App (DM)", url=f"https://t.me/{BOT_USERNAME}?start=webapp")])
+
+    buttons.extend([
         [types.InlineKeyboardButton("💬 Contact Support", url=f"https://t.me/{SUPPORT_CHAT}"),
             types.InlineKeyboardButton("📢 Latest Updates", url=f"https://t.me/{UPDATE_CHAT}")],
         [types.InlineKeyboardButton("❓ Help & Commands", callback_data="help:main")]
     ])
+    markup = types.InlineKeyboardMarkup(buttons)
 
     first_name = html_escape(query.from_user.first_name)
     text = START_TEXT.format(first_name=first_name, bot_name=BOT_NAME)
@@ -285,11 +292,14 @@ def random_photo():
 async def webapp_command(_, message):
     web_app_url = config.WEB_APP_URL
 
-    keyboard = types.InlineKeyboardMarkup([
-        [
-            types.InlineKeyboardButton("Open Mini App", web_app=types.WebAppInfo(url=web_app_url))
-        ]
-    ])
+    buttons = []
+    if message.chat.type == enums.ChatType.PRIVATE:
+        buttons.append([types.InlineKeyboardButton("Open Mini App", web_app=types.WebAppInfo(url=web_app_url))])
+    else:
+        bot_username = getattr(config, "BOT_USERNAME", "Seal_Your_Waifu_Bot")
+        buttons.append([types.InlineKeyboardButton("Launch Mini App (DM)", url=f"https://t.me/{bot_username}?start=webapp")])
+
+    keyboard = types.InlineKeyboardMarkup(buttons)
 
     await message.reply_text(
         "<b>Seal Bot Web Gallery</b>\n\n"

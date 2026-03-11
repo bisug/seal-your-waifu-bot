@@ -6,6 +6,7 @@ from typing import List, Dict, Union, Any
 
 from pyrogram import filters, types, enums, errors
 from pyrogram.enums import ParseMode
+from config import config
 from Grabber import app, WEB_APP_URL
 from Grabber import LOGGER
 from Grabber.core.user import get_user_data
@@ -95,8 +96,13 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
 
         harem_text += "━━━━━━━━━━━━━━━━━━━━━\n"
 
+        is_private = False
+        if isinstance(message_obj, types.CallbackQuery):
+            is_private = message_obj.message.chat.type == enums.ChatType.PRIVATE
+        else:
+            is_private = message_obj.chat.type == enums.ChatType.PRIVATE
 
-        markup = _build_harem_markup(page, total_pages, user_id)
+        markup = _build_harem_markup(page, total_pages, user_id, is_private)
 
 
         try:
@@ -132,7 +138,7 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
         if isinstance(message_obj, types.Message):
              await message_obj.reply_text("An error occurred while fetching your harem.")
 
-def _build_harem_markup(page: int, total_pages: int, user_id: int) -> types.InlineKeyboardMarkup:
+def _build_harem_markup(page: int, total_pages: int, user_id: int, is_private: bool) -> types.InlineKeyboardMarkup:
 
     nav_buttons = []
     if total_pages > 1:
@@ -147,10 +153,17 @@ def _build_harem_markup(page: int, total_pages: int, user_id: int) -> types.Inli
 
     keyboard = [
         nav_buttons,
-        [types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))],
+    ]
+    if is_private:
+        keyboard.append([types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))])
+    else:
+        bot_username = getattr(config, "BOT_USERNAME", "Seal_Your_Waifu_Bot")
+        keyboard.append([types.InlineKeyboardButton("🌐 Launch Web App (DM)", url=f"https://t.me/{bot_username}?start=webapp")])
+
+    keyboard.extend([
         [types.InlineKeyboardButton("🔍 Search Harem", switch_inline_query_current_chat=f"collection.{user_id} ")],
         [types.InlineKeyboardButton("🌐 Global Search", switch_inline_query_current_chat="")]
-    ]
+    ])
 
     return types.InlineKeyboardMarkup([row for row in keyboard if row])
 
