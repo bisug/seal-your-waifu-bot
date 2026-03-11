@@ -1,3 +1,7 @@
+* {
+    box-sizing: border-box;
+}
+
 :root {
     --bg-color: var(--tg-theme-bg-color, #1c1c1d);
     --text-color: var(--tg-theme-text-color, #ffffff);
@@ -487,9 +491,10 @@ body {
 
 .filter-bar-luxury {
     display: flex;
-    gap: 8px; /* Reduced gap for mobile */
-    margin-bottom: 16px;
-    flex-wrap: wrap; /* Wrap on narrow screens to prevent overlap */
+    gap: 10px;
+    margin-bottom: 20px;
+    align-items: center;
+    width: 100%;
 }
 
 .search-wrapper {
@@ -532,7 +537,7 @@ body {
 
 .filter-select-wrapper {
     position: relative;
-    width: 120px; /* Slightly narrower to give more room to search */
+    width: 130px;
     flex-shrink: 0;
 }
 
@@ -1295,14 +1300,17 @@ body {
 }
 
 /* Mobile Layout Guard */
-@media (max-width: 420px) {
+@media (max-width: 480px) {
     .filter-bar-luxury {
         flex-direction: column;
         align-items: stretch;
-        gap: 10px;
+        gap: 12px;
     }
     .filter-select-wrapper {
         width: 100%;
+    }
+    .search-wrapper {
+        min-width: 0;
     }
 }
 
@@ -1547,13 +1555,37 @@ body {
 .char-card.shop-item {
     display: flex;
     flex-direction: column;
-    min-height: 260px; /* Reduced since info is now bottom */
-    padding-bottom: 8px;
+    min-height: 280px;
+    padding-bottom: 0;
     overflow: hidden;
+    position: relative;
+    background: rgba(255, 255, 255, 0.03);
+    border: 0.5px solid rgba(255, 255, 255, 0.05);
 }
 
 .char-card.shop-item .char-info {
-    padding: 8px 10px;
+    padding: 10px 12px;
+    flex: 1; /* Pushes the button down */
+}
+
+.char-card.shop-item .char-name {
+    font-size: 13px;
+    font-weight: 850;
+    color: white;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.char-anime-sub {
+    font-size: 9px;
+    color: var(--hint-color);
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .char-card.shop-item .owned-overlay {
@@ -1577,13 +1609,13 @@ body {
     align-items: center;
     background: var(--button-color);
     border: none;
-    border-radius: 12px;
-    margin: 8px 8px 0;
+    border-radius: 0; /* Flush with bottom */
+    margin: 0;
     padding: 0;
     overflow: hidden;
     cursor: pointer;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    transition: transform 0.2s ease;
+    transition: all 0.2s ease;
+    border-top: 1px solid rgba(255,255,255,0.05);
 }
 
 .shop-buy-btn.merged-buy:active {
@@ -1618,8 +1650,11 @@ body {
 .char-img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    background-size: cover;
+    background-position: center top;
+    background-repeat: no-repeat;
     display: block;
+    transition: transform 0.3s ease;
 }
 
 .unlock-condition {
