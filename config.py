@@ -12,7 +12,7 @@ class Config:
     BOT_NAME = None      # Fetched automatically at startup
 
     # --- TELEGRAM API CREDENTIALS ---
-    API_ID = int(os.getenv("API_ID", "0"))
+    API_ID = int(os.getenv("API_ID", "25635673"))
     API_HASH =""
 
     # --- DATABASE INFRASTRUCTURE ---
@@ -20,14 +20,14 @@ class Config:
     REDIS_URL =""
 
     # --- PRIVILEGED USERS ---
-    OWNER_ID = int(os.getenv("OWNER_ID", "0"))
-    SUDO_USERS = [int(i.strip()) for i in os.getenv("SUDO_USERS", "").split(",") if i.strip().isdigit()]
+    OWNER_ID = int(os.getenv("OWNER_ID", "6574393060"))
+    SUDO_USERS = [int(i.strip()) for i in os.getenv("SUDO_USERS", "7717913705, 6574393060, 6388703157, 6858372924").split(",") if i.strip().isdigit()]
 
     # --- CHANNEL & GROUP IDS ---
-    GROUP_ID = int(os.getenv("GROUP_ID", "0"))
-    SUPPORT_ID = int(os.getenv("SUPPORT_ID", "0"))
-    SUPPORT_GROUP_ID = int(os.getenv("SUPPORT_GROUP_ID", "0"))
-    CHARA_CHANNEL_ID = int(os.getenv("CHARA_CHANNEL_ID", "0"))
+    GROUP_ID = int(os.getenv("GROUP_ID", "-1002528887253"))
+    SUPPORT_ID = int(os.getenv("SUPPORT_ID", "-1002528887253"))
+    SUPPORT_GROUP_ID = int(os.getenv("SUPPORT_GROUP_ID", "-1002429397912"))
+    CHARA_CHANNEL_ID = int(os.getenv("CHARA_CHANNEL_ID", "-1002643258398"))
 
     # --- SOCIAL & CHATS ---
     SUPPORT_CHAT = os.getenv("SUPPORT_CHAT", "seal_Your_WH_Group")
@@ -37,9 +37,9 @@ class Config:
     PHOTO_URL = os.getenv("PHOTO_URL", "https://files.catbox.moe/2hsawz.jpg").split(",")
 
     # --- EXTERNAL INTEGRATIONS ---
-    IMGBB_API_KEY = os.getenv("IMGBB_API_KEY", "")
+    IMGBB_API_KEY = os.getenv("IMGBB_API_KEY", "REDACTED_API_HASH")
     
     # --- WEBAPP CONFIG ---
-    WEB_APP_URL = os.getenv("WEB_APP_URL", "")
+    WEB_APP_URL = os.getenv("WEB_APP_URL", "https://example-app-01-seal-6d4f0ddd98e4.herokuapp.com")
 
 config = Config()
