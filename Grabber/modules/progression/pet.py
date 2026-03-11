@@ -54,7 +54,7 @@ async def send_petshop_page(message_or_query_obj, page: int, user_id: int):
     keyboard = [
         [
             types.InlineKeyboardButton("⬅️ Prev", callback_data=f"shop_prev_{page}_{user_id}"),
-            types.InlineKeyboardButton(buy_button_text, callback_data=f"shop_buy_{page}_{user_id}"),
+            types.InlineKeyboardButton(buy_button_text, callback_data=f"shop_buy_{page}_{user_id}", style=enums.ButtonStyle.SUCCESS),
             types.InlineKeyboardButton("Next ➡️", callback_data=f"shop_next_{page}_{user_id}")
         ]
     ]
@@ -65,11 +65,9 @@ async def send_petshop_page(message_or_query_obj, page: int, user_id: int):
     else:
         is_private = message_or_query_obj.chat.type == enums.ChatType.PRIVATE
         
-    if is_private:
-        keyboard.append([types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))])
-    else:
-        bot_username = getattr(config, "BOT_USERNAME", "Seal_Your_Waifu_Bot")
-        keyboard.append([types.InlineKeyboardButton("🌐 Launch Web App (DM)", url=f"https://t.me/{bot_username}?start=webapp")])
+    webapp_btn = get_webapp_button(is_private)
+    if webapp_btn:
+        keyboard.append([webapp_btn])
         
     keyboard.append([types.InlineKeyboardButton("⤾ Back to Hub", callback_data="hub_main")])
     reply_markup = types.InlineKeyboardMarkup(keyboard)
@@ -208,9 +206,9 @@ async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
 
     buttons = [
         [
-            types.InlineKeyboardButton("⬅️ Prev", callback_data=f"mypet_prev_{page}_{user_id}"),
-            types.InlineKeyboardButton("Set Active" if not is_active else "🌟 Active", callback_data=f"setpet_{page}_{user_id}"),
-            types.InlineKeyboardButton("Next ➡️", callback_data=f"mypet_next_{page}_{user_id}")
+            types.InlineKeyboardButton("⬅️", callback_data=f"mypet_prev_{page}_{user_id}"),
+            types.InlineKeyboardButton("Set Active" if not is_active else "Active", callback_data=f"setpet_{page}_{user_id}", style=enums.ButtonStyle.PRIMARY),
+            types.InlineKeyboardButton("➡️", callback_data=f"mypet_next_{page}_{user_id}")
         ]
     ]
 
@@ -220,13 +218,11 @@ async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
     else:
         is_private = message_or_query_obj.chat.type == enums.ChatType.PRIVATE
         
-    if is_private:
-        buttons.append([types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))])
-    else:
-        bot_username = getattr(config, "BOT_USERNAME", "Seal_Your_Waifu_Bot")
-        buttons.append([types.InlineKeyboardButton("🌐 Launch Web App (DM)", url=f"https://t.me/{bot_username}?start=webapp")])
+    webapp_btn = get_webapp_button(is_private)
+    if webapp_btn:
+        buttons.append([webapp_btn])
 
-    buttons.append([types.InlineKeyboardButton("⤾ Back to Hub", callback_data="hub_main")])
+    buttons.append([types.InlineKeyboardButton("Back to Hub", callback_data="hub_main")])
     reply_markup = types.InlineKeyboardMarkup(buttons)
     photo = pet.get("img", DEFAULT_PET["img"])
 
@@ -272,8 +268,8 @@ async def shop_mypet_navigation(_, query: types.CallbackQuery):
             pet = PET_SHOP[page]
             text = f"⚠️ <b>Confirm Purchase</b>\n\nBuy <b>{html_escape(pet['name'])}</b> for <b>{pet['zenith_price']} ⧫</b>?"
             keyboard = [[
-                types.InlineKeyboardButton("Confirm ✅", callback_data=f"petconfirm_{page}_{owner_id}"),
-                types.InlineKeyboardButton("Cancel ❌", callback_data=f"shop_view_{page}_{owner_id}")
+                types.InlineKeyboardButton("Confirm ✅", callback_data=f"petconfirm_{page}_{owner_id}", style=enums.ButtonStyle.SUCCESS),
+                types.InlineKeyboardButton("Cancel ❌", callback_data=f"shop_view_{page}_{owner_id}", style=enums.ButtonStyle.DANGER)
             ]]
             await query.message.edit_caption(text, reply_markup=types.InlineKeyboardMarkup(keyboard))
             return

@@ -7,6 +7,7 @@ from Grabber.modules.progression.pet import DEFAULT_PET
 from Grabber.core.progression import add_xp
 from Grabber.modules.progression.achievements import check_achievements
 from config import config
+from Grabber.core.keyboard import KeyboardBuilder, get_webapp_button
 
 LOGGER.info("Loading Start module...")
 
@@ -33,12 +34,12 @@ HELP_DATA = {
     "MAIN": {
         "text": "<b>📚 Seal Bot - Help Menu</b>\n\nSelect a category below to see available commands:",
         "buttons": [
-            [types.InlineKeyboardButton("🎮 Core Basics", callback_data="help:core"),
-             types.InlineKeyboardButton("🐾 Pet System", callback_data="help:pet")],
-            [types.InlineKeyboardButton("⚔️ Battle & Economy", callback_data="help:battle"),
-             types.InlineKeyboardButton("🎫 Progression", callback_data="help:progression")],
-            [types.InlineKeyboardButton("ℹ️ Info & Stats", callback_data="help:info"),
-             types.InlineKeyboardButton("🛠 Admin Tools", callback_data="help:owner")],
+            [types.InlineKeyboardButton("🎮 Core Basics", callback_data="help:core", style=enums.ButtonStyle.PRIMARY),
+             types.InlineKeyboardButton("🐾 Pet System", callback_data="help:pet", style=enums.ButtonStyle.PRIMARY)],
+            [types.InlineKeyboardButton("⚔️ Battle & Economy", callback_data="help:battle", style=enums.ButtonStyle.PRIMARY),
+             types.InlineKeyboardButton("🎫 Progression", callback_data="help:progression", style=enums.ButtonStyle.PRIMARY)],
+            [types.InlineKeyboardButton("ℹ️ Info & Stats", callback_data="help:info", style=enums.ButtonStyle.PRIMARY),
+             types.InlineKeyboardButton("🛠 Admin Tools", callback_data="help:owner", style=enums.ButtonStyle.DANGER)],
             [types.InlineKeyboardButton("⤾ Main Menu", callback_data="st:b")]
         ]
     },
@@ -120,7 +121,6 @@ HELP_DATA = {
 @app.on_message(filters.command("start"))
 async def start_handler(_, message: types.Message):
     user_id = message.from_user.id
-
     existing_user = await user_collection.find_one({"id": user_id})
 
     await total_pm_users.update_one(
@@ -131,12 +131,10 @@ async def start_handler(_, message: types.Message):
 
     if len(message.command) > 1:
         param = message.command[1]
-
         if param.startswith("locate_"):
             try:
                 char_id = param.split("_")[1]
                 character = await collection.find_one({'id': char_id})
-
                 if character:
                     response_message = (
                         f"<b>Character Name:</b> {html_escape(character['name'])}\n"
@@ -144,7 +142,6 @@ async def start_handler(_, message: types.Message):
                         f"<b>Rarity:</b> {html_escape(character['rarity'])}\n"
                         f"<b>Character ID:</b> <code>{character['id']}</code>\n"
                     )
-
                     await message.reply_photo(
                         photo=character['img_url'],
                         caption=response_message,
@@ -157,7 +154,6 @@ async def start_handler(_, message: types.Message):
             except Exception as e:
                 LOGGER.error(f"Locate Error: {e}")
                 pass
-
         elif not existing_user and param.startswith("ref_"):
             try:
                 referrer_id = int(param.split("_")[1])
@@ -167,30 +163,14 @@ async def start_handler(_, message: types.Message):
                     upgraded_pet["hp"] += 45
                     upgraded_pet["atk"] += 18
                     upgraded_pet["spd"] += 9
-
                     await user_collection.update_one(
                         {"id": user_id},
-                        {
-                            "$set": {
-                                "balance": 1500,
-                                "pets": [upgraded_pet],
-                                "current_pet": upgraded_pet["name"],
-                                "referred_by": referrer_id
-                            }
-                        },
+                        {"$set": {"balance": 1500, "pets": [upgraded_pet], "current_pet": upgraded_pet["name"], "referred_by": referrer_id}},
                         upsert=True
                     )
-
-
-                    await user_collection.update_one(
-                        {"id": referrer_id},
-                        {
-                            "$inc": {"balance": 500, "referrals_count": 1, "referrals_earned": 500}
-                        }
-                    )
+                    await user_collection.update_one({"id": referrer_id}, {"$inc": {"balance": 500, "referrals_count": 1, "referrals_earned": 500}})
                     await add_xp(referrer_id, 50, "referral")
                     await check_achievements(referrer_id)
-
                     try:
                         await app.send_message(
                             referrer_id,
@@ -199,25 +179,31 @@ async def start_handler(_, message: types.Message):
                         )
                     except:
                         pass
-
                     await message.reply_text("🎁 <b>Welcome Bonus!</b>\nYou received <b>1,500 ⬪</b> and a <b>Level 10 Pet</b> for using a referral link! 🚀", parse_mode=ParseMode.HTML)
-
             except ValueError:
                 pass
 
+    is_private = message.chat.type == enums.ChatType.PRIVATE
+    builder = KeyboardBuilder()
+    builder.add_button("Add to Group", url=f"https://t.me/{BOT_USERNAME}?startgroup=true", style=enums.ButtonStyle.PRIMARY)
+    
+    webapp_btn = get_webapp_button(is_private)
+    if webapp_btn:
+        builder.add_row(webapp_btn)
 
-    if message.chat.type == enums.ChatType.PRIVATE:
-        markup = types.InlineKeyboardMarkup([
-            [types.InlineKeyboardButton("➕ Add to Group", url=f"https://t.me/{BOT_USERNAME}?startgroup=true")],
-            [types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))],
-            [types.InlineKeyboardButton("💬 Contact Support", url=f"https://t.me/{SUPPORT_CHAT}"),
-             types.InlineKeyboardButton("📢 Latest Updates", url=f"https://t.me/{UPDATE_CHAT}")],
-            [types.InlineKeyboardButton("❓ Help & Commands", callback_data="help:main")]
-        ])
+    builder.add_row(
+        types.InlineKeyboardButton("Support", url=f"https://t.me/{SUPPORT_CHAT}"),
+        types.InlineKeyboardButton("Updates", url=f"https://t.me/{UPDATE_CHAT}")
+    )
+    builder.add_row(
+        types.InlineKeyboardButton("My Collection", callback_data="harem_view:self"),
+        types.InlineKeyboardButton("Help Menu", callback_data="help:main", style=enums.ButtonStyle.PRIMARY)
+    )
+    markup = builder.build()
 
+    if is_private:
         first_name = html_escape(message.from_user.first_name)
         text = START_TEXT.format(first_name=first_name, bot_name=BOT_NAME)
-
         await message.reply_photo(
             photo=random_photo(),
             caption=text,
@@ -229,22 +215,19 @@ async def start_handler(_, message: types.Message):
 
 @app.on_callback_query(filters.regex(r"^st:(h|b)"))
 async def start_callback_handler(_, query: types.CallbackQuery):
-    action = query.data.split(":")[1]
-
-    buttons = [
-        [types.InlineKeyboardButton("➕ Add to Group", url=f"https://t.me/{BOT_USERNAME}?startgroup=true")]
-    ]
-    if query.message.chat.type == enums.ChatType.PRIVATE:
-        buttons.append([types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))])
-    else:
-        buttons.append([types.InlineKeyboardButton("🌐 Launch Web App (DM)", url=f"https://t.me/{BOT_USERNAME}?start=webapp")])
-
-    buttons.extend([
-        [types.InlineKeyboardButton("💬 Contact Support", url=f"https://t.me/{SUPPORT_CHAT}"),
-            types.InlineKeyboardButton("📢 Latest Updates", url=f"https://t.me/{UPDATE_CHAT}")],
-        [types.InlineKeyboardButton("❓ Help & Commands", callback_data="help:main")]
-    ])
-    markup = types.InlineKeyboardMarkup(buttons)
+    is_private = query.message.chat.type == enums.ChatType.PRIVATE
+    builder = KeyboardBuilder()
+    builder.add_button("Add to Group", url=f"https://t.me/{BOT_USERNAME}?startgroup=true", style=enums.ButtonStyle.PRIMARY)
+    if not is_private: # Logic simplified in utility, but here we can be explicit if needed. Utility returns None if private.
+        webapp_btn = get_webapp_button(is_private)
+        if webapp_btn:
+             builder.add_row(webapp_btn)
+    builder.add_row(
+        types.InlineKeyboardButton("Support", url=f"https://t.me/{SUPPORT_CHAT}"),
+        types.InlineKeyboardButton("Updates", url=f"https://t.me/{UPDATE_CHAT}")
+    )
+    builder.add_button("Help Menu", callback_data="help:main", style=enums.ButtonStyle.PRIMARY)
+    markup = builder.build()
 
     first_name = html_escape(query.from_user.first_name)
     text = START_TEXT.format(first_name=first_name, bot_name=BOT_NAME)
@@ -256,13 +239,11 @@ async def start_callback_handler(_, query: types.CallbackQuery):
             await query.message.edit_text(text, reply_markup=markup, parse_mode=ParseMode.HTML)
     except errors.MessageNotModified:
         pass
-
     await query.answer()
 
 @app.on_callback_query(filters.regex(r"^help:(.+)"))
 async def help_callback_handler(_, query: types.CallbackQuery):
     module = query.data.split(":")[1].upper()
-
     if module == "MAIN":
         data = HELP_DATA["MAIN"]
         markup = types.InlineKeyboardMarkup(data["buttons"])
@@ -281,7 +262,6 @@ async def help_callback_handler(_, query: types.CallbackQuery):
             await query.message.edit_text(text, reply_markup=markup, parse_mode=ParseMode.HTML)
     except errors.MessageNotModified:
         pass
-
     await query.answer()
 
 def random_photo():
@@ -290,16 +270,10 @@ def random_photo():
 
 @app.on_message(filters.command("webapp"))
 async def webapp_command(_, message):
-    web_app_url = config.WEB_APP_URL
-
-    buttons = []
-    if message.chat.type == enums.ChatType.PRIVATE:
-        buttons.append([types.InlineKeyboardButton("Open Mini App", web_app=types.WebAppInfo(url=web_app_url))])
-    else:
-        bot_username = getattr(config, "BOT_USERNAME", "Seal_Your_Waifu_Bot")
-        buttons.append([types.InlineKeyboardButton("Launch Mini App (DM)", url=f"https://t.me/{bot_username}?start=webapp")])
-
-    keyboard = types.InlineKeyboardMarkup(buttons)
+    is_private = message.chat.type == enums.ChatType.PRIVATE
+    builder = KeyboardBuilder()
+    builder.add_row(get_webapp_button(is_private))
+    keyboard = builder.build()
 
     await message.reply_text(
         "<b>Seal Bot Web Gallery</b>\n\n"

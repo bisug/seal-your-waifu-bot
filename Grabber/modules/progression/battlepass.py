@@ -3,6 +3,7 @@ from pyrogram.enums import ButtonStyle, ParseMode
 from Grabber import user_collection, app, WEB_APP_URL
 from config import config
 from Grabber.core.progression import get_user_progress, get_progress_bar, LEVEL_REWARDS
+from Grabber.core.keyboard import KeyboardBuilder, get_webapp_button
 
 
 PASS_PRICES = {
@@ -55,18 +56,16 @@ async def view_pass(_, message: types.Message):
 
     buttons = []
     if pass_type == "free":
-        buttons.append([types.InlineKeyboardButton("⭐ Upgrade to Premium", callback_data=f"buyask_premium:{user_id}")])
-        buttons.append([types.InlineKeyboardButton("💎 Upgrade to Elite", callback_data=f"buyask_elite:{user_id}")])
+        buttons.append([types.InlineKeyboardButton("Upgrade to Premium", callback_data=f"buyask_premium:{user_id}", style=ButtonStyle.SUCCESS)])
+        buttons.append([types.InlineKeyboardButton("Upgrade to Elite", callback_data=f"buyask_elite:{user_id}", style=ButtonStyle.SUCCESS)])
     elif pass_type == "premium":
-        buttons.append([types.InlineKeyboardButton("💎 Upgrade to Elite", callback_data=f"buyask_elite:{user_id}")])
+        buttons.append([types.InlineKeyboardButton("Upgrade to Elite", callback_data=f"buyask_elite:{user_id}", style=ButtonStyle.SUCCESS)])
 
-    buttons.append([types.InlineKeyboardButton("🎁 View Rewards", callback_data=f"pass_rewards:{user_id}")])
+    buttons.append([types.InlineKeyboardButton("View Rewards", callback_data=f"pass_rewards:{user_id}", style=ButtonStyle.PRIMARY)])
     
-    if message.chat.type == enums.ChatType.PRIVATE:
-        buttons.append([types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))])
-    else:
-        bot_username = getattr(config, "BOT_USERNAME", "Seal_Your_Waifu_Bot")
-        buttons.append([types.InlineKeyboardButton("🌐 Launch Web App (DM)", url=f"https://t.me/{bot_username}?start=webapp")])
+    webapp_btn = get_webapp_button(message.chat.type == enums.ChatType.PRIVATE)
+    if webapp_btn:
+        buttons.append([webapp_btn])
         
     markup = types.InlineKeyboardMarkup(buttons)
     await message.reply_text(text, parse_mode=ParseMode.HTML, reply_markup=markup)
@@ -96,20 +95,18 @@ async def view_pass_inline(query: types.CallbackQuery):
 
     buttons = []
     if pass_type == "free":
-        buttons.append([types.InlineKeyboardButton("⭐ Upgrade to Premium", callback_data=f"buyask_premium:{user_id}")])
-        buttons.append([types.InlineKeyboardButton("💎 Upgrade to Elite", callback_data=f"buyask_elite:{user_id}")])
+        buttons.append([types.InlineKeyboardButton("Upgrade to Premium", callback_data=f"buyask_premium:{user_id}", style=ButtonStyle.SUCCESS)])
+        buttons.append([types.InlineKeyboardButton("Upgrade to Elite", callback_data=f"buyask_elite:{user_id}", style=ButtonStyle.SUCCESS)])
     elif pass_type == "premium":
-        buttons.append([types.InlineKeyboardButton("💎 Upgrade to Elite", callback_data=f"buyask_elite:{user_id}")])
+        buttons.append([types.InlineKeyboardButton("Upgrade to Elite", callback_data=f"buyask_elite:{user_id}", style=ButtonStyle.SUCCESS)])
 
-    buttons.append([types.InlineKeyboardButton("🎁 View Rewards", callback_data=f"pass_rewards:{user_id}")])
+    buttons.append([types.InlineKeyboardButton("View Rewards", callback_data=f"pass_rewards:{user_id}", style=ButtonStyle.PRIMARY)])
     
-    if query.message.chat.type == enums.ChatType.PRIVATE:
-        buttons.append([types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))])
-    else:
-        bot_username = getattr(config, "BOT_USERNAME", "Seal_Your_Waifu_Bot")
-        buttons.append([types.InlineKeyboardButton("🌐 Launch Web App (DM)", url=f"https://t.me/{bot_username}?start=webapp")])
+    webapp_btn = get_webapp_button(query.message.chat.type == enums.ChatType.PRIVATE)
+    if webapp_btn:
+        buttons.append([webapp_btn])
         
-    buttons.append([types.InlineKeyboardButton("⤾ Back to Hub", callback_data="hub_main")])
+    buttons.append([types.InlineKeyboardButton("Back to Hub", callback_data="hub_main")])
 
     await query.message.edit_text(text, parse_mode=ParseMode.HTML, reply_markup=types.InlineKeyboardMarkup(buttons))
 
@@ -126,8 +123,8 @@ async def buypass_ask_callback(_, query: types.CallbackQuery):
     price = PASS_PRICES[tier]
     text = f"⚠️ <b>Confirm Upgrade</b>\n\nUpgrade to <b>{tier.capitalize()} Pass</b> for <b>{price} ⧫</b>?"
     keyboard = [[
-        types.InlineKeyboardButton("Confirm ✅", callback_data=f"buypass_{tier}:{owner_id}"),
-        types.InlineKeyboardButton("Cancel ❌", callback_data=f"pass_back:{owner_id}")
+        types.InlineKeyboardButton("Confirm Upgrade", callback_data=f"buypass_{tier}:{owner_id}", style=enums.ButtonStyle.SUCCESS),
+        types.InlineKeyboardButton("Cancel", callback_data=f"pass_back:{owner_id}", style=enums.ButtonStyle.DANGER)
     ]]
     await query.message.edit_text(text, parse_mode=ParseMode.HTML, reply_markup=types.InlineKeyboardMarkup(keyboard))
 
@@ -192,9 +189,9 @@ async def buypass_callback(_, query: types.CallbackQuery):
         f"✨ <i>Upgraded rewards active!</i>"
     )
 
-    buttons = [[types.InlineKeyboardButton("🎁 View Rewards", callback_data=f"pass_rewards:{user_id}")]]
+    buttons = [[types.InlineKeyboardButton("View Rewards", callback_data=f"pass_rewards:{user_id}", style=enums.ButtonStyle.PRIMARY)]]
     if tier == "premium":
-        buttons.insert(0, [types.InlineKeyboardButton("💎 Upgrade to Elite", callback_data=f"buypass_elite:{user_id}")])
+        buttons.insert(0, [types.InlineKeyboardButton("Upgrade to Elite", callback_data=f"buypass_elite:{user_id}", style=enums.ButtonStyle.SUCCESS)])
 
     try:
         await query.message.edit_text(text, parse_mode=ParseMode.HTML, reply_markup=types.InlineKeyboardMarkup(buttons))
@@ -241,7 +238,7 @@ async def view_rewards_callback(_, query: types.CallbackQuery):
 
         text += f"{status} <b>Level {milestone}:</b> {reward_text}\n"
 
-    buttons = [[types.InlineKeyboardButton("⤾ Back", callback_data=f"pass_back:{user_id}")]]
+    buttons = [[types.InlineKeyboardButton("Back", callback_data=f"pass_back:{user_id}")]]
     await query.message.edit_text(text, parse_mode=ParseMode.HTML, reply_markup=types.InlineKeyboardMarkup(buttons))
 
 @app.on_callback_query(filters.regex(r"^pass_back:"))
@@ -275,12 +272,12 @@ async def pass_back_callback(_, query: types.CallbackQuery):
 
     buttons = []
     if pass_type == "free":
-        buttons.append([types.InlineKeyboardButton("⭐ Upgrade to Premium", callback_data=f"buypass_premium:{user_id}")])
-        buttons.append([types.InlineKeyboardButton("💎 Upgrade to Elite", callback_data=f"buypass_elite:{user_id}")])
+        buttons.append([types.InlineKeyboardButton("⭐ Upgrade to Premium", callback_data=f"buypass_premium:{user_id}", style=enums.ButtonStyle.SUCCESS)])
+        buttons.append([types.InlineKeyboardButton("💎 Upgrade to Elite", callback_data=f"buypass_elite:{user_id}", style=enums.ButtonStyle.SUCCESS)])
     elif pass_type == "premium":
-        buttons.append([types.InlineKeyboardButton("💎 Upgrade to Elite", callback_data=f"buypass_elite:{user_id}")])
+        buttons.append([types.InlineKeyboardButton("💎 Upgrade to Elite", callback_data=f"buypass_elite:{user_id}", style=enums.ButtonStyle.SUCCESS)])
 
-    buttons.append([types.InlineKeyboardButton("🎁 View Rewards", callback_data=f"pass_rewards:{user_id}")])
+    buttons.append([types.InlineKeyboardButton("View Rewards", callback_data=f"pass_rewards:{user_id}", style=enums.ButtonStyle.PRIMARY)])
 
     await query.message.edit_text(text, parse_mode=ParseMode.HTML, reply_markup=types.InlineKeyboardMarkup(buttons))
 
