@@ -185,7 +185,7 @@ async def start_handler(_, message: types.Message):
 
     is_private = message.chat.type == enums.ChatType.PRIVATE
     builder = KeyboardBuilder()
-    builder.add_button("Add to Group", url=f"https://t.me/{BOT_USERNAME}?startgroup=true", style=enums.ButtonStyle.PRIMARY)
+    builder.add_button("Add to Group", url=f"https://t.me/{BOT_USERNAME}?startgroup=true")
     
     webapp_btn = get_webapp_button(is_private)
     if webapp_btn:
@@ -218,7 +218,7 @@ async def start_callback_handler(_, query: types.CallbackQuery):
     await query.answer()  # Dismiss spinner instantly
     is_private = query.message.chat.type == enums.ChatType.PRIVATE
     builder = KeyboardBuilder()
-    builder.add_button("Add to Group", url=f"https://t.me/{BOT_USERNAME}?startgroup=true", style=enums.ButtonStyle.PRIMARY)
+    builder.add_button("Add to Group", url=f"https://t.me/{BOT_USERNAME}?startgroup=true")
     webapp_btn = get_webapp_button(is_private)
     if webapp_btn:
          builder.add_row(webapp_btn)
