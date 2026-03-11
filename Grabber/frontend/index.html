@@ -14,242 +14,38 @@
     <!-- Branded Loading Screen -->
     <div id="loading-overlay">
         <div class="loading-content">
-            <div id="loading-logo" class="loading-logo"></div>
-            <h2 id="loading-bot-name">Seal Grabber</h2>
-            <div class="loading-bar-container">
-                <div class="loading-bar-fill"></div>
+            <div class="loader-ring">
+                <div id="loading-logo" class="loading-logo"></div>
+                <svg class="progress-ring-svg" viewBox="0 0 100 100">
+                    <circle class="progress-ring-circle" cx="50" cy="50" r="48" />
+                </svg>
             </div>
-            <p class="loading-status">INITIALIZING SYSTEMS...</p>
+            <div class="loading-text-container">
+                <h2 id="loading-bot-name">Seal Grabber</h2>
+                <div class="loading-status-wrapper">
+                    <span class="loading-dot"></span>
+                    <p class="loading-status">INITIALIZING SYSTEMS</p>
+                </div>
+            </div>
         </div>
     </div>
     <div id="app-container">
-        <!-- Profile Page -->
-        <div id="page-profile" class="page active">
-            <!-- Unified Identity Header -->
-            <div class="meta-banner bg-profile" style="height: 180px; margin-bottom: 30px;">
-                <div class="banner-overlay-luxury">
-                    <div class="header-main-info">
-                        <div class="avatar-wrapper">
-                            <div id="user-avatar" class="avatar-luxury-small"></div>
-                            <div id="user-level-badge" class="level-badge-tiny">1</div>
-                        </div>
-                        <div class="user-text-info">
-                            <h2 id="user-name">Loading...</h2>
-                            <div id="user-title" class="title-chip-light">Rookie</div>
-                        </div>
-                        <div id="user-streak" class="streak-pill-mini">
-                            <span id="streak-val">0</span>🔥
-                        </div>
-                    </div>
-                    
-                    <div class="banner-progression">
-                        <div class="xp-meta-tiny">
-                            <span id="user-xp-val" class="xp-values-tiny">0 / 0 XP</span>
-                        </div>
-                        <div class="xp-track-mini">
-                            <div id="xp-bar-fill" class="xp-fill-glow"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <!-- Profile Page container -->
+        <div id="page-profile" class="page active"></div>
 
-            <!-- Compact Stat Strip -->
-            <div class="stat-strip-luxury">
-                <div class="stat-tile">
-                    <span class="stat-tile-label">RANK</span>
-                    <span id="stat-rank" class="stat-tile-val">?</span>
-                </div>
-                <div class="stat-divider"></div>
-                <div class="stat-tile">
-                    <span class="stat-tile-label">SHARDS</span>
-                    <span id="stat-balance" class="stat-tile-val">0</span>
-                </div>
-                <div class="stat-divider"></div>
-                <div class="stat-tile">
-                    <span class="stat-tile-label">ZENITH</span>
-                    <span id="stat-zenith" class="stat-tile-val">0</span>
-                </div>
-                <div class="stat-divider"></div>
-                <div class="stat-tile">
-                    <span class="stat-tile-label">CARDS</span>
-                    <span id="stat-collection" class="stat-tile-val">0</span>
-                </div>
-            </div>
+        <!-- Global Gallery Page container -->
+        <div id="page-gallery" class="page"></div>
 
-            <!-- Active Companion -->
-            <div id="pet-section" class="quest-section" style="display:none; margin-top: 10px;">
-                <div class="section-header">
-                    <span class="header-line"></span>
-                    <h4>ACTIVE COMPANION</h4>
-                    <span class="header-line"></span>
-                </div>
-                <div id="active-pet-card" class="pet-card-luxury">
-                    <!-- Pet info populated by JS -->
-                </div>
-            </div>
+        <!-- Leaderboard Page container -->
+        <div id="page-leaderboard" class="page"></div>
 
-            <div id="harem-section" class="quest-section" style="margin-top: 20px;">
-                <div class="section-header">
-                    <span class="header-line"></span>
-                    <h4>MY COLLECTION</h4>
-                    <span class="header-line"></span>
-                </div>
-                
-                <div class="filter-bar-luxury">
-                    <div class="search-wrapper">
-                        <div class="search-icon-inside">
-                            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none">
-                                <circle cx="11" cy="11" r="8"></circle>
-                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                            </svg>
-                        </div>
-                        <input type="text" id="harem-search" placeholder="Search collection...">
-                    </div>
-                    <div class="filter-select-wrapper">
-                        <select id="harem-filter-rarity">
-                            <option value="">Rarity (All)</option>
-                        </select>
-                    </div>
-                </div>
+        <!-- Quests Page container -->
+        <div id="page-quests" class="page"></div>
 
-                <div id="harem-grid" class="char-grid">
-                    <!-- Cards here -->
-                </div>
+        <!-- Shop Page container -->
+        <div id="page-shop" class="page"></div>
 
-                <div id="harem-loading" style="text-align:center; padding:10px; display:none;">
-                    <div class="spinner-mini"></div>
-                </div>
-            </div>
-
-            <!-- Secondary Operations -->
-            <div id="eggs-section" class="quest-section" style="display:none;">
-                 <div class="section-header">
-                    <span class="header-line"></span>
-                    <h4>EGG INVENTORY</h4>
-                    <span class="header-line"></span>
-                </div>
-                <div id="eggs-list" class="badge-row">
-                    <!-- Eggs populated by JS -->
-                </div>
-            </div>
-
-            <div id="achievements-section" class="quest-section">
-                <div class="section-header">
-                    <span class="header-line"></span>
-                    <h4>ACHIEVEMENTS</h4>
-                    <span class="header-line"></span>
-                </div>
-                <div id="achievements-list" class="badge-row">
-                    <!-- Badges populated by JS -->
-                </div>
-            </div>
-
-        </div>
-
-
-
-        <!-- Global Gallery Page -->
-        <div id="page-gallery" class="page">
-            <div class="meta-banner bg-gallery">
-                <div class="banner-overlay">
-                    <h3 class="banner-title">ARCHIVE</h3>
-                    <p class="banner-subtitle">Explore the global collection of all seals</p>
-                </div>
-            </div>
-
-            <div class="quest-section">
-                <div class="filter-bar-luxury">
-                    <div class="search-wrapper">
-                        <div class="search-icon-inside">
-                            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none">
-                                <circle cx="11" cy="11" r="8"></circle>
-                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                            </svg>
-                        </div>
-                        <input type="text" id="gallery-search" placeholder="Find characters...">
-                    </div>
-                    <div class="filter-select-wrapper">
-                        <select id="gallery-filter-rarity">
-                            <option value="">Rarity (All)</option>
-                        </select>
-                    </div>
-                </div>
-                <div id="gallery-scroll-container">
-                    <div id="gallery-grid" class="char-grid">
-                        <!-- Gallery cards here -->
-                    </div>
-                    <div id="gallery-loading" style="text-align:center; padding:10px; display:none;">
-                        <div class="spinner-mini"></div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- Leaderboard Page -->
-        <div id="page-leaderboard" class="page">
-            <div class="meta-banner bg-leaderboard">
-                <div class="banner-overlay">
-                    <h3 class="banner-title">HALL OF FAME</h3>
-                    <p class="banner-subtitle">Ranking the world's most dedicated trainers</p>
-                </div>
-            </div>
-
-            <div class="quest-section">
-                <div class="section-header">
-                    <span class="header-line"></span>
-                    <div class="filter-select-wrapper" style="width: 140px;">
-                        <select id="lb-metric-select"
-                            style="padding:10px 32px 10px 14px; border-radius:14px; border:0.5px solid var(--glass-border); background:var(--glass-bg); color:white; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:1px; width:100%; appearance:none;">
-                            <option value="level">FILTER: LEVEL</option>
-                            <option value="harem">FILTER: HAREM</option>
-                            <option value="shards">FILTER: SHARDS</option>
-                            <option value="zenith">FILTER: ZENITH</option>
-                            <option value="guesses">FILTER: GUESSES</option>
-                        </select>
-                    </div>
-                    <span class="header-line"></span>
-                </div>
-                <div id="leaderboard-podium" class="podium-container">
-                    <!-- Top 3 -->
-                </div>
-                <div id="leaderboard-list">
-                    <!-- List items -->
-                </div>
-            </div>
-        </div>
-
-        <!-- Quests Page -->
-        <div id="page-quests" class="page">
-            <div class="meta-banner bg-quests">
-                <div class="banner-overlay">
-                    <h3 class="banner-title">ASSIGNMENTS</h3>
-                    <p class="banner-subtitle">Complete missions to earn XP and rewards</p>
-                </div>
-            </div>
-
-            <div class="quest-section">
-                <div class="section-header">
-                    <span class="header-line"></span>
-                    <h4>DAILY MISSIONS</h4>
-                    <span class="header-line"></span>
-                </div>
-                <div id="daily-quests-list">
-                    <!-- Daily quests populated by JS -->
-                </div>
-            </div>
-
-            <div class="quest-section" style="margin-top:24px">
-                <div class="section-header">
-                    <span class="header-line"></span>
-                    <h4>WEEKLY OBJECTIVES</h4>
-                    <span class="header-line"></span>
-                </div>
-                <div id="weekly-quests-list">
-                    <!-- Weekly quests populated by JS -->
-                </div>
-            </div>
-            <div style="padding-bottom: 20px;"></div>
+        <div style="padding-bottom: 20px;"></div>
         </div>
 
         <!-- Navigation Tab Bar -->
@@ -287,6 +83,14 @@
                     <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
                     <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
                     <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+                </svg>
+            </div>
+            <div class="tab-item" onclick="navigate('shop')">
+                <svg class="tab-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+                    <path d="M3 6h18" />
+                    <path d="M16 10a4 4 0 0 1-8 0" />
                 </svg>
             </div>
         </div>
