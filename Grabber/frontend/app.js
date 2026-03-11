@@ -163,7 +163,7 @@ function setupControls() {
 
     // Glass Card Interaction (Haptics)
     document.getElementById('app-container').addEventListener('click', (e) => {
-        const card = e.target.closest('.char-card, .quest-card, .list-item');
+        const card = e.target.closest('.char-card, .quest-card, .list-item, .tab-item, button, .egg-btn-action, .quest-claim-btn');
         if (card && tg) {
             tg.HapticFeedback.impactOccurred('light');
         }
@@ -359,8 +359,8 @@ async function incubateEgg(eggId, event) {
         loadProfile();
     } else {
         if (event && event.target) {
+            event.target.classList.remove('loading');
             event.target.disabled = false;
-            event.target.innerText = "Incubate";
         }
         const err = await res.json();
         tg?.showAlert(err.detail || "Failed to start incubation");
@@ -369,8 +369,7 @@ async function incubateEgg(eggId, event) {
 
 async function hatchEgg(eggId, event) {
     if (event && event.target) {
-        event.target.disabled = true;
-        event.target.innerText = "Hatching...";
+        event.target.classList.add('loading');
     }
     if (tg) tg.HapticFeedback.notificationOccurred('success');
     const res = await fetch(`${window.API_BASE}/eggs/hatch/${eggId}`, {
@@ -389,8 +388,8 @@ async function hatchEgg(eggId, event) {
         }
     } else {
         if (event && event.target) {
+            event.target.classList.remove('loading');
             event.target.disabled = false;
-            event.target.innerText = "Hatch!";
         }
         const err = await res.json();
         tg?.showAlert(err.detail || "Failed to hatch egg");
@@ -555,8 +554,7 @@ async function loadQuests() {
 
 async function claimQuest(qid, event) {
     if (event && event.target) {
-        event.target.disabled = true;
-        event.target.innerText = "...";
+        event.target.classList.add('loading');
     }
     const res = await fetch(`${window.API_BASE}/quests/claim/${qid}`, {
         method: 'POST',
@@ -568,8 +566,8 @@ async function claimQuest(qid, event) {
         loadProfile();
     } else {
         if (event && event.target) {
+            event.target.classList.remove('loading');
             event.target.disabled = false;
-            event.target.innerText = "Claim";
         }
     }
 }

@@ -160,7 +160,7 @@ async def battle_challenge_handler(_, message: types.Message):
     await create_session(battle_id, {"attacker": attacker.id, "defender": defender.id, "bet": bet})
 
     markup = types.InlineKeyboardMarkup([[
-        types.InlineKeyboardButton("⚔ Accept", callback_data=f"abt_acc:{battle_id}")
+        types.InlineKeyboardButton("Accept Challenge", callback_data=f"abt_acc:{battle_id}", style=enums.ButtonStyle.SUCCESS)
     ]])
 
     await message.reply_to_message.reply_text(

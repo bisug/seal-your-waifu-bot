@@ -89,14 +89,17 @@ async def profile_handler(_, message: types.Message):
         profile_text += f"{icon} {rarity_name}: `{count}`\n"
 
 
-    buttons = [
-        [types.InlineKeyboardButton("🎒 Harem", callback_data=f"harem_view:{user_id}")]
-    ]
-    if message.chat.type == enums.ChatType.PRIVATE:
-        buttons.append([types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))])
-    else:
-        bot_username = getattr(config, "BOT_USERNAME", "Seal_Your_Waifu_Bot")
-        buttons.append([types.InlineKeyboardButton("🌐 Launch Web App (DM)", url=f"https://t.me/{bot_username}?start=webapp")])
+    from Grabber.core.keyboard import KeyboardBuilder, get_webapp_button
+    
+    is_private = message.chat.type == enums.ChatType.PRIVATE
+    builder = KeyboardBuilder()
+    builder.add_button("View Harem", callback_data=f"harem_view:{user_id}", style=enums.ButtonStyle.PRIMARY)
+    
+    webapp_btn = get_webapp_button(is_private)
+    if webapp_btn:
+        builder.add_row(webapp_btn)
+
+    reply_markup = builder.build()
 
 
     try:
