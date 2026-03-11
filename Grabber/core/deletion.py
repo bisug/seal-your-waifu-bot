@@ -24,6 +24,7 @@ async def deletion_worker():
     """
     Background worker that checks the MongoDB deletion queue every 60 seconds
     and deletes expired messages using the correct bot client.
+    Processed entries are removed in a single bulk delete_many call.
     """
     LOGGER.info("Persistent Deletion Worker started.")
     while True:
@@ -32,6 +33,7 @@ async def deletion_worker():
             cursor = deletion_queue_collection.find({"delete_at": {"$lte": now}})
             expired_messages = await cursor.to_list(length=100)
 
+            processed_ids = []
             for msg in expired_messages:
                 chat_id = msg["chat_id"]
                 message_id = msg["message_id"]
@@ -41,11 +43,15 @@ async def deletion_worker():
                 try:
                     await client.delete_messages(chat_id, message_id)
                 except (errors.Forbidden, errors.MessageDeleteForbidden):
-                    pass  # Can't delete — skip silently
+                    pass
                 except Exception:
-                    pass  # Already deleted or other transient error
+                    pass
 
-                await deletion_queue_collection.delete_one({"_id": msg["_id"]})
+                processed_ids.append(msg["_id"])
+
+            # Single bulk delete for all processed entries
+            if processed_ids:
+                await deletion_queue_collection.delete_many({"_id": {"$in": processed_ids}})
 
         except Exception as e:
             LOGGER.error(f"Error in deletion_worker loop: {e}")
