@@ -352,6 +352,10 @@ function renderPet(pet) {
         return;
     }
     section.style.display = 'block';
+    
+    // Check if user has other pets to show a switcher
+    const hasMorePets = currentUser?.owned_pets?.length > 1;
+    
     container.innerHTML = `
         <div class="pet-img-container" style="background-image: url('${pet.img || DEFAULT_AVATAR}')"></div>
         <div class="pet-info-mini">
@@ -361,8 +365,53 @@ function renderPet(pet) {
             <div class="xp-track" style="height:4px; margin-top:8px">
                 <div class="xp-fill-glow" style="width:${(pet.xp / pet.xp_needed) * 100}%"></div>
             </div>
+            ${hasMorePets ? `<button class="pet-switch-btn" onclick="togglePetList()">SWITCH PET</button>` : ''}
         </div>
     `;
+
+    // Render the hidden pet list for selection
+    if (hasMorePets) {
+        const listContainer = document.createElement('div');
+        listContainer.id = 'owned-pets-list';
+        listContainer.className = 'owned-pets-popup hidden';
+        listContainer.innerHTML = `
+            <div class="popup-header">SELECT PET</div>
+            <div class="popup-grid">
+                ${currentUser.owned_pets.map(p => `
+                    <div class="pet-select-item ${p.is_active ? 'active' : ''}" onclick="switchPet('${p.name}')">
+                        <div class="pet-select-img" style="background-image: url('${p.img || DEFAULT_AVATAR}')"></div>
+                        <div class="pet-select-name">${p.name}</div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        // Append or replace
+        const oldList = document.getElementById('owned-pets-list');
+        if (oldList) oldList.remove();
+        section.appendChild(listContainer);
+    }
+}
+
+function togglePetList() {
+    const list = document.getElementById('owned-pets-list');
+    if (list) {
+        list.classList.toggle('hidden');
+        if (tg) tg.HapticFeedback.impactOccurred('light');
+    }
+}
+
+async function switchPet(name) {
+    if (tg) {
+        tg.HapticFeedback.selectionChanged();
+        togglePetList();
+    }
+    const res = await fetch(`${window.API_BASE}/pets/set_active/${encodeURIComponent(name)}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${sessionToken}` }
+    });
+    if (res.ok) {
+        loadProfile();
+    }
 }
 
 function renderEggs(eggs) {
