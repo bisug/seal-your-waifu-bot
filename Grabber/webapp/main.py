@@ -48,6 +48,7 @@ app.add_middleware(
 async def auth(request: Request):
     data = await request.json()
     init_data = data.get("initData")
+    avatar_url = data.get("avatar")
     
     validated_data = validate_init_data(init_data)
     if not validated_data:
@@ -58,8 +59,17 @@ async def auth(request: Request):
         raise HTTPException(status_code=500, detail="Failed to create session")
         
     token, user_id = session_data
+
+    # Update Avatar in DB if provided
+    if avatar_url:
+        from Grabber.database import user_collection
+        await user_collection.update_one(
+            {"id": {"$in": [user_id, str(user_id)]}},
+            {"$set": {"avatar": avatar_url}}
+        )
     
     return {"token": token}
+
 
 # Include routers with obfuscated prefix
 api_version_prefix = os.getenv("API_VERSION_PREFIX", "v1_7b82")

@@ -69,10 +69,13 @@ async function fetchRarities() {
 function populateRaritySelects(rarities) {
     const haremSelect = document.getElementById('harem-filter-rarity');
     const gallerySelect = document.getElementById('gallery-filter-rarity');
+    if (!haremSelect || !gallerySelect) return;
+
     const options = rarities.map(r => `<option value="${r}">${r}</option>`).join('');
-    haremSelect.innerHTML = '<option value="">All Rarities</option>' + options;
-    gallerySelect.innerHTML = '<option value="">All Rarities</option>' + options;
+    haremSelect.innerHTML = '<option value="">Rarity (All)</option>' + options;
+    gallerySelect.innerHTML = '<option value="">Rarity (All)</option>' + options;
 }
+
 
 async function loadBotInfo() {
     const cached = sessionStorage.getItem('botInfo');
@@ -96,11 +99,16 @@ async function init() {
 
     try {
         // 2. Authenticate
+        const userPhoto = tg?.initDataUnsafe?.user?.photo_url || null;
         const authResponse = await fetch(`${window.API_BASE}/secure_init`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ initData: tg.initData })
+            body: JSON.stringify({ 
+                initData: tg.initData,
+                avatar: userPhoto 
+            })
         });
+
 
         if (authResponse.ok) {
             const authData = await authResponse.json();
