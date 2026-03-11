@@ -2,7 +2,7 @@ from pyrogram import filters, types, enums, errors
 from pyrogram.enums import ButtonStyle, ParseMode
 from Grabber.core.utils import html_escape
 from Grabber import app, user_collection, PHOTO_URL, LOGGER, WEB_APP_URL
-from Grabber.core.keyboard import get_webapp_button
+from Grabber.core.keyboard import get_webapp_button, KeyboardBuilder
 from config import config
 
 
