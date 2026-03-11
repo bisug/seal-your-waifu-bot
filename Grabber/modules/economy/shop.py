@@ -83,6 +83,7 @@ async def send_shop_hub(message_or_query):
 
 @app.on_callback_query(filters.regex(r"^hub_(char|pet|pass|egg|main)$"))
 async def hub_callback_handler(_, query: types.CallbackQuery):
+    await query.answer()  # Dismiss spinner instantly
     choice = query.data.split("_")[1]
 
     if choice == "main":
@@ -103,8 +104,6 @@ async def hub_callback_handler(_, query: types.CallbackQuery):
     elif choice == "egg":
         import Grabber.modules.economy.hunt as hunt_module
         await hunt_module.show_egg_page(query, 0, query.from_user.id)
-
-    await query.answer()
 
 @app.on_callback_query(filters.regex(r"^shop_back_(\d+)$"))
 async def shop_back_handler(_, query: types.CallbackQuery):
@@ -180,6 +179,8 @@ async def shop_navigation(_, query: types.CallbackQuery):
         await query.answer("❌ This shop session is not for you!", show_alert=True)
         return
 
+    await query.answer()  # Dismiss spinner instantly
+
     session = await get_session(f"shop_{user_id}")
     if not session:
         await query.answer("🚫 Shop session expired. Use /shop again.", show_alert=True)
@@ -197,7 +198,6 @@ async def shop_navigation(_, query: types.CallbackQuery):
     session["page"] = new_page
     await create_session(f"shop_{user_id}", session)
     await send_shop_message(query, user_id)
-    await query.answer()
 
 @app.on_callback_query(filters.regex(r"^ask_buy_char_(.+)"))
 async def ask_buy_character(_, query: types.CallbackQuery):
