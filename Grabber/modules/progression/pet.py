@@ -2,6 +2,7 @@ from pyrogram import filters, types, enums, errors
 from pyrogram.enums import ButtonStyle, ParseMode
 from Grabber.core.utils import html_escape
 from Grabber import app, user_collection, PHOTO_URL, LOGGER, WEB_APP_URL
+from Grabber.core.keyboard import get_webapp_button
 from config import config
 
 
@@ -246,7 +247,7 @@ async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
 async def mypet_cmd(_, message: types.Message):
     await send_mypet_page(message, 0, message.from_user.id)
 
-@app.on_callback_query(filters.regex(r"^(shop|mypet)_(next|prev|buy)_(\d+)_(\d+)$"))
+@app.on_callback_query(filters.regex(r"^(shop|mypet)_(next|prev|view|buy)_(\d+)_(\d+)$"))
 async def shop_mypet_navigation(_, query: types.CallbackQuery):
     data = query.data.split("_")
     action_type = data[0]
@@ -257,13 +258,15 @@ async def shop_mypet_navigation(_, query: types.CallbackQuery):
     if query.from_user.id != owner_id:
         return await query.answer("❌ This is not your menu!", show_alert=True)
 
+    await query.answer()  # Dismiss spinner instantly
+
     if action_type == "shop":
         if action == "next":
             page = (page + 1) % len(PET_SHOP)
         elif action == "prev":
             page = (page - 1) % len(PET_SHOP)
         elif action == "view":
-            pass # Keep exactly the same page
+            pass  # Keep exactly the same page
         elif action == "buy":
             pet = PET_SHOP[page]
             text = f"⚠️ <b>Confirm Purchase</b>\n\nBuy <b>{html_escape(pet['name'])}</b> for <b>{pet['zenith_price']} ⧫</b>?"
@@ -285,8 +288,6 @@ async def shop_mypet_navigation(_, query: types.CallbackQuery):
         else:
             page = (page - 1) % total
         await send_mypet_page(query, page, user_id)
-
-    await query.answer()
 
 @app.on_callback_query(filters.regex(r"^petconfirm_(\d+)_(\d+)$"))
 async def pet_confirm_callback(_, query: types.CallbackQuery):

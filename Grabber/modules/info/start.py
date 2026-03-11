@@ -215,13 +215,13 @@ async def start_handler(_, message: types.Message):
 
 @app.on_callback_query(filters.regex(r"^st:(h|b)"))
 async def start_callback_handler(_, query: types.CallbackQuery):
+    await query.answer()  # Dismiss spinner instantly
     is_private = query.message.chat.type == enums.ChatType.PRIVATE
     builder = KeyboardBuilder()
     builder.add_button("Add to Group", url=f"https://t.me/{BOT_USERNAME}?startgroup=true", style=enums.ButtonStyle.PRIMARY)
-    if not is_private: # Logic simplified in utility, but here we can be explicit if needed. Utility returns None if private.
-        webapp_btn = get_webapp_button(is_private)
-        if webapp_btn:
-             builder.add_row(webapp_btn)
+    webapp_btn = get_webapp_button(is_private)
+    if webapp_btn:
+         builder.add_row(webapp_btn)
     builder.add_row(
         types.InlineKeyboardButton("Support", url=f"https://t.me/{SUPPORT_CHAT}"),
         types.InlineKeyboardButton("Updates", url=f"https://t.me/{UPDATE_CHAT}")
@@ -239,10 +239,10 @@ async def start_callback_handler(_, query: types.CallbackQuery):
             await query.message.edit_text(text, reply_markup=markup, parse_mode=ParseMode.HTML)
     except errors.MessageNotModified:
         pass
-    await query.answer()
 
 @app.on_callback_query(filters.regex(r"^help:(.+)"))
 async def help_callback_handler(_, query: types.CallbackQuery):
+    await query.answer()  # Dismiss spinner instantly
     module = query.data.split(":")[1].upper()
     if module == "MAIN":
         data = HELP_DATA["MAIN"]
@@ -262,7 +262,6 @@ async def help_callback_handler(_, query: types.CallbackQuery):
             await query.message.edit_text(text, reply_markup=markup, parse_mode=ParseMode.HTML)
     except errors.MessageNotModified:
         pass
-    await query.answer()
 
 def random_photo():
     import random
@@ -271,8 +270,9 @@ def random_photo():
 @app.on_message(filters.command("webapp"))
 async def webapp_command(_, message):
     is_private = message.chat.type == enums.ChatType.PRIVATE
+    webapp_btn = get_webapp_button(is_private)
     builder = KeyboardBuilder()
-    builder.add_row(get_webapp_button(is_private))
+    builder.add_row(webapp_btn)
     keyboard = builder.build()
 
     await message.reply_text(

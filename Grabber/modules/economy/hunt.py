@@ -247,8 +247,8 @@ async def egg_page_callback(_, query: types.CallbackQuery):
     if query.from_user.id != owner_id:
         return await query.answer("❌ This is not your inventory!", show_alert=True)
 
+    await query.answer()  # Dismiss spinner instantly
     await show_egg_page(query, page, owner_id)
-    await query.answer()
 
 @app.on_callback_query(filters.regex(r"^egg_incubate:"))
 async def egg_incubate_callback(_, query: types.CallbackQuery):
@@ -326,7 +326,7 @@ async def egg_hatch_callback(_, query: types.CallbackQuery):
 
 @app.on_callback_query(filters.regex(r"^egg_(wait|noop)$"))
 async def egg_noop_callback(_, query: types.CallbackQuery):
-    await query.answer()
+    await query.answer()  # Instant dismiss
 
 async def process_egg_hatch(user_id: int, egg: dict):
     """Core logic for hatching an egg. Returns (success: bool, result: dict_or_error_msg)."""
