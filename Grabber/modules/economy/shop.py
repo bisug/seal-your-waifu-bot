@@ -117,8 +117,6 @@ async def hub_callback_handler(_, query: types.CallbackQuery):
     elif choice == "egg":
         import Grabber.modules.economy.hunt as hunt_module
         await hunt_module.show_egg_page(query, 0, query.from_user.id)
-    elif choice == "main":
-        await send_shop_hub(query)
 
     await query.answer()
 
@@ -296,6 +294,8 @@ async def buy_character(_, query: types.CallbackQuery):
 
 
 
+    # Atomic Update: Check stock and deduct Zenith in one unified operation
+    # This prevents negative balances and stock over-purchasing
     update_result = await collection.update_one(
         {
             "id": char_id,
@@ -312,16 +312,12 @@ async def buy_character(_, query: types.CallbackQuery):
         await query.message.edit_caption(f"❌ <b>SOLD OUT</b>\n\nSomeone bought the last copy of {html_escape(char.name)}!", parse_mode=ParseMode.HTML)
         return
 
-
-    await user_collection.update_one(
-        {"id": user_id},
-        {"$inc": {"zenith": -price}}
-    )
-
-    await user_collection.update_one(
-        {"id": user_id},
+    # User Update: Push character and deduct Zenith atomically
+    # We include a filter check for zenith >= price to be 100% safe
+    user_update = await user_collection.update_one(
+        {"id": user_id, "zenith": {"$gte": price}},
         {
-            "$set": {"id": user_id},
+            "$inc": {"zenith": -price},
             "$push": {"characters": {
                 "id": char.id,
                 "name": char.name,
@@ -329,18 +325,21 @@ async def buy_character(_, query: types.CallbackQuery):
                 "rarity": char.rarity,
                 "img_url": char.img_url
             }}
-        },
-        upsert=True
+        }
     )
 
+    if user_update.modified_count == 0:
+        # Rollback stock if user update failed (e.g. balance changed since initial check)
+        await collection.update_one({"id": char_id}, {"$inc": {"sold_count": -1}})
+        await query.answer("❌ Transaction failed. Insufficient Zenith or internal error.", show_alert=True)
+        return
 
     await update_quest_progress(user_id, "big_spender", price)
-
-
     await check_achievements(user_id)
 
-    await query.message.reply_text(
-        f"✅ <b>Purchase Successful!</b>\n🎉 You now own <b>{char.name}</b>!\n📦 Stock: <code>{getattr(char, 'sold_count', 0) + 1}</code>/{SHOP_LIMIT}",
+    # UI Cleanup: Edit confirmation message into success message to prevent double-clicks
+    await query.message.edit_caption(
+        f"✅ <b>Purchase Successful!</b>\n🎉 You now own <b>{char.name}</b>!\n📦 Remaining Stock: <code>{getattr(char, 'sold_count', 0) + 1}</code>/{SHOP_LIMIT}",
         parse_mode=ParseMode.HTML
     )
     await query.answer("Success!")

@@ -125,26 +125,32 @@ async def perform_pet_purchase(user_id, pet_index: int):
         user = {"id": user_id, "balance": 0, "zenith": 0, "pets": [DEFAULT_PET.copy()], "current_pet": DEFAULT_PET["name"]}
         await user_collection.insert_one(user)
 
+    # 1. Check Ownership BEFORE deduction
+    if any(p["name"] == pet["name"] for p in user.get("pets", [])):
+        return f"⚠️ You already own {pet['name']}."
+
+    # 2. Check Balance
     user_zenith = user.get("zenith", 0)
     price = pet["zenith_price"]
 
     if user_zenith < price:
         return f"❌ You need <b>{price} ⧫ Zenith</b> to purchase this pet! (You have: {user_zenith} ⧫)"
 
-
-    await user_collection.update_one(
-        {"id": user_id},
-        {"$inc": {"zenith": -price}}
+    # 3. Atomic Deduction and Push
+    update_result = await user_collection.update_one(
+        {"id": user_id, "zenith": {"$gte": price}},
+        {
+            "$inc": {"zenith": -price},
+            "$push": {"pets": pet},
+            "$set": {"current_pet": pet["name"]}
+        }
     )
 
-    if any(p["name"] == pet["name"] for p in user.get("pets", [])):
-        return f"⚠️ You already own {pet['name']}."
+    if update_result.modified_count == 0:
+        return "❌ Purchase failed. Your balance may have changed. Please try again."
 
-    await user_collection.update_one({"id": user_id}, {
-        "$push": {"pets": pet},
-        "$set": {"current_pet": pet["name"]}
-    })
     return True
+
 
 
 @app.on_message(filters.command("buypet"))
