@@ -102,6 +102,18 @@ class SealClient(Client):
             from Grabber.core.spawns import flush_cache_to_db
             asyncio.create_task(flush_cache_to_db())
 
+            # 8. Automate Mini App Menu Button
+            try:
+                await self.set_chat_menu_button(
+                    menu_button=types.MenuButtonWebApp(
+                        text="Shop",
+                        web_app=types.WebAppInfo(url=f"{config.WEB_APP_URL}#shop")
+                    )
+                )
+                LOGGER.info("Mini App Menu Button (Shop) configured successfully.")
+            except Exception as e:
+                LOGGER.error(f"Failed to configure Mini App Menu Button: {e}")
+
         LOGGER.info(f"SealClient started as {me.first_name} (@{me.username}).")
 
     async def _set_commands_internal(self):

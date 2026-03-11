@@ -1,4 +1,10 @@
-from Grabber import app, PHOTO_URL, SUPPORT_CHAT, UPDATE_CHAT, LOGGER, WEB_APP_URL, user_collection
+from pyrogram import types, enums, filters, errors
+from pyrogram.enums import ParseMode
+from Grabber import app, PHOTO_URL, SUPPORT_CHAT, UPDATE_CHAT, LOGGER, WEB_APP_URL, user_collection, collection, total_pm_users
+from Grabber.core.utils import html_escape
+from Grabber.core.progression import add_xp
+from Grabber.modules.progression.achievements import check_achievements
+from Grabber.modules.progression.pet import DEFAULT_PET
 from config import config
 from Grabber.core.keyboard import KeyboardBuilder, get_webapp_button
 
