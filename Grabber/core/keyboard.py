@@ -29,12 +29,23 @@ class KeyboardBuilder:
 def get_webapp_button(is_private: bool = True, path: str = None) -> types.InlineKeyboardButton:
     """Returns a standardized direct WebApp button, integrated for all chat types."""
     url = f"{WEB_APP_URL}{path}" if path else WEB_APP_URL
-    # Using web_app integrated button provides the smoothest "straight to webapp" experience
-    return types.InlineKeyboardButton(
-        "Open Mini App", 
-        web_app=types.WebAppInfo(url=url), 
-        style=enums.ButtonStyle.SUCCESS
-    )
+    
+    if is_private:
+        # Using web_app integrated button for the smoothest experience in DMs
+        return types.InlineKeyboardButton(
+            "Open Mini App", 
+            web_app=types.WebAppInfo(url=url), 
+            style=enums.ButtonStyle.SUCCESS
+        )
+    else:
+        # Since the user hasn't set up the Mini App in BotFather, we use a regular URL.
+        # Our new Persistent Auth System in app.js + main.py handles the login 
+        # for users who have opened the app at least once before.
+        return types.InlineKeyboardButton(
+            "Open Mini App", 
+            url=url,
+            style=enums.ButtonStyle.SUCCESS
+        )
 
 def get_paginated_keyboard(page: int, total_pages: int, callback_prefix: str, user_id: int, is_private: bool = True) -> types.InlineKeyboardMarkup:
     """Builds a standard paginated keyboard with navigation and optional group WebApp link."""

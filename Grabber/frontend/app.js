@@ -128,19 +128,22 @@ async function init() {
     try {
         // 2. Authenticate
         const userPhoto = tg?.initDataUnsafe?.user?.photo_url || null;
+        const storedToken = localStorage.getItem('sessionToken');
+        
         const authResponse = await fetch(`${window.API_BASE}/secure_init`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                initData: tg.initData,
+                initData: tg?.initData || null,
+                token: storedToken,
                 avatar: userPhoto 
             })
         });
 
-
         if (authResponse.ok) {
             const authData = await authResponse.json();
             sessionToken = authData.token;
+            localStorage.setItem('sessionToken', sessionToken);
 
             // 4. Setup controls (now that modules are in DOM)
             setupControls();
