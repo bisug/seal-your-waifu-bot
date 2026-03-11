@@ -39,8 +39,6 @@ BOT_USERNAME = config.BOT_USERNAME
 BOT_ID = None
 BOT_NAME = None
 CHARA_CHANNEL_ID = config.CHARA_CHANNEL_ID
-JOINLOGS = config.JOINLOGS
-LEAVELOGS = config.LEAVELOGS
 WEB_APP_URL = config.WEB_APP_URL
 
 class SealClient(Client):
@@ -155,7 +153,7 @@ class SealClient(Client):
         LOGGER.info(f"{self.name} stopped.")
 
 app = SealClient(name="MainBot", bot_token=config.TOKEN)
-nguess_bot = SealClient(name="NguessBot", bot_token=config.SUB_TOKEN)
+nguess_bot = SealClient(name="NguessBot", bot_token=config.TOKEN) # Fallback to main token if only one is used
 
 # For backward compatibility and modularity
 Grabberu = app
