@@ -60,16 +60,17 @@ class SealClient(Client):
     async def start(self, *args, **kwargs):
         await super().start(*args, **kwargs)
 
-        # 1. Fetch identity and update config
+        # 1. Fetch identity and update config (Only for MainBot)
         me = await self.get_me()
-        config.BOT_USERNAME = me.username
-        config.BOT_ID = me.id
-        config.BOT_NAME = me.first_name
+        if self.name == "MainBot":
+            config.BOT_USERNAME = me.username
+            config.BOT_ID = me.id
+            config.BOT_NAME = me.first_name
 
-        global BOT_USERNAME, BOT_ID, BOT_NAME
-        BOT_USERNAME = me.username
-        BOT_ID = me.id
-        BOT_NAME = me.first_name
+            global BOT_USERNAME, BOT_ID, BOT_NAME
+            BOT_USERNAME = me.username
+            BOT_ID = me.id
+            BOT_NAME = me.first_name
 
         # 2. Register Global Handlers
         if self.name == "MainBot":
