@@ -43,8 +43,8 @@ async def sell_handler(_, message: types.Message):
 
     buttons = [
         [
-            types.InlineKeyboardButton("✅ Confirm", callback_data=f"sell_c_{char_id}:{user_id}", style=ButtonStyle.SUCCESS),
-            types.InlineKeyboardButton("❌ Cancel", callback_data=f"sell_a:{user_id}", style=ButtonStyle.DANGER)
+            types.InlineKeyboardButton("✅ Confirm", callback_data=f"sell_c_{char_id}:{user_id}"),
+            types.InlineKeyboardButton("❌ Cancel", callback_data=f"sell_a:{user_id}")
         ]
     ]
 

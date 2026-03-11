@@ -42,8 +42,8 @@ async def give_coin_handler(_, message: types.Message):
         )
 
     buttons = [[
-        types.InlineKeyboardButton("✅ Confirm Give", callback_data=f"admin_coin_give_{user_id}_{amount}", style=ButtonStyle.SUCCESS),
-        types.InlineKeyboardButton("❌ Cancel", callback_data="admin_coin_cancel", style=ButtonStyle.DANGER)
+        types.InlineKeyboardButton("✅ Confirm Give", callback_data=f"admin_coin_give_{user_id}_{amount}"),
+        types.InlineKeyboardButton("❌ Cancel", callback_data="admin_coin_cancel")
     ]]
 
     await message.reply_text(
@@ -71,8 +71,8 @@ async def take_coin_handler(_, message: types.Message):
         )
 
     buttons = [[
-        types.InlineKeyboardButton("✅ Confirm Take", callback_data=f"admin_coin_take_{user_id}_{amount}", style=ButtonStyle.SUCCESS),
-        types.InlineKeyboardButton("❌ Cancel", callback_data="admin_coin_cancel", style=ButtonStyle.DANGER)
+        types.InlineKeyboardButton("✅ Confirm Take", callback_data=f"admin_coin_take_{user_id}_{amount}"),
+        types.InlineKeyboardButton("❌ Cancel", callback_data="admin_coin_cancel")
     ]]
 
     await message.reply_text(

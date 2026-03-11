@@ -4,12 +4,12 @@ from pyrogram import filters, types, errors, enums
 from pyrogram.enums import ButtonStyle, ParseMode
 from Grabber.core.utils import html_escape
 from Grabber import app, collection, user_collection, sudo_users, OWNER_ID, LOGGER, WEB_APP_URL
-from Grabber.models import Character, User
+from Grabber.database.models import Character, User
 from config import config
 from Grabber.core.sessions import create_session, get_session
-from Grabber.modules.rarities import RARITY_MAP
-from Grabber.modules.quests import update_quest_progress
-from Grabber.modules.achievements import check_achievements
+from Grabber.modules.collection.rarities import RARITY_MAP
+from Grabber.modules.progression.quests import update_quest_progress
+from Grabber.modules.progression.achievements import check_achievements
 
 
 SHOP_RARITY = RARITY_MAP[8]
@@ -97,13 +97,13 @@ async def hub_callback_handler(_, query: types.CallbackQuery):
         await create_session(f"shop_{query.from_user.id}", {"shop": chars_data, "page": 0})
         await send_shop_message(query, query.from_user.id)
     elif choice == "pet":
-        import Grabber.modules.pet as pet_module
+        import Grabber.modules.progression.pet as pet_module
         await pet_module.send_petshop_page(query, 0, query.from_user.id)
     elif choice == "pass":
-        import Grabber.modules.battlepass as pass_module
+        import Grabber.modules.progression.battlepass as pass_module
         await pass_module.view_pass_inline(query)
     elif choice == "egg":
-        import Grabber.modules.hunt as hunt_module
+        import Grabber.modules.economy.hunt as hunt_module
         await hunt_module.show_egg_page(query, 0, query.from_user.id)
     elif choice == "main":
         await send_shop_hub(query)
@@ -153,7 +153,7 @@ async def send_shop_message(message, user_id):
     )
 
     keyboard = [
-        [types.InlineKeyboardButton("💰 Buy", callback_data=f"ask_buy_char_{char.id}_{user_id}", style=ButtonStyle.PRIMARY)],
+        [types.InlineKeyboardButton("💰 Buy", callback_data=f"ask_buy_char_{char.id}_{user_id}")],
         [
             types.InlineKeyboardButton("⬅️ Prev", callback_data=f"shop_prev:{user_id}"),
             types.InlineKeyboardButton("➡️ Next", callback_data=f"shop_next:{user_id}")
@@ -239,8 +239,8 @@ async def ask_buy_character(_, query: types.CallbackQuery):
     )
     keyboard = [
         [
-            types.InlineKeyboardButton("Confirm ✅", callback_data=f"confirm_buy_char_{char_id}_{query.from_user.id}", style=ButtonStyle.SUCCESS),
-            types.InlineKeyboardButton("Cancel ❌", callback_data=f"shop_back_{query.from_user.id}", style=ButtonStyle.DANGER)
+            types.InlineKeyboardButton("Confirm ✅", callback_data=f"confirm_buy_char_{char_id}_{query.from_user.id}"),
+            types.InlineKeyboardButton("Cancel ❌", callback_data=f"shop_back_{query.from_user.id}")
         ]
     ]
     await query.message.edit_caption(text, reply_markup=types.InlineKeyboardMarkup(keyboard), parse_mode=ParseMode.HTML)

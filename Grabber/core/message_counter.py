@@ -8,7 +8,7 @@ from Grabber.core.spawns import (
     send_character, get_spawn_order, increment_spawn_order,
     get_chat_state, track_user_activity, get_active_user_count
 )
-from Grabber.modules.rarities import RARITY_WEIGHTS, ACTIVE_RARITY_WEIGHTS
+from Grabber.modules.collection.rarities import RARITY_WEIGHTS, ACTIVE_RARITY_WEIGHTS
 
 SPECIAL_GROUP_ID = config.SPECIAL_GROUP_ID
 

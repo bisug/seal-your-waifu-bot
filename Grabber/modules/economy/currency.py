@@ -62,8 +62,8 @@ async def exchange_command(_, message: types.Message):
 
     buttons = [
         [
-            types.InlineKeyboardButton("✅ Confirm", callback_data=f"exchange_confirm_{shards_amount}_{user_id}", style=ButtonStyle.SUCCESS),
-            types.InlineKeyboardButton("❌ Cancel", callback_data=f"exchange_cancel_{user_id}", style=ButtonStyle.DANGER)
+            types.InlineKeyboardButton("✅ Confirm", callback_data=f"exchange_confirm_{shards_amount}_{user_id}"),
+            types.InlineKeyboardButton("❌ Cancel", callback_data=f"exchange_cancel_{user_id}")
         ]
     ]
 

@@ -2,8 +2,8 @@ from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
 from Grabber.core.utils import html_escape
 from Grabber import app, user_collection, OWNER_ID, sudo_users, LOGGER
-from Grabber.modules.quests import update_quest_progress
-from Grabber.modules.achievements import check_achievements
+from Grabber.modules.progression.quests import update_quest_progress
+from Grabber.modules.progression.achievements import check_achievements
 
 
 AUTHORIZED_ADMINS = set(sudo_users + [OWNER_ID])

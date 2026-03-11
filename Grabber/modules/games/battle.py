@@ -10,8 +10,8 @@ from Grabber.core.game import get_user_balance, update_user_balance, check_and_d
 from Grabber.core.sessions import create_session, get_session, delete_session
 from Grabber.core.user import get_active_pet
 from Grabber.core.progression import add_xp
-from Grabber.modules.quests import update_quest_progress
-from Grabber.modules.achievements import check_achievements
+from Grabber.modules.progression.quests import update_quest_progress
+from Grabber.modules.progression.achievements import check_achievements
 
 
 battle_cooldowns = {}

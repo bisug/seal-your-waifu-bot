@@ -24,8 +24,8 @@ async def fav_handler(_, message: types.Message):
         return await message.reply_text("❌ You don't own this character.")
 
     markup = types.InlineKeyboardMarkup([[
-        types.InlineKeyboardButton("✅ Set as Favorite", callback_data=f"fav_set:{char_id}:{user_id}", style=ButtonStyle.SUCCESS),
-        types.InlineKeyboardButton("❌ Cancel", callback_data=f"fav_cancel:{user_id}", style=ButtonStyle.DANGER)
+        types.InlineKeyboardButton("✅ Set as Favorite", callback_data=f"fav_set:{char_id}:{user_id}"),
+        types.InlineKeyboardButton("❌ Cancel", callback_data=f"fav_cancel:{user_id}")
     ]])
 
     await message.reply_photo(

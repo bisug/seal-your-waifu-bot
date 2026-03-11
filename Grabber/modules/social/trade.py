@@ -4,7 +4,7 @@ from Grabber import app
 from Grabber import LOGGER
 from Grabber.core.user import get_user_data, update_user
 from Grabber.core.sessions import create_session, get_session, delete_session
-from Grabber.modules.quests import update_quest_progress
+from Grabber.modules.progression.quests import update_quest_progress
 
 @app.on_message(filters.command("trade") & filters.group)
 async def trade_handler(_, message: types.Message):
@@ -42,8 +42,8 @@ async def trade_handler(_, message: types.Message):
     await create_session(trade_id, {"s_char": s_char, "r_char": r_char, "s_id": sender_id, "r_id": receiver_id})
 
     markup = types.InlineKeyboardMarkup([
-        [types.InlineKeyboardButton("✅ Confirm", callback_data=f"tr_c:{trade_id}", style=ButtonStyle.SUCCESS),
-         types.InlineKeyboardButton("❌ Cancel", callback_data=f"tr_x:{trade_id}", style=ButtonStyle.DANGER)]
+        [types.InlineKeyboardButton("✅ Confirm", callback_data=f"tr_c:{trade_id}"),
+         types.InlineKeyboardButton("❌ Cancel", callback_data=f"tr_x:{trade_id}")]
     ])
 
     await message.reply_to_message.reply_text(

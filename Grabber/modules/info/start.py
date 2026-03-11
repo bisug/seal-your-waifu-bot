@@ -1,13 +1,12 @@
 from pyrogram import enums, filters, types, errors
 from pyrogram.enums import ParseMode
 from Grabber.core.utils import html_escape
-from Grabber import app
-from Grabber import PHOTO_URL, BOT_USERNAME, SUPPORT_CHAT, UPDATE_CHAT, LOGGER, WEB_APP_URL
-from Grabber.database import total_pm_users
-from Grabber import user_collection
-from Grabber.modules.pet import DEFAULT_PET
+from Grabber import app, PHOTO_URL, BOT_USERNAME, SUPPORT_CHAT, UPDATE_CHAT, LOGGER, WEB_APP_URL, BOT_NAME, user_collection
+from Grabber.database import total_pm_users, collection
+from Grabber.modules.progression.pet import DEFAULT_PET
 from Grabber.core.progression import add_xp
-from Grabber.modules.achievements import check_achievements
+from Grabber.modules.progression.achievements import check_achievements
+from config import config
 
 LOGGER.info("Loading Start module...")
 
@@ -136,7 +135,6 @@ async def start_handler(_, message: types.Message):
         if param.startswith("locate_"):
             try:
                 char_id = param.split("_")[1]
-                from Grabber.database import collection
                 character = await collection.find_one({'id': char_id})
 
                 if character:
@@ -218,7 +216,6 @@ async def start_handler(_, message: types.Message):
         ])
 
         first_name = html_escape(message.from_user.first_name)
-        from Grabber import BOT_NAME
         text = START_TEXT.format(first_name=first_name, bot_name=BOT_NAME)
 
         await message.reply_photo(
@@ -243,7 +240,6 @@ async def start_callback_handler(_, query: types.CallbackQuery):
     ])
 
     first_name = html_escape(query.from_user.first_name)
-    from Grabber import BOT_NAME
     text = START_TEXT.format(first_name=first_name, bot_name=BOT_NAME)
 
     try:
@@ -284,3 +280,20 @@ async def help_callback_handler(_, query: types.CallbackQuery):
 def random_photo():
     import random
     return random.choice(PHOTO_URL)
+
+@app.on_message(filters.command("webapp"))
+async def webapp_command(_, message):
+    web_app_url = config.WEB_APP_URL
+
+    keyboard = types.InlineKeyboardMarkup([
+        [
+            types.InlineKeyboardButton("Open Mini App", web_app=types.WebAppInfo(url=web_app_url))
+        ]
+    ])
+
+    await message.reply_text(
+        "<b>Seal Bot Web Gallery</b>\n\n"
+        "Click the button below to view the full character gallery and your collection!",
+        reply_markup=keyboard,
+        parse_mode=ParseMode.HTML
+    )
