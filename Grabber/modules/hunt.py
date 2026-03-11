@@ -1,6 +1,7 @@
 import asyncio
 import random
 import time
+import uuid
 from datetime import datetime, timedelta
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
@@ -24,16 +25,6 @@ CORRUPTED_EGG_CHANCE = 5
 
 
 from Grabber.modules.pet import DEFAULT_PET
-hunt_cooldowns = {}
-
-def is_on_cooldown(user_id):
-    now = time.time()
-    if user_id in hunt_cooldowns:
-        diff = now - hunt_cooldowns[user_id]
-        limit = 60
-        if diff < limit:
-             return True, int(limit - diff)
-    return False, 0
 
 def get_egg_roll(luck_multiplier):
 
@@ -50,31 +41,23 @@ def get_egg_roll(luck_multiplier):
 @app.on_message(filters.command("hunt"))
 async def hunt_cmd(_, message: types.Message):
     user_id = message.from_user.id
-    cooldown_active, seconds_left = is_on_cooldown(user_id)
-
-    if cooldown_active:
-        return await message.reply_text(f"⏳ Please wait {seconds_left}s before hunting again.", parse_mode=ParseMode.HTML)
 
     user = await user_collection.find_one({"id": user_id}) or {}
     pets = user.get("pets", [DEFAULT_PET])
     current = user.get("current_pet", DEFAULT_PET["name"])
     pet = next((p for p in pets if p["name"] == current), DEFAULT_PET)
 
-
     ability = pet.get("ability", None)
     luck = pet.get("luck", 0.1)
 
+    # Determine ability-aware cooldown duration
+    cooldown_duration = 50 if ability == "Speedster" else 60
 
-    cooldown_time = 50 if ability == "Speedster" else 60
-
-
-    now = time.time()
-    if user_id in hunt_cooldowns:
-        if now - hunt_cooldowns[user_id] < cooldown_time:
-
-             return
-
-    hunt_cooldowns[user_id] = now
+    # Redis-based cooldown check (survives restarts)
+    from Grabber.core.cache import is_on_cooldown as redis_cooldown
+    on_cd, seconds_left = await redis_cooldown("hunt", user_id, cooldown_duration)
+    if on_cd:
+        return await message.reply_text(f"⏳ Please wait {seconds_left}s before hunting again.", parse_mode=ParseMode.HTML)
 
     msg = await message.reply_text(f"🦊 <b>{html_escape(pet['name'])}</b> is going hunting...", parse_mode=ParseMode.HTML)
     await asyncio.sleep(2)
@@ -114,7 +97,7 @@ async def hunt_cmd(_, message: types.Message):
         is_corrupted = random.uniform(0, 100) <= CORRUPTED_EGG_CHANCE
 
         egg_data = {
-            "id": f"egg_{random.randint(10000, 99999)}",
+            "id": f"egg_{int(time.time() * 1000)}_{random.randint(100, 999)}",
             "tier": tier_key,
             "name": tier_data["name"],
             "obtained_at": datetime.now(),
@@ -126,7 +109,7 @@ async def hunt_cmd(_, message: types.Message):
         if extra_drop:
 
             extra_egg = egg_data.copy()
-            extra_egg["id"] = f"egg_{random.randint(10000, 99999)}"
+            extra_egg["id"] = f"egg_{int(time.time() * 1000)}_{random.randint(100, 999)}_b"
             extra_egg["tier"] = "common"
             extra_egg["name"] = "🥚 Bonus Common Egg"
             await user_collection.update_one({"id": user_id}, {"$push": {"eggs": extra_egg}}, upsert=True)
@@ -348,7 +331,8 @@ async def crack_open_egg_inline(query: types.CallbackQuery, user_id: int, egg: d
         rarity = random.choice(rarity_pool)
 
 
-    waifus = await collection.find({"rarity": rarity}).to_list(length=None)
+    from Grabber.core.waifu import get_or_load_characters
+    waifus = await get_or_load_characters(rarity)
     if waifus:
         character = random.choice(waifus)
         await user_collection.update_one({"id": user_id}, {"$push": {"characters": character}}, upsert=True)
@@ -398,7 +382,8 @@ async def crack_open_egg(message, user_id, egg, index):
         rarity = random.choice(rarity_pool)
 
 
-    waifus = await collection.find({"rarity": rarity}).to_list(length=None)
+    from Grabber.core.waifu import get_or_load_characters
+    waifus = await get_or_load_characters(rarity)
     if waifus:
         character = random.choice(waifus)
         await user_collection.update_one({"id": user_id}, {"$push": {"characters": character}}, upsert=True)

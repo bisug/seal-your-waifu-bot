@@ -1,6 +1,10 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 import redis.asyncio as redis
+import logging
 from config import config
+
+LOGGER = logging.getLogger(__name__)
+
 
 class Database:
     """
@@ -32,7 +36,12 @@ class Database:
         await self.users.create_index("id", unique=True)
         await self.anime_characters.create_index("id", unique=True)
         await self.anime_characters.create_index("rarity")
-        print("Database indexes ensured.")
+        await self.spawns.create_index("chat_id")
+        await self.message_counts.create_index("chat_id")
+        await self.deletion_queue.create_index("delete_at")
+        await self.group_user_totals.create_index([("group_id", 1), ("user_id", 1)])
+        await self.groups.create_index("group_id")
+        LOGGER.info("Database indexes ensured.")
 
 # Initialize Database
 try:

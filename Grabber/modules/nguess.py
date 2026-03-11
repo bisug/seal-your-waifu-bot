@@ -4,9 +4,10 @@ import asyncio
 from pyrogram import filters, types, errors
 from pyrogram.enums import ParseMode
 from pymongo import ReturnDocument
-from Grabber import app
+from Grabber import app, nguess_bot
 from Grabber import collection, user_collection, sessions_collection, nguess_enabled_groups_collection, LOGGER, OWNER_ID
 from Grabber.core.game import update_user_balance
+from Grabber.core.cache import is_nguess_enabled, add_nguess_group, remove_nguess_group
 
 # Local cache is no longer used for character data to ensure persistence
 # Active sessions are stored in sessions_collection with ID: "nguess:{chat_id}"
@@ -21,12 +22,12 @@ async def send_message_safe(chat_id, text=None, photo=None, caption=None, parse_
     """Sends a message or photo while handling FloodWait professionally."""
     try:
         if photo:
-            msg = await app.send_photo(chat_id, photo, caption=caption, parse_mode=parse_mode, reply_markup=reply_markup)
+            msg = await nguess_bot.send_photo(chat_id, photo, caption=caption, parse_mode=parse_mode, reply_markup=reply_markup)
         else:
-            msg = await app.send_message(chat_id, text, parse_mode=parse_mode, reply_markup=reply_markup)
+            msg = await nguess_bot.send_message(chat_id, text, parse_mode=parse_mode, reply_markup=reply_markup)
 
         if msg and auto_delete:
-            await schedule_deletion(chat_id, msg.id, 300) # 5 minutes
+            await schedule_deletion(chat_id, msg.id, 300, bot_name="NguessBot")
         return msg
     except errors.FloodWait as e:
         LOGGER.warning(f"FloodWait detected: Sleeping for {e.value} seconds")
@@ -80,19 +81,18 @@ def get_name_variants(name: str):
             variants.add(part)
     return variants
 
-@app.on_message(filters.command("nguess"))
+@nguess_bot.on_message(filters.command("nguess"))
 async def nguess_start_handler(_, message: types.Message):
     chat_id = message.chat.id
 
-    # Check if group is enabled
-    is_enabled = await nguess_enabled_groups_collection.find_one({"chat_id": chat_id})
-    if not is_enabled and chat_id not in [OWNER_ID]:
+    # Check if group is enabled (Redis set, falls back to MongoDB)
+    if not await is_nguess_enabled(chat_id, nguess_enabled_groups_collection):
         return
 
     # If a game is active, we just proceed to start a new one (per user request: "send next instead")
     await start_nguess_game(chat_id)
 
-@app.on_message(filters.command("ngon") & filters.user(OWNER_ID))
+@nguess_bot.on_message(filters.command("ngon") & filters.user(OWNER_ID))
 async def ngon_handler(_, message: types.Message):
     try:
         args = message.text.split()
@@ -103,36 +103,38 @@ async def ngon_handler(_, message: types.Message):
             {"$set": {"enabled": True}},
             upsert=True
         )
+        await add_nguess_group(chat_id)  # Update Redis set immediately
         msg_text = f"SECTOR AUTHORIZED: /nguess is now active for sector {chat_id}."
-        await send_message_safe(message.chat.id, text=msg_text, auto_delete=True)
+        await send_message_safe(OWNER_ID, text=msg_text, auto_delete=True)
     except ValueError:
-        await send_message_safe(message.chat.id, text="ERROR: Invalid Chat ID format.", auto_delete=True)
+        await send_message_safe(OWNER_ID, text="ERROR: Invalid Chat ID format.", auto_delete=True)
 
-@app.on_message(filters.command("ngoff") & filters.user(OWNER_ID))
+@nguess_bot.on_message(filters.command("ngoff") & filters.user(OWNER_ID))
 async def ngoff_handler(_, message: types.Message):
     try:
         args = message.text.split()
         chat_id = int(args[1]) if len(args) > 1 else message.chat.id
 
         await nguess_enabled_groups_collection.delete_one({"chat_id": chat_id})
+        await remove_nguess_group(chat_id)  # Update Redis set immediately
         msg_text = f"AUTHORIZATION REVOKED: /nguess is now disabled for sector {chat_id}."
-        await send_message_safe(message.chat.id, text=msg_text, auto_delete=True)
+        await send_message_safe(OWNER_ID, text=msg_text, auto_delete=True)
     except ValueError:
-        await send_message_safe(message.chat.id, text="ERROR: Invalid Chat ID format.", auto_delete=True)
+        await send_message_safe(OWNER_ID, text="ERROR: Invalid Chat ID format.", auto_delete=True)
 
-@app.on_message(filters.command("nglist") & filters.user(OWNER_ID))
+@nguess_bot.on_message(filters.command("nglist") & filters.user(OWNER_ID))
 async def nglist_handler(_, message: types.Message):
     enabled_groups = await nguess_enabled_groups_collection.find().to_list(length=100)
     if not enabled_groups:
-        return await send_message_safe(message.chat.id, text="REGISTRY EMPTY: No sectors are currently authorized.", auto_delete=True)
+        return await send_message_safe(OWNER_ID, text="REGISTRY EMPTY: No sectors are currently authorized.", auto_delete=True)
 
     text = "<b>AUTHORIZED SECTORS FOR /NGUESS</b>\n\n"
     for group in enabled_groups:
         text += f"• <code>{group['chat_id']}</code>\n"
 
-    await send_message_safe(message.chat.id, text=text, auto_delete=True)
+    await send_message_safe(OWNER_ID, text=text, auto_delete=True)
 
-@app.on_message(filters.text & filters.group & ~filters.command(["nguess", "top", "ctop"]), group=10)
+@nguess_bot.on_message(filters.text & filters.group & ~filters.command(["nguess", "top", "ctop"]), group=10)
 async def nguess_check_handler(_, message: types.Message):
     if not message.from_user:
         return

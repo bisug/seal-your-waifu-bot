@@ -35,8 +35,10 @@ async def seal_handler(_, message: types.Message):
     guess = " ".join(message.command[1:]).strip().lower()
     correct_name = character['name'].strip().lower()
 
-    # guess name logic
-    if guess == correct_name or any(part in guess for part in correct_name.split() if len(part) > 2):
+    # Guess matching: exact full-name match OR any significant name part matches a guess word
+    guess_words = set(guess.split())
+    name_parts = [p for p in correct_name.split() if len(p) > 2]
+    if guess == correct_name or any(part in guess_words for part in name_parts):
         # Atomically try to claim the character
         if not await clear_active_spawn(chat_id, user_id):
             return # Someone else caught it already

@@ -7,6 +7,7 @@ load_dotenv()
 class Config:
     # Bot identity
     TOKEN = os.getenv("TOKEN", "7888451649:AAGqpCops8LxBCs54h23SmD771TKRMucGh8")
+    SUB_TOKEN = os.getenv("SUB_TOKEN", "7888451649:AAGqpCops8LxBCs54h23SmD771TKRMucGh8") # Placeholder, user should update this
     BOT_USERNAME = None  # Fetched automatically at startup
 
     # Telegram API credentials
