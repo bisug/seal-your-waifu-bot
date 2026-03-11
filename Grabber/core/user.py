@@ -74,18 +74,24 @@ async def add_pet_xp(user_id: int, pet_name: str, xp_amount: int):
         level = pet.get("level", 1)
         xp = pet.get("xp", 0)
         xp_needed = level * 100
+        original_level = level
 
-        if xp >= xp_needed:
-            new_xp = xp - xp_needed
-            new_level = level + 1
-            new_luck = round(pet.get("luck", 0.1) + 0.002, 3)
+        while xp >= xp_needed:
+            xp -= xp_needed
+            level += 1
+            xp_needed = level * 100
+
+        if level > original_level:
+            # Calculate luck increase based on levels gained
+            luck_gain = (level - original_level) * 0.002
+            new_luck = round(pet.get("luck", 0.1) + luck_gain, 3)
 
             await user_collection.update_one(
                 {"id": {"$in": [user_id, str(user_id)]}, "pets.name": pet_name},
                 {
                     "$set": {
-                        "pets.$.xp": new_xp,
-                        "pets.$.level": new_level,
+                        "pets.$.xp": xp,
+                        "pets.$.level": level,
                         "pets.$.luck": new_luck
                     }
                 }
