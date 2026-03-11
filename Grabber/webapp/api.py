@@ -46,7 +46,19 @@ async def get_character(char_id: str):
 
 @router.get("/me", response_model=UserProfileResponse)
 async def get_me(user_id: int = Depends(get_current_user)):
-    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
+    pipeline = [
+        {"$match": {"id": {"$in": [user_id, str(user_id)]}}},
+        {"$project": {
+            "id": 1, "first_name": 1, "username": 1, "avatar": 1, "level": 1, "xp": 1,
+            "streak": 1, "balance": 1, "zenith": 1, "badges": 1, "achievements": 1,
+            "titles": 1, "title": 1, "pets": 1, "current_pet": 1, "eggs": 1,
+            "total_characters": {"$size": {"$ifNull": ["$characters", []]}}
+        }}
+    ]
+    cursor = user_collection.aggregate(pipeline)
+    users = await cursor.to_list(length=1)
+    user = users[0] if users else None
+
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
@@ -65,7 +77,6 @@ async def get_me(user_id: int = Depends(get_current_user)):
     # Remove emojis from titles for WebApp
     clean_titles = [re.sub(r'[^\x00-\x7F]+', '', t).strip() for t in titles_list]
     current_title = re.sub(r'[^\x00-\x7F]+', '', user.get("title", "Rookie")).strip()
-    characters = user.get("characters") or []
     # Performance: Pass existing user document to avoid redundant DB lookup
     progress = await get_user_progress(user_id, user_data=user)
     
@@ -83,7 +94,7 @@ async def get_me(user_id: int = Depends(get_current_user)):
             "points": user.get("balance", 0),
             "zenith": user.get("zenith", 0),
             "badges": user.get("badges") or [],
-            "total_characters": len(characters)
+            "total_characters": user.get("total_characters", 0)
         },
         "achievements": enriched_achievements,
         "titles": {
@@ -152,43 +163,57 @@ async def get_harem(
     search: str = None,
     rarity: str = None
 ):
-    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-        
-    chars = user.get("characters") or []
-    
+    # MongoDB Aggregation Pipeline for Harem
+    pipeline = [
+        {"$match": {"id": {"$in": [user_id, str(user_id)]}}},
+        {"$unwind": "$characters"}
+    ]
+
     # Filtering
     if search:
-        search = search.strip()
-        chars = [c for c in chars if search.lower() in c.get("name", "").lower() or search.lower() in c.get("anime", "").lower()]
+        search_regex = {"$regex": search, "$options": "i"}
+        pipeline.append({
+            "$match": {
+                "$or": [
+                    {"characters.name": search_regex},
+                    {"characters.anime": search_regex}
+                ]
+            }
+        })
+        
     if rarity:
-        rarity = rarity.strip()
-        chars = [c for c in chars if c.get("rarity") == rarity]
-        
-    # Grouping and counting duplicates
-    from collections import Counter
-    char_counts = Counter(c.get("id") for c in chars)
-    
-    # Unique characters for listing
-    unique_chars = []
-    seen = set()
-    for c in chars:
-        cid = c.get("id")
-        if cid not in seen:
-            unique_chars.append(c)
-            seen.add(cid)
-            
-    # Pagination
-    total = len(unique_chars)
-    start = (page - 1) * limit
-    end = start + limit
-    paginated = unique_chars[start:end]
-    
-    # Attach counts
-    for c in paginated:
-        c["count"] = char_counts[c.get("id")]
-        
+        pipeline.append({
+            "$match": {"characters.rarity": rarity}
+        })
+
+    # Grouping to count duplicates and formatting the document
+    pipeline.extend([
+        {"$group": {
+            "_id": "$characters.id",
+            "doc": {"$first": "$characters"},
+            "count": {"$sum": 1}
+        }},
+        {"$replaceRoot": {"newRoot": {"$mergeObjects": ["$doc", {"count": "$count"}]}}},
+        {"$sort": {"rarity": 1, "name": 1}} # Example sorting
+    ])
+
+    # Pagination Facet
+    skip = (page - 1) * limit
+    facet = {
+        "metadata": [{"$count": "total"}],
+        "data": [{"$skip": skip}, {"$limit": limit}]
+    }
+    pipeline.append({"$facet": facet})
+
+    cursor = user_collection.aggregate(pipeline)
+    result = await cursor.to_list(length=1)
+
+    total = 0
+    paginated = []
+    if result and result[0].get("metadata"):
+        total = result[0]["metadata"][0]["total"]
+        paginated = result[0]["data"]
+
     return {
         "total": total,
         "page": page,
@@ -219,8 +244,8 @@ async def get_gallery(
     items = await cursor.to_list(length=limit)
     total = await collection.count_documents(query)
     
-    # Check "Owned" status
-    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
+    # Check "Owned" status - ONLY fetch the IDs to save memory
+    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}}, {"characters.id": 1})
     owned_ids = set(c.get("id") for c in (user.get("characters") or [])) if user else set()
     
     for item in items:
@@ -389,12 +414,7 @@ async def incubate_egg(egg_id: str, user_id: int = Depends(get_current_user)):
 
 @router.post("/eggs/hatch/{egg_id}")
 async def hatch_egg(egg_id: str, user_id: int = Depends(get_current_user)):
-    # Re-use logic from hunt.py or just trigger the hatch
-    # Since this is complex logic with DB updates, let's keep it simple for now and rely on the existing logic
-    # but we need to implement it here for WebApp hatching.
-    from Grabber.modules.economy.hunt import crack_open_egg_inline, collection as anime_col
-    from Grabber.core.progression import add_xp
-    import random
+    from Grabber.modules.economy.hunt import process_egg_hatch
     
     user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
     eggs = user.get("eggs", [])
@@ -407,26 +427,15 @@ async def hatch_egg(egg_id: str, user_id: int = Depends(get_current_user)):
     if h_time and datetime.now() < h_time:
         raise HTTPException(status_code=400, detail="Egg still incubating")
         
-    # Hatching Logic (Simplified copy of hunt.py logic for API)
-    await user_collection.update_one({"id": user_id}, {"$pull": {"eggs": {"id": egg_id}}})
+    success, result = await process_egg_hatch(user_id, egg)
     
-    rarity = None
-    if egg.get("is_corrupted", False):
-        if random.random() < 0.5:
-            return {"status": "exploded", "message": "The egg exploded! It was corrupted..."}
-        from Grabber.modules.collection.rarities import RARITY_MAP
-        rarity = RARITY_MAP[9]
-    else:
-        rarity_pool = EGG_TIERS[egg["tier"]]["pool"]
-        rarity = random.choice(rarity_pool)
-        
-    waifus = await anime_col.find({"rarity": rarity}).to_list(length=None)
-    if not waifus:
-        return {"status": "error", "message": "No characters found for this rarity."}
-        
-    character = random.choice(waifus)
-    await user_collection.update_one({"id": user_id}, {"$push": {"characters": character}})
-    await add_xp(user_id, 15, "egg_hatch")
+    if not success:
+         # Clean the HTML formatting out for the API JSON response
+         msg = result.replace("<b>", "").replace("</b>", "").replace("💥 ", "").replace("⚠️ ", "").replace("\n", " ")
+         status_code = "exploded" if "exploded" in result else "error"
+         return {"status": status_code, "message": msg}
+         
+    character = result
     
     return {
         "status": "success",
