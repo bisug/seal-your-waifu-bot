@@ -1,52 +1,50 @@
 import asyncio
 import time
-from pyrogram import types, errors
+from pyrogram import errors
 from Grabber.database import deletion_queue_collection
-from Grabber import app, LOGGER
+from Grabber import app, nguess_bot, LOGGER
 
-async def schedule_deletion(chat_id: int, message_id: int, delay: int = 300):
+async def schedule_deletion(chat_id: int, message_id: int, delay: int = 300, bot_name: str = "MainBot"):
     """
     Saves a message to the persistent deletion queue in MongoDB.
     :param chat_id: The ID of the chat where the message exists.
     :param message_id: The ID of the message to delete.
     :param delay: Time in seconds to wait before deletion (default 5 mins).
+    :param bot_name: Which bot sent the message — 'MainBot' or 'NguessBot'.
     """
     delete_at = time.time() + delay
     await deletion_queue_collection.insert_one({
         "chat_id": chat_id,
         "message_id": message_id,
-        "delete_at": delete_at
+        "delete_at": delete_at,
+        "bot_name": bot_name
     })
-    LOGGER.info(f"Scheduled persistent deletion for message {message_id} in {chat_id} at {delete_at}")
 
 async def deletion_worker():
     """
     Background worker that checks the MongoDB deletion queue every 60 seconds
-    and deletes expired messages.
+    and deletes expired messages using the correct bot client.
     """
     LOGGER.info("Persistent Deletion Worker started.")
     while True:
         try:
             now = time.time()
-            # Find messages where delete_at is less than or equal to current time
             cursor = deletion_queue_collection.find({"delete_at": {"$lte": now}})
             expired_messages = await cursor.to_list(length=100)
 
             for msg in expired_messages:
                 chat_id = msg["chat_id"]
                 message_id = msg["message_id"]
+                bot_name = msg.get("bot_name", "MainBot")
+                client = nguess_bot if bot_name == "NguessBot" else app
 
                 try:
-                    await app.delete_messages(chat_id, message_id)
-                except errors.Forbidden:
-                    LOGGER.warning(f"Could not delete message {message_id} in {chat_id}: Forbidden (Bot not admin?)")
-                except errors.MessageDeleteForbidden:
-                    LOGGER.warning(f"Could not delete message {message_id} in {chat_id}: Not allowed to delete.")
-                except Exception as e:
-                    # Message might already be deleted or other error
-                    pass
+                    await client.delete_messages(chat_id, message_id)
+                except (errors.Forbidden, errors.MessageDeleteForbidden):
+                    pass  # Can't delete — skip silently
+                except Exception:
+                    pass  # Already deleted or other transient error
 
-                # Remove from queue regardless of success (to prevent retrying forever)
                 await deletion_queue_collection.delete_one({"_id": msg["_id"]})
 
         except Exception as e:

@@ -7,6 +7,7 @@ from Grabber import app
 from Grabber import SUPPORT_GROUP_ID, LOGGER
 from Grabber.core.user import get_user_data, add_char_to_user, update_user
 from Grabber.database import collection
+from Grabber.core.cache import get_daily_date, set_daily_date, get_weekly_date, set_weekly_date, invalidate_leaderboard_cache, invalidate_user_cache
 
 RARITY_WEIGHTS = {
     '⚪ Common': 60,
@@ -41,7 +42,11 @@ async def daily_command_handler(_, message: types.Message):
     user = await get_user_data(user_id)
 
     now_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    last_claim_date = user.get('last_daily_date')
+
+    # Check Redis first, fall back to DB
+    last_claim_date = await get_daily_date(user_id)
+    if last_claim_date is None:
+        last_claim_date = user.get('last_daily_date')
 
     if last_claim_date == now_date:
         return await message.reply_text("⏳ You've already claimed your daily reward today!", parse_mode=ParseMode.HTML)
@@ -55,13 +60,12 @@ async def daily_command_handler(_, message: types.Message):
     else:
         streak = 1
 
+    # Cap streak at 7 for reward lookup, then cycle back to 1 for storage
+    reward_streak = min(streak, 7)
     if streak > 7:
-        streak = 1 # Reset after 7 days? Or Cap at 7? Let's Cap at 7 for max rewards but keep counting?
-        # Actually user requested "Adjust Daily Streak Cap to 7 days" in task.md
-        # If user misses a day, streak resets. If user maintains, it cycles?
-        # Typically games cycle 1-7. Let's cycle.
+        streak = 1  # Reset for next cycle
 
-    reward_coins = STREAK_REWARDS.get(streak, 100)
+    reward_coins = STREAK_REWARDS.get(reward_streak, 100)
 
     # Give Rewards
     await app.send_chat_action(message.chat.id, enums.ChatAction.UPLOAD_PHOTO)
@@ -76,6 +80,10 @@ async def daily_command_handler(_, message: types.Message):
         "$set": {"last_daily_date": now_date, "daily_streak": streak},
         "$inc": {"balance": reward_coins}
     })
+    # Update Redis caches
+    await set_daily_date(user_id, now_date)
+    await invalidate_user_cache(user_id)
+    await invalidate_leaderboard_cache()
 
     caption = (
         f'🎊 <a href="tg://user?id={message.from_user.id}">{html_escape(message.from_user.first_name)}</a> claimed their daily reward!\n\n'
@@ -98,7 +106,11 @@ async def weekly_command_handler(_, message: types.Message):
 
     now = datetime.now(timezone.utc)
     now_str = now.strftime("%Y-%m-%d")
-    last_weekly = user.get('last_weekly_date')
+
+    # Check Redis first
+    last_weekly_cached = await get_weekly_date(user_id)
+    last_weekly = last_weekly_cached or user.get('last_weekly_date')
+
     if last_weekly:
         last_date = datetime.strptime(last_weekly, "%Y-%m-%d").replace(tzinfo=timezone.utc)
         days_diff = (now - last_date).days
@@ -113,6 +125,9 @@ async def weekly_command_handler(_, message: types.Message):
         "$set": {"last_weekly_date": now_str},
         "$inc": {"balance": 2000}
     })
+    await set_weekly_date(user_id, now_str)
+    await invalidate_user_cache(user_id)
+    await invalidate_leaderboard_cache()
 
     # Also give XP
     from Grabber.core.progression import add_xp

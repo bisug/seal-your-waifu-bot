@@ -1,30 +1,43 @@
 from Grabber.database import user_collection
+from Grabber.core.cache import (
+    get_cached_balance, set_cached_balance, invalidate_user_cache
+)
 from typing import Optional
 
 async def get_user_balance(user_id: int) -> int:
     """
     Fetch the current shard balance for a user.
+    Checks Redis cache first; falls back to MongoDB.
     """
+    cached = await get_cached_balance(user_id)
+    if cached is not None:
+        return cached
     user = await user_collection.find_one({"id": user_id}, {"balance": 1})
-    return user.get("balance", 0) if user else 0
+    balance = user.get("balance", 0) if user else 0
+    await set_cached_balance(user_id, balance)
+    return balance
 
 async def update_user_balance(user_id: int, amount: int):
     """
-    Increment or decrement a user's balance.
+    Increment or decrement a user's balance, then invalidate cache.
     """
     await user_collection.update_one(
         {"id": user_id},
         {"$inc": {"balance": amount}},
         upsert=True
     )
+    await invalidate_user_cache(user_id)
 
 async def check_and_deduct(user_id: int, amount: int) -> bool:
     """
-    Check if a user has enough balance and deduct it atomically.
+    Atomically check balance and deduct. Invalidates cache on success.
     Returns True if successful, False otherwise.
     """
     result = await user_collection.update_one(
         {"id": user_id, "balance": {"$gte": amount}},
         {"$inc": {"balance": -amount}}
     )
-    return result.modified_count > 0
+    if result.modified_count > 0:
+        await invalidate_user_cache(user_id)
+        return True
+    return False

@@ -17,6 +17,12 @@ METRICS = {
 }
 
 async def get_top_users(metric: str, limit: int = 10):
+    from Grabber.core.cache import get_cached_leaderboard, set_cached_leaderboard
+
+    # Try Redis cache first
+    cached = await get_cached_leaderboard(metric)
+    if cached is not None:
+        return cached
 
     if metric == "harem":
         pipeline = [
@@ -33,7 +39,11 @@ async def get_top_users(metric: str, limit: int = 10):
         ]
 
     cursor = user_collection.aggregate(pipeline)
-    return await cursor.to_list(length=limit)
+    results = await cursor.to_list(length=limit)
+
+    # Cache the result
+    await set_cached_leaderboard(metric, results)
+    return results
 
 def build_leaderboard_text(metric: str, users: list):
 
