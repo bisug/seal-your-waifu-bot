@@ -46,23 +46,14 @@ async def shop_hub(_, message: types.Message):
 async def send_shop_hub(message_or_query):
     text = (
         "🏪 <b>Seal Shop Central</b>\n\n"
-        "Welcome to the marketplace! Choose a category below to start browsing."
+        "Experience the full marketplace in our official Mini App! Shop for characters, pets, eggs, and more in one place."
     )
     is_private = (message_or_query.message if isinstance(message_or_query, types.CallbackQuery) else message_or_query).chat.type == enums.ChatType.PRIVATE
-
+ 
     builder = KeyboardBuilder()
     webapp_btn = get_webapp_button(is_private, path="#shop")
     if webapp_btn:
         builder.add_row(webapp_btn)
-    
-    builder.add_row(
-        types.InlineKeyboardButton("Character Shop", callback_data="hub_char"),
-        types.InlineKeyboardButton("Pet Shop", callback_data="hub_pet")
-    )
-    builder.add_row(
-        types.InlineKeyboardButton("Battle Pass", callback_data="hub_pass"),
-        types.InlineKeyboardButton("Egg Shop", callback_data="hub_egg")
-    )
 
     reply_markup = builder.build()
 
