@@ -53,7 +53,6 @@ async def create_session(user_data: dict):
     
     if not r:
         from Grabber.database import sessions_collection
-        import time
         expiry = time.time() + 3600
         # Store in MongoDB for fallback support
         await sessions_collection.update_one(
@@ -79,7 +78,6 @@ async def get_current_user(auth: HTTPAuthorizationCredentials = Security(securit
     token = auth.credentials
     if not r:
         from Grabber.database import sessions_collection
-        import time
         token_doc = await sessions_collection.find_one({"_id": f"auth_token:{token}"})
         if not token_doc or token_doc.get("expires_at", 0) < time.time():
             raise HTTPException(status_code=401, detail="Invalid or expired session")

@@ -56,9 +56,21 @@ async def send_shop_hub(message_or_query):
         [types.InlineKeyboardButton("👤 Character Shop", callback_data="hub_char")],
         [types.InlineKeyboardButton("🐾 Pet Shop", callback_data="hub_pet")],
         [types.InlineKeyboardButton("🎫 Battle Pass", callback_data="hub_pass")],
-        [types.InlineKeyboardButton("🥚 Egg Shop", callback_data="hub_egg")],
-        [types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))]
+        [types.InlineKeyboardButton("🥚 Egg Shop", callback_data="hub_egg")]
     ]
+    
+    is_private = False
+    if isinstance(message_or_query, types.CallbackQuery):
+        is_private = message_or_query.message.chat.type == enums.ChatType.PRIVATE
+    else:
+        is_private = message_or_query.chat.type == enums.ChatType.PRIVATE
+        
+    if is_private:
+        keyboard.append([types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))])
+    else:
+        bot_username = getattr(config, "BOT_USERNAME", "Seal_Your_Waifu_Bot")
+        keyboard.append([types.InlineKeyboardButton("🌐 Launch Web App (DM)", url=f"https://t.me/{bot_username}?start=webapp")])
+
     reply_markup = types.InlineKeyboardMarkup(keyboard)
 
     try:

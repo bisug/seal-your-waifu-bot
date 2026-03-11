@@ -2,6 +2,7 @@ from pyrogram import filters, types, enums, errors
 from pyrogram.enums import ButtonStyle, ParseMode
 from Grabber.core.utils import html_escape
 from Grabber import app, user_collection, PHOTO_URL, LOGGER, WEB_APP_URL
+from config import config
 
 
 DEFAULT_PET = {
@@ -55,10 +56,22 @@ async def send_petshop_page(message_or_query_obj, page: int, user_id: int):
             types.InlineKeyboardButton("⬅️ Prev", callback_data=f"shop_prev_{page}_{user_id}"),
             types.InlineKeyboardButton(buy_button_text, callback_data=f"shop_buy_{page}_{user_id}"),
             types.InlineKeyboardButton("Next ➡️", callback_data=f"shop_next_{page}_{user_id}")
-        ],
-        [types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))],
-        [types.InlineKeyboardButton("⤾ Back to Hub", callback_data="hub_main")]
+        ]
     ]
+
+    is_private = False
+    if isinstance(message_or_query_obj, types.CallbackQuery):
+        is_private = message_or_query_obj.message.chat.type == enums.ChatType.PRIVATE
+    else:
+        is_private = message_or_query_obj.chat.type == enums.ChatType.PRIVATE
+        
+    if is_private:
+        keyboard.append([types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))])
+    else:
+        bot_username = getattr(config, "BOT_USERNAME", "Seal_Your_Waifu_Bot")
+        keyboard.append([types.InlineKeyboardButton("🌐 Launch Web App (DM)", url=f"https://t.me/{bot_username}?start=webapp")])
+        
+    keyboard.append([types.InlineKeyboardButton("⤾ Back to Hub", callback_data="hub_main")])
     reply_markup = types.InlineKeyboardMarkup(keyboard)
 
     try:
@@ -192,10 +205,22 @@ async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
             types.InlineKeyboardButton("⬅️ Prev", callback_data=f"mypet_prev_{page}_{user_id}"),
             types.InlineKeyboardButton("Set Active" if not is_active else "🌟 Active", callback_data=f"setpet_{page}_{user_id}"),
             types.InlineKeyboardButton("Next ➡️", callback_data=f"mypet_next_{page}_{user_id}")
-        ],
-        [types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))],
-        [types.InlineKeyboardButton("⤾ Back to Hub", callback_data="hub_main")]
+        ]
     ]
+
+    is_private = False
+    if isinstance(message_or_query_obj, types.CallbackQuery):
+        is_private = message_or_query_obj.message.chat.type == enums.ChatType.PRIVATE
+    else:
+        is_private = message_or_query_obj.chat.type == enums.ChatType.PRIVATE
+        
+    if is_private:
+        buttons.append([types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))])
+    else:
+        bot_username = getattr(config, "BOT_USERNAME", "Seal_Your_Waifu_Bot")
+        buttons.append([types.InlineKeyboardButton("🌐 Launch Web App (DM)", url=f"https://t.me/{bot_username}?start=webapp")])
+
+    buttons.append([types.InlineKeyboardButton("⤾ Back to Hub", callback_data="hub_main")])
     reply_markup = types.InlineKeyboardMarkup(buttons)
     photo = pet.get("img", DEFAULT_PET["img"])
 
