@@ -352,6 +352,7 @@ body {
 
 .user-text-info {
     flex: 1;
+    min-width: 0; /* Enable truncation for child */
 }
 
 .user-text-info h2 {
@@ -360,15 +361,22 @@ body {
     font-weight: 900;
     letter-spacing: -0.5px;
     color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .title-chip-light {
-    display: inline-block;
+    display: block;
     color: rgba(255,255,255,0.7);
     font-size: 11px;
     font-weight: 600;
     margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
+
 
 .streak-pill-mini {
     background: rgba(255, 255, 255, 0.1);
@@ -428,7 +436,9 @@ body {
     flex-direction: column;
     align-items: center;
     gap: 2px;
+    min-width: 0; /* Anti-overflow */
 }
+
 
 .stat-tile-label {
     font-size: 8px;
@@ -441,7 +451,12 @@ body {
     font-size: 14px;
     font-weight: 900;
     color: white;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
+
 
 .stat-divider {
     width: 1px;
@@ -461,31 +476,70 @@ body {
     position: relative;
 }
 
+.search-icon-inside {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--hint-color);
+    pointer-events: none;
+    z-index: 10;
+}
+
 .search-wrapper input {
     width: 100%;
     background: var(--glass-bg);
     border: 0.5px solid var(--glass-border);
-    padding: 10px 16px;
+    padding: 10px 12px 10px 42px;
     border-radius: 14px;
     color: white;
     font-size: 13px;
     outline: none;
-    transition: border-color 0.2s;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
+
 
 .search-wrapper input:focus {
     border-color: var(--button-color);
+    background: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 0 15px rgba(72, 165, 255, 0.1);
+}
+
+.filter-select-wrapper {
+    position: relative;
+    width: 120px; /* Slightly narrower to give more room to search */
+    flex-shrink: 0;
+}
+
+
+.filter-select-wrapper::after {
+    content: '▼';
+    font-size: 8px;
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--hint-color);
+    pointer-events: none;
 }
 
 .filter-bar-luxury select {
+    width: 100%;
     background: var(--glass-bg);
     border: 0.5px solid var(--glass-border);
-    padding: 0 12px;
+    padding: 10px 32px 10px 14px;
     border-radius: 14px;
     color: white;
     font-size: 12px;
     outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
 }
+
 
 .spinner-mini {
     width: 20px;
