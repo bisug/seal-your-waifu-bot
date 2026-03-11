@@ -1,17 +1,22 @@
 import asyncio
 import nest_asyncio
 
-# Apply nest_asyncio FIRST — before any other imports.
-# kurigram (Pyrogram fork) internally uses asyncio.get_event_loop() in its Session
-# class, which on Python 3.13 can reference a different loop than the one running main().
-# nest_asyncio patches asyncio to be re-entrant and loop-agnostic, fixing this.
+# Patch asyncio to be re-entrant first
 nest_asyncio.apply()
 
+# Create our canonical event loop and set it as the global default
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
 
 from pyrogram import idle
 from Grabber import app, nguess_bot, LOGGER, start_bots, stop_bots
+
+# CRITICAL: kurigram's Session.send() calls self.client.loop.run_in_executor()
+# which creates Futures anchored to self.client.loop. If that loop != the running
+# loop, it crashes with "Future attached to a different loop".
+# Force-patching here guarantees both clients use the exact loop that main() runs on.
+app.loop = loop
+nguess_bot.loop = loop
 
 
 async def main():
