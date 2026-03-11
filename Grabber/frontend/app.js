@@ -1,16 +1,4 @@
-// --- HOSTING CONFIGURATION ---
-// 1. If hosting Frontend (Vercel) and Backend (Heroku) together, leave this as '/api/v1_7b82'.
-// 2. If hosting Frontend separately on Vercel, change this to your Heroku app's full URL.
-// Example: window.API_BASE = 'https://my-seal-bot.herokuapp.com/api/v1_7b82';
 window.API_BASE = '/api/v1_7b82';
-
-// Auto-detect Vercel deployment and remind developers to update the API base.
-if (window.location.hostname.includes('vercel.app')) {
-    // Uncomment and replace with your exact Heroku backend URL when deploying to Vercel:
-    // window.API_BASE = 'https://YOUR_HEROKU_APP_NAME.herokuapp.com/api/v1_7b82';
-}
-// -----------------------------
-
 const tg = window.Telegram?.WebApp;
 
 
