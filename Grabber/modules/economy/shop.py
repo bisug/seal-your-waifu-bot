@@ -44,10 +44,7 @@ async def shop_hub(_, message: types.Message):
     await send_shop_hub(message)
 
 async def send_shop_hub(message_or_query):
-    text = (
-        "🏪 <b>Seal Shop Central</b>\n\n"
-        "Experience the full marketplace in our official Mini App! Shop for characters, pets, eggs, and more in one place."
-    )
+    text = "🏪 <b>Tap below to open the Seal Shop!</b>"
     is_private = (message_or_query.message if isinstance(message_or_query, types.CallbackQuery) else message_or_query).chat.type == enums.ChatType.PRIVATE
  
     builder = KeyboardBuilder()
