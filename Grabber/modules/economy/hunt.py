@@ -9,9 +9,9 @@ from Grabber.core.utils import html_escape
 from Grabber import user_collection, collection, app, WEB_APP_URL
 from Grabber.core.user import add_pet_xp
 from Grabber.core.progression import add_xp
-from Grabber.modules.quests import update_quest_progress
-from Grabber.modules.achievements import check_achievements
-from Grabber.modules.rarities import RARITY_MAP
+from Grabber.modules.progression.quests import update_quest_progress
+from Grabber.modules.progression.achievements import check_achievements
+from Grabber.modules.collection.rarities import RARITY_MAP
 
 
 EGG_TIERS = {
@@ -24,7 +24,7 @@ EGG_TIERS = {
 CORRUPTED_EGG_CHANCE = 5
 
 
-from Grabber.modules.pet import DEFAULT_PET
+from Grabber.modules.progression.pet import DEFAULT_PET
 
 def get_egg_roll(luck_multiplier):
 

@@ -19,9 +19,7 @@ StartTime = time.time()
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
-    handlers=[logging.FileHandler("log.txt"), logging.StreamHandler()],
-    level=logging.INFO,
-)
+    level=logging.INFO)
 
 logging.getLogger('httpx').setLevel(logging.WARNING)
 logging.getLogger("pyrogram").setLevel(logging.WARNING)
@@ -59,8 +57,7 @@ class SealClient(Client):
             app_version="Seal-Bot v2",
             device_model="Seal-Server",
             system_version="Linux",
-            workdir="Grabber",
-        )
+            workdir="Grabber")
 
     async def start(self, *args, **kwargs):
         await super().start(*args, **kwargs)
@@ -110,15 +107,20 @@ class SealClient(Client):
 
     async def _set_commands_internal(self):
         try:
-            from Grabber.modules.start import HELP_DATA
+            from Grabber.modules.info.start import HELP_DATA
             commands = []
             command_pattern = re.compile(r"🔹\s+.*?/(?P<cmd>\w+).*?\s+-\s+(?P<desc>.+)")
             seen_commands = set()
 
-            # Commands allowed for NguessBot
-            sub_bot_allowlist = ["nguess", "ngon", "ngoff", "nglist", "start", "help"]
+            # Define which commands belong to which bot client
+            NGUESS_CMDS = ["nguess"]
+            COMMON_CMDS = ["start", "help"]
 
-            for category in HELP_DATA.values():
+            for key, category in HELP_DATA.items():
+                # Skip Owner/Admin commands completely for the public command list
+                if key == "OWNER":
+                    continue
+
                 if "text" in category:
                     for line in category["text"].split("\n"):
                         match = command_pattern.search(line)
@@ -126,9 +128,14 @@ class SealClient(Client):
                             cmd = match.group("cmd")
                             desc = match.group("desc").strip()
 
-                            # Filter for Sub Bot
-                            if self.name == "NguessBot" and cmd not in sub_bot_allowlist:
-                                continue
+                            if self.name == "NguessBot":
+                                # NguessBot only shows nguess + basic commands
+                                if cmd not in NGUESS_CMDS and cmd not in COMMON_CMDS:
+                                    continue
+                            else:
+                                # MainBot shows everything EXCEPT nguess and owner commands
+                                if cmd in NGUESS_CMDS:
+                                    continue
 
                             if cmd not in seen_commands:
                                 commands.append(types.BotCommand(command=cmd, description=desc[:100]))

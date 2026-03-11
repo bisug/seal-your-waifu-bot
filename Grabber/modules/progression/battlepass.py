@@ -113,8 +113,8 @@ async def buypass_ask_callback(_, query: types.CallbackQuery):
     price = PASS_PRICES[tier]
     text = f"⚠️ <b>Confirm Upgrade</b>\n\nUpgrade to <b>{tier.capitalize()} Pass</b> for <b>{price} ⧫</b>?"
     keyboard = [[
-        types.InlineKeyboardButton("Confirm ✅", callback_data=f"buypass_{tier}:{owner_id}", style=ButtonStyle.SUCCESS),
-        types.InlineKeyboardButton("Cancel ❌", callback_data=f"pass_back:{owner_id}", style=ButtonStyle.DANGER)
+        types.InlineKeyboardButton("Confirm ✅", callback_data=f"buypass_{tier}:{owner_id}"),
+        types.InlineKeyboardButton("Cancel ❌", callback_data=f"pass_back:{owner_id}")
     ]]
     await query.message.edit_text(text, parse_mode=ParseMode.HTML, reply_markup=types.InlineKeyboardMarkup(keyboard))
 

@@ -59,8 +59,8 @@ async def gift_command(_, message: types.Message):
 
     markup = types.InlineKeyboardMarkup([
         [
-            types.InlineKeyboardButton("✅ Confirm", callback_data=f"gift_confirm:{session_id}", style=ButtonStyle.SUCCESS),
-            types.InlineKeyboardButton("❌ Cancel", callback_data=f"gift_cancel:{session_id}", style=ButtonStyle.DANGER)
+            types.InlineKeyboardButton("✅ Confirm", callback_data=f"gift_confirm:{session_id}"),
+            types.InlineKeyboardButton("❌ Cancel", callback_data=f"gift_cancel:{session_id}")
         ]
     ])
 

@@ -1,16 +1,15 @@
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
 from Grabber.core.utils import html_escape
-from Grabber import app, OWNER_ID, sudo_users
-from Grabber import group_user_totals_collection, LOGGER
+from Grabber import app, OWNER_ID, sudo_users, BOT_USERNAME, group_user_totals_collection, LOGGER
 from Grabber.core.user import add_char_to_user
 from Grabber.core.spawns import get_chat_state, clear_active_spawn, get_message_count, send_character
 from Grabber.core.progression import add_xp
-from Grabber.modules.quests import update_quest_progress
-from Grabber.modules.achievements import check_achievements
+from Grabber.modules.progression.quests import update_quest_progress
+from Grabber.modules.progression.achievements import check_achievements
 import random
 import asyncio
-from Grabber.modules.rarities import RARITY_WEIGHTS
+from Grabber.modules.collection.rarities import RARITY_WEIGHTS
 
 AUTHORIZED_USERS = set(sudo_users + [OWNER_ID])
 
@@ -111,3 +110,17 @@ async def cnow_handler(_, message: types.Message):
     selected_rarity = random.choices(rarities, weights=weights, k=1)[0]
 
     await send_character(message.chat.id, selected_rarity)
+
+@app.on_message(filters.command("search"))
+async def search_waifu(_, message: types.Message):
+
+    keyboard = [
+        [types.InlineKeyboardButton("🔍 Search Waifu", switch_inline_query_current_chat="")]
+    ]
+    reply_markup = types.InlineKeyboardMarkup(keyboard)
+
+    await message.reply_text(
+        "🪄 To search for a waifu, click the button below!",
+        reply_markup=reply_markup,
+        parse_mode=ParseMode.HTML
+    )
