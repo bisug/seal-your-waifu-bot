@@ -174,17 +174,17 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
 
     if status == "fresh":
         status_display = f"🛑 <b>Status:</b> Not incubated\n⏱️ <b>Required:</b> {tier_info['wait_min']} minutes"
-        action_button = types.InlineKeyboardButton("🌡️ Start Incubation", callback_data=f"egg_incubate:{page}")
+        action_button = types.InlineKeyboardButton("Start Incubation", callback_data=f"egg_incubate:{page}", style=enums.ButtonStyle.SUCCESS)
     elif status == "incubating":
         hatch_time = egg.get("hatch_time")
         if hatch_time and datetime.now() < hatch_time:
             remaining = hatch_time - datetime.now()
             mins_left = int(remaining.total_seconds() / 60)
             status_display = f"⏳ <b>Status:</b> Incubating\n⏱️ <b>Time Left:</b> {mins_left} minutes"
-            action_button = types.InlineKeyboardButton("⏳ Incubating...", callback_data="egg_wait")
+            action_button = types.InlineKeyboardButton("Incubating...", callback_data="egg_wait")
         else:
             status_display = "✅ <b>Status:</b> Ready to hatch!"
-            action_button = types.InlineKeyboardButton("🎁 Hatch Now!", callback_data=f"egg_hatch:{page}")
+            action_button = types.InlineKeyboardButton("Hatch Egg", callback_data=f"egg_hatch:{page}", style=enums.ButtonStyle.SUCCESS)
 
     text = (
         f"🥚 <b>Egg Inventory</b>\n\n"
@@ -210,7 +210,7 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
         if "egg_incubate" in action_button.callback_data:
              action_button.callback_data = f"egg_incubate:{page}:{user_id}"
         elif "egg_hatch" in action_button.callback_data:
-             action_button = types.InlineKeyboardButton("🎁 Hatch Now!", callback_data=f"egg_hatch:{page}:{user_id}")
+             action_button = types.InlineKeyboardButton("🎁 Hatch Now!", callback_data=f"egg_hatch:{page}:{user_id}", style=enums.ButtonStyle.SUCCESS)
         buttons.append([action_button])
 
     is_private = False
@@ -219,13 +219,11 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
     else:
         is_private = message_or_query.chat.type == enums.ChatType.PRIVATE
         
-    if is_private:
-        buttons.append([types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))])
-    else:
-        bot_username = getattr(config, "BOT_USERNAME", "Seal_Your_Waifu_Bot")
-        buttons.append([types.InlineKeyboardButton("🌐 Launch Web App (DM)", url=f"https://t.me/{bot_username}?start=webapp")])
+    webapp_btn = get_webapp_button(is_private)
+    if webapp_btn:
+        buttons.append([webapp_btn])
 
-    buttons.append([types.InlineKeyboardButton("⤾ Back to Hub", callback_data="hub_main")])
+    buttons.append([types.InlineKeyboardButton("Back to Hub", callback_data="hub_main")])
 
     markup = types.InlineKeyboardMarkup(buttons) if buttons else None
 

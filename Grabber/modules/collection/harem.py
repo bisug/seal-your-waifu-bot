@@ -10,6 +10,7 @@ from config import config
 from Grabber import app, WEB_APP_URL
 from Grabber import LOGGER
 from Grabber.core.user import get_user_data
+from Grabber.core.keyboard import get_paginated_keyboard, KeyboardBuilder
 
 FORMATS = [
     "⧉ {anime} [🎮] ⦋{page}/{total_pages}⦌\n⤷〔<b>{rarity}</b>〕 {name} (ID: <code>{id}</code>) ×{count}",
@@ -42,13 +43,8 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
             return await message_obj.reply_text(text, parse_mode=ParseMode.HTML)
 
         all_chars = user['characters']
-
-
         char_counts = Counter(c.get('id') for c in all_chars)
-
-
-        sorted_chars = sorted(all_chars, key=lambda x: (x.get('anime', ''), x.get('id', '')))
-
+        sorted_chars = sorted(all_chars, key=lambda x: (x.get('anime', ''), x.get('name', ''), x.get('id', '')))
 
         unique_chars: List[Dict[str, Any]] = []
         seen_ids = set()
@@ -64,9 +60,7 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
 
         current_idx = user.get('current_format_index', 0)
         char_format = FORMATS[current_idx % len(FORMATS)]
-
         first_name = user.get('first_name', 'User')
-
 
         header_lines = [
             f"🎒 <b>{escape(first_name)}'s Collection</b>",
@@ -76,7 +70,6 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
             ""
         ]
         harem_text = "\n".join(header_lines)
-
 
         start_idx = page * per_page
         end_idx = start_idx + per_page
@@ -96,19 +89,19 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
 
         harem_text += "━━━━━━━━━━━━━━━━━━━━━\n"
 
-        is_private = False
-        if isinstance(message_obj, types.CallbackQuery):
-            is_private = message_obj.message.chat.type == enums.ChatType.PRIVATE
-        else:
-            is_private = message_obj.chat.type == enums.ChatType.PRIVATE
-
-        markup = _build_harem_markup(page, total_pages, user_id, is_private)
-
+        is_private = (message_obj.message if isinstance(message_obj, types.CallbackQuery) else message_obj).chat.type == enums.ChatType.PRIVATE
+        
+        # Build Keyboard using centralized utility
+        markup = get_paginated_keyboard(page, total_pages, "h", user_id, is_private)
+        builder = KeyboardBuilder()
+        builder.keyboard = markup.inline_keyboard.copy()
+        builder.add_row(types.InlineKeyboardButton("Search Collection", switch_inline_query_current_chat=f"collection.{user_id} ", style=enums.ButtonStyle.PRIMARY))
+        builder.add_row(types.InlineKeyboardButton("Global Search", switch_inline_query_current_chat="", style=enums.ButtonStyle.PRIMARY))
+        markup = builder.build()
 
         try:
             pic = random.choice(all_chars).get('img_url')
         except (IndexError, KeyError):
-
             pic = None
 
         if isinstance(message_obj, types.CallbackQuery):
@@ -134,44 +127,13 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
         pass
     except Exception as e:
         LOGGER.error(f"Error in show_harem: {e}", exc_info=True)
-
         if isinstance(message_obj, types.Message):
              await message_obj.reply_text("An error occurred while fetching your harem.")
-
-def _build_harem_markup(page: int, total_pages: int, user_id: int, is_private: bool) -> types.InlineKeyboardMarkup:
-
-    nav_buttons = []
-    if total_pages > 1:
-        prev_btn = types.InlineKeyboardButton("⬅️ Prev", callback_data=f"h:p:{page-1}:{user_id}")
-        next_btn = types.InlineKeyboardButton("Next ➡️", callback_data=f"h:n:{page+1}:{user_id}")
-        if page == 0:
-            nav_buttons = [next_btn]
-        elif page == total_pages - 1:
-            nav_buttons = [prev_btn]
-        else:
-            nav_buttons = [prev_btn, next_btn]
-
-    keyboard = [
-        nav_buttons,
-    ]
-    if is_private:
-        keyboard.append([types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))])
-    else:
-        bot_username = getattr(config, "BOT_USERNAME", "Seal_Your_Waifu_Bot")
-        keyboard.append([types.InlineKeyboardButton("🌐 Launch Web App (DM)", url=f"https://t.me/{bot_username}?start=webapp")])
-
-    keyboard.extend([
-        [types.InlineKeyboardButton("🔍 Search Harem", switch_inline_query_current_chat=f"collection.{user_id} ")],
-        [types.InlineKeyboardButton("🌐 Global Search", switch_inline_query_current_chat="")]
-    ])
-
-    return types.InlineKeyboardMarkup([row for row in keyboard if row])
 
 @app.on_callback_query(filters.regex(r"^h:(p|n):"))
 async def harem_nav_handler(_, query: types.CallbackQuery):
     try:
         data_parts = query.data.split(":")
-
         if len(data_parts) != 4:
             return await query.answer("❌ Invalid data!", show_alert=True)
 
