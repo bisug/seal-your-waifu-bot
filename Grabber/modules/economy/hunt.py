@@ -318,94 +318,75 @@ async def egg_hatch_callback(_, query: types.CallbackQuery):
 async def egg_noop_callback(_, query: types.CallbackQuery):
     await query.answer()
 
-async def crack_open_egg_inline(query: types.CallbackQuery, user_id: int, egg: dict):
-
-
+async def process_egg_hatch(user_id: int, egg: dict):
+    """Core logic for hatching an egg. Returns (success: bool, result: dict_or_error_msg)."""
     await user_collection.update_one({"id": user_id}, {"$pull": {"eggs": {"id": egg["id"]}}})
 
+    if egg.get("is_corrupted", False):
+        if random.random() < 0.5:
+            return False, "💥 <b>The egg exploded!</b>\nIt was corrupted..."
+        rarity = RARITY_MAP[9]
+    else:
+        rarity_pool = EGG_TIERS[egg["tier"]]["pool"]
+        rarity = random.choice(rarity_pool)
+
+    from Grabber.core.waifu import get_or_load_characters
+    waifus = await get_or_load_characters(rarity)
+    
+    if not waifus:
+        return False, "⚠️ The egg was empty (Database error: No chars for this rarity)."
+
+    character = random.choice(waifus)
+    await user_collection.update_one({"id": user_id}, {"$push": {"characters": character}}, upsert=True)
+    await add_xp(user_id, 15, "egg_hatch")
+    
+    return True, character
+
+
+async def crack_open_egg_inline(query: types.CallbackQuery, user_id: int, egg: dict):
     await query.message.edit_text("🥚 <b>Cracking open...</b>", parse_mode=ParseMode.HTML)
     await asyncio.sleep(2)
 
+    success, result = await process_egg_hatch(user_id, egg)
+    
+    if not success:
+        await query.message.edit_text(result, parse_mode=ParseMode.HTML)
+        return
 
-    if egg.get("is_corrupted", False):
-        if random.random() < 0.5:
-            await query.message.edit_text("💥 <b>The egg exploded!</b>\nIt was corrupted...", parse_mode=ParseMode.HTML)
-            return
-        else:
-            rarity = RARITY_MAP[9]
-    else:
-        rarity_pool = EGG_TIERS[egg["tier"]]["pool"]
-        rarity = random.choice(rarity_pool)
-
-
-    from Grabber.core.waifu import get_or_load_characters
-    waifus = await get_or_load_characters(rarity)
-    if waifus:
-        character = random.choice(waifus)
-        await user_collection.update_one({"id": user_id}, {"$push": {"characters": character}}, upsert=True)
-
-
-        await add_xp(user_id, 15, "egg_hatch")
-
-        await query.message.edit_text("🎉 <b>Success! Sending details...</b>", parse_mode=ParseMode.HTML)
-        await query.message.reply_photo(
-            photo=character["img_url"],
-            caption=(
-                f"🐣 <b>Hatched Successfully!</b>\n\n"
-                f"📛 <b>{html_escape(character['name'])}</b>\n"
-                f"✨ <b>{html_escape(rarity)}</b>\n"
-                f"🎬 {html_escape(character['anime'])}"
-            ),
-            parse_mode=ParseMode.HTML
-        )
-    else:
-        await query.message.edit_text("⚠️ The egg was empty (DB error).", parse_mode=ParseMode.HTML)
-
-
+    character = result
+    await query.message.edit_text("🎉 <b>Success! Sending details...</b>", parse_mode=ParseMode.HTML)
+    await query.message.reply_photo(
+        photo=character["img_url"],
+        caption=(
+            f"🐣 <b>Hatched Successfully!</b>\n\n"
+            f"📛 <b>{html_escape(character['name'])}</b>\n"
+            f"✨ <b>{html_escape(character['rarity'])}</b>\n"
+            f"🎬 {html_escape(character['anime'])}"
+        ),
+        parse_mode=ParseMode.HTML
+    )
 
 @app.on_message(filters.command("hatch"))
 async def hatch_cmd(_, message: types.Message):
-
     await show_egg_page(message, 0, message.from_user.id)
 
 async def crack_open_egg(message, user_id, egg, index):
-
-    await user_collection.update_one({"id": user_id}, {"$pull": {"eggs": {"id": egg["id"]}}})
-
     msg = await message.reply_text("🥚 <b>Cracking open...</b>", parse_mode=ParseMode.HTML)
     await asyncio.sleep(2)
 
+    success, result = await process_egg_hatch(user_id, egg)
+    
+    if not success:
+        await msg.edit_text(result, parse_mode=ParseMode.HTML)
+        return
 
-    if egg.get("is_corrupted", False):
-        if random.random() < 0.5:
-            await msg.edit_text("💥 <b>The egg exploded!</b>\nIt was corrupted... You got nothing.", parse_mode=ParseMode.HTML)
-            return
-        else:
-
-            rarity = RARITY_MAP[9]
-    else:
-
-        rarity_pool = EGG_TIERS[egg["tier"]]["pool"]
-        rarity = random.choice(rarity_pool)
-
-
-    from Grabber.core.waifu import get_or_load_characters
-    waifus = await get_or_load_characters(rarity)
-    if waifus:
-        character = random.choice(waifus)
-        await user_collection.update_one({"id": user_id}, {"$push": {"characters": character}}, upsert=True)
-
-
-        await add_xp(user_id, 15, "egg_hatch")
-
-        await msg.edit_text("🎉 Success! Sending details...", parse_mode=ParseMode.HTML)
-        await message.reply_photo(
-            photo=character["img_url"],
-            caption=f"🐣 <b>Hatched Successfully!</b>\n\n"
-                    f"📛 <b>{html_escape(character['name'])}</b>\n"
-                    f"✨ <b>{html_escape(rarity)}</b>\n"
-                    f"🎬 {html_escape(character['anime'])}",
-            parse_mode=ParseMode.HTML
-        )
-    else:
-        await msg.edit_text("⚠️ The egg was empty (Database error: No chars for this rarity).", parse_mode=ParseMode.HTML)
+    character = result
+    await msg.edit_text("🎉 Success! Sending details...", parse_mode=ParseMode.HTML)
+    await message.reply_photo(
+        photo=character["img_url"],
+        caption=f"🐣 <b>Hatched Successfully!</b>\n\n"
+                f"📛 <b>{html_escape(character['name'])}</b>\n"
+                f"✨ <b>{html_escape(character['rarity'])}</b>\n"
+                f"🎬 {html_escape(character['anime'])}",
+        parse_mode=ParseMode.HTML
+    )

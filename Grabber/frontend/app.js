@@ -1,3 +1,4 @@
+window.API_BASE = '/api/v1_7b82';
 const tg = window.Telegram?.WebApp;
 
 // Global Error Handler for Android Debugging
@@ -26,6 +27,7 @@ if (tg) {
 
 let sessionToken = null;
 let currentUser = null;
+let DEFAULT_AVATAR = 'https://files.catbox.moe/2hsawz.jpg';
 
 let haremPage = 1, galleryPage = 1;
 let haremLoading = false, galleryLoading = false;
@@ -53,7 +55,7 @@ async function fetchRarities() {
         return;
     }
     try {
-        const response = await fetch('/api/v1_7b82/rarities');
+        const response = await fetch('/rarities');
         if (response.ok) {
             const rarities = await response.json();
             sessionStorage.setItem('rarities', JSON.stringify(rarities));
@@ -76,7 +78,7 @@ async function loadBotInfo() {
     const cached = sessionStorage.getItem('botInfo');
     if (cached) return JSON.parse(cached);
     try {
-        const response = await fetch('/api/v1_7b82/bot/info');
+        const response = await fetch('/bot/info');
         if (response.ok) {
             const bot = await response.json();
             sessionStorage.setItem('botInfo', JSON.stringify(bot));
@@ -94,7 +96,7 @@ async function init() {
 
     try {
         // 2. Authenticate
-        const authResponse = await fetch('/api/v1_7b82/secure_init', {
+        const authResponse = await fetch('/secure_init', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ initData: tg.initData })
@@ -115,7 +117,18 @@ async function init() {
             const bot = await botPromise; 
             if (bot) {
                 document.getElementById('loading-bot-name').innerText = bot.name;
-                if (bot.avatar) document.getElementById('loading-logo').style.backgroundImage = `url('${bot.avatar}')`;
+                if (bot.avatar) {
+                    document.getElementById('loading-logo').style.backgroundImage = `url('${bot.avatar}')`;
+                    DEFAULT_AVATAR = bot.avatar;
+                }
+            }
+            
+            // Set Telegram Header Color to match the app's dark theme
+            if (tg && tg.setHeaderColor) {
+                try {
+                    tg.setHeaderColor(tg.themeParams.bg_color || '#1c1c1d');
+                    tg.setBackgroundColor(tg.themeParams.bg_color || '#1c1c1d');
+                } catch(e) { }
             }
             document.querySelector('.loading-status').innerText = 'READY!';
 
@@ -226,7 +239,7 @@ function refreshData(pageId) {
 // --- Data Fetching & Rendering ---
 
 async function apiFetch(endpoint) {
-    const res = await fetch(`/api/v1_7b82${endpoint}`, {
+    const res = await fetch(`${endpoint}`, {
         headers: { 'Authorization': `Bearer ${sessionToken}` }
     });
     if (res.status === 401) { init(); return null; }
@@ -240,7 +253,7 @@ async function loadProfile() {
     currentUser = data;
     document.getElementById('user-name').innerText = data.first_name;
     document.getElementById('user-title').innerText = data.titles.current;
-    document.getElementById('user-avatar').style.backgroundImage = `url('${data.avatar || 'https://files.catbox.moe/2hsawz.jpg'}')`;
+    document.getElementById('user-avatar').style.backgroundImage = `url('${data.avatar || DEFAULT_AVATAR}')`;
 
     // Level & XP
     document.getElementById('user-level-badge').innerText = data.stats.level || 1;
@@ -281,7 +294,7 @@ function renderPet(pet) {
     }
     section.style.display = 'block';
     container.innerHTML = `
-        <div class="pet-img-container" style="background-image: url('${pet.img || 'https://files.catbox.moe/2hsawz.jpg'}')"></div>
+        <div class="pet-img-container" style="background-image: url('${pet.img || DEFAULT_AVATAR}')"></div>
         <div class="pet-info-mini">
             <div class="pet-name-line">${pet.name} <span style="font-size:10px; color:var(--hint-color)">Lvl ${pet.level}</span></div>
             <div class="pet-ability-line">✨ ${pet.ability}</div>
@@ -321,7 +334,7 @@ function renderEggs(eggs) {
 
 async function incubateEgg(eggId) {
     if (tg) tg.HapticFeedback.impactOccurred('medium');
-    const res = await fetch(`/api/v1_7b82/eggs/incubate/${eggId}`, {
+    const res = await fetch(`/eggs/incubate/${eggId}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${sessionToken}` }
     });
@@ -336,7 +349,7 @@ async function incubateEgg(eggId) {
 
 async function hatchEgg(eggId) {
     if (tg) tg.HapticFeedback.notificationOccurred('success');
-    const res = await fetch(`/api/v1_7b82/eggs/hatch/${eggId}`, {
+    const res = await fetch(`/eggs/hatch/${eggId}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${sessionToken}` }
     });
@@ -484,7 +497,7 @@ async function loadQuests() {
 }
 
 async function claimQuest(qid) {
-    const res = await fetch(`/api/v1_7b82/quests/claim/${qid}`, {
+    const res = await fetch(`/quests/claim/${qid}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${sessionToken}` }
     });
@@ -516,7 +529,7 @@ async function loadLeaderboard(metric = 'level') {
     const top3 = data.slice(0, 3);
     const renderPodiumItem = (user, rank) => `
         <div class="podium-item rank-${rank}">
-            <div class="podium-avatar" style="background-image:url('${user?.avatar || 'https://files.catbox.moe/2hsawz.jpg'}'); background-size:cover"></div>
+            <div class="podium-avatar" style="background-image:url('${user?.avatar || DEFAULT_AVATAR}'); background-size:cover"></div>
             <div style="font-size:${rank === 1 ? '14px' : '12px'}; font-weight:${rank === 1 ? 'bold' : 'normal'}">
                 ${user?.name || 'TBA'}
             </div>
@@ -531,7 +544,7 @@ async function loadLeaderboard(metric = 'level') {
     list.innerHTML = data.slice(3).map(entry => `
         <div class="list-item">
             <span style="color:var(--hint-color); width:24px; font-size:11px">#${entry.rank}</span>
-            <div class="list-item-avatar" style="background-image:url('${entry.avatar || 'https://files.catbox.moe/2hsawz.jpg'}')"></div>
+            <div class="list-item-avatar" style="background-image:url('${entry.avatar || DEFAULT_AVATAR}')"></div>
             <span style="flex:1; font-weight:700">${entry.name}</span>
             <span style="font-weight:900; color:var(--button-color)">
                 ${metric === 'level' ? `Lvl ${entry.level || 0}` : entry.value.toLocaleString()}
@@ -562,7 +575,7 @@ async function showCharDetails(charId) {
     document.getElementById('modal-char-img').style.backgroundImage = 'none';
 
     try {
-        const response = await fetch(`/api/v1_7b82/character/${charId}`);
+        const response = await fetch(`/character/${charId}`);
         if (response.ok) {
             const char = await response.json();
             document.getElementById('modal-char-name').innerText = char.name;
