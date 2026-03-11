@@ -53,7 +53,7 @@ async def send_shop_hub(message_or_query):
     builder = KeyboardBuilder()
     webapp_btn = get_webapp_button(is_private, path="#shop")
     if webapp_btn:
-        builder.add_button("Visit Web Shop", webapp=webapp_btn.web_app if hasattr(webapp_btn, "web_app") else None, url=webapp_btn.url if hasattr(webapp_btn, "url") else None)
+        builder.add_button("Visit Web Shop", web_app=webapp_btn.web_app if hasattr(webapp_btn, "web_app") else None, url=webapp_btn.url if hasattr(webapp_btn, "url") else None, style=enums.ButtonStyle.SUCCESS)
     
     builder.add_row(
         types.InlineKeyboardButton("Character Shop", callback_data="hub_char"),
@@ -152,7 +152,7 @@ async def send_shop_message(message, user_id):
     builder = KeyboardBuilder()
     webapp_btn = get_webapp_button(user_id == message.from_user.id if hasattr(message, "from_user") else True, path="#shop")
     if webapp_btn:
-        builder.add_button("View in WebApp", webapp=webapp_btn.web_app if hasattr(webapp_btn, "web_app") else None, url=webapp_btn.url if hasattr(webapp_btn, "url") else None)
+        builder.add_button("View in WebApp", web_app=webapp_btn.web_app if hasattr(webapp_btn, "web_app") else None, url=webapp_btn.url if hasattr(webapp_btn, "url") else None, style=enums.ButtonStyle.SUCCESS)
         
     builder.add_button("Buy Character", callback_data=f"ask_buy_char_{char.id}_{user_id}", style=enums.ButtonStyle.SUCCESS)
     builder.add_row(
