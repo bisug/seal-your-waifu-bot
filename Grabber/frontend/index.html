@@ -88,7 +88,6 @@
                 </div>
             </div>
 
-            <!-- My Collection (Elevated) -->
             <div id="harem-section" class="quest-section" style="margin-top: 20px;">
                 <div class="section-header">
                     <span class="header-line"></span>
@@ -98,16 +97,25 @@
                 
                 <div class="filter-bar-luxury">
                     <div class="search-wrapper">
+                        <div class="search-icon-inside">
+                            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                        </div>
                         <input type="text" id="harem-search" placeholder="Search collection...">
                     </div>
-                    <select id="harem-filter-rarity">
-                        <option value="">Rarity (All)</option>
-                    </select>
+                    <div class="filter-select-wrapper">
+                        <select id="harem-filter-rarity">
+                            <option value="">Rarity (All)</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div id="harem-grid" class="char-grid">
                     <!-- Cards here -->
                 </div>
+
                 <div id="harem-loading" style="text-align:center; padding:10px; display:none;">
                     <div class="spinner-mini"></div>
                 </div>
@@ -136,25 +144,8 @@
                 </div>
             </div>
 
-            <!-- Integrated Harem Section -->
-            <div id="integrated-harem-section" class="quest-section" style="padding-bottom:100px;">
-                <div class="section-header">
-                    <span class="header-line"></span>
-                    <h4>MY COLLECTION</h4>
-                    <span class="header-line"></span>
-                </div>
-                <div class="filter-bar">
-                    <input type="text" id="harem-search" placeholder="Search collection...">
-                    <select id="harem-filter-rarity">
-                        <option value="">Rarity (All)</option>
-                    </select>
-                </div>
-                <div id="harem-grid" class="char-grid">
-                    <!-- Character cards here -->
-                </div>
-                <div id="harem-loading" style="text-align:center; padding:10px; display:none;">Loading more...</div>
-            </div>
         </div>
+
 
 
         <!-- Global Gallery Page -->
@@ -167,19 +158,32 @@
             </div>
 
             <div class="quest-section">
-                <div class="filter-bar">
-                    <input type="text" id="gallery-search" placeholder="Find characters...">
-                    <select id="gallery-filter-rarity">
-                        <option value="">Rarity (All)</option>
-                    </select>
+                <div class="filter-bar-luxury">
+                    <div class="search-wrapper">
+                        <div class="search-icon-inside">
+                            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                        </div>
+                        <input type="text" id="gallery-search" placeholder="Find characters...">
+                    </div>
+                    <div class="filter-select-wrapper">
+                        <select id="gallery-filter-rarity">
+                            <option value="">Rarity (All)</option>
+                        </select>
+                    </div>
                 </div>
                 <div id="gallery-scroll-container">
                     <div id="gallery-grid" class="char-grid">
                         <!-- Gallery cards here -->
                     </div>
-                    <div id="gallery-loading" style="text-align:center; padding:10px; display:none;">Loading more...</div>
+                    <div id="gallery-loading" style="text-align:center; padding:10px; display:none;">
+                        <div class="spinner-mini"></div>
+                    </div>
                 </div>
             </div>
+
         </div>
 
         <!-- Leaderboard Page -->
