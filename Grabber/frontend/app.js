@@ -320,10 +320,10 @@ function renderEggs(eggs) {
             <div class="egg-name-tiny">${egg.name}</div>
             <div class="egg-status-pill">${egg.status}</div>
             ${egg.status === 'fresh' ? `
-                <button class="egg-btn-action" onclick="incubateEgg('${egg.id}')">Incubate</button>
+                <button class="egg-btn-action" onclick="incubateEgg('${egg.id}', event)">Incubate</button>
             ` : ''}
             ${egg.status === 'incubating' && egg.remaining_mins <= 0 ? `
-                <button class="egg-btn-action" style="background:var(--success-color)" onclick="hatchEgg('${egg.id}')">Hatch!</button>
+                <button class="egg-btn-action" style="background:var(--success-color)" onclick="hatchEgg('${egg.id}', event)">Hatch!</button>
             ` : ''}
             ${egg.status === 'incubating' && egg.remaining_mins > 0 ? `
                 <div style="font-size:9px; margin-top:8px; color:var(--button-color)">${egg.remaining_mins}m left</div>
@@ -332,7 +332,11 @@ function renderEggs(eggs) {
     `).join('');
 }
 
-async function incubateEgg(eggId) {
+async function incubateEgg(eggId, event) {
+    if (event && event.target) {
+        event.target.disabled = true;
+        event.target.innerText = "Processing...";
+    }
     if (tg) tg.HapticFeedback.impactOccurred('medium');
     const res = await fetch(`${window.API_BASE}/eggs/incubate/${eggId}`, {
         method: 'POST',
@@ -342,12 +346,20 @@ async function incubateEgg(eggId) {
         tg?.showAlert("Incubation started!");
         loadProfile();
     } else {
+        if (event && event.target) {
+            event.target.disabled = false;
+            event.target.innerText = "Incubate";
+        }
         const err = await res.json();
         tg?.showAlert(err.detail || "Failed to start incubation");
     }
 }
 
-async function hatchEgg(eggId) {
+async function hatchEgg(eggId, event) {
+    if (event && event.target) {
+        event.target.disabled = true;
+        event.target.innerText = "Hatching...";
+    }
     if (tg) tg.HapticFeedback.notificationOccurred('success');
     const res = await fetch(`${window.API_BASE}/eggs/hatch/${eggId}`, {
         method: 'POST',
@@ -364,6 +376,10 @@ async function hatchEgg(eggId) {
             loadProfile();
         }
     } else {
+        if (event && event.target) {
+            event.target.disabled = false;
+            event.target.innerText = "Hatch!";
+        }
         const err = await res.json();
         tg?.showAlert(err.detail || "Failed to hatch egg");
     }
@@ -485,7 +501,7 @@ async function loadQuests() {
                 </div>
             </div>
             ${(q.progress || 0) >= (q.target || 1) && !q.claimed ?
-            `<button onclick="claimQuest('${q.id}')" style="width:auto; padding:6px 12px; margin:0">Claim</button>` :
+            `<button onclick="claimQuest('${q.id}', event)" style="width:auto; padding:6px 12px; margin:0">Claim</button>` :
             (q.claimed ? '<span style="color:var(--success-color)">COMPLETED</span>' : '')}
     `;
 
@@ -503,7 +519,11 @@ async function loadQuests() {
     document.getElementById('weekly-quests-list').innerHTML = '<h4>Weekly</h4>' + (data.weekly || []).map(renderQuest).join('');
 }
 
-async function claimQuest(qid) {
+async function claimQuest(qid, event) {
+    if (event && event.target) {
+        event.target.disabled = true;
+        event.target.innerText = "...";
+    }
     const res = await fetch(`${window.API_BASE}/quests/claim/${qid}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${sessionToken}` }
@@ -512,6 +532,11 @@ async function claimQuest(qid) {
         tg.HapticFeedback.notificationOccurred('success');
         loadQuests();
         loadProfile();
+    } else {
+        if (event && event.target) {
+            event.target.disabled = false;
+            event.target.innerText = "Claim";
+        }
     }
 }
 
