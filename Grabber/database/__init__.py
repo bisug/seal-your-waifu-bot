@@ -32,16 +32,28 @@ class Database:
         self.deletion_queue = self.db['deletion_queue']
 
     async def ensure_indexes(self):
-        """Create necessary indexes for performance."""
-        await self.users.create_index("id", unique=True)
-        await self.anime_characters.create_index("id", unique=True)
-        await self.anime_characters.create_index("rarity")
-        await self.spawns.create_index("chat_id")
-        await self.message_counts.create_index("chat_id")
-        await self.deletion_queue.create_index("delete_at")
-        await self.group_user_totals.create_index([("group_id", 1), ("user_id", 1)])
-        await self.groups.create_index("group_id")
-        LOGGER.info("Database indexes ensured.")
+        """Create necessary indexes for performance. Uses sparse=True to handle partially corrupt data."""
+        try:
+            # Users index on Telegram ID
+            await self.users.create_index("id", unique=True, sparse=True)
+            
+            # Characters index on ID
+            await self.anime_characters.create_index("id", unique=True, sparse=True)
+            await self.anime_characters.create_index("rarity")
+            
+            # Message counts and tracking
+            await self.spawns.create_index("chat_id")
+            await self.message_counts.create_index("chat_id")
+            
+            # Operational indexes
+            await self.deletion_queue.create_index("delete_at")
+            await self.group_user_totals.create_index([("group_id", 1), ("user_id", 1)])
+            await self.groups.create_index("group_id")
+            
+            LOGGER.info("Database indexes ensured successfully.")
+        except Exception as e:
+            LOGGER.error(f"Failed to ensure all indexes: {e}")
+            # We don't re-raise here so the bot can still start
 
 # Initialize Database
 try:
