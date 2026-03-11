@@ -50,12 +50,12 @@ class SealClient(Client):
     Custom Client subclass for Seal-Bot.
     Consolidated into __init__.py for simpler project structure.
     """
-    def __init__(self):
+    def __init__(self, name="Grabber", bot_token=None):
         super().__init__(
-            name="Grabber",
+            name=name,
             api_id=config.API_ID,
             api_hash=config.API_HASH,
-            bot_token=config.TOKEN,
+            bot_token=bot_token or config.TOKEN,
             app_version="Seal-Bot v2",
             device_model="Seal-Server",
             system_version="Linux",
@@ -77,8 +77,9 @@ class SealClient(Client):
         BOT_NAME = me.first_name
 
         # 2. Register Global Handlers
-        from Grabber.core.message_counter import message_counter
-        self.add_handler(MessageHandler(message_counter, filters.group & ~filters.command(["seal", "messagecount"])), group=1)
+        if self.name == "MainBot":
+            from Grabber.core.message_counter import message_counter
+            self.add_handler(MessageHandler(message_counter, filters.group & ~filters.command(["seal", "messagecount"])), group=1)
 
         # 3. Load Modules
         from Grabber.modules import ALL_MODULES
@@ -92,9 +93,18 @@ class SealClient(Client):
         # 4. Set Bot Commands
         await self._set_commands_internal()
 
-        # 5. Start Persistent Deletion Worker
-        from Grabber.core.deletion import deletion_worker
-        asyncio.create_task(deletion_worker())
+        if self.name == "MainBot":
+            # 5. Ensure DB indexes are created (only needs to run once)
+            from Grabber.database import seal_db
+            await seal_db.ensure_indexes()
+
+            # 6. Start Persistent Deletion Worker
+            from Grabber.core.deletion import deletion_worker
+            asyncio.create_task(deletion_worker())
+
+            # 7. Start cache flush worker to persist in-memory state to DB
+            from Grabber.core.spawns import flush_cache_to_db
+            asyncio.create_task(flush_cache_to_db())
 
         LOGGER.info(f"SealClient started as {me.first_name} (@{me.username}).")
 
@@ -127,7 +137,18 @@ class SealClient(Client):
 
     async def stop(self, *args):
         await super().stop()
-        LOGGER.info("SealClient stopped.")
+        LOGGER.info(f"{self.name} stopped.")
 
-app = SealClient()
+app = SealClient(name="MainBot", bot_token=config.TOKEN)
+nguess_bot = SealClient(name="NguessBot", bot_token=config.SUB_TOKEN)
+
+# For backward compatibility and modularity
 Grabberu = app
+
+async def start_bots():
+    await app.start()
+    await nguess_bot.start()
+
+async def stop_bots():
+    await app.stop()
+    await nguess_bot.stop()

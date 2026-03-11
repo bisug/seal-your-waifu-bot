@@ -7,6 +7,7 @@ load_dotenv()
 class Config:
     # Bot identity
     TOKEN =""
+    SUB_TOKEN =""
     BOT_USERNAME = None  # Fetched automatically at startup
 
     # Telegram API credentials

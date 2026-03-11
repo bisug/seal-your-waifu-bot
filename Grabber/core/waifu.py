@@ -1,5 +1,6 @@
 import httpx
 import random
+import time
 from typing import Dict, List
 from Grabber.database import collection, db
 from Grabber import LOGGER
@@ -85,14 +86,31 @@ async def get_character_by_id(char_id: str) -> dict or None:
 
 # Cache for characters grouped by rarity to improve spawn performance
 characters_by_rarity: Dict[str, list] = {}
+_cache_timestamps: Dict[str, float] = {}
+CACHE_TTL = 3600  # 1 hour
 
 async def get_or_load_characters(rarity: str) -> list:
     """
     Get a list of characters for a specific rarity, loading from DB into cache if needed.
+    Cache is invalidated after CACHE_TTL seconds so new uploads appear without restart.
     """
-    if rarity not in characters_by_rarity:
+    now = time.time()
+    if rarity not in characters_by_rarity or now - _cache_timestamps.get(rarity, 0) > CACHE_TTL:
         cursor = collection.find({"rarity": rarity})
         chars = await cursor.to_list(length=None)
         random.shuffle(chars)
         characters_by_rarity[rarity] = chars
+        _cache_timestamps[rarity] = now
     return characters_by_rarity[rarity]
+
+def invalidate_character_cache(rarity: str = None):
+    """
+    Invalidate the character cache. Pass a rarity to invalidate only that rarity,
+    or call with no args to invalidate all. Call this after uploading new characters.
+    """
+    if rarity:
+        _cache_timestamps.pop(rarity, None)
+        characters_by_rarity.pop(rarity, None)
+    else:
+        _cache_timestamps.clear()
+        characters_by_rarity.clear()

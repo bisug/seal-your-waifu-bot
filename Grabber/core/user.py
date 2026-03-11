@@ -1,26 +1,36 @@
 from Grabber.database import user_collection
+from Grabber.core.cache import invalidate_user_cache, get_cached_user, set_cached_user
 
 async def get_user_data(user_id: int) -> dict or None:
     """
-    Fetch all data associated with a user from the database.
+    Fetch all data associated with a user.
+    Checks Redis first, then MongoDB.
     """
-    return await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
+    cached = await get_cached_user(user_id)
+    if cached is not None:
+        return cached
+    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
+    if user:
+        await set_cached_user(user_id, user)
+    return user
 
 async def update_user(user_id: int, update_query: dict):
     """
-    Apply a MongoDB update query to a user's document.
+    Apply a MongoDB update query to a user's document and invalidate cache.
     """
     await user_collection.update_one({"id": {"$in": [user_id, str(user_id)]}}, update_query, upsert=True)
+    await invalidate_user_cache(user_id)
 
 async def add_char_to_user(user_id: int, character: dict):
     """
-    Add a character object to the user's collection.
+    Add a character object to the user's collection and invalidate cache.
     """
     await user_collection.update_one(
         {"id": {"$in": [user_id, str(user_id)]}},
         {"$push": {"characters": character}},
         upsert=True
     )
+    await invalidate_user_cache(user_id)
 
 async def remove_char_from_user(user_id: int, char_id: str) -> bool:
     """

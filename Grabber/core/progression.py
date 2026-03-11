@@ -76,14 +76,18 @@ async def add_xp(user_id: int, amount: int, source: str = "unknown"):
     LOGGER.info(f"User {user_id} gained {amount} XP from {source}. Level: {old_level} -> {new_level}")
 
     if new_level > old_level:
-        await check_and_grant_rewards(user_id, old_level, new_level)
+        await check_and_grant_rewards(user_id, old_level, new_level, user)
 
-async def check_and_grant_rewards(user_id: int, old_level: int, new_level: int):
+async def check_and_grant_rewards(user_id: int, old_level: int, new_level: int, user_data: dict = None):
     """
     Iterate through newly reached levels and grant corresponding rewards
     based on the user's Battle Pass type.
+    Accepts pre-fetched user_data to avoid a redundant DB query.
     """
-    user = await user_collection.find_one({"id": user_id})
+    if user_data is None:
+        user = await user_collection.find_one({"id": user_id})
+    else:
+        user = user_data
     pass_type = user.get("pass_type", "free")
     claimed_levels = set(user.get("claimed_levels", []))
 
