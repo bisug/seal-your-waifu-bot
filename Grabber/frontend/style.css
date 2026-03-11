@@ -224,11 +224,10 @@ body {
     font-size: 10px;
 }
 
-/* Quests Luxe Overhaul */
-.quests-meta-banner {
+/* --- Global Luxury Layout Standardization --- */
+.meta-banner {
     height: 100px;
     margin: -16px -16px 20px -16px;
-    background: linear-gradient(135deg, var(--rarity-epic), var(--button-color));
     position: relative;
     overflow: hidden;
     border-radius: 0 0 24px 24px;
@@ -260,11 +259,17 @@ body {
     color: rgba(255,255,255,0.7);
 }
 
+/* Page Specific Banners */
+.bg-profile { background: linear-gradient(135deg, var(--rarity-legendary), var(--rarity-mythical)); }
+.bg-gallery { background: linear-gradient(135deg, var(--accent-color), var(--rarity-epic)); }
+.bg-leaderboard { background: linear-gradient(135deg, #ffd700, #ff9f0a); }
+.bg-quests { background: linear-gradient(135deg, var(--rarity-epic), var(--button-color)); }
+
 .section-header {
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-bottom: 16px;
+    margin: 24px 0 16px 0;
 }
 
 .section-header h4 {
@@ -274,6 +279,7 @@ body {
     letter-spacing: 1.5px;
     color: var(--hint-color);
     white-space: nowrap;
+    text-transform: uppercase;
 }
 
 .header-line {
@@ -282,6 +288,18 @@ body {
     flex: 1;
 }
 
+/* Shared Section Container */
+.glass-section {
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 20px;
+    border-radius: 24px;
+    border: 0.5px solid var(--glass-border);
+    margin-bottom: 20px;
+}
+
+/* Quests Specific Card Styling (Stay as is but use shared icon look) */
 .quest-card {
     background: var(--glass-bg);
     backdrop-filter: blur(15px);
@@ -583,12 +601,7 @@ body {
 
 /* --- Phase 3: Luxury Profile Styles --- */
 #profile-banner {
-    height: 120px;
-    margin: -16px -16px 0 -16px;
-    background: linear-gradient(135deg, var(--button-color), var(--rarity-epic));
-    opacity: 0.2;
-    mask-image: linear-gradient(to bottom, black, transparent);
-    -webkit-mask-image: linear-gradient(to bottom, black, transparent);
+    display: none; /* Replaced by meta-banner */
 }
 
 .user-card-luxury {
@@ -763,15 +776,7 @@ body {
     color: var(--hint-color);
 }
 
-.glass-section {
-    margin-top: 24px;
-    background: var(--glass-bg);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    padding: 20px;
-    border-radius: 24px;
-    border: 0.5px solid var(--glass-border);
-}
+/* Deprecated glass-section margin, handled by standard margin-top or section spacing */
 
 .badge-row {
     display: flex;

@@ -251,9 +251,15 @@ async function loadProfile() {
     if (!data) return;
 
     currentUser = data;
-    document.getElementById('user-name').innerText = data.first_name;
-    document.getElementById('user-title').innerText = data.titles.current;
+    document.getElementById('user-name').innerText = data.first_name || 'User';
+    document.getElementById('user-title').innerText = data.titles?.current || 'Rookie';
     document.getElementById('user-avatar').style.backgroundImage = `url('${data.avatar || DEFAULT_AVATAR}')`;
+
+    // Update Banner Info
+    const bannerName = document.getElementById('banner-user-name');
+    const bannerTitle = document.getElementById('banner-user-title');
+    if (bannerName) bannerName.innerText = (data.first_name || 'TRAINER').toUpperCase();
+    if (bannerTitle) bannerTitle.innerText = data.titles?.current || 'Elite Trainer';
 
     // Level & XP
     document.getElementById('user-level-badge').innerText = data.stats.level || 1;
