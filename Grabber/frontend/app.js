@@ -703,3 +703,6 @@ if (typeof tg !== 'undefined') {
 } else {
     console.error("Telegram WebApp script not loaded");
 }
+document.getElementById('lb-metric-select').addEventListener('change', (e) => {
+    loadLeaderboard(e.target.value);
+});
