@@ -97,8 +97,8 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
         markup = get_paginated_keyboard(page, total_pages, "h", user_id, is_private)
         builder = KeyboardBuilder()
         builder.keyboard = markup.inline_keyboard.copy()
-        builder.add_row(types.InlineKeyboardButton("Search Collection", switch_inline_query_current_chat=f"collection.{user_id} ", style=enums.ButtonStyle.PRIMARY))
-        builder.add_row(types.InlineKeyboardButton("Global Search", switch_inline_query_current_chat="", style=enums.ButtonStyle.PRIMARY))
+        builder.add_row(types.InlineKeyboardButton("Search Collection", switch_inline_query_current_chat=f"collection.{user_id} "))
+        builder.add_row(types.InlineKeyboardButton("Global Search", switch_inline_query_current_chat=""))
         markup = builder.build()
 
         try:
