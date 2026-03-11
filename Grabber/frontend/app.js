@@ -398,7 +398,8 @@ async function loadHarem(append = false) {
         return;
     }
 
-    const html = data.items.map(char => renderCharCard(char, true)).join('');
+
+    const html = data.items.map((char, index) => renderCharCard(char, true, index)).join('');
 
     if (append) grid.innerHTML += html;
     else grid.innerHTML = html;
@@ -436,7 +437,7 @@ async function loadGallery(append = false) {
         return;
     }
 
-    const html = data.items.map(char => renderCharCard(char, false)).join('');
+    const html = data.items.map((char, index) => renderCharCard(char, false, index)).join('');
 
     if (append) grid.innerHTML += html;
     else grid.innerHTML = html;
@@ -445,11 +446,17 @@ async function loadGallery(append = false) {
     if (galleryHasMore) galleryPage++;
 }
 
-function renderCharCard(char, isHarem) {
+function renderCharCard(char, isHarem, index = 0) {
     const rarityColor = `var(--rarity-${char.rarity.toLowerCase()})`;
+    const glowColor = `var(--rarity-glow-${char.rarity.toLowerCase()})`;
+    // Calculate stagger delay based on index for smooth sequential rendering
+    const staggerDelay = (index % 25) * 0.04; 
+    
     return `
-        <div class="char-card" style="border-bottom: 2px solid ${rarityColor}" onclick="showCharDetails('${char.id}')">
-            <img src="${char.img_url}" class="char-img" loading="lazy">
+        <div class="char-card anim-stagger" style="border-bottom: 2px solid ${rarityColor}; --card-glow: ${glowColor}; animation-delay: ${staggerDelay}s" onclick="showCharDetails('${char.id}')">
+            <div class="char-img-wrapper skeleton">
+                <img src="${char.img_url}" class="char-img" loading="lazy" onload="this.style.opacity=1; this.parentElement.classList.remove('skeleton')">
+            </div>
             <span class="rarity-pill" style="background:${rarityColor}">${char.rarity}</span>
             ${isHarem ? `<span class="count-badge">x${char.count}</span>` : ''}
             ${!isHarem && char.owned ? '<span class="count-badge" style="background:var(--button-color); font-size:8px; letter-spacing:0.5px;">COLLECTED</span>' : ''}
@@ -565,10 +572,14 @@ function updateBackButton(pageId) {
 // --- Detail Modal ---
 
 async function showCharDetails(charId) {
-    if (tg) tg.HapticFeedback.impactOccurred('medium');
+    if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
 
-    // Show modal with loading state
+    // Show modal
     modal.classList.remove('hidden');
+    // Force reflow for CSS animation
+    void modal.offsetWidth; 
+    modal.classList.add('active');
+    
     document.getElementById('modal-char-name').innerText = "Loading...";
     document.getElementById('modal-char-anime').innerText = "";
     document.getElementById('modal-char-rarity').innerText = "???";
@@ -591,10 +602,41 @@ async function showCharDetails(charId) {
 }
 
 function closeModal(e) {
-    if (e && e.target !== modal) return;
-    modal.classList.add('hidden');
-    if (tg) tg.HapticFeedback.impactOccurred('light');
+    // Prevent closing if we clicked inside the content, UNLESS it's the close button
+    if (e && e.target !== modal && !e.target.classList.contains('modal-close-btn') && e.type !== 'touchend') return;
+    
+    modal.classList.remove('active');
+    if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+    
+    setTimeout(() => {
+        modal.classList.add('hidden');
+    }, 400); // Matches CSS transition time
 }
+
+// Swipe-to-Close Gesture Logic for Modal
+let touchStartY = 0;
+const modalContent = document.querySelector('.modal-content-glass');
+
+modalContent.addEventListener('touchstart', (e) => {
+    touchStartY = e.touches[0].clientY;
+}, {passive: true});
+
+modalContent.addEventListener('touchmove', (e) => {
+    const currentY = e.touches[0].clientY;
+    const diff = currentY - touchStartY;
+    // Only allow pull-down if scrolled to top
+    if (diff > 0 && modalContent.scrollTop <= 0) {
+        modalContent.style.transform = `translateY(${diff}px)`;
+    }
+}, {passive: false});
+
+modalContent.addEventListener('touchend', (e) => {
+    const diff = e.changedTouches[0].clientY - touchStartY;
+    modalContent.style.transform = ''; // Reset inline transform so CSS takes over
+    if (diff > 120 && modalContent.scrollTop <= 0) {
+        closeModal({type: 'touchend'});
+    }
+});
 
 // Start
 if (typeof tg !== 'undefined') {
