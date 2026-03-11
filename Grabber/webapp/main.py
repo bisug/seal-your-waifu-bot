@@ -5,15 +5,28 @@ from fastapi.responses import JSONResponse
 from Grabber.webapp.auth import validate_init_data, create_session, r
 from Grabber.webapp.api import router as api_router
 from Grabber.webapp.ws import router as ws_router
+from Grabber import start_bots, stop_bots
 from config import config
+from contextlib import asynccontextmanager
 import os
 import logging
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Start the Telegram bots
+    logging.info("Starting Telegram bots...")
+    await start_bots()
+    yield
+    # Shutdown: Stop the Telegram bots
+    logging.info("Stopping Telegram bots...")
+    await stop_bots()
 
 app = FastAPI(
     title="Telegram WebApp API",
     docs_url=None, 
     redoc_url=None, 
-    openapi_url=None
+    openapi_url=None,
+    lifespan=lifespan
 )
 
 @app.exception_handler(Exception)
