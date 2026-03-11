@@ -48,17 +48,35 @@ app.add_middleware(
 async def auth(request: Request):
     data = await request.json()
     init_data = data.get("initData")
+    token_provided = data.get("token")
     avatar_url = data.get("avatar")
     
-    validated_data = validate_init_data(init_data)
-    if not validated_data:
-        raise HTTPException(status_code=403, detail="Invalid Telegram initialization data")
-        
-    session_data = await create_session(validated_data)
-    if not session_data:
-        raise HTTPException(status_code=500, detail="Failed to create session")
-        
-    token, user_id = session_data
+    user_id = None
+    new_token = None
+
+    if init_data:
+        validated_data = validate_init_data(init_data)
+        if validated_data:
+            session_data = await create_session(validated_data)
+            if session_data:
+                new_token, user_id = session_data
+    
+    # Fallback to provided token if init_data is missing or invalid
+    if not user_id and token_provided:
+        if not r:
+            from Grabber.database import sessions_collection
+            token_doc = await sessions_collection.find_one({"_id": f"auth_token:{token_provided}"})
+            if token_doc:
+                user_id = token_doc.get("user_id")
+                new_token = token_provided
+        else:
+            user_id = await r.get(f"auth_token:{token_provided}")
+            if user_id:
+                new_token = token_provided
+                user_id = str(user_id)
+
+    if not user_id:
+        raise HTTPException(status_code=403, detail="Authentication failed. Please open the bot in PM.")
 
     # Update Avatar in DB if provided
     if avatar_url:
