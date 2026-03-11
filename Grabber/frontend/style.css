@@ -1504,7 +1504,85 @@ body {
 }
 
 .pet-shop-card.owned { opacity: 0.6; }
-.pet-shop-card.locked { opacity: 0.5; filter: grayscale(0.5); }
+.pet-shop-card.locked {
+    opacity: 0.8;
+    filter: grayscale(0.5);
+}
+
+/* Shop Enhancements */
+.preview-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 5;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    color: white;
+}
+
+.char-img-wrapper:active .preview-overlay {
+    opacity: 1;
+}
+
+.preview-overlay svg {
+    width: 24px;
+    height: 24px;
+}
+
+.shop-buy-btn {
+    width: calc(100% - 16px);
+    margin: 8px;
+    padding: 10px;
+    border: none;
+    border-radius: 10px;
+    background: var(--button-color);
+    color: white;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(72, 165, 255, 0.3);
+    transition: transform 0.2s ease, filter 0.2s ease;
+    z-index: 10;
+    position: relative;
+}
+
+.shop-buy-btn:active {
+    transform: scale(0.95);
+    filter: brightness(0.9);
+}
+
+.unlock-condition {
+    font-size: 10px;
+    font-weight: 800;
+    color: #ff4757;
+    margin: 6px 0;
+    background: rgba(255, 71, 87, 0.1);
+    padding: 4px 8px;
+    border-radius: 6px;
+    display: inline-block;
+    border: 0.5px solid rgba(255, 71, 87, 0.2);
+}
+
+.locked-btn {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--hint-color);
+    border: 0.5px solid var(--glass-border);
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 800;
+}
 
 /* Pass Upgrade Card */
 .pass-upgrade-card {
