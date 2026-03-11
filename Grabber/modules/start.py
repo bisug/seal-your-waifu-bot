@@ -38,7 +38,8 @@ HELP_DATA = {
              types.InlineKeyboardButton("🐾 Pet System", callback_data="help:pet")],
             [types.InlineKeyboardButton("⚔️ Battle & Economy", callback_data="help:battle"),
              types.InlineKeyboardButton("🎫 Progression", callback_data="help:progression")],
-            [types.InlineKeyboardButton("ℹ️ Info & Stats", callback_data="help:info")],
+            [types.InlineKeyboardButton("ℹ️ Info & Stats", callback_data="help:info"),
+             types.InlineKeyboardButton("🛠 Admin Tools", callback_data="help:owner")],
             [types.InlineKeyboardButton("⤾ Main Menu", callback_data="st:b")]
         ]
     },
@@ -46,13 +47,13 @@ HELP_DATA = {
         "text": """
 <b>🎮 Core Commands</b>
 
+🔹 <code>/nguess</code> - Start an anime character name guessing game
 🔹 <code>/seal &lt;name&gt;</code> - Catch a spawned character
 🔹 <code>/harem</code> - View your character collection
 🔹 <code>/fav &lt;id&gt;</code> - Set a favorite character
 🔹 <code>/trade &lt;user&gt; &lt;amount&gt;</code> - Trade characters/items
 🔹 <code>/gift &lt;id&gt;</code> - Gift a character to a user
 🔹 <code>/quiz</code> - Test your anime knowledge &amp; have fun!
-🔹 <code>/cnow</code> - [OWNER] Spawn a character immediately
 """,
     },
     "PET": {
@@ -71,6 +72,7 @@ HELP_DATA = {
 
 🔹 <code>/battle &lt;amount&gt;</code> - PvP duel (Turn-based strategy!)
 🔹 <code>/balance</code> - Check your Shards &amp; Zenith
+🔹 <code>/exchange</code> - Convert Shards into Zenith
 🔹 <code>/shop</code> - Universal Shop Hub (Chars, Pets, Items)
 🔹 <code>/daily</code> - Claim daily rewards (Streaks!)
 🔹 <code>/weekly</code> - Claim weekly bonus (Every 7 days)
@@ -84,6 +86,7 @@ HELP_DATA = {
 🔹 <code>/stats</code> - Global bot statistics
 🔹 <code>/rarities</code> - Character counts by rarity
 🔹 <code>/ctop</code> - Top chat members (Chat Leaderboard)
+🔹 <code>/mtop</code> - Global rich leaderboard (Shards)
 🔹 <code>/ping</code> - Real-time system status
 🔹 <code>/help</code> - Show this interactive menu
 """,
@@ -100,6 +103,17 @@ HELP_DATA = {
 
 <i>💡 Gain XP by catching, battling, and completing quests!</i>
 <i>🎁 Unlock rewards at levels 5, 10, 25, and 50</i>
+""",
+    },
+    "OWNER": {
+        "text": """
+<b>🛠 Admin Tools</b>
+
+🔹 <code>/cnow</code> - [OWNER] Spawn a character immediately
+🔹 <code>/ngon</code> - [OWNER] Enable /nguess in a sector
+🔹 <code>/ngoff</code> - [OWNER] Disable /nguess in a sector
+🔹 <code>/nglist</code> - [OWNER] View authorized sectors
+🔹 <code>/broadcast</code> - [OWNER] Send a global message
 """,
     }
 }

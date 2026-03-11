@@ -115,6 +115,9 @@ class SealClient(Client):
             command_pattern = re.compile(r"🔹\s+.*?/(?P<cmd>\w+).*?\s+-\s+(?P<desc>.+)")
             seen_commands = set()
 
+            # Commands allowed for NguessBot
+            sub_bot_allowlist = ["nguess", "ngon", "ngoff", "nglist", "start", "help"]
+
             for category in HELP_DATA.values():
                 if "text" in category:
                     for line in category["text"].split("\n"):
@@ -122,6 +125,11 @@ class SealClient(Client):
                         if match:
                             cmd = match.group("cmd")
                             desc = match.group("desc").strip()
+
+                            # Filter for Sub Bot
+                            if self.name == "NguessBot" and cmd not in sub_bot_allowlist:
+                                continue
+
                             if cmd not in seen_commands:
                                 commands.append(types.BotCommand(command=cmd, description=desc[:100]))
                                 seen_commands.add(cmd)
@@ -131,9 +139,9 @@ class SealClient(Client):
 
             if commands:
                 await self.set_bot_commands(commands)
-                LOGGER.info(f"Registered {len(commands)} commands.")
+                LOGGER.info(f"Registered {len(commands)} commands for {self.name}.")
         except Exception as e:
-            LOGGER.error(f"Failed to set commands: {e}")
+            LOGGER.error(f"Failed to set commands for {self.name}: {e}")
 
     async def stop(self, *args):
         await super().stop()
