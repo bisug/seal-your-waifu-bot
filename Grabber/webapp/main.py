@@ -21,8 +21,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     logging.error(f"Unhandled Exception: {exc}", exc_info=True)
     return JSONResponse(
         status_code=500,
-        content={"detail": "Internal server error. Please contact support if the issue persists."},
-    )
+        content={"detail": "Internal server error. Please contact support if the issue persists."})
 
 # CORS Configuration
 app.add_middleware(
@@ -30,8 +29,7 @@ app.add_middleware(
     allow_origins=["https://web.telegram.org", config.WEB_APP_URL],
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
-)
+    allow_headers=["*"])
 
 @api_router.post("/secure_init")
 async def auth(request: Request):

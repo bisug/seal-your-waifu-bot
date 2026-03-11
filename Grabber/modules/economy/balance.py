@@ -53,8 +53,8 @@ async def pay_cmd(_, message: types.Message):
 
     buttons = [
         [
-            types.InlineKeyboardButton("✅ Confirm", callback_data=f"pay_c_{recipient_id}_{amount}_{sender_id}", style=ButtonStyle.SUCCESS),
-            types.InlineKeyboardButton("❌ Cancel", callback_data=f"pay_a_{sender_id}", style=ButtonStyle.DANGER)
+            types.InlineKeyboardButton("✅ Confirm", callback_data=f"pay_c_{recipient_id}_{amount}_{sender_id}"),
+            types.InlineKeyboardButton("❌ Cancel", callback_data=f"pay_a_{sender_id}")
         ]
     ]
 

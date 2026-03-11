@@ -239,8 +239,8 @@ async def shop_mypet_navigation(_, query: types.CallbackQuery):
             pet = PET_SHOP[page]
             text = f"⚠️ <b>Confirm Purchase</b>\n\nBuy <b>{html_escape(pet['name'])}</b> for <b>{pet['zenith_price']} ⧫</b>?"
             keyboard = [[
-                types.InlineKeyboardButton("Confirm ✅", callback_data=f"petconfirm_{page}_{owner_id}", style=ButtonStyle.SUCCESS),
-                types.InlineKeyboardButton("Cancel ❌", callback_data=f"shop_next_{page}_{owner_id}", style=ButtonStyle.DANGER)
+                types.InlineKeyboardButton("Confirm ✅", callback_data=f"petconfirm_{page}_{owner_id}"),
+                types.InlineKeyboardButton("Cancel ❌", callback_data=f"shop_next_{page}_{owner_id}")
             ]]
             await query.message.edit_caption(text, reply_markup=types.InlineKeyboardMarkup(keyboard))
             return

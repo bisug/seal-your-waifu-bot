@@ -4,7 +4,7 @@ from Grabber import app
 from Grabber import sudo_users, OWNER_ID, CHARA_CHANNEL_ID, LOGGER
 from Grabber.core.waifu import upload_image_to_imgbb, add_character_to_db, get_character_by_id
 from Grabber.database import collection
-from Grabber.modules.rarities import RARITY_MAP
+from Grabber.modules.collection.rarities import RARITY_MAP
 
 WRONG_FORMAT_TEXT = """Wrong ❌️ format...  eg. reply /upload muzan-kibutsuji Demon-slayer 3
 

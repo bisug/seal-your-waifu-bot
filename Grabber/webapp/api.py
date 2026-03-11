@@ -9,8 +9,8 @@ from Grabber.webapp.auth import r
 from config import config
 import re
 from datetime import datetime, timedelta
-from Grabber.modules.pet import DEFAULT_PET, PET_SHOP
-from Grabber.modules.hunt import EGG_TIERS
+from Grabber.modules.progression.pet import DEFAULT_PET, PET_SHOP
+from Grabber.modules.economy.hunt import EGG_TIERS
 
 router = APIRouter()
 
@@ -50,7 +50,7 @@ async def get_me(user_id: int = Depends(get_current_user)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    from Grabber.modules.achievements import ACHIEVEMENTS
+    from Grabber.modules.progression.achievements import ACHIEVEMENTS
     raw_achievements = user.get("achievements") or []
     enriched_achievements = []
     for ach_id in raw_achievements:
@@ -235,7 +235,7 @@ async def get_gallery(
 
 @router.get("/quests", response_model=QuestsResponse)
 async def get_quests(user_id: int = Depends(get_current_user)):
-    from Grabber.modules.quests import get_user_quests, QUEST_POOL, WEEKLY_POOL
+    from Grabber.modules.progression.quests import get_user_quests, QUEST_POOL, WEEKLY_POOL
     quests_data = await get_user_quests(user_id)
     
     response = {"daily": [], "weekly": []}
@@ -256,7 +256,7 @@ async def get_quests(user_id: int = Depends(get_current_user)):
 
 @router.post("/quests/claim/{quest_id}")
 async def claim_quest(quest_id: str, user_id: int = Depends(get_current_user)):
-    from Grabber.modules.quests import get_user_quests, QUEST_POOL, WEEKLY_POOL, add_xp
+    from Grabber.modules.progression.quests import get_user_quests, QUEST_POOL, WEEKLY_POOL, add_xp
     
     quests = await get_user_quests(user_id)
     if quest_id not in quests:
@@ -289,7 +289,7 @@ async def get_leaderboard(
     if cached:
         return json.loads(cached)
         
-    from Grabber.modules.leaderboard import get_top_users
+    from Grabber.modules.info.leaderboard import get_top_users
     users = await get_top_users(metric, limit)
     
     metric_map = {
@@ -392,7 +392,7 @@ async def hatch_egg(egg_id: str, user_id: int = Depends(get_current_user)):
     # Re-use logic from hunt.py or just trigger the hatch
     # Since this is complex logic with DB updates, let's keep it simple for now and rely on the existing logic
     # but we need to implement it here for WebApp hatching.
-    from Grabber.modules.hunt import crack_open_egg_inline, collection as anime_col
+    from Grabber.modules.economy.hunt import crack_open_egg_inline, collection as anime_col
     from Grabber.core.progression import add_xp
     import random
     
@@ -414,7 +414,7 @@ async def hatch_egg(egg_id: str, user_id: int = Depends(get_current_user)):
     if egg.get("is_corrupted", False):
         if random.random() < 0.5:
             return {"status": "exploded", "message": "The egg exploded! It was corrupted..."}
-        from Grabber.modules.rarities import RARITY_MAP
+        from Grabber.modules.collection.rarities import RARITY_MAP
         rarity = RARITY_MAP[9]
     else:
         rarity_pool = EGG_TIERS[egg["tier"]]["pool"]
