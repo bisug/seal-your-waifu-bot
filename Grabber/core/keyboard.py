@@ -38,10 +38,27 @@ def get_webapp_button(is_private: bool = True, path: str = None) -> types.Inline
             style=enums.ButtonStyle.SUCCESS
         )
     else:
-        # FALLBACK FOR GROUPS/CHANNELS:
-        # We use the direct Heroku URL here because the user might not have set up 
-        # a 'Short Name' in BotFather yet. This ensures the button actually WORKS 
-        # and opens the app immediately in the browser.
+        # To "hide" the URL and get a professional Mini App feel in groups,
+        # we use the Telegram internal app link: https://t.me/bot_username/app_short_name
+        # Note: YOU MUST SET THIS UP IN @BotFather (Mini App -> Edit Short Name)
+        # Default name is 'app' unless changed in config.py
+        app_name = getattr(config, "MINI_APP_SHORT_NAME", "app")
+        bot_usr = config.BOT_USERNAME or BOT_USERNAME
+        
+        if bot_usr:
+            # Format: https://t.me/bot_username/app_short_name?startapp=optional_path
+            app_link = f"https://t.me/{bot_usr}/{app_name}"
+            if path:
+                # Telegram startapp parameters don't allow '#' so we pass it cleanly
+                app_link += f"?startapp={path.replace('#', '')}"
+            
+            return types.InlineKeyboardButton(
+                "Open Mini App", 
+                url=app_link,
+                style=enums.ButtonStyle.SUCCESS
+            )
+        
+        # Absolute fallback if username is missing
         return types.InlineKeyboardButton(
             "Open Mini App", 
             url=url,
