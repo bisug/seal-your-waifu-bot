@@ -55,7 +55,7 @@ async function fetchRarities() {
         return;
     }
     try {
-        const response = await fetch('/rarities');
+        const response = await fetch(`${window.API_BASE}/rarities`);
         if (response.ok) {
             const rarities = await response.json();
             sessionStorage.setItem('rarities', JSON.stringify(rarities));
@@ -78,7 +78,7 @@ async function loadBotInfo() {
     const cached = sessionStorage.getItem('botInfo');
     if (cached) return JSON.parse(cached);
     try {
-        const response = await fetch('/bot/info');
+        const response = await fetch(`${window.API_BASE}/bot/info`);
         if (response.ok) {
             const bot = await response.json();
             sessionStorage.setItem('botInfo', JSON.stringify(bot));
@@ -96,7 +96,7 @@ async function init() {
 
     try {
         // 2. Authenticate
-        const authResponse = await fetch('/secure_init', {
+        const authResponse = await fetch(`${window.API_BASE}/secure_init`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ initData: tg.initData })
@@ -239,7 +239,7 @@ function refreshData(pageId) {
 // --- Data Fetching & Rendering ---
 
 async function apiFetch(endpoint) {
-    const res = await fetch(`${endpoint}`, {
+    const res = await fetch(`${window.API_BASE}${endpoint}`, {
         headers: { 'Authorization': `Bearer ${sessionToken}` }
     });
     if (res.status === 401) { init(); return null; }
@@ -334,7 +334,7 @@ function renderEggs(eggs) {
 
 async function incubateEgg(eggId) {
     if (tg) tg.HapticFeedback.impactOccurred('medium');
-    const res = await fetch(`/eggs/incubate/${eggId}`, {
+    const res = await fetch(`${window.API_BASE}/eggs/incubate/${eggId}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${sessionToken}` }
     });
@@ -349,7 +349,7 @@ async function incubateEgg(eggId) {
 
 async function hatchEgg(eggId) {
     if (tg) tg.HapticFeedback.notificationOccurred('success');
-    const res = await fetch(`/eggs/hatch/${eggId}`, {
+    const res = await fetch(`${window.API_BASE}/eggs/hatch/${eggId}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${sessionToken}` }
     });
@@ -504,7 +504,7 @@ async function loadQuests() {
 }
 
 async function claimQuest(qid) {
-    const res = await fetch(`/quests/claim/${qid}`, {
+    const res = await fetch(`${window.API_BASE}/quests/claim/${qid}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${sessionToken}` }
     });
@@ -586,7 +586,7 @@ async function showCharDetails(charId) {
     document.getElementById('modal-char-img').style.backgroundImage = 'none';
 
     try {
-        const response = await fetch(`/character/${charId}`);
+        const response = await fetch(`${window.API_BASE}/character/${charId}`);
         if (response.ok) {
             const char = await response.json();
             document.getElementById('modal-char-name').innerText = char.name;
