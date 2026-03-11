@@ -59,9 +59,6 @@ async def auth(request: Request):
         
     token, user_id = session_data
     
-    # Also store the token -> user_id mapping for fast auth
-    await r.setex(f"auth_token:{token}", 3600, user_id)
-    
     return {"token": token}
 
 # Include routers with obfuscated prefix

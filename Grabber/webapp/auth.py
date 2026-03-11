@@ -52,6 +52,20 @@ async def create_session(user_data: dict):
     token_key = f"auth_token:{token}"
     
     if not r:
+        from Grabber.database import sessions_collection
+        import time
+        expiry = time.time() + 3600
+        # Store in MongoDB for fallback support
+        await sessions_collection.update_one(
+            {"_id": session_key},
+            {"$set": {"token": token, "expires_at": expiry}},
+            upsert=True
+        )
+        await sessions_collection.update_one(
+            {"_id": token_key},
+            {"$set": {"user_id": str(user_id), "expires_at": expiry}},
+            upsert=True
+        )
         return token, user_id
         
     # Store both mappings
@@ -64,7 +78,12 @@ async def get_current_user(auth: HTTPAuthorizationCredentials = Security(securit
     """Middleware to validate session token and handle rate limiting."""
     token = auth.credentials
     if not r:
-        raise HTTPException(status_code=503, detail="Session service unavailable")
+        from Grabber.database import sessions_collection
+        import time
+        token_doc = await sessions_collection.find_one({"_id": f"auth_token:{token}"})
+        if not token_doc or token_doc.get("expires_at", 0) < time.time():
+            raise HTTPException(status_code=401, detail="Invalid or expired session")
+        return int(token_doc["user_id"])
 
     user_id = await r.get(f"auth_token:{token}")
     if not user_id:
