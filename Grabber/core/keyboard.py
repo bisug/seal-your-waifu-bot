@@ -26,13 +26,19 @@ class KeyboardBuilder:
     def build(self) -> types.InlineKeyboardMarkup:
         return types.InlineKeyboardMarkup(self.keyboard)
 
-def get_webapp_button(is_private: bool = True) -> types.InlineKeyboardButton:
+def get_webapp_button(is_private: bool = True, path: str = None) -> types.InlineKeyboardButton:
     """Returns a standardized direct WebApp button, using deep links for groups to avoid Telegram errors."""
+    url = f"{WEB_APP_URL}{path}" if path else WEB_APP_URL
     if is_private:
-        return types.InlineKeyboardButton("Open Mini App", web_app=types.WebAppInfo(url=WEB_APP_URL))
+        return types.InlineKeyboardButton("Open Mini App", web_app=types.WebAppInfo(url=url))
     else:
         # Deep link launches the app in groups safely
-        return types.InlineKeyboardButton("Open Mini App", url=f"https://t.me/{BOT_USERNAME}/app")
+        deep_link = f"https://t.me/{BOT_USERNAME}/app"
+        if path:
+            # Extract fragment for startapp param
+            start_param = path.replace('#', '')
+            deep_link += f"?startapp={start_param}"
+        return types.InlineKeyboardButton("Open Mini App", url=deep_link)
 
 def get_paginated_keyboard(page: int, total_pages: int, callback_prefix: str, user_id: int, is_private: bool = True) -> types.InlineKeyboardMarkup:
     """Builds a standard paginated keyboard with navigation and optional group WebApp link."""
