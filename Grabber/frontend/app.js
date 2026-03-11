@@ -41,7 +41,8 @@ const containers = {
     profile: document.getElementById('page-profile'),
     gallery: document.getElementById('page-gallery'),
     quests: document.getElementById('page-quests'),
-    leaderboard: document.getElementById('page-leaderboard')
+    leaderboard: document.getElementById('page-leaderboard'),
+    shop: document.getElementById('page-shop')
 };
 
 const modal = document.getElementById('char-detail-modal');
@@ -93,8 +94,35 @@ async function loadBotInfo() {
     return null;
 }
 
+async function loadModules() {
+    const modules = ['profile', 'gallery', 'quests', 'leaderboard', 'shop'];
+    const version = '2.8'; // Cache busting
+    
+    const loadPromises = modules.map(async (name) => {
+        try {
+            const response = await fetch(`templates/${name}.html?v=${version}`);
+            if (response.ok) {
+                return { name, html: await response.text() };
+            }
+        } catch (e) {
+            console.error(`Failed to load module ${name}`, e);
+        }
+        return { name, html: '' };
+    });
+
+    const loaded = await Promise.all(loadPromises);
+    loaded.forEach(mod => {
+        const container = document.getElementById(`page-${mod.name}`);
+        if (container) container.innerHTML = mod.html;
+    });
+}
+
 async function init() {
-    // 1. Start loading bot info immediately
+    // 1. Load HTML Modules first
+    document.querySelector('.loading-status').innerText = 'LOADING MODULES...';
+    await loadModules();
+
+    // 2. Start loading bot info
     const botPromise = loadBotInfo();
 
     try {
@@ -114,8 +142,10 @@ async function init() {
             const authData = await authResponse.json();
             sessionToken = authData.token;
 
-            // 3. Setup and load initial data
+            // 4. Setup controls (now that modules are in DOM)
             setupControls();
+            
+            // 5. Load initial data
             fetchRarities();
             document.querySelector('.loading-status').innerText = 'LOADING PROFILE...';
             await loadProfile();
@@ -208,7 +238,7 @@ function setupControls() {
 // --- Navigation ---
 
 function navigate(pageId) {
-    const navPages = ['profile', 'gallery', 'quests', 'leaderboard'];
+    const navPages = ['profile', 'gallery', 'quests', 'leaderboard', 'shop'];
     document.querySelectorAll('.tab-item').forEach((item, idx) => {
         item.classList.toggle('active', navPages[idx] === pageId);
     });
@@ -241,6 +271,7 @@ function refreshData(pageId) {
         case 'gallery': loadGallery(false); break;
         case 'quests': loadQuests(); break;
         case 'leaderboard': loadLeaderboard(); break;
+        case 'shop': loadShop(); break;
     }
 }
 
@@ -624,6 +655,173 @@ function updateBackButton(pageId) {
     } else {
         tg.BackButton.show();
     }
+}
+
+// --- Shop Logic ---
+
+function switchShopTab(tab) {
+    document.querySelectorAll('.shop-view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.shop-subtab').forEach(t => t.classList.remove('active'));
+    
+    document.getElementById(`shop-content-${tab}`).classList.add('active');
+    const tabs = document.querySelectorAll('.shop-subtab');
+    if (tab === 'chars') tabs[0].classList.add('active');
+    if (tab === 'pets') tabs[1].classList.add('active');
+    if (tab === 'upgrades') tabs[2].classList.add('active');
+    
+    if (tg) tg.HapticFeedback.selectionChanged();
+}
+
+async function loadShop() {
+    const hub = await apiFetch('/shop/hub');
+    if (!hub) return;
+    
+    document.getElementById('shop-shards-val').innerText = hub.balance.toLocaleString();
+    document.getElementById('shop-zenith-val').innerText = hub.zenith.toLocaleString();
+    document.getElementById('shop-rarity-title').innerText = `DAILY STOCK (${hub.characters_rarity.toUpperCase()})`;
+    
+    // Load sub-sections (can be parallelized)
+    loadShopCharacters();
+    loadShopPets();
+    loadShopPass();
+}
+
+async function loadShopCharacters() {
+    const chars = await apiFetch('/shop/characters');
+    const grid = document.getElementById('shop-chars-grid');
+    if (!chars || chars.length === 0) {
+        grid.innerHTML = '<div class="empty-state">No stock today.</div>';
+        return;
+    }
+    
+    grid.innerHTML = chars.map(char => `
+        <div class="char-card shop-item ${char.owned ? 'owned' : ''}" onclick="${char.owned ? '' : `confirmShopBuy('${char.id}', '${char.name.replace(/'/g, "\\'")}', ${char.zenith_price || 5})`}">
+            <div class="char-img-wrapper">
+                <img src="${char.img_url}" class="char-img" loading="lazy">
+            </div>
+            <div class="shop-price-tag">⧫ ${char.zenith_price || 5}</div>
+            ${char.owned ? '<div class="owned-overlay">OWNED</div>' : ''}
+            <div class="char-info">
+                <div class="char-name">${char.name}</div>
+                <div style="font-size:9px; color:var(--hint-color)">${char.anime}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function loadShopPets() {
+    const data = await apiFetch('/shop/pets');
+    const list = document.getElementById('shop-pets-list');
+    if (!data) return;
+    
+    list.innerHTML = data.pets.map((pet, index) => {
+        const isOwned = data.owned.includes(pet.name);
+        const isLocked = data.current_level < pet.req_level;
+        
+        return `
+            <div class="pet-shop-card ${isOwned ? 'owned' : (isLocked ? 'locked' : '')}">
+                <div class="pet-shop-img" style="background-image: url('${pet.img}')"></div>
+                <div class="pet-shop-info">
+                    <div class="pet-shop-name">${pet.name}</div>
+                    <div class="pet-shop-ability">✨ ${pet.ability}</div>
+                    <div class="pet-shop-desc">${pet.desc}</div>
+                    <div class="pet-shop-stats">❤️ ${pet.hp} | ⚔️ ${pet.atk} | ⚡ ${pet.spd} | 🍀 ${Math.round(pet.luck*100)}%</div>
+                </div>
+                <div class="pet-shop-action">
+                    ${isOwned ? '<span class="owned-btn">OWNED</span>' : 
+                      (isLocked ? `<span class="locked-btn">LVL ${pet.req_level}</span>` : 
+                      `<button class="buy-btn" onclick="buyPet(${index}, '${pet.name.replace(/'/g, "\\'")}', ${pet.zenith_price})">⧫ ${pet.zenith_price}</button>`)}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+async function loadShopPass() {
+    const data = await apiFetch('/shop/battlepass');
+    const container = document.getElementById('shop-pass-container');
+    if (!data) return;
+    
+    const renderCard = (tier, price, color) => `
+        <div class="pass-upgrade-card ${data.current_tier === tier ? 'active' : ''}" style="border-left: 4px solid ${color}">
+            <div class="pass-info">
+                <div class="pass-tier-name">${tier.toUpperCase()} PASS</div>
+                <div class="pass-tier-status">${data.current_tier === tier ? 'CURRENTLY ACTIVE' : 'UPGRADE AVAILABLE'}</div>
+            </div>
+            <div class="pass-action">
+                ${data.current_tier === tier ? '✅' : 
+                  (data.current_tier === 'premium' && tier === 'premium' ? '✅' : 
+                  `<button class="buy-btn" onclick="upgradePass('${tier}', ${price})">⧫ ${price}</button>`)}
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = `
+        ${renderCard('premium', data.prices.premium, '#ffd700')}
+        ${renderCard('elite', data.prices.elite, '#00f2ff')}
+    `;
+}
+
+// --- Purchase Logic ---
+
+async function confirmShopBuy(charId, name, price) {
+    if (tg) tg.showConfirm(`Buy ${name} for ${price} Zenith?`, async (ok) => {
+        if (ok) {
+            const res = await fetch(`${window.API_BASE}/shop/buy/character/${charId}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${sessionToken}` }
+            });
+            if (res.ok) {
+                tg.HapticFeedback.notificationOccurred('success');
+                tg.showAlert(`Successfully purchased ${name}!`);
+                loadShop();
+                loadProfile();
+            } else {
+                const err = await res.json();
+                tg.showAlert(err.detail || "Purchase failed.");
+            }
+        }
+    });
+}
+
+async function buyPet(index, name, price) {
+    if (tg) tg.showConfirm(`Purchase ${name} for ${price} Zenith?`, async (ok) => {
+        if (ok) {
+            const res = await fetch(`${window.API_BASE}/shop/buy/pet/${index}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${sessionToken}` }
+            });
+            if (res.ok) {
+                tg.HapticFeedback.notificationOccurred('success');
+                tg.showAlert(`Successfully purchased ${name}!`);
+                loadShop();
+                loadProfile();
+            } else {
+                const err = await res.json();
+                tg.showAlert(err.detail || "Purchase failed.");
+            }
+        }
+    });
+}
+
+async function upgradePass(tier, price) {
+    if (tg) tg.showConfirm(`Upgrade to ${tier.toUpperCase()} Pass for ${price} Zenith?`, async (ok) => {
+        if (ok) {
+            const res = await fetch(`${window.API_BASE}/shop/upgrade_pass/${tier}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${sessionToken}` }
+            });
+            if (res.ok) {
+                tg.HapticFeedback.notificationOccurred('success');
+                tg.showAlert(`Battle Pass upgraded to ${tier.toUpperCase()}!`);
+                loadShop();
+                loadProfile();
+            } else {
+                const err = await res.json();
+                tg.showAlert(err.detail || "Upgrade failed.");
+            }
+        }
+    });
 }
 
 // --- Detail Modal ---

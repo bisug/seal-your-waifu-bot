@@ -10,7 +10,9 @@ from config import config
 import re
 from datetime import datetime, timedelta
 from Grabber.modules.progression.pet import DEFAULT_PET, PET_SHOP
-from Grabber.modules.economy.hunt import EGG_TIERS
+from Grabber.modules.economy.hunt import EGG_TIERS, process_egg_hatch
+from Grabber.modules.progression.battlepass import PASS_PRICES, LEVEL_REWARDS, PASS_EMOJI
+from Grabber.modules.economy.shop import get_daily_shop_characters, SHOP_LIMIT, DEFAULT_ZENITH_PRICE, SHOP_RARITY
 
 router = APIRouter()
 
@@ -447,3 +449,140 @@ async def hatch_egg(egg_id: str, user_id: int = Depends(get_current_user)):
             "img_url": character["img_url"]
         }
     }
+
+# --- SHOP ENDPOINTS ---
+
+@router.get("/shop/hub")
+async def get_shop_hub(user_id: int = Depends(get_current_user)):
+    """General shop status and user balances."""
+    user = await user_collection.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {
+        "balance": user.get("balance", 0),
+        "zenith": user.get("zenith", 0),
+        "pass_type": user.get("pass_type", "free"),
+        "characters_rarity": SHOP_RARITY
+    }
+
+@router.get("/shop/characters")
+async def get_shop_characters(user_id: int = Depends(get_current_user)):
+    """Fetch daily character stock."""
+    chars = await get_daily_shop_characters()
+    # Check "Owned" status
+    user = await user_collection.find_one({"id": user_id}, {"characters.id": 1})
+    owned_ids = set(c.get("id") for c in (user.get("characters") or [])) if user else set()
+    
+    response = []
+    for c in chars:
+        char_dict = c.dict()
+        char_dict["owned"] = c.id in owned_ids
+        char_dict["stock_limit"] = SHOP_LIMIT
+        response.append(char_dict)
+    return response
+
+@router.post("/shop/buy/character/{char_id}")
+async def buy_character_api(char_id: str, user_id: int = Depends(get_current_user)):
+    """Logic mirror from modules/economy/shop.py but returning JSON errors."""
+    from Grabber.database import collection
+    from Grabber.modules.progression.quests import update_quest_progress
+    from Grabber.modules.progression.achievements import check_achievements
+    
+    user_raw = await user_collection.find_one({"id": user_id})
+    if not user_raw: raise HTTPException(status_code=404, detail="User not found")
+    
+    char_raw = await collection.find_one({"id": char_id})
+    if not char_raw or char_raw.get("rarity") != SHOP_RARITY:
+        raise HTTPException(status_code=404, detail="Character not available in shop")
+    
+    price = char_raw.get("zenith_price", DEFAULT_ZENITH_PRICE)
+    if user_raw.get("zenith", 0) < price:
+        raise HTTPException(status_code=400, detail=f"Insufficient Zenith (Need {price})")
+        
+    # Ownership Check
+    owned_ids = [c["id"] for c in user_raw.get("characters", []) if isinstance(c, dict) and "id" in c]
+    if char_id in owned_ids:
+        raise HTTPException(status_code=400, detail="You already own this character")
+
+    # Atomic Update for Global Stock
+    stock_update = await collection.update_one(
+        {"id": char_id, "sold_count": {"$lt": SHOP_LIMIT}},
+        {"$inc": {"sold_count": 1}}
+    )
+    if stock_update.modified_count == 0:
+        raise HTTPException(status_code=400, detail="Character is SOLD OUT")
+
+    # User Update
+    user_update = await user_collection.update_one(
+        {"id": user_id, "zenith": {"$gte": price}},
+        {
+            "$inc": {"zenith": -price},
+            "$push": {"characters": {
+                "id": char_raw["id"], 
+                "name": char_raw["name"], 
+                "anime": char_raw["anime"], 
+                "rarity": char_raw["rarity"], 
+                "img_url": char_raw["img_url"]
+            }}
+        }
+    )
+
+    if user_update.modified_count == 0:
+        await collection.update_one({"id": char_id}, {"$inc": {"sold_count": -1}}) # Rollback
+        raise HTTPException(status_code=500, detail="Transaction failed")
+
+    await update_quest_progress(user_id, "big_spender", price)
+    await check_achievements(user_id)
+    return {"status": "success", "char_name": char_raw["name"]}
+
+@router.get("/shop/pets")
+async def get_shop_pets(user_id: int = Depends(get_current_user)):
+    """Fetch potential pets and ownership status."""
+    user = await user_collection.find_one({"id": user_id})
+    owned_pet_names = [p["name"] for p in user.get("pets", [])] if user else []
+    
+    return {
+        "pets": PET_SHOP,
+        "owned": owned_pet_names,
+        "current_level": (await get_user_progress(user_id))["level"]
+    }
+
+@router.post("/shop/buy/pet/{pet_index}")
+async def buy_pet_api(pet_index: int, user_id: int = Depends(get_current_user)):
+    from Grabber.modules.progression.pet import perform_pet_purchase
+    result = await perform_pet_purchase(user_id, pet_index)
+    if result is True:
+        return {"status": "success"}
+    raise HTTPException(status_code=400, detail=str(result).replace("❌ ", "").replace("🔒 ", ""))
+
+@router.get("/shop/battlepass")
+async def get_battlepass_shop(user_id: int = Depends(get_current_user)):
+    progress = await get_user_progress(user_id)
+    return {
+        "prices": PASS_PRICES,
+        "current_tier": progress["pass_type"],
+        "level": progress["level"]
+    }
+
+@router.post("/shop/upgrade_pass/{tier}")
+async def upgrade_pass_api(tier: str, user_id: int = Depends(get_current_user)):
+    if tier not in PASS_PRICES: raise HTTPException(status_code=400, detail="Invalid tier")
+    
+    user = await user_collection.find_one({"id": user_id})
+    if not user: raise HTTPException(status_code=404, detail="User not found")
+    
+    current_tier = user.get("pass_type", "free")
+    tiers_order = ["free", "premium", "elite"]
+    if tiers_order.index(current_tier) >= tiers_order.index(tier):
+        raise HTTPException(status_code=400, detail="You already have this tier or higher")
+        
+    price = PASS_PRICES[tier]
+    if user.get("zenith", 0) < price:
+        raise HTTPException(status_code=400, detail=f"Insufficient Zenith (Need {price})")
+        
+    await user_collection.update_one(
+        {"id": user_id, "zenith": {"$gte": price}},
+        {"$set": {"pass_type": tier}, "$inc": {"zenith": -price}}
+    )
+    return {"status": "success", "new_tier": tier}
