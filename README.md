@@ -27,10 +27,11 @@ This version introduces a **Unified Web Service** architecture—the Bot and the
 
 - 🎮 **Dynamic Spawning**: Characters appear automatically based on message frequency.
 - 📱 **Premium WebApp**: Native-feel UI with haptic feedback, swipe gestures, and real-time rare card glows.
-- 🚀 **Unified Architecture**: One process runs both the Telegram bot and the API server.
-- 💎 **Universal Rarities**: "Royal" characters now spawn globally!
-- 📊 **Optimized Backend**: MongoDB Aggregation pipelines for ultra-fast harem and gallery browsing.
-- 🐳 **Deployment Ready**: Fully optimized for Heroku, Docker, and Render.
+- 🚀 **Unified or Separated Hosting**: Run everything on Heroku, or split the Frontend (Vercel) and Backend (Heroku) for maximum speed.
+- 🛡️ **Hardened Security**: Built-in Content Security Policy (CSP), GZip compression, and secure API headers.
+- 🖼️ **Robust Rendering**: Smart image fallback system—no more broken avatars or empty shop cards.
+- 🦋 **Modular Frontend**: Organized template-based structure for easy customization and maintenance.
+- 📊 **Optimized Backend**: Advanced MongoDB compound indexes for lightning-fast leaderboard and harem browsing.
 
 ## 🛠️ Tech Stack
 
@@ -52,6 +53,12 @@ web: uvicorn Grabber.webapp.main:app --host 0.0.0.0 --port $PORT
 1. Deploy to your platform of choice.
 2. Set all required environment variables (see `sample.env`).
 3. Scale the `web` process to 1. **No separate worker is needed.**
+
+### Separated Hosting (Pro Setup)
+For the best performance, you can split the app:
+- **Frontend**: Deploy the `Grabber/frontend` directory to **Vercel**.
+- **Backend/Bot**: Deploy the main repository to **Heroku**.
+*(See `vercel_deployment_guide.md` in artifacts for the full setup tutorial.)*
 
 ## ⚙️ Configuration
 
