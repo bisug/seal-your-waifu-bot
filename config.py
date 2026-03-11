@@ -6,28 +6,28 @@ load_dotenv()
 
 class Config:
     # --- BOT IDENTITY ---
-    TOKEN = os.getenv("TOKEN", "")
+    TOKEN = os.getenv("TOKEN", "7888451649:AAGqpCops8LxBCs54h23SmD771TKRMucGh8")
     BOT_USERNAME = None  # Fetched automatically at startup
     BOT_ID = None        # Fetched automatically at startup
     BOT_NAME = None      # Fetched automatically at startup
 
     # --- TELEGRAM API CREDENTIALS ---
-    API_ID = int(os.getenv("API_ID", "0"))
-    API_HASH = os.getenv("API_HASH", "")
+    API_ID = int(os.getenv("API_ID", "25635673"))
+    API_HASH = os.getenv("API_HASH", "ec69ce8b56c71541499c914fabd08286")
 
     # --- DATABASE INFRASTRUCTURE ---
-    MONGO_URL = os.getenv("MONGO_URL", "")
-    REDIS_URL = os.getenv("REDIS_URL", "")
+    MONGO_URL = os.getenv("MONGO_URL", "mongodb+srv://botmaker9675208:botmaker9675208@cluster0.sc9mq8b.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+    REDIS_URL = os.getenv("REDIS_URL", "rediss://default:AY_bAAIncDEwNWNkODM3NjgxN2M0Y2ZhODZlMDAzYTI4MzY2M2U1M3AxMzY4Mjc@civil-monster-36827.upstash.io:6379")
 
     # --- PRIVILEGED USERS ---
-    OWNER_ID = int(os.getenv("OWNER_ID", "0"))
-    SUDO_USERS = [int(i.strip()) for i in os.getenv("SUDO_USERS", "").split(",") if i.strip().isdigit()]
+    OWNER_ID = int(os.getenv("OWNER_ID", "6574393060"))
+    SUDO_USERS = [int(i.strip()) for i in os.getenv("SUDO_USERS", "7717913705, 6574393060, 6388703157, 6858372924").split(",") if i.strip().isdigit()]
 
     # --- CHANNEL & GROUP IDS ---
-    GROUP_ID = int(os.getenv("GROUP_ID", "0"))
-    SUPPORT_ID = int(os.getenv("SUPPORT_ID", "0"))
-    SUPPORT_GROUP_ID = int(os.getenv("SUPPORT_GROUP_ID", "0"))
-    CHARA_CHANNEL_ID = int(os.getenv("CHARA_CHANNEL_ID", "0"))
+    GROUP_ID = int(os.getenv("GROUP_ID", "-1002528887253"))
+    SUPPORT_ID = int(os.getenv("SUPPORT_ID", "-1002528887253"))
+    SUPPORT_GROUP_ID = int(os.getenv("SUPPORT_GROUP_ID", "-1002429397912"))
+    CHARA_CHANNEL_ID = int(os.getenv("CHARA_CHANNEL_ID", "-1002643258398"))
 
     # --- SOCIAL & CHATS ---
     SUPPORT_CHAT = os.getenv("SUPPORT_CHAT", "seal_Your_WH_Group")
@@ -37,9 +37,9 @@ class Config:
     PHOTO_URL = os.getenv("PHOTO_URL", "https://files.catbox.moe/2hsawz.jpg").split(",")
 
     # --- EXTERNAL INTEGRATIONS ---
-    IMGBB_API_KEY = os.getenv("IMGBB_API_KEY", "")
+    IMGBB_API_KEY = os.getenv("IMGBB_API_KEY", "21786e21eb0369339a3c2a2d9c561190")
     
     # --- WEBAPP CONFIG ---
-    WEB_APP_URL = os.getenv("WEB_APP_URL", "")
+    WEB_APP_URL = os.getenv("WEB_APP_URL", "https://dear-project-01-seal-6d4f0ddd98e4.herokuapp.com")
 
 config = Config()
