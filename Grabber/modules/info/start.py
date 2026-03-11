@@ -1,11 +1,4 @@
-from pyrogram import enums, filters, types, errors
-from pyrogram.enums import ParseMode
-from Grabber.core.utils import html_escape
-from Grabber import app, PHOTO_URL, BOT_USERNAME, SUPPORT_CHAT, UPDATE_CHAT, LOGGER, WEB_APP_URL, BOT_NAME, user_collection
-from Grabber.database import total_pm_users, collection
-from Grabber.modules.progression.pet import DEFAULT_PET
-from Grabber.core.progression import add_xp
-from Grabber.modules.progression.achievements import check_achievements
+from Grabber import app, PHOTO_URL, SUPPORT_CHAT, UPDATE_CHAT, LOGGER, WEB_APP_URL, user_collection
 from config import config
 from Grabber.core.keyboard import KeyboardBuilder, get_webapp_button
 
@@ -185,7 +178,7 @@ async def start_handler(_, message: types.Message):
 
     is_private = message.chat.type == enums.ChatType.PRIVATE
     builder = KeyboardBuilder()
-    builder.add_button("Add to Group", url=f"https://t.me/{BOT_USERNAME}?startgroup=true")
+    builder.add_button("Add to Group", url=f"https://t.me/{config.BOT_USERNAME}?startgroup=true")
     
     webapp_btn = get_webapp_button(is_private)
     if webapp_btn:
@@ -203,7 +196,7 @@ async def start_handler(_, message: types.Message):
 
     if is_private:
         first_name = html_escape(message.from_user.first_name)
-        text = START_TEXT.format(first_name=first_name, bot_name=BOT_NAME)
+        text = START_TEXT.format(first_name=first_name, bot_name=config.BOT_NAME)
         await message.reply_photo(
             photo=random_photo(),
             caption=text,
@@ -218,7 +211,7 @@ async def start_callback_handler(_, query: types.CallbackQuery):
     await query.answer()  # Dismiss spinner instantly
     is_private = query.message.chat.type == enums.ChatType.PRIVATE
     builder = KeyboardBuilder()
-    builder.add_button("Add to Group", url=f"https://t.me/{BOT_USERNAME}?startgroup=true")
+    builder.add_button("Add to Group", url=f"https://t.me/{config.BOT_USERNAME}?startgroup=true")
     webapp_btn = get_webapp_button(is_private)
     if webapp_btn:
          builder.add_row(webapp_btn)
@@ -230,7 +223,7 @@ async def start_callback_handler(_, query: types.CallbackQuery):
     markup = builder.build()
 
     first_name = html_escape(query.from_user.first_name)
-    text = START_TEXT.format(first_name=first_name, bot_name=BOT_NAME)
+    text = START_TEXT.format(first_name=first_name, bot_name=config.BOT_NAME)
 
     try:
         if query.message.photo:

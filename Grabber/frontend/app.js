@@ -696,23 +696,23 @@ async function loadShopCharacters() {
     
     grid.innerHTML = chars.map(char => `
         <div class="char-card shop-item ${char.owned ? 'owned' : ''}">
-            <div class="shop-price-tag">⧫ ${char.zenith_price || 5}</div>
             <div class="char-img-wrapper" onclick="showCharDetails('${char.id}')">
-                <img src="${char.img_url}" class="char-img" loading="lazy">
+                <img src="${char.img_url}" class="char-img" loading="lazy" onerror="this.src='https://files.catbox.moe/2hsawz.jpg'">
                 <div class="preview-overlay">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                     PREVIEW
                 </div>
             </div>
+            ${char.owned ? '<div class="owned-overlay">OWNED</div>' : `
+                <button class="shop-buy-btn merged-buy" onclick="confirmShopBuy('${char.id}', '${char.name.replace(/'/g, "\\'")}', ${char.zenith_price || 5}, event)">
+                    <span class="buy-price">⧫ ${char.zenith_price || 5}</span>
+                    <span class="buy-text">BUY NOW</span>
+                </button>
+            `}
             <div class="char-info">
                 <div class="char-name">${char.name}</div>
                 <div style="font-size:9px; color:var(--hint-color)">${char.anime}</div>
             </div>
-            ${char.owned ? '<div class="owned-overlay">OWNED</div>' : `
-                <button class="shop-buy-btn" onclick="confirmShopBuy('${char.id}', '${char.name.replace(/'/g, "\\'")}', ${char.zenith_price || 5})">
-                    BUY NOW
-                </button>
-            `}
         </div>
     `).join('');
 }
