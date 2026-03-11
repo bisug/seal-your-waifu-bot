@@ -251,44 +251,42 @@ async function loadProfile() {
     if (!data) return;
 
     currentUser = data;
+    
+    // Identity & Avatar
     document.getElementById('user-name').innerText = data.first_name || 'User';
     document.getElementById('user-title').innerText = data.titles?.current || 'Rookie';
     document.getElementById('user-avatar').style.backgroundImage = `url('${data.avatar || DEFAULT_AVATAR}')`;
-
-    // Update Banner Info
-    const bannerName = document.getElementById('banner-user-name');
-    const bannerTitle = document.getElementById('banner-user-title');
-    if (bannerName) bannerName.innerText = (data.first_name || 'TRAINER').toUpperCase();
-    if (bannerTitle) bannerTitle.innerText = data.titles?.current || 'Elite Trainer';
-
-    // Level & XP
     document.getElementById('user-level-badge').innerText = data.stats.level || 1;
-    document.getElementById('user-xp-val').innerText = `${data.stats.xp_current.toLocaleString()} / ${data.stats.xp_needed.toLocaleString()}`;
+    document.getElementById('streak-val').innerText = data.stats.streak || 0;
+
+    // Progression (XP)
+    document.getElementById('user-xp-val').innerText = `${data.stats.xp_current.toLocaleString()} / ${data.stats.xp_needed.toLocaleString()} XP`;
     const xpPercent = Math.min(100, (data.stats.xp_current / data.stats.xp_needed) * 100);
     document.getElementById('xp-bar-fill').style.width = `${xpPercent}%`;
 
-    // Luxury Stats
-    document.getElementById('streak-val').innerText = data.stats.streak || 0;
+    // Stat Strip Tiles
     document.getElementById('stat-rank').innerText = `#${data.stats.rank || '?'}`;
     document.getElementById('stat-balance').innerText = data.stats.points.toLocaleString();
     document.getElementById('stat-zenith').innerText = data.stats.zenith.toLocaleString();
     document.getElementById('stat-collection').innerText = data.stats.total_characters.toLocaleString();
 
-    // Badges/Achievements
-    const badgeList = document.getElementById('achievements-list');
-    if (data.achievements && data.achievements.length > 0) {
-        badgeList.innerHTML = data.achievements.map(ach => `
-            <div class="badge-item" title="${ach.name}">
-                <span class="professional-badge">${ach.icon || '✦'}</span>
-            </div>
-        `).join('');
-    } else {
-        badgeList.innerHTML = '<div style="color:var(--hint-color); font-size:12px; padding:10px; font-weight:500;">No achievements earned.</div>';
-    }
+    // Specialized Renderers
+    if (data.current_pet) renderPet(data.current_pet);
+    if (data.eggs) renderEggs(data.eggs);
+    if (data.achievements) renderAchievements(data.achievements);
+}
 
-    // Render Pet & Eggs
-    renderPet(data.current_pet);
-    renderEggs(data.eggs);
+function renderAchievements(achievements) {
+    const list = document.getElementById('achievements-list');
+    if (!achievements || achievements.length === 0) {
+        list.innerHTML = '<div style="color:var(--hint-color); font-size:11px; padding:10px;">No achievements yet.</div>';
+        return;
+    }
+    list.innerHTML = achievements.map(ach => `
+        <div class="badge-item" title="${ach.name}">
+            <div style="font-size:24px">${ach.icon || '✦'}</div>
+        </div>
+    `).join('');
 }
 
 function renderPet(pet) {
