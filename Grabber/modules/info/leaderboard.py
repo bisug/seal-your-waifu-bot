@@ -3,6 +3,7 @@ from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
 from Grabber.core.utils import html_escape
 from Grabber import app, WEB_APP_URL
+from config import config
 from Grabber import user_collection, top_global_groups_collection, group_user_totals_collection
 from Grabber.core.progression import get_level_from_xp
 
@@ -78,7 +79,7 @@ def build_leaderboard_text(metric: str, users: list):
     text += "\n━━━━━━━━━━━━━━━━━━━━━"
     return text
 
-def build_leaderboard_keyboard(current_metric: str, user_id: int):
+def build_leaderboard_keyboard(current_metric: str, user_id: int, is_private: bool):
 
     idx = METRIC_ORDER.index(current_metric)
     prev_metric = METRIC_ORDER[(idx - 1) % len(METRIC_ORDER)]
@@ -89,14 +90,19 @@ def build_leaderboard_keyboard(current_metric: str, user_id: int):
             types.InlineKeyboardButton("⬅️", callback_data=f"top_switch:{prev_metric}:{user_id}"),
             types.InlineKeyboardButton(METRICS[current_metric]['label'], callback_data="top_info"),
             types.InlineKeyboardButton("➡️", callback_data=f"top_switch:{next_metric}:{user_id}"),
-        ],
-        [
-            types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))
-        ],
-        [
-            types.InlineKeyboardButton("❌ Close", callback_data=f"top_close:{user_id}")
         ]
     ]
+
+    if is_private:
+        buttons.append([types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))])
+    else:
+        bot_username = getattr(config, "BOT_USERNAME", "Seal_Your_Waifu_Bot")
+        buttons.append([types.InlineKeyboardButton("🌐 Launch Web App (DM)", url=f"https://t.me/{bot_username}?start=webapp")])
+
+    buttons.append([
+        types.InlineKeyboardButton("❌ Close", callback_data=f"top_close:{user_id}")
+    ])
+    
     return types.InlineKeyboardMarkup(buttons)
 
 @app.on_message(filters.command("top"))
@@ -106,7 +112,8 @@ async def global_leaderboard_handler(_, message: types.Message):
 
     users = await get_top_users("harem")
     text = build_leaderboard_text("harem", users)
-    keyboard = build_leaderboard_keyboard("harem", message.from_user.id)
+    is_private = message.chat.type == enums.ChatType.PRIVATE
+    keyboard = build_leaderboard_keyboard("harem", message.from_user.id, is_private)
 
     await message.reply_text(text, reply_markup=keyboard, parse_mode=ParseMode.HTML)
 
@@ -121,7 +128,8 @@ async def leaderboard_callback(_, query: types.CallbackQuery):
 
     users = await get_top_users(metric)
     text = build_leaderboard_text(metric, users)
-    keyboard = build_leaderboard_keyboard(metric, owner_id)
+    is_private = query.message.chat.type == enums.ChatType.PRIVATE
+    keyboard = build_leaderboard_keyboard(metric, owner_id, is_private)
 
     try:
         await query.message.edit_text(text, reply_markup=keyboard, parse_mode=ParseMode.HTML)

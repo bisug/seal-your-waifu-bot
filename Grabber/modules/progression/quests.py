@@ -5,6 +5,7 @@ from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
 from Grabber.core.utils import html_escape
 from Grabber import user_collection, app, WEB_APP_URL
+from config import config
 from Grabber.core.progression import add_xp, get_progress_bar
 
 
@@ -264,7 +265,12 @@ async def view_quests(_, message: types.Message, edit_message=False):
 
     if not buttons:
         buttons = []
-    buttons.append([types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))])
+        
+    if message.chat.type == enums.ChatType.PRIVATE:
+        buttons.append([types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))])
+    else:
+        bot_username = getattr(config, "BOT_USERNAME", "Seal_Your_Waifu_Bot")
+        buttons.append([types.InlineKeyboardButton("🌐 Launch Web App (DM)", url=f"https://t.me/{bot_username}?start=webapp")])
     
     markup = types.InlineKeyboardMarkup(buttons)
     if edit_message:

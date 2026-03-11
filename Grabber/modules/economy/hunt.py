@@ -12,6 +12,7 @@ from Grabber.core.progression import add_xp
 from Grabber.modules.progression.quests import update_quest_progress
 from Grabber.modules.progression.achievements import check_achievements
 from Grabber.modules.collection.rarities import RARITY_MAP
+from config import config
 
 
 EGG_TIERS = {
@@ -212,7 +213,18 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
              action_button = types.InlineKeyboardButton("🎁 Hatch Now!", callback_data=f"egg_hatch:{page}:{user_id}")
         buttons.append([action_button])
 
-    buttons.append([types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))])
+    is_private = False
+    if isinstance(message_or_query, types.CallbackQuery):
+        is_private = message_or_query.message.chat.type == enums.ChatType.PRIVATE
+    else:
+        is_private = message_or_query.chat.type == enums.ChatType.PRIVATE
+        
+    if is_private:
+        buttons.append([types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))])
+    else:
+        bot_username = getattr(config, "BOT_USERNAME", "Seal_Your_Waifu_Bot")
+        buttons.append([types.InlineKeyboardButton("🌐 Launch Web App (DM)", url=f"https://t.me/{bot_username}?start=webapp")])
+
     buttons.append([types.InlineKeyboardButton("⤾ Back to Hub", callback_data="hub_main")])
 
     markup = types.InlineKeyboardMarkup(buttons) if buttons else None
