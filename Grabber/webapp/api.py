@@ -75,14 +75,14 @@ async def get_me(user_id: int = Depends(get_current_user)):
 
     titles_list = user.get("titles") or ["Rookie"]
     # Remove emojis from titles for WebApp
-    clean_titles = [re.sub(r'[^\x00-\x7F]+', '', t).strip() for t in titles_list]
-    current_title = re.sub(r'[^\x00-\x7F]+', '', user.get("title", "Rookie")).strip()
+    clean_titles = [re.sub(r'[^\x00-\x7F]+', '', str(t or "")).strip() for t in titles_list]
+    current_title = re.sub(r'[^\x00-\x7F]+', '', str(user.get("title") or "Rookie")).strip()
     # Performance: Pass existing user document to avoid redundant DB lookup
     progress = await get_user_progress(user_id, user_data=user)
     
     resp_data = {
         "id": user_id,
-        "first_name": user.get("first_name", "User"),
+        "first_name": (user.get("first_name") or "User"),
         "username": user.get("username"),
         "avatar": user.get("avatar"),
         "stats": {
