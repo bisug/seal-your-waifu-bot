@@ -34,6 +34,18 @@ let haremLoading = false, galleryLoading = false;
 let haremHasMore = true, galleryHasMore = true;
 
 // Harem logic now integrated into main container scroll
+function safeImg(url) {
+    if (!url || url === 'undefined' || url === 'null') return `url('${DEFAULT_AVATAR}')`;
+    // Returns a multiple-background shorthand where the primary URL is tried first, 
+    // and the default avatar is the local fallback.
+    return `url('${url}'), url('${DEFAULT_AVATAR}')`;
+}
+
+function handleImgError(el) {
+    el.onerror = null; // Prevent infinite loop
+    el.src = DEFAULT_AVATAR;
+    el.parentElement.classList.remove('skeleton');
+}
 
 // DOM Elements
 const pages = ['profile', 'gallery', 'quests', 'leaderboard'];
@@ -297,7 +309,7 @@ async function loadProfile() {
     // Identity & Avatar
     document.getElementById('user-name').innerText = data.first_name || 'User';
     document.getElementById('user-title').innerText = data.titles?.current || 'Rookie';
-    document.getElementById('user-avatar').style.backgroundImage = `url('${data.avatar || DEFAULT_AVATAR}')`;
+    document.getElementById('user-avatar').style.backgroundImage = safeImg(data.avatar);
     document.getElementById('user-level-badge').innerText = data.stats.level || 1;
     document.getElementById('streak-val').innerText = data.stats.streak || 0;
 
@@ -516,7 +528,9 @@ function renderCharCard(char, isHarem, index = 0) {
     return `
         <div class="char-card anim-stagger" style="border-bottom: 2px solid ${rarityColor}; --card-glow: ${glowColor}; animation-delay: ${staggerDelay}s" onclick="showCharDetails('${char.id}')">
             <div class="char-img-wrapper skeleton">
-                <img src="${char.img_url}" class="char-img" loading="lazy" onload="this.style.opacity=1; this.parentElement.classList.remove('skeleton')">
+                <img src="${char.img_url}" class="char-img" loading="lazy" 
+                     onerror="handleImgError(this)"
+                     onload="this.style.opacity=1; this.parentElement.classList.remove('skeleton')">
             </div>
             <span class="rarity-pill" style="background:${rarityColor}">${char.rarity}</span>
             ${isHarem ? `<span class="count-badge">x${char.count}</span>` : ''}
@@ -627,7 +641,7 @@ async function loadLeaderboard(metric = 'level') {
     const top3 = data.slice(0, 3);
     const renderPodiumItem = (user, rank) => `
         <div class="podium-item rank-${rank}">
-            <div class="podium-avatar" style="background-image:url('${user?.avatar || DEFAULT_AVATAR}'); background-size:cover"></div>
+            <div class="podium-avatar" style="background-image:${safeImg(user?.avatar)}; background-size:cover"></div>
             <div style="font-size:${rank === 1 ? '14px' : '12px'}; font-weight:${rank === 1 ? 'bold' : 'normal'}">
                 ${user?.name || 'TBA'}
             </div>
@@ -642,7 +656,7 @@ async function loadLeaderboard(metric = 'level') {
     list.innerHTML = data.slice(3).map(entry => `
         <div class="list-item">
             <span style="color:var(--hint-color); width:24px; font-size:11px">#${entry.rank}</span>
-            <div class="list-item-avatar" style="background-image:url('${entry.avatar || DEFAULT_AVATAR}')"></div>
+            <div class="list-item-avatar" style="background-image:${safeImg(entry.avatar)}"></div>
             <span style="flex:1; font-weight:700">${entry.name}</span>
             <span style="font-weight:900; color:var(--button-color)">
                 ${metric === 'level' ? `Lvl ${entry.level || 0}` : entry.value.toLocaleString()}
@@ -700,7 +714,7 @@ async function loadShopCharacters() {
     grid.innerHTML = chars.map(char => `
         <div class="char-card shop-item ${char.owned ? 'owned' : ''}">
             <div class="char-img-wrapper" onclick="showCharDetails('${char.id}')">
-                <div class="char-img" style="background-image: url('${char.img_url}'), url('https://files.catbox.moe/2hsawz.jpg')"></div>
+                <div class="char-img" style="background-image: ${safeImg(char.img_url)}"></div>
                 <div class="preview-overlay">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                     PREVIEW
@@ -861,7 +875,7 @@ async function showCharDetails(charId) {
             document.getElementById('modal-char-name').innerText = char.name;
             document.getElementById('modal-char-anime').innerText = char.anime;
             document.getElementById('modal-char-rarity').innerText = char.rarity;
-            document.getElementById('modal-char-img').style.backgroundImage = `url('${char.img_url}')`;
+            document.getElementById('modal-char-img').style.backgroundImage = safeImg(char.img_url);
             document.getElementById('modal-char-id').innerText = `ID: ${char.id}`;
         }
     } catch (e) {
