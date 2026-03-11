@@ -7,6 +7,7 @@ from Grabber.core.utils import html_escape
 from Grabber import user_collection, app, WEB_APP_URL
 from config import config
 from Grabber.core.progression import add_xp, get_progress_bar
+from Grabber.core.keyboard import get_webapp_button
 
 
 QUEST_POOL = {

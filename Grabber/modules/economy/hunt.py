@@ -12,6 +12,7 @@ from Grabber.core.progression import add_xp
 from Grabber.modules.progression.quests import update_quest_progress
 from Grabber.modules.progression.achievements import check_achievements
 from Grabber.modules.collection.rarities import RARITY_MAP
+from Grabber.core.keyboard import get_webapp_button
 from config import config
 
 
