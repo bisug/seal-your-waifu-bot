@@ -696,6 +696,7 @@ async function loadShopCharacters() {
     
     grid.innerHTML = chars.map(char => `
         <div class="char-card shop-item ${char.owned ? 'owned' : ''}">
+            <div class="shop-price-tag">⧫ ${char.zenith_price || 5}</div>
             <div class="char-img-wrapper" onclick="showCharDetails('${char.id}')">
                 <img src="${char.img_url}" class="char-img" loading="lazy">
                 <div class="preview-overlay">
@@ -703,16 +704,15 @@ async function loadShopCharacters() {
                     PREVIEW
                 </div>
             </div>
-            <div class="shop-price-tag">⧫ ${char.zenith_price || 5}</div>
+            <div class="char-info">
+                <div class="char-name">${char.name}</div>
+                <div style="font-size:9px; color:var(--hint-color)">${char.anime}</div>
+            </div>
             ${char.owned ? '<div class="owned-overlay">OWNED</div>' : `
                 <button class="shop-buy-btn" onclick="confirmShopBuy('${char.id}', '${char.name.replace(/'/g, "\\'")}', ${char.zenith_price || 5})">
                     BUY NOW
                 </button>
             `}
-            <div class="char-info">
-                <div class="char-name">${char.name}</div>
-                <div style="font-size:9px; color:var(--hint-color)">${char.anime}</div>
-            </div>
         </div>
     `).join('');
 }

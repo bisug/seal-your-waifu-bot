@@ -30,7 +30,7 @@ def get_webapp_button(is_private: bool = True, path: str = None) -> types.Inline
     """Returns a standardized direct WebApp button, using deep links for groups to avoid Telegram errors."""
     url = f"{WEB_APP_URL}{path}" if path else WEB_APP_URL
     if is_private:
-        return types.InlineKeyboardButton("Open Mini App", web_app=types.WebAppInfo(url=url))
+        return types.InlineKeyboardButton("Open Mini App", web_app=types.WebAppInfo(url=url), style=enums.ButtonStyle.SUCCESS)
     else:
         # Deep link launches the app in groups safely
         deep_link = f"https://t.me/{BOT_USERNAME}/app"
@@ -38,7 +38,7 @@ def get_webapp_button(is_private: bool = True, path: str = None) -> types.Inline
             # Extract fragment for startapp param
             start_param = path.replace('#', '')
             deep_link += f"?startapp={start_param}"
-        return types.InlineKeyboardButton("Open Mini App", url=deep_link)
+        return types.InlineKeyboardButton("Open Mini App", url=deep_link, style=enums.ButtonStyle.SUCCESS)
 
 def get_paginated_keyboard(page: int, total_pages: int, callback_prefix: str, user_id: int, is_private: bool = True) -> types.InlineKeyboardMarkup:
     """Builds a standard paginated keyboard with navigation and optional group WebApp link."""
