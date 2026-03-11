@@ -104,29 +104,35 @@ async def get_me(user_id: int = Depends(get_current_user)):
             "all": clean_titles
         },
         "current_pet": None,
+        "owned_pets": [],
         "eggs": []
     }
 
-    # Handle Pet
+    # Handle Pets
     user_pets = user.get("pets", [DEFAULT_PET])
     current_pet_name = user.get("current_pet", DEFAULT_PET["name"])
-    pet_data = next((p for p in user_pets if p["name"] == current_pet_name), DEFAULT_PET)
     
-    if pet_data:
-        resp_data["current_pet"] = {
-            "name": pet_data["name"],
-            "level": pet_data.get("level", 1),
-            "xp": pet_data.get("xp", 0),
-            "xp_needed": pet_data.get("level", 1) * 100,
-            "hp": pet_data.get("hp", 100),
-            "atk": pet_data.get("atk", 10),
-            "spd": pet_data.get("spd", 10),
-            "luck": pet_data.get("luck", 0.1),
-            "ability": pet_data.get("ability", "None"),
-            "desc": pet_data.get("desc", ""),
-            "img": pet_data.get("img", ""),
-            "is_active": True
+    formatted_pets = []
+    for p in user_pets:
+        p_data = {
+            "name": p["name"],
+            "level": p.get("level", 1),
+            "xp": p.get("xp", 0),
+            "xp_needed": p.get("level", 1) * 100,
+            "hp": p.get("hp", 100),
+            "atk": p.get("atk", 10),
+            "spd": p.get("spd", 10),
+            "luck": p.get("luck", 0.1),
+            "ability": p.get("ability", "None"),
+            "desc": p.get("desc", ""),
+            "img": p.get("img", ""),
+            "is_active": p["name"] == current_pet_name
         }
+        formatted_pets.append(p_data)
+        if p_data["is_active"]:
+            resp_data["current_pet"] = p_data
+
+    resp_data["owned_pets"] = formatted_pets
 
     # Handle Eggs
     eggs = user.get("eggs", [])

@@ -91,16 +91,15 @@ async def send_petshop_page(message_or_query_obj, page: int, user_id: int):
 
 @app.on_message(filters.command("petshop"))
 async def petshop(_, message: types.Message):
-    user_id = message.from_user.id
-    user = await user_collection.find_one({"id": user_id})
-    if not user:
-        await user_collection.insert_one({
-            "id": user_id,
-            "balance": 0,
-            "pets": [DEFAULT_PET],
-            "current_pet": DEFAULT_PET["name"]
-        })
-    await send_petshop_page(message, 0, user_id)
+    is_private = message.chat.type == enums.ChatType.PRIVATE
+    webapp_btn = get_webapp_button(is_private, path="#shop")
+    builder = KeyboardBuilder()
+    if webapp_btn:
+        builder.add_row(webapp_btn)
+    
+    markup = builder.build()
+    text = "🐾 <b>Open the Mini App to visit the Pet Shop!</b>"
+    await message.reply_text(text, reply_markup=markup, parse_mode=ParseMode.HTML)
 
 
 async def perform_pet_purchase(user_id, pet_index: int):
@@ -245,7 +244,15 @@ async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
 
 @app.on_message(filters.command(["mypet", "pet", "pets"]))
 async def mypet_cmd(_, message: types.Message):
-    await send_mypet_page(message, 0, message.from_user.id)
+    is_private = message.chat.type == enums.ChatType.PRIVATE
+    webapp_btn = get_webapp_button(is_private)
+    builder = KeyboardBuilder()
+    if webapp_btn:
+        builder.add_row(webapp_btn)
+    
+    markup = builder.build()
+    text = "🐾 <b>Visit your Profile in the Mini App to manage your pets!</b>"
+    await message.reply_text(text, reply_markup=markup, parse_mode=ParseMode.HTML)
 
 @app.on_callback_query(filters.regex(r"^(shop|mypet)_(next|prev|view|buy)_(\d+)_(\d+)$"))
 async def shop_mypet_navigation(_, query: types.CallbackQuery):

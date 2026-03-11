@@ -953,7 +953,7 @@ body {
     border: 0.5px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Pet Card Luxury */
+/* Pet Card Luxury & Switcher */
 .pet-card-luxury {
     display: flex;
     gap: 16px;
@@ -962,6 +962,90 @@ body {
     border-radius: 20px;
     padding: 12px;
     border: 0.5px solid var(--glass-border);
+    position: relative;
+    overflow: hidden;
+}
+
+.pet-switch-btn {
+    background: var(--button-color);
+    color: white;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 9px;
+    font-weight: 800;
+    margin-top: 8px;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+}
+
+.pet-switch-btn:active {
+    transform: scale(0.95);
+    filter: brightness(1.2);
+}
+
+.owned-pets-popup {
+    margin-top: 15px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 18px;
+    padding: 15px;
+    border: 0.5px solid rgba(255, 255, 255, 0.1);
+    animation: slideUp 0.3s ease-out;
+}
+
+.owned-pets-popup.hidden {
+    display: none;
+}
+
+.popup-header {
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--hint-color);
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+.popup-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.pet-select-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 12px;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+}
+
+.pet-select-item.active {
+    background: rgba(0, 242, 255, 0.1);
+    border-color: var(--button-color);
+}
+
+.pet-select-img {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background-size: cover;
+    background-position: center;
+}
+
+.pet-select-name {
+    font-size: 9px;
+    text-align: center;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
 }
 
 .pet-img-container {
@@ -1703,3 +1787,8 @@ body {
     font-weight: 700;
     margin-top: 2px;
 }
+
+@keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
