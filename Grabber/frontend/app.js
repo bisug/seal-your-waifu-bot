@@ -488,22 +488,43 @@ function renderCharCard(char, isHarem, index = 0) {
 async function loadQuests() {
     const data = await apiFetch('/quests');
     if (!data) return;
-    const renderQuest = (q) => `
-        <div class="quest-card">
-            <div class="quest-icon" style="font-size:24px; color:var(--button-color)">
-                ${q.symbol || '✦'}
-            </div>
-            <div class="quest-details">
-                <div class="quest-title">${q.name || 'Unknown Quest'}</div>
-                <div class="quest-desc">${q.description || 'No description available.'}</div>
-                <div style="font-size:10px; color:var(--button-color); margin-top:4px">
-                    ${q.progress || 0}/${q.target || 1} | +${q.reward_xp || 0} XP
+
+    const renderQuest = (q) => {
+        const progress = q.progress || 0;
+        const target = q.target || 1;
+        const percent = Math.min(100, (progress / target) * 100);
+        const isCompleted = progress >= target;
+
+        return `
+            <div class="quest-card ${q.claimed ? 'completed' : ''}">
+                <div class="quest-icon">
+                    ${q.symbol || '✦'}
+                </div>
+                <div class="quest-details">
+                    <div class="quest-title">${q.name || 'Unknown Quest'}</div>
+                    <p class="quest-desc">${q.description || 'No description available.'}</p>
+                    
+                    <div class="quest-progress-track">
+                        <div class="quest-progress-fill" style="width: ${percent}%"></div>
+                    </div>
+                    
+                    <div class="quest-footer">
+                        <span class="quest-reward">💰 +${q.reward_xp || 0} XP</span>
+                        <span style="color:var(--hint-color)">${progress}/${target}</span>
+                    </div>
+                </div>
+                
+                <div class="quest-action">
+                    ${isCompleted && !q.claimed ?
+                `<button class="quest-claim-btn" onclick="claimQuest('${q.id}', event)">CLAIM</button>` :
+                (q.claimed ? '<span class="quest-status-text">DONE ✔</span>' : '')}
                 </div>
             </div>
-            ${(q.progress || 0) >= (q.target || 1) && !q.claimed ?
-            `<button onclick="claimQuest('${q.id}', event)" style="width:auto; padding:6px 12px; margin:0">Claim</button>` :
-            (q.claimed ? '<span style="color:var(--success-color)">COMPLETED</span>' : '')}
-    `;
+        `;
+    };
+
+    const dailyList = document.getElementById('daily-quests-list');
+    const weeklyList = document.getElementById('weekly-quests-list');
 
     if (!data.daily?.length && !data.weekly?.length) {
         document.getElementById('page-quests').innerHTML += `
@@ -513,10 +534,11 @@ async function loadQuests() {
                 <div class="empty-desc">Check back later for new missions!</div>
             </div>
         `;
+        return;
     }
 
-    document.getElementById('daily-quests-list').innerHTML = '<h4>Daily</h4>' + (data.daily || []).map(renderQuest).join('');
-    document.getElementById('weekly-quests-list').innerHTML = '<h4>Weekly</h4>' + (data.weekly || []).map(renderQuest).join('');
+    dailyList.innerHTML = (data.daily || []).map(renderQuest).join('');
+    weeklyList.innerHTML = (data.weekly || []).map(renderQuest).join('');
 }
 
 async function claimQuest(qid, event) {
@@ -628,7 +650,7 @@ async function showCharDetails(charId) {
 
 function closeModal(e) {
     // Prevent closing if we clicked inside the content, UNLESS it's the close button
-    if (e && e.target !== modal && !e.target.classList.contains('modal-close-btn') && e.type !== 'touchend') return;
+    if (e && e.target && e.target !== modal && !e.target.classList.contains('modal-close-btn') && e.type !== 'touchend') return;
     
     modal.classList.remove('active');
     if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
