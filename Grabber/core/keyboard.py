@@ -38,12 +38,19 @@ def get_webapp_button(is_private: bool = True, path: str = None) -> types.Inline
             style=enums.ButtonStyle.SUCCESS
         )
     else:
-        # Since the user hasn't set up the Mini App in BotFather, we use a regular URL.
-        # Our new Persistent Auth System in app.js + main.py handles the login 
-        # for users who have opened the app at least once before.
+        # To "hide" the URL and get a professional Mini App feel in groups,
+        # we use the Telegram internal app link: https://t.me/bot_username/app_short_name
+        # Note: You MUST set this up in BotFather (@BotFather -> /newapp)
+        app_name = getattr(config, "MINI_APP_SHORT_NAME", "app")
+        app_url = f"https://t.me/{config.BOT_USERNAME}/{app_name}"
+        
+        # If we have a specific path (like #shop), we pass it as a parameter
+        if path:
+            app_url += f"?startapp={path.replace('#', '')}"
+
         return types.InlineKeyboardButton(
             "Open Mini App", 
-            url=url,
+            url=app_url,
             style=enums.ButtonStyle.SUCCESS
         )
 
