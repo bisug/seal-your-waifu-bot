@@ -155,15 +155,25 @@ async def chat_leaderboard_handler(_, message: types.Message):
 
     top_members = await cursor.to_list(length=10)
 
+    if not top_members:
+        return await message.reply_text("⚠️ No data yet for this group.", parse_mode=ParseMode.HTML)
+
+    # Batch fetch all users in a single API call instead of N sequential calls
+    user_ids = [m["user_id"] for m in top_members]
+    user_map = {}
+    try:
+        fetched = await app.get_users(user_ids)
+        if not isinstance(fetched, list):
+            fetched = [fetched]
+        for u in fetched:
+            user_map[u.id] = u.first_name
+    except Exception:
+        pass
+
     text = f"🏆 <b>Top Members in {html_escape(message.chat.title)}</b>\n\n"
     for i, member in enumerate(top_members, 1):
-        user_id = member['user_id']
-        try:
-            m = await app.get_users(user_id)
-            name = m.first_name
-        except Exception:
-            name = f"User {user_id}"
-
-        text += f"{i}. {html_escape(name)} ➾ <b>{member['count']}</b>\n"
+        uid = member['user_id']
+        name = html_escape(user_map.get(uid, f"User {uid}"))
+        text += f"{i}. {name} ➾ <b>{member['count']}</b>\n"
 
     await message.reply_text(text, parse_mode=ParseMode.HTML)

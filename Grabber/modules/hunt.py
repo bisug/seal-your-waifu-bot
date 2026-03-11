@@ -70,9 +70,6 @@ async def hunt_cmd(_, message: types.Message):
         shards *= 2
         bonus_text += "\n<b>Double Shards!</b> (Scavenger)"
 
-    await user_collection.update_one({"id": user_id}, {"$inc": {"balance": shards}}, upsert=True)
-
-
     xp_gain = random.randint(10, 20)
     if ability == "Beginner's Luck":
         xp_gain = int(xp_gain * 1.05)
@@ -88,7 +85,6 @@ async def hunt_cmd(_, message: types.Message):
     extra_drop = False
     if ability == "Hoarder" and random.random() < 0.05:
         extra_drop = True
-
     if random.uniform(0, 100) <= base_drop_chance or extra_drop:
         tier_key = get_egg_roll(luck)
         tier_data = EGG_TIERS[tier_key]
@@ -105,15 +101,24 @@ async def hunt_cmd(_, message: types.Message):
             "is_corrupted": is_corrupted
         }
 
-        await user_collection.update_one({"id": user_id}, {"$push": {"eggs": egg_data}}, upsert=True)
+        eggs_to_push = [egg_data]
         if extra_drop:
-
             extra_egg = egg_data.copy()
             extra_egg["id"] = f"egg_{int(time.time() * 1000)}_{random.randint(100, 999)}_b"
             extra_egg["tier"] = "common"
             extra_egg["name"] = "🥚 Bonus Common Egg"
-            await user_collection.update_one({"id": user_id}, {"$push": {"eggs": extra_egg}}, upsert=True)
+            eggs_to_push.append(extra_egg)
             bonus_text += "\n🥚 <b>Bonus Egg Found!</b> (Hoarder)"
+
+        # Single atomic write: balance + all eggs at once
+        await user_collection.update_one(
+            {"id": user_id},
+            {
+                "$inc": {"balance": shards},
+                "$push": {"eggs": {"$each": eggs_to_push}}
+            },
+            upsert=True
+        )
 
 
         await update_quest_progress(user_id, "egg_hunter", 1)
@@ -126,6 +131,8 @@ async def hunt_cmd(_, message: types.Message):
             parse_mode=ParseMode.HTML
         )
     else:
+        # No egg — single write for shards only
+        await user_collection.update_one({"id": user_id}, {"$inc": {"balance": shards}}, upsert=True)
         await msg.edit_text(
             f"🌲 <b>Hunt Complete!</b>\n\n"
             f"<b>+{shards} Shards</b> ⬪{bonus_text}\n"
