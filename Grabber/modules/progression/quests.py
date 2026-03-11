@@ -181,12 +181,15 @@ async def update_quest_progress(user_id: int, quest_id: str, increment: int = 1)
             )
 
 @app.on_message(filters.command("quests"))
-async def view_quests(_, message: types.Message):
-    user_id = message.from_user.id
+async def view_quests(_, message: types.Message, edit_message=False):
+    user_id = message.from_user.id if hasattr(message, 'from_user') and message.from_user else message.chat.id
     quests = await get_user_quests(user_id)
 
     if not quests:
-        await message.reply_text("🚫 No quests available right now.", parse_mode=ParseMode.HTML)
+        if edit_message:
+            await message.edit_text("🚫 No quests available right now.", parse_mode=ParseMode.HTML)
+        else:
+            await message.reply_text("🚫 No quests available right now.", parse_mode=ParseMode.HTML)
         return
 
     text = "📋 <b>Quest Log</b>\n\n"
@@ -264,7 +267,13 @@ async def view_quests(_, message: types.Message):
     buttons.append([types.InlineKeyboardButton("🌐 Open Web App", web_app=types.WebAppInfo(url=WEB_APP_URL))])
     
     markup = types.InlineKeyboardMarkup(buttons)
-    await message.reply_text(text, parse_mode=ParseMode.HTML, reply_markup=markup)
+    if edit_message:
+        try:
+            await message.edit_text(text, parse_mode=ParseMode.HTML, reply_markup=markup)
+        except Exception:
+            pass
+    else:
+        await message.reply_text(text, parse_mode=ParseMode.HTML, reply_markup=markup)
 
 @app.on_callback_query(filters.regex(r"^quest_claim:"))
 async def claim_quest_callback(_, query: types.CallbackQuery):
@@ -300,4 +309,4 @@ async def claim_quest_callback(_, query: types.CallbackQuery):
     await query.answer(f"🎉 +{reward_xp} XP!", show_alert=True)
 
 
-    await view_quests(None, query.message)
+    await view_quests(None, query.message, edit_message=True)
