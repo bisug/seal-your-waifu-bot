@@ -41,7 +41,7 @@ class Database:
             (self.message_counts,    lambda c: c.create_index("chat_id")),
             (self.deletion_queue,    lambda c: c.create_index("delete_at")),
             (self.group_user_totals, lambda c: c.create_index([("group_id", 1), ("user_id", 1)])),
-            (self.groups,            lambda c: c.create_index("group_id")),
+            (self.groups,            lambda c: c.create_index("group_id", unique=True)),
         ]
         failed = 0
         for collection, idx_fn in indexes:
