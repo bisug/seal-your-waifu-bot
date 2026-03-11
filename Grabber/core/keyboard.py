@@ -27,9 +27,7 @@ class KeyboardBuilder:
         return types.InlineKeyboardMarkup(self.keyboard)
 
 def get_webapp_button(is_private: bool = True) -> types.InlineKeyboardButton:
-    """Returns a standardized direct WebApp button only for groups (DM removed as per request)."""
-    if is_private:
-        return None
+    """Returns a standardized direct WebApp button for all chat types."""
     return types.InlineKeyboardButton("Open Mini App", web_app=types.WebAppInfo(url=WEB_APP_URL), style=enums.ButtonStyle.PRIMARY)
 
 def get_paginated_keyboard(page: int, total_pages: int, callback_prefix: str, user_id: int, is_private: bool = True) -> types.InlineKeyboardMarkup:

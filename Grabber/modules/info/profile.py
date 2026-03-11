@@ -107,9 +107,9 @@ async def profile_handler(_, message: types.Message):
         await message.reply_photo(
             photo=pic,
             caption=profile_text,
-            reply_markup=types.InlineKeyboardMarkup(buttons),
+            reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
     except Exception as e:
         LOGGER.error(f"Profile Photo Error: {e}")
-        await message.reply_text(profile_text, reply_markup=types.InlineKeyboardMarkup(buttons), parse_mode=ParseMode.HTML)
+        await message.reply_text(profile_text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)

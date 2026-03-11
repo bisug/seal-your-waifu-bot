@@ -120,6 +120,7 @@ async def buypass_ask_callback(_, query: types.CallbackQuery):
     if query.from_user.id != owner_id:
         return await query.answer("❌ This is not your menu!", show_alert=True)
 
+    await query.answer()  # Dismiss spinner instantly
     price = PASS_PRICES[tier]
     text = f"⚠️ <b>Confirm Upgrade</b>\n\nUpgrade to <b>{tier.capitalize()} Pass</b> for <b>{price} ⧫</b>?"
     keyboard = [[
@@ -207,7 +208,8 @@ async def view_rewards_callback(_, query: types.CallbackQuery):
     if query.from_user.id != owner_id:
         return await query.answer("❌ This is not your menu!", show_alert=True)
 
-    user_id = query.from_user.id
+    await query.answer()  # Dismiss spinner instantly
+    user_id = query.from_user.id  # Must be declared before use
     progress = await get_user_progress(user_id)
 
     pass_type = progress["pass_type"]
@@ -249,7 +251,8 @@ async def pass_back_callback(_, query: types.CallbackQuery):
     if query.from_user.id != owner_id:
         return await query.answer("❌ This is not your menu!", show_alert=True)
 
-    user_id = query.from_user.id
+    await query.answer()  # Dismiss spinner instantly
+    user_id = query.from_user.id  # Must be declared before use
     progress = await get_user_progress(user_id)
 
     level = progress["level"]

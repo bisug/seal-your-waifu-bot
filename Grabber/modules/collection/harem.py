@@ -25,13 +25,15 @@ async def harem_handler(_, message: types.Message):
 @app.on_callback_query(filters.regex(r"^harem_view"))
 async def harem_view_btn_handler(_, query: types.CallbackQuery):
     data = query.data.split(":")
-    owner_id = int(data[1]) if len(data) > 1 else query.from_user.id
+    # "self" is a special case used in /start — resolve to the caller's ID
+    raw_id = data[1] if len(data) > 1 else "self"
+    owner_id = query.from_user.id if raw_id == "self" else int(raw_id)
 
     if query.from_user.id != owner_id:
         return await query.answer("❌ This is not your profile!", show_alert=True)
 
-    await show_harem(query, owner_id, 0)
     await query.answer()
+    await show_harem(query, owner_id, 0)
 
 async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], user_id: int, page: int):
     try:
@@ -144,7 +146,7 @@ async def harem_nav_handler(_, query: types.CallbackQuery):
         if query.from_user.id != user_id:
             return await query.answer("❌ This is not your harem!", show_alert=True)
 
+        await query.answer()  # Dismiss spinner instantly
         await show_harem(query, user_id, page)
-        await query.answer()
     except ValueError:
          await query.answer("❌ Invalid data format!", show_alert=True)
