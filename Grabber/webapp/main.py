@@ -53,8 +53,7 @@ async def add_security_headers(request: Request, call_next):
     """Inject basic security headers into every API response."""
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
-    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    # Note: X-Frame-Options must NOT be 'DENY' for Telegram Mini Apps to function in a frame.
     return response
 
 @api_router.post("/secure_init")
