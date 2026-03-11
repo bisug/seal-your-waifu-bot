@@ -28,7 +28,7 @@ class KeyboardBuilder:
 
 def get_webapp_button(is_private: bool = True) -> types.InlineKeyboardButton:
     """Returns a standardized direct WebApp button for all chat types."""
-    return types.InlineKeyboardButton("Open Mini App", web_app=types.WebAppInfo(url=WEB_APP_URL), style=enums.ButtonStyle.PRIMARY)
+    return types.InlineKeyboardButton("Open Mini App", web_app=types.WebAppInfo(url=WEB_APP_URL))
 
 def get_paginated_keyboard(page: int, total_pages: int, callback_prefix: str, user_id: int, is_private: bool = True) -> types.InlineKeyboardMarkup:
     """Builds a standard paginated keyboard with navigation and optional group WebApp link."""
