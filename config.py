@@ -41,7 +41,7 @@ class Config:
     IMGBB_API_KEY = os.getenv("IMGBB_API_KEY", "21786e21eb0369339a3c2a2d9c561190")
     
     # --- WEBAPP CONFIG ---
-    WEB_APP_URL = os.getenv("WEB_APP_URL", "https://example-app-01-seal-6d4f0ddd98e4.herokuapp.com")
+    WEB_APP_URL = os.getenv("WEB_APP_URL", "https://seal-bot-v2.vercel.app")
     MINI_APP_SHORT_NAME = os.getenv("MINI_APP_SHORT_NAME", "app") # The 'Short Name' you set in BotFather
 
 config = Config()
