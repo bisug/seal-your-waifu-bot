@@ -695,12 +695,20 @@ async function loadShopCharacters() {
     }
     
     grid.innerHTML = chars.map(char => `
-        <div class="char-card shop-item ${char.owned ? 'owned' : ''}" onclick="${char.owned ? '' : `confirmShopBuy('${char.id}', '${char.name.replace(/'/g, "\\'")}', ${char.zenith_price || 5})`}">
-            <div class="char-img-wrapper">
+        <div class="char-card shop-item ${char.owned ? 'owned' : ''}">
+            <div class="char-img-wrapper" onclick="showCharDetails('${char.id}')">
                 <img src="${char.img_url}" class="char-img" loading="lazy">
+                <div class="preview-overlay">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    PREVIEW
+                </div>
             </div>
             <div class="shop-price-tag">⧫ ${char.zenith_price || 5}</div>
-            ${char.owned ? '<div class="owned-overlay">OWNED</div>' : ''}
+            ${char.owned ? '<div class="owned-overlay">OWNED</div>' : `
+                <button class="shop-buy-btn" onclick="confirmShopBuy('${char.id}', '${char.name.replace(/'/g, "\\'")}', ${char.zenith_price || 5})">
+                    BUY NOW
+                </button>
+            `}
             <div class="char-info">
                 <div class="char-name">${char.name}</div>
                 <div style="font-size:9px; color:var(--hint-color)">${char.anime}</div>
@@ -725,11 +733,12 @@ async function loadShopPets() {
                     <div class="pet-shop-name">${pet.name}</div>
                     <div class="pet-shop-ability">✨ ${pet.ability}</div>
                     <div class="pet-shop-desc">${pet.desc}</div>
+                    ${isLocked ? `<div class="unlock-condition">🔒 UNLOCKS AT LEVEL ${pet.req_level}</div>` : ''}
                     <div class="pet-shop-stats">❤️ ${pet.hp} | ⚔️ ${pet.atk} | ⚡ ${pet.spd} | 🍀 ${Math.round(pet.luck*100)}%</div>
                 </div>
                 <div class="pet-shop-action">
                     ${isOwned ? '<span class="owned-btn">OWNED</span>' : 
-                      (isLocked ? `<span class="locked-btn">LVL ${pet.req_level}</span>` : 
+                      (isLocked ? `<span class="locked-btn">LOCKED</span>` : 
                       `<button class="buy-btn" onclick="buyPet(${index}, '${pet.name.replace(/'/g, "\\'")}', ${pet.zenith_price})">⧫ ${pet.zenith_price}</button>`)}
                 </div>
             </div>
@@ -899,6 +908,3 @@ if (typeof tg !== 'undefined') {
 } else {
     console.error("Telegram WebApp script not loaded");
 }
-document.getElementById('lb-metric-select').addEventListener('change', (e) => {
-    loadLeaderboard(e.target.value);
-});
