@@ -86,7 +86,7 @@ async def auth(request: Request):
             {"$set": {"avatar": avatar_url}}
         )
     
-    return {"token": token}
+    return {"token": new_token}
 
 
 # Include routers with obfuscated prefix
