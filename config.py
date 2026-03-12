@@ -6,7 +6,7 @@ load_dotenv()
 
 class Config:
     # --- BOT IDENTITY ---
-    TOKEN = os.getenv("TOKEN", "7888451649:AAGqpCops8LxBCs54h23SmD771TKRMucGh8")
+    TOKEN = os.getenv("TOKEN", "7888451649:AAFsl_vtOiN7dDvE-bLx32WJ-Gof-oc1zA0")
     SUB_TOKEN = os.getenv("SUB_TOKEN", "8785400009:AAG6gvkM-BH8Jq7NCKzVczNRUPrkm3O9-Y4")
     BOT_USERNAME = None  # Fetched automatically at startup
     BOT_ID = None        # Fetched automatically at startup
