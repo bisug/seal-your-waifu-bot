@@ -3,7 +3,7 @@ import re
 import time
 import logging
 import asyncio
-from pyrogram import Client, enums, types, filters
+from pyrogram import Client, enums, types, filters, errors
 from pyrogram.handlers import MessageHandler
 from config import config
 from Grabber.database import (
@@ -57,6 +57,70 @@ class SealClient(Client):
             device_model="Seal-Server",
             system_version="Linux",
             workdir="Grabber")
+
+    async def send_message_safe(self, chat_id, text, *args, **kwargs):
+        """Sends a message while handling FloodWait and optional auto-deletion."""
+        auto_delete = kwargs.pop("auto_delete", 0)
+        try:
+            msg = await self.send_message(chat_id, text, *args, **kwargs)
+            if msg and auto_delete:
+                from Grabber.core.deletion import schedule_deletion
+                await schedule_deletion(chat_id, msg.id, auto_delete, bot_name=self.name)
+            return msg
+        except errors.FloodWait as e:
+            LOGGER.warning(f"[{self.name}] FloodWait detected: Sleeping for {e.value}s")
+            await asyncio.sleep(e.value)
+            # Re-insert auto_delete for the recursive call
+            if auto_delete: kwargs["auto_delete"] = auto_delete
+            return await self.send_message_safe(chat_id, text, *args, **kwargs)
+        except Exception as e:
+            LOGGER.error(f"[{self.name}] Error sending message to {chat_id}: {e}")
+            return None
+
+    async def send_photo_safe(self, chat_id, photo, *args, **kwargs):
+        """Sends a photo while handling FloodWait and optional auto-deletion."""
+        auto_delete = kwargs.pop("auto_delete", 0)
+        try:
+            msg = await self.send_photo(chat_id, photo, *args, **kwargs)
+            if msg and auto_delete:
+                from Grabber.core.deletion import schedule_deletion
+                await schedule_deletion(chat_id, msg.id, auto_delete, bot_name=self.name)
+            return msg
+        except errors.FloodWait as e:
+            LOGGER.warning(f"[{self.name}] FloodWait detected: Sleeping for {e.value}s")
+            await asyncio.sleep(e.value)
+            if auto_delete: kwargs["auto_delete"] = auto_delete
+            return await self.send_photo_safe(chat_id, photo, *args, **kwargs)
+        except Exception as e:
+            LOGGER.error(f"[{self.name}] Error sending photo to {chat_id}: {e}")
+            return None
+
+    async def edit_message_text_safe(self, chat_id, message_id, text, *args, **kwargs):
+        """Edits message text while handling FloodWait."""
+        try:
+            return await self.edit_message_text(chat_id, message_id, text, *args, **kwargs)
+        except errors.FloodWait as e:
+            LOGGER.warning(f"[{self.name}] FloodWait detected: Sleeping for {e.value}s")
+            await asyncio.sleep(e.value)
+            return await self.edit_message_text_safe(chat_id, message_id, text, *args, **kwargs)
+        except Exception as e:
+            # Silently ignore "Message is not modified" errors which are common
+            if "MESSAGE_NOT_MODIFIED" not in str(e):
+                LOGGER.error(f"[{self.name}] Error editing message text in {chat_id}: {e}")
+            return None
+
+    async def edit_message_caption_safe(self, chat_id, message_id, caption, *args, **kwargs):
+        """Edits message caption while handling FloodWait."""
+        try:
+            return await self.edit_message_caption(chat_id, message_id, caption, *args, **kwargs)
+        except errors.FloodWait as e:
+            LOGGER.warning(f"[{self.name}] FloodWait detected: Sleeping for {e.value}s")
+            await asyncio.sleep(e.value)
+            return await self.edit_message_caption_safe(chat_id, message_id, caption, *args, **kwargs)
+        except Exception as e:
+            if "MESSAGE_NOT_MODIFIED" not in str(e):
+                LOGGER.error(f"[{self.name}] Error editing message caption in {chat_id}: {e}")
+            return None
 
     async def start(self, *args, **kwargs):
         await super().start(*args, **kwargs)
@@ -132,7 +196,7 @@ class SealClient(Client):
             seen_commands = set()
 
             # Define bot-specific command lists
-            GAMEBOT_SPECIFIC = ["nguess", "quiz"]
+            GAMEBOT_SPECIFIC = ["nguess", "quiz", "scramble"]
             COMMON_CMDS = {
                 "start": "Start the bot & interactive intro",
                 "help": "Show available commands and usage guide"
