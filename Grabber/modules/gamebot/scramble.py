@@ -72,15 +72,21 @@ async def start_scramble_game(chat_id):
 
 @game_bot.on_message(filters.command("scramble"))
 async def scramble_cmd_handler(_, message: types.Message):
-    # 50-member check
-    meets_req, count = await check_member_requirement(message.chat)
+    # 50-member check + Main Bot presence
+    meets_req, reason, count = await check_member_requirement(game_bot, message.chat)
     if not meets_req:
-        return await game_bot.send_message_safe(
-            message.chat.id,
-            f"⚠️ <b>Security Level Low:</b> This sector must contain at least <b>50 personnel</b> (members) to authorize GameBot operations.\n\n"
-            f"Current count: <code>{count}</code>",
-            auto_delete=300
-        )
+        if reason == "member_count":
+            text = (
+                f"⚠️ <b>Security Level Low:</b> This sector must contain at least <b>50 personnel</b> (members) to authorize GameBot operations.\n\n"
+                f"Current count: <code>{count}</code>"
+            )
+        else: # main_bot_missing
+            from Grabber import BOT_NAME, BOT_USERNAME
+            text = (
+                f"🚫 <b>Main Bot Missing:</b> GameBot operations require the presence of <b>{BOT_NAME}</b> (@{BOT_USERNAME}) in this sector.\n\n"
+                f"<i>Please add the Main Bot to authorize games!</i>"
+            )
+        return await game_bot.send_message_safe(message.chat.id, text, auto_delete=300)
         
     await start_scramble_game(message.chat.id)
 
