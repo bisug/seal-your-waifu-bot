@@ -6,6 +6,7 @@ class User(BaseModel):
     first_name: str
     username: Optional[str] = None
     balance: int = 0
+    zenith: int = 0
     characters: List[dict] = []
 
     # Daily Streak
@@ -28,6 +29,15 @@ class User(BaseModel):
     pass_type: str = "free" # free, premium, elite
 
 class Character(BaseModel):
+    id: str
+    name: str
+    anime: str
+    rarity: str
+    img_url: str
+    zenith_price: int = 5
+    sold_count: int = 0
+
+class UserCharacter(BaseModel):
     id: str
     name: str
     anime: str

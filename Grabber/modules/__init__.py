@@ -18,16 +18,16 @@ LOAD = []
 NO_LOAD = []
 
 def __list_all_modules():
-    import glob
-    from os.path import basename, dirname, isfile
-
-
-    mod_paths = glob.glob(dirname(__file__) + "/*.py")
-    all_modules = [
-        basename(f)[:-3]
-        for f in mod_paths
-        if isfile(f) and f.endswith(".py") and not f.endswith("__init__.py")
-    ]
+    from pathlib import Path
+    base = Path(__file__).parent
+    all_modules = []
+    
+    for py_file in sorted(base.rglob("*.py")):
+        if py_file.name == "__init__.py":
+            continue
+        rel = py_file.relative_to(base)
+        dotted = ".".join(rel.with_suffix("").parts)
+        all_modules.append(dotted)
 
     if LOAD or NO_LOAD:
         to_load = LOAD
