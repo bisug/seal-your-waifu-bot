@@ -36,5 +36,5 @@ async def gamebot_start_handler(_, message: types.Message):
         text,
         reply_markup=types.InlineKeyboardMarkup(buttons),
         parse_mode=ParseMode.HTML,
-        reply_to_message_id=message.id
+        reply_parameters=types.ReplyParameters(message_id=message.id)
     )
