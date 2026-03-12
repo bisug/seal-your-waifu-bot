@@ -15,18 +15,36 @@ def md_escape(text: str) -> str:
     escape_chars = r"_*[]()~`>#+-=|{}.!"
     return re.sub(f"([{re.escape(escape_chars)}])", r"\\\1", text)
 
-async def check_member_requirement(chat, min_count=50):
+async def check_member_requirement(bot, chat, min_count=50):
     """
-    Checks if a chat meets the minimum member requirement for GameBot.
-    Returns (bool, current_count).
+    Checks if a chat meets the requirements for GameBot:
+    1. Minimum 50 members.
+    2. Main Bot (BOT_ID) is present in the group.
+    Returns (bool, str_reason, current_count).
     """
-    from pyrogram import enums
+    from pyrogram import enums, errors
+    from config import config
+
     if chat.type in [enums.ChatType.PRIVATE, enums.ChatType.BOT]:
-        return True, 0
+        return True, None, 0
         
     try:
+        # 1. Check member count
         count = await chat.get_members_count()
-        return count >= min_count, count
+        if count < min_count:
+            return False, "member_count", count
+
+        # 2. Check Main Bot presence
+        try:
+            # We check if BOT_ID (Main Bot) is in this chat
+            await bot.get_chat_member(chat.id, config.BOT_ID)
+        except errors.UserNotParticipant:
+            return False, "main_bot_missing", count
+        except Exception:
+            # Other errors (e.g. no permission to view members) - assume present to be safe
+            pass
+
+        return True, None, count
     except Exception:
-        # If we can't check (e.g., bot not in group), assume True to avoid blocking if the bot just joined
-        return True, 0
+        # Generic fallback
+        return True, None, 0
