@@ -9,8 +9,10 @@ from Grabber.webapp.auth import r
 from config import config
 import re
 from datetime import datetime, timedelta
-from Grabber.modules.pet import DEFAULT_PET, PET_SHOP
-from Grabber.modules.hunt import EGG_TIERS
+from Grabber.modules.progression.pet import DEFAULT_PET, PET_SHOP
+from Grabber.modules.economy.hunt import EGG_TIERS, process_egg_hatch
+from Grabber.modules.progression.battlepass import PASS_PRICES, LEVEL_REWARDS, PASS_EMOJI
+from Grabber.modules.economy.shop import get_daily_shop_characters, SHOP_LIMIT, DEFAULT_ZENITH_PRICE, SHOP_RARITY
 
 router = APIRouter()
 
@@ -46,11 +48,23 @@ async def get_character(char_id: str):
 
 @router.get("/me", response_model=UserProfileResponse)
 async def get_me(user_id: int = Depends(get_current_user)):
-    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
+    pipeline = [
+        {"$match": {"id": {"$in": [user_id, str(user_id)]}}},
+        {"$project": {
+            "id": 1, "first_name": 1, "username": 1, "avatar": 1, "level": 1, "xp": 1,
+            "streak": 1, "balance": 1, "zenith": 1, "badges": 1, "achievements": 1,
+            "titles": 1, "title": 1, "pets": 1, "current_pet": 1, "eggs": 1,
+            "total_characters": {"$size": {"$ifNull": ["$characters", []]}}
+        }}
+    ]
+    cursor = user_collection.aggregate(pipeline)
+    users = await cursor.to_list(length=1)
+    user = users[0] if users else None
+
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    from Grabber.modules.achievements import ACHIEVEMENTS
+    from Grabber.modules.progression.achievements import ACHIEVEMENTS
     raw_achievements = user.get("achievements") or []
     enriched_achievements = []
     for ach_id in raw_achievements:
@@ -63,15 +77,14 @@ async def get_me(user_id: int = Depends(get_current_user)):
 
     titles_list = user.get("titles") or ["Rookie"]
     # Remove emojis from titles for WebApp
-    clean_titles = [re.sub(r'[^\x00-\x7F]+', '', t).strip() for t in titles_list]
-    current_title = re.sub(r'[^\x00-\x7F]+', '', user.get("title", "Rookie")).strip()
-    characters = user.get("characters") or []
+    clean_titles = [re.sub(r'[^\x00-\x7F]+', '', str(t or "")).strip() for t in titles_list]
+    current_title = re.sub(r'[^\x00-\x7F]+', '', str(user.get("title") or "Rookie")).strip()
     # Performance: Pass existing user document to avoid redundant DB lookup
     progress = await get_user_progress(user_id, user_data=user)
     
     resp_data = {
         "id": user_id,
-        "first_name": user.get("first_name", "User"),
+        "first_name": (user.get("first_name") or "User"),
         "username": user.get("username"),
         "avatar": user.get("avatar"),
         "stats": {
@@ -83,7 +96,7 @@ async def get_me(user_id: int = Depends(get_current_user)):
             "points": user.get("balance", 0),
             "zenith": user.get("zenith", 0),
             "badges": user.get("badges") or [],
-            "total_characters": len(characters)
+            "total_characters": user.get("total_characters", 0)
         },
         "achievements": enriched_achievements,
         "titles": {
@@ -91,29 +104,35 @@ async def get_me(user_id: int = Depends(get_current_user)):
             "all": clean_titles
         },
         "current_pet": None,
+        "owned_pets": [],
         "eggs": []
     }
 
-    # Handle Pet
+    # Handle Pets
     user_pets = user.get("pets", [DEFAULT_PET])
     current_pet_name = user.get("current_pet", DEFAULT_PET["name"])
-    pet_data = next((p for p in user_pets if p["name"] == current_pet_name), DEFAULT_PET)
     
-    if pet_data:
-        resp_data["current_pet"] = {
-            "name": pet_data["name"],
-            "level": pet_data.get("level", 1),
-            "xp": pet_data.get("xp", 0),
-            "xp_needed": pet_data.get("level", 1) * 100,
-            "hp": pet_data.get("hp", 100),
-            "atk": pet_data.get("atk", 10),
-            "spd": pet_data.get("spd", 10),
-            "luck": pet_data.get("luck", 0.1),
-            "ability": pet_data.get("ability", "None"),
-            "desc": pet_data.get("desc", ""),
-            "img": pet_data.get("img", ""),
-            "is_active": True
+    formatted_pets = []
+    for p in user_pets:
+        p_data = {
+            "name": p["name"],
+            "level": p.get("level", 1),
+            "xp": p.get("xp", 0),
+            "xp_needed": p.get("level", 1) * 100,
+            "hp": p.get("hp", 100),
+            "atk": p.get("atk", 10),
+            "spd": p.get("spd", 10),
+            "luck": p.get("luck", 0.1),
+            "ability": p.get("ability", "None"),
+            "desc": p.get("desc", ""),
+            "img": p.get("img", ""),
+            "is_active": p["name"] == current_pet_name
         }
+        formatted_pets.append(p_data)
+        if p_data["is_active"]:
+            resp_data["current_pet"] = p_data
+
+    resp_data["owned_pets"] = formatted_pets
 
     # Handle Eggs
     eggs = user.get("eggs", [])
@@ -152,43 +171,57 @@ async def get_harem(
     search: str = None,
     rarity: str = None
 ):
-    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-        
-    chars = user.get("characters") or []
-    
+    # MongoDB Aggregation Pipeline for Harem
+    pipeline = [
+        {"$match": {"id": {"$in": [user_id, str(user_id)]}}},
+        {"$unwind": "$characters"}
+    ]
+
     # Filtering
     if search:
-        search = search.strip()
-        chars = [c for c in chars if search.lower() in c.get("name", "").lower() or search.lower() in c.get("anime", "").lower()]
+        search_regex = {"$regex": search, "$options": "i"}
+        pipeline.append({
+            "$match": {
+                "$or": [
+                    {"characters.name": search_regex},
+                    {"characters.anime": search_regex}
+                ]
+            }
+        })
+        
     if rarity:
-        rarity = rarity.strip()
-        chars = [c for c in chars if c.get("rarity") == rarity]
-        
-    # Grouping and counting duplicates
-    from collections import Counter
-    char_counts = Counter(c.get("id") for c in chars)
-    
-    # Unique characters for listing
-    unique_chars = []
-    seen = set()
-    for c in chars:
-        cid = c.get("id")
-        if cid not in seen:
-            unique_chars.append(c)
-            seen.add(cid)
-            
-    # Pagination
-    total = len(unique_chars)
-    start = (page - 1) * limit
-    end = start + limit
-    paginated = unique_chars[start:end]
-    
-    # Attach counts
-    for c in paginated:
-        c["count"] = char_counts[c.get("id")]
-        
+        pipeline.append({
+            "$match": {"characters.rarity": rarity}
+        })
+
+    # Grouping to count duplicates and formatting the document
+    pipeline.extend([
+        {"$group": {
+            "_id": "$characters.id",
+            "doc": {"$first": "$characters"},
+            "count": {"$sum": 1}
+        }},
+        {"$replaceRoot": {"newRoot": {"$mergeObjects": ["$doc", {"count": "$count"}]}}},
+        {"$sort": {"rarity": 1, "name": 1}} # Example sorting
+    ])
+
+    # Pagination Facet
+    skip = (page - 1) * limit
+    facet = {
+        "metadata": [{"$count": "total"}],
+        "data": [{"$skip": skip}, {"$limit": limit}]
+    }
+    pipeline.append({"$facet": facet})
+
+    cursor = user_collection.aggregate(pipeline)
+    result = await cursor.to_list(length=1)
+
+    total = 0
+    paginated = []
+    if result and result[0].get("metadata"):
+        total = result[0]["metadata"][0]["total"]
+        paginated = result[0]["data"]
+
     return {
         "total": total,
         "page": page,
@@ -219,8 +252,8 @@ async def get_gallery(
     items = await cursor.to_list(length=limit)
     total = await collection.count_documents(query)
     
-    # Check "Owned" status
-    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
+    # Check "Owned" status - ONLY fetch the IDs to save memory
+    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}}, {"characters.id": 1})
     owned_ids = set(c.get("id") for c in (user.get("characters") or [])) if user else set()
     
     for item in items:
@@ -235,7 +268,7 @@ async def get_gallery(
 
 @router.get("/quests", response_model=QuestsResponse)
 async def get_quests(user_id: int = Depends(get_current_user)):
-    from Grabber.modules.quests import get_user_quests, QUEST_POOL, WEEKLY_POOL
+    from Grabber.modules.progression.quests import get_user_quests, QUEST_POOL, WEEKLY_POOL
     quests_data = await get_user_quests(user_id)
     
     response = {"daily": [], "weekly": []}
@@ -256,7 +289,7 @@ async def get_quests(user_id: int = Depends(get_current_user)):
 
 @router.post("/quests/claim/{quest_id}")
 async def claim_quest(quest_id: str, user_id: int = Depends(get_current_user)):
-    from Grabber.modules.quests import get_user_quests, QUEST_POOL, WEEKLY_POOL, add_xp
+    from Grabber.modules.progression.quests import get_user_quests, QUEST_POOL, WEEKLY_POOL, add_xp
     
     quests = await get_user_quests(user_id)
     if quest_id not in quests:
@@ -289,7 +322,7 @@ async def get_leaderboard(
     if cached:
         return json.loads(cached)
         
-    from Grabber.modules.leaderboard import get_top_users
+    from Grabber.modules.info.leaderboard import get_top_users
     users = await get_top_users(metric, limit)
     
     metric_map = {
@@ -389,12 +422,7 @@ async def incubate_egg(egg_id: str, user_id: int = Depends(get_current_user)):
 
 @router.post("/eggs/hatch/{egg_id}")
 async def hatch_egg(egg_id: str, user_id: int = Depends(get_current_user)):
-    # Re-use logic from hunt.py or just trigger the hatch
-    # Since this is complex logic with DB updates, let's keep it simple for now and rely on the existing logic
-    # but we need to implement it here for WebApp hatching.
-    from Grabber.modules.hunt import crack_open_egg_inline, collection as anime_col
-    from Grabber.core.progression import add_xp
-    import random
+    from Grabber.modules.economy.hunt import process_egg_hatch
     
     user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
     eggs = user.get("eggs", [])
@@ -407,26 +435,15 @@ async def hatch_egg(egg_id: str, user_id: int = Depends(get_current_user)):
     if h_time and datetime.now() < h_time:
         raise HTTPException(status_code=400, detail="Egg still incubating")
         
-    # Hatching Logic (Simplified copy of hunt.py logic for API)
-    await user_collection.update_one({"id": user_id}, {"$pull": {"eggs": {"id": egg_id}}})
+    success, result = await process_egg_hatch(user_id, egg)
     
-    rarity = None
-    if egg.get("is_corrupted", False):
-        if random.random() < 0.5:
-            return {"status": "exploded", "message": "The egg exploded! It was corrupted..."}
-        from Grabber.modules.rarities import RARITY_MAP
-        rarity = RARITY_MAP[9]
-    else:
-        rarity_pool = EGG_TIERS[egg["tier"]]["pool"]
-        rarity = random.choice(rarity_pool)
-        
-    waifus = await anime_col.find({"rarity": rarity}).to_list(length=None)
-    if not waifus:
-        return {"status": "error", "message": "No characters found for this rarity."}
-        
-    character = random.choice(waifus)
-    await user_collection.update_one({"id": user_id}, {"$push": {"characters": character}})
-    await add_xp(user_id, 15, "egg_hatch")
+    if not success:
+         # Clean the HTML formatting out for the API JSON response
+         msg = result.replace("<b>", "").replace("</b>", "").replace("💥 ", "").replace("⚠️ ", "").replace("\n", " ")
+         status_code = "exploded" if "exploded" in result else "error"
+         return {"status": status_code, "message": msg}
+         
+    character = result
     
     return {
         "status": "success",
@@ -438,3 +455,140 @@ async def hatch_egg(egg_id: str, user_id: int = Depends(get_current_user)):
             "img_url": character["img_url"]
         }
     }
+
+# --- SHOP ENDPOINTS ---
+
+@router.get("/shop/hub")
+async def get_shop_hub(user_id: int = Depends(get_current_user)):
+    """General shop status and user balances."""
+    user = await user_collection.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {
+        "balance": user.get("balance", 0),
+        "zenith": user.get("zenith", 0),
+        "pass_type": user.get("pass_type", "free"),
+        "characters_rarity": SHOP_RARITY
+    }
+
+@router.get("/shop/characters")
+async def get_shop_characters(user_id: int = Depends(get_current_user)):
+    """Fetch daily character stock."""
+    chars = await get_daily_shop_characters()
+    # Check "Owned" status
+    user = await user_collection.find_one({"id": user_id}, {"characters.id": 1})
+    owned_ids = set(c.get("id") for c in (user.get("characters") or [])) if user else set()
+    
+    response = []
+    for c in chars:
+        char_dict = c.dict()
+        char_dict["owned"] = c.id in owned_ids
+        char_dict["stock_limit"] = SHOP_LIMIT
+        response.append(char_dict)
+    return response
+
+@router.post("/shop/buy/character/{char_id}")
+async def buy_character_api(char_id: str, user_id: int = Depends(get_current_user)):
+    """Logic mirror from modules/economy/shop.py but returning JSON errors."""
+    from Grabber.database import collection
+    from Grabber.modules.progression.quests import update_quest_progress
+    from Grabber.modules.progression.achievements import check_achievements
+    
+    user_raw = await user_collection.find_one({"id": user_id})
+    if not user_raw: raise HTTPException(status_code=404, detail="User not found")
+    
+    char_raw = await collection.find_one({"id": char_id})
+    if not char_raw or char_raw.get("rarity") != SHOP_RARITY:
+        raise HTTPException(status_code=404, detail="Character not available in shop")
+    
+    price = char_raw.get("zenith_price", DEFAULT_ZENITH_PRICE)
+    if user_raw.get("zenith", 0) < price:
+        raise HTTPException(status_code=400, detail=f"Insufficient Zenith (Need {price})")
+        
+    # Ownership Check
+    owned_ids = [c["id"] for c in user_raw.get("characters", []) if isinstance(c, dict) and "id" in c]
+    if char_id in owned_ids:
+        raise HTTPException(status_code=400, detail="You already own this character")
+
+    # Atomic Update for Global Stock
+    stock_update = await collection.update_one(
+        {"id": char_id, "sold_count": {"$lt": SHOP_LIMIT}},
+        {"$inc": {"sold_count": 1}}
+    )
+    if stock_update.modified_count == 0:
+        raise HTTPException(status_code=400, detail="Character is SOLD OUT")
+
+    # User Update
+    user_update = await user_collection.update_one(
+        {"id": user_id, "zenith": {"$gte": price}},
+        {
+            "$inc": {"zenith": -price},
+            "$push": {"characters": {
+                "id": char_raw["id"], 
+                "name": char_raw["name"], 
+                "anime": char_raw["anime"], 
+                "rarity": char_raw["rarity"], 
+                "img_url": char_raw["img_url"]
+            }}
+        }
+    )
+
+    if user_update.modified_count == 0:
+        await collection.update_one({"id": char_id}, {"$inc": {"sold_count": -1}}) # Rollback
+        raise HTTPException(status_code=500, detail="Transaction failed")
+
+    await update_quest_progress(user_id, "big_spender", price)
+    await check_achievements(user_id)
+    return {"status": "success", "char_name": char_raw["name"]}
+
+@router.get("/shop/pets")
+async def get_shop_pets(user_id: int = Depends(get_current_user)):
+    """Fetch potential pets and ownership status."""
+    user = await user_collection.find_one({"id": user_id})
+    owned_pet_names = [p["name"] for p in user.get("pets", [])] if user else []
+    
+    return {
+        "pets": PET_SHOP,
+        "owned": owned_pet_names,
+        "current_level": (await get_user_progress(user_id))["level"]
+    }
+
+@router.post("/shop/buy/pet/{pet_index}")
+async def buy_pet_api(pet_index: int, user_id: int = Depends(get_current_user)):
+    from Grabber.modules.progression.pet import perform_pet_purchase
+    result = await perform_pet_purchase(user_id, pet_index)
+    if result is True:
+        return {"status": "success"}
+    raise HTTPException(status_code=400, detail=str(result).replace("❌ ", "").replace("🔒 ", ""))
+
+@router.get("/shop/battlepass")
+async def get_battlepass_shop(user_id: int = Depends(get_current_user)):
+    progress = await get_user_progress(user_id)
+    return {
+        "prices": PASS_PRICES,
+        "current_tier": progress["pass_type"],
+        "level": progress["level"]
+    }
+
+@router.post("/shop/upgrade_pass/{tier}")
+async def upgrade_pass_api(tier: str, user_id: int = Depends(get_current_user)):
+    if tier not in PASS_PRICES: raise HTTPException(status_code=400, detail="Invalid tier")
+    
+    user = await user_collection.find_one({"id": user_id})
+    if not user: raise HTTPException(status_code=404, detail="User not found")
+    
+    current_tier = user.get("pass_type", "free")
+    tiers_order = ["free", "premium", "elite"]
+    if tiers_order.index(current_tier) >= tiers_order.index(tier):
+        raise HTTPException(status_code=400, detail="You already have this tier or higher")
+        
+    price = PASS_PRICES[tier]
+    if user.get("zenith", 0) < price:
+        raise HTTPException(status_code=400, detail=f"Insufficient Zenith (Need {price})")
+        
+    await user_collection.update_one(
+        {"id": user_id, "zenith": {"$gte": price}},
+        {"$set": {"pass_type": tier}, "$inc": {"zenith": -price}}
+    )
+    return {"status": "success", "new_tier": tier}

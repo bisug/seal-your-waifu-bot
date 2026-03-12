@@ -1,0 +1,118 @@
+<!-- Unified Identity Header -->
+<div class="meta-banner bg-profile" style="height: 180px; margin-bottom: 30px;">
+    <div class="banner-overlay-luxury">
+        <div class="header-main-info">
+            <div class="avatar-wrapper">
+                <div id="user-avatar" class="avatar-luxury-small"></div>
+                <div id="user-level-badge" class="level-badge-tiny">1</div>
+            </div>
+            <div class="user-text-info">
+                <h2 id="user-name">Loading...</h2>
+                <div id="user-title" class="title-chip-light">Rookie</div>
+            </div>
+            <div id="user-streak" class="streak-pill-mini">
+                <span id="streak-val">0</span>🔥
+            </div>
+        </div>
+        
+        <div class="banner-progression">
+            <div class="xp-meta-tiny">
+                <span id="user-xp-val" class="xp-values-tiny">0 / 0 XP</span>
+            </div>
+            <div class="xp-track-mini">
+                <div id="xp-bar-fill" class="xp-fill-glow"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Compact Stat Strip -->
+<div class="stat-strip-luxury">
+    <div class="stat-tile">
+        <span class="stat-tile-label">RANK</span>
+        <span id="stat-rank" class="stat-tile-val">?</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-tile">
+        <span class="stat-tile-label">SHARDS</span>
+        <span id="stat-balance" class="stat-tile-val">0</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-tile">
+        <span class="stat-tile-label">ZENITH</span>
+        <span id="stat-zenith" class="stat-tile-val">0</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-tile">
+        <span class="stat-tile-label">CARDS</span>
+        <span id="stat-collection" class="stat-tile-val">0</span>
+    </div>
+</div>
+
+<!-- Active Companion -->
+<div id="pet-section" class="quest-section" style="display:none; margin-top: 10px;">
+    <div class="section-header">
+        <span class="header-line"></span>
+        <h4>ACTIVE COMPANION</h4>
+        <span class="header-line"></span>
+    </div>
+    <div id="active-pet-card" class="pet-card-luxury">
+        <!-- Pet info populated by JS -->
+    </div>
+</div>
+
+<div id="harem-section" class="quest-section" style="margin-top: 20px;">
+    <div class="section-header">
+        <span class="header-line"></span>
+        <h4>MY COLLECTION</h4>
+        <span class="header-line"></span>
+    </div>
+    
+    <div class="filter-bar-luxury">
+        <div class="search-wrapper">
+            <div class="search-icon-inside">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+            </div>
+            <input type="text" id="harem-search" placeholder="Search collection...">
+        </div>
+        <div class="filter-select-wrapper">
+            <select id="harem-filter-rarity">
+                <option value="">Rarity (All)</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="harem-grid" class="char-grid">
+        <!-- Cards here -->
+    </div>
+
+    <div id="harem-loading" style="text-align:center; padding:10px; display:none;">
+        <div class="spinner-mini"></div>
+    </div>
+</div>
+
+<!-- Secondary Operations -->
+<div id="eggs-section" class="quest-section" style="display:none;">
+     <div class="section-header">
+        <span class="header-line"></span>
+        <h4>EGG INVENTORY</h4>
+        <span class="header-line"></span>
+    </div>
+    <div id="eggs-list" class="badge-row">
+        <!-- Eggs populated by JS -->
+    </div>
+</div>
+
+<div id="achievements-section" class="quest-section">
+    <div class="section-header">
+        <span class="header-line"></span>
+        <h4>ACHIEVEMENTS</h4>
+        <span class="header-line"></span>
+    </div>
+    <div id="achievements-list" class="badge-row">
+        <!-- Badges populated by JS -->
+    </div>
+</div>
