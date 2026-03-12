@@ -300,11 +300,19 @@ async def start_bots():
     await app.start()
     await game_bot.start()
     if userbot:
-        await userbot.start()
-        LOGGER.info("Userbot started successfully.")
+        try:
+            await userbot.start()
+            LOGGER.info("Userbot started successfully.")
+        except Exception as e:
+            LOGGER.error(f"Userbot failed to start: {e}")
+            # Ensure the object exists but is disconnected
+            pass 
 
 async def stop_bots():
     await app.stop()
     await game_bot.stop()
     if userbot:
-        await userbot.stop()
+        try:
+            await userbot.stop()
+        except:
+            pass

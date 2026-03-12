@@ -77,8 +77,8 @@ async def scrape_group_command_handler(client, message):
     if len(message.command) < 2:
         return await message.reply_text("❌ Usage: `/scrape <group_id_or_username>`")
 
-    if not userbot:
-        return await message.reply_text("❌ Userbot is not configured/started. Add `STRING_SESSION` to config.")
+    if not userbot or not userbot.is_connected:
+        return await message.reply_text("❌ Userbot is not configured or failed to start. Check your `STRING_SESSION` and logs.")
 
     if message.chat.id in scraping_tasks:
         return await message.reply_text("⚠️ A scraping task is already running. Use `/stop_scrape`.")
