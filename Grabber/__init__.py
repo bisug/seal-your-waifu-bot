@@ -280,17 +280,8 @@ class SealClient(Client):
 app = SealClient(name="MainBot", bot_token=config.TOKEN)
 game_bot = SealClient(name="GameBot", bot_token=config.SUB_TOKEN)
 
-# Userbot initialization
+# Userbot is disabled
 userbot = None
-if config.STRING_SESSION:
-    userbot = Client(
-        name="SealUserbot",
-        api_id=config.API_ID,
-        api_hash=config.API_HASH,
-        session_string=config.STRING_SESSION,
-        plugins=None, # Userbot doesn't need its own plugins for now
-        in_memory=True
-    )
 
 # For backward compatibility and modularity
 Grabber = app
@@ -299,20 +290,7 @@ nguess_bot = game_bot
 async def start_bots():
     await app.start()
     await game_bot.start()
-    if userbot:
-        try:
-            await userbot.start()
-            LOGGER.info("Userbot started successfully.")
-        except Exception as e:
-            LOGGER.error(f"Userbot failed to start: {e}")
-            # Ensure the object exists but is disconnected
-            pass 
 
 async def stop_bots():
     await app.stop()
     await game_bot.stop()
-    if userbot:
-        try:
-            await userbot.stop()
-        except:
-            pass
