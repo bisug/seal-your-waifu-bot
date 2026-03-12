@@ -2,7 +2,7 @@ import asyncio
 import time
 from pyrogram import errors
 from Grabber.database import deletion_queue_collection
-from Grabber import app, nguess_bot, LOGGER
+from Grabber import app, game_bot, LOGGER
 
 async def schedule_deletion(chat_id: int, message_id: int, delay: int = 300, bot_name: str = "MainBot"):
     """
@@ -10,7 +10,7 @@ async def schedule_deletion(chat_id: int, message_id: int, delay: int = 300, bot
     :param chat_id: The ID of the chat where the message exists.
     :param message_id: The ID of the message to delete.
     :param delay: Time in seconds to wait before deletion (default 5 mins).
-    :param bot_name: Which bot sent the message — 'MainBot' or 'NguessBot'.
+    :param bot_name: Which bot sent the message — 'MainBot' or 'GameBot'.
     """
     delete_at = time.time() + delay
     await deletion_queue_collection.insert_one({
@@ -37,8 +37,7 @@ async def deletion_worker():
             for msg in expired_messages:
                 chat_id = msg["chat_id"]
                 message_id = msg["message_id"]
-                bot_name = msg.get("bot_name", "MainBot")
-                client = nguess_bot if bot_name == "NguessBot" else app
+                client = game_bot if bot_name == "GameBot" else app
 
                 try:
                     await client.delete_messages(chat_id, message_id)
