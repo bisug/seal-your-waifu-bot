@@ -11,7 +11,7 @@ Key prefixes:
   cooldown:{key}     → Unix timestamp float, TTL = cooldown duration
   lb:{metric}        → leaderboard JSON list, TTL 5m
   session:{id}       → session JSON, TTL = caller-specified (default 1h)
-  nguess_groups      → Redis set of enabled chat_ids, TTL 10m
+  gamebot_groups     → Redis set of enabled chat_ids, TTL 10m
   daily:{id}         → last daily date string YYYY-MM-DD, TTL 48h
   weekly:{id}        → last weekly date string YYYY-MM-DD, TTL 8d
 """
@@ -28,7 +28,7 @@ TTL_LEADERBOARD = 300     # 5 minutes
 TTL_SESSION     = 3600    # 1 hour
 TTL_DAILY       = 48 * 3600
 TTL_WEEKLY      = 8 * 24 * 3600
-TTL_NGUESS      = 600     # 10 minutes
+TTL_GAMEBOT     = 600     # 10 minutes
 
 
 # ── Low-level helpers ────────────────────────────────────────────
@@ -222,52 +222,52 @@ async def delete_session(session_id: str):
 
 # ── Nguess enabled groups set ─────────────────────────────────────
 
-_NGUESS_KEY = "nguess_groups"
+_GAMEBOT_KEY = "gamebot_groups"
 
-async def refresh_nguess_groups_cache(nguess_enabled_groups_collection) -> set:
+async def refresh_gamebot_groups_cache(gamebot_enabled_groups_collection) -> set:
     """Load enabled groups from MongoDB and cache in Redis set."""
-    groups = await nguess_enabled_groups_collection.find({}, {"chat_id": 1}).to_list(length=1000)
+    groups = await gamebot_enabled_groups_collection.find({}, {"chat_id": 1}).to_list(length=1000)
     ids = {str(g["chat_id"]) for g in groups}
     if _redis and ids:
         try:
             pipe = _redis.pipeline()
-            await pipe.delete(_NGUESS_KEY)
-            await pipe.sadd(_NGUESS_KEY, *ids)
-            await pipe.expire(_NGUESS_KEY, TTL_NGUESS)
+            await pipe.delete(_GAMEBOT_KEY)
+            await pipe.sadd(_GAMEBOT_KEY, *ids)
+            await pipe.expire(_GAMEBOT_KEY, TTL_GAMEBOT)
             await pipe.execute()
         except Exception as e:
-            LOGGER.warning(f"Redis nguess set error: {e}")
+            LOGGER.warning(f"Redis gamebot set error: {e}")
     return ids
 
-async def is_nguess_enabled(chat_id: int, nguess_enabled_groups_collection) -> bool:
-    """Check if a chat has nguess enabled. Uses Redis set, falls back to MongoDB."""
+async def is_gamebot_enabled(chat_id: int, gamebot_enabled_groups_collection) -> bool:
+    """Check if a chat has gamebot enabled. Uses Redis set, falls back to MongoDB."""
     if _redis:
         try:
-            exists = await _redis.sismember(_NGUESS_KEY, str(chat_id))
+            exists = await _redis.sismember(_GAMEBOT_KEY, str(chat_id))
             if exists:
                 return True
             # Key might be expired — check if key exists at all
-            key_exists = await _redis.exists(_NGUESS_KEY)
+            key_exists = await _redis.exists(_GAMEBOT_KEY)
             if key_exists:
                 return False  # Key exists but chat not in set → definitely disabled
         except Exception as e:
-            LOGGER.warning(f"Redis nguess check error: {e}")
+            LOGGER.warning(f"Redis gamebot check error: {e}")
     # MongoDB fallback
-    result = await nguess_enabled_groups_collection.find_one({"chat_id": chat_id})
+    result = await gamebot_enabled_groups_collection.find_one({"chat_id": chat_id})
     return result is not None
 
-async def add_nguess_group(chat_id: int):
-    """Add a group to the nguess enabled set in Redis."""
+async def add_gamebot_group(chat_id: int):
+    """Add a group to the gamebot enabled set in Redis."""
     if _redis:
         try:
-            await _redis.sadd(_NGUESS_KEY, str(chat_id))
+            await _redis.sadd(_GAMEBOT_KEY, str(chat_id))
         except Exception as e:
-            LOGGER.warning(f"Redis nguess add error: {e}")
+            LOGGER.warning(f"Redis gamebot add error: {e}")
 
-async def remove_nguess_group(chat_id: int):
-    """Remove a group from the nguess enabled set in Redis."""
+async def remove_gamebot_group(chat_id: int):
+    """Remove a group from the gamebot enabled set in Redis."""
     if _redis:
         try:
-            await _redis.srem(_NGUESS_KEY, str(chat_id))
+            await _redis.srem(_GAMEBOT_KEY, str(chat_id))
         except Exception as e:
-            LOGGER.warning(f"Redis nguess remove error: {e}")
+            LOGGER.warning(f"Redis gamebot remove error: {e}")

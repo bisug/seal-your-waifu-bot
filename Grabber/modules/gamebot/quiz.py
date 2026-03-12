@@ -5,14 +5,14 @@ import httpx
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
 from Grabber.core.utils import html_escape
-from Grabber import app, nguess_bot
+from Grabber import app, game_bot
 from Grabber import LOGGER, quiz_questions_collection
 from Grabber.core.game import update_user_balance, get_user_balance
 
 
 QUIZ_API_URL = "https://opentdb.com/api.php?amount=1&category=31"
 
-@nguess_bot.on_message(filters.command("quiz"))
+@game_bot.on_message(filters.command("quiz"))
 async def quiz_cmd(_, message: types.Message):
     user_id = message.from_user.id
 
@@ -94,7 +94,7 @@ async def quiz_cmd(_, message: types.Message):
         LOGGER.error(f"Quiz Error: {e}")
         await message.reply_text("❌ <b>An error occurred while starting the quiz.</b>", parse_mode=ParseMode.HTML)
 
-@nguess_bot.on_callback_query(filters.regex(r"^qz:"))
+@game_bot.on_callback_query(filters.regex(r"^qz:"))
 async def quiz_callback_handler(_, query: types.CallbackQuery):
     data = query.data.split(":")
 

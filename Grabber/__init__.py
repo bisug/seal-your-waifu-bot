@@ -12,7 +12,7 @@ from Grabber.database import (
     user_collection, group_user_totals_collection,
     top_global_groups_collection, total_pm_users, sudo_collection,
     spawns_collection, sessions_collection, quiz_questions_collection,
-    nguess_enabled_groups_collection
+    gamebot_enabled_groups_collection
 )
 
 StartTime = time.time()
@@ -36,6 +36,7 @@ PHOTO_URL = config.PHOTO_URL
 SUPPORT_CHAT = config.SUPPORT_CHAT
 UPDATE_CHAT = config.UPDATE_CHAT
 BOT_USERNAME = config.BOT_USERNAME
+GAME_BOT_USERNAME = None
 BOT_ID = None
 BOT_NAME = None
 CHARA_CHANNEL_ID = config.CHARA_CHANNEL_ID
@@ -60,8 +61,12 @@ class SealClient(Client):
     async def start(self, *args, **kwargs):
         await super().start(*args, **kwargs)
 
-        # 1. Fetch identity and update config (Only for MainBot)
+        # 1. Fetch identity and update config
         me = await self.get_me()
+        self.username = me.username
+        self.bot_id = me.id
+        self.first_name = me.first_name
+
         if self.name == "MainBot":
             config.BOT_USERNAME = me.username
             config.BOT_ID = me.id
@@ -71,6 +76,9 @@ class SealClient(Client):
             BOT_USERNAME = me.username
             BOT_ID = me.id
             BOT_NAME = me.first_name
+        else:
+            global GAME_BOT_USERNAME
+            GAME_BOT_USERNAME = me.username
 
         # 2. Register Global Handlers
         if self.name == "MainBot":
@@ -123,34 +131,50 @@ class SealClient(Client):
             command_pattern = re.compile(r"🔹\s+.*?/(?P<cmd>\w+).*?\s+-\s+(?P<desc>.+)")
             seen_commands = set()
 
-            # Define which commands belong to which bot client
-            NGUESS_CMDS = ["nguess"]
-            COMMON_CMDS = ["start", "help"]
+            # Define bot-specific command lists
+            GAMEBOT_SPECIFIC = ["nguess", "quiz"]
+            COMMON_CMDS = {
+                "start": "Start the bot & interactive intro",
+                "help": "Show available commands and usage guide"
+            }
 
-            for key, category in HELP_DATA.items():
-                # Skip Owner/Admin commands completely for the public command list
-                if key == "OWNER":
-                    continue
-
-                if "text" in category:
-                    for line in category["text"].split("\n"):
+            if self.name == "GameBot":
+                # GameBot: Only Games + Common
+                # 1. Add common commands first
+                for cmd, desc in COMMON_CMDS.items():
+                    commands.append(types.BotCommand(command=cmd, description=desc))
+                    seen_commands.add(cmd)
+                
+                # 2. Add gamebot-specific commands from HELP_DATA if they match
+                if "GAMES" in HELP_DATA and "text" in HELP_DATA["GAMES"]:
+                    for line in HELP_DATA["GAMES"]["text"].split("\n"):
                         match = command_pattern.search(line)
                         if match:
                             cmd = match.group("cmd")
                             desc = match.group("desc").strip()
-
-                            if self.name == "NguessBot":
-                                # NguessBot only shows nguess + basic commands
-                                if cmd not in NGUESS_CMDS and cmd not in COMMON_CMDS:
-                                    continue
-                            else:
-                                # MainBot shows everything EXCEPT nguess and owner commands
-                                if cmd in NGUESS_CMDS:
-                                    continue
-
-                            if cmd not in seen_commands:
+                            if cmd in GAMEBOT_SPECIFIC and cmd not in seen_commands:
                                 commands.append(types.BotCommand(command=cmd, description=desc[:100]))
                                 seen_commands.add(cmd)
+            else:
+                # MainBot: All categories EXCEPT Games and Owner
+                for key, category in HELP_DATA.items():
+                    if key in ["OWNER", "GAMES"]:
+                        continue
+
+                    if "text" in category:
+                        for line in category["text"].split("\n"):
+                            match = command_pattern.search(line)
+                            if match:
+                                cmd = match.group("cmd")
+                                desc = match.group("desc").strip()
+                                
+                                # Safety: ensure we don't accidentally leak owner commands if they were in HELP_DATA
+                                if cmd in ["ngon", "ngoff", "nglist"]:
+                                    continue
+                                    
+                                if cmd not in seen_commands:
+                                    commands.append(types.BotCommand(command=cmd, description=desc[:100]))
+                                    seen_commands.add(cmd)
 
             if "start" not in seen_commands:
                 commands.append(types.BotCommand("start", "Start the bot"))
@@ -166,15 +190,15 @@ class SealClient(Client):
         LOGGER.info(f"{self.name} stopped.")
 
 app = SealClient(name="MainBot", bot_token=config.TOKEN)
-nguess_bot = SealClient(name="NguessBot", bot_token=config.SUB_TOKEN)
+game_bot = SealClient(name="GameBot", bot_token=config.SUB_TOKEN)
 
 # For backward compatibility and modularity
 Grabberu = app
 
 async def start_bots():
     await app.start()
-    await nguess_bot.start()
+    await game_bot.start()
 
 async def stop_bots():
     await app.stop()
-    await nguess_bot.stop()
+    await game_bot.stop()

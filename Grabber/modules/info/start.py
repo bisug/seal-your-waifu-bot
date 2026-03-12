@@ -34,25 +34,37 @@ HELP_DATA = {
         "text": "<b>📚 Seal Bot - Help Menu</b>\n\nSelect a category below to see available commands:",
         "buttons": [
             [types.InlineKeyboardButton("🎮 Core Basics", callback_data="help:core", style=enums.ButtonStyle.PRIMARY),
-             types.InlineKeyboardButton("🐾 Pet System", callback_data="help:pet", style=enums.ButtonStyle.PRIMARY)],
-            [types.InlineKeyboardButton("⚔️ Battle & Economy", callback_data="help:battle", style=enums.ButtonStyle.PRIMARY),
-             types.InlineKeyboardButton("🎫 Progression", callback_data="help:progression", style=enums.ButtonStyle.PRIMARY)],
-            [types.InlineKeyboardButton("ℹ️ Info & Stats", callback_data="help:info", style=enums.ButtonStyle.PRIMARY),
-             types.InlineKeyboardButton("🛠 Admin Tools", callback_data="help:owner", style=enums.ButtonStyle.DANGER)],
-            [types.InlineKeyboardButton("⤾ Main Menu", callback_data="st:b")]
+             types.InlineKeyboardButton("🎲 Mini Games", callback_data="help:games", style=enums.ButtonStyle.PRIMARY)],
+            [types.InlineKeyboardButton("🐾 Pet System", callback_data="help:pet", style=enums.ButtonStyle.PRIMARY),
+             types.InlineKeyboardButton("⚔️ Battle & Economy", callback_data="help:battle", style=enums.ButtonStyle.PRIMARY)],
+            [types.InlineKeyboardButton("🎫 Progression", callback_data="help:progression", style=enums.ButtonStyle.PRIMARY),
+             types.InlineKeyboardButton("ℹ️ Info & Stats", callback_data="help:info", style=enums.ButtonStyle.PRIMARY)],
+            [types.InlineKeyboardButton("🛠 Admin Tools", callback_data="help:owner", style=enums.ButtonStyle.DANGER),
+             types.InlineKeyboardButton("⤾ Main Menu", callback_data="st:b")]
         ]
     },
     "CORE": {
         "text": """
 <b>🎮 Core Commands</b>
 
-🔹 <code>/nguess</code> - Start an anime character name guessing game
+🔹 <code>/start</code> - Start the bot & view intro
+🔹 <code>/help</code> - Show this interactive help menu
+🔹 <code>/webapp</code> - Open the Shop & Gallery Mini-App
 🔹 <code>/seal &lt;name&gt;</code> - Catch a spawned character
 🔹 <code>/harem</code> - View your character collection
 🔹 <code>/fav &lt;id&gt;</code> - Set a favorite character
 🔹 <code>/trade &lt;user&gt; &lt;amount&gt;</code> - Trade characters/items
 🔹 <code>/gift &lt;id&gt;</code> - Gift a character to a user
-🔹 <code>/quiz</code> - Test your anime knowledge &amp; have fun!
+""",
+    },
+    "GAMES": {
+        "text": """
+<b>🎲 Mini Games (GameBot)</b>
+
+🔹 <code>/nguess</code> - Start an anime character name guessing game
+🔹 <code>/quiz</code> - Test your anime knowledge &amp; win Shards!
+
+<i>💡 All games are handled by our secondary bot client.</i>
 """,
     },
     "PET": {
