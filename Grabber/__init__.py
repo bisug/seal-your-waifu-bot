@@ -257,7 +257,8 @@ app = SealClient(name="MainBot", bot_token=config.TOKEN)
 game_bot = SealClient(name="GameBot", bot_token=config.SUB_TOKEN)
 
 # For backward compatibility and modularity
-Grabberu = app
+Grabber = app
+nguess_bot = game_bot
 
 async def start_bots():
     await app.start()
