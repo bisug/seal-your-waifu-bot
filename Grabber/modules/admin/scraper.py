@@ -3,39 +3,41 @@ import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
-from Grabber import app, collection, user_collection, OWNER_ID, CHARA_CHANNEL_ID, LOGGER
+from Grabber import app, collection, user_collection, OWNER_ID, CHARA_CHANNEL_ID, LOGGER, userbot
 from Grabber.core.waifu import upload_image_to_catbox, add_character_to_db
 from Grabber.core.utils import html_escape
 from Grabber.modules.collection.rarities import RARITY_MAP
 from config import config
 
 # Configuration for Scraper Review
+# The user wants this hardcoded or from config. We already have it in scraper.py as hardcoded.
 REVIEW_GROUP_ID = -1002767033399
 
-# Dictionary to keep track of active scrapers
-active_scrapers = {}
+# Global state to manage active scraping tasks
+scraping_tasks = {}
 
 def clean_text(text: str) -> str:
     """Dynamically cleans name and anime name by removing common icons and extra spaces."""
     if not text:
         return ""
-    # Remove icons like [🦋], [💮], etc.
+    # Remove emojis and special bracketed icons like [🦋]
     text = re.sub(r'\[.*?\]', '', text)
-    # Remove emojis and other non-ascii (optional, but requested for cleanliness)
-    # text = re.sub(r'[^\x00-\x7F]+', '', text) # Keeping it simple for now
+    # Remove common emojis/special characters (simplified)
+    text = re.sub(r'[^\x00-\x7F]+', '', text)
     return text.strip()
 
 def get_review_keyboard(char_id_in_remote: str):
     """Buttons for selecting rarity or declining a character."""
     buttons = []
-    # Rarity Choices (Common to Legendary)
+    # Rarity Choices (1-10)
     row = []
-    # We only show the common ones or all 10? User said "choosing rarity"
-    # Let's show all 10 in small rows
     for i in range(1, 11):
-        rarity_icon = RARITY_MAP[i].split(" ")[0]
-        row.append(types.InlineKeyboardButton(rarity_icon, callback_data=f"sc_app:{i}:{char_id_in_remote}"))
-        if len(row) == 5:
+        rarity_full = RARITY_MAP.get(i, "Unknown")
+        # Extract just the name (e.g., "Common" from "⚪ Common")
+        rarity_name = rarity_full.split(" ")[1] if " " in rarity_full else rarity_full
+        
+        row.append(types.InlineKeyboardButton(rarity_name, callback_data=f"sc_app:{i}:{char_id_in_remote}"))
+        if len(row) == 3:
             buttons.append(row)
             row = []
     if row: buttons.append(row)
@@ -49,60 +51,59 @@ async def scrape_command_handler(client, message):
     if len(message.command) < 2:
         return await message.reply_text("❌ Usage: `/scrape <mongo_uri>`")
 
-    mongo_uri = message.command[1]
-    
-    if active_scrapers.get(message.chat.id):
-        return await message.reply_text("⚠️ Scraper is already running.")
+    if message.chat.id in scraping_tasks:
+        return await message.reply_text("⚠️ A scraping task is already running. Use `/stop_scrape` to kill it first.")
 
+    mongo_uri = message.command[1]
     status = await message.reply_text("⏳ Connecting to remote database...")
 
     try:
         remote_client = AsyncIOMotorClient(mongo_uri)
+        # Based on user request: database 'character_database', collection 'characters1'
         remote_db = remote_client['character_database']
         remote_col = remote_db['characters1']
         
         count = await remote_col.count_documents({})
         if count == 0:
-            return await status.edit_text("❌ No characters found in that collection.")
+            return await status.edit_text("❌ No characters found in remote collection 'characters1'.")
 
-        await status.edit_text(f"🔍 Found {count} characters. Starting continuous review process...\nUse `/stop_scrape` to stop.")
+        await status.edit_text(f"🔍 Connected! Found {count} records.\nStarting review batch in the review group...\n(Use `/stop_scrape` to cancel)")
         
-        active_scrapers[message.chat.id] = True
+        scraping_tasks[message.chat.id] = True
+        sent_count = 0
         
-        # We store the cursor or just start iterating
         cursor = remote_col.find({})
-        
-        processed_count = 0
         async for char in cursor:
-            # Check if we should stop
-            if not active_scrapers.get(message.chat.id):
+            # Check for stop signal
+            if message.chat.id not in scraping_tasks:
                 break
 
             remote_id = str(char.get("_id"))
             name = clean_text(char.get("name", "Unknown"))
             anime = clean_text(char.get("anime", "Unknown"))
-            image_id = char.get("image_id") 
+            image_id = char.get("image_id")
 
             if not image_id:
                 continue
 
-            # Check duplication
+            # Skip if already exists locally
             exists = await collection.find_one({"name": name, "anime": anime})
             if exists:
                 continue
 
             try:
-                # 1. Choose which client to use for sending to review
-                from Grabber import userbot
-                client_to_use = userbot if userbot else app
-
                 caption = (
-                    f"<b>👤 Name:</b> {name}\n"
-                    f"<b>🎬 Anime:</b> {anime}\n\n"
-                    "Select Rarity to Approve or Decline:"
+                    f"<b>🆕 Scraped Character!</b>\n\n"
+                    f"👤 <b>Name:</b> {name}\n"
+                    f"🎬 <b>Anime:</b> {anime}\n\n"
+                    "Select Rarity to Approve or Decline below:"
                 )
                 
-                await client_to_use.send_photo(
+                # CRITICAL: If image_id is from another bot, MainBot will fail ("Failed to decode").
+                # We use the Userbot if available to send the preview.
+                sender = userbot if userbot else app
+                
+                await sender.send_photo(
                     chat_id=REVIEW_GROUP_ID,
                     photo=image_id,
                     caption=caption,
@@ -110,35 +111,39 @@ async def scrape_command_handler(client, message):
                     parse_mode=ParseMode.HTML
                 )
                 
-                processed_count += 1
-                # Small delay to avoid flood
-                await asyncio.sleep(1)
+                sent_count += 1
+                await asyncio.sleep(2) # Avoid spamming the group too fast
+
+                # Limit batch to 10 characters per run to prevent runaway loops
+                if sent_count >= 10:
+                    await message.reply_text("✅ Batch of 10 characters sent for review. Run `/scrape` again for more.")
+                    break
 
             except Exception as e:
-                LOGGER.error(f"Scraper Error for {name}: {e}")
+                LOGGER.error(f"Scraper Preview Error for {name}: {e}")
+                # If even userbot fails to decode, this file_id might be invalid or restricted
                 continue
 
-        # Clean cleanup
-        stopped_by_user = not active_scrapers.get(message.chat.id)
-        active_scrapers.pop(message.chat.id, None)
-        
-        if stopped_by_user:
-            await app.send_message(message.chat.id, f"🛑 Scraper stopped manually. Processed {processed_count} characters in this session.")
-        else:
-            await app.send_message(message.chat.id, f"✅ Scraper completed! Processed {processed_count} characters.")
+        if message.chat.id in scraping_tasks:
+            del scraping_tasks[message.chat.id]
+            if sent_count == 0:
+                await message.reply_text("✅ Scraping complete. No new characters found.")
+            elif sent_count < 10:
+                await message.reply_text(f"✅ Scraping session complete. Sent {sent_count} characters.")
 
     except Exception as e:
         LOGGER.error(f"Scraper Root Error: {e}")
-        active_scrapers.pop(message.chat.id, None)
-        await message.reply_text(f"❌ Scraper Failed: {e}")
+        if message.chat.id in scraping_tasks:
+            del scraping_tasks[message.chat.id]
+        await status.edit_text(f"❌ Scraper Failed: {e}")
 
 @app.on_message(filters.command("stop_scrape") & filters.user(OWNER_ID))
 async def stop_scrape_handler(client, message):
-    if message.chat.id in active_scrapers:
-        active_scrapers[message.chat.id] = False
-        await message.reply_text("🛑 Stopping scraper... Please wait for current character to finish.")
+    if message.chat.id in scraping_tasks:
+        del scraping_tasks[message.chat.id]
+        await message.reply_text("🛑 Scraper task has been stopped.")
     else:
-        await message.reply_text("❌ No active scraper found.")
+        await message.reply_text("ℹ️ No active scraper task found.")
 
 @app.on_callback_query(filters.regex(r"^sc_app:(\d+):(.+)$"))
 async def approve_callback_handler(client, query):
@@ -147,39 +152,44 @@ async def approve_callback_handler(client, query):
 
     data = query.data.split(":")
     rarity_num = int(data[1])
-    remote_id = data[2]
-    
-    # Extract data from caption
-    lines = query.message.caption.split("\n")
-    name = lines[2].split(": ")[1].strip()
-    anime = lines[3].split(": ")[1].strip()
-    photo_id = query.message.photo.file_id # Use the one already sent to the group
+    # remote_id = data[2] # Unused if we have caption
 
-    await query.answer("♻️ Migrating character...")
-    await query.message.edit_reply_markup(None) # Remove buttons
+    # Parse metadata from caption
+    caption_lines = query.message.caption.split("\n")
+    try:
+        name = caption_lines[2].split(": ")[1].strip()
+        anime = caption_lines[3].split(": ")[1].strip()
+    except Exception:
+        return await query.answer("❌ Error parsing character info from caption.", show_alert=True)
+
+    # Use the photo that was successfully sent to the group
+    photo_id = query.message.photo.file_id
+
+    await query.answer("♻️ Processing approval...")
+    await query.message.edit_reply_markup(None) # Remove buttons to prevent double-click
+
+    status_msg = await query.message.reply_text("📥 Re-hosting image to Catbox...")
 
     try:
-        # 1. Download and Upload to Catbox (to have a permanent link)
-        status_msg = await query.message.reply_text("📥 Downloading & Re-hosting...")
-        
-        # USE USERBOT IF AVAILABLE, ELSE FALLBACK TO MAIN APP
-        from Grabber import userbot
+        # Download using Userbot if available (more likely to have access to old File IDs)
         client_to_use = userbot if userbot else app
-        
         temp_path = await client_to_use.download_media(photo_id)
         
+        if not temp_path:
+             return await status_msg.edit_text("❌ Failed to download image from Telegram.")
+
         final_url = await upload_image_to_catbox(temp_path)
         if not final_url:
-            return await status_msg.edit_text("❌ Image re-hosting failed.")
+            return await status_msg.edit_text("❌ Image re-hosting failed (Catbox).")
 
-        rarity_text = RARITY_MAP[rarity_num]
+        rarity_text = RARITY_MAP.get(rarity_num, "Common")
         
-        # 2. Post to Channel
+        # 1. Post to Announcement Channel
         channel_caption = (
             f"<b>Character Name:</b> {name}\n"
             f"<b>Anime Name:</b> {anime}\n"
             f"<b>Rarity:</b> {rarity_text}\n"
-            f"Approved by Admin"
+            f"<i>Approved & Integrated by Admin</i>"
         )
         
         channel_msg = await app.send_photo(
@@ -189,28 +199,29 @@ async def approve_callback_handler(client, query):
             parse_mode=ParseMode.HTML
         )
 
-        # 3. Add to Main DB
+        # 2. Insert into Main Character Collection
         char_data = {
             'img_url': final_url,
             'name': name,
             'anime': anime,
             'rarity': rarity_text,
-            'message_id': channel_msg.id
+            'message_id': channel_msg.id if channel_msg else None
         }
         
-        new_id = await add_character_to_db(char_data)
+        char_id = await add_character_to_db(char_data)
         
-        await status_msg.edit_text(f"✅ <b>Successfully Integrated!</b>\nName: {name}\nID: <code>{new_id}</code>")
-        await query.message.delete() # Remove the review request
+        await status_msg.edit_text(f"✅ <b>Integrated!</b>\nName: {name}\nID: <code>{char_id}</code>")
+        # Cleanup the review message
+        await query.message.delete()
 
     except Exception as e:
-        LOGGER.error(f"Approval Error: {e}")
-        await query.message.reply_text(f"❌ Integration Failed: {e}")
+        LOGGER.error(f"Approval Integration Error: {e}")
+        await status_msg.edit_text(f"❌ Integration Failed: {e}")
 
 @app.on_callback_query(filters.regex(r"^sc_dec:(.+)$"))
 async def decline_callback_handler(client, query):
     if query.from_user.id != OWNER_ID:
-        return await query.answer("❌ Only Owner can decline.", show_alert=True)
+        return await query.answer("❌ Only the Owner can decline characters.", show_alert=True)
 
     await query.answer("❌ Character Declined.")
     await query.message.delete()
