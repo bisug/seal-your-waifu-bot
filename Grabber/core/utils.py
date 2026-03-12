@@ -26,7 +26,7 @@ async def check_member_requirement(bot, chat, min_count=50):
     from config import config
 
     if chat.type in [enums.ChatType.PRIVATE, enums.ChatType.BOT]:
-        return True, None, 0
+        return False, "group_only", 0
         
     try:
         # 1. Check member count
