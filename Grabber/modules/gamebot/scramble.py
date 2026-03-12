@@ -72,10 +72,11 @@ async def start_scramble_game(chat_id):
 
 @game_bot.on_message(filters.command("scramble"))
 async def scramble_cmd_handler(_, message: types.Message):
-    # 50-member check + Main Bot presence
     meets_req, reason, count = await check_member_requirement(game_bot, message.chat)
     if not meets_req:
-        if reason == "member_count":
+        if reason == "group_only":
+            text = "❌ <b>Group Required:</b> This game can only be played in group chats."
+        elif reason == "member_count":
             text = (
                 f"⚠️ <b>Security Level Low:</b> This sector must contain at least <b>50 personnel</b> (members) to authorize GameBot operations.\n\n"
                 f"Current count: <code>{count}</code>"
