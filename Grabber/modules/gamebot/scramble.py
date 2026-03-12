@@ -109,7 +109,7 @@ async def scramble_guess_handler(_, message: types.Message):
             chat_id,
             f"⏱ <b>Time's up!</b>\nThe word was: <b>{html_escape(session['target_word'])}</b> (from {html_escape(session['original_name'])})",
             parse_mode=ParseMode.HTML,
-            reply_to_message_id=message.id
+            reply_parameters=types.ReplyParameters(message_id=message.id)
         )
         return
 
@@ -129,7 +129,7 @@ async def scramble_guess_handler(_, message: types.Message):
             f"✅ The word was: <b>{html_escape(session['target_word'])}</b>\n"
             f"💰 <b>Reward:</b> +{REWARD} Shards",
             parse_mode=ParseMode.HTML,
-            reply_to_message_id=message.id
+            reply_parameters=types.ReplyParameters(message_id=message.id)
         )
     else:
         # Wrong guess, increment retries
@@ -146,5 +146,5 @@ async def scramble_guess_handler(_, message: types.Message):
                 f"❌ <b>Game Over!</b> Max retries reached.\n"
                 f"The word was: <b>{html_escape(session['target_word'])}</b>",
                 parse_mode=ParseMode.HTML,
-                reply_to_message_id=message.id
+                reply_parameters=types.ReplyParameters(message_id=message.id)
             )

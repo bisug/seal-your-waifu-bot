@@ -61,6 +61,13 @@ class SealClient(Client):
     async def send_message_safe(self, chat_id, text, *args, **kwargs):
         """Sends a message while handling FloodWait and optional auto-deletion."""
         auto_delete = kwargs.pop("auto_delete", 0)
+        
+        # Handle reply_to_message_id deprecation
+        if "reply_to_message_id" in kwargs and "reply_parameters" not in kwargs:
+            reply_id = kwargs.pop("reply_to_message_id")
+            if reply_id:
+                kwargs["reply_parameters"] = types.ReplyParameters(message_id=reply_id)
+
         try:
             msg = await self.send_message(chat_id, text, *args, **kwargs)
             if msg and auto_delete:
@@ -70,7 +77,6 @@ class SealClient(Client):
         except errors.FloodWait as e:
             LOGGER.warning(f"[{self.name}] FloodWait detected: Sleeping for {e.value}s")
             await asyncio.sleep(e.value)
-            # Re-insert auto_delete for the recursive call
             if auto_delete: kwargs["auto_delete"] = auto_delete
             return await self.send_message_safe(chat_id, text, *args, **kwargs)
         except Exception as e:
@@ -80,6 +86,13 @@ class SealClient(Client):
     async def send_photo_safe(self, chat_id, photo, *args, **kwargs):
         """Sends a photo while handling FloodWait and optional auto-deletion."""
         auto_delete = kwargs.pop("auto_delete", 0)
+        
+        # Handle reply_to_message_id deprecation
+        if "reply_to_message_id" in kwargs and "reply_parameters" not in kwargs:
+            reply_id = kwargs.pop("reply_to_message_id")
+            if reply_id:
+                kwargs["reply_parameters"] = types.ReplyParameters(message_id=reply_id)
+
         try:
             msg = await self.send_photo(chat_id, photo, *args, **kwargs)
             if msg and auto_delete:
@@ -97,6 +110,12 @@ class SealClient(Client):
 
     async def edit_message_text_safe(self, chat_id, message_id, text, *args, **kwargs):
         """Edits message text while handling FloodWait."""
+        # Handle reply_to_message_id deprecation (though less common for edits, for consistency)
+        if "reply_to_message_id" in kwargs and "reply_parameters" not in kwargs:
+            reply_id = kwargs.pop("reply_to_message_id")
+            if reply_id:
+                kwargs["reply_parameters"] = types.ReplyParameters(message_id=reply_id)
+
         try:
             return await self.edit_message_text(chat_id, message_id, text, *args, **kwargs)
         except errors.FloodWait as e:
@@ -111,6 +130,12 @@ class SealClient(Client):
 
     async def edit_message_caption_safe(self, chat_id, message_id, caption, *args, **kwargs):
         """Edits message caption while handling FloodWait."""
+        # Handle reply_to_message_id deprecation
+        if "reply_to_message_id" in kwargs and "reply_parameters" not in kwargs:
+            reply_id = kwargs.pop("reply_to_message_id")
+            if reply_id:
+                kwargs["reply_parameters"] = types.ReplyParameters(message_id=reply_id)
+
         try:
             return await self.edit_message_caption(chat_id, message_id, caption, *args, **kwargs)
         except errors.FloodWait as e:
