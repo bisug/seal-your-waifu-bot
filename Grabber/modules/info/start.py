@@ -63,6 +63,7 @@ HELP_DATA = {
 
 🔹 <code>/nguess</code> - Start an anime character name guessing game
 🔹 <code>/quiz</code> - Test your anime knowledge &amp; win Shards!
+🔹 <code>/scramble</code> - Unscramble the shuffled character name
 
 <i>💡 All games are handled by our secondary bot client.</i>
 """,
