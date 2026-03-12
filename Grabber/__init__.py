@@ -196,7 +196,11 @@ class SealClient(Client):
             seen_commands = set()
 
             # Define bot-specific command lists
-            GAMEBOT_SPECIFIC = ["nguess", "quiz", "scramble"]
+            GAMEBOT_CMDS = {
+                "nguess": "Start an anime character name guessing game",
+                "quiz": "Test your anime knowledge & win Shards!",
+                "scramble": "Unscramble the shuffled character name"
+            }
             COMMON_CMDS = {
                 "start": "Start the bot & interactive intro",
                 "help": "Show available commands and usage guide"
@@ -209,16 +213,11 @@ class SealClient(Client):
                     commands.append(types.BotCommand(command=cmd, description=desc))
                     seen_commands.add(cmd)
                 
-                # 2. Add gamebot-specific commands from HELP_DATA if they match
-                if "GAMES" in HELP_DATA and "text" in HELP_DATA["GAMES"]:
-                    for line in HELP_DATA["GAMES"]["text"].split("\n"):
-                        match = command_pattern.search(line)
-                        if match:
-                            cmd = match.group("cmd")
-                            desc = match.group("desc").strip()
-                            if cmd in GAMEBOT_SPECIFIC and cmd not in seen_commands:
-                                commands.append(types.BotCommand(command=cmd, description=desc[:100]))
-                                seen_commands.add(cmd)
+                # 2. Add game-specific commands
+                for cmd, desc in GAMEBOT_CMDS.items():
+                    if cmd not in seen_commands:
+                        commands.append(types.BotCommand(command=cmd, description=desc))
+                        seen_commands.add(cmd)
             else:
                 # MainBot: All categories EXCEPT Games and Owner
                 for key, category in HELP_DATA.items():

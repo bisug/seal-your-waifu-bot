@@ -34,13 +34,12 @@ HELP_DATA = {
         "text": "<b>📚 Seal Bot - Help Menu</b>\n\nSelect a category below to see available commands:",
         "buttons": [
             [types.InlineKeyboardButton("🎮 Core Basics", callback_data="help:core", style=enums.ButtonStyle.PRIMARY),
-             types.InlineKeyboardButton("🎲 Mini Games", callback_data="help:games", style=enums.ButtonStyle.PRIMARY)],
-            [types.InlineKeyboardButton("🐾 Pet System", callback_data="help:pet", style=enums.ButtonStyle.PRIMARY),
-             types.InlineKeyboardButton("⚔️ Battle & Economy", callback_data="help:battle", style=enums.ButtonStyle.PRIMARY)],
-            [types.InlineKeyboardButton("🎫 Progression", callback_data="help:progression", style=enums.ButtonStyle.PRIMARY),
-             types.InlineKeyboardButton("ℹ️ Info & Stats", callback_data="help:info", style=enums.ButtonStyle.PRIMARY)],
-            [types.InlineKeyboardButton("🛠 Admin Tools", callback_data="help:owner", style=enums.ButtonStyle.DANGER),
-             types.InlineKeyboardButton("⤾ Main Menu", callback_data="st:b")]
+             types.InlineKeyboardButton("🐾 Pet System", callback_data="help:pet", style=enums.ButtonStyle.PRIMARY)],
+            [types.InlineKeyboardButton("⚔️ Battle & Economy", callback_data="help:battle", style=enums.ButtonStyle.PRIMARY),
+             types.InlineKeyboardButton("🎫 Progression", callback_data="help:progression", style=enums.ButtonStyle.PRIMARY)],
+            [types.InlineKeyboardButton("ℹ️ Info & Stats", callback_data="help:info", style=enums.ButtonStyle.PRIMARY),
+             types.InlineKeyboardButton("🛠 Admin Tools", callback_data="help:owner", style=enums.ButtonStyle.DANGER)],
+            [types.InlineKeyboardButton("⤾ Main Menu", callback_data="st:b")]
         ]
     },
     "CORE": {
@@ -55,17 +54,6 @@ HELP_DATA = {
 🔹 <code>/fav &lt;id&gt;</code> - Set a favorite character
 🔹 <code>/trade &lt;user&gt; &lt;amount&gt;</code> - Trade characters/items
 🔹 <code>/gift &lt;id&gt;</code> - Gift a character to a user
-""",
-    },
-    "GAMES": {
-        "text": """
-<b>🎲 Mini Games (GameBot)</b>
-
-🔹 <code>/nguess</code> - Start an anime character name guessing game
-🔹 <code>/quiz</code> - Test your anime knowledge &amp; win Shards!
-🔹 <code>/scramble</code> - Unscramble the shuffled character name
-
-<i>💡 All games are handled by our secondary bot client.</i>
 """,
     },
     "PET": {
@@ -122,9 +110,6 @@ HELP_DATA = {
 <b>🛠 Admin Tools</b>
 
 🔹 <code>/cnow</code> - [OWNER] Spawn a character immediately
-🔹 <code>/ngon</code> - [OWNER] Enable /nguess in a sector
-🔹 <code>/ngoff</code> - [OWNER] Disable /nguess in a sector
-🔹 <code>/nglist</code> - [OWNER] View authorized sectors
 🔹 <code>/broadcast</code> - [OWNER] Send a global message
 """,
     }

@@ -4,7 +4,7 @@ import html
 import httpx
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
-from Grabber.core.utils import html_escape
+from Grabber.core.utils import html_escape, check_member_requirement
 from Grabber import app, game_bot
 from Grabber import LOGGER, quiz_questions_collection
 from Grabber.core.game import update_user_balance, get_user_balance
@@ -14,6 +14,16 @@ QUIZ_API_URL = "https://opentdb.com/api.php?amount=1&category=31"
 
 @game_bot.on_message(filters.command("quiz"))
 async def quiz_cmd(_, message: types.Message):
+    # 50-member check
+    meets_req, count = await check_member_requirement(message.chat)
+    if not meets_req:
+        return await game_bot.send_message_safe(
+            message.chat.id,
+            f"⚠️ <b>Security Level Low:</b> This sector must contain at least <b>50 personnel</b> (members) to authorize GameBot operations.\n\n"
+            f"Current count: <code>{count}</code>",
+            auto_delete=300
+        )
+
     user_id = message.from_user.id
 
     try:
