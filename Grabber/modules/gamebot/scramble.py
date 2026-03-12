@@ -5,7 +5,7 @@ from pyrogram import filters, types
 from pyrogram.enums import ParseMode
 from Grabber import game_bot, collection, sessions_collection, user_collection, LOGGER, BOT_USERNAME
 from Grabber.core.game import update_user_balance
-from Grabber.core.utils import html_escape
+from Grabber.core.utils import html_escape, check_member_requirement
 
 # Game settings
 TIMEOUT = 60  # 1 minute
@@ -72,6 +72,16 @@ async def start_scramble_game(chat_id):
 
 @game_bot.on_message(filters.command("scramble"))
 async def scramble_cmd_handler(_, message: types.Message):
+    # 50-member check
+    meets_req, count = await check_member_requirement(message.chat)
+    if not meets_req:
+        return await game_bot.send_message_safe(
+            message.chat.id,
+            f"⚠️ <b>Security Level Low:</b> This sector must contain at least <b>50 personnel</b> (members) to authorize GameBot operations.\n\n"
+            f"Current count: <code>{count}</code>",
+            auto_delete=300
+        )
+        
     await start_scramble_game(message.chat.id)
 
 @game_bot.on_message(filters.text & filters.group, group=11)

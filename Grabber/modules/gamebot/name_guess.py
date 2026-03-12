@@ -7,7 +7,7 @@ from pymongo import ReturnDocument
 from Grabber import app, game_bot
 from Grabber import collection, user_collection, sessions_collection, gamebot_enabled_groups_collection, LOGGER, OWNER_ID
 from Grabber.core.game import update_user_balance
-from Grabber.core.cache import is_gamebot_enabled, add_gamebot_group, remove_gamebot_group
+from Grabber.core.utils import html_escape, check_member_requirement
 
 # Local cache is no longer used for character data to ensure persistence
 # Active sessions are stored in sessions_collection with ID: "nguess:{chat_id}"
@@ -67,51 +67,20 @@ def get_name_variants(name: str):
 @game_bot.on_message(filters.command("nguess"))
 async def nguess_start_handler(_, message: types.Message):
     chat_id = message.chat.id
+    
+    # 50-member check
+    meets_req, count = await check_member_requirement(message.chat)
+    if not meets_req:
+        return await game_bot.send_message_safe(
+            chat_id,
+            f"⚠️ <b>Security Level Low:</b> This sector must contain at least <b>50 personnel</b> (members) to authorize GameBot operations.\n\n"
+            f"Current count: <code>{count}</code>",
+            auto_delete=300
+        )
 
     # If a game is active, we just proceed to start a new one (per user request: "send next instead")
     await start_nguess_game(chat_id)
 
-@game_bot.on_message(filters.command("ngon") & filters.user(OWNER_ID))
-async def ngon_handler(_, message: types.Message):
-    try:
-        args = message.text.split()
-        chat_id = int(args[1]) if len(args) > 1 else message.chat.id
-
-        await gamebot_enabled_groups_collection.update_one(
-            {"chat_id": chat_id},
-            {"$set": {"enabled": True}},
-            upsert=True
-        )
-        await add_gamebot_group(chat_id)  # Update Redis set immediately
-        msg_text = f"SECTOR AUTHORIZED: /nguess is now active for sector {chat_id}."
-        await game_bot.send_message_safe(OWNER_ID, text=msg_text, auto_delete=300)
-    except ValueError:
-        await send_message_safe(OWNER_ID, text="ERROR: Invalid Chat ID format.", auto_delete=True)
-
-@game_bot.on_message(filters.command("ngoff") & filters.user(OWNER_ID))
-async def ngoff_handler(_, message: types.Message):
-    try:
-        args = message.text.split()
-        chat_id = int(args[1]) if len(args) > 1 else message.chat.id
-
-        await gamebot_enabled_groups_collection.delete_one({"chat_id": chat_id})
-        await remove_gamebot_group(chat_id)  # Update Redis set immediately
-        msg_text = f"AUTHORIZATION REVOKED: /nguess is now disabled for sector {chat_id}."
-        await game_bot.send_message_safe(OWNER_ID, text=msg_text, auto_delete=300)
-    except ValueError:
-        await send_message_safe(OWNER_ID, text="ERROR: Invalid Chat ID format.", auto_delete=True)
-
-@game_bot.on_message(filters.command("nglist") & filters.user(OWNER_ID))
-async def nglist_handler(_, message: types.Message):
-    enabled_groups = await gamebot_enabled_groups_collection.find().to_list(length=100)
-    if not enabled_groups:
-        return await game_bot.send_message_safe(OWNER_ID, text="REGISTRY EMPTY: No sectors are currently authorized.", auto_delete=300)
-
-    text = "<b>AUTHORIZED SECTORS FOR /NGUESS</b>\n\n"
-    for group in enabled_groups:
-        text += f"• <code>{group['chat_id']}</code>\n"
-
-    await game_bot.send_message_safe(OWNER_ID, text=text, auto_delete=300)
 
 @game_bot.on_message(filters.text & filters.group & ~filters.command(["nguess", "top", "ctop"]), group=10)
 async def nguess_check_handler(_, message: types.Message):
