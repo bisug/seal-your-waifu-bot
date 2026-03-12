@@ -29,6 +29,7 @@ class Config:
     SUPPORT_ID = int(os.getenv("SUPPORT_ID", "-1002528887253"))
     SUPPORT_GROUP_ID = int(os.getenv("SUPPORT_GROUP_ID", "-1002429397912"))
     CHARA_CHANNEL_ID = int(os.getenv("CHARA_CHANNEL_ID", "-1002643258398"))
+    
 
     # --- SOCIAL & CHATS ---
     SUPPORT_CHAT = os.getenv("SUPPORT_CHAT", "seal_Your_WH_Group")
@@ -43,5 +44,6 @@ class Config:
     # --- WEBAPP CONFIG ---
     WEB_APP_URL = os.getenv("WEB_APP_URL", "https://dear-project-01-seal-6d4f0ddd98e4.herokuapp.com")
     MINI_APP_SHORT_NAME = os.getenv("MINI_APP_SHORT_NAME", "app") # The 'Short Name' you set in BotFather
+    STRING_SESSION = os.getenv("STRING_SESSION", "")
 
 config = Config()
