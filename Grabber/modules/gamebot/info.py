@@ -13,8 +13,9 @@ async def gamebot_start_handler(_, message: types.Message):
         f"I am the secondary assistant for {main_bot_mention}, dedicated to providing fun and interactive mini-games. "
         "Earn <b>Shards</b> and test your knowledge!\n\n"
         "<b>Available Commands:</b>\n"
-        "🔹 <code>/nguess</code> - Start an anime character name guessing game\n"
-        "🔹 <code>/quiz</code> - Test your anime knowledge and win Shards!\n\n"
+        "🔹 <code>/nguess</code> - Identify a character from their image\n"
+        "🔹 <code>/quiz</code> - Test your anime knowledge for Shards\n"
+        "🔹 <code>/scramble</code> - Unscramble the shuffled character name\n\n"
         f"<i>Check out {main_bot_mention} for the full Seal-Bot experience!</i>"
     )
     
@@ -30,8 +31,10 @@ async def gamebot_start_handler(_, message: types.Message):
     # Filter out None buttons
     buttons = [[b for b in row if b] for row in buttons]
     
-    await message.reply_text(
+    await game_bot.send_message_safe(
+        message.chat.id,
         text,
         reply_markup=types.InlineKeyboardMarkup(buttons),
-        parse_mode=ParseMode.HTML
+        parse_mode=ParseMode.HTML,
+        reply_to_message_id=message.id
     )

@@ -18,24 +18,7 @@ escape_html = html_escape
 
 from Grabber.core.deletion import schedule_deletion
 
-async def send_message_safe(chat_id, text=None, photo=None, caption=None, parse_mode=ParseMode.HTML, reply_markup=None, auto_delete=False):
-    """Sends a message or photo while handling FloodWait professionally."""
-    try:
-        if photo:
-            msg = await game_bot.send_photo(chat_id, photo, caption=caption, parse_mode=parse_mode, reply_markup=reply_markup)
-        else:
-            msg = await game_bot.send_message(chat_id, text, parse_mode=parse_mode, reply_markup=reply_markup)
-
-        if msg and auto_delete:
-            await schedule_deletion(chat_id, msg.id, 300, bot_name="GameBot")
-        return msg
-    except errors.FloodWait as e:
-        LOGGER.warning(f"FloodWait detected: Sleeping for {e.value} seconds")
-        await asyncio.sleep(e.value)
-        return await send_message_safe(chat_id, text, photo, caption, parse_mode, reply_markup, auto_delete)
-    except Exception as e:
-        LOGGER.error(f"Error in send_message_safe: {e}")
-        return None
+# Send message safe is now handled by game_bot.send_message_safe and game_bot.send_photo_safe
 
 async def start_nguess_game(chat_id):
     """Fetches a character and starts a new game session."""
@@ -43,7 +26,7 @@ async def start_nguess_game(chat_id):
     cursor = collection.aggregate([{"$sample": {"size": 1}}])
     res = await cursor.to_list(length=1)
     if not res:
-        return await send_message_safe(chat_id, text=html_escape("DATABASE ERROR: No target profiles available."), auto_delete=True)
+        return await game_bot.send_message_safe(chat_id, text=html_escape("DATABASE ERROR: No target profiles available."), auto_delete=300)
 
     char = res[0]
 
@@ -60,16 +43,16 @@ async def start_nguess_game(chat_id):
     anime_name = char['anime']
     briefing = f"Identify this character from the series <b>{html_escape(anime_name)}</b>"
 
-    sent = await send_message_safe(
+    sent = await game_bot.send_photo_safe(
         chat_id,
         photo=char['img_url'],
         caption=briefing,
-        auto_delete=True
+        auto_delete=300
     )
 
     if not sent:
         await sessions_collection.delete_one({"_id": f"nguess:{chat_id}"})
-        await send_message_safe(chat_id, text=html_escape("CRITICAL FAILURE: Transponder link lost."), auto_delete=True)
+        await game_bot.send_message_safe(chat_id, text=html_escape("CRITICAL FAILURE: Transponder link lost."), auto_delete=300)
 
 def get_name_variants(name: str):
     """Generates possible name variants for matching."""
@@ -101,7 +84,7 @@ async def ngon_handler(_, message: types.Message):
         )
         await add_gamebot_group(chat_id)  # Update Redis set immediately
         msg_text = f"SECTOR AUTHORIZED: /nguess is now active for sector {chat_id}."
-        await send_message_safe(OWNER_ID, text=msg_text, auto_delete=True)
+        await game_bot.send_message_safe(OWNER_ID, text=msg_text, auto_delete=300)
     except ValueError:
         await send_message_safe(OWNER_ID, text="ERROR: Invalid Chat ID format.", auto_delete=True)
 
@@ -114,7 +97,7 @@ async def ngoff_handler(_, message: types.Message):
         await gamebot_enabled_groups_collection.delete_one({"chat_id": chat_id})
         await remove_gamebot_group(chat_id)  # Update Redis set immediately
         msg_text = f"AUTHORIZATION REVOKED: /nguess is now disabled for sector {chat_id}."
-        await send_message_safe(OWNER_ID, text=msg_text, auto_delete=True)
+        await game_bot.send_message_safe(OWNER_ID, text=msg_text, auto_delete=300)
     except ValueError:
         await send_message_safe(OWNER_ID, text="ERROR: Invalid Chat ID format.", auto_delete=True)
 
@@ -122,13 +105,13 @@ async def ngoff_handler(_, message: types.Message):
 async def nglist_handler(_, message: types.Message):
     enabled_groups = await gamebot_enabled_groups_collection.find().to_list(length=100)
     if not enabled_groups:
-        return await send_message_safe(OWNER_ID, text="REGISTRY EMPTY: No sectors are currently authorized.", auto_delete=True)
+        return await game_bot.send_message_safe(OWNER_ID, text="REGISTRY EMPTY: No sectors are currently authorized.", auto_delete=300)
 
     text = "<b>AUTHORIZED SECTORS FOR /NGUESS</b>\n\n"
     for group in enabled_groups:
         text += f"• <code>{group['chat_id']}</code>\n"
 
-    await send_message_safe(OWNER_ID, text=text, auto_delete=True)
+    await game_bot.send_message_safe(OWNER_ID, text=text, auto_delete=300)
 
 @game_bot.on_message(filters.text & filters.group & ~filters.command(["nguess", "top", "ctop"]), group=10)
 async def nguess_check_handler(_, message: types.Message):
@@ -201,7 +184,7 @@ async def nguess_check_handler(_, message: types.Message):
             f"🔥 <b>Progress:</b> {display_progress}/100{milestone_text}"
         )
 
-        await send_message_safe(chat_id, text=success_msg, auto_delete=True)
+        await game_bot.send_message_safe(chat_id, text=success_msg, auto_delete=300)
         # Recursive start
         await start_nguess_game(chat_id)
     else:
