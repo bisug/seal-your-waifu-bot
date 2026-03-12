@@ -2,7 +2,7 @@ from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
 from Grabber.core.utils import html_escape
 from Grabber import (
-    Grabberu as app,
+    Grabber as app,
     db, LOGGER
 )
 
