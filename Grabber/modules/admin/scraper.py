@@ -3,7 +3,7 @@ import asyncio
 import os
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
-from Grabber import app, collection, OWNER_ID, CHARA_CHANNEL_ID, LOGGER, userbot
+from Grabber import app, collection, OWNER_ID, CHARA_CHANNEL_ID, LOGGER
 from Grabber.core.waifu import upload_image_to_catbox, add_character_to_db
 from Grabber.modules.collection.rarities import RARITY_MAP
 from config import config
@@ -39,7 +39,6 @@ def smart_parse_character(text: str):
         # Format 5: - NAME: Fubuki ... - FROM: One Punch Man
         (r"NAME:\s*(?P<name>.*?)\n.*?FROM:\s*(?P<anime>.*)", re.I | re.S),
         # Format 2 & 6: 12790: Ryuuge Kisaki [👶] ... (Line above usually Anime)
-        # We'll try to get the line before the ID
         (r"(?P<anime>.*?)\n\d+:\s*(?P<name>.*?)(?:\n|\(|$)", re.S),
     ]
 
@@ -55,7 +54,7 @@ def smart_parse_character(text: str):
 
     return None, None
 
-def get_review_keyboard(char_info: dict):
+def get_review_keyboard():
     """Buttons for selecting rarity or declining a character."""
     buttons = []
     # Rarity Choices (1-10)
@@ -75,10 +74,7 @@ def get_review_keyboard(char_info: dict):
 @app.on_message(filters.command("scrape") & filters.user(OWNER_ID))
 async def scrape_group_command_handler(client, message):
     if len(message.command) < 2:
-        return await message.reply_text("❌ Usage: `/scrape <group_id_or_username>`")
-
-    if not userbot or not userbot.is_connected:
-        return await message.reply_text("❌ Userbot is not configured or failed to start. Check your `STRING_SESSION` and logs.")
+        return await message.reply_text("❌ Usage: `/scrape <group_id_or_username>`\nNote: Bot must be a member of the group.")
 
     if message.chat.id in scraping_tasks:
         return await message.reply_text("⚠️ A scraping task is already running. Use `/stop_scrape`.")
@@ -89,19 +85,19 @@ async def scrape_group_command_handler(client, message):
     try:
         # Resolve chat
         try:
-            chat = await userbot.get_chat(target_chat)
+            chat = await app.get_chat(target_chat)
         except Exception as e:
-            return await status.edit_text(f"❌ Could not access chat: {e}")
+            return await status.edit_text(f"❌ Could not access chat: {e}\nMake sure Bot is added to the group.")
 
         scraping_tasks[message.chat.id] = True
         sent_count = 0
         
         # Iterate backwards through history
-        async for msg in userbot.get_chat_history(chat.id, limit=300):
+        async for msg in app.get_chat_history(chat.id, limit=300):
             if message.chat.id not in scraping_tasks:
                 break
 
-            # Process only photos or docs that might be characters
+            # Process only photos or docs (media)
             if not (msg.photo or msg.document):
                 continue
 
@@ -118,8 +114,8 @@ async def scrape_group_command_handler(client, message):
 
             try:
                 # Send for Review
-                # We download and re-upload because Bot can't use Userbot's File IDs reliably across chats
-                temp_path = await userbot.download_media(msg)
+                # We download first to ensure we have a valid file to re-upload to our group
+                temp_path = await app.download_media(msg)
                 
                 review_caption = (
                     f"<b>🆕 Scraped Character!</b>\n\n"
@@ -132,7 +128,7 @@ async def scrape_group_command_handler(client, message):
                     chat_id=REVIEW_GROUP_ID,
                     photo=temp_path,
                     caption=review_caption,
-                    reply_markup=get_review_keyboard({}),
+                    reply_markup=get_review_keyboard(),
                     parse_mode=ParseMode.HTML
                 )
                 
@@ -191,7 +187,7 @@ async def approve_scrape_callback(client, query):
     status_msg = await query.message.reply_text("📥 Re-hosting to Catbox...")
 
     try:
-        # Download from our own review group (Bot can do this)
+        # Download from our own review group
         temp_path = await app.download_media(query.message.photo.file_id)
         final_url = await upload_image_to_catbox(temp_path)
         
@@ -221,7 +217,7 @@ async def approve_scrape_callback(client, query):
             'name': name,
             'anime': anime,
             'rarity': rarity_text,
-            'message_id': sent_msg.id
+            'message_id': sent_msg.id if sent_msg else None
         }
         
         char_id = await add_character_to_db(char_data)
