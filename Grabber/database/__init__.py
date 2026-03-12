@@ -47,6 +47,10 @@ class Database:
             (self.user_totals,       lambda c: c.create_index("chat_id")),
             (self.nguess_enabled_groups, lambda c: c.create_index("chat_id", unique=True, sparse=True)),
             (self.total_pm_users,    lambda c: c.create_index("_id")),
+            # WebApp Specific Indexes
+            (self.users,             lambda c: c.create_index("characters.id")),
+            (self.users,             lambda c: c.create_index([("id", 1), ("characters.id", 1)])),
+            (self.anime_characters,  lambda c: c.create_index([("rarity", 1), ("name", 1)])),
         ]
         failed = 0
         for collection, idx_fn in indexes:

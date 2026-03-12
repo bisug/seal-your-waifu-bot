@@ -8,9 +8,7 @@ from Grabber.core.spawns import (
     send_character, get_spawn_order, increment_spawn_order,
     get_chat_state, track_user_activity, get_active_user_count
 )
-from Grabber.modules.rarities import RARITY_WEIGHTS, ACTIVE_RARITY_WEIGHTS
-
-SPECIAL_GROUP_ID = config.SPECIAL_GROUP_ID
+from Grabber.modules.collection.rarities import RARITY_WEIGHTS, ACTIVE_RARITY_WEIGHTS
 
 special_rarity_thresholds = {
     "💠 Cosmic": 300,
@@ -65,8 +63,6 @@ async def message_counter(_, message: types.Message):
     # Check for special rarity milestones (e.g., every 300th message)
     for r_name, threshold in special_rarity_thresholds.items():
         if count % int(threshold * multiplier) == 0:
-            if r_name == "🫧 Royal" and chat_id != SPECIAL_GROUP_ID:
-                continue
             await send_character(chat_id, r_name)
             return
 

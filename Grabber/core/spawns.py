@@ -10,8 +10,6 @@ from Grabber.database import spawns_collection, message_counts_collection, user_
 from Grabber import app, LOGGER, config
 from Grabber.core.waifu import get_or_load_characters
 
-ROYAL_NOTIFY_USER_ID = config.ROYAL_NOTIFY_USER_ID
-
 # --- IN-MEMORY CACHE FOR PERFORMANCE ---
 MESSAGE_COUNTS_CACHE: Dict[int, int] = {}
 CHAT_STATE_CACHE: Dict[int, Dict[str, Any]] = {}
@@ -207,13 +205,3 @@ async def send_character(chat_id: int, rarity: str):
 
     except Exception as e:
         LOGGER.error(f"Error sending character: {e}")
-
-    if rarity == "🫧 Royal":
-        try:
-            await app.send_message(
-                ROYAL_NOTIFY_USER_ID,
-                f"👑 <b>Royal Spawn!</b>\nID: <code>{character['id']}</code>\nName: {html_escape(character['name'])}",
-                parse_mode=ParseMode.HTML
-            )
-        except Exception:
-            pass
