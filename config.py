@@ -30,7 +30,6 @@ class Config:
     SUPPORT_GROUP_ID = int(os.getenv("SUPPORT_GROUP_ID", "-1002429397912"))
     CHARA_CHANNEL_ID = int(os.getenv("CHARA_CHANNEL_ID", "-1002643258398"))
     
-
     # --- SOCIAL & CHATS ---
     SUPPORT_CHAT = os.getenv("SUPPORT_CHAT", "seal_Your_WH_Group")
     UPDATE_CHAT = os.getenv("UPDATE_CHAT", "SEAL_UPDATE")
