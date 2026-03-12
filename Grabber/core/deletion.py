@@ -37,7 +37,7 @@ async def deletion_worker():
             for msg in expired_messages:
                 chat_id = msg["chat_id"]
                 message_id = msg["message_id"]
-                client = game_bot if bot_name == "GameBot" else app
+                client = game_bot if msg.get("bot_name") == "GameBot" else app
 
                 try:
                     await client.delete_messages(chat_id, message_id)
