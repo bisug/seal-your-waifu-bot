@@ -6,15 +6,15 @@ load_dotenv()
 
 class Config:
     # --- BOT IDENTITY ---
-    TOKEN = os.getenv("TOKEN", "7888451649:AAGqpCops8LxBCs54h23SmD771TKRMucGh8")
+    TOKEN = os.getenv("TOKEN", "7888451649:AAFsl_vtOiN7dDvE-bLx32WJ-Gof-oc1zA0")
     SUB_TOKEN = os.getenv("SUB_TOKEN", "8785400009:AAG6gvkM-BH8Jq7NCKzVczNRUPrkm3O9-Y4")
     BOT_USERNAME = None  # Fetched automatically at startup
     BOT_ID = None        # Fetched automatically at startup
     BOT_NAME = None      # Fetched automatically at startup
 
     # --- TELEGRAM API CREDENTIALS ---
-    API_ID = int(os.getenv("API_ID", "25635673"))
-    API_HASH = os.getenv("API_HASH", "ec69ce8b56c71541499c914fabd08286")
+    API_ID = int(os.getenv("API_ID", "20098819"))
+    API_HASH = os.getenv("API_HASH", "2545d49cea8894d513726649b1bd5a1f")
 
     # --- DATABASE INFRASTRUCTURE ---
     MONGO_URL = os.getenv("MONGO_URL", "mongodb+srv://botmaker9675208:botmaker9675208@cluster0.sc9mq8b.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
