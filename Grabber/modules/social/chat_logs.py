@@ -1,10 +1,7 @@
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
 from Grabber.core.utils import html_escape
-from Grabber import (
-    Grabber as app,
-    db, LOGGER
-)
+from Grabber import app, db, LOGGER
 
 group_collection = db['total_groups']
 
