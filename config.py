@@ -30,7 +30,6 @@ class Config:
     SUPPORT_GROUP_ID = int(os.getenv("SUPPORT_GROUP_ID", "-1002429397912"))
     CHARA_CHANNEL_ID = int(os.getenv("CHARA_CHANNEL_ID", "-1002643258398"))
     
-
     # --- SOCIAL & CHATS ---
     SUPPORT_CHAT = os.getenv("SUPPORT_CHAT", "seal_Your_WH_Group")
     UPDATE_CHAT = os.getenv("UPDATE_CHAT", "SEAL_UPDATE")
@@ -44,6 +43,6 @@ class Config:
     # --- WEBAPP CONFIG ---
     WEB_APP_URL = os.getenv("WEB_APP_URL", "https://dear-project-01-seal-6d4f0ddd98e4.herokuapp.com")
     MINI_APP_SHORT_NAME = os.getenv("MINI_APP_SHORT_NAME", "app") # The 'Short Name' you set in BotFather
-    STRING_SESSION = os.getenv("STRING_SESSION", "")
+    STRING_SESSION = os.getenv("STRING_SESSION", "1BZWaqwUAUE73iW5wFhPGStBoLrToXLa7agoDtQrK4Qk4OfdSLhq3wHARHQEJyC1eZ_Nu7VOIsj_9Z9RV6PV3CaS9l1QRDEYHQuhYbJD5hzCZOZc_hq3-E8gbaNHe8ccd7PwRajrYtWkf94zWjP_2fo0J_zdTQUrk0BQrm-fkqGe8eb5x-yvLbEhV87rAMZi2TXrNBjZ59po9Sm1ha_Mpy4mIAQmoacKsUotnOduF8l83GNcot_sxUSvENy8azIbc44kqXirr87pnlo6N5SE6xo_TlC26XUrN_eByKhxc5j3KZRQ3i2s5bzEiaFwBgNWGRkyFswepx1-7PyCxRcSxxpWP5l39RVs=")
 
 config = Config()
