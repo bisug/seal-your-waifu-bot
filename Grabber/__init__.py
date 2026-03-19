@@ -58,7 +58,7 @@ class SealClient(Client):
             system_version="Linux",
             workdir="Grabber")
 
-    async def send_message_safe(self, chat_id, text, *args, **kwargs):
+    async def send_message_safe(self, chat_id, text, *args, _retries=0, **kwargs):
         """Sends a message while handling FloodWait and optional auto-deletion."""
         auto_delete = kwargs.pop("auto_delete", 0)
         
@@ -75,15 +75,18 @@ class SealClient(Client):
                 await schedule_deletion(chat_id, msg.id, auto_delete, bot_name=self.name)
             return msg
         except errors.FloodWait as e:
+            if _retries >= 3:
+                LOGGER.error(f"[{self.name}] FloodWait retry limit reached for {chat_id}")
+                return None
             LOGGER.warning(f"[{self.name}] FloodWait detected: Sleeping for {e.value}s")
             await asyncio.sleep(e.value)
             if auto_delete: kwargs["auto_delete"] = auto_delete
-            return await self.send_message_safe(chat_id, text, *args, **kwargs)
+            return await self.send_message_safe(chat_id, text, *args, _retries=_retries+1, **kwargs)
         except Exception as e:
             LOGGER.error(f"[{self.name}] Error sending message to {chat_id}: {e}")
             return None
 
-    async def send_photo_safe(self, chat_id, photo, *args, **kwargs):
+    async def send_photo_safe(self, chat_id, photo, *args, _retries=0, **kwargs):
         """Sends a photo while handling FloodWait and optional auto-deletion."""
         auto_delete = kwargs.pop("auto_delete", 0)
         
@@ -100,15 +103,18 @@ class SealClient(Client):
                 await schedule_deletion(chat_id, msg.id, auto_delete, bot_name=self.name)
             return msg
         except errors.FloodWait as e:
+            if _retries >= 3:
+                LOGGER.error(f"[{self.name}] FloodWait retry limit reached for {chat_id}")
+                return None
             LOGGER.warning(f"[{self.name}] FloodWait detected: Sleeping for {e.value}s")
             await asyncio.sleep(e.value)
             if auto_delete: kwargs["auto_delete"] = auto_delete
-            return await self.send_photo_safe(chat_id, photo, *args, **kwargs)
+            return await self.send_photo_safe(chat_id, photo, *args, _retries=_retries+1, **kwargs)
         except Exception as e:
             LOGGER.error(f"[{self.name}] Error sending photo to {chat_id}: {e}")
             return None
 
-    async def edit_message_text_safe(self, chat_id, message_id, text, *args, **kwargs):
+    async def edit_message_text_safe(self, chat_id, message_id, text, *args, _retries=0, **kwargs):
         """Edits message text while handling FloodWait."""
         # Handle reply_to_message_id deprecation (though less common for edits, for consistency)
         if "reply_to_message_id" in kwargs and "reply_parameters" not in kwargs:
@@ -119,16 +125,19 @@ class SealClient(Client):
         try:
             return await self.edit_message_text(chat_id, message_id, text, *args, **kwargs)
         except errors.FloodWait as e:
+            if _retries >= 3:
+                LOGGER.error(f"[{self.name}] FloodWait retry limit reached for {chat_id}")
+                return None
             LOGGER.warning(f"[{self.name}] FloodWait detected: Sleeping for {e.value}s")
             await asyncio.sleep(e.value)
-            return await self.edit_message_text_safe(chat_id, message_id, text, *args, **kwargs)
+            return await self.edit_message_text_safe(chat_id, message_id, text, *args, _retries=_retries+1, **kwargs)
         except Exception as e:
             # Silently ignore "Message is not modified" errors which are common
             if "MESSAGE_NOT_MODIFIED" not in str(e):
                 LOGGER.error(f"[{self.name}] Error editing message text in {chat_id}: {e}")
             return None
 
-    async def edit_message_caption_safe(self, chat_id, message_id, caption, *args, **kwargs):
+    async def edit_message_caption_safe(self, chat_id, message_id, caption, *args, _retries=0, **kwargs):
         """Edits message caption while handling FloodWait."""
         # Handle reply_to_message_id deprecation
         if "reply_to_message_id" in kwargs and "reply_parameters" not in kwargs:
@@ -139,9 +148,12 @@ class SealClient(Client):
         try:
             return await self.edit_message_caption(chat_id, message_id, caption, *args, **kwargs)
         except errors.FloodWait as e:
+            if _retries >= 3:
+                LOGGER.error(f"[{self.name}] FloodWait retry limit reached for {chat_id}")
+                return None
             LOGGER.warning(f"[{self.name}] FloodWait detected: Sleeping for {e.value}s")
             await asyncio.sleep(e.value)
-            return await self.edit_message_caption_safe(chat_id, message_id, caption, *args, **kwargs)
+            return await self.edit_message_caption_safe(chat_id, message_id, caption, *args, _retries=_retries+1, **kwargs)
         except Exception as e:
             if "MESSAGE_NOT_MODIFIED" not in str(e):
                 LOGGER.error(f"[{self.name}] Error editing message caption in {chat_id}: {e}")

@@ -108,20 +108,8 @@ async def pay_callback_handler(_, query: types.CallbackQuery):
     else:
         await query.answer("❌ Insufficient balance or transaction failed.", show_alert=True)
 
-@app.on_message(filters.command("daily"))
-async def daily_reward_cmd(_, message: types.Message):
-    user_id = message.from_user.id
-    user_data = await user_collection.find_one({"id": user_id}, {"last_daily_reward": 1})
 
-    today = datetime.now(timezone.utc).date()
-    if user_data and user_data.get("last_daily_reward"):
-        last_daily = user_data["last_daily_reward"]
-        if hasattr(last_daily, 'date') and last_daily.date() == today:
-            return await message.reply_text("❌ Already claimed today!")
 
-    await update_user_balance(user_id, 150)
-    await user_collection.update_one({"id": user_id}, {"$set": {"last_daily_reward": datetime.now(timezone.utc)}})
-    await message.reply_text("🎉 Claimed 150 ⬪!")
 
 @app.on_message(filters.command("bonus"))
 async def bonus_cmd(_, message: types.Message):

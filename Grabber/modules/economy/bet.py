@@ -3,6 +3,7 @@ import random
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
 from Grabber import app, user_collection
+from Grabber.core.cache import invalidate_user_cache
 
 CURRENCY_SYMBOL = "⬪"
 
@@ -36,7 +37,7 @@ async def bet_cmd(_, message: types.Message):
         return
 
 
-    user_data = await user_collection.find_one({'id': user_id}, projection={'balance': 1})
+    user_data = await user_collection.find_one({'id': {'$in': [user_id, str(user_id)]}}, projection={'balance': 1})
 
     if not user_data:
         await message.reply_text(
@@ -71,29 +72,35 @@ async def bet_cmd(_, message: types.Message):
     await asyncio.sleep(2)
 
 
-    is_win = random.randint(1, 100) <= 40
+    # Real coin flip
+    coin_result = random.choice(["h", "t"])
+    is_win = (choice == coin_result)
+    coin_name = "Heads" if coin_result == "h" else "Tails"
 
     if is_win:
         win_multiplier = 2
         winnings = amount * win_multiplier
-        new_balance = balance_amount + winnings
         result_text = (
             f"🎉 <b>YOU WIN!</b> 🎉\n"
-            f"🪙 The coin landed on <b>{user_choice_name}</b>!\n"
+            f"🪙 The coin landed on <b>{coin_name}</b>!\n"
             f"💰 <b>You Earned:</b> {winnings:,} ⬪\n\n"
-            f"🏦 <b>New Balance:</b> {new_balance:,} ⬪"
+            f"🏦 <b>New Balance:</b> {(balance_amount + winnings):,} ⬪"
         )
+        delta = winnings
     else:
-        new_balance = balance_amount - amount
-        comp_choice = "Heads" if user_choice_name == "Tails" else "Tails"
         result_text = (
             f"💔 <b>YOU LOST!</b>\n"
-            f"🪙 The coin landed on <b>{comp_choice}</b>.\n"
+            f"🪙 The coin landed on <b>{coin_name}</b>.\n"
             f"💸 <b>You Lost:</b> {amount:,} ⬪\n\n"
-            f"🏦 <b>New Balance:</b> {new_balance:,} ⬪"
+            f"🏦 <b>New Balance:</b> {(balance_amount - amount):,} ⬪"
         )
+        delta = -amount
 
-
-    await user_collection.update_one({'id': user_id}, {'$set': {'balance': new_balance}})
+    # Atomic balance update using $inc (prevents race conditions)
+    await user_collection.update_one(
+        {'id': {'$in': [user_id, str(user_id)]}},
+        {'$inc': {'balance': delta}}
+    )
+    await invalidate_user_cache(user_id)
 
     await message.reply_text(result_text, parse_mode=ParseMode.HTML)
