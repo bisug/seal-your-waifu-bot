@@ -81,74 +81,112 @@ async def add_xp(user_id: int, amount: int, source: str = "unknown"):
 async def check_and_grant_rewards(user_id: int, old_level: int, new_level: int, user_data: dict = None):
     """
     Iterate through newly reached levels and grant corresponding rewards
-    based on the user's Battle Pass type.
-    Accepts pre-fetched user_data to avoid a redundant DB query.
+    based on the user's Battle Pass type. Also tracks Pass Bank for free users.
     """
     if user_data is None:
         user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
     else:
         user = user_data
+        
     pass_type = user.get("pass_type", "free")
     claimed_levels = set(user.get("claimed_levels", []))
-
-
-    STANDARD_REWARDS = {
-        "free": 100,
-        "premium": 300,
-        "elite": 500
-    }
+    
+    from Grabber.core.pass_data import PASS_TRACKS
+    import uuid
 
     total_coins_earned = 0
+    eggs_awarded = []
+    
+    bank_shards = 0
+    bank_eggs = {} # tier: count
 
+    def add_egg(tier):
+        eggs_awarded.append({
+            "id": str(uuid.uuid4()),
+            "tier": str(tier),
+            "status": "fresh"
+        })
+
+    def bank_egg(tier):
+        tier_str = str(tier)
+        bank_eggs[tier_str] = bank_eggs.get(tier_str, 0) + 1
 
     for level in range(old_level + 1, new_level + 1):
-        if level in LEVEL_REWARDS and level not in claimed_levels:
+        if level in claimed_levels:
+            continue
+            
+        claimed_levels.add(level)
+        track = PASS_TRACKS.get(level)
+        
+        if not track:
+            # Fallback scaling for level > 100
+            reward = 100 + (level * 2) if pass_type == "free" else 300 + (level * 4) if pass_type == "premium" else 500 + (level * 6)
+            total_coins_earned += reward
+            continue
 
-            reward = LEVEL_REWARDS[level].get(pass_type)
+        # Grant Free Reward (everyone gets this)
+        free_rw = track["free"]
+        if free_rw["type"] == "shards":
+            total_coins_earned += free_rw["amount"]
+        elif free_rw["type"] == "egg":
+            add_egg(free_rw["tier"])
 
-            if isinstance(reward, int):
-
-                await user_collection.update_one(
-                    {"id": {"$in": [user_id, str(user_id)]}},
-                    {"$inc": {"balance": reward}}
-                )
-                total_coins_earned += reward
-                LOGGER.info(f"User {user_id} received {reward} coins for reaching level {level} ({pass_type})")
-
-            elif isinstance(reward, str) and reward.startswith("egg_"):
-
-                tier = reward.split("_")[1]
-                egg_data = {
-                    "id": f"reward_egg_{level}",
-                    "tier": tier,
-                    "name": f"Level {level} Reward Egg",
-                    "status": "fresh"
-                }
-                await user_collection.update_one(
-                    {"id": {"$in": [user_id, str(user_id)]}},
-                    {"$push": {"eggs": egg_data}}
-                )
-                LOGGER.info(f"User {user_id} received {tier} egg for reaching level {level} ({pass_type})")
-
-
-            claimed_levels.add(level)
+        # Grant Premium Reward (Premium & Elite get this)
+        prem_rw = track["premium"]
+        prem_extra = track.get("premium_extra_amount", 0)
+        
+        if pass_type in ["premium", "elite"]:
+            if prem_rw["type"] == "shards":
+                total_coins_earned += prem_rw["amount"]
+            elif prem_rw["type"] == "egg":
+                add_egg(prem_rw["tier"])
+            total_coins_earned += prem_extra
         else:
+            # FREE user: Bank premium rewards!
+            if prem_rw["type"] == "shards":
+                bank_shards += prem_rw["amount"]
+            elif prem_rw["type"] == "egg":
+                bank_egg(prem_rw["tier"])
+            bank_shards += prem_extra
 
-            if level not in claimed_levels:
-                standard_reward = STANDARD_REWARDS.get(pass_type, 100)
-                await user_collection.update_one(
-                    {"id": {"$in": [user_id, str(user_id)]}},
-                    {"$inc": {"balance": standard_reward}}
-                )
-                total_coins_earned += standard_reward
-                LOGGER.info(f"User {user_id} received {standard_reward} coins (standard) for level {level} ({pass_type})")
-                claimed_levels.add(level)
+        # Grant Elite Reward (Elite only)
+        elite_rw = track["elite"]
+        elite_extra = track.get("elite_extra_amount", 0)
+        
+        if pass_type == "elite":
+            if elite_rw["type"] == "shards":
+                total_coins_earned += elite_rw["amount"]
+            elif elite_rw["type"] == "egg":
+                add_egg(elite_rw["tier"])
+            total_coins_earned += elite_extra
+        elif pass_type in ["free", "premium"]:
+            # Bank elite rewards for non-elite users
+            if elite_rw["type"] == "shards":
+                bank_shards += elite_rw["amount"]
+            elif elite_rw["type"] == "egg":
+                bank_egg(elite_rw["tier"])
+            bank_shards += elite_extra
 
+    # Perform DB Updates
+    updates = {"$set": {"claimed_levels": list(claimed_levels)}}
+    if total_coins_earned > 0:
+        updates.setdefault("$inc", {})["balance"] = total_coins_earned
+        
+    if bank_shards > 0:
+        updates.setdefault("$inc", {})["pass_bank.shards"] = bank_shards
+    for tier, count in bank_eggs.items():
+        updates.setdefault("$inc", {})[f"pass_bank.eggs_t{tier}"] = count
+        
+    if eggs_awarded:
+        updates["$push"] = {"eggs": {"$each": eggs_awarded}}
 
-    await user_collection.update_one(
-        {"id": {"$in": [user_id, str(user_id)]}},
-        {"$set": {"claimed_levels": list(claimed_levels)}}
-    )
+    if updates.get("$inc") or updates.get("$push") or updates.get("$set"):
+        await user_collection.update_one(
+            {"id": {"$in": [user_id, str(user_id)]}},
+            updates
+        )
+        if total_coins_earned > 0 or eggs_awarded:
+            LOGGER.info(f"User {user_id} pass rewards: {total_coins_earned} shards, {len(eggs_awarded)} eggs")
 
 async def get_user_progress(user_id: int, user_data: dict = None) -> dict:
     """

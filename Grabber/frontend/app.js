@@ -56,13 +56,14 @@ function handleImgError(el) {
 }
 
 // DOM Elements
-const pages = ['profile', 'gallery', 'quests', 'leaderboard'];
+const pages = ['profile', 'gallery', 'quests', 'leaderboard', 'shop', 'pass'];
 const containers = {
     profile: document.getElementById('page-profile'),
     gallery: document.getElementById('page-gallery'),
     quests: document.getElementById('page-quests'),
     leaderboard: document.getElementById('page-leaderboard'),
-    shop: document.getElementById('page-shop')
+    shop: document.getElementById('page-shop'),
+    pass: document.getElementById('page-pass')
 };
 
 const modal = document.getElementById('char-detail-modal');
@@ -115,8 +116,8 @@ async function loadBotInfo() {
 }
 
 async function loadModules() {
-    const modules = ['profile', 'gallery', 'quests', 'leaderboard', 'shop'];
-    const version = '2.8'; // Cache busting
+    const modules = ['profile', 'gallery', 'quests', 'leaderboard', 'shop', 'pass'];
+    const version = '2.9'; // Cache busting
     
     const loadPromises = modules.map(async (name) => {
         try {
@@ -274,7 +275,7 @@ function setupControls() {
 // --- Navigation ---
 
 function navigate(pageId) {
-    const navPages = ['profile', 'gallery', 'quests', 'leaderboard', 'shop'];
+    const navPages = ['profile', 'gallery', 'quests', 'leaderboard', 'pass', 'shop'];
     document.querySelectorAll('.tab-item').forEach((item, idx) => {
         item.classList.toggle('active', navPages[idx] === pageId);
     });
@@ -307,6 +308,7 @@ function refreshData(pageId) {
         case 'gallery': loadGallery(false); break;
         case 'quests': loadQuests(); break;
         case 'leaderboard': loadLeaderboard(); break;
+        case 'pass': loadPass(); break;
         case 'shop': loadShop(); break;
     }
 }
