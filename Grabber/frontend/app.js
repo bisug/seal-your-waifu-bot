@@ -34,6 +34,13 @@ let haremPage = 1, galleryPage = 1;
 let haremLoading = false, galleryLoading = false;
 let haremHasMore = true, galleryHasMore = true;
 
+// Fix #2: XSS sanitizer — use for all user-facing text in innerHTML
+function sanitize(str) {
+    const d = document.createElement('div');
+    d.textContent = str ?? '';
+    return d.innerHTML;
+}
+
 // Harem logic now integrated into main container scroll
 function safeImg(url) {
     if (!url || url === 'undefined' || url === 'null') return `url('${DEFAULT_AVATAR}')`;
@@ -126,7 +133,18 @@ async function loadModules() {
     const loaded = await Promise.all(loadPromises);
     loaded.forEach(mod => {
         const container = document.getElementById(`page-${mod.name}`);
-        if (container) container.innerHTML = mod.html;
+        if (container) {
+            if (mod.html) {
+                container.innerHTML = mod.html;
+            } else {
+                // Fix #15: Show error instead of silent blank page on template load failure
+                container.innerHTML = `<div class="empty-state" style="padding:40px 0">
+                    <div class="empty-icon">⚠️</div>
+                    <div class="empty-title">Failed to Load</div>
+                    <div class="empty-desc">Could not load the ${mod.name} section. Please restart the app.</div>
+                </div>`;
+            }
+        }
     });
 }
 
@@ -191,10 +209,11 @@ async function init() {
                 document.getElementById('app-container').style.opacity = '1';
             }, 800);
         } else {
-            tg.showAlert("Authentication failed. Please restart the app.");
+            // Fix #9: use optional chaining so this doesn't crash outside Telegram
+            tg?.showAlert("Authentication failed. Please restart the app.");
         }
     } catch (e) {
-        tg.showAlert("Server connection error: " + e.message);
+        tg?.showAlert("Server connection error: " + e.message);  // Fix #9
     }
 }
 
@@ -308,8 +327,8 @@ async function loadProfile() {
     currentUser = data;
     
     // Identity & Avatar
-    document.getElementById('user-name').innerText = data.first_name || 'User';
-    document.getElementById('user-title').innerText = data.titles?.current || 'Rookie';
+    document.getElementById('user-name').innerText = sanitize(data.first_name || 'User');
+    document.getElementById('user-title').innerText = sanitize(data.titles?.current || 'Rookie');
     document.getElementById('user-avatar').style.backgroundImage = safeImg(data.avatar);
     document.getElementById('user-level-badge').innerText = data.stats.level || 1;
     document.getElementById('streak-val').innerText = data.stats.streak || 0;
@@ -319,8 +338,8 @@ async function loadProfile() {
     const xpPercent = Math.min(100, (data.stats.xp_current / data.stats.xp_needed) * 100);
     document.getElementById('xp-bar-fill').style.width = `${xpPercent}%`;
 
-    // Stat Strip Tiles
-    document.getElementById('stat-rank').innerText = `#${data.stats.rank || '?'}`;
+    // Stat Strip Tiles — Fix #16: rank now comes from /me directly
+    document.getElementById('stat-rank').innerText = data.stats.rank ? `#${data.stats.rank}` : '#?';
     document.getElementById('stat-balance').innerText = data.stats.points.toLocaleString();
     document.getElementById('stat-zenith').innerText = data.stats.zenith.toLocaleString();
     document.getElementById('stat-collection').innerText = data.stats.total_characters.toLocaleString();
@@ -338,8 +357,8 @@ function renderAchievements(achievements) {
         return;
     }
     list.innerHTML = achievements.map(ach => `
-        <div class="badge-item" title="${ach.name}">
-            <div style="font-size:24px">${ach.icon || '✦'}</div>
+        <div class="badge-item" title="${sanitize(ach.name)}">
+            <div style="font-size:24px">${sanitize(ach.icon || '✦')}</div>
         </div>
     `).join('');
 }
@@ -359,8 +378,8 @@ function renderPet(pet) {
     container.innerHTML = `
         <div class="pet-img-container" style="background-image: url('${pet.img || DEFAULT_AVATAR}')"></div>
         <div class="pet-info-mini">
-            <div class="pet-name-line">${pet.name} <span style="font-size:10px; color:var(--hint-color)">Lvl ${pet.level}</span></div>
-            <div class="pet-ability-line">✨ ${pet.ability}</div>
+            <div class="pet-name-line">${sanitize(pet.name)} <span style="font-size:10px; color:var(--hint-color)">Lvl ${pet.level}</span></div>
+            <div class="pet-ability-line">✨ ${sanitize(pet.ability)}</div>
             <div class="pet-stats-line">HP: ${pet.hp} | ATK: ${pet.atk} | SPD: ${pet.spd} | Luck: ${Math.round(pet.luck * 100)}%</div>
             <div class="xp-track" style="height:4px; margin-top:8px">
                 <div class="xp-fill-glow" style="width:${(pet.xp / pet.xp_needed) * 100}%"></div>
@@ -573,7 +592,12 @@ function renderCharCard(char, isHarem, index = 0) {
     const rarityColor = `var(--rarity-${char.rarity.toLowerCase()})`;
     const glowColor = `var(--rarity-glow-${char.rarity.toLowerCase()})`;
     // Calculate stagger delay based on index for smooth sequential rendering
-    const staggerDelay = (index % 25) * 0.04; 
+    const staggerDelay = (index % 25) * 0.04;
+    
+    // Fix #2: Sanitize user-facing text from DB to prevent XSS
+    const safeName = sanitize(char.name);
+    const safeAnime = sanitize(char.anime);
+    const safeRarity = sanitize(char.rarity);
     
     return `
         <div class="char-card anim-stagger" style="border-bottom: 2px solid ${rarityColor}; --card-glow: ${glowColor}; animation-delay: ${staggerDelay}s" onclick="showCharDetails('${char.id}')">
@@ -582,13 +606,13 @@ function renderCharCard(char, isHarem, index = 0) {
                      onerror="handleImgError(this)"
                      onload="this.style.opacity=1; this.parentElement.classList.remove('skeleton')">
             </div>
-            <span class="rarity-pill" style="background:${rarityColor}">${char.rarity}</span>
+            <span class="rarity-pill" style="background:${rarityColor}">${safeRarity}</span>
             ${isHarem ? `<span class="count-badge">x${char.count}</span>` : ''}
             ${!isHarem && char.owned ? '<span class="count-badge" style="background:var(--button-color); font-size:8px; letter-spacing:0.5px;">COLLECTED</span>' : ''}
             ${!isHarem && !char.owned ? '<div class="lock-overlay"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>' : ''}
             <div class="char-info">
-                <div class="char-name">${char.name}</div>
-                <div style="font-size:9px; color:var(--hint-color)">${char.anime}</div>
+                <div class="char-name">${safeName}</div>
+                <div style="font-size:9px; color:var(--hint-color)">${safeAnime}</div>
             </div>
         </div>
     `;
@@ -603,15 +627,18 @@ async function loadQuests() {
         const target = q.target || 1;
         const percent = Math.min(100, (progress / target) * 100);
         const isCompleted = progress >= target;
+        // Fix #2: sanitize quest text
+        const safeName = sanitize(q.name || 'Unknown Quest');
+        const safeDesc = sanitize(q.description || 'No description available.');
 
         return `
             <div class="quest-card ${q.claimed ? 'completed' : ''}">
                 <div class="quest-icon">
-                    ${q.symbol || '✦'}
+                    ${sanitize(q.symbol || '✦')}
                 </div>
                 <div class="quest-details">
-                    <div class="quest-title">${q.name || 'Unknown Quest'}</div>
-                    <p class="quest-desc">${q.description || 'No description available.'}</p>
+                    <div class="quest-title">${safeName}</div>
+                    <p class="quest-desc">${safeDesc}</p>
                     
                     <div class="quest-progress-track">
                         <div class="quest-progress-fill" style="width: ${percent}%"></div>
@@ -693,7 +720,7 @@ async function loadLeaderboard(metric = 'level') {
         <div class="podium-item rank-${rank}">
             <div class="podium-avatar" style="background-image:${safeImg(user?.avatar)}; background-size:cover"></div>
             <div style="font-size:${rank === 1 ? '14px' : '12px'}; font-weight:${rank === 1 ? 'bold' : 'normal'}">
-                ${user?.name || 'TBA'}
+                ${sanitize(user?.name || 'TBA')}
             </div>
             <div style="font-size:10px; color:var(--button-color)">
                 ${metric === 'level' ? `Lvl ${user?.level || 0}` : (user?.value?.toLocaleString() || '0')}
@@ -707,7 +734,7 @@ async function loadLeaderboard(metric = 'level') {
         <div class="list-item">
             <span style="color:var(--hint-color); width:24px; font-size:11px">#${entry.rank}</span>
             <div class="list-item-avatar" style="background-image:${safeImg(entry.avatar)}"></div>
-            <span style="flex:1; font-weight:700">${entry.name}</span>
+            <span style="flex:1; font-weight:700">${sanitize(entry.name)}</span>
             <span style="font-weight:900; color:var(--button-color)">
                 ${metric === 'level' ? `Lvl ${entry.level || 0}` : entry.value.toLocaleString()}
             </span>
@@ -715,14 +742,8 @@ async function loadLeaderboard(metric = 'level') {
     `).join('');
 }
 
-function updateBackButton(pageId) {
-    if (!tg) return;
-    if (pageId === 'profile') {
-        tg.BackButton.hide();
-    } else {
-        tg.BackButton.show();
-    }
-}
+// Fix #5: Removed duplicate updateBackButton definition that was here (lines 718-725)
+// The canonical definition is above in setupControls section.
 
 // --- Shop Logic ---
 
@@ -761,7 +782,11 @@ async function loadShopCharacters() {
         return;
     }
     
-    grid.innerHTML = chars.map(char => `
+    grid.innerHTML = chars.map(char => {
+        // Fix #2: sanitize DB text fields
+        const safeName = sanitize(char.name);
+        const safeAnime = sanitize(char.anime);
+        return `
         <div class="char-card shop-item ${char.owned ? 'owned' : ''}">
             <div class="char-img-wrapper" onclick="showCharDetails('${char.id}')">
                 <div class="char-img" style="background-image: ${safeImg(char.img_url)}"></div>
@@ -772,18 +797,19 @@ async function loadShopCharacters() {
             </div>
             
             <div class="char-info">
-                <div class="char-name">${char.name}</div>
-                <div class="char-anime-sub">${char.anime}</div>
+                <div class="char-name">${safeName}</div>
+                <div class="char-anime-sub">${safeAnime}</div>
             </div>
 
             ${char.owned ? '<div class="owned-overlay">OWNED</div>' : `
-                <button class="shop-buy-btn merged-buy" onclick="confirmShopBuy('${char.id}', '${char.name.replace(/'/g, "\\'")}', ${char.zenith_price || 5}, event)">
+                <button class="shop-buy-btn merged-buy" onclick="confirmShopBuy('${char.id}', '${char.name.replace(/'/g, "\\'").replace(/</g, '&lt;')}', ${char.zenith_price || 5}, event)">
                     <span class="buy-price">⧫ ${char.zenith_price || 5}</span>
                     <span class="buy-text">BUY NOW</span>
                 </button>
             `}
         </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 async function loadShopPets() {
@@ -842,7 +868,10 @@ async function loadShopPass() {
 
 // --- Purchase Logic ---
 
-async function confirmShopBuy(charId, name, price) {
+// Fix #18: Added event param so the button can be disabled during the async confirm flow
+async function confirmShopBuy(charId, name, price, event) {
+    const btn = event?.target?.closest('button');
+    if (btn) btn.disabled = true;
     if (tg) tg.showConfirm(`Buy ${name} for ${price} Zenith?`, async (ok) => {
         if (ok) {
             const res = await fetch(`${window.API_BASE}/shop/buy/character/${charId}`, {
@@ -855,9 +884,12 @@ async function confirmShopBuy(charId, name, price) {
                 loadShop();
                 loadProfile();
             } else {
+                if (btn) btn.disabled = false;
                 const err = await res.json();
                 tg.showAlert(err.detail || "Purchase failed.");
             }
+        } else {
+            if (btn) btn.disabled = false;
         }
     });
 }
@@ -919,14 +951,17 @@ async function showCharDetails(charId) {
     document.getElementById('modal-char-img').style.backgroundImage = 'none';
 
     try {
-        const response = await fetch(`${window.API_BASE}/character/${charId}`);
+        // Fix #3/#7: Pass Authorization header so character endpoint is properly authenticated
+        const response = await fetch(`${window.API_BASE}/character/${charId}`, {
+            headers: { 'Authorization': `Bearer ${sessionToken}` }
+        });
         if (response.ok) {
             const char = await response.json();
-            document.getElementById('modal-char-name').innerText = char.name;
-            document.getElementById('modal-char-anime').innerText = char.anime;
-            document.getElementById('modal-char-rarity').innerText = char.rarity;
+            document.getElementById('modal-char-name').innerText = sanitize(char.name);
+            document.getElementById('modal-char-anime').innerText = sanitize(char.anime);
+            document.getElementById('modal-char-rarity').innerText = sanitize(char.rarity);
             document.getElementById('modal-char-img').style.backgroundImage = safeImg(char.img_url);
-            document.getElementById('modal-char-id').innerText = `ID: ${char.id}`;
+            document.getElementById('modal-char-id').innerText = `ID: ${sanitize(char.id)}`;
         }
     } catch (e) {
         console.error("Error loading character details", e);

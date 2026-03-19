@@ -8,7 +8,13 @@ router = APIRouter()
 @router.websocket("/ws/leaderboard")
 async def leaderboard_ws(websocket: WebSocket):
     await websocket.accept()
-    
+
+    # Fix #6: Guard against Redis being None (e.g. REDIS_URL not configured)
+    if not r:
+        await websocket.send_text(json.dumps({"error": "Realtime updates unavailable: Redis not configured"}))
+        await websocket.close(code=1011)
+        return
+
     # Send initial data
     # (Initial data would normally be fetched here)
     
