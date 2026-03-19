@@ -324,6 +324,15 @@ async function apiFetch(endpoint) {
 }
 
 async function loadProfile() {
+    // Optimistic update using local Telegram data
+    if (tg?.initDataUnsafe?.user) {
+        const u = tg.initDataUnsafe.user;
+        document.getElementById('user-name').innerText = sanitize(u.first_name || 'User');
+        if (u.photo_url) {
+            document.getElementById('user-avatar').style.backgroundImage = `url('${u.photo_url}')`;
+        }
+    }
+
     const data = await apiFetch('/me');
     if (!data) return;
 
