@@ -52,7 +52,7 @@ async def add_xp(user_id: int, amount: int, source: str = "unknown"):
     Add XP to a user's profile and handle level-ups atomically.
     """
     user = await user_collection.find_one_and_update(
-        {"id": user_id},
+        {"id": {"$in": [user_id, str(user_id)]}},
         {
             "$inc": {"xp": amount},
             "$setOnInsert": {
@@ -85,7 +85,7 @@ async def check_and_grant_rewards(user_id: int, old_level: int, new_level: int, 
     Accepts pre-fetched user_data to avoid a redundant DB query.
     """
     if user_data is None:
-        user = await user_collection.find_one({"id": user_id})
+        user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
     else:
         user = user_data
     pass_type = user.get("pass_type", "free")
@@ -109,7 +109,7 @@ async def check_and_grant_rewards(user_id: int, old_level: int, new_level: int, 
             if isinstance(reward, int):
 
                 await user_collection.update_one(
-                    {"id": user_id},
+                    {"id": {"$in": [user_id, str(user_id)]}},
                     {"$inc": {"balance": reward}}
                 )
                 total_coins_earned += reward
@@ -125,7 +125,7 @@ async def check_and_grant_rewards(user_id: int, old_level: int, new_level: int, 
                     "status": "fresh"
                 }
                 await user_collection.update_one(
-                    {"id": user_id},
+                    {"id": {"$in": [user_id, str(user_id)]}},
                     {"$push": {"eggs": egg_data}}
                 )
                 LOGGER.info(f"User {user_id} received {tier} egg for reaching level {level} ({pass_type})")
@@ -137,7 +137,7 @@ async def check_and_grant_rewards(user_id: int, old_level: int, new_level: int, 
             if level not in claimed_levels:
                 standard_reward = STANDARD_REWARDS.get(pass_type, 100)
                 await user_collection.update_one(
-                    {"id": user_id},
+                    {"id": {"$in": [user_id, str(user_id)]}},
                     {"$inc": {"balance": standard_reward}}
                 )
                 total_coins_earned += standard_reward
@@ -146,7 +146,7 @@ async def check_and_grant_rewards(user_id: int, old_level: int, new_level: int, 
 
 
     await user_collection.update_one(
-        {"id": user_id},
+        {"id": {"$in": [user_id, str(user_id)]}},
         {"$set": {"claimed_levels": list(claimed_levels)}}
     )
 

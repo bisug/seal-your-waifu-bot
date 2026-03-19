@@ -12,7 +12,7 @@ async def get_user_balance(user_id: int) -> int:
     cached = await get_cached_balance(user_id)
     if cached is not None:
         return cached
-    user = await user_collection.find_one({"id": user_id}, {"balance": 1})
+    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}}, {"balance": 1})
     balance = user.get("balance", 0) if user else 0
     await set_cached_balance(user_id, balance)
     return balance
@@ -22,7 +22,7 @@ async def update_user_balance(user_id: int, amount: int):
     Increment or decrement a user's balance, then invalidate cache.
     """
     await user_collection.update_one(
-        {"id": user_id},
+        {"id": {"$in": [user_id, str(user_id)]}},
         {"$inc": {"balance": amount}},
         upsert=True
     )
@@ -34,7 +34,7 @@ async def check_and_deduct(user_id: int, amount: int) -> bool:
     Returns True if successful, False otherwise.
     """
     result = await user_collection.update_one(
-        {"id": user_id, "balance": {"$gte": amount}},
+        {"id": {"$in": [user_id, str(user_id)]}, "balance": {"$gte": amount}},
         {"$inc": {"balance": -amount}}
     )
     if result.modified_count > 0:

@@ -91,7 +91,7 @@ WEEKLY_POOL = {
 
 async def get_user_quests(user_id: int) -> dict:
 
-    user = await user_collection.find_one({"id": user_id})
+    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
     now = datetime.now(timezone.utc)
     today = now.date().isoformat()
 
@@ -108,7 +108,7 @@ async def get_user_quests(user_id: int) -> dict:
         }
 
         await user_collection.update_one(
-            {"id": user_id},
+            {"id": {"$in": [user_id, str(user_id)]}},
             {
                 "$set": {
                     "quests": quests_data,
@@ -146,7 +146,7 @@ async def get_user_quests(user_id: int) -> dict:
 
     if updates:
         updates["quests"] = quests_data
-        await user_collection.update_one({"id": user_id}, {"$set": updates})
+        await user_collection.update_one({"id": {"$in": [user_id, str(user_id)]}}, {"$set": updates})
 
     return quests_data
 
@@ -309,7 +309,7 @@ async def claim_quest_callback(_, query: types.CallbackQuery):
     await add_xp(user_id, reward_xp, f"quest_{quest_id}")
 
     await user_collection.update_one(
-        {"id": user_id},
+        {"id": {"$in": [user_id, str(user_id)]}},
         {"$set": {f"quests.{quest_id}.claimed": True}}
     )
 

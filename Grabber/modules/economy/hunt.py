@@ -3,7 +3,7 @@ import random
 import time
 import uuid
 from datetime import datetime, timedelta
-from pyrogram import filters, types, enums
+from pyrogram import filters, types, enums, errors
 from pyrogram.enums import ParseMode
 from Grabber.core.utils import html_escape
 from Grabber import user_collection, collection, app, WEB_APP_URL
@@ -13,6 +13,7 @@ from Grabber.modules.progression.quests import update_quest_progress
 from Grabber.modules.progression.achievements import check_achievements
 from Grabber.modules.collection.rarities import RARITY_MAP
 from Grabber.core.keyboard import get_webapp_button
+from Grabber.core.cache import invalidate_user_cache
 from config import config
 
 
@@ -121,6 +122,7 @@ async def hunt_cmd(_, message: types.Message):
             },
             upsert=True
         )
+        await invalidate_user_cache(user_id)
 
 
         await update_quest_progress(user_id, "egg_hunter", 1)
@@ -135,6 +137,7 @@ async def hunt_cmd(_, message: types.Message):
     else:
         # No egg — single write for shards only
         await user_collection.update_one({"id": user_id}, {"$inc": {"balance": shards}}, upsert=True)
+        await invalidate_user_cache(user_id)
         await msg.edit_text(
             f"🌲 <b>Hunt Complete!</b>\n\n"
             f"<b>+{shards} Shards</b> ⬪{bonus_text}\n"
@@ -331,15 +334,18 @@ async def egg_noop_callback(_, query: types.CallbackQuery):
 
 async def process_egg_hatch(user_id: int, egg: dict):
     """Core logic for hatching an egg. Returns (success: bool, result: dict_or_error_msg)."""
-    await user_collection.update_one({"id": user_id}, {"$pull": {"eggs": {"id": egg["id"]}}})
-
     if egg.get("is_corrupted", False):
         if random.random() < 0.5:
+            # Remove egg only on explosion
+            await user_collection.update_one({"id": user_id}, {"$pull": {"eggs": {"id": egg["id"]}}})
             return False, "💥 <b>The egg exploded!</b>\nIt was corrupted..."
         rarity = RARITY_MAP[9]
     else:
         rarity_pool = EGG_TIERS[egg["tier"]]["pool"]
         rarity = random.choice(rarity_pool)
+
+    # Remove egg after rarity is determined (successful hatch)
+    await user_collection.update_one({"id": user_id}, {"$pull": {"eggs": {"id": egg["id"]}}})
 
     from Grabber.core.waifu import get_or_load_characters
     waifus = await get_or_load_characters(rarity)
