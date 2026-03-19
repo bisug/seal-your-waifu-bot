@@ -224,8 +224,7 @@ body {
     position: absolute;
     top: 6px;
     left: 6px;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.7);
     padding: 3px 8px;
     border-radius: 12px;
     font-size: 10px;
@@ -234,11 +233,10 @@ body {
 .lock-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.4);
+    background: rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
-    backdrop-filter: blur(1px);
     z-index: 5;
 }
 
@@ -403,8 +401,7 @@ body {
 
 
 .streak-pill-mini {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.15);
     padding: 4px 10px;
     border-radius: 12px;
     font-size: 12px;
@@ -582,9 +579,7 @@ body {
 
 /* Quests Specific Card Styling (Stay as is but use shared icon look) */
 .quest-card {
-    background: var(--glass-bg);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
+    background: rgba(255, 255, 255, 0.05); /* Faster transulcent layer instead of blur */
     border-radius: 20px;
     padding: 16px;
     margin-bottom: 12px;
@@ -1503,7 +1498,6 @@ body {
     font-weight: 900;
     font-size: 14px;
     letter-spacing: 2px;
-    backdrop-filter: blur(2px);
     z-index: 3;
 }
 
@@ -1606,8 +1600,7 @@ body {
 .preview-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.7);
     display: flex;
     flex-direction: column;
     align-items: center;

@@ -323,7 +323,7 @@ async def claim_quest(quest_id: str, user_id: int = Depends(get_current_user)):
     # Logic mirror from modules/quests.py
     await add_xp(user_id, info["reward_xp"], f"quest_{quest_id}")
     await user_collection.update_one(
-        {"id": user_id},
+        {"id": {"$in": [user_id, str(user_id)]}},
         {"$set": {f"quests.{quest_id}.claimed": True}}
     )
     
@@ -376,7 +376,7 @@ async def get_stats(user_id: int = Depends(get_current_user)):
         
     total_users = await user_collection.count_documents({})
     rank = await user_collection.count_documents({"xp": {"$gt": user.get("xp", 0)}}) + 1
-    percentile = (1 - (rank / total_users)) * 100
+    percentile = (1 - (rank / max(total_users, 1))) * 100
     
     return {
         "rank": rank,
@@ -396,7 +396,7 @@ async def set_active_pet(pet_name: str, user_id: int = Depends(get_current_user)
         raise HTTPException(status_code=400, detail="Pet not owned")
         
     await user_collection.update_one(
-        {"id": user_id},
+        {"id": {"$in": [user_id, str(user_id)]}},
         {"$set": {"current_pet": pet_name}}
     )
     return {"status": "success", "pet": pet_name}
@@ -594,7 +594,7 @@ async def get_battlepass_shop(user_id: int = Depends(get_current_user)):
 async def upgrade_pass_api(tier: str, user_id: int = Depends(get_current_user)):
     if tier not in PASS_PRICES: raise HTTPException(status_code=400, detail="Invalid tier")
     
-    user = await user_collection.find_one({"id": user_id})
+    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
     if not user: raise HTTPException(status_code=404, detail="User not found")
     
     current_tier = user.get("pass_type", "free")
@@ -607,7 +607,7 @@ async def upgrade_pass_api(tier: str, user_id: int = Depends(get_current_user)):
         raise HTTPException(status_code=400, detail=f"Insufficient Zenith (Need {price})")
         
     await user_collection.update_one(
-        {"id": user_id, "zenith": {"$gte": price}},
+        {"id": {"$in": [user_id, str(user_id)]}, "zenith": {"$gte": price}},
         {"$set": {"pass_type": tier}, "$inc": {"zenith": -price}}
     )
     return {"status": "success", "new_tier": tier}
