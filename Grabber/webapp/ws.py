@@ -15,34 +15,39 @@ async def leaderboard_ws(websocket: WebSocket):
         await websocket.close(code=1011)
         return
 
-    # Send initial data
-    # (Initial data would normally be fetched here)
-    
     # Subscribe to leaderboard changes in Redis
     pubsub = r.pubsub()
     await pubsub.subscribe("leaderboard_updates")
     
-    try:
-        while True:
-            # Check for messages from Redis
-            message = await pubsub.get_message(ignore_subscribe_none=True)
-            if message:
+    async def listen_redis():
+        """Efficiently listen for Redis pub/sub messages."""
+        async for message in pubsub.listen():
+            if message["type"] == "message":
                 data = message.get("data")
                 if data:
-                    await websocket.send_text(data)
-            
-            # Keep-alive or check for client messages
-            try:
-                # Use a small timeout to not block the pubsub check
-                msg = await asyncio.wait_for(websocket.receive_text(), timeout=0.1)
-                # Handle client messages if any
-            except asyncio.TimeoutError:
-                pass
-                
-            await asyncio.sleep(0.1)
-            
-    except WebSocketDisconnect:
+                    await websocket.send_text(data if isinstance(data, str) else data.decode())
+
+    async def listen_client():
+        """Wait for client disconnect."""
+        try:
+            while True:
+                await websocket.receive_text()
+        except WebSocketDisconnect:
+            pass
+
+    try:
+        # Run both listeners concurrently; when either finishes, cancel the other
+        redis_task = asyncio.create_task(listen_redis())
+        client_task = asyncio.create_task(listen_client())
+        done, pending = await asyncio.wait(
+            [redis_task, client_task],
+            return_when=asyncio.FIRST_COMPLETED
+        )
+        for task in pending:
+            task.cancel()
+    finally:
         await pubsub.unsubscribe("leaderboard_updates")
-    except Exception:
-        await pubsub.unsubscribe("leaderboard_updates")
-        await websocket.close()
+        try:
+            await websocket.close()
+        except Exception:
+            pass

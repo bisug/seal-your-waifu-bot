@@ -76,9 +76,9 @@ async function fetchRarities() {
         return;
     }
     try {
-        const response = await fetch(`${window.API_BASE}/rarities`);
-        if (response.ok) {
-            const rarities = await response.json();
+        // Use apiFetch which includes the auth header (B4 fix)
+        const rarities = await apiFetch('/rarities');
+        if (rarities) {
             sessionStorage.setItem('rarities', JSON.stringify(rarities));
             populateRaritySelects(rarities);
         }
@@ -247,7 +247,8 @@ function setupControls() {
     };
 
     // Filter Listeners (with debounce for search)
-    let searchTimeout;
+    // L1 fix: separate debounce timers so harem and gallery don't cancel each other
+    let haremSearchTimeout, gallerySearchTimeout;
     const onFilterChange = (type) => {
         if (tg) tg.HapticFeedback.selectionChanged();
         if (type === 'harem') loadHarem(false);
@@ -255,14 +256,14 @@ function setupControls() {
     };
 
     document.getElementById('harem-search').oninput = () => {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => onFilterChange('harem'), 500);
+        clearTimeout(haremSearchTimeout);
+        haremSearchTimeout = setTimeout(() => onFilterChange('harem'), 500);
     };
     document.getElementById('harem-filter-rarity').onchange = () => onFilterChange('harem');
 
     document.getElementById('gallery-search').oninput = () => {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => onFilterChange('gallery'), 500);
+        clearTimeout(gallerySearchTimeout);
+        gallerySearchTimeout = setTimeout(() => onFilterChange('gallery'), 500);
     };
     document.getElementById('gallery-filter-rarity').onchange = () => onFilterChange('gallery');
 
@@ -429,7 +430,13 @@ async function switchPet(name) {
         headers: { 'Authorization': `Bearer ${sessionToken}` }
     });
     if (res.ok) {
-        loadProfile();
+        // Optimistic refresh instead of full profile DOM rebuild
+        apiFetch('/me').then(data => {
+            if(data) {
+                currentUser = data;
+                if(data.current_pet) renderPet(data.current_pet);
+            }
+        });
     }
 }
 
@@ -471,7 +478,12 @@ async function incubateEgg(eggId, event) {
     });
     if (res.ok) {
         tg?.showAlert("Incubation started!");
-        loadProfile();
+        // Optimistic DOM update
+        const item = event?.target?.closest('.egg-item');
+        if (item && event.target) {
+            event.target.remove();
+            item.querySelector('.egg-status-pill').innerText = 'incubating';
+        }
     } else {
         if (event && event.target) {
             event.target.classList.remove('loading');
@@ -495,11 +507,20 @@ async function hatchEgg(eggId, event) {
         const result = await res.json();
         if (result.status === 'success') {
             showCharDetails(result.character.id);
-            loadProfile();
-            loadHarem(false);
+            // Optimistic: remove egg card, background sync
+            const item = event?.target?.closest('.egg-item');
+            if (item) item.remove();
+            apiFetch('/me').then(d => {
+                if(d) {
+                    currentUser = d;
+                    document.getElementById('stat-zenith').innerText = d.stats.zenith.toLocaleString();
+                    document.getElementById('stat-collection').innerText = d.stats.total_characters.toLocaleString();
+                }
+            });
         } else if (result.status === 'exploded') {
             tg?.showAlert("💥 " + result.message);
-            loadProfile();
+            const item = event?.target?.closest('.egg-item');
+            if (item) item.remove();
         }
     } else {
         if (event && event.target) {
@@ -663,6 +684,8 @@ async function loadQuests() {
     const weeklyList = document.getElementById('weekly-quests-list');
 
     if (!data.daily?.length && !data.weekly?.length) {
+        // L2 fix: use = instead of += to avoid stacking empty states
+        document.getElementById('page-quests').querySelector('.quest-lists-container')?.remove();
         document.getElementById('page-quests').innerHTML += `
              <div class="empty-state">
                 <div class="empty-icon">📜</div>
@@ -686,9 +709,28 @@ async function claimQuest(qid, event) {
         headers: { 'Authorization': `Bearer ${sessionToken}` }
     });
     if (res.ok) {
-        tg.HapticFeedback.notificationOccurred('success');
-        loadQuests();
-        loadProfile();
+        tg?.HapticFeedback?.notificationOccurred('success');
+        
+        // Optimistic DOM update: mark as done without full reload
+        if (event && event.target) {
+            const btn = event.target;
+            const container = btn.closest('.quest-action');
+            if (container) container.innerHTML = '<span class="quest-status-text">DONE ✔</span>';
+            const card = btn.closest('.quest-card');
+            if (card) card.classList.add('completed');
+        }
+
+        // Silent background sync
+        apiFetch('/me').then(d => {
+            if(d) {
+                currentUser = d;
+                document.getElementById('stat-balance').innerText = d.stats.points.toLocaleString();
+                document.getElementById('user-xp-val').innerText = `${d.stats.xp_current.toLocaleString()} / ${d.stats.xp_needed.toLocaleString()} XP`;
+                const xpPercent = Math.min(100, (d.stats.xp_current / d.stats.xp_needed) * 100);
+                document.getElementById('xp-bar-fill').style.width = `${xpPercent}%`;
+                document.getElementById('user-level-badge').innerText = d.stats.level || 1;
+            }
+        });
     } else {
         if (event && event.target) {
             event.target.classList.remove('loading');
@@ -728,7 +770,11 @@ async function loadLeaderboard(metric = 'level') {
         </div>
     `;
 
-    podiumEl.innerHTML = renderPodiumItem(top3[1], 2) + renderPodiumItem(top3[0], 1) + renderPodiumItem(top3[2], 3);
+    // L3 fix: guard podium rendering for < 3 users
+    const p2 = top3.length > 1 ? renderPodiumItem(top3[1], 2) : '';
+    const p1 = top3.length > 0 ? renderPodiumItem(top3[0], 1) : '';
+    const p3 = top3.length > 2 ? renderPodiumItem(top3[2], 3) : '';
+    podiumEl.innerHTML = p2 + p1 + p3;
 
     list.innerHTML = data.slice(3).map(entry => `
         <div class="list-item">
@@ -881,8 +927,13 @@ async function confirmShopBuy(charId, name, price, event) {
             if (res.ok) {
                 tg.HapticFeedback.notificationOccurred('success');
                 tg.showAlert(`Successfully purchased ${name}!`);
-                loadShop();
-                loadProfile();
+                loadShop(); // Need to update shop grid to say 'OWNED'
+                
+                // Optimistic currency update
+                if (currentUser && currentUser.stats) {
+                    currentUser.stats.zenith -= price;
+                    document.getElementById('stat-zenith').innerText = currentUser.stats.zenith.toLocaleString();
+                }
             } else {
                 if (btn) btn.disabled = false;
                 const err = await res.json();
@@ -904,8 +955,13 @@ async function buyPet(index, name, price) {
             if (res.ok) {
                 tg.HapticFeedback.notificationOccurred('success');
                 tg.showAlert(`Successfully purchased ${name}!`);
-                loadShop();
-                loadProfile();
+                loadShopPets();
+                
+                // Optimistic currency update
+                if (currentUser && currentUser.stats) {
+                    currentUser.stats.zenith -= price;
+                    document.getElementById('stat-zenith').innerText = currentUser.stats.zenith.toLocaleString();
+                }
             } else {
                 const err = await res.json();
                 tg.showAlert(err.detail || "Purchase failed.");
@@ -924,8 +980,13 @@ async function upgradePass(tier, price) {
             if (res.ok) {
                 tg.HapticFeedback.notificationOccurred('success');
                 tg.showAlert(`Battle Pass upgraded to ${tier.toUpperCase()}!`);
-                loadShop();
-                loadProfile();
+                loadShopPass();
+                
+                // Optimistic currency update
+                if (currentUser && currentUser.stats) {
+                    currentUser.stats.zenith -= price;
+                    document.getElementById('stat-zenith').innerText = currentUser.stats.zenith.toLocaleString();
+                }
             } else {
                 const err = await res.json();
                 tg.showAlert(err.detail || "Upgrade failed.");

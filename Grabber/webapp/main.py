@@ -77,8 +77,9 @@ async def auth(request: Request):
     if not user_id and token_provided:
         if not r:
             from Grabber.database import sessions_collection
+            import time as _time
             token_doc = await sessions_collection.find_one({"_id": f"auth_token:{token_provided}"})
-            if token_doc:
+            if token_doc and token_doc.get("expires_at", 0) > _time.time():
                 user_id = token_doc.get("user_id")
                 new_token = token_provided
         else:
