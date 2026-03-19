@@ -91,12 +91,30 @@ async def auth(request: Request):
     if not user_id:
         raise HTTPException(status_code=403, detail="Authentication failed. Please open the bot in PM.")
 
-    # Update Avatar in DB if provided
+    # Update Avatar and Name in DB
+    updates = {}
     if avatar_url:
+        updates["avatar"] = avatar_url
+        
+    if init_data:
+        try:
+            import json
+            from urllib.parse import parse_qsl
+            vals = dict(parse_qsl(init_data))
+            if 'user' in vals:
+                uobj = json.loads(vals['user'])
+                if uobj.get('first_name'): 
+                    updates['first_name'] = uobj['first_name']
+                if uobj.get('username'): 
+                    updates['username'] = uobj['username']
+        except Exception:
+            pass
+            
+    if updates and user_id:
         from Grabber.database import user_collection
         await user_collection.update_one(
             {"id": {"$in": [user_id, str(user_id)]}},
-            {"$set": {"avatar": avatar_url}}
+            {"$set": updates}
         )
     
     return {"token": new_token}

@@ -10,6 +10,7 @@ asyncio.set_event_loop(loop)
 
 from pyrogram import idle
 from Grabber import app, game_bot, LOGGER, start_bots, stop_bots
+import Grabber.core.user_sync  # Register global message sync handlers
 
 # CRITICAL: kurigram's Session.send() calls self.client.loop.run_in_executor()
 # which creates Futures anchored to self.client.loop. If that loop != the running
