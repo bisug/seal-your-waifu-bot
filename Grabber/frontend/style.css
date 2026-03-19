@@ -1780,4 +1780,234 @@ body {
 @keyframes slideUp {
     from { transform: translateY(20px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
+}
+
+/* --- Battle Pass UI --- */
+.pass-container {
+    padding: 15px;
+    padding-bottom: 80px;
+    animation: fadeIn 0.4s ease-out;
+}
+
+.pass-header {
+    background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+    border: 0.5px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 20px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.pass-stats {
+    display: flex;
+    justify-content: space-around;
+    margin: 15px 0;
+}
+
+.pass-stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.pass-stat-label {
+    font-size: 11px;
+    color: var(--hint-color);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.pass-stat-val {
+    font-size: 24px;
+    font-weight: 800;
+    color: white;
+    text-shadow: 0 0 10px rgba(255,255,255,0.2);
+}
+
+.pass-bank-widget {
+    background: linear-gradient(45deg, rgba(255, 215, 0, 0.1), rgba(255, 140, 0, 0.2));
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 16px;
+    padding: 15px;
+    margin: 15px 0;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.1);
+}
+
+.bank-icon {
+    font-size: 32px;
+    filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.5));
+}
+
+.bank-info {
+    flex: 1;
+    text-align: left;
+}
+
+.bank-info h3 {
+    margin: 0;
+    font-size: 14px;
+    color: #FFD700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.bank-info p {
+    margin: 4px 0 0 0;
+    font-size: 12px;
+    color: #FFF;
+    opacity: 0.9;
+}
+
+.bank-btn {
+    background: linear-gradient(to right, #FFD700, #FFA500);
+    color: #000;
+    font-weight: 800;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+}
+
+.buy-level-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: bold;
+    margin-top: 10px;
+    transition: all 0.2s;
+}
+.buy-level-btn:active {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(0.95);
+}
+
+.pass-track-wrapper {
+    display: flex;
+    background: rgba(0, 0, 0, 0.3);
+    border: 0.5px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    padding: 15px 0;
+}
+
+.pass-track-labels {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    padding: 30px 10px 10px 10px;
+    width: 60px;
+    border-right: 1px solid rgba(255,255,255,0.1);
+    background: rgba(0,0,0,0.5);
+    z-index: 2;
+}
+
+.track-label {
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: 1px;
+    transform: rotate(-90deg);
+}
+.track-label.free { color: #aaa; }
+.track-label.premium { color: #FFD700; text-shadow: 0 0 5px rgba(255,215,0,0.5); }
+.track-label.elite { color: #FF00FF; text-shadow: 0 0 5px rgba(255,0,255,0.5); }
+
+.pass-track-scroll {
+    flex: 1;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.2) transparent;
+}
+
+.pass-track {
+    display: flex;
+    padding: 0 15px;
+    gap: 15px;
+}
+
+.track-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    opacity: 0.6;
+    transition: opacity 0.3s;
+}
+
+.track-column.reached {
+    opacity: 1;
+}
+
+.track-level-marker {
+    background: rgba(255,255,255,0.1);
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: bold;
+    color: white;
+    margin-bottom: 15px;
+    position: relative;
+}
+
+.track-column.reached .track-level-marker {
+    background: var(--button-color);
+    box-shadow: 0 0 10px var(--button-color);
+}
+
+.track-reward {
+    width: 60px;
+    height: 60px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    position: relative;
+    flex-direction: column;
+    text-align: center;
+}
+
+.track-reward.empty {
+    visibility: hidden;
+}
+
+.track-reward.claimed {
+    background: rgba(0, 255, 0, 0.1);
+    border-color: rgba(0, 255, 0, 0.3);
+}
+
+.track-reward.locked-pass {
+    background: rgba(255, 0, 0, 0.05);
+    border-color: rgba(255, 0, 0, 0.2);
+}
+
+.track-reward .lock-icon {
+    position: absolute;
+    bottom: -8px;
+    font-size: 16px;
+    text-shadow: 0 0 5px rgba(0,0,0,0.8);
+}
+
+.track-reward .check-icon {
+    position: absolute;
+    bottom: -8px;
+    font-size: 18px;
+    color: #0f0;
+    text-shadow: 0 0 5px rgba(0,255,0,0.5);
 }

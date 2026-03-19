@@ -28,14 +28,14 @@ async def get_top_users(metric: str, limit: int = 10):
 
     if metric == "harem":
         pipeline = [
-            {"$project": {"first_name": 1, "id": 1, "avatar": 1, "char_count": {"$size": {"$ifNull": ["$characters", []]}}}},
+            {"$project": {"first_name": 1, "id": 1, "avatar": 1, "pass_type": 1, "char_count": {"$size": {"$ifNull": ["$characters", []]}}}},
             {"$sort": {"char_count": -1}},
             {"$limit": limit}
         ]
     else:
         field = METRICS[metric]["field"]
         pipeline = [
-            {"$project": {"first_name": 1, "id": 1, "avatar": 1, field: {"$ifNull": [f"${field}", 0]}}},
+            {"$project": {"first_name": 1, "id": 1, "avatar": 1, "pass_type": 1, field: {"$ifNull": [f"${field}", 0]}}},
             {"$sort": {field: -1}},
             {"$limit": limit}
         ]
@@ -60,6 +60,12 @@ def build_leaderboard_text(metric: str, users: list):
 
     for i, user in enumerate(users, 1):
         name = html_escape(user.get('first_name', 'User'))
+        pass_type = user.get("pass_type", "free")
+        if pass_type == "elite":
+            name = f"👑 {name}"
+        elif pass_type == "premium":
+            name = f"🌟 {name}"
+        
         value = user.get(info['field'], 0)
 
 

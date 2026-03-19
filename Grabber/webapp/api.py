@@ -611,3 +611,83 @@ async def upgrade_pass_api(tier: str, user_id: int = Depends(get_current_user)):
         {"$set": {"pass_type": tier}, "$inc": {"zenith": -price}}
     )
     return {"status": "success", "new_tier": tier}
+
+@router.get("/pass_data")
+async def get_pass_data(user_id: int = Depends(get_current_user)):
+    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    from Grabber.core.pass_data import PASS_TRACKS, MAX_PASS_LEVEL
+    from Grabber.core.progression import get_user_progress
+    
+    progress = await get_user_progress(user_id, user_data=user)
+    
+    return {
+        "level": progress["level"],
+        "pass_type": user.get("pass_type", "free"),
+        "pass_bank": user.get("pass_bank", {"shards": 0}),
+        "claimed_levels": user.get("pass_claimed", []),
+        "tracks": PASS_TRACKS,
+        "max_level": MAX_PASS_LEVEL
+    }
+
+@router.post("/claim_bank")
+async def claim_pass_bank(user_id: int = Depends(get_current_user)):
+    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    pass_type = user.get("pass_type", "free")
+    if pass_type == "free":
+        raise HTTPException(status_code=400, detail="Must upgrade pass to claim bank.")
+        
+    pass_bank = user.get("pass_bank", {})
+    if not pass_bank:
+        return {"message": "Bank is empty."}
+        
+    shards = pass_bank.get("shards", 0)
+    
+    eggs_to_add = []
+    import uuid
+    for k, v in pass_bank.items():
+        if k.startswith("eggs_t") and v > 0:
+            tier = k.split("_t")[1]
+            if tier == "1": tier_name = "gold"
+            elif tier == "2": tier_name = "void"
+            else: tier_name = "common"
+            
+            for _ in range(v):
+                eggs_to_add.append({
+                    "id": f"bk_{uuid.uuid4().hex[:8]}",
+                    "tier": tier_name,
+                    "name": f"{tier_name.capitalize()} Egg",
+                    "status": "fresh"
+                })
+                
+    updates = {}
+    if shards > 0:
+        updates["$inc"] = {"balance": shards}
+    if eggs_to_add:
+        updates["$push"] = {"eggs": {"$each": eggs_to_add}}
+        
+    updates["$unset"] = {"pass_bank": ""}
+    
+    await user_collection.update_one({"id": {"$in": [user_id, str(user_id)]}}, updates)
+    
+    return {"message": f"Claimed {shards} Shards and {len(eggs_to_add)} Eggs!", "shards": shards, "eggs": len(eggs_to_add)}
+
+@router.post("/buy_level")
+async def api_buy_level(levels: int = Query(1, ge=1, le=50), user_id: int = Depends(get_current_user)):
+    cost = levels * 5000
+    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
+    
+    if not user or user.get("balance", 0) < cost:
+        raise HTTPException(status_code=400, detail=f"Insufficient Shards (Need {cost})")
+        
+    await user_collection.update_one({"id": {"$in": [user_id, str(user_id)]}}, {"$inc": {"balance": -cost}})
+    
+    from Grabber.core.progression import add_xp
+    await add_xp(user_id, levels * 100, "shop_buylevel")
+    
+    return {"status": "success", "message": f"Bought {levels} levels for {cost} Shards!"}
