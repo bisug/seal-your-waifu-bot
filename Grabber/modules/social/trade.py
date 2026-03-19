@@ -3,6 +3,7 @@ from pyrogram.enums import ButtonStyle, ParseMode
 from Grabber import app
 from Grabber import LOGGER
 from Grabber.core.user import get_user_data, update_user
+from Grabber.core.utils import html_escape
 from Grabber.core.sessions import create_session, get_session, delete_session
 from Grabber.modules.progression.quests import update_quest_progress
 
@@ -102,14 +103,11 @@ async def trade_callback_handler(_, query: types.CallbackQuery):
     # 2. Atomic Database Updates
     # Note: Using $pull and $push is safer if we match specific properties
     try:
-        await update_user(sender_id, {
-            "$pull": {"characters": {"id": s_char['id']}},
-            "$push": {"characters": r_char}
-        })
-        await update_user(receiver_id, {
-            "$pull": {"characters": {"id": r_char['id']}},
-            "$push": {"characters": s_char}
-        })
+        # Separate $pull and $push to avoid undefined behavior on same field
+        await update_user(sender_id, {"$pull": {"characters": {"id": s_char['id']}}})
+        await update_user(sender_id, {"$push": {"characters": r_char}})
+        await update_user(receiver_id, {"$pull": {"characters": {"id": r_char['id']}}})
+        await update_user(receiver_id, {"$push": {"characters": s_char}})
 
         # Logic: Both updates should ideally be in a transaction,
         # but atomic ops on characters list is second best.

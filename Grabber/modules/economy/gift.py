@@ -117,15 +117,11 @@ async def gift_callback(_, query: types.CallbackQuery):
         return
 
 
-    removed_char = sender_chars.pop(index_to_remove)
+    # Atomic removal using $pull (prevents overwriting concurrent changes)
+    await update_user(sender_id, {"$pull": {"characters": {"id": str(char_id)}}})
 
 
-
-
-    await update_user(sender_id, {"$set": {"characters": sender_chars}})
-
-
-    await update_user(receiver_id, {"$push": {"characters": removed_char}})
+    await update_user(receiver_id, {"$push": {"characters": character}})
 
 
     await delete_session(session_id)

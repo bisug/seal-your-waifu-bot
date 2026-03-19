@@ -13,8 +13,7 @@ from Grabber.core.progression import add_xp
 from Grabber.modules.progression.quests import update_quest_progress
 from Grabber.modules.progression.achievements import check_achievements
 
-
-battle_cooldowns = {}
+from Grabber.core.cache import is_on_cooldown as redis_cooldown
 
 
 
@@ -134,13 +133,11 @@ async def battle_challenge_handler(_, message: types.Message):
         return await message.reply_text("⚠️ You can't fight yourself!", parse_mode=ParseMode.HTML)
 
 
-    pair_key = tuple(sorted((attacker.id, defender.id)))
-    now = time.time()
-    if pair_key in battle_cooldowns:
-        last_battle = battle_cooldowns[pair_key]
-        if now - last_battle < 300:
-            remain = int(300 - (now - last_battle))
-            return await message.reply_text(f"⏳ <b>Cooldown!</b> Wait {remain}s before battling this user again.", parse_mode=ParseMode.HTML)
+    # Redis-based cooldown (survives restarts)
+    pair_key = f"battle_{min(attacker.id, defender.id)}_{max(attacker.id, defender.id)}"
+    on_cd, remain = await redis_cooldown(pair_key, 0, 300)
+    if on_cd:
+        return await message.reply_text(f"⏳ <b>Cooldown!</b> Wait {remain}s before battling this user again.", parse_mode=ParseMode.HTML)
 
     try:
         bet = int(message.command[1])
@@ -208,8 +205,7 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
     await delete_session(battle_id)
 
 
-    pair_key = tuple(sorted((attacker_id, defender_id)))
-    battle_cooldowns[pair_key] = time.time()
+
 
     try:
         a_user = await app.get_users(attacker_id)

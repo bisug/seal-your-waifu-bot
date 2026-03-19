@@ -161,9 +161,12 @@ async def flush_cache_to_db():
                 cleaned_users = {uid: ts for uid, ts in active_users.items() if ts > current_time - 600}
                 state["active_users"] = cleaned_users
 
+                # Strip runtime-only cache fields (prefixed with _)
+                flush_state = {k: v for k, v in state.items() if not k.startswith("_")}
+
                 await spawns_collection.update_one(
                     {"chat_id": chat_id},
-                    {"$set": state},
+                    {"$set": flush_state},
                     upsert=True
                 )
         except Exception as e:
