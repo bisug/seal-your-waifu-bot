@@ -67,8 +67,15 @@ async def hunt_cmd(_, message: types.Message):
 
     shards = random.randint(100, 300)
 
-
     bonus_text = ""
+    pass_type = user.get("pass_type", "free")
+    if pass_type == "elite":
+        shards = int(shards * 1.5)
+        bonus_text += "\n💎 <b>+50% Elite Bonus!</b>"
+    elif pass_type == "premium":
+        shards = int(shards * 1.2)
+        bonus_text += "\n💎 <b>+20% Premium Bonus!</b>"
+
     if ability == "Scavenger" and random.random() < 0.2:
         shards *= 2
         bonus_text += "\n<b>Double Shards!</b> (Scavenger)"

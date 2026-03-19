@@ -1,0 +1,41 @@
+<div class="pass-container" id="pass-content">
+    <div class="pass-header">
+        <h2 class="section-title">Seal Pass</h2>
+        <div class="pass-stats">
+            <div class="pass-stat-item">
+                <span class="pass-stat-label">Level</span>
+                <span class="pass-stat-val" id="pass-level-val">1</span>
+            </div>
+            <div class="pass-stat-item">
+                <span class="pass-stat-label">Pass</span>
+                <span class="pass-stat-val" id="pass-type-val" style="text-transform: capitalize;">Free</span>
+            </div>
+        </div>
+        
+        <!-- Piggy Bank UI -->
+        <div id="pass-bank-widget" class="pass-bank-widget hidden">
+            <div class="bank-icon">🏦</div>
+            <div class="bank-info">
+                <h3>Pass Bank</h3>
+                <p id="pass-bank-text">Locked Rewards</p>
+            </div>
+            <button id="claim-bank-btn" class="bank-btn" onclick="claimPassBank()">Unlock!</button>
+        </div>
+        
+        <button id="buy-level-btn" class="buy-level-btn" onclick="buyLevelPrompt()">+ Buy LVL (5k💎)</button>
+    </div>
+
+    <!-- The scrolling timeline -->
+    <div class="pass-track-wrapper">
+        <div class="pass-track-labels">
+            <div class="track-label free">Free</div>
+            <div class="track-label premium">Prem</div>
+            <div class="track-label elite">Elite</div>
+        </div>
+        <div class="pass-track-scroll">
+            <div class="pass-track" id="pass-track-container">
+                <!-- Rendered via JS -->
+            </div>
+        </div>
+    </div>
+</div>

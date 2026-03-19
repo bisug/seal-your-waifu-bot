@@ -89,6 +89,33 @@ WEEKLY_POOL = {
     }
 }
 
+PASS_MISSIONS = {
+    "pass_battles": {
+        "name": "Pass Warlord",
+        "description": "Win 50 battles this week",
+        "target": 50,
+        "reward_xp": 1000,
+        "icon": "⚔️",
+        "symbol": "⚔"
+    },
+    "pass_collector": {
+        "name": "Pass Master",
+        "description": "Catch 100 characters this week",
+        "target": 100,
+        "reward_xp": 1000,
+        "icon": "🏆",
+        "symbol": "❂"
+    },
+    "pass_hatcher": {
+        "name": "Pass Hunter",
+        "description": "Find 10 eggs",
+        "target": 10,
+        "reward_xp": 1500,
+        "icon": "🥚",
+        "symbol": "◈"
+    }
+}
+
 async def get_user_quests(user_id: int) -> dict:
 
     user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
@@ -101,10 +128,12 @@ async def get_user_quests(user_id: int) -> dict:
 
         daily_keys = random.sample(list(QUEST_POOL.keys()), 3)
         weekly_keys = list(WEEKLY_POOL.keys())
+        pass_keys = list(PASS_MISSIONS.keys())
 
         quests_data = {
             **{k: {"progress": 0, "claimed": False} for k in daily_keys},
-            **{k: {"progress": 0, "claimed": False} for k in weekly_keys}
+            **{k: {"progress": 0, "claimed": False} for k in weekly_keys},
+            **{k: {"progress": 0, "claimed": False} for k in pass_keys}
         }
 
         await user_collection.update_one(
@@ -128,7 +157,7 @@ async def get_user_quests(user_id: int) -> dict:
     if last_reset != today:
         daily_keys = random.sample(list(QUEST_POOL.keys()), 3)
 
-        quests_data = {k: v for k, v in quests_data.items() if k in WEEKLY_POOL}
+        quests_data = {k: v for k, v in quests_data.items() if k in WEEKLY_POOL or k in PASS_MISSIONS}
 
         quests_data.update({k: {"progress": 0, "claimed": False} for k in daily_keys})
 
@@ -138,8 +167,9 @@ async def get_user_quests(user_id: int) -> dict:
     last_week = user.get("quests_week")
     if last_week != current_week:
         weekly_keys = list(WEEKLY_POOL.keys())
+        pass_keys = list(PASS_MISSIONS.keys())
 
-        for k in weekly_keys:
+        for k in weekly_keys + pass_keys:
             quests_data[k] = {"progress": 0, "claimed": False}
 
         updates["quests_week"] = current_week
@@ -160,6 +190,8 @@ async def update_quest_progress(user_id: int, quest_id: str, increment: int = 1)
         target = QUEST_POOL[quest_id]["target"]
     elif quest_id in WEEKLY_POOL:
         target = WEEKLY_POOL[quest_id]["target"]
+    elif quest_id in PASS_MISSIONS:
+        target = PASS_MISSIONS[quest_id]["target"]
     else:
         return
 
@@ -253,6 +285,32 @@ async def view_quests(_, message: types.Message, edit_message=False):
         text += f"{info['icon']} <b>{info['name']}</b>: {bar} {status}\n"
 
 
+    text += "\n🌟 <b>Pass Missions</b>\n"
+    has_pass = False
+    for qid, qdata in quests.items():
+        if qid not in PASS_MISSIONS: continue
+        has_pass = True
+
+        info = PASS_MISSIONS[qid]
+        prog = qdata["progress"]
+        targ = info["target"]
+        claimed = qdata["claimed"]
+
+        bar = get_progress_bar(prog, targ, 6)
+
+        if claimed:
+            status = "✅"
+            btn_txt = f"{info['icon']} {info['name']} ✅"
+        elif prog >= targ:
+            status = "🎁"
+            btn_txt = f"{info['icon']} Claim {info['name']}"
+            buttons.append([types.InlineKeyboardButton(btn_txt, callback_data=f"quest_claim:{qid}")])
+        else:
+            status = f"<code>{prog}/{targ}</code>"
+
+        text += f"{info['icon']} <b>{info['name']}</b>: {bar} {status}\n"
+
+
     now = datetime.now(timezone.utc)
     tmrw = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
     d_left = tmrw - now
@@ -295,6 +353,13 @@ async def claim_quest_callback(_, query: types.CallbackQuery):
         quest_info = QUEST_POOL[quest_id]
     elif quest_id in WEEKLY_POOL:
         quest_info = WEEKLY_POOL[quest_id]
+    elif quest_id in PASS_MISSIONS:
+        quest_info = PASS_MISSIONS[quest_id]
+        
+        user_raw = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
+        pass_type = user_raw.get("pass_type", "free") if user_raw else "free"
+        if pass_type == "free":
+            return await query.answer("❌ This mission requires a Premium or Elite Pass!", show_alert=True)
     else:
         return await query.answer("❌ Quest not found!", show_alert=True)
 

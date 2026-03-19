@@ -290,3 +290,28 @@ async def buy_character(_, query: types.CallbackQuery):
         parse_mode=ParseMode.HTML
     )
     await query.answer("Success!")
+
+@app.on_message(filters.command("buylevel"))
+async def buy_level_cmd(_, message: types.Message):
+    user_id = message.from_user.id
+    try:
+        levels = int(message.command[1]) if len(message.command) > 1 else 1
+    except ValueError:
+        return await message.reply_text("❌ Usage: <code>/buylevel [amount]</code>\n\nExample: <code>/buylevel 5</code> to buy 5 levels.", parse_mode=ParseMode.HTML)
+    
+    if levels < 1 or levels > 50:
+        return await message.reply_text("❌ Invalid amount (min 1, max 50 at a time).", parse_mode=ParseMode.HTML)
+        
+    cost = levels * 5000 # 5000 shards per level
+    
+    user = await user_collection.find_one({"id": user_id})
+    if not user or user.get("balance", 0) < cost:
+        return await message.reply_text(f"❌ You need <b>{cost:,}</b> ⬪ Shards to buy {levels} levels.", parse_mode=ParseMode.HTML)
+        
+    await user_collection.update_one({"id": user_id}, {"$inc": {"balance": -cost}})
+    
+    from Grabber.core.progression import add_xp
+    await add_xp(user_id, levels * 100, "shop_buylevel")
+    
+    await message.reply_text(f"🆙 <b>Levels Purchased!</b>\n\nSpent {cost:,} ⬪ Shards for +{levels * 100} XP.", parse_mode=ParseMode.HTML)
+

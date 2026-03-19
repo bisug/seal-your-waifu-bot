@@ -66,6 +66,12 @@ async def daily_command_handler(_, message: types.Message):
         streak = 1  # Reset for next cycle
 
     reward_coins = STREAK_REWARDS.get(reward_streak, 100)
+    
+    # Add Pass bonus
+    pass_type = user.get("pass_type", "free")
+    multiplier = 1.5 if pass_type == "elite" else 1.2 if pass_type == "premium" else 1.0
+    reward_coins = int(reward_coins * multiplier)
+    pass_bonus_text = f"\n💎 <b>Pass Bonus:</b> +{int(reward_coins - (reward_coins/multiplier))} ⬪" if multiplier > 1.0 else ""
 
     # Give Rewards
     await app.send_chat_action(message.chat.id, enums.ChatAction.UPLOAD_PHOTO)
@@ -90,7 +96,7 @@ async def daily_command_handler(_, message: types.Message):
         f"📛 <b>Character:</b> {html_escape(char['name'])}\n"
         f"✨ <b>Rarity:</b> {html_escape(char['rarity'])}\n"
         f"🎬 <b>Anime:</b> {html_escape(char['anime'])}\n\n"
-        f"💰 <b>Coins:</b> +{reward_coins} ⬪\n"
+        f"💰 <b>Coins:</b> +{reward_coins} ⬪{pass_bonus_text}\n"
         f"🔥 <b>Streak:</b> {streak}/7 Days"
     )
 
@@ -121,9 +127,15 @@ async def weekly_command_handler(_, message: types.Message):
     # or just random better loot.
     # Let's give 2000 coins + 500 XP
 
+    pass_type = user.get("pass_type", "free")
+    multiplier = 1.5 if pass_type == "elite" else 1.2 if pass_type == "premium" else 1.0
+    reward_coins = int(2000 * multiplier)
+    xp_reward = int(500 * multiplier)
+    pass_bonus_text = f"\n💎 (+{int(reward_coins - (reward_coins/multiplier))} Pass Bonus)" if multiplier > 1.0 else ""
+
     await update_user(user_id, {
         "$set": {"last_weekly_date": now_str},
-        "$inc": {"balance": 2000}
+        "$inc": {"balance": reward_coins}
     })
     await set_weekly_date(user_id, now_str)
     await invalidate_user_cache(user_id)
@@ -131,12 +143,12 @@ async def weekly_command_handler(_, message: types.Message):
 
     # Also give XP
     from Grabber.core.progression import add_xp
-    await add_xp(user_id, 500, "weekly_claim")
+    await add_xp(user_id, xp_reward, "weekly_claim")
 
     await message.reply_text(
         f"🎁 <b>Weekly Reward Claimed!</b>\n\n"
-        f"💰 <b>Coins:</b> +2,000 ⬪\n"
-        f"🆙 <b>XP:</b> +500 XP\n"
+        f"💰 <b>Coins:</b> +{reward_coins} ⬪{pass_bonus_text}\n"
+        f"🆙 <b>XP:</b> +{xp_reward} XP\n"
         f"✅ Come back in 7 days!",
         parse_mode=ParseMode.HTML
     )
