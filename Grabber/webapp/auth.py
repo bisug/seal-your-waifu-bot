@@ -3,6 +3,7 @@ import hashlib
 import json
 import uuid
 import time
+import logging
 from urllib.parse import parse_qsl
 from fastapi import Request, HTTPException, Security, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -102,8 +103,7 @@ async def get_current_user(auth: HTTPAuthorizationCredentials = Security(securit
         if count > 30:
             raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in a minute.")
     except Exception as e:
-        # Log rate limit failure but allow request if it's just a Redis intermittent error
-        print(f"Rate limiting error: {e}")
-        pass
-        
+        # Fix #4: Log properly, not just print. Request is allowed through on transient Redis error.
+        logging.warning(f"Rate limiting skipped due to Redis error (request allowed): {e}")
+
     return int(user_id)
