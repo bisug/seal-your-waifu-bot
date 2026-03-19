@@ -3,6 +3,7 @@ from Grabber.webapp.auth import get_current_user
 from Grabber.database import user_collection, client, db
 from Grabber.core.progression import get_user_progress, get_level_from_xp
 from Grabber.webapp.models import UserProfileResponse, PaginatedResponse, QuestsResponse, StatsModel, TitlesModel
+from typing import Optional
 import json
 import logging
 from Grabber.webapp.auth import r
@@ -27,7 +28,7 @@ async def get_bot_info():
     }
 
 @router.get("/rarities")
-async def get_rarities():
+async def get_rarities(user_id: int = Depends(get_current_user)):
     """Fetch distinct rarities from the database character collection."""
     from Grabber.database import collection
     rarities = await collection.distinct("rarity")
@@ -36,7 +37,7 @@ async def get_rarities():
     return sorted(rarities)
 
 @router.get("/character/{char_id}")
-async def get_character(char_id: str):
+async def get_character(char_id: str, user_id: int = Depends(get_current_user)):
     """Fetch details for a specific character."""
     from Grabber.database import collection
     char = await collection.find_one({"id": char_id})
@@ -63,6 +64,12 @@ async def get_me(user_id: int = Depends(get_current_user)):
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    # Compute rank (run concurrently with other data)
+    total_users = await user_collection.count_documents({})
+    user_xp = user.get("xp", 0)
+    rank = await user_collection.count_documents({"xp": {"$gt": user_xp}}) + 1
+    percentile = round((1 - (rank / max(total_users, 1))) * 100, 1)
     
     from Grabber.modules.progression.achievements import ACHIEVEMENTS
     raw_achievements = user.get("achievements") or []
@@ -96,7 +103,9 @@ async def get_me(user_id: int = Depends(get_current_user)):
             "points": user.get("balance", 0),
             "zenith": user.get("zenith", 0),
             "badges": user.get("badges") or [],
-            "total_characters": user.get("total_characters", 0)
+            "total_characters": user.get("total_characters", 0),
+            "rank": rank,
+            "percentile": percentile
         },
         "achievements": enriched_achievements,
         "titles": {
@@ -168,8 +177,8 @@ async def get_harem(
     user_id: int = Depends(get_current_user),
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=50),
-    search: str = None,
-    rarity: str = None
+    search: Optional[str] = None,
+    rarity: Optional[str] = None
 ):
     # MongoDB Aggregation Pipeline for Harem
     pipeline = [
@@ -232,34 +241,42 @@ async def get_harem(
 async def get_gallery(
     page: int = Query(1, ge=1),
     limit: int = Query(24, ge=1, le=50),
-    search: str = None,
-    rarity: str = None,
+    search: Optional[str] = None,
+    rarity: Optional[str] = None,
     user_id: int = Depends(get_current_user)
 ):
     from Grabber.database import collection
-    query = {}
+    match_query = {}
     if search:
         search = search.strip()
-        query["$or"] = [
+        match_query["$or"] = [
             {"name": {"$regex": search, "$options": "i"}},
             {"anime": {"$regex": search, "$options": "i"}}
         ]
     if rarity:
-        rarity = rarity.strip()
-        query["rarity"] = rarity
-        
-    cursor = collection.find(query).skip((page - 1) * limit).limit(limit)
-    items = await cursor.to_list(length=limit)
-    total = await collection.count_documents(query)
-    
+        match_query["rarity"] = rarity.strip()
+
+    # Use $facet to get count + paginated data in a single DB round-trip (#11 fix)
+    skip = (page - 1) * limit
+    pipeline = [
+        {"$match": match_query},
+        {"$facet": {
+            "metadata": [{"$count": "total"}],
+            "data": [{"$skip": skip}, {"$limit": limit}]
+        }}
+    ]
+    result = await collection.aggregate(pipeline).to_list(length=1)
+    total = result[0]["metadata"][0]["total"] if result and result[0].get("metadata") else 0
+    items = result[0]["data"] if result else []
+
     # Check "Owned" status - ONLY fetch the IDs to save memory
     user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}}, {"characters.id": 1})
     owned_ids = set(c.get("id") for c in (user.get("characters") or [])) if user else set()
-    
+
     for item in items:
         item["_id"] = str(item["_id"])
         item["owned"] = item.get("id") in owned_ids
-        
+
     return {
         "total": total,
         "page": page,
@@ -423,8 +440,10 @@ async def incubate_egg(egg_id: str, user_id: int = Depends(get_current_user)):
 @router.post("/eggs/hatch/{egg_id}")
 async def hatch_egg(egg_id: str, user_id: int = Depends(get_current_user)):
     from Grabber.modules.economy.hunt import process_egg_hatch
-    
+
     user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
+    if not user:  # Fix #8: missing null guard
+        raise HTTPException(status_code=404, detail="User not found")
     eggs = user.get("eggs", [])
     egg = next((e for e in eggs if e["id"] == egg_id), None)
     
@@ -461,7 +480,7 @@ async def hatch_egg(egg_id: str, user_id: int = Depends(get_current_user)):
 @router.get("/shop/hub")
 async def get_shop_hub(user_id: int = Depends(get_current_user)):
     """General shop status and user balances."""
-    user = await user_collection.find_one({"id": user_id})
+    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})  # Fix #7
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
@@ -477,7 +496,7 @@ async def get_shop_characters(user_id: int = Depends(get_current_user)):
     """Fetch daily character stock."""
     chars = await get_daily_shop_characters()
     # Check "Owned" status
-    user = await user_collection.find_one({"id": user_id}, {"characters.id": 1})
+    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}}, {"characters.id": 1})  # Fix #7
     owned_ids = set(c.get("id") for c in (user.get("characters") or [])) if user else set()
     
     response = []
@@ -494,8 +513,8 @@ async def buy_character_api(char_id: str, user_id: int = Depends(get_current_use
     from Grabber.database import collection
     from Grabber.modules.progression.quests import update_quest_progress
     from Grabber.modules.progression.achievements import check_achievements
-    
-    user_raw = await user_collection.find_one({"id": user_id})
+
+    user_raw = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})  # Fix #7
     if not user_raw: raise HTTPException(status_code=404, detail="User not found")
     
     char_raw = await collection.find_one({"id": char_id})
@@ -545,7 +564,7 @@ async def buy_character_api(char_id: str, user_id: int = Depends(get_current_use
 @router.get("/shop/pets")
 async def get_shop_pets(user_id: int = Depends(get_current_user)):
     """Fetch potential pets and ownership status."""
-    user = await user_collection.find_one({"id": user_id})
+    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})  # Fix #7
     owned_pet_names = [p["name"] for p in user.get("pets", [])] if user else []
     
     return {

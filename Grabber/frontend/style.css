@@ -648,13 +648,14 @@ body {
     contain-intrinsic-size: 1000px;
 }
 
-/* Smoothness for interactions */
-.char-card {
-    will-change: transform, opacity;
-}
-
+/* Smoothness for interactions — Fix #13: only promote to GPU layer on hover/active, not permanently */
 .char-card:hover {
     transform: translateY(-4px) scale(1.02);
+    will-change: transform;
+}
+
+.char-card:active {
+    will-change: transform;
 }
 
 /* Fix for Android/Low-end lag */
@@ -755,12 +756,7 @@ body {
     border-color: #cd7f32;
 }
 
-/* Skeleton & Loading */
-.skeleton {
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.05) 75%);
-    background-size: 200% 100%;
-    animation: loading 1.5s infinite;
-}
+/* Fix #12: Duplicate .skeleton removed — canonical definition is at top of file (~line 41) */
 
 @keyframes loading {
     to {

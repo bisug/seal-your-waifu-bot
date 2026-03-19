@@ -11,6 +11,8 @@ class StatsModel(BaseModel):
     zenith: int = 0
     badges: List[str] = Field(default_factory=list)
     total_characters: int = 0
+    rank: int = 0
+    percentile: float = 0.0
 
 class PetModel(BaseModel):
     name: str
