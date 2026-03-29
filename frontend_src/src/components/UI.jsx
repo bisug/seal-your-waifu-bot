@@ -12,12 +12,12 @@ export const ProgressBar = ({ current, total, color = "bg-brand-neon", label }) 
   return (
     <div className="w-full space-y-1">
       {label && (
-        <div className="flex justify-between text-xs font-medium text-slate-400 px-1 uppercase tracking-widest">
+        <div className="flex justify-between text-[9px] font-black text-slate-500 px-0.5 uppercase tracking-[0.15em]">
           <span>{label}</span>
           <span>{current.toLocaleString()} / {total.toLocaleString()}</span>
         </div>
       )}
-      <div className="h-2 w-full bg-slate-800/50 rounded-full overflow-hidden border border-white/5">
+      <div className="h-1.5 w-full bg-slate-800/50 rounded-full overflow-hidden border border-white/5">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${percentage}%` }}
@@ -191,19 +191,19 @@ export const Modal = ({ character, onClose }) => {
                 animate={{ y: 0 }}
                 exit={{ y: "100%" }}
                 transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                className={`relative w-full max-w-md glass-panel rounded-3xl overflow-hidden border-t-2 border-x border-white/10 flex flex-col pt-2 bg-gradient-to-b ${rarityColors[character.rarity] || 'from-slate-800/10 to-slate-900'}`}
+                className={`relative w-full max-w-sm glass-panel rounded-t-3xl overflow-hidden border-t-2 border-x border-white/10 flex flex-col pt-1 bg-gradient-to-b ${rarityColors[character.rarity] || 'from-slate-800/10 to-slate-900'}`}
             >
-                <div className="w-12 h-1.5 bg-white/10 rounded-full mx-auto mb-4" />
+                <div className="w-10 h-1 bg-white/10 rounded-full mx-auto mb-3" />
                 
                 <button 
                   onClick={onClose}
-                  className="absolute top-4 right-4 p-2 rounded-full bg-white/5 text-white/50 hover:text-white transition-colors"
+                  className="absolute top-3 right-3 p-1.5 rounded-full bg-white/5 text-white/50 hover:text-white transition-colors"
                 >
-                    <X size={20} />
+                    <X size={18} />
                 </button>
 
-                <div className="px-6 pb-6 overflow-y-auto">
-                    <div className={`aspect-[3/4] rounded-2xl overflow-hidden border-2 border-white/5 mb-6 shadow-2xl ${glowColors[character.rarity]}`}>
+                <div className="px-5 pb-5 overflow-y-auto">
+                    <div className={`aspect-[4/5] rounded-xl overflow-hidden border border-white/10 mb-5 shadow-2xl ${glowColors[character.rarity]}`}>
                         <img 
                           src={character.img_url} 
                           alt={character.name}
@@ -211,23 +211,23 @@ export const Modal = ({ character, onClose }) => {
                         />
                     </div>
 
-                    <div className="space-y-4 text-left">
+                    <div className="space-y-3 text-left">
                         <div>
-                            <span className="px-2 py-0.5 rounded-lg bg-white/10 text-[10px] font-black uppercase tracking-widest text-brand-neon border border-white/5">
+                            <span className="px-1.5 py-0.5 rounded-md bg-white/10 text-[9px] font-black uppercase tracking-widest text-brand-neon border border-white/5">
                                 {character.rarity}
                             </span>
-                            <h2 className="text-2xl font-black mt-2 leading-tight uppercase tracking-tight">{character.name}</h2>
-                            <p className="text-slate-400 font-medium italic text-sm">{character.anime}</p>
+                            <h2 className="text-xl font-black mt-1 leading-tight uppercase tracking-tight">{character.name}</h2>
+                            <p className="text-slate-400 font-medium italic text-xs">{character.anime}</p>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
-                            <div className="space-y-1">
-                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Global ID</p>
-                                <p className="font-mono text-sm text-brand-neon">#{character.id}</p>
+                        <div className="grid grid-cols-2 gap-3 pt-3 border-t border-white/5">
+                            <div className="space-y-0.5">
+                                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Global ID</p>
+                                <p className="font-mono text-xs text-brand-neon">#{character.id}</p>
                             </div>
-                            <div className="space-y-1">
-                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Duplicates</p>
-                                <p className="font-bold text-sm">x{character.count || 1}</p>
+                            <div className="space-y-0.5">
+                                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Duplicates</p>
+                                <p className="font-bold text-xs">x{character.count || 1}</p>
                             </div>
                         </div>
 
@@ -248,24 +248,24 @@ export const Modal = ({ character, onClose }) => {
                                     toast.error(err.message || 'Fusion failed');
                                 }
                               }}
-                              className="w-full py-3 rounded-xl bg-brand-accent/10 border border-brand-accent/20 text-brand-accent text-[11px] font-black uppercase tracking-widest hover:bg-brand-accent/20 transition-all flex items-center justify-center space-x-2"
+                              className="w-full py-2.5 rounded-lg bg-brand-accent/10 border border-brand-accent/20 text-brand-accent text-[10px] font-black uppercase tracking-widest hover:bg-brand-accent/20 transition-all flex items-center justify-center space-x-2"
                             >
-                                <Zap size={14} />
+                                <Zap size={12} />
                                 <span>Recycle Duplicate</span>
                             </button>
                         )}
                         
-                        <div className="flex items-center space-x-2 p-3 rounded-xl bg-white/5 border border-white/5 text-[10px] text-slate-400 font-medium italic">
-                            <Info size={14} className="text-brand-neon shrink-0" />
-                            <span>This character was captured in a group chat by this collector.</span>
+                        <div className="flex items-center space-x-2 p-2.5 rounded-lg bg-white/5 border border-white/5 text-[9px] text-slate-400 font-medium italic">
+                            <Info size={12} className="text-brand-neon shrink-0" />
+                            <span>Captured in group by this collector.</span>
                         </div>
                     </div>
                 </div>
                 
-                <div className="px-6 pb-6 pt-2">
+                <div className="px-5 pb-5 pt-1">
                     <button 
                       onClick={onClose}
-                      className="w-full py-4 rounded-2xl bg-white text-brand-midnight font-black uppercase tracking-widest text-xs hover:scale-[1.02] transition-transform active:scale-95"
+                      className="w-full py-3 rounded-xl bg-white text-brand-midnight font-black uppercase tracking-widest text-[10px] hover:scale-[1.02] transition-transform active:scale-95"
                     >
                         CLOSE DETAIL
                     </button>
@@ -329,14 +329,14 @@ export const Card = memo(({ character, onClick }) => {
                     onError={() => setImgSrc(DEFAULT_AVATAR)}
                     loading="lazy"
                 />
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-brand-midnight/90 to-transparent p-2.5 pt-6 text-left">
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-brand-midnight/90 to-transparent p-2 pt-5 text-left">
                     <div className="flex justify-between items-end">
                         <div className="flex-1 truncate">
-                             <p className="text-[8px] font-black text-brand-neon uppercase tracking-widest mb-0.5 opacity-80">{character.rarity}</p>
-                             <h3 className="text-[11px] font-bold truncate leading-tight uppercase tracking-tighter">{character.name}</h3>
+                             <p className="text-[7px] font-black text-brand-neon uppercase tracking-[0.1em] mb-0 opacity-80">{character.rarity}</p>
+                             <h3 className="text-[9px] font-bold truncate leading-none uppercase tracking-tighter">{character.name}</h3>
                         </div>
                         {character.count > 1 && (
-                            <span className="ml-1 bg-brand-neon text-brand-midnight text-[8px] font-black px-1 rounded-sm shadow-sm">x{character.count}</span>
+                            <span className="ml-1 bg-brand-neon text-brand-midnight text-[7px] font-black px-1 rounded-[2px] shadow-sm">x{character.count}</span>
                         )}
                     </div>
                 </div>
