@@ -82,41 +82,49 @@ export const Profile = ({ onCharClick }) => {
 
   return (
     <div className="pb-24">
-      {/* Compact Hero Section */}
-      <section className="relative h-36 overflow-hidden flex flex-col justify-end px-4 pb-4">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-brand-midnight/40 to-brand-midnight z-10" />
+      {/* Premium Hero Section */}
+      <section className="relative h-44 overflow-hidden flex flex-col justify-end px-4 pb-5">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-brand-midnight/60 to-brand-midnight z-10" />
+        <div className="absolute inset-0 bg-mesh opacity-30 z-0 scale-150 animate-pulse" />
         <img 
           src={user.avatar || 'https://files.catbox.moe/2hsawz.jpg'} 
-          className="absolute inset-0 w-full h-full object-cover opacity-30 blur-[2px] scale-105"
+          className="absolute inset-0 w-full h-full object-cover opacity-40 blur-[4px] scale-110"
           alt="Profile Background"
         />
         
-        <div className="relative z-20 flex items-center space-x-3">
-          <div className="relative">
-            <div className="w-12 h-12 rounded-xl overflow-hidden border-2 border-brand-neon neon-shadow bg-brand-midnight">
+        <div className="relative z-20 flex items-center space-x-4">
+          <div className="relative group">
+            <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-brand-neon neon-shadow bg-brand-midnight transform transition-transform group-hover:scale-105">
               <img src={user.avatar || 'https://files.catbox.moe/2hsawz.jpg'} className="w-full h-full object-cover" alt="User" />
             </div>
-            <div className="absolute -bottom-1 -right-1 bg-brand-neon text-brand-midnight text-[9px] font-black px-1.5 py-0.5 rounded shadow-lg shadow-brand-neon/20">
+            <div className="absolute -bottom-1.5 -right-1.5 bg-brand-neon text-brand-midnight text-[10px] font-black px-2 py-0.5 rounded-md shadow-lg shadow-brand-neon/40 ring-2 ring-brand-midnight">
               LVL {user.stats?.level || 1}
             </div>
           </div>
           <div className="text-left">
-            <h1 className="text-lg font-black uppercase tracking-tight leading-none mb-0.5 text-white">{user.first_name || 'Collector'}</h1>
-            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] opacity-80">@{user.username || 'unknown'}</p>
+            <h1 className="text-xl font-black uppercase tracking-tight leading-none mb-1 shadow-black/50 drop-shadow-lg text-white">
+              {user.first_name || 'Collector'}
+            </h1>
+            <div className="flex items-center space-x-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-brand-neon animate-pulse" />
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.25em] opacity-90">@{user.username || 'unknown'}</p>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Stats Dashboard */}
-      <div className="px-4 -mt-3 relative z-30 grid grid-cols-3 gap-2 mb-6">
+      <div className="px-4 -mt-4 relative z-30 grid grid-cols-3 gap-2.5 mb-8">
         {[
-          { icon: Shield, label: 'XP', value: user.stats?.xp || 0, color: 'text-brand-neon' },
-          { icon: Zap, label: 'Zenith', value: user.stats?.zenith || 0, color: 'text-brand-accent' },
-          { icon: Users, label: 'Owned', value: user.stats?.total_characters || 0, color: 'text-white' },
+          { icon: Shield, label: 'XP', value: user.stats?.xp || 0, color: 'text-brand-neon', bg: 'bg-brand-neon/5' },
+          { icon: Zap, label: 'Zenith', value: user.stats?.zenith || 0, color: 'text-brand-accent', bg: 'bg-brand-accent/5' },
+          { icon: Users, label: 'Assets', value: user.stats?.total_characters || 0, color: 'text-white', bg: 'bg-white/5' },
         ].map((stat, i) => (
-          <div key={i} className="glass-panel p-2.5 rounded-xl border border-white/5 flex flex-col items-center">
-            <stat.icon size={14} className={`${stat.color} mb-1`} />
-            <span className="text-[12px] font-black">{stat.value.toLocaleString()}</span>
+          <div key={i} className={`glass-panel p-3 rounded-2xl border border-white/10 flex flex-col items-center ${stat.bg} backdrop-blur-md`}>
+            <div className={`${stat.color} mb-1.5 opacity-80`}>
+              <stat.icon size={16} />
+            </div>
+            <span className="text-[13px] font-black tracking-tight">{stat.value.toLocaleString()}</span>
             <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{stat.label}</span>
           </div>
         ))}
@@ -141,12 +149,12 @@ export const Profile = ({ onCharClick }) => {
           </div>
         </div>
 
-        <div className="relative mb-5">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={12} />
+        <div className="relative mb-6">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
           <input 
             type="text" 
             placeholder="Search collector files..." 
-            className="w-full bg-white/5 border border-white/10 rounded-lg py-2.5 pl-9 pr-4 text-[10px] focus:border-brand-neon outline-none transition-all placeholder:text-slate-600 font-bold uppercase tracking-widest"
+            className="w-full bg-slate-900/40 border border-white/10 rounded-xl py-3 pl-11 pr-4 text-xs focus:border-brand-neon/50 outline-none transition-all placeholder:text-slate-600 font-bold uppercase tracking-widest backdrop-blur-sm"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />

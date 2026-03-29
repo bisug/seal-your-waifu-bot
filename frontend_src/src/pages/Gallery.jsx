@@ -62,15 +62,15 @@ export const Gallery = ({ onCharClick }) => {
   }, [page]);
 
   return (
-    <div className="pb-24 pt-0 px-4 relative">
-      {/* Search & Filter Header */}
-      <section className="sticky top-0 z-30 bg-brand-midnight/95 backdrop-blur-xl pt-3 pb-3 mb-4 -mx-4 px-4 space-y-2 border-b border-white/5 shadow-2xl">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
+    <div className="pb-24 pt-0 px-4 relative min-h-full">
+      {/* Premium Search & Filter Header */}
+      <section className="sticky top-0 z-30 bg-brand-midnight/80 backdrop-blur-xl pt-4 pb-3 mb-5 -mx-4 px-4 space-y-3 border-b border-white/5 shadow-2xl">
+        <div className="relative group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-brand-neon transition-colors" size={14} />
           <input 
             type="text" 
             placeholder="Search characters or anime..." 
-            className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-xs focus:border-brand-neon outline-none transition-all placeholder:text-slate-600 font-medium"
+            className="w-full bg-slate-900/40 border border-white/10 rounded-xl py-3 pl-11 pr-4 text-xs focus:border-brand-neon/50 outline-none transition-all placeholder:text-slate-600 font-bold tracking-tight backdrop-blur-sm"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -78,12 +78,12 @@ export const Gallery = ({ onCharClick }) => {
         
         <ScrollArea>
            {['', 'Common', 'Rare', 'Epic', 'Legendary', 'Mythical', 'Celestial'].map((r) => (
-            <button
+            <button 
               key={r}
               onClick={() => { setRarity(r); setPage(1); }}
-              className={`px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest whitespace-nowrap transition-all border ${
+              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] whitespace-nowrap transition-all border ${
                 rarity === r 
-               ? 'bg-brand-neon text-brand-midnight border-brand-neon shadow-lg shadow-brand-neon/20' 
+                ? 'bg-brand-neon text-brand-midnight border-brand-neon shadow-lg shadow-brand-neon/30 scale-105' 
                 : 'bg-white/5 text-slate-500 border-white/5 hover:border-white/10'
               }`}
             >
