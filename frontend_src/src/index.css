@@ -32,6 +32,10 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+html, body {
+  overscroll-behavior: none;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -40,6 +44,7 @@ body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   overflow-x: hidden;
   user-select: none;
+  touch-action: pan-y;
   min-height: 100svh;
 }
 

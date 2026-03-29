@@ -36,22 +36,58 @@ const LoadingScreen = () => (
 
 const AppContent = () => {
   const { user, loading, error } = useUser();
-  const [activeTab, setActiveTab] = useState('profile');
+  
+  // Intelligence: Read the start_param for deep-linking (e.g., Shop/Gallery/Profile)
+  const getInitialTab = () => {
+    const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
+    if (startParam === 'shop') return 'shop';
+    if (startParam === 'gallery') return 'gallery';
+    if (startParam === 'leaderboard') return 'leaderboard';
+    return 'profile';
+  };
+
+  const [activeTab, setActiveTab] = useState(getInitialTab());
   const [selectedChar, setSelectedChar] = useState(null);
 
   if (loading) return <LoadingScreen />;
 
-  if (error) {
+  if (error || (!loading && !user)) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center px-10 text-center min-h-svh">
-        <h2 className="text-brand-neon font-black mb-4 uppercase tracking-widest text-xl">Connection Offline</h2>
-        <p className="text-slate-500 text-xs mb-8 leading-relaxed uppercase tracking-widest">{error}</p>
-        <button 
-          onClick={() => window.location.reload()}
-          className="px-10 py-4 rounded-2xl bg-brand-neon text-brand-midnight font-black uppercase text-[10px] tracking-[0.2em] shadow-xl shadow-brand-neon/20 transition-transform active:scale-95"
-        >
-          RETRY STABILIZATION
-        </button>
+      <div className="flex-1 flex flex-col items-center justify-center px-10 text-center min-h-svh bg-brand-midnight relative overflow-hidden">
+        {/* Cinematic Glitch Background for Error */}
+        <div className="absolute inset-0 bg-brand-accent/5 opacity-5 animate-pulse" />
+        
+        <div className="relative z-10">
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="mb-8"
+          >
+            <div className="w-20 h-20 mx-auto rounded-3xl border border-brand-accent/30 flex items-center justify-center bg-brand-accent/5">
+              <span className="text-4xl">📡</span>
+            </div>
+          </motion.div>
+          
+          <h2 className="text-brand-accent font-black mb-2 uppercase tracking-[0.3em] text-xl">Signal Interrupted</h2>
+          <p className="text-slate-500 text-[10px] mb-10 leading-relaxed uppercase tracking-widest max-w-[200px] mx-auto">
+            {error || "Authentication handshake timeout. Please re-open the portal."}
+          </p>
+          
+          <div className="space-y-4">
+            <button 
+              onClick={() => window.location.reload()}
+              className="w-full px-10 py-5 rounded-2xl bg-brand-accent text-brand-midnight font-black uppercase text-[10px] tracking-[0.2em] shadow-xl shadow-brand-accent/20 transition-all active:scale-95 flex items-center justify-center gap-3"
+            >
+              RE-ESTABLISH LINK
+            </button>
+            <button 
+              onClick={() => { localStorage.clear(); window.location.reload(); }}
+              className="w-full py-4 text-slate-600 text-[8px] font-bold uppercase tracking-[0.2em] hover:text-slate-400 transition-colors"
+            >
+              Deep Reset (Recovery Mode)
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
