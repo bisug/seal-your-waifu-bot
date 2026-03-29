@@ -50,7 +50,7 @@ export const Leaderboard = () => {
   };
 
   return (
-    <div className="pb-32 pt-6 px-4 uppercase tracking-[0.2em] font-black">
+    <div className="pb-8 pt-6 px-4 uppercase tracking-[0.2em] font-black">
       <header className="mb-8 px-2">
         <div className="flex items-center space-x-2 text-brand-neon mb-1 text-[11px]">
           <Trophy size={16} />
