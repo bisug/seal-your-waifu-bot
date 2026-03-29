@@ -11,10 +11,9 @@ router = APIRouter()
 
 def get_user_id_query(user_id):
     try:
-        uid_int = int(user_id)
-        return {"id": {"$in": [uid_int, str(uid_int)]}}
+        return {"id": int(user_id)}
     except (ValueError, TypeError):
-        return {"id": str(user_id)}
+        return {"id": user_id}
 
 @router.get("/quests", response_model=QuestsResponse)
 async def get_quests(user_id: int = Depends(get_current_user)):
@@ -50,11 +49,19 @@ async def claim_quest(quest_id: str, user_id: int = Depends(get_current_user)):
     if qdata.get("progress", 0) < info["target"]:
         raise HTTPException(status_code=400, detail="Quest not completed")
         
-    await add_xp(user_id, info["reward_xp"], f"quest_{quest_id}")
-    await user_collection.update_one(
-        get_user_id_query(user_id),
+    # Atomic update to prevent race conditions during rapid concurrent requests
+    q = get_user_id_query(user_id)
+    q[f"quests.{quest_id}.claimed"] = {"$ne": True}
+    
+    result = await user_collection.update_one(
+        q,
         {"$set": {f"quests.{quest_id}.claimed": True}}
     )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=400, detail="Already claimed or processing")
+        
+    await add_xp(user_id, info["reward_xp"], f"quest_{quest_id}")
     
     return {"success": True, "reward_xp": info["reward_xp"]}
 
@@ -64,8 +71,7 @@ async def set_active_pet(pet_name: str, user: dict = Depends(get_current_user_da
     if not any(p["name"] == pet_name for p in pets):
         raise HTTPException(status_code=400, detail="Pet not owned")
         
-    uid_int = user["id"]
-    if isinstance(uid_int, list): uid_int = uid_int[0]
+    uid_int = int(user["id"])
 
     await user_collection.update_one(
         get_user_id_query(uid_int),
@@ -93,8 +99,7 @@ async def incubate_egg(egg_id: str, user: dict = Depends(get_current_user_data))
         
     ready_time = datetime.now() + timedelta(minutes=wait_min)
     
-    uid_int = user["id"]
-    if isinstance(uid_int, list): uid_int = uid_int[0]
+    uid_int = int(user["id"])
     
     q = get_user_id_query(uid_int)
     q["eggs.id"] = egg_id
@@ -123,8 +128,7 @@ async def hatch_egg(egg_id: str, user: dict = Depends(get_current_user_data)):
     if h_time and datetime.now() < h_time:
         raise HTTPException(status_code=400, detail="Egg still incubating")
         
-    uid_int = user["id"]
-    if isinstance(uid_int, list): uid_int = uid_int[0]
+    uid_int = int(user["id"])
 
     success, result = await process_egg_hatch(uid_int, egg)
     
