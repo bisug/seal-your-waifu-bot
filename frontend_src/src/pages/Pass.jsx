@@ -12,7 +12,7 @@ export const Pass = () => {
   ];
 
   return (
-    <div className="pb-32 pt-6 px-4 uppercase tracking-[0.2em] font-black">
+    <div className="pb-8 pt-6 px-4 uppercase tracking-[0.2em] font-black">
       <header className="mb-10 px-2">
         <div className="flex items-center space-x-2 text-brand-accent mb-1">
           <Sparkles size={16} />

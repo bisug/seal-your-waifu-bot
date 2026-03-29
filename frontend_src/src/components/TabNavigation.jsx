@@ -29,7 +29,7 @@ export const TabNavigation = ({ activeTab, onNavigate }) => {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 glass-panel border-t border-white/10 pt-3 z-50 backdrop-blur-2xl bg-brand-midnight/40" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
+    <nav className="fixed bottom-0 left-0 right-0 glass-panel border-t border-white/10 pt-3 z-50 backdrop-blur-2xl bg-brand-midnight/40" style={{ height: 'var(--nav-height)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
       <div className="max-w-2xl mx-auto flex justify-around items-center px-2">
         {tabs.map((tab) => {
           const Icon = tab.icon;

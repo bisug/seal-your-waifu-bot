@@ -102,7 +102,7 @@ export const Shop = ({ onCharClick }) => {
   };
 
   return (
-    <div className="pb-32 pt-6 px-4">
+    <div className="pb-8 pt-6 px-4">
       <header className="mb-6 flex justify-between items-end px-2">
         <div>
           <h1 className="text-2xl font-black uppercase tracking-tight">Market</h1>

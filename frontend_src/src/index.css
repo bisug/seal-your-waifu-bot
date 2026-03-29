@@ -32,6 +32,7 @@
   
   /* Adaptive Layout Tokens */
   --safe-area-inset-bottom: env(safe-area-inset-bottom);
+  --nav-height: calc(72px + var(--safe-area-inset-bottom));
   --content-px: var(--space-4);
 }
 
@@ -53,7 +54,10 @@ html, body {
   padding: 0;
   width: 100%;
   height: 100%;
-  overflow: hidden; /* CRITICAL: Viewport Lock */
+  overflow: hidden; 
+  position: fixed; /* STRICT: Viewport Lock */
+  top: 0;
+  left: 0;
   background-color: var(--background);
   color: var(--foreground);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -133,9 +137,13 @@ button, a {
   flex-direction: column;
 }
 
-/* Specific Scroller for content */
+/* Specific Scroller for content - Using Absolute to guarantee height */
 .app-scroller {
-  flex: 1;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: var(--nav-height);
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;

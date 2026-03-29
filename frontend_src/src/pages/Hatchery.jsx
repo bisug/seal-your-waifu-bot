@@ -202,7 +202,7 @@ export const Hatchery = () => {
   if (!user) return null;
 
   return (
-    <div className="pb-24 pt-6 px-4 max-w-lg mx-auto">
+    <div className="pb-8 pt-6 px-4 max-w-lg mx-auto">
       <section className="mb-8 text-center relative">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-brand-neon/5 blur-[60px] rounded-full pointer-events-none" />
         <h1 className="text-2xl font-black uppercase tracking-[0.3em] mb-2 text-white">Hatchery</h1>

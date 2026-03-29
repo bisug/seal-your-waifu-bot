@@ -99,7 +99,7 @@ export const Quests = () => {
   };
 
   return (
-    <div className="pb-32 pt-6 px-4">
+    <div className="pb-8 pt-6 px-4">
       <header className="mb-8 px-2">
         <div className="flex items-center space-x-2 text-brand-neon mb-1 text-[11px]">
           <Sparkles size={16} />
