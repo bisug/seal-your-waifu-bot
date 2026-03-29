@@ -1,4 +1,4 @@
-import React, { useState, createContext, useContext, useEffect, useCallback, useMemo, memo } from 'react';
+import React, { useState, createContext, useContext, useEffect, useCallback, useMemo, memo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Info, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { apiFetch } from '../api';
@@ -112,11 +112,28 @@ export const useApi = (endpoint, options = {}, deps = []) => {
   const [loading, setLoading] = useState(!options.manual);
   const [error, setError] = useState(null);
 
+  const optionsRef = useRef(options);
+  
+  // Shallow array comparison utility
+  const isShallowEqual = (obj1, obj2) => {
+    const keys1 = Object.keys(obj1);
+    const keys2 = Object.keys(obj2);
+    if (keys1.length !== keys2.length) return false;
+    for (let key of keys1) {
+        if (obj1[key] !== obj2[key]) return false;
+    }
+    return true;
+  };
+
+  if (!isShallowEqual(optionsRef.current, options)) {
+    optionsRef.current = options;
+  }
+
   const execute = useCallback(async (overrides = {}) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await apiFetch(endpoint, { ...options, ...overrides });
+      const res = await apiFetch(endpoint, { ...optionsRef.current, ...overrides });
       setData(res);
       return res;
     } catch (err) {
@@ -125,10 +142,10 @@ export const useApi = (endpoint, options = {}, deps = []) => {
     } finally {
       setLoading(false);
     }
-  }, [endpoint, JSON.stringify(options)]);
+  }, [endpoint]); // Safely drops the heavy JSON parse logic and binds to endpoint
 
   useEffect(() => {
-    if (!options.manual) {
+    if (!optionsRef.current.manual) {
       execute();
     }
   }, deps);
