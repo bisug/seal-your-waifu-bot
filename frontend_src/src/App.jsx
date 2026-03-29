@@ -166,18 +166,18 @@ const AppContent = () => {
   }
 
   return (
-    <div className="relative w-full h-full overflow-hidden bg-brand-midnight">
+    <div className="w-full h-full flex flex-col overflow-hidden bg-brand-midnight">
       <AnimatePresence mode="wait">
         <motion.main
           key={activeTab}
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -25 }}
-          transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1] }}
+          transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
           className="app-scroller adaptive-px bg-mesh overflow-x-hidden"
         >
           <Suspense fallback={
-            <div className="flex-1 flex items-center justify-center bg-brand-midnight bg-mesh">
+            <div className="flex items-center justify-center h-full bg-brand-midnight bg-mesh">
               <Loader2 size={24} className="animate-spin text-brand-neon/20" />
             </div>
           }>
@@ -188,8 +188,6 @@ const AppContent = () => {
             {activeTab === 'pass' && <Pass />}
             {activeTab === 'shop' && <Shop onCharClick={setSelectedChar} />}
             {activeTab === 'hatchery' && <Hatchery />}
-            
-            {/* Cinematic 404 Fallback */}
             {!['profile', 'gallery', 'quests', 'leaderboard', 'pass', 'shop', 'hatchery'].includes(activeTab) && (
               <NotFound onReset={() => setActiveTab('profile')} />
             )}
@@ -199,9 +197,9 @@ const AppContent = () => {
 
       <AnimatePresence>
         {selectedChar && (
-          <Modal 
-            character={selectedChar} 
-            onClose={() => setSelectedChar(null)} 
+          <Modal
+            character={selectedChar}
+            onClose={() => setSelectedChar(null)}
           />
         )}
       </AnimatePresence>
