@@ -11,6 +11,7 @@ export const Shop = ({ onCharClick }) => {
   const [marketItems, setMarketItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hatching, setHatching] = useState(false);
+  const [buyingId, setBuyingId] = useState(null);
   const [newChar, setNewChar] = useState(null);
 
   useEffect(() => {
@@ -32,16 +33,21 @@ export const Shop = ({ onCharClick }) => {
   };
 
   const buyCharacter = async (charId) => {
+    if (buyingId) return;
+    setBuyingId(charId);
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
     try {
       const res = await apiFetch(`/shop/buy/character/${charId}`, { method: 'POST' });
       if (res.status === 'success') {
         window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
-        refreshUser();
-        fetchShopData();
+        await refreshUser();
+        await fetchShopData();
       }
     } catch (err) {
+      window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('error');
       window.Telegram?.WebApp?.showAlert(err.message);
+    } finally {
+      setBuyingId(null);
     }
   };
 
@@ -115,15 +121,26 @@ export const Shop = ({ onCharClick }) => {
                   <div key={char.id} className="space-y-3">
                     <Card character={char} onClick={() => onCharClick(char)} />
                     <button 
-                      disabled={char.owned}
+                      disabled={char.owned || buyingId === char.id}
                       onClick={() => buyCharacter(char.id)}
-                      className={`w-full py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
+                      className={`w-full py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-2 ${
                         char.owned 
                         ? 'border-white/5 bg-white/5 text-slate-600 grayscale' 
+                        : buyingId === char.id
+                        ? 'border-brand-accent/50 bg-brand-accent/20 text-brand-accent animate-pulse'
                         : 'border-brand-accent/50 bg-brand-accent/10 text-brand-accent hover:bg-brand-accent hover:text-brand-midnight shadow-lg shadow-brand-accent/10'
                       }`}
                     >
-                      {char.owned ? 'COLLECTED' : `BUY ✧ ${char.zenith_price || 500}`}
+                      {buyingId === char.id ? (
+                        <>
+                          <Loader2 size={12} className="animate-spin" />
+                          <span>SECURE LINK...</span>
+                        </>
+                      ) : char.owned ? (
+                        'COLLECTED'
+                      ) : (
+                        `BUY ✧ ${char.zenith_price || 500}`
+                      )}
                     </button>
                   </div>
                 ))}

@@ -1,4 +1,4 @@
-import React, { useState, Suspense, lazy } from 'react';
+import React, { useState, useEffect, Suspense, lazy, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserProvider, useUser } from './context/UserContext';
 import { TabNavigation } from './components/TabNavigation';
@@ -11,6 +11,40 @@ const Quests = lazy(() => import('./pages/Quests').then(m => ({ default: m.Quest
 const Leaderboard = lazy(() => import('./pages/Leaderboard').then(m => ({ default: m.Leaderboard })));
 const Pass = lazy(() => import('./pages/Pass').then(m => ({ default: m.Pass })));
 const Shop = lazy(() => import('./pages/Shop').then(m => ({ default: m.Shop })));
+
+// Cinematic Error Boundary for high-deployment stability
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, errorInfo: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("Master Audit - UI Crash Detected:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex-1 flex flex-col items-center justify-center p-12 text-center min-h-svh bg-brand-midnight">
+          <h2 className="text-brand-accent font-black mb-4 uppercase tracking-[0.3em]">Critical Overload</h2>
+          <p className="text-slate-500 text-[10px] mb-8 uppercase tracking-widest">A UI module has desynchronized. Initiate recovery?</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="px-10 py-5 rounded-2xl bg-brand-accent text-brand-midnight font-black uppercase text-[10px] tracking-[0.2em] shadow-xl shadow-brand-accent/20"
+          >
+            RESTABILIZE
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const LoadingScreen = () => (
   <div className="fixed inset-0 bg-brand-midnight flex flex-col items-center justify-center p-12">
@@ -48,6 +82,29 @@ const AppContent = () => {
 
   const [activeTab, setActiveTab] = useState(getInitialTab());
   const [selectedChar, setSelectedChar] = useState(null);
+
+  // Native Telegram Integration: Back Button & Haptics
+  useEffect(() => {
+    const tg = window.Telegram?.WebApp;
+    if (!tg) return;
+
+    if (selectedChar) {
+      tg.BackButton.show();
+      tg.BackButton.onClick(() => setSelectedChar(null));
+    } else {
+      tg.BackButton.hide();
+    }
+
+    return () => {
+      tg.BackButton.offClick(() => setSelectedChar(null));
+    };
+  }, [selectedChar]);
+
+  const handleNavigate = useCallback((tab) => {
+    const tg = window.Telegram?.WebApp;
+    tg?.HapticFeedback?.impactOccurred('light');
+    setActiveTab(tab);
+  }, []);
 
   if (loading) return <LoadingScreen />;
 
@@ -123,16 +180,18 @@ const AppContent = () => {
         )}
       </AnimatePresence>
 
-      <TabNavigation activeTab={activeTab} onNavigate={setActiveTab} />
+      <TabNavigation activeTab={activeTab} onNavigate={handleNavigate} />
     </div>
   );
 };
 
 function App() {
   return (
-    <UserProvider>
-      <AppContent />
-    </UserProvider>
+    <ErrorBoundary>
+      <UserProvider>
+        <AppContent />
+      </UserProvider>
+    </ErrorBoundary>
   );
 }
 

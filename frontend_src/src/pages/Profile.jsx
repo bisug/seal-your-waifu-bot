@@ -48,8 +48,8 @@ export const Profile = ({ onCharClick }) => {
             <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-brand-neon neon-shadow">
               <img src={user.avatar || 'https://files.catbox.moe/2hsawz.jpg'} className="w-full h-full object-cover" alt="User" />
             </div>
-            <div className="absolute -bottom-2 -right-2 bg-brand-neon text-brand-midnight text-[10px] font-black px-2 py-0.5 rounded-md">
-              LVL {user.level || 1}
+            <div className="absolute -bottom-2 -right-2 bg-brand-neon text-brand-midnight text-[10px] font-black px-2 py-0.5 rounded-md shadow-lg shadow-brand-neon/20">
+              LVL {user.stats?.level || 1}
             </div>
           </div>
           <div className="text-left">
@@ -62,9 +62,9 @@ export const Profile = ({ onCharClick }) => {
       {/* Stats Dashboard */}
       <div className="px-6 -mt-4 relative z-30 grid grid-cols-3 gap-3 mb-8">
         {[
-          { icon: Shield, label: 'XP', value: user.xp || 0, color: 'text-brand-neon' },
-          { icon: Zap, label: 'Zenith', value: user.zenith || 0, color: 'text-brand-accent' },
-          { icon: Users, label: 'Owned', value: user.total_characters || 0, color: 'text-white' },
+          { icon: Shield, label: 'XP', value: user.stats?.xp || 0, color: 'text-brand-neon' },
+          { icon: Zap, label: 'Zenith', value: user.stats?.zenith || 0, color: 'text-brand-accent' },
+          { icon: Users, label: 'Owned', value: user.stats?.total_characters || 0, color: 'text-white' },
         ].map((stat, i) => (
           <div key={i} className="glass-panel p-3 rounded-2xl border border-white/5 flex flex-col items-center">
             <stat.icon size={16} className={`${stat.color} mb-1`} />
@@ -77,8 +77,8 @@ export const Profile = ({ onCharClick }) => {
       {/* Progress Section */}
       <section className="px-6 mb-10">
         <ProgressBar 
-          current={user.xp_current || 0} 
-          total={user.xp_needed || 1000} 
+          current={user.stats?.xp_current || 0} 
+          total={user.stats?.xp_needed || 1000} 
           label="Exp Progression"
         />
       </section>
@@ -87,9 +87,9 @@ export const Profile = ({ onCharClick }) => {
       <section className="px-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-black uppercase tracking-widest text-slate-400">My Collection</h2>
-          <div className="flex items-center space-x-1 text-[10px] font-bold text-brand-neon uppercase">
+          <div className="flex items-center space-x-1 text-[10px] font-black text-brand-neon uppercase tracking-widest bg-brand-neon/5 px-2 py-1 rounded-full border border-brand-neon/10">
             <Trophy size={12} />
-            <span>Rank #---</span>
+            <span>Rank #{user.stats?.rank || '---'}</span>
           </div>
         </div>
         
