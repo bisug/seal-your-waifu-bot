@@ -53,12 +53,17 @@ html, body {
   padding: 0;
   width: 100%;
   height: 100%;
-  overflow: hidden; /* Lock the viewport to prevent bounce */
+  overflow: hidden; 
   background-color: var(--background);
   color: var(--foreground);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   user-select: none;
   -webkit-touch-callout: none;
+  overscroll-behavior: none;
+}
+
+button, a {
+  touch-action: manipulation;
 }
 
 /* Fluid Container Padding Utility */
@@ -129,4 +134,5 @@ html, body {
   -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
+  overscroll-behavior-y: none;
 }
