@@ -14,17 +14,33 @@
   --background: #080a12;
   --foreground: #f8fafc;
   
+  /* 8px Spacing System */
+  --space-1: 0.25rem; /* 4px */
+  --space-2: 0.5rem;  /* 8px */
+  --space-3: 0.75rem; /* 12px */
+  --space-4: 1rem;    /* 16px */
+  --space-6: 1.5rem;  /* 24px */
+  --space-8: 2rem;    /* 32px */
+
+  /* 1.25 Modular Typography Scale */
+  --font-xs: 0.6875rem; /* 11px */
+  --font-sm: 0.875rem;  /* 14px */
+  --font-base: 1rem;     /* 16px */
+  --font-lg: 1.25rem;    /* 20px */
+  --font-xl: 1.5625rem;  /* 25px */
+  --font-2xl: 1.953rem;  /* 31px */
+  
   /* Adaptive Layout Tokens */
   --safe-area-inset-bottom: env(safe-area-inset-bottom);
-  --content-px: 1rem; /* 16px */
+  --content-px: var(--space-4);
 }
 
 @media (min-width: 640px) {
-  :root { --content-px: 1.5rem; }
+  :root { --content-px: var(--space-6); }
 }
 
 @media (min-width: 1024px) {
-  :root { --content-px: 2.5rem; }
+  :root { --content-px: var(--space-8); }
 }
 
 * {
@@ -32,8 +48,8 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-html, body {
-  overscroll-behavior: none;
+html {
+  height: -webkit-fill-available;
 }
 
 body {
@@ -44,14 +60,16 @@ body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   overflow-x: hidden;
   user-select: none;
-  touch-action: pan-y;
-  min-height: 100svh;
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Fluid Container Padding Utility */
 .adaptive-px {
-  padding-left: var(--content-px);
-  padding-right: var(--content-px);
+  padding-left: clamp(1rem, 5vw, 2rem);
+  padding-right: clamp(1rem, 5vw, 2rem);
 }
 
 /* Hide scrollbars for a cleaner app look */
@@ -61,13 +79,23 @@ body {
 
 .glass-panel {
   background: var(--color-brand-glass);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--color-brand-glass-border);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.bg-mesh {
+  background-color: var(--color-brand-midnight);
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(0, 242, 255, 0.1) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.1) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(0, 242, 255, 0.05) 0px, transparent 50%);
 }
 
 .neon-shadow {
-  box-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
+  box-shadow: 0 0 20px rgba(0, 242, 255, 0.25);
 }
 
 /* Cinematic Shimmer for Skeleton Loaders */

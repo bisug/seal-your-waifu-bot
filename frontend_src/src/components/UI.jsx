@@ -1,6 +1,7 @@
-import React, { useState, createContext, useContext, useEffect, useCallback } from 'react';
+import React, { useState, createContext, useContext, useEffect, useCallback, useMemo, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Info, CheckCircle2, AlertCircle } from 'lucide-react';
+import { X, Info, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { apiFetch } from '../api';
 
 /**
  * Animated Progress Bar for XP, Health, or Pass levels.
@@ -20,7 +21,7 @@ export const ProgressBar = ({ current, total, color = "bg-brand-neon", label }) 
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${percentage}%` }}
-          transition={{ duration: 1, ease: 'easeOut' }}
+          transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
           className={`h-full ${color} neon-shadow shadow-current transition-all`}
         />
       </div>
@@ -101,6 +102,39 @@ export const ToastProvider = ({ children }) => {
 };
 
 export const useToast = () => useContext(ToastContext);
+
+/**
+ * Standardized API Hook for managed loading/error/data states.
+ * Includes optional caching and automatic dependency tracking.
+ */
+export const useApi = (endpoint, options = {}, deps = []) => {
+  const [data, setData] = useState(options.initialData || null);
+  const [loading, setLoading] = useState(!options.manual);
+  const [error, setError] = useState(null);
+
+  const execute = useCallback(async (overrides = {}) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await apiFetch(endpoint, { ...options, ...overrides });
+      setData(res);
+      return res;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [endpoint, JSON.stringify(options)]);
+
+  useEffect(() => {
+    if (!options.manual) {
+      execute();
+    }
+  }, deps);
+
+  return { data, loading, error, execute, setData };
+};
 
 /**
  * Cinematic Detail Modal
@@ -202,8 +236,9 @@ export const Modal = ({ character, onClose }) => {
 
 /**
  * Unified Character/Item Card with rarity color coding.
+ * Memoized to prevent redundant re-renders in large grids.
  */
-export const Card = ({ character, onClick }) => {
+export const Card = memo(({ character, onClick }) => {
     const [imgSrc, setImgSrc] = useState(character.img_url);
     const [isLoaded, setIsLoaded] = useState(false);
     
@@ -264,4 +299,4 @@ export const Card = ({ character, onClick }) => {
             </div>
         </motion.div>
     );
-};
+});

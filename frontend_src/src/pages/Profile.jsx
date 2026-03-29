@@ -24,7 +24,7 @@ export const Profile = ({ onCharClick }) => {
   }, [user]);
 
   if (loading) return (
-    <div className="pb-32 pt-6 px-6">
+    <div className="pb-24 pt-6 px-6">
        <div className="h-64 mb-8">
           <Skeleton className="w-full h-full rounded-3xl" />
        </div>
@@ -42,28 +42,28 @@ export const Profile = ({ onCharClick }) => {
   if (!user) return null;
 
   return (
-    <div className="pb-32">
+    <div className="pb-24">
       {/* Cinematic Hero Section */}
-      <section className="relative h-72 overflow-hidden flex flex-col justify-end px-6 pb-8">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-brand-midnight/60 to-brand-midnight z-10" />
+      <section className="relative h-52 overflow-hidden flex flex-col justify-end px-6 pb-6">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-brand-midnight/40 to-brand-midnight z-10" />
         <img 
           src={user.avatar || 'https://files.catbox.moe/2hsawz.jpg'} 
-          className="absolute inset-0 w-full h-full object-cover opacity-40 blur-sm scale-110"
+          className="absolute inset-0 w-full h-full object-cover opacity-30 blur-[2px] scale-105"
           alt="Profile Background"
         />
         
-        <div className="relative z-20 flex items-center space-x-5">
+        <div className="relative z-20 flex items-center space-x-4">
           <div className="relative">
-            <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-brand-neon neon-shadow">
+            <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-brand-neon neon-shadow bg-brand-midnight">
               <img src={user.avatar || 'https://files.catbox.moe/2hsawz.jpg'} className="w-full h-full object-cover" alt="User" />
             </div>
-            <div className="absolute -bottom-2 -right-2 bg-brand-neon text-brand-midnight text-[10px] font-black px-2 py-0.5 rounded-md shadow-lg shadow-brand-neon/20">
+            <div className="absolute -bottom-1.5 -right-1.5 bg-brand-neon text-brand-midnight text-[11px] font-black px-1.5 py-0.5 rounded shadow-lg shadow-brand-neon/20">
               LVL {user.stats?.level || 1}
             </div>
           </div>
           <div className="text-left">
-            <h1 className="text-2xl font-black uppercase tracking-tight leading-none mb-1">{user.first_name || 'Collector'}</h1>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">@{user.username || 'unknown'}</p>
+            <h1 className="text-xl font-black uppercase tracking-tight leading-none mb-1 text-white">{user.first_name || 'Collector'}</h1>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em] opacity-80">@{user.username || 'unknown'}</p>
           </div>
         </div>
       </section>
@@ -78,7 +78,7 @@ export const Profile = ({ onCharClick }) => {
           <div key={i} className="glass-panel p-3 rounded-2xl border border-white/5 flex flex-col items-center">
             <stat.icon size={16} className={`${stat.color} mb-1`} />
             <span className="text-[14px] font-black">{stat.value.toLocaleString()}</span>
-            <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">{stat.label}</span>
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">{stat.label}</span>
           </div>
         ))}
       </div>
@@ -95,8 +95,8 @@ export const Profile = ({ onCharClick }) => {
       {/* Harem Grid */}
       <section className="px-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-black uppercase tracking-widest text-slate-400">My Collection</h2>
-          <div className="flex items-center space-x-1 text-[10px] font-black text-brand-neon uppercase tracking-widest bg-brand-neon/5 px-2 py-1 rounded-full border border-brand-neon/10">
+          <h2 className="text-[11px] font-black uppercase tracking-widest text-slate-500">My Collection</h2>
+          <div className="flex items-center space-x-1 text-[11px] font-black text-brand-neon uppercase tracking-widest bg-brand-neon/5 px-3 py-1.5 rounded-xl border border-brand-neon/10 shadow-[0_0_10px_rgba(0,255,255,0.05)]">
             <Trophy size={12} />
             <span>Rank #{user.stats?.rank || '---'}</span>
           </div>
@@ -123,8 +123,8 @@ export const Profile = ({ onCharClick }) => {
           </div>
         ) : (
           <div className="glass-panel p-10 rounded-3xl border border-white/5 text-center flex flex-col items-center opacity-80">
-            <Users size={40} className="text-slate-700 mb-4" />
-            <p className="text-slate-500 text-xs font-medium uppercase tracking-widest italic leading-relaxed">
+            <Users size={40} className="text-slate-800 mb-4" />
+            <p className="text-slate-500 text-[11px] font-bold uppercase tracking-widest italic leading-relaxed">
               Your harem is empty.<br/>Capture characters in group chats to start!
             </p>
           </div>
