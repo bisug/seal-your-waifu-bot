@@ -44,19 +44,19 @@ export const TabNavigation = ({ activeTab, onNavigate }) => {
               <motion.div
                 initial={false}
                 animate={{
-                  scale: isActive ? 1.15 : 1,
+                  scale: isActive ? 1.1 : 1,
                   color: isActive ? '#00f2ff' : '#64748b',
                 }}
                 className={cn(
-                  "p-1.5 rounded-xl transition-colors",
+                  "p-1 rounded-lg transition-colors",
                   isActive ? "text-brand-neon" : "text-slate-500"
                 )}
               >
-                <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+                <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
                 {isActive && (
                   <motion.div
                     layoutId="activeTab"
-                    className="absolute -bottom-1 inset-x-0 h-0.5 rounded-full bg-brand-neon neon-shadow shadow-brand-neon/50 z-10 mx-1.5"
+                    className="absolute -bottom-1 inset-x-0 h-0.5 rounded-full bg-brand-neon neon-shadow shadow-brand-neon/50 z-10 mx-1"
                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                   />
                 )}
