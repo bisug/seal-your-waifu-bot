@@ -28,8 +28,8 @@ export const TabNavigation = ({ activeTab, onNavigate }) => {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 glass-panel border-t border-brand-glass-border pb-8 pt-4 z-50">
-      <div className="max-w-2xl mx-auto flex justify-between items-center px-6">
+    <nav className="fixed bottom-0 left-0 right-0 glass-panel border-t border-brand-glass-border pb-6 pt-3 z-50">
+      <div className="max-w-2xl mx-auto flex justify-between items-center px-4">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -38,24 +38,24 @@ export const TabNavigation = ({ activeTab, onNavigate }) => {
             <button
               key={tab.id}
               onClick={() => handleNavigate(tab.id)}
-              className="relative flex flex-col items-center justify-center p-2"
+              className="relative flex flex-col items-center justify-center p-1.5 min-w-[44px]"
             >
               <motion.div
                 initial={false}
                 animate={{
-                  scale: isActive ? 1.2 : 1,
-                  color: isActive ? '#00f2ff' : '#94a3b8',
+                  scale: isActive ? 1.15 : 1,
+                  color: isActive ? '#00f2ff' : '#64748b',
                 }}
                 className={cn(
-                  "p-2 rounded-xl transition-colors",
-                  isActive ? "text-brand-neon" : "text-slate-400"
+                  "p-1.5 rounded-xl transition-colors",
+                  isActive ? "text-brand-neon" : "text-slate-500"
                 )}
               >
-                <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
+                <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
                 {isActive && (
                   <motion.div
                     layoutId="activeTab"
-                    className="absolute -bottom-1 inset-x-0 h-1 rounded-full bg-brand-neon neon-shadow shadow-brand-neon/50 z-10 mx-2"
+                    className="absolute -bottom-1 inset-x-0 h-0.5 rounded-full bg-brand-neon neon-shadow shadow-brand-neon/50 z-10 mx-1.5"
                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                   />
                 )}

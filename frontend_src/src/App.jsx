@@ -48,7 +48,10 @@ class ErrorBoundary extends React.Component {
 }
 
 const LoadingScreen = () => (
-  <div className="fixed inset-0 bg-brand-midnight flex flex-col items-center justify-center p-12">
+  <div className="fixed inset-0 bg-brand-midnight flex flex-col items-center justify-center p-12 bg-mesh overflow-hidden">
+    {/* Ambient Glows */}
+    <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-neon/5 blur-[120px] rounded-full" />
+    <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-brand-accent/5 blur-[120px] rounded-full" />
     <motion.div 
       animate={{ 
         scale: [1, 1.1, 1],
@@ -116,9 +119,9 @@ const AppContent = () => {
 
   if (error || (!loading && !user)) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center px-10 text-center min-h-svh bg-brand-midnight relative overflow-hidden">
+      <div className="flex-1 flex flex-col items-center justify-center px-10 text-center min-h-svh bg-brand-midnight relative overflow-hidden bg-mesh">
         {/* Cinematic Glitch Background for Error */}
-        <div className="absolute inset-0 bg-brand-accent/5 opacity-5 animate-pulse" />
+        <div className="absolute inset-0 bg-brand-accent/5 opacity-10 animate-pulse" />
         
         <div className="relative z-10">
           <motion.div 
@@ -156,7 +159,7 @@ const AppContent = () => {
   }
 
   return (
-    <div className="relative min-h-svh flex flex-col overflow-x-hidden">
+    <div className="flex-1 flex flex-col">
       <AnimatePresence mode="wait">
         <motion.main
           key={activeTab}
@@ -164,9 +167,13 @@ const AppContent = () => {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -10 }}
           transition={{ duration: 0.2 }}
-          className="flex-1 adaptive-px"
+          className="flex-1 adaptive-px relative bg-mesh"
         >
-          <Suspense fallback={<div className="flex-1 animate-pulse bg-brand-midnight" />}>
+          <Suspense fallback={
+            <div className="flex-1 flex items-center justify-center bg-brand-midnight bg-mesh">
+              <Loader2 size={24} className="animate-spin text-brand-neon/20" />
+            </div>
+          }>
             {activeTab === 'profile' && <Profile onCharClick={setSelectedChar} />}
             {activeTab === 'gallery' && <Gallery onCharClick={setSelectedChar} />}
             {activeTab === 'quests' && <Quests />}
