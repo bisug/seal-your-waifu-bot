@@ -116,8 +116,9 @@ async def auth(request: Request):
         try:
             if await r.get(sync_key):
                 should_sync = False
-        except Exception:
-            pass
+        except Exception as e:
+            from Grabber import LOGGER
+            LOGGER.debug(f"Redis sync check failed: {e}")
 
     if should_sync:
         # Update Avatar and Name in DB
@@ -136,8 +137,9 @@ async def auth(request: Request):
                         updates['first_name'] = uobj['first_name']
                     if uobj.get('username'): 
                         updates['username'] = uobj['username']
-            except Exception:
-                pass
+            except Exception as e:
+                from Grabber import LOGGER
+                LOGGER.debug(f"InitData payload unparseable: {e}")
                 
         if updates:
             from Grabber.database import user_collection
@@ -147,7 +149,9 @@ async def auth(request: Request):
             )
             if r:
                 try: await r.setex(sync_key, 3600, "1")
-                except: pass
+                except Exception as e: 
+                    from Grabber import LOGGER
+                    LOGGER.debug(f"Redis string write failed: {e}")
     
     return {"token": new_token}
 
@@ -174,5 +178,5 @@ if os.path.exists(frontend_path):
         from fastapi.responses import FileResponse
         return FileResponse(index_file)
 else:
-    # Development fallback or warning
-    pass
+    from Grabber import LOGGER
+    LOGGER.warning("Frontend UI missing: React build missing or inactive.")

@@ -49,5 +49,6 @@ async def leaderboard_ws(websocket: WebSocket):
         await pubsub.unsubscribe("leaderboard_updates")
         try:
             await websocket.close()
-        except Exception:
-            pass
+        except Exception as e:
+            from Grabber import LOGGER
+            LOGGER.debug(f"Websocket close error: {e}")

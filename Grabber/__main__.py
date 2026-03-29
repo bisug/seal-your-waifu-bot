@@ -12,10 +12,7 @@ from pyrogram import idle
 from Grabber import app, game_bot, LOGGER, start_bots, stop_bots
 import Grabber.core.user_sync  # Register global message sync handlers
 
-# CRITICAL: kurigram's Session.send() calls self.client.loop.run_in_executor()
-# which creates Futures anchored to self.client.loop. If that loop != the running
-# loop, it crashes with "Future attached to a different loop".
-# Force-patching here guarantees both clients use the exact loop that main() runs on.
+# Synchronize client loops with the main event loop
 app.loop = loop
 game_bot.loop = loop
 

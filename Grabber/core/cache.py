@@ -67,7 +67,7 @@ async def check_memory_and_purge():
             keys = await _redis.keys("user:*") + await _redis.keys("lb:*") + await _redis.keys("rank:*")
             if keys:
                 await _redis.delete(*keys[:50]) # Delete batches
-    except Exception: pass
+    except Exception as e: LOGGER.debug(f"Purge error: {e}")
 
 async def rdel(*keys: str):
     """Delete one or more keys from Redis. Silently ignores errors."""

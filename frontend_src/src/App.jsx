@@ -12,6 +12,7 @@ const Quests = lazy(() => import('./pages/Quests').then(m => ({ default: m.Quest
 const Leaderboard = lazy(() => import('./pages/Leaderboard').then(m => ({ default: m.Leaderboard })));
 const Pass = lazy(() => import('./pages/Pass').then(m => ({ default: m.Pass })));
 const Shop = lazy(() => import('./pages/Shop').then(m => ({ default: m.Shop })));
+const Hatchery = lazy(() => import('./pages/Hatchery').then(m => ({ default: m.Hatchery })));
 
 // Cinematic Error Boundary for high-deployment stability
 class ErrorBoundary extends React.Component {
@@ -99,6 +100,11 @@ const AppContent = () => {
       tg.BackButton.hide();
     }
 
+    // Theme Sync: Deep Midnight & Neon
+    tg.setHeaderColor('#0A0A0B'); 
+    tg.setBackgroundColor('#0A0A0B');
+    tg.expand();
+
     return () => {
       tg.BackButton.offClick(() => setSelectedChar(null));
     };
@@ -180,9 +186,10 @@ const AppContent = () => {
             {activeTab === 'leaderboard' && <Leaderboard />}
             {activeTab === 'pass' && <Pass />}
             {activeTab === 'shop' && <Shop onCharClick={setSelectedChar} />}
+            {activeTab === 'hatchery' && <Hatchery />}
             
             {/* Cinematic 404 Fallback */}
-            {!['profile', 'gallery', 'quests', 'leaderboard', 'pass', 'shop'].includes(activeTab) && (
+            {!['profile', 'gallery', 'quests', 'leaderboard', 'pass', 'shop', 'hatchery'].includes(activeTab) && (
               <NotFound onReset={() => setActiveTab('profile')} />
             )}
           </Suspense>

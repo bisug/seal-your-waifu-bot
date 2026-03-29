@@ -1,29 +1,68 @@
-import React, { useMemo } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useUser } from '../context/UserContext';
+import { apiFetch } from '../api';
 import { ProgressBar, Card, Skeleton, CardSkeleton } from '../components/UI';
-import { Shield, Zap, Users, Trophy } from 'lucide-react';
+import { Shield, Zap, Users, Trophy, Search, Loader2 } from 'lucide-react';
 
 export const Profile = ({ onCharClick }) => {
-  const { user, loading } = useUser();
-
-  // Consolidate duplicates for cleaner UI and better performance
-  const consolidatedHarem = useMemo(() => {
-    if (!user || !user.characters) return [];
-    
-    const map = new Map();
-    user.characters.forEach(char => {
-      const charId = char.id;
-      if (map.has(charId)) {
-        map.get(charId).count = (map.get(charId).count || 1) + 1;
-      } else {
-        map.set(charId, { ...char, count: 1 });
+  const { user, loading: userLoading } = useUser();
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [search, setSearch] = useState('');
+  
+  const observer = useRef();
+  const lastElementRef = useCallback(node => {
+    if (loading) return;
+    if (observer.current) observer.current.disconnect();
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore) {
+        setPage(prev => prev + 1);
       }
     });
-    return Array.from(map.values()).sort((a, b) => b.count - a.count);
-  }, [user]);
+    if (node) observer.current.observe(node);
+  }, [loading, hasMore]);
 
-  if (loading) return (
+  const fetchHarem = useCallback(async (isNew = false) => {
+    setLoading(true);
+    try {
+      const currentPage = isNew ? 1 : page;
+      // Note: Backend /harem already handles grouping/counting duplicates
+      const data = await apiFetch(`/harem?page=${currentPage}&limit=24&search=${search}`);
+      
+      if (isNew) {
+        setItems(data.items);
+      } else {
+        setItems(prev => [...prev, ...data.items]);
+      }
+      
+      setHasMore(data.items.length === 24);
+    } catch (err) {
+      console.error('Harem fetch error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, search]);
+
+  // Initial fetch and search debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPage(1);
+      fetchHarem(true);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Infinite scroll trigger
+  useEffect(() => {
+    if (page > 1) {
+      fetchHarem(false);
+    }
+  }, [page]);
+
+  if (userLoading && items.length === 0) return (
     <div className="pb-24 pt-6 px-6">
        <div className="h-64 mb-8">
           <Skeleton className="w-full h-full rounded-3xl" />
@@ -31,7 +70,7 @@ export const Profile = ({ onCharClick }) => {
        <div className="grid grid-cols-3 gap-3 mb-8">
           {[1,2,3].map(i => <Skeleton key={i} className="h-16 rounded-2xl" />)}
        </div>
-       <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-3">
+       <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 gap-3">
           {Array.from({ length: 8 }).map((_, i) => (
             <CardSkeleton key={`prof-skeleton-${i}`} />
           ))}
@@ -92,7 +131,7 @@ export const Profile = ({ onCharClick }) => {
         />
       </section>
 
-      {/* Harem Grid */}
+      {/* Harem Grid Search & Header */}
       <section className="px-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-[11px] font-black uppercase tracking-widest text-slate-500">My Collection</h2>
@@ -101,13 +140,25 @@ export const Profile = ({ onCharClick }) => {
             <span>Rank #{user.stats?.rank || '---'}</span>
           </div>
         </div>
+
+        <div className="relative mb-6">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
+          <input 
+            type="text" 
+            placeholder="Search collector files..." 
+            className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-[11px] focus:border-brand-neon outline-none transition-all placeholder:text-slate-600 font-bold uppercase tracking-widest"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
         
-        {consolidatedHarem.length > 0 ? (
-          <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-3">
+        {items.length > 0 || loading ? (
+          <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
              <AnimatePresence mode="popLayout">
-               {consolidatedHarem.map((char, i) => (
+               {items.map((char, i) => (
                  <motion.div
-                   key={char.id}
+                   key={`${char.id}-${i}`}
+                   ref={i === items.length - 1 ? lastElementRef : null}
                    layout
                    initial={{ opacity: 0, scale: 0.9, y: 10 }}
                    animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -120,14 +171,24 @@ export const Profile = ({ onCharClick }) => {
                  </motion.div>
                ))}
              </AnimatePresence>
+             {loading && Array.from({ length: 6 }).map((_, i) => (
+                <CardSkeleton key={`loading-${i}`} />
+             ))}
           </div>
         ) : (
           <div className="glass-panel p-10 rounded-3xl border border-white/5 text-center flex flex-col items-center opacity-80">
             <Users size={40} className="text-slate-800 mb-4" />
             <p className="text-slate-500 text-[11px] font-bold uppercase tracking-widest italic leading-relaxed">
-              Your harem is empty.<br/>Capture characters in group chats to start!
+              No matching records.<br/>Try adjusting your scanner.
             </p>
           </div>
+        )}
+
+        {/* Loading Spacing */}
+        {loading && items.length > 0 && (
+           <div className="flex justify-center py-8">
+              <Loader2 className="animate-spin text-brand-neon/20" size={20} />
+           </div>
         )}
       </section>
     </div>
