@@ -190,6 +190,16 @@ async def get_cached_leaderboard(metric: str) -> Optional[list]:
 async def set_cached_leaderboard(metric: str, data: list):
     await rset_json(_lb_key(metric), data, TTL_LEADERBOARD)
 
+async def invalidate_leaderboard_cache():
+    """Remove all cached leaderboard lists. Call after any major XP/Balance shift."""
+    if not _redis: return
+    try:
+        keys = await _redis.keys("lb:*")
+        if keys:
+            await _redis.delete(*keys)
+    except Exception as e:
+        LOGGER.warning(f"Failed to invalidate leaderboard cache: {e}")
+
 # ── Unified XP Ranking (ZSET) ──────────────────────────────────
 
 _RANK_KEY = "user_xp_leaderboard"
