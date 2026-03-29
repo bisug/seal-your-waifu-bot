@@ -1,5 +1,8 @@
 import re
 import html
+import logging
+
+LOGGER = logging.getLogger(__name__)
 
 def html_escape(text: str) -> str:
     """Escapes special characters for Telegram HTML."""
@@ -30,7 +33,8 @@ async def check_member_requirement(bot, chat, min_count=50):
         
     try:
         # 1. Check member count
-        count = await chat.get_members_count()
+        # In Pyrogram V2, get_chat_members_count is on the Client, not the Chat object.
+        count = await bot.get_chat_members_count(chat.id)
         if count < min_count:
             return False, "member_count", count
 
