@@ -12,14 +12,32 @@ from contextlib import asynccontextmanager
 import os
 import logging
 
+import asyncio
+from Grabber.core.cache import rebuild_leaderboard
+from Grabber.database import user_collection
+
+async def sync_leaderboard_periodic():
+    """Background task to keep the Redis Top 1000 in sync with Mongo."""
+    while True:
+        try:
+            await rebuild_leaderboard(user_collection)
+        except Exception as e:
+            logging.error(f"Error in periodic leaderboard sync: {e}")
+        # Sync every hour (3600 seconds)
+        await asyncio.sleep(3600)
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Start the Telegram bots
-    logging.info("Starting Telegram bots...")
+    # Startup: Start the Telegram bots and the rank sync task
+    logging.info("Starting Telegram bots and ranking sync task...")
     await start_bots()
+    sync_task = asyncio.create_task(sync_leaderboard_periodic())
+    
     yield
-    # Shutdown: Stop the Telegram bots
-    logging.info("Stopping Telegram bots...")
+    
+    # Shutdown: Stop the Telegram bots and our sync task
+    logging.info("Stopping Telegram bots and background tasks...")
+    sync_task.cancel()
     await stop_bots()
 
 app = FastAPI(
@@ -91,31 +109,45 @@ async def auth(request: Request):
     if not user_id:
         raise HTTPException(status_code=403, detail="Authentication failed. Please open the bot in PM.")
 
-    # Update Avatar and Name in DB
-    updates = {}
-    if avatar_url:
-        updates["avatar"] = avatar_url
-        
-    if init_data:
+    # Optimization: Only sync profile once per hour to avoid redundant DB writes
+    sync_key = f"last_sync:{user_id}"
+    should_sync = True
+    if r:
         try:
-            import json
-            from urllib.parse import parse_qsl
-            vals = dict(parse_qsl(init_data))
-            if 'user' in vals:
-                uobj = json.loads(vals['user'])
-                if uobj.get('first_name'): 
-                    updates['first_name'] = uobj['first_name']
-                if uobj.get('username'): 
-                    updates['username'] = uobj['username']
+            if await r.get(sync_key):
+                should_sync = False
         except Exception:
             pass
+
+    if should_sync:
+        # Update Avatar and Name in DB
+        updates = {}
+        if avatar_url:
+            updates["avatar"] = avatar_url
             
-    if updates and user_id:
-        from Grabber.database import user_collection
-        await user_collection.update_one(
-            {"id": {"$in": [user_id, str(user_id)]}},
-            {"$set": updates}
-        )
+        if init_data:
+            try:
+                import json
+                from urllib.parse import parse_qsl
+                vals = dict(parse_qsl(init_data))
+                if 'user' in vals:
+                    uobj = json.loads(vals['user'])
+                    if uobj.get('first_name'): 
+                        updates['first_name'] = uobj['first_name']
+                    if uobj.get('username'): 
+                        updates['username'] = uobj['username']
+            except Exception:
+                pass
+                
+        if updates:
+            from Grabber.database import user_collection
+            await user_collection.update_one(
+                {"id": {"$in": [user_id, str(user_id)]}},
+                {"$set": updates}
+            )
+            if r:
+                try: await r.setex(sync_key, 3600, "1")
+                except: pass
     
     return {"token": new_token}
 
@@ -128,7 +160,17 @@ app.include_router(ws_router, prefix=f"/api/{api_version_prefix}")
 # Mount static files for frontend
 frontend_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
 if os.path.exists(frontend_path):
-    app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")
+    app.mount("/assets", StaticFiles(directory=os.path.join(frontend_path, "assets")), name="assets")
+    
+    @app.get("/{full_path:path}")
+    async def serve_frontend(request: Request, full_path: str):
+        # Allow API and assets to pass through
+        if full_path.startswith("api/") or full_path.startswith("assets/"):
+            return None # FastAPI will continue to other routes
+            
+        index_file = os.path.join(frontend_path, "index.html")
+        from fastapi.responses import FileResponse
+        return FileResponse(index_file)
 else:
     # Development fallback or warning
     pass

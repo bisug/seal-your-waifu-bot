@@ -18,7 +18,7 @@ class Config:
 
     # --- DATABASE INFRASTRUCTURE ---
     MONGO_URL = os.getenv("MONGO_URL", "mongodb+srv://botmaker9675208:botmaker9675208@cluster0.sc9mq8b.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
-    REDIS_URL = os.getenv("REDIS_URL", "rediss://default:AY_bAAIncDEwNWNkODM3NjgxN2M0Y2ZhODZlMDAzYTI4MzY2M2U1M3AxMzY4Mjc@civil-monster-36827.upstash.io:6379")
+    REDIS_URL = os.getenv("REDIS_URL", "redis://:UvSaz52wKSnIJfapNAaVkF7apl0xKwh2@redis-13252.crce283.ap-south-1-2.ec2.cloud.redislabs.com:13252")
 
     # --- PRIVILEGED USERS ---
     OWNER_ID = int(os.getenv("OWNER_ID", "6574393060"))
