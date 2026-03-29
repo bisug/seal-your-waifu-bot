@@ -103,7 +103,7 @@ async def set_active_spawn(chat_id: int, character: Dict[str, Any], message_id: 
         try:
             await _redis.hset(key, mapping=data)
             await _redis.expire(key, 3600)
-        except Exception: pass
+        except Exception as e: LOGGER.debug(f"Redis operation bypassed: {e}")
     
     # Still write to MongoDB for absolute safety (active spawns are high-value)
     mongo_data = {
@@ -134,7 +134,7 @@ async def clear_active_spawn(chat_id: int, user_id: int) -> bool:
                 key = f"spawn:state:{chat_id}"
                 await _redis.hset(key, "first_correct_guess", str(user_id))
                 await _redis.hdel(key, "last_character", "message_id")
-            except Exception: pass
+            except Exception as e: LOGGER.debug(f"Redis operation bypassed: {e}")
         return True
     return False
 
@@ -156,7 +156,7 @@ async def increment_message_count(chat_id: int) -> int:
             count = await _redis.incr(key)
             await _redis.expire(key, 86400) # Ensure TTL on every increment
             return count
-        except Exception: pass
+        except Exception as e: LOGGER.debug(f"Redis operation bypassed: {e}")
     
     # Fallback to local
     count = await get_message_count(chat_id) + 1
@@ -173,7 +173,7 @@ async def increment_spawn_order(chat_id: int):
         try:
             await _redis.hincrby(key, "spawn_order", 1)
             return
-        except Exception: pass
+        except Exception as e: LOGGER.debug(f"Redis operation bypassed: {e}")
     
     # Fallback
     state = await get_chat_state(chat_id)

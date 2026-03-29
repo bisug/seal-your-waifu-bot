@@ -213,6 +213,30 @@ export const Modal = ({ character, onClose }) => {
                                 <p className="font-bold text-sm">x{character.count || 1}</p>
                             </div>
                         </div>
+
+                        {character.count > 1 && (
+                            <button 
+                              onClick={async () => {
+                                try {
+                                    const confirm = window.confirm(`Recycle 1 x ${character.name} for Zenith?`);
+                                    if (!confirm) return;
+                                    await apiFetch('/recycle', { 
+                                        method: 'POST', 
+                                        body: JSON.stringify([character.id]) 
+                                    });
+                                    toast.success('Nexus Fusion Complete');
+                                    onClose();
+                                    window.dispatchEvent(new CustomEvent('user-data-refresh'));
+                                } catch (err) {
+                                    toast.error(err.message || 'Fusion failed');
+                                }
+                              }}
+                              className="w-full py-3 rounded-xl bg-brand-accent/10 border border-brand-accent/20 text-brand-accent text-[11px] font-black uppercase tracking-widest hover:bg-brand-accent/20 transition-all flex items-center justify-center space-x-2"
+                            >
+                                <Zap size={14} />
+                                <span>Recycle Duplicate</span>
+                            </button>
+                        )}
                         
                         <div className="flex items-center space-x-2 p-3 rounded-xl bg-white/5 border border-white/5 text-[10px] text-slate-400 font-medium italic">
                             <Info size={14} className="text-brand-neon shrink-0" />
@@ -277,12 +301,15 @@ export const Card = memo(({ character, onClick }) => {
                 {!isLoaded && (
                     <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-transparent via-white/10 to-transparent" />
                 )}
-                <img 
-                    src={imgSrc} 
+                <img
+                    src={imgSrc || DEFAULT_AVATAR}
                     alt={character.name}
-                    className={`w-full h-full object-cover transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+                    className={cn(
+                        "w-full h-full object-cover transition-all duration-700",
+                        isLoaded ? "scale-100 blur-0 opacity-100" : "scale-110 blur-xl opacity-0"
+                    )}
                     onLoad={() => setIsLoaded(true)}
-                    onError={handleImageError}
+                    onError={() => setImgSrc(DEFAULT_AVATAR)}
                     loading="lazy"
                 />
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-brand-midnight/90 to-transparent p-2.5 pt-6 text-left">

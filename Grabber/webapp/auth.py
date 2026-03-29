@@ -32,10 +32,16 @@ def validate_init_data(init_data: str):
         h = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
         
         if hmac.compare_digest(h, msg_hash):
+            auth_date = int(vals.get('auth_date', 0))
+            if time.time() - auth_date > 86400: # 24 hours expiry
+                return False
             return vals
     except Exception:
         pass
     return False
+
+from collections import defaultdict
+_fallback_rate_limits = defaultdict(list)
 
 async def create_session(user_data: dict):
     """Creates a Redis session for the user."""
@@ -103,7 +109,24 @@ async def get_current_user(auth: HTTPAuthorizationCredentials = Security(securit
         if count > 30:
             raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in a minute.")
     except Exception as e:
-        # Fix #4: Log properly, not just print. Request is allowed through on transient Redis error.
-        logging.warning(f"Rate limiting skipped due to Redis error (request allowed): {e}")
+        if isinstance(e, HTTPException):
+            raise e
+        logging.warning(f"Rate limiting skipped due to Redis error, using local fallback: {e}")
+        history = _fallback_rate_limits[user_id]
+        history = [ts for ts in history if now - ts < 60]
+        if len(history) >= 30:
+            _fallback_rate_limits[user_id] = history
+            raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in a minute.")
+        history.append(now)
+        _fallback_rate_limits[user_id] = history
 
     return int(user_id)
+
+async def get_current_user_data(user_id: int = Depends(get_current_user)):
+    """Dependency to fetch the full user document from the database efficiently."""
+    from Grabber.database import user_collection
+    # Provide a unified way to fetch the DB object and replace scattered queries
+    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
