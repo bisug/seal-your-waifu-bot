@@ -48,22 +48,17 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-html {
-  height: -webkit-fill-available;
-}
-
-body {
+html, body {
   margin: 0;
   padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden; /* Lock the viewport to prevent bounce */
   background-color: var(--background);
   color: var(--foreground);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  overflow-x: hidden;
   user-select: none;
-  min-height: 100vh;
-  min-height: -webkit-fill-available;
-  display: flex;
-  flex-direction: column;
+  -webkit-touch-callout: none;
 }
 
 /* Fluid Container Padding Utility */
@@ -128,8 +123,10 @@ body {
 
 #root {
   width: 100%;
-  height: 100svh;
+  height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
-  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
 }
