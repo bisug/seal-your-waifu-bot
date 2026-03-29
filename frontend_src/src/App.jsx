@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { UserProvider, useUser } from './context/UserContext';
 import { TabNavigation } from './components/TabNavigation';
 import { Profile } from './pages/Profile';
-import { Modal } from './components/UI';
+import { NotFound } from './pages/NotFound';
+import { Modal, ToastProvider } from './components/UI';
 
 // Lazy load pages for extreme performance
 const Gallery = lazy(() => import('./pages/Gallery').then(m => ({ default: m.Gallery })));
@@ -172,6 +173,11 @@ const AppContent = () => {
             {activeTab === 'leaderboard' && <Leaderboard />}
             {activeTab === 'pass' && <Pass />}
             {activeTab === 'shop' && <Shop onCharClick={setSelectedChar} />}
+            
+            {/* Cinematic 404 Fallback */}
+            {!['profile', 'gallery', 'quests', 'leaderboard', 'pass', 'shop'].includes(activeTab) && (
+              <NotFound onReset={() => setActiveTab('profile')} />
+            )}
           </Suspense>
         </motion.main>
       </AnimatePresence>
