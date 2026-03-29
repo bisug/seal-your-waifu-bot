@@ -96,7 +96,7 @@ async def get_or_load_characters(rarity: str) -> list:
     """
     now = time.time()
     if rarity not in characters_by_rarity or now - _cache_timestamps.get(rarity, 0) > CACHE_TTL:
-        cursor = collection.find({"rarity": rarity})
+        cursor = collection.find({"rarity": rarity}, projection={"_id": 0})
         chars = await cursor.to_list(length=None)
         random.shuffle(chars)
         characters_by_rarity[rarity] = chars
