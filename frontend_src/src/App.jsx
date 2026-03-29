@@ -12,6 +12,28 @@ const Leaderboard = lazy(() => import('./pages/Leaderboard').then(m => ({ defaul
 const Pass = lazy(() => import('./pages/Pass').then(m => ({ default: m.Pass })));
 const Shop = lazy(() => import('./pages/Shop').then(m => ({ default: m.Shop })));
 
+const LoadingScreen = () => (
+  <div className="fixed inset-0 bg-brand-midnight flex flex-col items-center justify-center p-12">
+    <motion.div 
+      animate={{ 
+        scale: [1, 1.1, 1],
+        opacity: [0.5, 1, 0.5] 
+      }}
+      transition={{ 
+        repeat: Infinity, 
+        duration: 2,
+        ease: "easeInOut"
+      }}
+      className="w-24 h-24 mb-8 relative"
+    >
+      <div className="absolute inset-0 rounded-full border-4 border-brand-neon opacity-20" />
+      <div className="absolute inset-0 rounded-full border-t-4 border-brand-neon animate-spin" />
+      <div className="absolute inset-4 rounded-full bg-brand-neon/10 flex items-center justify-center blur-sm transform scale-150 animate-pulse" />
+    </motion.div>
+    <p className="text-brand-neon font-black uppercase tracking-[0.5em] text-[10px] animate-pulse">Syncing Protocols</p>
+  </div>
+);
+
 const AppContent = () => {
   const { user, loading, error } = useUser();
   const [activeTab, setActiveTab] = useState('profile');
@@ -21,14 +43,14 @@ const AppContent = () => {
 
   if (error) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center px-10 text-center">
-        <h2 className="text-brand-neon font-black mb-4 uppercase tracking-widest">Connection Error</h2>
-        <p className="text-slate-400 text-sm mb-6 leading-relaxed">{error}</p>
+      <div className="flex-1 flex flex-col items-center justify-center px-10 text-center min-h-svh">
+        <h2 className="text-brand-neon font-black mb-4 uppercase tracking-widest text-xl">Connection Offline</h2>
+        <p className="text-slate-500 text-xs mb-8 leading-relaxed uppercase tracking-widest">{error}</p>
         <button 
           onClick={() => window.location.reload()}
-          className="px-8 py-3 rounded-full bg-brand-neon text-brand-midnight font-bold uppercase text-xs transition-transform hover:scale-105"
+          className="px-10 py-4 rounded-2xl bg-brand-neon text-brand-midnight font-black uppercase text-[10px] tracking-[0.2em] shadow-xl shadow-brand-neon/20 transition-transform active:scale-95"
         >
-          RETRY
+          RETRY STABILIZATION
         </button>
       </div>
     );
