@@ -51,11 +51,12 @@ export const TabNavigation = ({ activeTab, onNavigate }) => {
                   isActive ? "text-brand-neon" : "text-slate-400"
                 )}
               >
-                <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
+                <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
                 {isActive && (
                   <motion.div
                     layoutId="activeTab"
-                    className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-brand-neon neon-shadow"
+                    className="absolute -bottom-1 inset-x-0 h-1 rounded-full bg-brand-neon neon-shadow shadow-brand-neon/50 z-10 mx-2"
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                   />
                 )}
               </motion.div>

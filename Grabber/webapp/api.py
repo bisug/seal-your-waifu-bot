@@ -121,8 +121,8 @@ async def get_me(user_id: int = Depends(get_current_user)):
         "stats": {
             "level": progress["level"],
             "xp": progress["xp"],
-            "xp_current": progress["xp_current"],
-            "xp_needed": progress["xp_needed"],
+            "xp_needed": max(progress["xp_needed"], 1),
+            "xp_current": min(progress["xp_current"], progress["xp_needed"]),
             "streak": user.get("streak", 0),
             "points": user.get("balance", 0),
             "zenith": user.get("zenith", 0),
