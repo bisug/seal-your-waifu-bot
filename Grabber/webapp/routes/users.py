@@ -25,9 +25,7 @@ async def get_bot_info():
 
 @router.get("/me", response_model=UserProfileResponse)
 async def get_me(user: dict = Depends(get_current_user_data)):
-    user_id = user["id"]
-    if isinstance(user_id, list):
-        user_id = user_id[0]
+    user_id = int(user["id"])
 
     # Compute rank via Redis ZSET for O(log N) performance
     user_xp = user.get("xp", 0)

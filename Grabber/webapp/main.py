@@ -1,20 +1,23 @@
 from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.middleware.gzip import GZipMiddleware
 from Grabber.webapp.auth import validate_init_data, create_session, r
 from Grabber.webapp.api import router as api_router
 from Grabber.webapp.ws import router as ws_router
-from Grabber import start_bots, stop_bots
+from Grabber import start_bots, stop_bots, LOGGER
 from config import config
 from contextlib import asynccontextmanager
 import os
 import logging
+import json
+import time as _time
+from urllib.parse import parse_qsl
 
 import asyncio
 from Grabber.core.cache import rebuild_leaderboard
-from Grabber.database import user_collection
+from Grabber.database import user_collection, sessions_collection
 
 async def sync_leaderboard_periodic():
     """Background task to keep the Redis Top 1000 in sync with Mongo."""
@@ -94,8 +97,6 @@ async def auth(request: Request):
     # Fallback to provided token if init_data is missing or invalid
     if not user_id and token_provided:
         if not r:
-            from Grabber.database import sessions_collection
-            import time as _time
             token_doc = await sessions_collection.find_one({"_id": f"auth_token:{token_provided}"})
             if token_doc and token_doc.get("expires_at", 0) > _time.time():
                 user_id = token_doc.get("user_id")
@@ -117,7 +118,6 @@ async def auth(request: Request):
             if await r.get(sync_key):
                 should_sync = False
         except Exception as e:
-            from Grabber import LOGGER
             LOGGER.debug(f"Redis sync check failed: {e}")
 
     if should_sync:
@@ -128,8 +128,6 @@ async def auth(request: Request):
             
         if init_data:
             try:
-                import json
-                from urllib.parse import parse_qsl
                 vals = dict(parse_qsl(init_data))
                 if 'user' in vals:
                     uobj = json.loads(vals['user'])
@@ -138,19 +136,20 @@ async def auth(request: Request):
                     if uobj.get('username'): 
                         updates['username'] = uobj['username']
             except Exception as e:
-                from Grabber import LOGGER
                 LOGGER.debug(f"InitData payload unparseable: {e}")
                 
         if updates:
-            from Grabber.database import user_collection
+            try:
+                user_id_int = int(user_id)
+            except ValueError:
+                user_id_int = user_id
             await user_collection.update_one(
-                {"id": {"$in": [user_id, str(user_id)]}},
+                {"id": user_id_int},
                 {"$set": updates}
             )
             if r:
                 try: await r.setex(sync_key, 3600, "1")
                 except Exception as e: 
-                    from Grabber import LOGGER
                     LOGGER.debug(f"Redis string write failed: {e}")
     
     return {"token": new_token}
@@ -175,8 +174,6 @@ if os.path.exists(frontend_path):
             raise HTTPException(status_code=404, detail="Resource not found")
             
         index_file = os.path.join(frontend_path, "index.html")
-        from fastapi.responses import FileResponse
         return FileResponse(index_file)
 else:
-    from Grabber import LOGGER
     LOGGER.warning("Frontend UI missing: React build missing or inactive.")

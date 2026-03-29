@@ -62,9 +62,9 @@ export const Gallery = ({ onCharClick }) => {
   }, [page]);
 
   return (
-    <div className="pb-24 pt-6 px-4">
+    <div className="pb-24 pt-2 px-4 relative">
       {/* Search & Filter Header */}
-      <section className="mb-6 space-y-3">
+      <section className="sticky top-0 z-30 bg-brand-midnight/95 backdrop-blur-xl pt-4 pb-4 mb-6 -mx-4 px-4 space-y-3 border-b border-white/5 shadow-2xl">
         <div className="relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
           <input 
@@ -95,7 +95,7 @@ export const Gallery = ({ onCharClick }) => {
 
       {/* Gallery Grid */}
       <section>
-        <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           <AnimatePresence mode="popLayout">
             {items.map((char, i) => (
               <motion.div
@@ -120,11 +120,19 @@ export const Gallery = ({ onCharClick }) => {
                 )}
               </motion.div>
             ))}
+            
+            {loading && items.length === 0 && Array.from({ length: 12 }).map((_, i) => (
+              <motion.div
+                key={`skeleton-${i}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <CardSkeleton />
+              </motion.div>
+            ))}
           </AnimatePresence>
-          
-          {loading && items.length === 0 && Array.from({ length: 12 }).map((_, i) => (
-            <CardSkeleton key={`skeleton-${i}`} />
-          ))}
         </div>
 
         {/* Status Indicators */}

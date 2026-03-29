@@ -7,7 +7,7 @@ import logging
 from urllib.parse import parse_qsl
 from fastapi import Request, HTTPException, Security, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from Grabber.database import r
+from Grabber.database import r, sessions_collection, user_collection
 from config import config
 
 security = HTTPBearer()
@@ -59,7 +59,6 @@ async def create_session(user_data: dict):
     token_key = f"auth_token:{token}"
     
     if not r:
-        from Grabber.database import sessions_collection
         expiry = time.time() + 3600
         # Store in MongoDB for fallback support
         await sessions_collection.update_one(
@@ -84,7 +83,6 @@ async def get_current_user(auth: HTTPAuthorizationCredentials = Security(securit
     """Middleware to validate session token and handle rate limiting."""
     token = auth.credentials
     if not r:
-        from Grabber.database import sessions_collection
         token_doc = await sessions_collection.find_one({"_id": f"auth_token:{token}"})
         if not token_doc or token_doc.get("expires_at", 0) < time.time():
             raise HTTPException(status_code=401, detail="Invalid or expired session")
@@ -112,6 +110,14 @@ async def get_current_user(auth: HTTPAuthorizationCredentials = Security(securit
         if isinstance(e, HTTPException):
             raise e
         logging.warning(f"Rate limiting skipped due to Redis error, using local fallback: {e}")
+        
+        # Periodically clean up old rate limit entries to avoid memory leak
+        if len(_fallback_rate_limits) > 1000:
+            stale = [uid for uid, hist in list(_fallback_rate_limits.items()) if not [ts for ts in hist if now - ts < 60]]
+            for uid in stale:
+                if uid in _fallback_rate_limits:
+                    del _fallback_rate_limits[uid]
+                    
         history = _fallback_rate_limits[user_id]
         history = [ts for ts in history if now - ts < 60]
         if len(history) >= 30:
@@ -124,9 +130,8 @@ async def get_current_user(auth: HTTPAuthorizationCredentials = Security(securit
 
 async def get_current_user_data(user_id: int = Depends(get_current_user)):
     """Dependency to fetch the full user document from the database efficiently."""
-    from Grabber.database import user_collection
     # Provide a unified way to fetch the DB object and replace scattered queries
-    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
+    user = await user_collection.find_one({"id": int(user_id)})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user

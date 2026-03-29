@@ -1,5 +1,6 @@
 import React, { useState, useEffect, Suspense, lazy, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Loader2 } from 'lucide-react';
 import { UserProvider, useUser } from './context/UserContext';
 import { TabNavigation } from './components/TabNavigation';
 import { Profile } from './pages/Profile';
