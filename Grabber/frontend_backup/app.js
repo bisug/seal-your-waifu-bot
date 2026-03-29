@@ -1078,6 +1078,144 @@ modalContent.addEventListener('touchend', (e) => {
     }
 });
 
+// --- Battle Pass (Seal Pass) Logic ---
+
+async function loadPass() {
+    const data = await apiFetch('/pass_data');
+    if (!data) return;
+
+    // Update Header Stats
+    document.getElementById('pass-level-val').innerText = data.level;
+    document.getElementById('pass-type-val').innerText = data.pass_type;
+
+    // Update Piggy Bank (Locked Rewards)
+    const bank = data.pass_bank || {};
+    const bankWidget = document.getElementById('pass-bank-widget');
+    const shards = bank.shards || 0;
+    
+    // Count eggs in bank
+    let eggCount = 0;
+    Object.keys(bank).forEach(k => {
+        if (k.startsWith('eggs_t')) eggCount += bank[k];
+    });
+
+    if (shards > 0 || eggCount > 0) {
+        bankWidget.classList.remove('hidden');
+        document.getElementById('pass-bank-text').innerText = `${shards.toLocaleString()} Shards & ${eggCount} Eggs`;
+        // Only allow claim if they have Premium/Elite or if the backend allows it
+        // (Server-side check is authoritative, here we just show the button)
+        document.getElementById('claim-bank-btn').disabled = (data.pass_type === 'free');
+        if (data.pass_type === 'free') {
+             document.getElementById('pass-bank-text').innerText += " (Upgrade to Unlock)";
+        }
+    } else {
+        bankWidget.classList.add('hidden');
+    }
+
+    renderPassTimeline(data);
+}
+
+function renderPassTimeline(data) {
+    const container = document.getElementById('pass-track-container');
+    if (!container) return;
+
+    const currentLevel = data.level;
+    const tracks = data.tracks;
+    const claimed = data.claimed_levels || [];
+    const maxLevel = data.max_level || 100;
+
+    let html = '';
+    
+    // Sort levels descending to show highest at top if preferred, or ascending
+    // Let's do ascending for a standard timeline feel
+    for (let i = 1; i <= maxLevel; i++) {
+        const tr = tracks[i];
+        if (!tr) continue;
+
+        const isReached = i <= currentLevel;
+        const isClaimed = claimed.includes(i);
+
+        const renderReward = (rw, isLocked) => {
+            const icon = rw.type === 'shards' ? '💎' : '🥚';
+            const rarityClass = rw.tier ? `rarity-${rw.tier}` : '';
+            return `
+                <div class="pass-reward-item ${isLocked ? 'locked' : ''} ${rarityClass}">
+                    <span class="reward-icon">${icon}</span>
+                    <span class="reward-amt">${rw.amount || (rw.tier ? rw.tier.toUpperCase() : '')}</span>
+                </div>
+            `;
+        };
+
+        html += `
+            <div class="pass-level-row ${isReached ? 'reached' : ''}">
+                <div class="level-indicator">
+                    <div class="level-num">${i}</div>
+                    <div class="level-dot"></div>
+                </div>
+                <div class="rewards-grid">
+                    ${renderReward(tr.free, !isReached)}
+                    ${renderReward(tr.premium, !isReached || (data.pass_type === 'free'))}
+                    ${renderReward(tr.elite, !isReached || (data.pass_type !== 'elite'))}
+                </div>
+            </div>
+        `;
+    }
+
+    container.innerHTML = html;
+}
+
+async function claimPassBank() {
+    if (tg) tg.HapticFeedback.impactOccurred('medium');
+    const res = await fetch(`${window.API_BASE}/claim_bank`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${sessionToken}` }
+    });
+    
+    if (res.ok) {
+        const result = await res.json();
+        tg?.showAlert(result.message);
+        loadPass(); // Refresh
+        // Update global balances
+        apiFetch('/me').then(d => {
+            if(d) currentUser = d;
+            document.getElementById('stat-balance').innerText = d.stats.points.toLocaleString();
+        });
+    } else {
+        const err = await res.json();
+        tg?.showAlert(err.detail || "Failed to claim bank.");
+    }
+}
+
+async function buyLevelPrompt() {
+    if (tg) tg.showPopup({
+        title: 'Level Up',
+        message: 'Increase your Pass Level by 1 for 5,000 Shards?',
+        buttons: [{id: 'buy', type: 'default', text: 'Buy Level (5k)'}, {type: 'cancel'}]
+    }, async (id) => {
+        if (id === 'buy') {
+            const res = await fetch(`${window.API_BASE}/buy_level?levels=1`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${sessionToken}` }
+            });
+            if (res.ok) {
+                tg.HapticFeedback.notificationOccurred('success');
+                tg.showAlert("Level purchased!");
+                loadPass();
+                // Update Shards
+                apiFetch('/me').then(d => {
+                    if(d) {
+                        currentUser = d;
+                        document.getElementById('stat-balance').innerText = d.stats.points.toLocaleString();
+                    }
+                });
+            } else {
+                const err = await res.json();
+                tg.showAlert(err.detail || "Transaction failed.");
+            }
+        }
+    });
+}
+
 // Start
 if (typeof tg !== 'undefined') {
     init();

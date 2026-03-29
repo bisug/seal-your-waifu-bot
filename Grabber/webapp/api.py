@@ -65,30 +65,22 @@ async def get_me(user_id: int = Depends(get_current_user)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Compute rank via Redis cache to prevent heavy mongo aggregations on every load
-    total_users = 1
-    user_xp = user.get("xp", 0)
-    rank = 1
+    # Compute rank via Redis ZSET for O(log N) performance
+    from Grabber.core.cache import get_user_rank, get_total_ranked_users, update_user_rank, rebuild_leaderboard
     
-    if r:
-        # Cache total users for 1 hour
-        cached_total = await r.get("app:total_users")
-        if cached_total:
-            total_users = int(cached_total)
-        else:
-            total_users = await user_collection.count_documents({})
-            await r.setex("app:total_users", 3600, total_users)
-            
-        # Cache user rank for 10 minutes
-        cached_rank = await r.get(f"rank:{user_id}")
-        if cached_rank:
-            rank = int(cached_rank)
-        else:
-            rank = await user_collection.count_documents({"xp": {"$gt": user_xp}}) + 1
-            await r.setex(f"rank:{user_id}", 600, rank)
-    else:
-        total_users = await user_collection.count_documents({})
+    rank = await get_user_rank(user_id)
+    total_users = await get_total_ranked_users()
+    
+    if rank is None or total_users == 0:
+        # Fallback or initialization
+        LOGGER.info(f"Leaderboard ZSET miss for {user_id}, falling back to Mongo.")
         rank = await user_collection.count_documents({"xp": {"$gt": user_xp}}) + 1
+        total_users = await user_collection.count_documents({})
+        # Sync this user's rank back to Redis
+        await update_user_rank(user_id, user_xp)
+        # If the whole leaderboard is empty, trigger a background rebuild
+        if total_users > 0 and (await get_total_ranked_users()) == 0:
+            asyncio.create_task(rebuild_leaderboard(user_collection))
 
     percentile = round((1 - (rank / max(total_users, 1))) * 100, 1)
     
