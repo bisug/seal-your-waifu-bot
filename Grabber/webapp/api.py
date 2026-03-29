@@ -14,8 +14,18 @@ from Grabber.modules.progression.pet import DEFAULT_PET, PET_SHOP
 from Grabber.modules.economy.hunt import EGG_TIERS, process_egg_hatch
 from Grabber.modules.progression.battlepass import PASS_PRICES, LEVEL_REWARDS, PASS_EMOJI
 from Grabber.modules.economy.shop import get_daily_shop_characters, SHOP_LIMIT, DEFAULT_ZENITH_PRICE, SHOP_RARITY
+from Grabber import LOGGER
+import asyncio
 
 router = APIRouter()
+
+def get_user_id_query(user_id):
+    """Unified helper for MongoDB lookups supporting both int and string IDs."""
+    try:
+        uid_int = int(user_id)
+        return {"id": {"$in": [uid_int, str(uid_int)]}}
+    except (ValueError, TypeError):
+        return {"id": str(user_id)}
 
 @router.get("/bot/info")
 async def get_bot_info():
@@ -50,7 +60,7 @@ async def get_character(char_id: str, user_id: int = Depends(get_current_user)):
 @router.get("/me", response_model=UserProfileResponse)
 async def get_me(user_id: int = Depends(get_current_user)):
     pipeline = [
-        {"$match": {"id": {"$in": [user_id, str(user_id)]}}},
+        {"$match": get_user_id_query(user_id)},
         {"$project": {
             "id": 1, "first_name": 1, "username": 1, "avatar": 1, "level": 1, "xp": 1,
             "streak": 1, "balance": 1, "zenith": 1, "badges": 1, "achievements": 1,
@@ -68,6 +78,7 @@ async def get_me(user_id: int = Depends(get_current_user)):
     # Compute rank via Redis ZSET for O(log N) performance
     from Grabber.core.cache import get_user_rank, get_total_ranked_users, update_user_rank, rebuild_leaderboard
     
+    user_xp = user.get("xp", 0)
     rank = await get_user_rank(user_id)
     total_users = await get_total_ranked_users()
     
@@ -195,7 +206,7 @@ async def get_harem(
 ):
     # MongoDB Aggregation Pipeline for Harem
     pipeline = [
-        {"$match": {"id": {"$in": [user_id, str(user_id)]}}},
+        {"$match": get_user_id_query(user_id)},
         {"$unwind": "$characters"}
     ]
 
@@ -283,7 +294,7 @@ async def get_gallery(
     items = result[0]["data"] if result else []
 
     # Check "Owned" status - ONLY fetch the IDs to save memory
-    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}}, {"characters.id": 1})
+    user = await user_collection.find_one(get_user_id_query(user_id), {"characters.id": 1})
     owned_ids = set(c.get("id") for c in (user.get("characters") or [])) if user else set()
 
     for item in items:
@@ -336,7 +347,7 @@ async def claim_quest(quest_id: str, user_id: int = Depends(get_current_user)):
     # Logic mirror from modules/quests.py
     await add_xp(user_id, info["reward_xp"], f"quest_{quest_id}")
     await user_collection.update_one(
-        {"id": {"$in": [user_id, str(user_id)]}},
+        get_user_id_query(user_id),
         {"$set": {f"quests.{quest_id}.claimed": True}}
     )
     
@@ -383,7 +394,7 @@ async def get_leaderboard(
 
 @router.get("/stats")
 async def get_stats(user_id: int = Depends(get_current_user)):
-    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
+    user = await user_collection.find_one(get_user_id_query(user_id))
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
         
@@ -400,7 +411,7 @@ async def get_stats(user_id: int = Depends(get_current_user)):
     }
 @router.post("/pets/set_active/{pet_name}")
 async def set_active_pet(pet_name: str, user_id: int = Depends(get_current_user)):
-    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
+    user = await user_collection.find_one(get_user_id_query(user_id))
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
         
@@ -409,14 +420,14 @@ async def set_active_pet(pet_name: str, user_id: int = Depends(get_current_user)
         raise HTTPException(status_code=400, detail="Pet not owned")
         
     await user_collection.update_one(
-        {"id": {"$in": [user_id, str(user_id)]}},
+        get_user_id_query(user_id),
         {"$set": {"current_pet": pet_name}}
     )
     return {"status": "success", "pet": pet_name}
 
 @router.post("/eggs/incubate/{egg_id}")
 async def incubate_egg(egg_id: str, user_id: int = Depends(get_current_user)):
-    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
+    user = await user_collection.find_one(get_user_id_query(user_id))
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
         
@@ -439,8 +450,10 @@ async def incubate_egg(egg_id: str, user_id: int = Depends(get_current_user)):
         
     ready_time = datetime.now() + timedelta(minutes=wait_min)
     
+    q = get_user_id_query(user_id)
+    q["eggs.id"] = egg_id
     await user_collection.update_one(
-        {"id": user_id, "eggs.id": egg_id},
+        q,
         {
             "$set": {
                 "eggs.$.status": "incubating",
@@ -454,7 +467,7 @@ async def incubate_egg(egg_id: str, user_id: int = Depends(get_current_user)):
 async def hatch_egg(egg_id: str, user_id: int = Depends(get_current_user)):
     from Grabber.modules.economy.hunt import process_egg_hatch
 
-    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
+    user = await user_collection.find_one(get_user_id_query(user_id))
     if not user:  # Fix #8: missing null guard
         raise HTTPException(status_code=404, detail="User not found")
     eggs = user.get("eggs", [])
@@ -493,7 +506,7 @@ async def hatch_egg(egg_id: str, user_id: int = Depends(get_current_user)):
 @router.get("/shop/hub")
 async def get_shop_hub(user_id: int = Depends(get_current_user)):
     """General shop status and user balances."""
-    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})  # Fix #7
+    user = await user_collection.find_one(get_user_id_query(user_id))  # Fix #7
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
@@ -509,7 +522,7 @@ async def get_shop_characters(user_id: int = Depends(get_current_user)):
     """Fetch daily character stock."""
     chars = await get_daily_shop_characters()
     # Check "Owned" status
-    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}}, {"characters.id": 1})  # Fix #7
+    user = await user_collection.find_one(get_user_id_query(user_id), {"characters.id": 1})  # Fix #7
     owned_ids = set(c.get("id") for c in (user.get("characters") or [])) if user else set()
     
     response = []
@@ -527,7 +540,7 @@ async def buy_character_api(char_id: str, user_id: int = Depends(get_current_use
     from Grabber.modules.progression.quests import update_quest_progress
     from Grabber.modules.progression.achievements import check_achievements
 
-    user_raw = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})  # Fix #7
+    user_raw = await user_collection.find_one(get_user_id_query(user_id))  # Fix #7
     if not user_raw: raise HTTPException(status_code=404, detail="User not found")
     
     char_raw = await collection.find_one({"id": char_id})
@@ -552,8 +565,10 @@ async def buy_character_api(char_id: str, user_id: int = Depends(get_current_use
         raise HTTPException(status_code=400, detail="Character is SOLD OUT")
 
     # User Update
+    q = get_user_id_query(user_id)
+    q["zenith"] = {"$gte": price}
     user_update = await user_collection.update_one(
-        {"id": user_id, "zenith": {"$gte": price}},
+        q,
         {
             "$inc": {"zenith": -price},
             "$push": {"characters": {
@@ -577,7 +592,7 @@ async def buy_character_api(char_id: str, user_id: int = Depends(get_current_use
 @router.get("/shop/pets")
 async def get_shop_pets(user_id: int = Depends(get_current_user)):
     """Fetch potential pets and ownership status."""
-    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})  # Fix #7
+    user = await user_collection.find_one(get_user_id_query(user_id))  # Fix #7
     owned_pet_names = [p["name"] for p in user.get("pets", [])] if user else []
     
     return {
@@ -607,7 +622,7 @@ async def get_battlepass_shop(user_id: int = Depends(get_current_user)):
 async def upgrade_pass_api(tier: str, user_id: int = Depends(get_current_user)):
     if tier not in PASS_PRICES: raise HTTPException(status_code=400, detail="Invalid tier")
     
-    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
+    user = await user_collection.find_one(get_user_id_query(user_id))
     if not user: raise HTTPException(status_code=404, detail="User not found")
     
     current_tier = user.get("pass_type", "free")
@@ -619,15 +634,17 @@ async def upgrade_pass_api(tier: str, user_id: int = Depends(get_current_user)):
     if user.get("zenith", 0) < price:
         raise HTTPException(status_code=400, detail=f"Insufficient Zenith (Need {price})")
         
+    q = get_user_id_query(user_id)
+    q["zenith"] = {"$gte": price}
     await user_collection.update_one(
-        {"id": {"$in": [user_id, str(user_id)]}, "zenith": {"$gte": price}},
+        q,
         {"$set": {"pass_type": tier}, "$inc": {"zenith": -price}}
     )
     return {"status": "success", "new_tier": tier}
 
 @router.get("/pass_data")
 async def get_pass_data(user_id: int = Depends(get_current_user)):
-    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
+    user = await user_collection.find_one(get_user_id_query(user_id))
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
         
@@ -647,7 +664,7 @@ async def get_pass_data(user_id: int = Depends(get_current_user)):
 
 @router.post("/claim_bank")
 async def claim_pass_bank(user_id: int = Depends(get_current_user)):
-    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
+    user = await user_collection.find_one(get_user_id_query(user_id))
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
         
@@ -686,19 +703,19 @@ async def claim_pass_bank(user_id: int = Depends(get_current_user)):
         
     updates["$unset"] = {"pass_bank": ""}
     
-    await user_collection.update_one({"id": {"$in": [user_id, str(user_id)]}}, updates)
+    await user_collection.update_one(get_user_id_query(user_id), updates)
     
     return {"message": f"Claimed {shards} Shards and {len(eggs_to_add)} Eggs!", "shards": shards, "eggs": len(eggs_to_add)}
 
 @router.post("/buy_level")
 async def api_buy_level(levels: int = Query(1, ge=1, le=50), user_id: int = Depends(get_current_user)):
     cost = levels * 5000
-    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
+    user = await user_collection.find_one(get_user_id_query(user_id))
     
     if not user or user.get("balance", 0) < cost:
         raise HTTPException(status_code=400, detail=f"Insufficient Shards (Need {cost})")
         
-    await user_collection.update_one({"id": {"$in": [user_id, str(user_id)]}}, {"$inc": {"balance": -cost}})
+    await user_collection.update_one(get_user_id_query(user_id), {"$inc": {"balance": -cost}})
     
     from Grabber.core.progression import add_xp
     await add_xp(user_id, levels * 100, "shop_buylevel")
