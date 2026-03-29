@@ -162,11 +162,13 @@ frontend_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "fronte
 if os.path.exists(frontend_path):
     app.mount("/assets", StaticFiles(directory=os.path.join(frontend_path, "assets")), name="assets")
     
-    @app.get("/{full_path:path}")
+    @app.get("/{full_path:path}", include_in_schema=False)
     async def serve_frontend(request: Request, full_path: str):
-        # Allow API and assets to pass through
+        # Critical Protection: Do NOT intercept API or Asset calls.
+        api_prefix = f"api/{api_version_prefix}"
         if full_path.startswith("api/") or full_path.startswith("assets/"):
-            return None # FastAPI will continue to other routes
+            # If we reached here for an API/Asset path, it means the actual route doesn't exist.
+            raise HTTPException(status_code=404, detail="Resource not found")
             
         index_file = os.path.join(frontend_path, "index.html")
         from fastapi.responses import FileResponse
