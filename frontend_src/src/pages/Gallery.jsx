@@ -62,7 +62,7 @@ export const Gallery = ({ onCharClick }) => {
   }, [page]);
 
   return (
-    <div className="pb-32 pt-6 px-4">
+    <div className="pb-24 pt-6 px-4">
       {/* Search & Filter Header */}
       <section className="mb-6 space-y-3">
         <div className="relative">
@@ -81,10 +81,10 @@ export const Gallery = ({ onCharClick }) => {
             <button
               key={r}
               onClick={() => { setRarity(r); setPage(1); }}
-              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border ${
+              className={`px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest whitespace-nowrap transition-all border ${
                 rarity === r 
                 ? 'bg-brand-neon text-brand-midnight border-brand-neon shadow-lg shadow-brand-neon/20' 
-                : 'bg-white/5 text-slate-400 border-white/5 hover:border-white/10'
+                : 'bg-white/5 text-slate-500 border-white/5 hover:border-white/10'
               }`}
             >
               {r || 'All Tiers'}
@@ -122,18 +122,34 @@ export const Gallery = ({ onCharClick }) => {
             ))}
           </AnimatePresence>
           
-          {loading && Array.from({ length: 8 }).map((_, i) => (
+          {loading && items.length === 0 && Array.from({ length: 12 }).map((_, i) => (
             <CardSkeleton key={`skeleton-${i}`} />
           ))}
         </div>
 
+        {/* Status Indicators */}
+        <div className="mt-10 mb-6 flex flex-col items-center justify-center">
+          {loading && items.length > 0 && (
+            <div className="flex items-center space-x-3 bg-white/5 px-6 py-3 rounded-2xl border border-white/10 animate-pulse">
+              <Loader2 size={14} className="animate-spin text-brand-neon" />
+              <span className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em]">Syncing Archive Data...</span>
+            </div>
+          )}
 
-        {!loading && items.length === 0 && (
-          <div className="py-20 text-center flex flex-col items-center">
-            <Compass size={40} className="text-slate-800 mb-4" />
-            <p className="text-slate-600 text-xs font-bold uppercase tracking-widest italic">No characters found</p>
-          </div>
-        )}
+          {!hasMore && items.length > 0 && (
+            <div className="flex flex-col items-center space-y-2 opacity-30">
+              <div className="h-px w-24 bg-gradient-to-r from-transparent via-slate-700 to-transparent mb-2" />
+              <span className="text-[11px] font-black text-slate-600 uppercase tracking-[0.3em]">End of Collection Archive</span>
+            </div>
+          )}
+
+          {!loading && items.length === 0 && (
+            <div className="py-20 text-center flex flex-col items-center">
+              <Compass size={40} className="text-slate-800 mb-4" />
+              <p className="text-slate-600 text-xs font-bold uppercase tracking-widest italic">No characters found</p>
+            </div>
+          )}
+        </div>
       </section>
     </div>
   );
