@@ -81,7 +81,7 @@ export const Profile = ({ onCharClick }) => {
   if (!user) return null;
 
   return (
-    <div className="pb-24">
+    <div className="pb-8">
       {/* Premium Hero Section */}
       <section className="relative h-44 overflow-hidden flex flex-col justify-end px-4 pb-5">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-brand-midnight/60 to-brand-midnight z-10" />

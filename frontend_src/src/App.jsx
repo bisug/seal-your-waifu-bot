@@ -166,15 +166,15 @@ const AppContent = () => {
   }
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
+    <div className="relative w-full h-full overflow-hidden bg-brand-midnight">
       <AnimatePresence mode="wait">
         <motion.main
           key={activeTab}
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 1.02 }}
-          transition={{ duration: 0.25, ease: "easeInOut" }}
-          className="app-scroller adaptive-px relative bg-mesh"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -25 }}
+          transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1] }}
+          className="app-scroller adaptive-px bg-mesh overflow-x-hidden"
         >
           <Suspense fallback={
             <div className="flex-1 flex items-center justify-center bg-brand-midnight bg-mesh">
