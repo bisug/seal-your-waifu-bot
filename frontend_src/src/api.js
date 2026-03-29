@@ -18,6 +18,8 @@ export const setSessionToken = (token) => {
  * Universal fetch wrapper for the Seal-bot FastAPI backend.
  * Handles authentication headers and standard error reporting.
  */
+let isRefreshing = false;
+
 export async function apiFetch(endpoint, options = {}, retries = 2) {
   const url = `${API_BASE}${endpoint}`;
   
@@ -33,7 +35,19 @@ export async function apiFetch(endpoint, options = {}, retries = 2) {
   try {
     const response = await fetch(url, { ...options, headers });
     
-    if (response.status === 401 || response.status === 403) {
+    // Automatic Handshake Recovery: If 401, session might be dead. Try to re-init once.
+    if (response.status === 401 && !isRefreshing) {
+      isRefreshing = true;
+      try {
+        const newToken = await secureInit();
+        if (newToken) {
+          isRefreshing = false;
+          return apiFetch(endpoint, options, retries); // Retry with new token
+        }
+      } catch (err) {
+        console.error("Auth Recovery Failed:", err);
+      }
+      isRefreshing = false;
       setSessionToken(null);
     }
 
