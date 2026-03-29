@@ -102,7 +102,12 @@ const AppContent = () => {
 
   const handleNavigate = useCallback((tab) => {
     const tg = window.Telegram?.WebApp;
-    tg?.HapticFeedback?.impactOccurred('light');
+    // Context-Aware Haptics: Profile & Shop get more 'Weight'
+    if (tab === 'profile' || tab === 'shop') {
+      tg?.HapticFeedback?.impactOccurred('medium');
+    } else {
+      tg?.HapticFeedback?.impactOccurred('light');
+    }
     setActiveTab(tab);
   }, []);
 
@@ -188,9 +193,11 @@ const AppContent = () => {
 function App() {
   return (
     <ErrorBoundary>
-      <UserProvider>
-        <AppContent />
-      </UserProvider>
+      <ToastProvider>
+        <UserProvider>
+          <AppContent />
+        </UserProvider>
+      </ToastProvider>
     </ErrorBoundary>
   );
 }

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '../api';
-import { Card } from '../components/UI';
-import { ShoppingBag, Zap, Timer, Loader2, PackageOpen } from 'lucide-react';
+import { Card, CardSkeleton } from '../components/UI';
+import { ShoppingBag, Zap, Timer, PackageOpen } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 
 export const Shop = ({ onCharClick }) => {
@@ -111,40 +111,51 @@ export const Shop = ({ onCharClick }) => {
       </div>
 
       {loading && activeTab === 'market' ? (
-        <div className="flex justify-center py-20"><Loader2 className="text-brand-neon animate-spin" /></div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6 gap-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <CardSkeleton key={`shop-skeleton-${i}`} />
+          ))}
+        </div>
       ) : (
         <AnimatePresence mode="wait">
           {activeTab === 'market' && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} key="market">
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6 gap-4">
-                {marketItems.map(char => (
-                  <div key={char.id} className="space-y-3">
-                    <Card character={char} onClick={() => onCharClick(char)} />
-                    <button 
-                      disabled={char.owned || buyingId === char.id}
-                      onClick={() => buyCharacter(char.id)}
-                      className={`w-full py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-2 ${
-                        char.owned 
-                        ? 'border-white/5 bg-white/5 text-slate-600 grayscale' 
-                        : buyingId === char.id
-                        ? 'border-brand-accent/50 bg-brand-accent/20 text-brand-accent animate-pulse'
-                        : 'border-brand-accent/50 bg-brand-accent/10 text-brand-accent hover:bg-brand-accent hover:text-brand-midnight shadow-lg shadow-brand-accent/10'
-                      }`}
+                <AnimatePresence mode="popLayout">
+                  {marketItems.map((char, i) => (
+                    <motion.div 
+                      key={char.id} 
+                      layout
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: (i % 8) * 0.05 }}
+                      className="space-y-3"
                     >
-                      {buyingId === char.id ? (
-                        <>
-                          <Loader2 size={12} className="animate-spin" />
-                          <span>SECURE LINK...</span>
-                        </>
-                      ) : char.owned ? (
-                        'COLLECTED'
-                      ) : (
-                        `BUY ✧ ${char.zenith_price || 500}`
-                      )}
-                    </button>
-                  </div>
-                ))}
-              </div>
+                      <Card character={char} onClick={() => onCharClick(char)} />
+                      <button 
+                        disabled={char.owned || buyingId === char.id}
+                        onClick={() => buyCharacter(char.id)}
+                        className={`w-full py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-2 ${
+                          char.owned 
+                          ? 'border-white/5 bg-white/5 text-slate-600 grayscale' 
+                          : buyingId === char.id
+                          ? 'border-brand-accent/50 bg-brand-accent/20 text-brand-accent animate-pulse'
+                          : 'border-brand-accent/50 bg-brand-accent/10 text-brand-accent hover:bg-brand-accent hover:text-brand-midnight shadow-lg shadow-brand-accent/10'
+                        }`}
+                      >
+                        {buyingId === char.id ? (
+                          <>
+                            <Loader2 size={12} className="animate-spin" />
+                            <span>SECURE LINK...</span>
+                          </>
+                        ) : char.owned ? (
+                          'COLLECTED'
+                        ) : (
+                          `BUY ✧ ${char.zenith_price || 500}`
+                        )}
+                      </button>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
             </motion.div>
           )}
 

@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '../api';
-import { Card } from '../components/UI';
+import { Card, ScrollArea, CardSkeleton } from '../components/UI';
 import { Search, Loader2, Compass } from 'lucide-react';
 
 export const Gallery = ({ onCharClick }) => {
@@ -11,6 +11,18 @@ export const Gallery = ({ onCharClick }) => {
   const [rarity, setRarity] = useState('');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+
+  const observer = useRef();
+  const lastElementRef = useCallback(node => {
+    if (loading) return;
+    if (observer.current) observer.current.disconnect();
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore) {
+        setPage(prev => prev + 1);
+      }
+    });
+    if (node) observer.current.observe(node);
+  }, [loading, hasMore]);
 
   const fetchGallery = useCallback(async (isNew = false) => {
     setLoading(true);
@@ -25,7 +37,6 @@ export const Gallery = ({ onCharClick }) => {
       }
       
       setHasMore(data.items.length === 24);
-      setPage(currentPage + 1);
     } catch (err) {
       console.error('Gallery fetch error:', err);
     } finally {
@@ -36,11 +47,19 @@ export const Gallery = ({ onCharClick }) => {
   // Initial fetch and filter reset
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
+      setPage(1);
       fetchGallery(true);
     }, 400);
 
     return () => clearTimeout(delayDebounceFn);
   }, [search, rarity]);
+
+  // Infinite scroll trigger
+  useEffect(() => {
+    if (page > 1) {
+      fetchGallery(false);
+    }
+  }, [page]);
 
   return (
     <div className="pb-32 pt-6 px-4">
@@ -57,58 +76,57 @@ export const Gallery = ({ onCharClick }) => {
           />
         </div>
         
-        <div className="flex space-x-2 overflow-x-auto no-scrollbar pb-1">
-          {['', 'Common', 'Rare', 'Epic', 'Legendary', 'Mythical', 'Celestial'].map((r) => (
+        <ScrollArea>
+           {['', 'Common', 'Rare', 'Epic', 'Legendary', 'Mythical', 'Celestial'].map((r) => (
             <button
               key={r}
               onClick={() => { setRarity(r); setPage(1); }}
               className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border ${
                 rarity === r 
-                ? 'bg-brand-neon text-brand-midnight border-brand-neon' 
-                : 'bg-white/5 text-slate-400 border-white/5'
+                ? 'bg-brand-neon text-brand-midnight border-brand-neon shadow-lg shadow-brand-neon/20' 
+                : 'bg-white/5 text-slate-400 border-white/5 hover:border-white/10'
               }`}
             >
               {r || 'All Tiers'}
             </button>
           ))}
-        </div>
+        </ScrollArea>
       </section>
 
       {/* Gallery Grid */}
       <section>
         <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-3">
-          {items.map((char, i) => (
-            <motion.div
-              key={`${char.id}-${i}`}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: (i % 8) * 0.05 }}
-              className="relative"
-            >
-              <Card character={char} onClick={() => onCharClick(char)} />
-              {char.owned && (
-                <div className="absolute top-1.5 right-1.5 bg-brand-neon text-brand-midnight rounded-full p-0.5 shadow-lg border border-brand-midnight z-10 scale-75">
-                   <div className="w-2 h-2 rounded-full bg-brand-midnight animate-pulse" />
-                </div>
-              )}
-            </motion.div>
+          <AnimatePresence mode="popLayout">
+            {items.map((char, i) => (
+              <motion.div
+                key={`${char.id}-${i}`}
+                ref={i === items.length - 1 ? lastElementRef : null}
+                layout
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ 
+                  duration: 0.4,
+                  delay: (i % 8) * 0.05,
+                  ease: "easeOut"
+                }}
+                className="relative"
+              >
+                <Card character={char} onClick={() => onCharClick(char)} />
+                {char.owned && (
+                  <div className="absolute top-1.5 right-1.5 bg-brand-neon text-brand-midnight rounded-full p-0.5 shadow-lg border border-brand-midnight z-10 scale-75">
+                    <div className="w-2 h-2 rounded-full bg-brand-midnight animate-pulse" />
+                  </div>
+                )}
+              </motion.div>
+            ))}
+          </AnimatePresence>
+          
+          {loading && Array.from({ length: 8 }).map((_, i) => (
+            <CardSkeleton key={`skeleton-${i}`} />
           ))}
         </div>
 
-        {loading && (
-          <div className="flex justify-center py-12">
-            <Loader2 className="text-brand-neon animate-spin" size={24} />
-          </div>
-        )}
-
-        {!loading && hasMore && (
-          <button 
-            onClick={() => fetchGallery()}
-            className="w-full mt-8 py-4 rounded-2xl border border-white/5 bg-white/5 text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 hover:text-white transition-colors"
-          >
-            Load More Characters
-          </button>
-        )}
 
         {!loading && items.length === 0 && (
           <div className="py-20 text-center flex flex-col items-center">

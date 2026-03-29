@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useUser } from '../context/UserContext';
-import { ProgressBar, Card } from '../components/UI';
+import { ProgressBar, Card, Skeleton, CardSkeleton } from '../components/UI';
 import { Shield, Zap, Users, Trophy } from 'lucide-react';
 
 export const Profile = ({ onCharClick }) => {
@@ -24,9 +24,18 @@ export const Profile = ({ onCharClick }) => {
   }, [user]);
 
   if (loading) return (
-    <div className="flex-1 flex flex-col items-center justify-center space-y-4">
-      <div className="w-12 h-12 rounded-full border-4 border-slate-800 border-t-brand-neon animate-spin neon-shadow" />
-      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest animate-pulse">Synchronizing Data</p>
+    <div className="pb-32 pt-6 px-6">
+       <div className="h-64 mb-8">
+          <Skeleton className="w-full h-full rounded-3xl" />
+       </div>
+       <div className="grid grid-cols-3 gap-3 mb-8">
+          {[1,2,3].map(i => <Skeleton key={i} className="h-16 rounded-2xl" />)}
+       </div>
+       <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-3">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <CardSkeleton key={`prof-skeleton-${i}`} />
+          ))}
+       </div>
     </div>
   );
 
@@ -95,13 +104,22 @@ export const Profile = ({ onCharClick }) => {
         
         {consolidatedHarem.length > 0 ? (
           <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-3">
-             {consolidatedHarem.map(char => (
-               <Card 
-                key={char.id} 
-                character={char} 
-                onClick={() => onCharClick(char)} 
-               />
-             ))}
+             <AnimatePresence mode="popLayout">
+               {consolidatedHarem.map((char, i) => (
+                 <motion.div
+                   key={char.id}
+                   layout
+                   initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                   animate={{ opacity: 1, scale: 1, y: 0 }}
+                   transition={{ delay: (i % 8) * 0.05 }}
+                 >
+                   <Card 
+                    character={char} 
+                    onClick={() => onCharClick(char)} 
+                   />
+                 </motion.div>
+               ))}
+             </AnimatePresence>
           </div>
         ) : (
           <div className="glass-panel p-10 rounded-3xl border border-white/5 text-center flex flex-col items-center opacity-80">
