@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { User, Search, Trophy, ShoppingBag, Star, LayoutGrid } from 'lucide-react';
+import { User, Search, Trophy, ShoppingBag, Star, LayoutGrid, Egg } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -15,6 +15,7 @@ export const TabNavigation = ({ activeTab, onNavigate }) => {
     { id: 'profile', icon: User, label: 'Profile' },
     { id: 'gallery', icon: Search, label: 'Gallery' },
     { id: 'quests', icon: LayoutGrid, label: 'Quests' },
+    { id: 'hatchery', icon: Egg, label: 'Hatchery' },
     { id: 'leaderboard', icon: Trophy, label: 'Rank' },
     { id: 'pass', icon: Star, label: 'Pass' },
     { id: 'shop', icon: ShoppingBag, label: 'Shop' },
@@ -29,7 +30,7 @@ export const TabNavigation = ({ activeTab, onNavigate }) => {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 glass-panel border-t border-brand-glass-border pb-6 pt-3 z-50">
-      <div className="max-w-2xl mx-auto flex justify-between items-center px-4">
+      <div className="max-w-2xl mx-auto flex justify-around items-center px-2">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -38,7 +39,7 @@ export const TabNavigation = ({ activeTab, onNavigate }) => {
             <button
               key={tab.id}
               onClick={() => handleNavigate(tab.id)}
-              className="relative flex flex-col items-center justify-center p-1.5 min-w-[44px]"
+              className="relative flex flex-col items-center justify-center p-1.5 min-w-[38px]"
             >
               <motion.div
                 initial={false}

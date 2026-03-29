@@ -2,7 +2,7 @@ from pyrogram import enums, filters, types, errors
 from pyrogram.enums import ParseMode
 from Grabber import app
 from Grabber import sudo_users, OWNER_ID, CHARA_CHANNEL_ID, LOGGER
-from Grabber.core.waifu import upload_image_to_imgbb, add_character_to_db, get_character_by_id
+from Grabber.core.waifu import upload_image_to_imgbb, add_character_to_db, get_character_by_id, invalidate_character_cache
 from Grabber.database import collection
 from Grabber.modules.collection.rarities import RARITY_MAP
 
@@ -59,6 +59,10 @@ async def upload_waifu_handler(_, message: types.Message):
             await status.edit_text("📥 Downloading image...")
             temp_path = await message.reply_to_message.download()
         else:
+            import urllib.parse
+            parsed = urllib.parse.urlparse(img_url)
+            if parsed.scheme not in ("http", "https"):
+                return await status.edit_text("❌ Invalid image URL scheme. Only HTTP/HTTPS allowed.", parse_mode=ParseMode.HTML)
 
             import httpx
             async with httpx.AsyncClient() as client:
@@ -110,6 +114,7 @@ async def upload_waifu_handler(_, message: types.Message):
         }
 
         char_id = await add_character_to_db(char_data)
+        invalidate_character_cache(rarity_text)
         await status.edit_text(f"✅ <b>Waifu Uploaded!</b>\nID: <code>{char_id}</code>\nHost: {'Catbox' if 'catbox' in final_url else 'ImgBB'}", parse_mode=ParseMode.HTML)
 
     except errors.FloodWait as e:
@@ -136,6 +141,7 @@ async def delete_waifu_handler(_, message: types.Message):
                 await app.delete_messages(CHARA_CHANNEL_ID, character['message_id'])
             except Exception:
                 pass
+        invalidate_character_cache(character.get('rarity'))
         await message.reply_text(f"✅ Deleted ID: <code>{char_id}</code>", parse_mode=ParseMode.HTML)
     else:
         await message.reply_text("❌ Character not found.", parse_mode=ParseMode.HTML)

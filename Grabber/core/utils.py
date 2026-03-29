@@ -40,11 +40,12 @@ async def check_member_requirement(bot, chat, min_count=50):
             await bot.get_chat_member(chat.id, config.BOT_ID)
         except errors.UserNotParticipant:
             return False, "main_bot_missing", count
-        except Exception:
-            # Other errors (e.g. no permission to view members) - assume present to be safe
+        except Exception as e:
+            LOGGER.debug(f"Failed to fetch ID via pyrogram: {e}")# Other errors (e.g. no permission to view members) - assume present to be safe
             pass
 
         return True, None, count
-    except Exception:
+    except Exception as e:
+        LOGGER.error(f"Failed to resolve group name: {e}")
         # Generic fallback
         return True, None, 0
