@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#1c1c1d">
+    <!-- Content Security Policy: Mitgates XSS and unauthorized resource loading -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://telegram.org https://files.catbox.moe; img-src 'self' data: https://* http://*; script-src 'self' 'unsafe-inline' https://telegram.org; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src *;">
+    <title>Grabber WebApp</title>
+    <link rel="stylesheet" href="style.css?v=2.7">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+
+<body>
+    <!-- Branded Loading Screen -->
+    <div id="loading-overlay">
+        <div class="loading-content">
+            <div class="loader-ring">
+                <div id="loading-logo" class="loading-logo"></div>
+                <svg class="progress-ring-svg" viewBox="0 0 100 100">
+                    <circle class="progress-ring-circle" cx="50" cy="50" r="48" />
+                </svg>
+            </div>
+            <div class="loading-text-container">
+                <h2 id="loading-bot-name">Seal Grabber</h2>
+                <div class="loading-status-wrapper">
+                    <span class="loading-dot"></span>
+                    <p class="loading-status">INITIALIZING SYSTEMS</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="app-container">
+        <!-- Profile Page container -->
+        <div id="page-profile" class="page active"></div>
+
+        <!-- Global Gallery Page container -->
+        <div id="page-gallery" class="page"></div>
+
+        <!-- Leaderboard Page container -->
+        <div id="page-leaderboard" class="page"></div>
+
+        <!-- Quests Page container -->
+        <div id="page-quests" class="page"></div>
+
+        <!-- Pass Page container -->
+        <div id="page-pass" class="page"></div>
+
+        <!-- Shop Page container -->
+        <div id="page-shop" class="page"></div>
+
+        <div style="padding-bottom: 20px;"></div>
+        </div>
+
+        <!-- Navigation Tab Bar -->
+        <div class="tab-bar">
+            <div class="tab-item active" onclick="navigate('profile')">
+                <svg class="tab-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                </svg>
+            </div>
+            <div class="tab-item" onclick="navigate('gallery')">
+                <svg class="tab-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="m21 21-4.3-4.3" />
+                </svg>
+            </div>
+            <div class="tab-item" onclick="navigate('quests')">
+                <svg class="tab-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2H2v10c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V2h-4" />
+                    <path d="M2 8h16" />
+                    <path d="M6 14v6" />
+                    <path d="M10 14v6" />
+                    <path d="M14 14v6" />
+                </svg>
+            </div>
+            <div class="tab-item" onclick="navigate('leaderboard')">
+                <svg class="tab-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+                    <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+                    <path d="M4 22h16" />
+                    <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+                    <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+                    <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+                </svg>
+            </div>
+            <div class="tab-item" onclick="navigate('pass')">
+                <svg class="tab-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+            </div>
+            <div class="tab-item" onclick="navigate('shop')">
+                <svg class="tab-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+                    <path d="M3 6h18" />
+                    <path d="M16 10a4 4 0 0 1-8 0" />
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Character Detail Modal -->
+    <div id="char-detail-modal" class="modal-overlay modal hidden" onclick="closeModal(event)">
+        <div class="modal-content-glass" onclick="event.stopPropagation()">
+            <div class="modal-swipe-handle"></div>
+            <div id="modal-char-img" class="modal-img"></div>
+            <div class="modal-info-box">
+                <div id="modal-char-rarity" class="rarity-badge-detail">RARITY</div>
+                <h2 id="modal-char-name">Character Name</h2>
+                <p id="modal-char-anime">Anime Source</p>
+                <div class="modal-footer-stats">
+                    <span id="modal-char-id">ID: 00</span>
+                </div>
+            </div>
+            <button class="modal-close-btn" onclick="closeModal()">CLOSE</button>
+        </div>
+    </div>
+
+    <script src="app.js?v=3.1"></script>
+</body>
+
+</html>

@@ -22,13 +22,14 @@ from typing import Any, Optional, List
 from Grabber.database import r as _redis
 from Grabber import LOGGER
 
-# ── TTLs (seconds) ──────────────────────────────────────────────
-TTL_USER        = 300     # 5 minutes
+# ── TTLs (seconds) optimized for 30MB ──────────────────────────
+TTL_USER        = 60      # 1 minute (Fast refresh to save space)
 TTL_LEADERBOARD = 300     # 5 minutes
-TTL_SESSION     = 3600    # 1 hour
-TTL_DAILY       = 48 * 3600
-TTL_WEEKLY      = 8 * 24 * 3600
-TTL_GAMEBOT     = 600     # 10 minutes
+TTL_SESSION     = 1800    # 30 minutes
+TTL_DAILY       = 24 * 3600 # 24h
+TTL_WEEKLY      = 7 * 24 * 3600
+TTL_GAMEBOT     = 300     # 5 minutes
+MEM_LIMIT_BYTES = 25 * 1024 * 1024 # 25MB Soft limit for auto-purge
 
 
 # ── Low-level helpers ────────────────────────────────────────────
@@ -48,9 +49,25 @@ async def rset(key: str, value: str, ttl: int):
     if not _redis:
         return
     try:
+        # Check memory before setting large key or frequently
+        await check_memory_and_purge()
         await _redis.setex(key, ttl, value)
     except Exception as e:
         LOGGER.warning(f"Redis SET error [{key}]: {e}")
+
+async def check_memory_and_purge():
+    """Smart memory management: Purges old keys if memory exceeds limit."""
+    if not _redis: return
+    try:
+        info = await _redis.info("memory")
+        used = int(info.get("used_memory", 0))
+        if used > MEM_LIMIT_BYTES:
+            LOGGER.warning(f"Redis memory usage high ({used/1024/1024:.2f}MB). Purging old caches...")
+            # Purge short-lived user caches and leaderboard entries
+            keys = await _redis.keys("user:*") + await _redis.keys("lb:*") + await _redis.keys("rank:*")
+            if keys:
+                await _redis.delete(*keys[:50]) # Delete batches
+    except Exception: pass
 
 async def rdel(*keys: str):
     """Delete one or more keys from Redis. Silently ignores errors."""
@@ -173,16 +190,69 @@ async def get_cached_leaderboard(metric: str) -> Optional[list]:
 async def set_cached_leaderboard(metric: str, data: list):
     await rset_json(_lb_key(metric), data, TTL_LEADERBOARD)
 
-async def invalidate_leaderboard_cache():
-    """Invalidate all leaderboard entries. Call after balance/character writes."""
-    if not _redis:
-        return
+# ── Unified XP Ranking (ZSET) ──────────────────────────────────
+
+_RANK_KEY = "user_xp_leaderboard"
+
+async def update_user_rank(user_id: int, xp: int):
+    """Update user score in the global ZSET and CAP it to Top 500 for memory."""
+    if not _redis: return
     try:
-        keys = await _redis.keys("lb:*")
-        if keys:
-            await _redis.delete(*keys)
+        await _redis.zadd(_RANK_KEY, {str(user_id): xp})
+        # SMART: Only keep the top 500 in the fast cache to stay within 30MB
+        await _redis.zremrangebyrank(_RANK_KEY, 0, -501)
     except Exception as e:
-        LOGGER.warning(f"Redis leaderboard invalidation error: {e}")
+        LOGGER.warning(f"Redis ZSET update error: {e}")
+
+async def get_user_rank(user_id: int) -> Optional[int]:
+    """Get 1-based rank from ZSET. Returns None on miss."""
+    if not _redis: return None
+    try:
+        rank = await _redis.zrevrank(_RANK_KEY, str(user_id))
+        return (rank + 1) if rank is not None else None
+    except Exception:
+        return None
+
+async def get_total_ranked_users() -> int:
+    if not _redis: return 0
+    try: return await _redis.zcard(_RANK_KEY)
+    except Exception: return 0
+
+async def rebuild_leaderboard(user_collection):
+    """
+    Cold-rebuild the Redis XP ZSET from MongoDB with 30MB memory safety.
+    Only pulls Top 1,000 users to keep the fast cache small.
+    """
+    if not _redis: return
+    try:
+        LOGGER.info("Starting safe XP ZSET rebuild from MongoDB (Top 1000)...")
+        # Get Top 1,000 users by XP descending
+        cursor = user_collection.find({"xp": {"$gt": 0}}, {"id": 1, "xp": 1}).sort("xp", -1).limit(1000)
+        
+        # Clear the old set first
+        await _redis.delete(_RANK_KEY)
+        
+        batch = {}
+        count = 0
+        async for user in cursor:
+            uid = str(user.get("id"))
+            xp = user.get("xp", 0)
+            if uid and xp:
+                batch[uid] = xp
+                count += 1
+            
+            # Batch write every 100 users for performance
+            if len(batch) >= 100:
+                await _redis.zadd(_RANK_KEY, batch)
+                batch = {}
+        
+        # Final batch
+        if batch:
+            await _redis.zadd(_RANK_KEY, batch)
+            
+        LOGGER.info(f"XP ZSET rebuild complete. Synchronized {count} top users.")
+    except Exception as e:
+        LOGGER.error(f"Failed to rebuild XP ZSET in memory-safe mode: {e}")
 
 
 # ── Sessions (replaces MongoDB sessions) ─────────────────────────

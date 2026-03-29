@@ -12,21 +12,21 @@ LEVEL_REWARDS = {
     50: {"free": 10000, "premium": 30000, "elite": 50000}
 }
 
+import math
+
 def get_level_from_xp(xp: int) -> int:
     """
-    Calculate the current level based on total XP.
-    Levels have increasing XP requirements.
+    Calculate the current level based on total XP using the sum of arithmetic progression formula.
+    XP required for level L = 50 * L * (L + 1).
+    Inverse: L = (-1 + sqrt(1 + XP / 12.5)) / 2.
     """
-    level = 0
-    required_xp = 100
-    remaining_xp = xp
-
-    while remaining_xp >= required_xp and level < LEVEL_CAP:
-        remaining_xp -= required_xp
-        level += 1
-        required_xp = 100 * (level + 1)
-
-    return level
+    if xp <= 0:
+        return 0
+    
+    # Quadratic formula to find level L
+    level = int((-1 + math.sqrt(1 + xp / 12.5)) / 2)
+    
+    return min(level, LEVEL_CAP)
 
 def get_xp_for_next_level(current_level: int) -> int:
     """
@@ -69,6 +69,10 @@ async def add_xp(user_id: int, amount: int, source: str = "unknown"):
         return
 
     new_xp = user.get("xp", 0)
+    
+    # Sync with Redis Ranking Cache
+    from Grabber.core.cache import update_user_rank
+    await update_user_rank(user_id, new_xp)
     old_xp = new_xp - amount
     old_level = get_level_from_xp(old_xp)
     new_level = get_level_from_xp(new_xp)
