@@ -1,17 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 import asyncio
-from typing import Dict
-from collections import defaultdict
 import uuid
-from Grabber.webapp.auth import get_current_user, get_current_user_data
+from Grabber import LOGGER
+from Grabber.webapp.auth import get_current_user, get_current_user_data, _user_locks
 from Grabber.database import user_collection, collection
-from Grabber.core.constants import SHOP_RARITY, SHOP_LIMIT, PASS_PRICES
+from Grabber.core.constants import SHOP_RARITY, SHOP_LIMIT, RARITY_PRICES, PASS_PRICES
 from Grabber.modules.economy.shop import get_daily_shop_characters
 from Grabber.modules.progression.pet import PET_SHOP
 from Grabber.core.pass_data import PASS_TRACKS, MAX_PASS_LEVEL
 from Grabber.core.progression import get_user_progress
-
-from Grabber.webapp.auth import get_current_user, get_current_user_data, _user_locks
 
 router = APIRouter()
 
@@ -45,9 +42,7 @@ async def get_shop_characters(user: dict = Depends(get_current_user_data)):
         response.append(char_dict)
     return response
 
-from Grabber.core.constants import SHOP_RARITY, SHOP_LIMIT, RARITY_PRICES, PASS_PRICES
-from Grabber.modules.economy.shop import get_daily_shop_characters
-
+@router.post("/shop/buy/character/{char_id}")
 async def buy_character_api(char_id: str, user_id: int = Depends(get_current_user)):
     uid_str = str(user_id)
     
@@ -62,13 +57,11 @@ async def buy_character_api(char_id: str, user_id: int = Depends(get_current_use
         
         price = RARITY_PRICES.get(char_raw.get("rarity"), 5)
         if user_raw.get("zenith", 0) < price:
-            from Grabber import LOGGER
             LOGGER.info(f"Shop Purchase Error: User {user_id} has insufficient Zenith ({user_raw.get('zenith', 0)}) for price {price}")
             raise HTTPException(status_code=400, detail=f"Insufficient Zenith (Need {price})")
             
         owned_ids = [c["id"] for c in user_raw.get("characters", []) if isinstance(c, dict) and "id" in c]
         if char_id in owned_ids:
-            from Grabber import LOGGER
             LOGGER.info(f"Shop Purchase Error: User {user_id} already owns character {char_id}")
             raise HTTPException(status_code=400, detail="You already own this character")
 
@@ -77,7 +70,6 @@ async def buy_character_api(char_id: str, user_id: int = Depends(get_current_use
             {"$inc": {"sold_count": 1}}
         )
         if stock_update.modified_count == 0:
-            from Grabber import LOGGER
             LOGGER.info(f"Shop Purchase Error: Character {char_id} is SOLD OUT (Limit: {SHOP_LIMIT})")
             raise HTTPException(status_code=400, detail="Character is SOLD OUT")
 

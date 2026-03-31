@@ -95,7 +95,7 @@ async def seal_handler(_, message: types.Message):
         if spawn_msg_id:
             try:
                 await app.delete_messages(chat_id, spawn_msg_id)
-            except:
+            except Exception:
                 pass
 
         caption = (

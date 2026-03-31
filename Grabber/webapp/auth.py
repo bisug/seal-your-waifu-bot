@@ -48,7 +48,6 @@ def validate_init_data(init_data: str):
         pass
     return False
 
-from collections import defaultdict
 _fallback_rate_limits = defaultdict(list)
 
 async def create_session(user_data: dict):
