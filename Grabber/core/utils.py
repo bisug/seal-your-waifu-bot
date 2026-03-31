@@ -4,6 +4,20 @@ import logging
 
 LOGGER = logging.getLogger(__name__)
 
+def normalize_user_id(uid):
+    """
+    Normalizes a user ID that might be stored as an int, string, or 
+    a single-item list. Returns the ID as an integer.
+    """
+    if isinstance(uid, list):
+        if not uid: return 0
+        uid = uid[0]
+    try:
+        return int(uid)
+    except (ValueError, TypeError):
+        return 0
+
+
 def html_escape(text: str) -> str:
     """Escapes special characters for Telegram HTML."""
     if not text:

@@ -9,6 +9,7 @@ from Grabber.modules.economy.shop import get_daily_shop_characters
 from Grabber.modules.progression.pet import PET_SHOP
 from Grabber.core.pass_data import PASS_TRACKS, MAX_PASS_LEVEL
 from Grabber.core.progression import get_user_progress
+from Grabber.core.utils import normalize_user_id
 
 router = APIRouter()
 
@@ -78,7 +79,7 @@ async def buy_character_api(char_id: str, user_id: int = Depends(get_current_use
         user_update = await user_collection.update_one(
             q,
             {
-                "$inc": {"zenith": -price},
+                "$inc": {"zenith": -price, "char_count": 1},
                 "$push": {"characters": {
                     "id": char_raw["id"], 
                     "name": char_raw["name"], 
@@ -103,8 +104,7 @@ async def buy_character_api(char_id: str, user_id: int = Depends(get_current_use
 @router.get("/shop/pets")
 async def get_shop_pets(user: dict = Depends(get_current_user_data)):
     owned_pet_names = [p["name"] for p in user.get("pets", [])]
-    uid_int = user["id"]
-    if isinstance(uid_int, list): uid_int = uid_int[0]
+    uid_int = normalize_user_id(user["id"])
     
     return {
         "pets": PET_SHOP,
@@ -159,8 +159,7 @@ async def upgrade_pass_api(tier: str, user_id: int = Depends(get_current_user)):
 
 @router.get("/pass_data")
 async def get_pass_data(user: dict = Depends(get_current_user_data)):
-    uid_int = user["id"]
-    if isinstance(uid_int, list): uid_int = uid_int[0]
+    uid_int = normalize_user_id(user["id"])
     
     progress = await get_user_progress(uid_int, user_data=user)
     
