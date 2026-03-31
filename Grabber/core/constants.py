@@ -1,7 +1,7 @@
 # Grabber/core/constants.py
 
 # Rarity Mappings
-SHOP_RARITY = "⚪ Common"
+SHOP_RARITY = "🟠 Rare"
 
 PAYOUTS = {
     "⚪ Common": 10,
@@ -12,7 +12,8 @@ PAYOUTS = {
     "💮 Exclusive": 500,
     "🔮 Limited Edition": 750,
     "🫧 Royal": 1500,
-    "💎 Antique": 2500
+    "💎 Antique": 2500,
+    "🎐 Celestial": 5000
 }
 
 # Shop Settings

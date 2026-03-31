@@ -32,27 +32,43 @@ async def seal_handler(_, message: types.Message):
         return await message.reply_text("❌ Provide the character's name! Usage: <code>/seal &lt;name&gt;</code>", parse_mode=ParseMode.HTML)
 
     guess = " ".join(message.command[1:]).strip().lower()
-    correct_name = character['name'].strip().lower()
+    
+    # Guess matching logic (REFINED PER USER REQUEST)
+    # 1. Normalize both and remove common punctuation
+    def normalize(text):
+        for char in ".,!?-": text = text.replace(char, " ")
+        return " ".join(text.lower().split())
 
-    # Guess matching: exact full-name match OR any significant name part matches a guess word
-    guess_words = set(guess.split())
-    name_parts = [p for p in correct_name.split() if len(p) > 2]
-    if guess == correct_name or any(part in guess_words for part in name_parts):
+    guess_normalized = normalize(guess)
+    correct_normalized = normalize(character['name'])
+    
+    guess_words = set(guess_normalized.split())
+    correct_words = set(correct_normalized.split())
+
+    # RULE 1: Exact Match
+    is_match = (guess_normalized == correct_normalized)
+    
+    # RULE 2: Subset Match (e.g., 'Light' or 'Yagami' catches 'Light Yagami')
+    # All words in guess must be one of the words in the correct name.
+    if not is_match and guess_words:
+        is_match = guess_words.issubset(correct_words)
+
+    if is_match:
         # Atomically try to claim the character
         if not await clear_active_spawn(chat_id, user_id):
             return # Someone else caught it already
 
-        # Send one random big positive reaction
+        # Enhanced reaction task for v2 compatibility
         async def send_reactions():
             try:
-                # Using only standard reactions that are widely enabled
-                emojis = ["🔥", "❤️", "🎉", "🤩", "👍", "🥰", "👏"]
+                # Use only foundational reactions
+                emojis = ["🔥", "🎉", "🤩", "👏"]
                 selected = random.choice(emojis)
-                # Note: Some clients/forks use 'big', some use 'is_big',
-                # but if the error was REACTION_INVALID, it's the emoji itself.
-                await app.send_reaction(chat_id, message_id=message.id, emoji=selected, big=True)
+                # Some Pyrogram versions require a list, others a single emoji;
+                # using the single emoji string is standard for most.
+                await app.send_reaction(chat_id, message_id=message.id, emoji=selected)
             except Exception as e:
-                LOGGER.error(f"Failed to send reaction: {e}")
+                LOGGER.debug(f"Reaction task handled: {e}")
 
         asyncio.create_task(send_reactions())
 

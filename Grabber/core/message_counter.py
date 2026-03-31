@@ -14,7 +14,8 @@ special_rarity_thresholds = {
     "💠 Cosmic": 300,
     "💮 Exclusive": 600,
     "🔮 Limited Edition": 900,
-    "🫧 Royal": 1000
+    "🫧 Royal": 1200,
+    "💎 Antique": 1500
 }
 
 
