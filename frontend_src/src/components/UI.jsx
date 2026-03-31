@@ -159,6 +159,18 @@ export const useApi = (endpoint, options = {}, deps = []) => {
  * Cinematic Detail Modal
  */
 export const Modal = ({ character, onClose }) => {
+    // Audit: Scroll Lock for background content
+    useEffect(() => {
+        if (character) {
+            const scroller = document.querySelector('.app-scroller');
+            if (scroller) scroller.style.overflow = 'hidden';
+            return () => {
+                const scroller = document.querySelector('.app-scroller');
+                if (scroller) scroller.style.overflow = 'auto';
+            };
+        }
+    }, [character]);
+
     if (!character) return null;
 
     const rarityColors = {
@@ -218,8 +230,8 @@ export const Modal = ({ character, onClose }) => {
                             <span className="px-2 py-1 rounded-md bg-white/10 text-[10px] font-black uppercase tracking-[0.2em] text-brand-neon border border-white/10 backdrop-blur-md">
                                 {character.rarity}
                             </span>
-                            <h2 className="text-2xl font-black mt-2 leading-tight uppercase tracking-tight text-white drop-shadow-sm">{character.name}</h2>
-                            <p className="text-slate-400 font-medium italic text-xs tracking-wide">{character.anime}</p>
+                            <h2 className="text-2xl font-black mt-2 leading-tight uppercase tracking-tight text-white drop-shadow-sm line-clamp-2">{character.name}</h2>
+                            <p className="text-slate-400 font-medium italic text-xs tracking-wide truncate">{character.anime}</p>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3 pt-3 border-t border-white/5">
