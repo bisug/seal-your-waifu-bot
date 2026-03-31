@@ -132,7 +132,7 @@ export const Shop = ({ onCharClick }) => {
         ))}
       </div>
 
-      {loading && activeTab === 'market' && !marketItems.length ? (
+      {loading && activeTab === 'market' && !(Array.isArray(marketItems) && marketItems.length) ? (
         <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6 gap-4">
           {Array.from({ length: 12 }).map((_, i) => (
             <CardSkeleton key={`shop-skeleton-${i}`} />
@@ -141,9 +141,9 @@ export const Shop = ({ onCharClick }) => {
       ) : (
         <AnimatePresence mode="wait">
           {activeTab === 'market' && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} key="market" className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6 gap-4">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} key="market" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                 <AnimatePresence mode="popLayout">
-                  {marketItems.map((char, i) => (
+                  {(Array.isArray(marketItems) ? marketItems : []).map((char, i) => (
                     <motion.div 
                       key={char.id} 
                       layout
@@ -180,7 +180,7 @@ export const Shop = ({ onCharClick }) => {
           {activeTab === 'eggs' && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} key="eggs" className="space-y-4">
               {user?.eggs?.length > 0 ? (
-                user.eggs.map(egg => (
+                (user.eggs || []).map(egg => (
                   <div key={egg.id} className="glass-panel p-5 rounded-2xl border border-white/5 flex items-center space-x-4 bg-mesh">
                     <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-brand-midnight border border-white/5 relative overflow-hidden">
                       <div className="absolute inset-0 bg-brand-neon/5 blur-xl animate-pulse" />
