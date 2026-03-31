@@ -28,7 +28,7 @@ async def get_top_users(metric: str, limit: int = 10):
 
     if metric == "harem":
         pipeline = [
-            {"$project": {"first_name": 1, "id": 1, "avatar": 1, "pass_type": 1, "char_count": {"$size": {"$ifNull": ["$characters", []]}}}},
+            {"$project": {"first_name": 1, "id": 1, "avatar": 1, "pass_type": 1, "char_count": {"$ifNull": ["$char_count", 0]}}},
             {"$sort": {"char_count": -1}},
             {"$limit": limit}
         ]

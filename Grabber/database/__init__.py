@@ -51,6 +51,7 @@ class Database:
             (self.users,             lambda c: c.create_index("characters.id")),
             (self.users,             lambda c: c.create_index([("id", 1), ("characters.id", 1)])),
             (self.anime_characters,  lambda c: c.create_index([("rarity", 1), ("name", 1)])),
+            (self.users,             lambda c: c.create_index("char_count", sparse=True)),
         ]
         failed = 0
         for collection, idx_fn in indexes:
