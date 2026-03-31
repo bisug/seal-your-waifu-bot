@@ -30,6 +30,7 @@ class Database:
         self.quiz_questions = self.db['quiz_questions']
         self.gamebot_enabled_groups = self.db['nguess_enabled_groups']
         self.deletion_queue = self.db['deletion_queue']
+        self.daily_shop = self.db['daily_shop_inventory']
 
     async def ensure_indexes(self):
         """Create performance indexes. Each index is isolated so one failure doesn't block others."""
@@ -101,3 +102,4 @@ sessions_collection = seal_db.sessions
 quiz_questions_collection = seal_db.quiz_questions
 gamebot_enabled_groups_collection = seal_db.gamebot_enabled_groups
 deletion_queue_collection = seal_db.deletion_queue
+daily_shop_collection = seal_db.daily_shop

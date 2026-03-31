@@ -18,7 +18,18 @@ PAYOUTS = {
 
 # Shop Settings
 SHOP_LIMIT = 50
-DEFAULT_ZENITH_PRICE = 5
+RARITY_PRICES = {
+    "⚪ Common": 1,
+    "🟢 Medium": 2,
+    "🟠 Rare": 5,
+    "🟡 Legendary": 10,
+    "💠 Cosmic": 25,
+    "💮 Exclusive": 50,
+    "🔮 Limited Edition": 100,
+    "🫧 Royal": 250,
+    "💎 Antique": 500,
+    "🎐 Celestial": 1000
+}
 
 # Pass Constants
 PASS_PRICES = {

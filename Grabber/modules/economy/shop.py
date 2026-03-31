@@ -12,19 +12,47 @@ from Grabber.modules.progression.quests import update_quest_progress
 from Grabber.modules.progression.achievements import check_achievements
 from Grabber.core.keyboard import KeyboardBuilder, get_webapp_button
 
-from Grabber.core.constants import SHOP_RARITY, DEFAULT_ZENITH_PRICE
-SHOP_PAGE_SIZE = 5
-SHOP_LIMIT = 20
-ADMINS = list(set(sudo_users + [OWNER_ID]))
-SHOP_BANNER = config.PHOTO_URL[0]
+from datetime import datetime, timezone
+from Grabber.database import daily_shop_collection
+from Grabber.core.constants import SHOP_RARITY, RARITY_PRICES
 
 async def get_daily_shop_characters():
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    
+    # 1. Check persistent daily storage
+    shop_doc = await daily_shop_collection.find_one({"date": today})
+    
+    if shop_doc:
+        char_ids = shop_doc.get("character_ids", [])
+        cursor = collection.find({"id": {"$in": char_ids}})
+        chars_raw = await cursor.to_list(None)
+        # Ensure we return in specific order if needed, but random is fine for daily
+        characters = [Character(**c) for c in chars_raw]
+        return characters[:5]
+
+    # 2. If it's a new day, pick 5 new characters
     cursor = collection.find({"rarity": SHOP_RARITY})
-    characters_raw = await cursor.to_list(None)
-    if not characters_raw:
+    all_eligible = await cursor.to_list(None)
+    
+    if not all_eligible:
+        LOGGER.warning(f"No characters found for SHOP_RARITY: {SHOP_RARITY}")
         return []
-    characters = [Character(**c) for c in characters_raw]
-    return random.sample(characters, min(len(characters), SHOP_PAGE_SIZE))
+    
+    selected_raw = random.sample(all_eligible, min(len(all_eligible), 5))
+    selected_ids = [c["id"] for c in selected_raw]
+    
+    # 3. Save for the day (clear old first)
+    await daily_shop_collection.delete_many({})
+    await daily_shop_collection.insert_one({
+        "date": today,
+        "character_ids": selected_ids
+    })
+    
+    return [Character(**c) for c in selected_raw]
+
+SHOP_LIMIT = 50
+ADMINS = list(set(sudo_users + [OWNER_ID]))
+SHOP_BANNER = config.PHOTO_URL[0]
 
 @app.on_message(filters.command("cshop"))
 async def cshop_cmd(_, message: types.Message):
@@ -114,7 +142,7 @@ async def send_shop_message(message, user_id):
     chars = [Character(**c) for c in chars_data]
 
     char = chars[page]
-    price = getattr(char, "zenith_price", DEFAULT_ZENITH_PRICE)
+    price = RARITY_PRICES.get(char.rarity, 5)
 
     user_raw = await user_collection.find_one({"id": user_id})
     user = User(**user_raw) if user_raw else None
@@ -208,7 +236,7 @@ async def ask_buy_character(_, query: types.CallbackQuery):
     if not char:
         return await query.answer("❌ Character not found.")
 
-    price = getattr(char, "zenith_price", DEFAULT_ZENITH_PRICE)
+    price = RARITY_PRICES.get(char.rarity, 5)
     sold_count = getattr(char, "sold_count", 0)
 
     text = (
@@ -252,10 +280,10 @@ async def buy_character(_, query: types.CallbackQuery):
 
     owned_ids = [c.id if hasattr(c, "id") else (c["id"] if isinstance(c, dict) else c) for c in owned]
     if char_id in owned_ids:
-        await query.answer("✅ You already own this character.", show_alert=True)
+        await query.answer("❌ Character not available.", show_alert=True)
         return
 
-    price = getattr(char, "zenith_price", DEFAULT_ZENITH_PRICE)
+    price = RARITY_PRICES.get(char.rarity, 5)
     user_zenith = user_data.zenith if user_data else 0
     if user_zenith < price:
         await query.answer(f"❌ Insufficient Zenith!\nYou have: {user_zenith} ⧫\nNeed: {price} ⧫", show_alert=True)

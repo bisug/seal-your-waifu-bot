@@ -42,10 +42,13 @@ async def get_shop_characters(user: dict = Depends(get_current_user_data)):
         char_dict = c.dict()
         char_dict["owned"] = c.id in owned_ids
         char_dict["stock_limit"] = SHOP_LIMIT
+        char_dict["zenith_price"] = RARITY_PRICES.get(c.rarity, 5)
         response.append(char_dict)
     return response
 
-@router.post("/shop/buy/character/{char_id}")
+from Grabber.core.constants import SHOP_RARITY, SHOP_LIMIT, RARITY_PRICES, PASS_PRICES
+from Grabber.modules.economy.shop import get_daily_shop_characters
+
 async def buy_character_api(char_id: str, user_id: int = Depends(get_current_user)):
     uid_str = str(user_id)
     
@@ -58,7 +61,7 @@ async def buy_character_api(char_id: str, user_id: int = Depends(get_current_use
         if not char_raw or char_raw.get("rarity") != SHOP_RARITY:
             raise HTTPException(status_code=404, detail="Character not available in shop")
         
-        price = char_raw.get("zenith_price", DEFAULT_ZENITH_PRICE)
+        price = RARITY_PRICES.get(char_raw.get("rarity"), 5)
         if user_raw.get("zenith", 0) < price:
             from Grabber import LOGGER
             LOGGER.info(f"Shop Purchase Error: User {user_id} has insufficient Zenith ({user_raw.get('zenith', 0)}) for price {price}")
