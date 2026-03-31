@@ -83,7 +83,7 @@ async def set_active_pet(pet_name: str, user: dict = Depends(get_current_user_da
 @router.post("/eggs/incubate/{egg_id}")
 async def incubate_egg(egg_id: str, user: dict = Depends(get_current_user_data)):
     eggs = user.get("eggs", [])
-    egg = next((e for e in eggs if e["id"] == egg_id), None)
+    egg = next((e for e in eggs if isinstance(e, dict) and e.get("id") == egg_id), None)
     if not egg:
         raise HTTPException(status_code=404, detail="Egg not found")
         
@@ -120,7 +120,7 @@ async def hatch_egg(egg_id: str, user: dict = Depends(get_current_user_data)):
     from Grabber.modules.economy.hunt import process_egg_hatch
 
     eggs = user.get("eggs", [])
-    egg = next((e for e in eggs if e["id"] == egg_id), None)
+    egg = next((e for e in eggs if isinstance(e, dict) and e.get("id") == egg_id), None)
     
     if not egg or egg.get("status") != "incubating":
          raise HTTPException(status_code=400, detail="Egg not ready or not found")

@@ -123,6 +123,21 @@ async def get_me(user: dict = Depends(get_current_user_data)):
     from datetime import datetime
     processed_eggs = []
     for egg in eggs:
+        if isinstance(egg, str):
+            # Resolve numeric or string tier to a cleaner name for the WebApp
+            from Grabber.modules.economy.hunt import TIER_MAP
+            tier_key = TIER_MAP.get(egg, egg)
+            processed_eggs.append({
+                "id": f"mig_{int(datetime.now().timestamp())}",
+                "tier": tier_key,
+                "name": f"{tier_key.capitalize()} Egg",
+                "status": "fresh",
+                "is_corrupted": False,
+                "hatch_time": None,
+                "remaining_mins": 0
+            })
+            continue
+
         h_time = egg.get("hatch_time")
         rem_mins = 0
         if h_time and isinstance(h_time, datetime):
