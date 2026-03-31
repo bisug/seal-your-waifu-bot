@@ -1,60 +1,83 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 
 /**
  * Custom hook for managing the Telegram WebApp MainButton.
  * Handles visibility, text, color, and tap events with automatic cleanup.
  */
-export const useMainButton = (options = {}) => {
-  const tg = window.Telegram?.WebApp;
-  const mainButton = tg?.MainButton;
+export const useMainButton = () => {
+  const handlerRef = useRef(null);
+
+  const getButton = () => window.Telegram?.WebApp?.MainButton;
+  const getTg = () => window.Telegram?.WebApp;
 
   const show = useCallback((text, onClick, color = '#00f2ff', textColor = '#080a12') => {
+    const mainButton = getButton();
     if (!mainButton) return;
 
-    mainButton.setText(text.toUpperCase());
-    mainButton.setParams({
-      color: color,
-      text_color: textColor,
-      is_visible: true,
-      is_active: true
-    });
+    try {
+      // Clean up previous handler before adding new one
+      if (handlerRef.current) {
+        mainButton.offClick(handlerRef.current);
+      }
 
-    // Handle click with global event listener to avoid stale closure issues
-    const handleClick = () => {
-      tg.HapticFeedback?.impactOccurred('medium');
-      if (onClick) onClick();
-    };
+      const handleClick = () => {
+        getTg()?.HapticFeedback?.impactOccurred('medium');
+        if (onClick) onClick();
+      };
 
-    mainButton.onClick(handleClick);
-    
-    return () => {
-      mainButton.offClick(handleClick);
-    };
-  }, [mainButton, tg]);
+      handlerRef.current = handleClick;
+      mainButton.setText(text.toUpperCase());
+      mainButton.setParams({
+        color,
+        text_color: textColor,
+        is_visible: true,
+        is_active: true,
+      });
+      mainButton.onClick(handleClick);
+    } catch (e) {
+      console.warn('MainButton error:', e.message);
+    }
+  }, []);
 
   const hide = useCallback(() => {
+    const mainButton = getButton();
     if (!mainButton) return;
-    mainButton.hide();
-  }, [mainButton]);
+    try {
+      if (handlerRef.current) {
+        mainButton.offClick(handlerRef.current);
+        handlerRef.current = null;
+      }
+      mainButton.hide();
+    } catch (e) {
+      console.warn('MainButton hide error:', e.message);
+    }
+  }, []);
 
   const setProgress = useCallback((isLoading) => {
+    const mainButton = getButton();
     if (!mainButton) return;
-    if (isLoading) {
-      mainButton.showProgress(false);
-    } else {
-      mainButton.hideProgress();
+    try {
+      if (isLoading) mainButton.showProgress(false);
+      else mainButton.hideProgress();
+    } catch (e) {
+      console.warn('MainButton progress error:', e.message);
     }
-  }, [mainButton]);
+  }, []);
 
-  // Comprehensive Cleanup on unmount or route change
+  // Comprehensive cleanup on unmount
   useEffect(() => {
     return () => {
-      if (mainButton) {
+      const mainButton = getButton();
+      if (!mainButton) return;
+      try {
+        if (handlerRef.current) mainButton.offClick(handlerRef.current);
         mainButton.hide();
         mainButton.hideProgress();
+      } catch (e) {
+        // ignore
       }
     };
-  }, [mainButton]);
+  }, []);
 
-  return { show, hide, setProgress, isVisible: mainButton?.isVisible };
+  return { show, hide, setProgress, isVisible: getButton()?.isVisible };
 };
