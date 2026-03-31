@@ -1,6 +1,6 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Body
-from Grabber.webapp.auth import get_current_user, get_current_user_data
+from Grabber.webapp.auth import get_current_user, get_current_user_data, _user_locks
 from Grabber.database import user_collection, collection
 from Grabber.webapp.models import PaginatedResponse
 from Grabber.core.constants import PAYOUTS
@@ -88,47 +88,54 @@ async def get_harem(
 @router.post("/recycle")
 async def recycle_characters(
     char_ids: List[str] = Body(...), 
-    user: dict = Depends(get_current_user_data)
+    user_id: int = Depends(get_current_user)
 ):
-    owned_chars = user.get("characters", [])
-    if not owned_chars:
-        raise HTTPException(status_code=400, detail="Harem is empty")
-        
-    from collections import Counter
-    to_recycle_counts = Counter(char_ids)
-    
-    total_reward = 0
-    current_counts = Counter(c["id"] for c in owned_chars)
-    
-    for rid, rcount in to_recycle_counts.items():
-        if current_counts[rid] < rcount:
-             raise HTTPException(status_code=400, detail=f"Insufficient duplicates for ID {rid}")
-             
-    new_harem = []
-    temp_counts = Counter(to_recycle_counts)
-    
-    for char in owned_chars:
-        cid = char["id"]
-        if temp_counts[cid] > 0:
-            rarity = char.get("rarity", "⚪ Common")
-            total_reward += PAYOUTS.get(rarity, 10)
-            temp_counts[cid] -= 1
-        else:
-            new_harem.append(char)
+    uid_str = str(user_id)
+    async with _user_locks[uid_str]:
+        # Fetch fresh data under lock
+        user = await user_collection.find_one(get_user_id_query(user_id))
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
             
-    # Resolve exact user id integer for mongo query compatibility
-    uid_int = user["id"]
-    if isinstance(uid_int, list): uid_int = uid_int[0]
+        owned_chars = user.get("characters", [])
+        if not owned_chars:
+            raise HTTPException(status_code=400, detail="Harem is empty")
+            
+        from collections import Counter
+        to_recycle_counts = Counter(char_ids)
+        
+        total_reward = 0
+        current_counts = Counter(c["id"] for c in owned_chars)
+        
+        for rid, rcount in to_recycle_counts.items():
+            if current_counts[rid] < rcount:
+                 raise HTTPException(status_code=400, detail=f"Insufficient duplicates for ID {rid}")
+                 
+        new_harem = []
+        temp_counts = Counter(to_recycle_counts)
+        
+        for char in owned_chars:
+            cid = char["id"]
+            if temp_counts[cid] > 0:
+                rarity = char.get("rarity", "⚪ Common")
+                total_reward += PAYOUTS.get(rarity, 10)
+                temp_counts[cid] -= 1
+            else:
+                new_harem.append(char)
+                
+        # Resolve exact user id integer for mongo query compatibility
+        uid_int = user["id"]
+        if isinstance(uid_int, list): uid_int = uid_int[0]
 
-    await user_collection.update_one(
-        get_user_id_query(uid_int),
-        {
-            "$set": {"characters": new_harem},
-            "$inc": {"zenith": total_reward}
-        }
-    )
-    
-    return {"status": "success", "reward": total_reward, "count": len(char_ids)}
+        await user_collection.update_one(
+            get_user_id_query(uid_int),
+            {
+                "$set": {"characters": new_harem},
+                "$inc": {"zenith": total_reward}
+            }
+        )
+        
+        return {"status": "success", "reward": total_reward, "count": len(char_ids)}
 
 @router.get("/gallery", response_model=PaginatedResponse)
 async def get_gallery(

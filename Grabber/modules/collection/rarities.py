@@ -5,7 +5,8 @@ from Grabber.database import collection
 
 RARITY_MAP = {
     1: "⚪ Common", 2: "🟢 Medium", 3: "🟠 Rare", 4: "🟡 Legendary", 5: "💠 Cosmic",
-    6: "💮 Exclusive", 7: "🔮 Limited Edition", 8: "🫧 Royal", 9: "💎 Antique", 10: "🎐 Celestial"
+    6: "💮 Exclusive", 7: "🔮 Limited Edition", 8: "🫧 Royal", 9: "💎 Antique", 10: "🎐 Celestial",
+    11: "🎞️ AMV"
 }
 
 RARITY_WEIGHTS = {
@@ -15,7 +16,8 @@ RARITY_WEIGHTS = {
     "🟡 Legendary": 6,
     "💠 Cosmic": 3,
     "💮 Exclusive": 0.8,
-    "🔮 Limited Edition": 0.2
+    "🔮 Limited Edition": 0.2,
+    "🎞️ AMV": 1
 }
 
 ACTIVE_RARITY_WEIGHTS = {
@@ -24,7 +26,8 @@ ACTIVE_RARITY_WEIGHTS = {
     "🟡 Legendary": 20,
     "💠 Cosmic": 10,
     "💮 Exclusive": 4,
-    "🔮 Limited Edition": 1
+    "🔮 Limited Edition": 1,
+    "🎞️ AMV": 2
 }
 
 @app.on_message(filters.command("rarities"))

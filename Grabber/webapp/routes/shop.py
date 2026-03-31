@@ -11,10 +11,9 @@ from Grabber.modules.progression.pet import PET_SHOP
 from Grabber.core.pass_data import PASS_TRACKS, MAX_PASS_LEVEL
 from Grabber.core.progression import get_user_progress
 
-router = APIRouter()
+from Grabber.webapp.auth import get_current_user, get_current_user_data, _user_locks
 
-# Memory lock for safe transactions
-_user_locks: Dict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
+router = APIRouter()
 
 def get_user_id_query(user_id):
     try:

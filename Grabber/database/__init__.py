@@ -22,7 +22,6 @@ class Database:
         self.message_counts = self.db['message']
         self.users = self.db["user_collectionsss"]
         self.group_user_totals = self.db['group_user_totals']
-        self.top_global_groups = self.db['top_global_groupss']
         self.total_pm_users = self.db['total_pm_users']
         self.sudo_users = self.db['sudos']
         self.spawns = self.db['active_spawns']
@@ -94,7 +93,6 @@ user_totals_collection = seal_db.user_totals
 message_counts_collection = seal_db.message_counts
 user_collection = seal_db.users
 group_user_totals_collection = seal_db.group_user_totals
-top_global_groups_collection = seal_db.top_global_groups
 total_pm_users = seal_db.total_pm_users
 sudo_collection = seal_db.sudo_users
 spawns_collection = seal_db.spawns

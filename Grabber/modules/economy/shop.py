@@ -1,3 +1,4 @@
+from Grabber.core.utils import reply_media_dynamic
 import random
 import httpx
 from pyrogram import filters, types, errors, enums
@@ -88,8 +89,7 @@ async def send_shop_hub(message_or_query):
                 reply_markup=reply_markup
             )
         else:
-            await message_or_query.reply_photo(
-                photo=SHOP_BANNER, caption=text, reply_markup=reply_markup, parse_mode=ParseMode.HTML
+            await reply_media_dynamic(message_or_query, SHOP_BANNER, caption=text, reply_markup=reply_markup, parse_mode=ParseMode.HTML
             )
     except Exception as e:
         LOGGER.error(f"Error in send_shop_hub: {e}")
@@ -185,8 +185,7 @@ async def send_shop_message(message, user_id):
                 reply_markup=markup
             )
         else:
-            await message.reply_photo(
-                photo=char.img_url, caption=text,
+            await reply_media_dynamic(message, char.img_url, caption=text,
                 reply_markup=markup, parse_mode=ParseMode.HTML
             )
     except errors.MessageNotModified:
