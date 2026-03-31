@@ -1,3 +1,4 @@
+from Grabber.core.utils import reply_media_dynamic
 import asyncio
 import random
 import time
@@ -379,8 +380,7 @@ async def crack_open_egg_inline(query: types.CallbackQuery, user_id: int, egg: d
 
     character = result
     await query.message.edit_text("🎉 <b>Success! Sending details...</b>", parse_mode=ParseMode.HTML)
-    await query.message.reply_photo(
-        photo=character["img_url"],
+    await reply_media_dynamic(query.message, character["img_url"],
         caption=(
             f"🐣 <b>Hatched Successfully!</b>\n\n"
             f"📛 <b>{html_escape(character['name'])}</b>\n"
@@ -406,8 +406,7 @@ async def crack_open_egg(message, user_id, egg, index):
 
     character = result
     await msg.edit_text("🎉 Success! Sending details...", parse_mode=ParseMode.HTML)
-    await message.reply_photo(
-        photo=character["img_url"],
+    await reply_media_dynamic(message, character["img_url"],
         caption=f"🐣 <b>Hatched Successfully!</b>\n\n"
                 f"📛 <b>{html_escape(character['name'])}</b>\n"
                 f"✨ <b>{html_escape(character['rarity'])}</b>\n"

@@ -4,7 +4,7 @@ from pyrogram.enums import ParseMode
 from Grabber.core.utils import html_escape
 from Grabber import app, WEB_APP_URL
 from config import config
-from Grabber import user_collection, top_global_groups_collection, group_user_totals_collection
+from Grabber import user_collection, group_user_totals_collection
 from Grabber.core.progression import get_level_from_xp
 from Grabber.core.keyboard import get_webapp_button
 

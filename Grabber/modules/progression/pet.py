@@ -1,3 +1,4 @@
+from Grabber.core.utils import reply_media_dynamic
 from pyrogram import filters, types, enums, errors
 from pyrogram.enums import ButtonStyle, ParseMode
 from Grabber.core.utils import html_escape
@@ -80,8 +81,7 @@ async def send_petshop_page(message_or_query_obj, page: int, user_id: int):
                 reply_markup=reply_markup
             )
         else:
-            await message_or_query_obj.reply_photo(
-                photo=pet["img"], caption=caption, parse_mode=ParseMode.HTML, reply_markup=reply_markup
+            await reply_media_dynamic(message_or_query_obj, pet["img"], caption=caption, parse_mode=ParseMode.HTML, reply_markup=reply_markup
             )
     except errors.MessageNotModified:
         pass
@@ -164,8 +164,7 @@ async def buypet_cmd(_, message: types.Message):
     result = await perform_pet_purchase(message.from_user.id, pet_id)
     if result is True:
         pet = PET_SHOP[pet_id]
-        await message.reply_photo(
-            photo=pet["img"],
+        await reply_media_dynamic(message, pet["img"],
             caption=f"✅ You bought <b>{html_escape(pet['name'])}</b> with {int(pet['luck']*100)}% luck!",
             parse_mode=ParseMode.HTML
         )
@@ -233,8 +232,7 @@ async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
                 reply_markup=reply_markup
             )
         else:
-            await message_or_query_obj.reply_photo(
-                photo=photo, caption=caption, parse_mode=ParseMode.HTML, reply_markup=reply_markup
+            await reply_media_dynamic(message_or_query_obj, photo, caption=caption, parse_mode=ParseMode.HTML, reply_markup=reply_markup
             )
     except errors.MessageNotModified:
         pass

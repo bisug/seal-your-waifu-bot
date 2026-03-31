@@ -1,3 +1,5 @@
+from Grabber.core.utils import send_media_dynamic
+from Grabber.core.utils import reply_media_dynamic
 import random
 from pyrogram import filters, types, enums, errors
 from pyrogram.enums import ParseMode
@@ -89,16 +91,13 @@ async def show_preview(message_or_query, user_id):
     try:
         if isinstance(message_or_query, types.CallbackQuery):
             await message_or_query.message.delete()
-            await app.send_photo(
-                message_or_query.message.chat.id,
-                char['img_url'],
+            await send_media_dynamic(app, message_or_query.message.chat.id, media_url=char['img_url'],
                 caption=preview_text,
                 reply_markup=markup,
                 parse_mode=ParseMode.HTML
             )
         else:
-            await message_or_query.reply_photo(
-                char['img_url'],
+            await reply_media_dynamic(message_or_query, char['img_url'],
                 caption=preview_text,
                 reply_markup=markup,
                 parse_mode=ParseMode.HTML

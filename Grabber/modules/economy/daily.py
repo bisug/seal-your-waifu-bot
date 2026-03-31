@@ -1,3 +1,4 @@
+from Grabber.core.utils import reply_media_dynamic
 import random
 from datetime import datetime, timedelta, timezone
 from pyrogram import filters, enums, types
@@ -100,7 +101,7 @@ async def daily_command_handler(_, message: types.Message):
         f"🔥 <b>Streak:</b> {streak}/7 Days"
     )
 
-    await message.reply_photo(char['img_url'], caption=caption, parse_mode=ParseMode.HTML)
+    await reply_media_dynamic(message, char['img_url'], caption=caption, parse_mode=ParseMode.HTML)
 
 @app.on_message(filters.command("weekly") & filters.group)
 async def weekly_command_handler(_, message: types.Message):

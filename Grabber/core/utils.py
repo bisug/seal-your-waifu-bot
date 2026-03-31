@@ -53,3 +53,15 @@ async def check_member_requirement(bot, chat, min_count=50):
         LOGGER.error(f"Failed to resolve group name: {e}")
         # Generic fallback
         return True, None, 0
+
+async def send_media_dynamic(client, chat_id, media_url, **kwargs):
+    """Dynamically sends either a photo or a video based on the URL extension."""
+    if isinstance(media_url, str) and media_url.endswith(('.mp4', '.webm', '.gif')):
+        return await client.send_video(chat_id, video=media_url, **kwargs)
+    return await client.send_photo(chat_id, photo=media_url, **kwargs)
+
+async def reply_media_dynamic(message_obj, media_url, **kwargs):
+    """Dynamically replies with either a photo or a video based on the URL extension."""
+    if isinstance(media_url, str) and media_url.endswith(('.mp4', '.webm', '.gif')):
+        return await message_obj.reply_video(video=media_url, **kwargs)
+    return await message_obj.reply_photo(photo=media_url, **kwargs)

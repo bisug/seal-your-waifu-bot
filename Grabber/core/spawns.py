@@ -253,9 +253,11 @@ async def send_character(chat_id: int, rarity: str):
     )
 
     try:
-        msg = await app.send_photo(
+        from Grabber.core.utils import send_media_dynamic
+        msg = await send_media_dynamic(
+            client=app,
             chat_id=chat_id,
-            photo=character['img_url'],
+            media_url=character['img_url'],
             caption=caption,
             parse_mode=ParseMode.HTML
         )

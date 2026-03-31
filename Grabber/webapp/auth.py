@@ -10,7 +10,15 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from Grabber.database import r, sessions_collection, user_collection
 from config import config
 
+import asyncio
+from typing import Dict
+from collections import defaultdict
+
 security = HTTPBearer()
+
+# Global memory lock for safe WebApp transactions (preventing race condition exploits)
+_user_locks: Dict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
+
 
 def validate_init_data(init_data: str):
     """
