@@ -1,3 +1,4 @@
+from Grabber.core.utils import reply_media_dynamic
 import math
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
@@ -104,8 +105,7 @@ async def profile_handler(_, message: types.Message):
 
     try:
         pic = random.choice(PHOTO_URL)
-        await message.reply_photo(
-            photo=pic,
+        await reply_media_dynamic(message, pic,
             caption=profile_text,
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML

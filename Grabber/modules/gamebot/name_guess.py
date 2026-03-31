@@ -18,7 +18,7 @@ escape_html = html_escape
 
 from Grabber.core.deletion import schedule_deletion
 
-# Send message safe is now handled by game_bot.send_message_safe and game_bot.send_photo_safe
+# Send message safe is now handled by game_bot.send_message_safe and game_bot.send_media_safe
 
 async def start_nguess_game(chat_id):
     """Fetches a character and starts a new game session."""
@@ -43,9 +43,9 @@ async def start_nguess_game(chat_id):
     anime_name = char['anime']
     briefing = f"Identify this character from the series <b>{html_escape(anime_name)}</b>"
 
-    sent = await game_bot.send_photo_safe(
+    sent = await game_bot.send_media_safe(
         chat_id,
-        photo=char['img_url'],
+        media_url=char['img_url'],
         caption=briefing,
         auto_delete=300
     )

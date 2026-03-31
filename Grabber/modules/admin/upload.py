@@ -1,10 +1,15 @@
+import os
+import asyncio
+import urllib.parse
+import httpx
 from pyrogram import enums, filters, types, errors
 from pyrogram.enums import ParseMode
-from Grabber import app
-from Grabber import sudo_users, OWNER_ID, CHARA_CHANNEL_ID, LOGGER
-from Grabber.core.waifu import upload_image_to_imgbb, add_character_to_db, get_character_by_id, invalidate_character_cache
+
+from Grabber import app, sudo_users, OWNER_ID, CHARA_CHANNEL_ID, LOGGER
+from Grabber.core.waifu import upload_media_safely, add_character_to_db, invalidate_character_cache
 from Grabber.database import collection
 from Grabber.modules.collection.rarities import RARITY_MAP
+from Grabber.core.utils import send_media_dynamic, html_escape
 
 WRONG_FORMAT_TEXT = """Wrong ❌️ format...  eg. reply /upload muzan-kibutsuji Demon-slayer 3
 
@@ -23,24 +28,27 @@ rarity_map =
 (🪽 Shop=8)
 (🫧 royal=9)
 (💎 Antique=10)
+(🎞️ AMV=11)
 """
-
-import asyncio
-import os
 
 @app.on_message(filters.command("upload") & filters.user(sudo_users + [OWNER_ID]))
 async def upload_waifu_handler(_, message: types.Message):
+    is_reply = bool(message.reply_to_message and (
+        message.reply_to_message.photo or 
+        message.reply_to_message.document or 
+        getattr(message.reply_to_message, 'video', None) or 
+        getattr(message.reply_to_message, 'animation', None)
+    ))
 
+    args = message.command[1:]
 
-
-    if message.reply_to_message and (message.reply_to_message.photo or message.reply_to_message.document):
-        if len(message.command) < 4:
+    if is_reply:
+        if len(args) < 3:
             return await message.reply_text(WRONG_FORMAT_TEXT, parse_mode=ParseMode.HTML)
-        name, anime, rarity_num = message.command[1], message.command[2], message.command[3]
-        is_reply = True
-    elif len(message.command) == 5:
-        img_url, name, anime, rarity_num = message.command[1], message.command[2], message.command[3], message.command[4]
-        is_reply = False
+        name, anime, rarity_num = args[0], args[1], args[2]
+        img_url = None
+    elif len(args) == 4:
+        img_url, name, anime, rarity_num = args[0], args[1], args[2], args[3]
     else:
         return await message.reply_text(WRONG_FORMAT_TEXT, parse_mode=ParseMode.HTML)
 
@@ -49,44 +57,45 @@ async def upload_waifu_handler(_, message: types.Message):
         if rarity_num not in RARITY_MAP:
             raise ValueError
     except ValueError:
-        return await message.reply_text("❌ Rarity must be between 1 and 10.", parse_mode=ParseMode.HTML)
+        return await message.reply_text("❌ Rarity must be between 1 and 11.", parse_mode=ParseMode.HTML)
 
     status = await message.reply_text("⏳ <b>Processing upload...</b>", parse_mode=ParseMode.HTML)
     temp_path = None
 
     try:
+        # 1. Acquire Media
         if is_reply:
-            await status.edit_text("📥 Downloading image...")
+            await status.edit_text("📥 Downloading media...")
             temp_path = await message.reply_to_message.download()
         else:
-            import urllib.parse
             parsed = urllib.parse.urlparse(img_url)
             if parsed.scheme not in ("http", "https"):
-                return await status.edit_text("❌ Invalid image URL scheme. Only HTTP/HTTPS allowed.", parse_mode=ParseMode.HTML)
+                return await status.edit_text("❌ Invalid media URL scheme. Only HTTP/HTTPS allowed.", parse_mode=ParseMode.HTML)
 
-            import httpx
+            await status.edit_text("📥 Fetching media from URL...")
             async with httpx.AsyncClient() as client:
-                resp = await client.get(img_url)
+                resp = await client.get(img_url, timeout=30.0)
                 if resp.status_code == 200:
-                    temp_path = f"temp_{message.id}.jpg"
+                    ext = os.path.splitext(parsed.path)[1] or ".jpg"
+                    temp_path = f"temp_{message.id}{ext}"
                     with open(temp_path, "wb") as f:
                         f.write(resp.content)
+                else:
+                    return await status.edit_text(f"❌ Failed to fetch media (HTTP {resp.status_code}).")
 
         if not temp_path or not os.path.exists(temp_path):
-            return await status.edit_text("❌ Failed to retrieve image.")
+            return await status.edit_text("❌ Failed to retrieve media.")
 
-        await status.edit_text("☁️ Uploading to Catbox (Primary)...")
-        from Grabber.core.waifu import upload_image_to_catbox, upload_image_to_imgbb
+        is_video = str(temp_path).endswith(('.mp4', '.webm', '.gif'))
 
-        final_url = await upload_image_to_catbox(temp_path)
-
-        if not final_url:
-            await status.edit_text("⚠️ Catbox failed. Using ImgBB backup...")
-            final_url = await upload_image_to_imgbb(temp_path)
+        # 2. Upload Media
+        await status.edit_text("☁️ Uploading Media (Catbox/ImgBB)...")
+        final_url = await upload_media_safely(temp_path)
 
         if not final_url:
-            return await status.edit_text("❌ Both Catbox and ImgBB failed to host the image.")
+            return await status.edit_text("❌ Failed to securely host the media on Catbox or ImgBB.")
 
+        # 3. Finalize Database
         char_name = name.replace('-', ' ').title()
         anime_name = anime.replace('-', ' ').title()
         rarity_text = RARITY_MAP[rarity_num]
@@ -98,9 +107,10 @@ async def upload_waifu_handler(_, message: types.Message):
             f"Added by <a href=\"tg://user?id={message.from_user.id}\">{html_escape(message.from_user.first_name)}</a>"
         )
 
-        sent_msg = await app.send_photo(
+        sent_msg = await send_media_dynamic(
+            client=app,
             chat_id=CHARA_CHANNEL_ID,
-            photo=final_url,
+            media_url=final_url,
             caption=caption,
             parse_mode=ParseMode.HTML
         )
@@ -115,17 +125,24 @@ async def upload_waifu_handler(_, message: types.Message):
 
         char_id = await add_character_to_db(char_data)
         invalidate_character_cache(rarity_text)
-        await status.edit_text(f"✅ <b>Waifu Uploaded!</b>\nID: <code>{char_id}</code>\nHost: {'Catbox' if 'catbox' in final_url else 'ImgBB'}", parse_mode=ParseMode.HTML)
+        
+        await status.edit_text(
+            f"✅ <b>Waifu Uploaded!</b>\nID: <code>{char_id}</code>\nHost: {'Catbox' if 'catbox' in final_url else 'ImgBB'}", 
+            parse_mode=ParseMode.HTML
+        )
 
     except errors.FloodWait as e:
         await asyncio.sleep(e.value)
-        return await upload_waifu_handler(_, message)
+        return await upload_waifu_handler(_, message) # '_' represents client here
     except Exception as e:
         LOGGER.error(f"Upload Failure: {e}")
         await status.edit_text(f"❌ Error: {str(e)}")
     finally:
         if temp_path and os.path.exists(temp_path):
-            os.remove(temp_path)
+            try:
+                os.remove(temp_path)
+            except Exception as cleanup_err:
+                LOGGER.warning(f"Failed to cleanup {temp_path}: {cleanup_err}")
 
 @app.on_message(filters.command(["delete", "delhete"]) & filters.user(sudo_users + [OWNER_ID]))
 async def delete_waifu_handler(_, message: types.Message):
@@ -136,11 +153,13 @@ async def delete_waifu_handler(_, message: types.Message):
     character = await collection.find_one_and_delete({'id': char_id})
 
     if character:
-        if character.get('message_id'):
+        msg_id = character.get('message_id')
+        if msg_id:
             try:
-                await app.delete_messages(CHARA_CHANNEL_ID, character['message_id'])
-            except Exception:
-                pass
+                await app.delete_messages(CHARA_CHANNEL_ID, msg_id)
+            except Exception as e:
+                LOGGER.warning(f"Failed to delete channel message {msg_id}: {e}")
+                
         invalidate_character_cache(character.get('rarity'))
         await message.reply_text(f"✅ Deleted ID: <code>{char_id}</code>", parse_mode=ParseMode.HTML)
     else:

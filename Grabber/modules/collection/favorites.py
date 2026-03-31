@@ -1,3 +1,4 @@
+from Grabber.core.utils import reply_media_dynamic
 from pyrogram import filters, types, enums, errors
 from pyrogram.enums import ButtonStyle, ParseMode
 from Grabber.core.utils import html_escape
@@ -28,8 +29,7 @@ async def fav_handler(_, message: types.Message):
         types.InlineKeyboardButton("❌ Cancel", callback_data=f"fav_cancel:{user_id}")
     ]])
 
-    await message.reply_photo(
-        photo=character.get('img_url'),
+    await reply_media_dynamic(message, character.get('img_url'),
         caption=f"Set <b>{html_escape(character.get('name'))}</b> as your favorite?",
         reply_markup=markup,
         parse_mode=ParseMode.HTML

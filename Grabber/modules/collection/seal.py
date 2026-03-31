@@ -106,7 +106,8 @@ async def seal_handler(_, message: types.Message):
             f"🧤 Added to your harem!"
         )
 
-        await message.reply_photo(character['img_url'], caption=caption, parse_mode=ParseMode.HTML)
+        from Grabber.core.utils import reply_media_dynamic
+        await reply_media_dynamic(message, character['img_url'], caption=caption, parse_mode=ParseMode.HTML)
     else:
         await message.reply_text("❌ Wrong name! Try again.")
 

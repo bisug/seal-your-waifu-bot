@@ -1,3 +1,4 @@
+from Grabber.core.utils import reply_media_dynamic
 import math
 import random
 from Grabber.core.utils import html_escape as escape
@@ -116,8 +117,7 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
                 await message_obj.edit_message_text(text=harem_text, reply_markup=markup, parse_mode=ParseMode.HTML)
         else:
             if pic:
-                await message_obj.reply_photo(
-                    photo=pic,
+                await reply_media_dynamic(message_obj, pic,
                     caption=harem_text,
                     reply_markup=markup,
                     parse_mode=ParseMode.HTML

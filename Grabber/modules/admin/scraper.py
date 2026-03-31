@@ -1,10 +1,11 @@
+from Grabber.core.utils import send_media_dynamic
 import re
 import asyncio
 import os
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
 from Grabber import app, collection, OWNER_ID, CHARA_CHANNEL_ID, LOGGER
-from Grabber.core.waifu import upload_image_to_catbox, add_character_to_db
+from Grabber.core.waifu import upload_media_safely, add_character_to_db
 from Grabber.modules.collection.rarities import RARITY_MAP
 from config import config
 
@@ -124,9 +125,7 @@ async def scrape_group_command_handler(client, message):
                     "Select Rarity to Approve or Decline below:"
                 )
 
-                await app.send_photo(
-                    chat_id=REVIEW_GROUP_ID,
-                    photo=temp_path,
+                await send_media_dynamic(app, chat_id=REVIEW_GROUP_ID, media_url=temp_path,
                     caption=review_caption,
                     reply_markup=get_review_keyboard(),
                     parse_mode=ParseMode.HTML
@@ -189,7 +188,7 @@ async def approve_scrape_callback(client, query):
     try:
         # Download from our own review group
         temp_path = await app.download_media(query.message.photo.file_id)
-        final_url = await upload_image_to_catbox(temp_path)
+        final_url = await upload_media_safely(temp_path)
         
         if not final_url:
             return await status_msg.edit_text("❌ Re-hosting failed.")
@@ -204,9 +203,7 @@ async def approve_scrape_callback(client, query):
             f"<i>Approved by Admin</i>"
         )
         
-        sent_msg = await app.send_photo(
-            chat_id=CHARA_CHANNEL_ID,
-            photo=final_url,
+        sent_msg = await send_media_dynamic(app, chat_id=CHARA_CHANNEL_ID, media_url=final_url,
             caption=channel_caption,
             parse_mode=ParseMode.HTML
         )

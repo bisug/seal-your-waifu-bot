@@ -68,6 +68,25 @@ async def upload_image_to_imgbb(file_path: str) -> str or None:
         LOGGER.error(f"ImgBB Upload Error: {e}")
         return None
 
+async def upload_media_safely(file_path: str) -> str or None:
+    """
+    Maximized wrapper for uploading media.
+    1. Tries Catbox first (supports all media).
+    2. If Catbox fails and the file is NOT a video/GIF, tries ImgBB.
+    """
+    url = await upload_image_to_catbox(file_path)
+    if url:
+        return url
+        
+    if not str(file_path).endswith(('.mp4', '.webm', '.gif')):
+        LOGGER.warning(f"Catbox failed for {file_path}. Falling back to ImgBB...")
+        url = await upload_image_to_imgbb(file_path)
+        if url:
+            return url
+            
+    LOGGER.error(f"Complete upload failure for {file_path}")
+    return None
+
 async def add_character_to_db(char_data: dict) -> str:
     """
     Add a new character to the database with a unique generated ID.

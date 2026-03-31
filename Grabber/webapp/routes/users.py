@@ -188,9 +188,20 @@ async def get_leaderboard(
 
 @router.get("/stats")
 async def get_stats(user: dict = Depends(get_current_user_data)):
-    total_users = await user_collection.count_documents({})
-    # Basic rank calculate fallback
-    rank = await user_collection.count_documents({"xp": {"$gt": user.get("xp", 0)}}) + 1
+    user_id = int(str(user["id"]).split()[0] if isinstance(user["id"], list) else user["id"])
+    user_xp = user.get("xp", 0)
+    
+    rank = await get_user_rank(user_id)
+    total_users = await get_total_ranked_users()
+    
+    if rank is None or total_users == 0:
+        LOGGER.info(f"Stats Leaderboard ZSET miss for {user_id}, falling back to Mongo.")
+        rank = await user_collection.count_documents({"xp": {"$gt": user_xp}}) + 1
+        total_users = await user_collection.count_documents({})
+        await update_user_rank(user_id, user_xp)
+        if total_users > 0 and (await get_total_ranked_users()) == 0:
+            asyncio.create_task(rebuild_leaderboard(user_collection))
+
     percentile = (1 - (rank / max(total_users, 1))) * 100
     
     return {
