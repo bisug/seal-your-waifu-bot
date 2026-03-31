@@ -362,7 +362,11 @@ async def process_egg_hatch(user_id: int, egg: dict):
         return False, "⚠️ The egg was empty (Database error: No chars for this rarity)."
 
     character = random.choice(waifus)
-    await user_collection.update_one({"id": user_id}, {"$push": {"characters": character}}, upsert=True)
+    await user_collection.update_one(
+        {"id": user_id},
+        {"$push": {"characters": character}, "$inc": {"char_count": 1}},
+        upsert=True
+    )
     await add_xp(user_id, 15, "egg_hatch")
     
     return True, character
