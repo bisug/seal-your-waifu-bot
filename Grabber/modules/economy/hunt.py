@@ -25,6 +25,16 @@ EGG_TIERS = {
 }
 
 
+# Mapping for numeric tiers (from Battle Pass) to EGG_TIERS keys
+TIER_MAP = {
+    "1": "common",
+    "2": "gold",
+    "3": "void",
+    "4": "gold", # Fallback for legendary if not defined
+    "5": "void"
+}
+
+
 CORRUPTED_EGG_CHANCE = 5
 
 
@@ -177,8 +187,20 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
 
     page = page % len(eggs)
     egg = eggs[page]
-    tier_info = EGG_TIERS.get(egg.get("tier", "common"))
-    status = egg.get("status", "fresh")
+    
+    # Robust handling for cases where 'egg' might be a string (legacy data or inconsistent pushes)
+    if isinstance(egg, str):
+        tier_key = TIER_MAP.get(egg, egg)
+        status = "fresh"
+        egg_id = f"legacy_{page}"
+    else:
+        # Resolve tier key (might be numeric from BP)
+        raw_tier = egg.get("tier", "common")
+        tier_key = TIER_MAP.get(str(raw_tier), str(raw_tier))
+        status = egg.get("status", "fresh")
+        egg_id = egg.get("id")
+
+    tier_info = EGG_TIERS.get(tier_key, EGG_TIERS["common"])
 
 
     action_button = None
@@ -200,7 +222,7 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
 
     text = (
         f"🥚 <b>Egg Inventory</b>\n\n"
-        f"<b>{html_escape(egg.get('name', 'Unknown Egg'))}</b>\n"
+        f"<b>{html_escape(egg.get('name') if isinstance(egg, dict) else tier_info['name'])}</b>\n"
         f"{status_display}\n\n"
         f"<i>Egg {page + 1} of {len(eggs)}</i>"
     )
@@ -293,15 +315,26 @@ async def egg_incubate_callback(_, query: types.CallbackQuery):
     ready_time = datetime.now() + timedelta(minutes=wait_min)
 
     # Use ID-based update to be safe from positional shifts
-    await user_collection.update_one(
-        {"id": user_id, "eggs.id": egg["id"]},
-        {
+    # If legacy egg (string), we target by position since it has no ID
+    if isinstance(egg, str):
+        query_filter = {"id": user_id}
+        update_op = {"$set": {f"eggs.{page}": {
+            "id": f"migrated_{page}_{int(time.time())}",
+            "tier": TIER_MAP.get(egg, egg),
+            "status": "incubating",
+            "hatch_time": ready_time,
+            "name": EGG_TIERS.get(TIER_MAP.get(egg, egg), EGG_TIERS["common"])["name"]
+        }}}
+    else:
+        query_filter = {"id": user_id, "eggs.id": egg.get("id")}
+        update_op = {
             "$set": {
                 "eggs.$.status": "incubating",
                 "eggs.$.hatch_time": ready_time
             }
         }
-    )
+
+    await user_collection.update_one(query_filter, update_op)
 
     await query.answer(f"🌡️ Incubation started! Come back in {wait_min} minutes.", show_alert=True)
     await show_egg_page(query, page, user_id)
