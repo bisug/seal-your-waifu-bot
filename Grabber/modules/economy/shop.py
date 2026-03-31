@@ -12,8 +12,7 @@ from Grabber.modules.progression.quests import update_quest_progress
 from Grabber.modules.progression.achievements import check_achievements
 from Grabber.core.keyboard import KeyboardBuilder, get_webapp_button
 
-SHOP_RARITY = RARITY_MAP[8]
-DEFAULT_ZENITH_PRICE = 5
+from Grabber.core.constants import SHOP_RARITY, DEFAULT_ZENITH_PRICE
 SHOP_PAGE_SIZE = 5
 SHOP_LIMIT = 20
 ADMINS = list(set(sudo_users + [OWNER_ID]))
