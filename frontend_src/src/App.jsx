@@ -166,7 +166,7 @@ const AppContent = () => {
   }
 
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden bg-brand-midnight">
+    <div className="w-screen h-[100svh] flex flex-col overflow-hidden bg-brand-midnight">
       <AnimatePresence mode="wait">
         <motion.main
           key={activeTab}

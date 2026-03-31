@@ -70,7 +70,7 @@ export const Profile = ({ onCharClick }) => {
        <div className="grid grid-cols-3 gap-3 mb-8">
           {[1,2,3].map(i => <Skeleton key={i} className="h-16 rounded-2xl" />)}
        </div>
-       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
           {Array.from({ length: 9 }).map((_, i) => (
             <CardSkeleton key={`prof-skeleton-${i}`} />
           ))}
