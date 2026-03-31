@@ -46,15 +46,25 @@ async def get_chat_state(chat_id: int) -> Dict[str, Any]:
         try:
             state = await _redis.hgetall(key)
             if state:
-                # Redis hgetall returns a dict of strings. We need to parse some.
-                # Special cases for nested objects like last_character
-                if "last_character" in state:
-                    try: state["last_character"] = json.loads(state["last_character"])
-                    except: pass
-                if "message_id" in state: state["message_id"] = int(state["message_id"])
-                if "spawn_order" in state: state["spawn_order"] = int(state["spawn_order"])
-                if "last_spawn_time" in state: state["last_spawn_time"] = float(state["last_spawn_time"])
-                return state
+                # Redis hgetall returns a dict of strings. We need to parse them.
+                parsed_state = {}
+                for k, v in state.items():
+                    # Handle basic types
+                    if v == "None": parsed_state[k] = None
+                    elif v == "True": parsed_state[k] = True
+                    elif v == "False": parsed_state[k] = False
+                    elif k == "last_character":
+                        try: parsed_state[k] = json.loads(v)
+                        except: parsed_state[k] = v
+                    elif k in ["message_id", "spawn_order"]:
+                        try: parsed_state[k] = int(v)
+                        except: parsed_state[k] = v
+                    elif k == "last_spawn_time":
+                        try: parsed_state[k] = float(v)
+                        except: parsed_state[k] = v
+                    else:
+                        parsed_state[k] = v
+                return parsed_state
         except Exception as e:
             LOGGER.warning(f"Redis get_chat_state error: {e}")
     

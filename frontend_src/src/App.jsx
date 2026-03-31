@@ -242,19 +242,31 @@ const AppContent = () => {
                     <span>Recycle Duplicate</span>
                 </button>
               ) : activeTab === 'shop' && !selectedChar.owned ? (
-                <button 
-                  onClick={() => {
-                    const confirm = window.confirm(`Authorize purchase of ${selectedChar.name} for ✧ ${formatNumber(selectedChar.zenith_price || 500)}?`);
-                    if (confirm) {
-                      window.dispatchEvent(new CustomEvent('shop-buy-character', { detail: { charId: selectedChar.id } }));
-                      setSelectedChar(null);
-                    }
-                  }}
-                  className="w-full py-3.5 rounded-xl bg-brand-neon text-brand-midnight text-[10px] font-black uppercase tracking-widest shadow-lg shadow-brand-neon/20 active:scale-95 transition-all mb-4 flex items-center justify-center space-x-2"
-                >
-                    <Zap size={14} />
-                    <span>BUY CHARACTER (✧ {formatNumber(selectedChar.zenith_price || 500)})</span>
-                </button>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-brand-neon/5 border border-brand-neon/20 rounded-2xl">
+                     <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 rounded-full bg-brand-neon/20 flex items-center justify-center text-brand-neon shadow-lg shadow-brand-neon/20">
+                           <Zap size={20} />
+                        </div>
+                        <div>
+                           <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Buy Value</p>
+                           <p className="text-sm font-black text-white">✧ {formatNumber(selectedChar.zenith_price || 500)}</p>
+                        </div>
+                     </div>
+                     <button 
+                        onClick={() => {
+                            const confirm = window.confirm(`Authorize purchase of ${selectedChar.name}?`);
+                            if (confirm) {
+                                window.dispatchEvent(new CustomEvent('shop-buy-character', { detail: { charId: String(selectedChar.id) } }));
+                                setSelectedChar(null);
+                            }
+                        }}
+                        className="px-6 py-3 rounded-2xl bg-brand-neon text-brand-midnight text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-brand-neon/30 active:scale-95 transition-all"
+                     >
+                        BUY NOW
+                     </button>
+                  </div>
+                </div>
               ) : null
             }
           />

@@ -1,8 +1,14 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Award, Lock, Sparkles, ChevronRight } from 'lucide-react';
+import { Award, Lock, Sparkles, ChevronRight, Loader2 } from 'lucide-react';
+import { apiFetch } from '../api';
+import { useUser } from '../context/UserContext';
+import { toast } from 'react-hot-toast';
 
 export const Pass = () => {
+  const { user, refreshUser } = useUser();
+  const [loading, setLoading] = React.useState(false);
+
   const rewards = [
     { lvl: 5, reward: 'Premium Egg', rarity: 'Rare', type: 'item' },
     { lvl: 10, reward: 'Zenith Pack (500)', rarity: 'Epic', type: 'currency' },
@@ -58,8 +64,37 @@ export const Pass = () => {
       </div>
       
       <div className="mt-12 p-6 glass-panel rounded-3xl border border-brand-neon/20 bg-brand-neon/[0.02] text-center">
-         <p className="text-[10px] text-slate-500 mb-2">COMPLETE QUESTS TO LEVEL UP</p>
-         <button className="w-full py-4 rounded-2xl bg-brand-neon text-brand-midnight text-[11px] font-black tracking-[0.3em]">PURCHASE PREMIUM</button>
+         <p className="text-[10px] text-slate-500 mb-2 uppercase tracking-widest">
+           {user?.pass_type === 'premium' ? 'PREMIUM ACCESS GRANTED' : 'COMPLETE QUESTS TO LEVEL UP'}
+         </p>
+         
+         {user?.pass_type !== 'premium' ? (
+           <button 
+             onClick={async () => {
+                setLoading(true);
+                try {
+                  const res = await apiFetch('/shop/upgrade_pass/premium', { method: 'POST' });
+                  if (res.status === 'success') {
+                    toast.success('PREMIUM PROTOCOL ACTIVATED');
+                    refreshUser();
+                  }
+                } catch (err) {
+                  toast.error(err.message || 'Upgrade failed');
+                } finally {
+                  setLoading(false);
+                }
+             }}
+             disabled={loading}
+             className="w-full py-4 rounded-2xl bg-brand-neon text-brand-midnight text-[11px] font-black tracking-[0.3em] flex items-center justify-center space-x-2 active:scale-95 transition-all shadow-lg shadow-brand-neon/20"
+           >
+              {loading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+              <span>PURCHASE PREMIUM (✧ 500)</span>
+           </button>
+         ) : (
+           <div className="w-full py-4 rounded-2xl bg-white/5 border border-white/10 text-white/40 text-[11px] font-black tracking-[0.3em]">
+             ELITE STATUS ACTIVE
+           </div>
+         )}
       </div>
     </div>
   );
