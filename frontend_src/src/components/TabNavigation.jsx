@@ -30,7 +30,7 @@ export const TabNavigation = ({ activeTab, onNavigate }) => {
 
   return (
     <nav className="flex-shrink-0 glass-panel border-t border-white/10 pt-3 backdrop-blur-2xl bg-brand-midnight/40" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
-      <div className="max-w-2xl mx-auto flex justify-around items-center px-2">
+      <div className="max-w-2xl mx-auto grid grid-cols-7 gap-1 px-1">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -39,7 +39,7 @@ export const TabNavigation = ({ activeTab, onNavigate }) => {
             <button
               key={tab.id}
               onClick={() => handleNavigate(tab.id)}
-              className="relative flex flex-col items-center justify-center p-1.5 min-w-[38px]"
+              className="relative flex flex-col items-center justify-center py-3 min-h-[44px] transition-transform active:scale-90"
             >
               <motion.div
                 initial={false}

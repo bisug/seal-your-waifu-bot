@@ -182,6 +182,18 @@ export const Hatchery = () => {
     }
   };
 
+  // Audit: Scroll Lock for hatching result
+  useEffect(() => {
+    if (hatchingResult) {
+      const scroller = document.querySelector('.app-scroller');
+      if (scroller) scroller.style.overflow = 'hidden';
+      return () => {
+        const scroller = document.querySelector('.app-scroller');
+        if (scroller) scroller.style.overflow = 'auto';
+      };
+    }
+  }, [hatchingResult]);
+
   const handleSetPet = async (petName) => {
     try {
       await apiFetch(`/pets/set_active/${petName}`, { method: 'POST' });
