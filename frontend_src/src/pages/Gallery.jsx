@@ -77,7 +77,7 @@ export const Gallery = ({ onCharClick }) => {
         </div>
         
         <ScrollArea>
-           {['', 'Common', 'Rare', 'Epic', 'Legendary', 'Mythical', 'Celestial'].map((r) => (
+           {['', 'Common', 'Medium', 'Rare', 'Legendary', 'Cosmic', 'Exclusive', 'Limited Edition', 'Royal', 'Antique', 'Celestial'].map((r) => (
             <button 
               key={r}
               onClick={() => { setRarity(r); setPage(1); }}
