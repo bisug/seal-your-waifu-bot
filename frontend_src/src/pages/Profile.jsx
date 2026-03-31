@@ -4,6 +4,7 @@ import { useUser } from '../context/UserContext';
 import { apiFetch } from '../api';
 import { ProgressBar, Card, Skeleton, CardSkeleton } from '../components/UI';
 import { Shield, Zap, Users, Trophy, Search, Loader2 } from 'lucide-react';
+import { formatNumber } from '../utils';
 
 export const Profile = ({ onCharClick }) => {
   const { user, loading: userLoading } = useUser();
@@ -124,7 +125,7 @@ export const Profile = ({ onCharClick }) => {
             <div className={`${stat.color} mb-1.5 opacity-80`}>
               <stat.icon size={16} />
             </div>
-            <span className="text-[13px] font-black tracking-tight">{stat.value.toLocaleString()}</span>
+            <span className="text-[13px] font-black tracking-tight">{formatNumber(stat.value)}</span>
             <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{stat.label}</span>
           </div>
         ))}

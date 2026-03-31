@@ -6,6 +6,10 @@ import { TabNavigation } from './components/TabNavigation';
 import { Profile } from './pages/Profile';
 import { NotFound } from './pages/NotFound';
 import { Modal, ToastProvider } from './components/UI';
+import { Zap } from 'lucide-react';
+import { apiFetch } from './api';
+import { toast } from 'react-hot-toast';
+import { formatNumber } from './utils';
 
 // Lazy load pages for extreme performance
 const Gallery = lazy(() => import('./pages/Gallery').then(m => ({ default: m.Gallery })));
@@ -214,6 +218,45 @@ const AppContent = () => {
           <Modal
             character={selectedChar}
             onClose={() => setSelectedChar(null)}
+            actions={
+              activeTab === 'profile' && selectedChar.count > 1 ? (
+                <button 
+                  onClick={async () => {
+                    try {
+                        const confirm = window.confirm(`Recycle 1 x ${selectedChar.name} for Zenith?`);
+                        if (!confirm) return;
+                        await apiFetch('/recycle', { 
+                            method: 'POST', 
+                            body: JSON.stringify([selectedChar.id]) 
+                        });
+                        toast.success('Nexus Fusion Complete');
+                        setSelectedChar(null);
+                        window.dispatchEvent(new CustomEvent('user-data-refresh'));
+                    } catch (err) {
+                        toast.error(err.message || 'Fusion failed');
+                    }
+                  }}
+                  className="w-full py-3.5 rounded-xl bg-brand-accent/10 border border-brand-accent/20 text-brand-accent text-[10px] font-black uppercase tracking-widest hover:bg-brand-accent/20 transition-all flex items-center justify-center space-x-2 mb-4"
+                >
+                    <Zap size={14} />
+                    <span>Recycle Duplicate</span>
+                </button>
+              ) : activeTab === 'shop' && !selectedChar.owned ? (
+                <button 
+                  onClick={() => {
+                    const confirm = window.confirm(`Authorize purchase of ${selectedChar.name} for ✧ ${formatNumber(selectedChar.zenith_price || 500)}?`);
+                    if (confirm) {
+                      window.dispatchEvent(new CustomEvent('shop-buy-character', { detail: { charId: selectedChar.id } }));
+                      setSelectedChar(null);
+                    }
+                  }}
+                  className="w-full py-3.5 rounded-xl bg-brand-neon text-brand-midnight text-[10px] font-black uppercase tracking-widest shadow-lg shadow-brand-neon/20 active:scale-95 transition-all mb-4 flex items-center justify-center space-x-2"
+                >
+                    <Zap size={14} />
+                    <span>BUY CHARACTER (✧ {formatNumber(selectedChar.zenith_price || 500)})</span>
+                </button>
+              ) : null
+            }
           />
         )}
       </AnimatePresence>
