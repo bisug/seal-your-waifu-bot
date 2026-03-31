@@ -4,62 +4,18 @@ import { apiFetch } from '../api';
 import { Card, CardSkeleton, useApi } from '../components/UI';
 import { ShoppingBag, Zap, Timer, PackageOpen, Loader2, Check } from 'lucide-react';
 import { useUser } from '../context/UserContext';
-import { useMainButton } from '../hooks/useMainButton';
+import { toast } from 'react-hot-toast';
+import { formatNumber } from '../utils';
 
 export const Shop = ({ onCharClick }) => {
   const { user, refreshUser } = useUser();
   const [activeTab, setActiveTab] = useState('market');
   const [hatching, setHatching] = useState(false);
-  const [buyingId, setBuyingId] = useState(null);
   const [newChar, setNewChar] = useState(null);
-  const [selectedForPurchase, setSelectedForPurchase] = useState(null);
-
-  const { show: showMain, hide: hideMain, setProgress: setMainProgress } = useMainButton();
-
-  const { data: marketItems, loading, execute: fetchShopData } = useApi('/shop/characters', { 
-    initialData: [],
-    manual: activeTab !== 'market'
-  }, [activeTab]);
-
   const handleTabChange = (tabId) => {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
     setActiveTab(tabId);
-    setSelectedForPurchase(null);
-    hideMain();
   };
-
-  const buyCharacter = async (charId, price) => {
-    setBuyingId(charId);
-    setMainProgress(true);
-    try {
-      const res = await apiFetch(`/shop/buy/character/${charId}`, { method: 'POST' });
-      if (res.status === 'success') {
-        window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
-        setSelectedForPurchase(null);
-        hideMain();
-        await refreshUser();
-        await fetchShopData();
-      }
-    } catch (err) {
-      window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('error');
-      window.Telegram?.WebApp?.showAlert(err.message);
-    } finally {
-      setBuyingId(null);
-      setMainProgress(false);
-    }
-  };
-
-  // Handle MainButton visibility based on selection
-  useEffect(() => {
-    if (selectedForPurchase && !selectedForPurchase.owned && activeTab === 'market') {
-      showMain(
-        `BUY ${selectedForPurchase.name} (✧ ${selectedForPurchase.zenith_price || 500})`,
-        () => buyCharacter(selectedForPurchase.id, selectedForPurchase.zenith_price)
-      );
-    } else {
-      hideMain();
-    }
-  }, [selectedForPurchase, activeTab]);
 
   const incubateEgg = async (eggId) => {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
@@ -93,13 +49,31 @@ export const Shop = ({ onCharClick }) => {
     }
   };
 
-  const handleCardClick = (char) => {
-    if (char.owned) {
-       onCharClick(char);
-    } else {
-       setSelectedForPurchase(char === selectedForPurchase ? null : char);
-    }
-  };
+  const { data: marketItems, loading, execute: fetchShopData } = useApi('/shop/characters', { 
+    initialData: [],
+    manual: activeTab !== 'market'
+  }, [activeTab]);
+
+  // Handle purchases via global event dispatched by Modal
+  useEffect(() => {
+    const handlePurchase = async (e) => {
+      const { charId } = e.detail;
+      try {
+        const res = await apiFetch(`/shop/buy/character/${charId}`, { method: 'POST' });
+        if (res.status === 'success') {
+          window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
+          toast.success('Asset integrated successfully');
+          await refreshUser();
+          await fetchShopData();
+        }
+      } catch (err) {
+        toast.error(err.message || 'Transaction failed');
+      }
+    };
+
+    window.addEventListener('shop-buy-character', handlePurchase);
+    return () => window.removeEventListener('shop-buy-character', handlePurchase);
+  }, [fetchShopData]);
 
   return (
     <div className="pb-8 pt-6 px-4">
@@ -110,7 +84,7 @@ export const Shop = ({ onCharClick }) => {
         </div>
         <div className="flex items-center space-x-2 bg-brand-neon/10 border border-brand-neon/20 px-3 py-1.5 rounded-xl shadow-[0_0_15px_rgba(0,242,255,0.1)]">
           <Zap size={14} className="text-brand-neon" />
-          <span className="text-sm font-black text-brand-neon">{user?.stats?.zenith?.toLocaleString() || 0}</span>
+          <span className="text-sm font-black text-brand-neon">{formatNumber(user?.stats?.zenith)}</span>
         </div>
       </header>
 
@@ -133,7 +107,7 @@ export const Shop = ({ onCharClick }) => {
       </div>
 
       {loading && activeTab === 'market' && !(Array.isArray(marketItems) && marketItems.length) ? (
-        <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
           {Array.from({ length: 12 }).map((_, i) => (
             <CardSkeleton key={`shop-skeleton-${i}`} />
           ))}
@@ -141,7 +115,7 @@ export const Shop = ({ onCharClick }) => {
       ) : (
         <AnimatePresence mode="wait">
           {activeTab === 'market' && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} key="market" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} key="market" className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                 <AnimatePresence mode="popLayout">
                   {(Array.isArray(marketItems) ? marketItems : []).map((char, i) => (
                     <motion.div 
@@ -155,21 +129,14 @@ export const Shop = ({ onCharClick }) => {
                       <div className={char.owned ? 'opacity-40 grayscale-[0.5]' : ''}>
                          <Card 
                            character={char} 
-                           onClick={() => handleCardClick(char)} 
+                           onClick={() => onCharClick(char)} 
                          />
                       </div>
                       
                       {char.owned && (
-                        <div className="absolute top-2 right-2 bg-brand-neon text-brand-midnight rounded-full p-1 shadow-lg z-20 border border-brand-midnight scale-75">
-                          <Check size={12} strokeWidth={4} />
+                        <div className="absolute top-1.5 right-1.5 bg-brand-neon text-brand-midnight rounded-full p-0.5 shadow-lg z-20 border border-brand-midnight scale-75">
+                          <Check size={11} strokeWidth={4} />
                         </div>
-                      )}
-
-                      {selectedForPurchase?.id === char.id && !char.owned && (
-                        <motion.div 
-                           layoutId="selection-ring"
-                           className="absolute inset-0 border-2 border-brand-neon rounded-2xl pointer-events-none z-30 shadow-[0_0_20px_rgba(0,242,255,0.4)]"
-                        />
                       )}
                     </motion.div>
                   ))}

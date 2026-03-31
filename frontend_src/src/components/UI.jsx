@@ -3,11 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Info, CheckCircle2, AlertCircle, Loader2, Zap } from 'lucide-react';
 import { apiFetch } from '../api';
 import { toast } from 'react-hot-toast';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-
-// Utility: merge Tailwind classes safely
-const cn = (...inputs) => twMerge(clsx(inputs));
+import { cn, formatNumber } from '../utils';
 
 /**
  * Animated Progress Bar for XP, Health, or Pass levels.
@@ -20,7 +16,7 @@ export const ProgressBar = ({ current, total, color = "bg-brand-neon", label }) 
       {label && (
         <div className="flex justify-between items-end text-[10px] font-black text-slate-400 px-0.5 uppercase tracking-widest">
           <span className="opacity-70">{label}</span>
-          <span className="text-white/80 tabular-nums">{current.toLocaleString()} / {total.toLocaleString()}</span>
+          <span className="text-white/80 tabular-nums">{formatNumber(current)} / {formatNumber(total)}</span>
         </div>
       )}
       <div className="h-2 w-full bg-slate-900/50 rounded-full overflow-hidden border border-white/10 p-[1px]">
@@ -164,7 +160,7 @@ export const useApi = (endpoint, options = {}, deps = []) => {
 /**
  * Cinematic Detail Modal
  */
-export const Modal = ({ character, onClose }) => {
+export const Modal = ({ character, onClose, actions }) => {
     // Audit: Scroll Lock for background content
     useEffect(() => {
         if (character) {
@@ -202,7 +198,7 @@ export const Modal = ({ character, onClose }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-end justify-center px-4 pb-12 pt-20"
+            className="fixed inset-0 z-[100] flex items-end justify-center px-4 pb-6 pt-10"
         >
             <div className="absolute inset-0 bg-brand-midnight/80 backdrop-blur-md" onClick={onClose} />
             
@@ -211,9 +207,9 @@ export const Modal = ({ character, onClose }) => {
                 animate={{ y: 0 }}
                 exit={{ y: "100%" }}
                 transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                className={`relative w-full max-w-sm glass-panel rounded-t-[2.5rem] overflow-hidden border-t-2 border-x border-white/20 flex flex-col pt-2 bg-gradient-to-b ${rarityColors[character.rarity] || 'from-slate-800/10 to-slate-900'}`}
+                className={`relative w-full max-w-sm glass-panel rounded-t-3xl overflow-hidden border-t border-x border-white/20 flex flex-col pt-1 bg-gradient-to-b ${rarityColors[character.rarity] || 'from-slate-800/10 to-slate-900'}`}
             >
-                <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-4" />
+                <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-3" />
                 
                 <button 
                   onClick={onClose}
@@ -222,12 +218,13 @@ export const Modal = ({ character, onClose }) => {
                     <X size={18} />
                 </button>
 
-                <div className="px-6 pb-8 overflow-y-auto">
-                    <div className={`aspect-[4/5] rounded-3xl overflow-hidden border border-white/10 mb-6 shadow-[0_0_50px_rgba(0,0,0,0.5)] ${glowColors[character.rarity]}`}>
+                <div className="px-5 pb-6 overflow-y-auto custom-scrollbar">
+                    <div className={`aspect-square rounded-2xl overflow-hidden border border-white/10 mb-5 shadow-[0_0_40px_rgba(0,0,0,0.5)] ${glowColors[character.rarity]}`}>
                         <img 
                           src={character.img_url} 
                           alt={character.name}
                           className="w-full h-full object-cover"
+                          decoding="async"
                         />
                     </div>
 
@@ -240,54 +237,26 @@ export const Modal = ({ character, onClose }) => {
                             <p className="text-slate-400 font-medium italic text-xs tracking-wide truncate">{character.anime}</p>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3 pt-3 border-t border-white/5">
-                            <div className="space-y-0.5">
-                                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Global ID</p>
-                                <p className="font-mono text-xs text-brand-neon">#{character.id}</p>
+                        {/* Dynamic Actions (Buy, Recycle, etc.) */}
+                        {actions && (
+                            <div className="pt-2">
+                                {actions}
                             </div>
-                            <div className="space-y-0.5">
-                                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Duplicates</p>
-                                <p className="font-bold text-xs">x{character.count || 1}</p>
-                            </div>
-                        </div>
-
-                        {character.count > 1 && (
-                            <button 
-                              onClick={async () => {
-                                try {
-                                    const confirm = window.confirm(`Recycle 1 x ${character.name} for Zenith?`);
-                                    if (!confirm) return;
-                                    await apiFetch('/recycle', { 
-                                        method: 'POST', 
-                                        body: JSON.stringify([character.id]) 
-                                    });
-                                    toast.success('Nexus Fusion Complete');
-                                    onClose();
-                                    window.dispatchEvent(new CustomEvent('user-data-refresh'));
-                                } catch (err) {
-                                    toast.error(err.message || 'Fusion failed');
-                                }
-                              }}
-                              className="w-full py-2.5 rounded-lg bg-brand-accent/10 border border-brand-accent/20 text-brand-accent text-[10px] font-black uppercase tracking-widest hover:bg-brand-accent/20 transition-all flex items-center justify-center space-x-2"
-                            >
-                                <Zap size={12} />
-                                <span>Recycle Duplicate</span>
-                            </button>
                         )}
                         
-                        <div className="flex items-center space-x-2 p-2.5 rounded-lg bg-white/5 border border-white/5 text-[9px] text-slate-400 font-medium italic">
-                            <Info size={12} className="text-brand-neon shrink-0" />
-                            <span>Captured in group by this collector.</span>
+                        <div className="flex items-center space-x-2 p-2 rounded-lg bg-white/5 border border-white/5 text-[9px] text-slate-400 font-medium italic">
+                            <Info size={11} className="text-brand-neon shrink-0" />
+                            <span>Neural signature captured in sector archive.</span>
                         </div>
                     </div>
                 </div>
                 
-                <div className="px-5 pb-5 pt-1">
+                <div className="px-5 pb-5 pt-0">
                     <button 
                       onClick={onClose}
-                      className="w-full py-3 rounded-xl bg-white text-brand-midnight font-black uppercase tracking-widest text-[10px] hover:scale-[1.02] transition-transform active:scale-95"
+                      className="w-full py-3.5 rounded-xl bg-white text-brand-midnight font-black uppercase tracking-widest text-[10px] active:scale-95 transition-transform"
                     >
-                        CLOSE DETAIL
+                        CLOSE PORTAL
                     </button>
                 </div>
             </motion.div>
@@ -342,12 +311,12 @@ export const Card = memo(({ character, onClick }) => {
                     src={imgSrc || DEFAULT_AVATAR}
                     alt={character.name}
                     className={cn(
-                        "w-full h-full object-cover transition-all duration-700",
+                        "w-full h-full object-cover transition-all duration-300",
                         isLoaded ? "scale-100 blur-0 opacity-100" : "scale-110 blur-xl opacity-0"
                     )}
                     onLoad={() => setIsLoaded(true)}
                     onError={() => setImgSrc(DEFAULT_AVATAR)}
-                    loading="lazy"
+                    decoding="async"
                 />
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-brand-midnight via-brand-midnight/60 to-transparent p-2.5 pt-8 text-left">
                     <div className="flex justify-between items-end">

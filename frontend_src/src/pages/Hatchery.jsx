@@ -5,6 +5,7 @@ import { apiFetch } from '../api';
 import { toast } from 'react-hot-toast';
 import { Card, ProgressBar, Skeleton } from '../components/UI';
 import { Egg, Zap, Clock, ChevronRight, Sparkles, Shield, Flame, Wind, Loader2 } from 'lucide-react';
+import { formatNumber } from '../utils';
 
 const EGG_THEMES = {
   common: { color: 'text-slate-400', bg: 'bg-slate-400/10', border: 'border-slate-400/20' },
@@ -232,7 +233,7 @@ export const Hatchery = () => {
           >
             <div className="flex items-center justify-center space-x-2">
               {tab === 'eggs' ? <Egg size={14} /> : <Zap size={14} />}
-              <span>{tab === 'eggs' ? `PODS (${user.eggs?.length || 0})` : 'PET SQUAD'}</span>
+              <span>{tab === 'eggs' ? `PODS (${formatNumber(user.eggs?.length)})` : 'PET SQUAD'}</span>
             </div>
           </button>
         ))}
