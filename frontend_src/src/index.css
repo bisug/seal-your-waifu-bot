@@ -51,7 +51,8 @@ html {
   height: 100svh;
   width: 100vw;
   overflow: hidden;
-  position: fixed;
+  margin: 0;
+  padding: 0;
 }
 
 body {
@@ -66,7 +67,6 @@ body {
   user-select: none;
   -webkit-touch-callout: none;
   overscroll-behavior: none;
-  position: fixed;
 }
 
 button, a {
@@ -134,12 +134,11 @@ button, a {
 }
 
 #root {
-  width: 100vw;
-  height: 100svh;
+  position: fixed;
+  inset: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  position: relative;
 }
 
 /* THE DEFINITIVE SCROLL FIX:
