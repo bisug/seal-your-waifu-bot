@@ -8,6 +8,7 @@ from Grabber.database import user_collection
 from Grabber.webapp.models import UserProfileResponse
 from Grabber.core.progression import get_user_progress, get_level_from_xp
 from Grabber.core.cache import get_user_rank, get_total_ranked_users, update_user_rank, rebuild_leaderboard
+from Grabber.core.utils import normalize_user_id
 from Grabber.modules.progression.pet import DEFAULT_PET
 import json
 
@@ -25,7 +26,7 @@ async def get_bot_info():
 
 @router.get("/me", response_model=UserProfileResponse)
 async def get_me(user: dict = Depends(get_current_user_data)):
-    user_id = int(user["id"])
+    user_id = normalize_user_id(user["id"])
 
     # Compute rank via Redis ZSET for O(log N) performance
     user_xp = user.get("xp", 0)
@@ -188,7 +189,7 @@ async def get_leaderboard(
 
 @router.get("/stats")
 async def get_stats(user: dict = Depends(get_current_user_data)):
-    user_id = int(str(user["id"]).split()[0] if isinstance(user["id"], list) else user["id"])
+    user_id = normalize_user_id(user["id"])
     user_xp = user.get("xp", 0)
     
     rank = await get_user_rank(user_id)

@@ -27,7 +27,7 @@ async def add_char_to_user(user_id: int, character: dict):
     """
     await user_collection.update_one(
         {"id": {"$in": [user_id, str(user_id)]}},
-        {"$push": {"characters": character}},
+        {"$push": {"characters": character}, "$inc": {"char_count": 1}},
         upsert=True
     )
     await invalidate_user_cache(user_id)
@@ -39,7 +39,7 @@ async def remove_char_from_user(user_id: int, char_id: str) -> bool:
     """
     res = await user_collection.update_one(
         {"id": {"$in": [user_id, str(user_id)]}, "characters.id": char_id},
-        {"$pull": {"characters": {"id": char_id}}}
+        {"$pull": {"characters": {"id": char_id}}, "$inc": {"char_count": -1}}
     )
     return res.modified_count > 0
 

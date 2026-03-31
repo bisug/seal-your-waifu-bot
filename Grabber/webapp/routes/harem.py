@@ -4,6 +4,7 @@ from Grabber.webapp.auth import get_current_user, get_current_user_data, _user_l
 from Grabber.database import user_collection, collection
 from Grabber.webapp.models import PaginatedResponse
 from Grabber.core.constants import PAYOUTS
+from Grabber.core.utils import normalize_user_id
 
 router = APIRouter()
 
@@ -124,14 +125,16 @@ async def recycle_characters(
                 new_harem.append(char)
                 
         # Resolve exact user id integer for mongo query compatibility
-        uid_int = user["id"]
-        if isinstance(uid_int, list): uid_int = uid_int[0]
+        uid_int = normalize_user_id(user["id"])
 
         await user_collection.update_one(
             get_user_id_query(uid_int),
             {
                 "$set": {"characters": new_harem},
-                "$inc": {"zenith": total_reward}
+                "$inc": {
+                    "zenith": total_reward,
+                    "char_count": -len(char_ids)
+                }
             }
         )
         
