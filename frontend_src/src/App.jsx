@@ -28,17 +28,23 @@ class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error("Master Audit - UI Crash Detected:", error, errorInfo);
+    this.setState({ errorInfo });
   }
 
   render() {
     if (this.state.hasError) {
       return (
         <div className="flex-1 flex flex-col items-center justify-center p-12 text-center min-h-svh bg-brand-midnight">
-          <h2 className="text-brand-accent font-black mb-4 uppercase tracking-[0.3em]">Critical Overload</h2>
+          <div className="mb-8 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl max-w-sm">
+             <h2 className="text-red-500 font-black mb-2 uppercase tracking-[0.3em]">Critical Overload</h2>
+             <p className="text-[10px] text-red-400 font-mono break-all">{this.state.error?.toString() || 'Unknown Error Signature'}</p>
+          </div>
+          
           <p className="text-slate-500 text-[10px] mb-8 uppercase tracking-widest">A UI module has desynchronized. Initiate recovery?</p>
+          
           <button 
             onClick={() => window.location.reload()}
-            className="px-10 py-5 rounded-2xl bg-brand-accent text-brand-midnight font-black uppercase text-[10px] tracking-[0.2em] shadow-xl shadow-brand-accent/20"
+            className="px-8 py-4 bg-brand-accent text-white font-black rounded-2xl uppercase tracking-widest text-[11px] neon-shadow shadow-brand-accent/50 active:scale-95 transition-transform"
           >
             RESTABILIZE
           </button>
