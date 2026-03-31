@@ -1,5 +1,7 @@
 const API_BASE = '/api/v1_7b82';
-const tg = window.Telegram?.WebApp;
+// FIX: Read Telegram SDK at CALL TIME, not at module load time.
+// On mobile, the SDK may not be injected yet when the JS module first evaluates.
+const getTg = () => window.Telegram?.WebApp;
 
 let sessionToken = localStorage.getItem('auth_token');
 
@@ -71,6 +73,7 @@ export async function apiFetch(endpoint, options = {}, retries = 2) {
  * Perform initial handshake with the backend using Telegram initData.
  */
 export async function secureInit(avatarUrl = null) {
+  const tg = getTg(); // Read at call time, not module load time
   const initData = tg?.initData;
   const storedToken = localStorage.getItem('auth_token');
 

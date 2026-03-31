@@ -35,7 +35,9 @@ export const Quests = () => {
   };
 
   const claimableQuest = useMemo(() => {
-    const all = [...quests.daily, ...quests.weekly];
+    const daily = Array.isArray(quests?.daily) ? quests.daily : [];
+    const weekly = Array.isArray(quests?.weekly) ? quests.weekly : [];
+    const all = [...daily, ...weekly];
     return all.find(q => q.progress >= q.target && !q.claimed);
   }, [quests]);
 
@@ -108,21 +110,21 @@ export const Quests = () => {
         <h1 className="text-2xl font-black uppercase tracking-tight">Active Quests</h1>
       </header>
 
-      {loading && !quests.daily.length ? (
+      {loading && !(quests?.daily?.length) ? (
         <div className="flex justify-center py-20"><Loader2 className="animate-spin text-brand-neon" /></div>
       ) : (
-        <div className="space-y-8">
+      <div className="space-y-8">
           <section>
             <h2 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 px-2">Daily Assignments</h2>
             <div className="space-y-3">
-              {quests.daily.map(q => <QuestItem key={q.id} quest={q} />)}
+              {(quests?.daily || []).map(q => <QuestItem key={q.id} quest={q} />)}
             </div>
           </section>
 
           <section>
             <h2 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 px-2">Weekly Challenges</h2>
             <div className="space-y-3">
-              {quests.weekly.map(q => <QuestItem key={q.id} quest={q} />)}
+              {(quests?.weekly || []).map(q => <QuestItem key={q.id} quest={q} />)}
             </div>
           </section>
         </div>

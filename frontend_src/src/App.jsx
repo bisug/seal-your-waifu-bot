@@ -23,12 +23,11 @@ class ErrorBoundary extends React.Component {
   }
 
   static getDerivedStateFromError(error) {
-    return { hasError: true };
+    return { hasError: true, error };
   }
 
   componentDidCatch(error, errorInfo) {
     console.error("Master Audit - UI Crash Detected:", error, errorInfo);
-    this.setState({ errorInfo });
   }
 
   render() {
@@ -100,20 +99,29 @@ const AppContent = () => {
     const tg = window.Telegram?.WebApp;
     if (!tg) return;
 
-    if (selectedChar) {
-      tg.BackButton.show();
-      tg.BackButton.onClick(() => setSelectedChar(null));
-    } else {
-      tg.BackButton.hide();
+    try {
+      if (selectedChar) {
+        tg.BackButton?.show?.();
+        tg.BackButton?.onClick?.(() => setSelectedChar(null));
+      } else {
+        tg.BackButton?.hide?.();
+      }
+
+      // Theme Sync: Only call if method exists (not all Telegram versions)
+      tg.setHeaderColor?.('#0A0A0B');
+      tg.setBackgroundColor?.('#0A0A0B');
+      tg.expand?.();
+    } catch (e) {
+      // Silently ignore Telegram API errors on older clients
+      console.warn('Telegram API error (non-critical):', e.message);
     }
 
-    // Theme Sync: Deep Midnight & Neon
-    tg.setHeaderColor('#0A0A0B'); 
-    tg.setBackgroundColor('#0A0A0B');
-    tg.expand();
-
     return () => {
-      tg.BackButton.offClick(() => setSelectedChar(null));
+      try {
+        tg.BackButton?.offClick?.(() => setSelectedChar(null));
+      } catch (e) {
+        // ignore
+      }
     };
   }, [selectedChar]);
 
@@ -176,10 +184,10 @@ const AppContent = () => {
       <AnimatePresence mode="wait">
         <motion.main
           key={activeTab}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -25 }}
-          transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15, ease: 'easeOut' }}
           className="app-scroller adaptive-px bg-mesh overflow-x-hidden"
         >
           <Suspense fallback={
