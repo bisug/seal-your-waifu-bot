@@ -6,6 +6,7 @@ from Grabber.webapp.models import QuestsResponse
 from Grabber.modules.progression.quests import get_user_quests, QUEST_POOL, WEEKLY_POOL, add_xp
 from Grabber.core.constants import EGG_TIERS
 from Grabber.modules.progression.pet import DEFAULT_PET
+from Grabber.core.utils import normalize_user_id
 
 router = APIRouter()
 
@@ -71,7 +72,7 @@ async def set_active_pet(pet_name: str, user: dict = Depends(get_current_user_da
     if not any(p["name"] == pet_name for p in pets):
         raise HTTPException(status_code=400, detail="Pet not owned")
         
-    uid_int = int(user["id"])
+    uid_int = normalize_user_id(user["id"])
 
     await user_collection.update_one(
         get_user_id_query(uid_int),
@@ -99,7 +100,7 @@ async def incubate_egg(egg_id: str, user: dict = Depends(get_current_user_data))
         
     ready_time = datetime.now() + timedelta(minutes=wait_min)
     
-    uid_int = int(user["id"])
+    uid_int = normalize_user_id(user["id"])
     
     q = get_user_id_query(uid_int)
     q["eggs.id"] = egg_id
@@ -128,7 +129,7 @@ async def hatch_egg(egg_id: str, user: dict = Depends(get_current_user_data)):
     if h_time and datetime.now() < h_time:
         raise HTTPException(status_code=400, detail="Egg still incubating")
         
-    uid_int = int(user["id"])
+    uid_int = normalize_user_id(user["id"])
 
     success, result = await process_egg_hatch(uid_int, egg)
     
