@@ -18,7 +18,7 @@ PAYOUTS = {
 
 # Shop Settings
 SHOP_LIMIT = 50
-DEFAULT_ZENITH_PRICE = 50
+DEFAULT_ZENITH_PRICE = 5
 
 # Pass Constants
 PASS_PRICES = {

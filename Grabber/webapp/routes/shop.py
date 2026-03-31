@@ -60,10 +60,14 @@ async def buy_character_api(char_id: str, user_id: int = Depends(get_current_use
         
         price = char_raw.get("zenith_price", DEFAULT_ZENITH_PRICE)
         if user_raw.get("zenith", 0) < price:
+            from Grabber import LOGGER
+            LOGGER.info(f"Shop Purchase Error: User {user_id} has insufficient Zenith ({user_raw.get('zenith', 0)}) for price {price}")
             raise HTTPException(status_code=400, detail=f"Insufficient Zenith (Need {price})")
             
         owned_ids = [c["id"] for c in user_raw.get("characters", []) if isinstance(c, dict) and "id" in c]
         if char_id in owned_ids:
+            from Grabber import LOGGER
+            LOGGER.info(f"Shop Purchase Error: User {user_id} already owns character {char_id}")
             raise HTTPException(status_code=400, detail="You already own this character")
 
         stock_update = await collection.update_one(
@@ -71,6 +75,8 @@ async def buy_character_api(char_id: str, user_id: int = Depends(get_current_use
             {"$inc": {"sold_count": 1}}
         )
         if stock_update.modified_count == 0:
+            from Grabber import LOGGER
+            LOGGER.info(f"Shop Purchase Error: Character {char_id} is SOLD OUT (Limit: {SHOP_LIMIT})")
             raise HTTPException(status_code=400, detail="Character is SOLD OUT")
 
         q = get_user_id_query(user_id)
