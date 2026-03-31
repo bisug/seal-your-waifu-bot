@@ -10,7 +10,7 @@ from Grabber.modules.collection.rarities import RARITY_MAP
 from config import config
 
 # Hardcoded Review Group
-REVIEW_GROUP_ID = -1002767033399
+REVIEW_GROUP_ID = config.REVIEW_GROUP_ID
 
 # Global state to manage active scraping tasks
 scraping_tasks = {}
@@ -171,14 +171,14 @@ async def approve_scrape_callback(client, query):
 
     rarity_num = int(query.data.split(":")[1])
     
-    # Parse info from caption
-    caption = query.message.caption
-    lines = caption.split("\n")
-    try:
-        name = lines[2].split(": ")[1].strip()
-        anime = lines[3].split(": ")[1].strip()
-    except:
+    # Parse info from caption using regex — resilient to caption format changes
+    caption = query.message.caption or ""
+    name_match = re.search(r"Name:\s*(.+)", caption)
+    anime_match = re.search(r"Anime:\s*(.+)", caption)
+    if not name_match or not anime_match:
         return await query.answer("❌ Error parsing metadata.")
+    name = name_match.group(1).strip()
+    anime = anime_match.group(1).strip()
 
     await query.answer("♻️ Re-hosting & Integrating...")
     await query.message.edit_reply_markup(None)
