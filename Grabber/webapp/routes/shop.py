@@ -5,7 +5,7 @@ from collections import defaultdict
 import uuid
 from Grabber.webapp.auth import get_current_user, get_current_user_data
 from Grabber.database import user_collection, collection
-from Grabber.core.constants import SHOP_RARITY, SHOP_LIMIT, DEFAULT_ZENITH_PRICE, PASS_PRICES
+from Grabber.core.constants import SHOP_RARITY, SHOP_LIMIT, PASS_PRICES
 from Grabber.modules.economy.shop import get_daily_shop_characters
 from Grabber.modules.progression.pet import PET_SHOP
 from Grabber.core.pass_data import PASS_TRACKS, MAX_PASS_LEVEL
