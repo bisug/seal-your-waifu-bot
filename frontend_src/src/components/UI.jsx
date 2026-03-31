@@ -3,6 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Info, CheckCircle2, AlertCircle, Loader2, Zap } from 'lucide-react';
 import { apiFetch } from '../api';
 import { toast } from 'react-hot-toast';
+import { clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+// Utility: merge Tailwind classes safely
+const cn = (...inputs) => twMerge(clsx(inputs));
 
 /**
  * Animated Progress Bar for XP, Health, or Pass levels.
