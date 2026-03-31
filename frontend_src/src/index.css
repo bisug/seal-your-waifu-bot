@@ -134,11 +134,12 @@ button, a {
 }
 
 #root {
-  position: fixed;
-  inset: 0;
+  width: 100%;
+  height: 100svh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background-color: var(--background);
 }
 
 /* THE DEFINITIVE SCROLL FIX:
