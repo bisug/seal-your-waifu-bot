@@ -250,7 +250,7 @@ const AppContent = () => {
                         </div>
                         <div>
                            <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Buy Value</p>
-                           <p className="text-sm font-black text-white">✧ {formatNumber(selectedChar.zenith_price || 500)}</p>
+                           <p className="text-sm font-black text-white">✧ {formatNumber(selectedChar.zenith_price || 5)}</p>
                         </div>
                      </div>
                      <button 
