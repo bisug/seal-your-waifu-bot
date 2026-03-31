@@ -1,14 +1,6 @@
 import { motion } from 'framer-motion';
+import { cn } from '../utils';
 import { User, Search, Trophy, ShoppingBag, Star, LayoutGrid, Egg } from 'lucide-react';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-
-/**
- * Utility for combining Tailwind classes cleanly.
- */
-function cn(...inputs) {
-  return twMerge(clsx(inputs));
-}
 
 export const TabNavigation = ({ activeTab, onNavigate }) => {
   const tabs = [

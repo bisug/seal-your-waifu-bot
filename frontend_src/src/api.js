@@ -5,8 +5,6 @@ const getTg = () => window.Telegram?.WebApp;
 
 let sessionToken = localStorage.getItem('auth_token');
 
-export const getSessionToken = () => sessionToken;
-
 export const setSessionToken = (token) => {
   sessionToken = token;
   if (token) {
