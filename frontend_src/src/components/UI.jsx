@@ -1,7 +1,8 @@
 import React, { useState, createContext, useContext, useEffect, useCallback, useMemo, memo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Info, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { X, Info, CheckCircle2, AlertCircle, Loader2, Zap } from 'lucide-react';
 import { apiFetch } from '../api';
+import { toast } from 'react-hot-toast';
 
 /**
  * Animated Progress Bar for XP, Health, or Pass levels.
