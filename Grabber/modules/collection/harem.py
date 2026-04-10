@@ -65,7 +65,6 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
         char_format = FORMATS[current_idx % len(FORMATS)]
         first_name = user.get('first_name', 'User')
 
-        harem_text = "\n".join(header_lines)
         total_chars_count = user.get('char_count', len(all_chars))
 
         header_lines = [
