@@ -2,19 +2,6 @@ import time
 import random
 import datetime
 import asyncio
-from typing import Optional, Dict, Any
-from pyrogram import enums
-from pyrogram.enums import ParseMode
-from Grabber.core.utils import html_escape
-from Grabber.database import spawns_collection, message_counts_collection, user_totals_collection
-from Grabber import app, LOGGER, config
-from Grabber.core.waifu import get_or_load_characters
-
-# --- IN-MEMORY CACHE FOR PERFORMANCE ---
-import time
-import random
-import datetime
-import asyncio
 import json
 from typing import Optional, Dict, Any
 from pyrogram import enums
@@ -61,7 +48,7 @@ async def get_chat_state(chat_id: int) -> Dict[str, Any]:
                         except: parsed_state[k] = v
                     elif k == "last_spawn_time":
                         try: parsed_state[k] = float(v)
-                        except: parsed_state[k] = v
+                        except Exception: parsed_state[k] = v
                     else:
                         parsed_state[k] = v
                 return parsed_state
@@ -77,7 +64,7 @@ async def get_chat_state(chat_id: int) -> Dict[str, Any]:
             if to_cache:
                 await _redis.hset(key, mapping=to_cache)
                 await _redis.expire(key, 3600) # 1h TTL
-        except: pass
+        except Exception as e: LOGGER.debug(f"Redis fallback cache error: {e}")
     return state or {}
 
 async def track_user_activity(chat_id: int, user_id: int):
@@ -87,7 +74,7 @@ async def track_user_activity(chat_id: int, user_id: int):
     try:
         await _redis.zadd(key, {str(user_id): time.time()})
         await _redis.expire(key, 600) # 10m TTL
-    except Exception: pass
+    except Exception as e: LOGGER.debug(f"Non-critical error (suppressed): {e}")
 
 async def get_active_user_count(chat_id: int) -> int:
     """Get count of users active in the last 10 minutes."""
@@ -98,7 +85,9 @@ async def get_active_user_count(chat_id: int) -> int:
         # Remove users older than 10 mins
         await _redis.zremrangebyscore(key, "-inf", now - 600)
         return await _redis.zcard(key)
-    except Exception: return 1
+    except Exception as e:
+        LOGGER.debug(f"Non-critical error: {e}")
+        return 1
 
 async def set_active_spawn(chat_id: int, character: Dict[str, Any], message_id: int):
     """Register active spawn in Redis and MongoDB."""
@@ -214,7 +203,8 @@ async def flush_cache_to_db():
         await asyncio.sleep(60)
         try:
             # Sync message counts
-            keys = await _redis.keys("msg_count:*")
+            from Grabber.core.cache import _scan_keys
+            keys = await _scan_keys("msg_count:*")
             for key in keys:
                 chat_id = key.split(":")[-1]
                 count = await _redis.get(key)

@@ -13,12 +13,7 @@ from Grabber.core.utils import normalize_user_id
 
 router = APIRouter()
 
-def get_user_id_query(user_id):
-    try:
-        uid_int = int(user_id)
-        return {"id": {"$in": [uid_int, str(uid_int)]}}
-    except (ValueError, TypeError):
-        return {"id": str(user_id)}
+from Grabber.webapp.utils import get_user_id_query
 
 @router.get("/shop/hub")
 async def get_shop_hub(user: dict = Depends(get_current_user_data)):

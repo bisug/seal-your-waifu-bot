@@ -32,8 +32,12 @@ export async function apiFetch(endpoint, options = {}, retries = 2) {
     headers['Authorization'] = `Bearer ${sessionToken}`;
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 12000);
+
   try {
-    const response = await fetch(url, { ...options, headers });
+    const response = await fetch(url, { ...options, headers, signal: controller.signal });
+    clearTimeout(timeoutId);
     
     // Automatic Handshake Recovery: If 401, session might be dead. Try to re-init once.
     if (response.status === 401 && !isRefreshing) {
@@ -58,6 +62,7 @@ export async function apiFetch(endpoint, options = {}, retries = 2) {
 
     return await response.json();
   } catch (error) {
+    if (timeoutId) clearTimeout(timeoutId);
     if (retries > 0 && (!options.method || options.method === 'GET')) {
       console.warn(`Retrying [${endpoint}]... (${retries} left)`);
       return apiFetch(endpoint, options, retries - 1);
@@ -81,12 +86,18 @@ export async function secureInit(avatarUrl = null) {
     avatar: avatarUrl,
   };
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 12000);
+
   try {
     const response = await fetch(`${API_BASE}/secure_init`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
+      signal: controller.signal
     });
+    
+    clearTimeout(timeoutId);
 
     if (!response.ok) throw new Error('Init failed');
 
@@ -97,6 +108,7 @@ export async function secureInit(avatarUrl = null) {
     }
     return null;
   } catch (error) {
+    if (timeoutId) clearTimeout(timeoutId);
     console.error('Secure Init Error:', error);
     return null;
   }

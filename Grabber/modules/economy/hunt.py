@@ -349,44 +349,44 @@ async def egg_hatch_callback(_, query: types.CallbackQuery):
         return await query.answer("❌ This is not your egg!", show_alert=True)
 
     user_id = owner_id
-    user = await user_collection.find_one({"id": user_id}) or {}
-    eggs = user.get("eggs", [])
+    from Grabber.webapp.auth import _user_locks
+    uid_str = str(user_id)
+    async with _user_locks[uid_str]:
+        user = await user_collection.find_one({"id": user_id}) or {}
+        eggs = user.get("eggs", [])
 
-    if page >= len(eggs):
-        return await query.answer("❌ Egg not found!", show_alert=True)
+        if page >= len(eggs):
+            return await query.answer("❌ Egg not found!", show_alert=True)
 
-    egg = eggs[page]
-
-
-    if egg.get("status") != "incubating":
-        return await query.answer("❌ Egg is not incubating!", show_alert=True)
-
-    ready_time = egg.get("hatch_time")
-    if ready_time and datetime.now() < ready_time:
-        remaining = int((ready_time - datetime.now()).total_seconds() / 60)
-        return await query.answer(f"⏳ Still incubating! {remaining}m left.", show_alert=True)
+        egg = eggs[page]
 
 
-    await crack_open_egg_inline(query, user_id, egg)
+        if egg.get("status") != "incubating":
+            return await query.answer("❌ Egg is not incubating!", show_alert=True)
+
+        ready_time = egg.get("hatch_time")
+        if ready_time and datetime.now() < ready_time:
+            remaining = int((ready_time - datetime.now()).total_seconds() / 60)
+            return await query.answer(f"⏳ Still incubating! {remaining}m left.", show_alert=True)
+
+
+        await crack_open_egg_inline(query, user_id, egg)
 
 @app.on_callback_query(filters.regex(r"^egg_(wait|noop)$"))
 async def egg_noop_callback(_, query: types.CallbackQuery):
     await query.answer()  # Instant dismiss
 
 async def process_egg_hatch(user_id: int, egg: dict):
-    """Core logic for hatching an egg. Returns (success: bool, result: dict_or_error_msg)."""
-    if egg.get("is_corrupted", False):
-        if random.random() < 0.5:
-            # Remove egg only on explosion
-            await user_collection.update_one({"id": user_id}, {"$pull": {"eggs": {"id": egg["id"]}}})
-            return False, "💥 <b>The egg exploded!</b>\nIt was corrupted..."
-        rarity = RARITY_MAP[9]
-    else:
-        rarity_pool = EGG_TIERS[egg["tier"]]["pool"]
-        rarity = random.choice(rarity_pool)
+    """Core logic for hatching an egg. Returns (success: bool, result: dict_or_error_msg).
+    Uses a single atomic write to prevent item duplication or loss.
+    """
+    if egg.get("is_corrupted", False) and random.random() < 0.5:
+        # Remove egg atomically on explosion
+        await user_collection.update_one({"id": user_id}, {"$pull": {"eggs": {"id": egg["id"]}}})
+        return False, "💥 <b>The egg exploded!</b>\nIt was corrupted..."
 
-    # Remove egg after rarity is determined (successful hatch)
-    await user_collection.update_one({"id": user_id}, {"$pull": {"eggs": {"id": egg["id"]}}})
+    rarity_pool = EGG_TIERS.get(egg["tier"], EGG_TIERS["common"])["pool"]
+    rarity = RARITY_MAP[9] if egg.get("is_corrupted") else random.choice(rarity_pool)
 
     from Grabber.core.waifu import get_or_load_characters
     waifus = await get_or_load_characters(rarity)
@@ -395,13 +395,21 @@ async def process_egg_hatch(user_id: int, egg: dict):
         return False, "⚠️ The egg was empty (Database error: No chars for this rarity)."
 
     character = random.choice(waifus)
-    await user_collection.update_one(
-        {"id": user_id},
-        {"$push": {"characters": character}, "$inc": {"char_count": 1}},
-        upsert=True
+
+    # ATOMIC: Pull egg AND push character in one operation.
+    result = await user_collection.update_one(
+        {"id": user_id, "eggs.id": egg["id"]},
+        {
+            "$pull": {"eggs": {"id": egg["id"]}},
+            "$push": {"characters": character},
+            "$inc": {"char_count": 1}
+        }
     )
+
+    if result.modified_count == 0:
+        return False, "⚠️ This egg was already hatched!"
+
     await add_xp(user_id, 15, "egg_hatch")
-    
     return True, character
 
 

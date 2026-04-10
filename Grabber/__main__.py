@@ -12,9 +12,7 @@ from pyrogram import idle
 from Grabber import app, game_bot, LOGGER, start_bots, stop_bots
 import Grabber.core.user_sync  # Register global message sync handlers
 
-# Synchronize client loops with the main event loop
-app.loop = loop
-game_bot.loop = loop
+
 
 
 async def main():
