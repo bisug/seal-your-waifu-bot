@@ -151,6 +151,3 @@ cython_debug/
 
 # VS Code
 .vscode/
-
-# Build assets
-Grabber/static/
