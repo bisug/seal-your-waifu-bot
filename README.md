@@ -48,7 +48,7 @@ This bot is designed to run as a single `web` process.
 #### Heroku / Render
 The `Procfile` is pre-configured to start the bot and web service together:
 ```text
-web: uvicorn Grabber.webapp.main:app --host 0.0.0.0 --port $PORT
+web: hypercorn Grabber.webapp.main:app --bind 0.0.0.0:$PORT
 ```
 1. Deploy to your platform of choice.
 2. Set all required environment variables (see `sample.env`).
