@@ -10,11 +10,7 @@ from Grabber.core.utils import normalize_user_id
 
 router = APIRouter()
 
-def get_user_id_query(user_id):
-    try:
-        return {"id": int(user_id)}
-    except (ValueError, TypeError):
-        return {"id": user_id}
+from Grabber.webapp.utils import get_user_id_query
 
 @router.get("/quests", response_model=QuestsResponse)
 async def get_quests(user_id: int = Depends(get_current_user)):

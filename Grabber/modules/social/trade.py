@@ -101,19 +101,40 @@ async def trade_callback_handler(_, query: types.CallbackQuery):
     await delete_session(trade_id)
 
     # 2. Atomic Database Updates
-    # Note: Using $pull and $push is safer if we match specific properties
+    from Grabber.database import user_collection
     try:
-        # Separate $pull and $push to avoid undefined behavior on same field
-        await update_user(sender_id, {"$pull": {"characters": {"id": s_char['id']}}})
-        await update_user(sender_id, {"$push": {"characters": r_char}})
-        await update_user(receiver_id, {"$pull": {"characters": {"id": r_char['id']}}})
-        await update_user(receiver_id, {"$push": {"characters": s_char}})
+        sender_result = await user_collection.update_one(
+            {"id": {"$in": [sender_id, str(sender_id)]}, "characters.id": s_char['id']},
+            {
+                "$pull": {"characters": {"id": s_char['id']}},
+                "$push": {"characters": r_char}
+            }
+        )
+        if sender_result.modified_count == 0:
+            raise ValueError(f"Sender {sender_id} no longer owns char {s_char['id']}")
 
-        # Logic: Both updates should ideally be in a transaction,
-        # but atomic ops on characters list is second best.
+        receiver_result = await user_collection.update_one(
+            {"id": {"$in": [receiver_id, str(receiver_id)]}, "characters.id": r_char['id']},
+            {
+                "$pull": {"characters": {"id": r_char['id']}},
+                "$push": {"characters": s_char}
+            }
+        )
+        if receiver_result.modified_count == 0:
+            # Compensate: give the sender their char back
+            await user_collection.update_one(
+                {"id": {"$in": [sender_id, str(sender_id)]}},
+                {"$pull": {"characters": {"id": r_char['id']}}, "$push": {"characters": s_char}}
+            )
+            raise ValueError(f"Receiver {receiver_id} no longer owns char {r_char['id']}, rolled back.")
+
+        from Grabber.core.cache import invalidate_user_cache
+        await invalidate_user_cache(sender_id)
+        await invalidate_user_cache(receiver_id)
+
     except Exception as e:
         LOGGER.error(f"Trade DB Error: {e}")
-        return await query.message.edit_text("❌ Database error during trade.", parse_mode=ParseMode.HTML)
+        return await query.message.edit_text("❌ Trade failed: One of the characters was no longer available.", parse_mode=ParseMode.HTML)
 
     # 3. Quests & Achievements
     await update_quest_progress(sender_id, "trader", 1)

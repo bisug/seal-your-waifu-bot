@@ -61,8 +61,10 @@ async def get_me(user: dict = Depends(get_current_user_data)):
     progress = await get_user_progress(user_id, user_data=user)
     
     # Calculate total characters dynamically 
-    # instead of aggregate $size since we already have the memory object
-    total_characters = len(user.get("characters") or [])
+    # using denormalized char_count
+    total_characters = user.get("char_count")
+    if total_characters is None:
+        total_characters = len(user.get("characters") or [])
     
     resp_data = {
         "id": int(user_id),

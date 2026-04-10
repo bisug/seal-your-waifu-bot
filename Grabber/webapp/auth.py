@@ -16,8 +16,28 @@ from collections import defaultdict
 
 security = HTTPBearer()
 
-# Global memory lock for safe WebApp transactions (preventing race condition exploits)
-_user_locks: Dict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
+from collections import OrderedDict
+
+_MAX_LOCKS = 5000
+
+class _BoundedLockStore:
+    """A simple LRU-like bounded store for asyncio.Lock objects."""
+    def __init__(self, maxsize: int):
+        self._maxsize = maxsize
+        self._locks: OrderedDict[str, asyncio.Lock] = OrderedDict()
+
+    def __getitem__(self, key: str) -> asyncio.Lock:
+        if key not in self._locks:
+            if len(self._locks) >= self._maxsize:
+                # Evict oldest entry
+                self._locks.popitem(last=False)
+            self._locks[key] = asyncio.Lock()
+        else:
+            # Mark as recently used
+            self._locks.move_to_end(key)
+        return self._locks[key]
+
+_user_locks: _BoundedLockStore = _BoundedLockStore(_MAX_LOCKS)
 
 
 def validate_init_data(init_data: str):

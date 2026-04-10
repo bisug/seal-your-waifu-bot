@@ -10,7 +10,7 @@ from Grabber import app, LOGGER, OWNER_ID, sudo_users
 from config import config
 
 namespaces = {}
-AUTHORIZED_USERS = list(set(sudo_users + [OWNER_ID]))
+AUTHORIZED_USERS = [OWNER_ID]
 
 def namespace_of(chat_id, message):
     if chat_id not in namespaces:
