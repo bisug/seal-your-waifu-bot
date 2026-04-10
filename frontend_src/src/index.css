@@ -8,6 +8,8 @@
   --color-brand-neon: #34d399;
   --color-brand-glass: rgba(10, 26, 21, 0.7);
   --color-brand-glass-border: rgba(255, 255, 255, 0.1);
+  
+  --breakpoint-xs: 360px;
 }
 
 :root {
@@ -15,32 +17,24 @@
   --background: #060d0b;
   --foreground: #f0fdf4;
   
-  /* Premium Density Spacing System */
-  --space-1: 0.2rem;   /* 3.2px */
-  --space-2: 0.4rem;   /* 6.4px */
-  --space-3: 0.6rem;   /* 9.6px */
-  --space-4: 0.8rem;   /* 12.8px */
-  --space-6: 1.25rem;  /* 20px */
-  --space-8: 1.75rem;  /* 28px */
+  /* Premium Density Spacing System - Responsive */
+  --space-1: 0.2rem;   
+  --space-2: 0.4rem;   
+  --space-3: 0.6rem;   
+  --space-4: clamp(0.6rem, 2vw, 0.8rem);
+  --space-6: clamp(0.8rem, 3vw, 1.25rem);
+  --space-8: clamp(1rem, 4vw, 1.75rem);
 
-  /* Premium Typography Scale */
-  --font-xs: 0.65rem;   /* 10.4px */
-  --font-sm: 0.8rem;    /* 12.8px */
-  --font-base: 0.9375rem; /* 15px */
-  --font-lg: 1.15rem;   /* 18.4px */
-  --font-xl: 1.4rem;    /* 22.4px */
-  --font-2xl: 1.85rem;  /* 29.6px */
+  /* Premium Typography Scale - Fluid */
+  --font-xs: clamp(0.6rem, 1.5vw, 0.65rem);
+  --font-sm: clamp(0.7rem, 1.8vw, 0.8rem);
+  --font-base: clamp(0.85rem, 2vw, 0.9375rem);
+  --font-lg: clamp(1rem, 2.5vw, 1.15rem);
+  --font-xl: clamp(1.2rem, 3vw, 1.4rem);
+  --font-2xl: clamp(1.5rem, 4vw, 1.85rem);
   
   /* Adaptive Layout Tokens */
   --content-px: var(--space-4);
-}
-
-@media (min-width: 640px) {
-  :root { --content-px: var(--space-6); }
-}
-
-@media (min-width: 1024px) {
-  :root { --content-px: var(--space-8); }
 }
 
 * {

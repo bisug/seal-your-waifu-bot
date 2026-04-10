@@ -86,7 +86,7 @@ export const Shop = ({ onCharClick }) => {
       </div>
 
       {loading && activeTab === 'market' && !(Array.isArray(marketItems) && marketItems.length) ? (
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+        <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
           {Array.from({ length: 12 }).map((_, i) => (
             <CardSkeleton key={`shop-skeleton-${i}`} />
           ))}
@@ -94,7 +94,7 @@ export const Shop = ({ onCharClick }) => {
       ) : (
         <AnimatePresence mode="wait">
           {activeTab === 'market' && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} key="market" className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} key="market" className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                 <AnimatePresence mode="popLayout">
                   {(Array.isArray(marketItems) ? marketItems : []).map((char, i) => (
                     <motion.div 

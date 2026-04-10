@@ -21,8 +21,8 @@ export const TabNavigation = ({ activeTab, onNavigate }) => {
   };
 
   return (
-    <nav className="flex-shrink-0 glass-panel border-t border-white/10 pt-3 backdrop-blur-2xl bg-brand-midnight/40" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
-      <div className="max-w-2xl mx-auto grid grid-cols-7 gap-1 px-1">
+    <nav className="flex-shrink-0 glass-panel border-t border-white/10 pt-2 backdrop-blur-3xl bg-brand-midnight/60 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}>
+      <div className="max-w-screen-sm mx-auto grid grid-cols-7 gap-0.5 px-0.5">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -31,24 +31,24 @@ export const TabNavigation = ({ activeTab, onNavigate }) => {
             <button
               key={tab.id}
               onClick={() => handleNavigate(tab.id)}
-              className="relative flex flex-col items-center justify-center py-3 min-h-[44px] transition-transform active:scale-90"
+              className="relative flex flex-col items-center justify-center py-2.5 min-h-[44px] transition-transform active:scale-90"
             >
               <motion.div
                 initial={false}
                 animate={{
-                  scale: isActive ? 1.1 : 1,
-                  color: isActive ? '#34d399' : '#64748b',
+                  scale: isActive ? 1.05 : 1,
+                  color: isActive ? '#34d399' : '#475569',
                 }}
                 className={cn(
-                  "p-1 rounded-lg transition-colors",
-                  isActive ? "text-brand-neon" : "text-slate-500"
+                  "p-1.5 rounded-xl transition-colors relative",
+                  isActive ? "bg-brand-neon/5" : "text-slate-500"
                 )}
               >
                 <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
                 {isActive && (
                   <motion.div
                     layoutId="activeTab"
-                    className="absolute -bottom-1 inset-x-0 h-0.5 rounded-full bg-brand-neon neon-shadow shadow-brand-neon/50 z-10 mx-1"
+                    className="absolute -bottom-2 inset-x-2 h-0.5 rounded-full bg-brand-neon neon-shadow shadow-brand-neon/50 z-10"
                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                   />
                 )}
