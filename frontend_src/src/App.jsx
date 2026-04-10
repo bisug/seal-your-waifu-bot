@@ -72,6 +72,7 @@ const AppContent = () => {
     return 'profile';
   };
 
+  const [activeTab, setActiveTab] = useState(getInitialTab());
   const [selectedChar, setSelectedChar] = useState(null);
   const [purchaseStage, setPurchaseStage] = useState('idle'); // 'idle', 'confirm', 'buying'
 
