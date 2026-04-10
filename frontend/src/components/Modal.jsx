@@ -35,11 +35,11 @@ export const Modal = ({ character, onClose, actions }) => {
                 <div className="absolute inset-0" onClick={onClose} />
 
                 <motion.div 
-                    initial={{ scale: 0.9, opacity: 0, y: 100 }}
+                    initial={{ scale: 0.95, opacity: 0, y: 100 }}
                     animate={{ scale: 1, opacity: 1, y: 0 }}
-                    exit={{ scale: 0.9, opacity: 0, y: 100 }}
-                    transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                    className="relative w-[92vw] max-w-[480px] max-h-[720px] bg-brand-midnight sm:border border-white/5 rounded-[3rem] overflow-hidden shadow-[0_0_120px_rgba(0,0,0,0.6)] flex flex-col"
+                    exit={{ scale: 0.95, opacity: 0, y: 100 }}
+                    transition={{ type: "spring", damping: 28, stiffness: 220 }}
+                    className="relative w-[98vw] max-w-[650px] h-[96vh] bg-brand-midnight sm:border border-white/10 rounded-[3.5rem] overflow-hidden shadow-[0_0_150px_rgba(0,0,0,0.8)] flex flex-col"
                 >
                     {/* Floating Close Button */}
                     <button 
@@ -51,15 +51,15 @@ export const Modal = ({ character, onClose, actions }) => {
 
                     <div className="flex-1 overflow-y-auto no-scrollbar">
                         {/* Hero Section */}
-                        <div className="relative aspect-[4/5] w-full bg-slate-900/50 group">
+                        <div className="relative aspect-[9/16] w-full bg-slate-900/50 group">
                             <img 
                                 src={character.img_url} 
-                                className="w-full h-full object-contain p-4" 
+                                className="w-full h-full object-contain p-2" 
                                 alt={character.name} 
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-brand-midnight via-transparent to-transparent opacity-90" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-brand-midnight via-brand-midnight/40 to-transparent opacity-100" />
                             
-                            <div className="absolute bottom-6 left-7 right-7">
+                            <div className="absolute bottom-10 left-8 right-8">
                                 <motion.div 
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
@@ -76,13 +76,13 @@ export const Modal = ({ character, onClose, actions }) => {
                                         {character.rarity}
                                     </p>
                                 </motion.div>
-                                <h2 className="text-[clamp(1.5rem,6vw,2.25rem)] font-black uppercase italic leading-none text-white tracking-tighter drop-shadow-2xl mb-2">{character.name}</h2>
-                                <p className="text-[clamp(0.5rem,2.5vw,0.65rem)] font-bold text-slate-500 uppercase tracking-[0.4em]">{character.anime}</p>
+                                <h2 className="text-[clamp(2rem,10vw,3.5rem)] font-black uppercase italic leading-[0.85] text-white tracking-tighter drop-shadow-2xl mb-4">{character.name}</h2>
+                                <p className="text-[clamp(0.6rem,3vw,0.8rem)] font-bold text-slate-400 uppercase tracking-[0.5em]">{character.anime}</p>
                             </div>
                         </div>
 
                         {/* Details Area */}
-                        <div className="px-7 pb-10 space-y-7">
+                        <div className="px-8 pb-12 space-y-10">
                             <div className="grid grid-cols-2 gap-2.5">
                                 <div className="bg-white/[0.03] border border-white/5 p-3.5 rounded-2xl">
                                     <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Status</p>
