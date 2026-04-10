@@ -45,7 +45,7 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                 }}
                 className="w-full py-3.5 rounded-xl bg-brand-accent/10 border border-brand-accent/20 text-brand-accent text-[10px] font-black uppercase tracking-widest hover:bg-brand-accent/20 transition-all flex items-center justify-center space-x-2 mb-4"
             >
-                <Zap size={14} />
+                <Zap size={16} />
                 <span>Sell Duplicate</span>
             </button>
         );
@@ -59,15 +59,15 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="flex items-center justify-between p-5 bg-brand-neon/5 border border-brand-neon/20 rounded-[2.5rem]"
+                    className="flex items-center justify-between p-6 bg-brand-neon/5 border border-brand-neon/20 rounded-[3rem]"
                     >
                         <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 rounded-full bg-brand-neon/20 flex items-center justify-center text-brand-neon shadow-lg shadow-brand-neon/20">
                             <Zap size={20} />
                         </div>
                         <div>
-                            <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Price</p>
-                            <p className="text-sm font-black text-white">⧫ {formatNumber(selectedChar.zenith_price || 5)}</p>
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Price</p>
+                            <p className="text-xl font-black text-white">⧫ {formatNumber(selectedChar.zenith_price || 5)}</p>
                         </div>
                         </div>
                         <button 
@@ -75,7 +75,7 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                             window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
                             setPurchaseStage('confirm');
                         }}
-                        className="px-8 py-3 rounded-2xl bg-brand-neon text-brand-midnight text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-brand-neon/30 active:scale-95 transition-all"
+                        className="px-10 py-4 rounded-2xl bg-brand-neon text-brand-midnight text-[11px] font-black uppercase tracking-[0.25em] shadow-2xl shadow-brand-neon/40 active:scale-95 transition-all"
                         >
                         BUY
                         </button>
