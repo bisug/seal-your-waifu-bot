@@ -165,7 +165,7 @@ async def get_pass_data(user: dict = Depends(get_current_user_data)):
         "level": progress["level"],
         "pass_type": user.get("pass_type", "free"),
         "pass_bank": user.get("pass_bank", {"shards": 0}),
-        "claimed_levels": user.get("pass_claimed", []),
+        "claimed_levels": user.get("claimed_levels", []),
         "tracks": PASS_TRACKS,
         "max_level": MAX_PASS_LEVEL
     }
@@ -230,7 +230,7 @@ async def claim_pass_level(level: int, user_id: int = Depends(get_current_user))
         if progress["level"] < level:
             raise HTTPException(status_code=400, detail=f"Level {level} not reached yet")
             
-        claimed = user.get("pass_claimed", [])
+        claimed = user.get("claimed_levels", [])
         if level in claimed:
             raise HTTPException(status_code=400, detail="Level reward already claimed")
             
@@ -261,7 +261,7 @@ async def claim_pass_level(level: int, user_id: int = Depends(get_current_user))
                     "status": "fresh"
                 })
         
-        updates = {"$push": {"pass_claimed": level}}
+        updates = {"$push": {"claimed_levels": level}}
         if shards > 0:
             updates["$inc"] = {"balance": shards}
         if eggs:

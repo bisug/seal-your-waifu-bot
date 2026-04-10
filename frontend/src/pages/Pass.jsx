@@ -74,7 +74,7 @@ export const Pass = () => {
         
         {milestones.map((lvl) => {
           const isReached = userLevel >= lvl;
-          const isClaimed = claimedLevels.includes(lvl);
+          const isClaimed = Array.isArray(claimedLevels) ? claimedLevels.includes(lvl) : false;
           const track = passData.tracks[lvl];
           const reward = track[passData.pass_type] || track['free'];
           const rewardLabel = reward.type === 'shards' ? `${reward.amount} Shards` : `${reward.tier === 2 ? 'Rare' : 'Common'} Egg`;
