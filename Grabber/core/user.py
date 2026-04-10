@@ -1,7 +1,8 @@
 from Grabber.database import user_collection
 from Grabber.core.cache import invalidate_user_cache, get_cached_user, set_cached_user
+from typing import Optional
 
-async def get_user_data(user_id: int) -> dict or None:
+async def get_user_data(user_id: int) -> Optional[dict]:
     """
     Fetch all data associated with a user.
     Checks Redis first, then MongoDB.
@@ -96,3 +97,4 @@ async def add_pet_xp(user_id: int, pet_name: str, xp_amount: int):
                     }
                 }
             )
+            await invalidate_user_cache(user_id)

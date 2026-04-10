@@ -22,7 +22,7 @@ async def get_top_users(metric: str, limit: int = 10):
     from Grabber.core.cache import get_cached_leaderboard, set_cached_leaderboard
 
     # Try Redis cache first
-    cached = await get_cached_leaderboard(metric)
+    cached = await get_cached_leaderboard(metric, limit)
     if cached is not None:
         return cached
 
@@ -44,7 +44,7 @@ async def get_top_users(metric: str, limit: int = 10):
     results = await cursor.to_list(length=limit)
 
     # Cache the result
-    await set_cached_leaderboard(metric, results)
+    await set_cached_leaderboard(metric, results, limit)
     return results
 
 def build_leaderboard_text(metric: str, users: list):

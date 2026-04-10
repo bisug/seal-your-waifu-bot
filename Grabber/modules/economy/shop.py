@@ -51,7 +51,7 @@ async def get_daily_shop_characters():
     
     return [Character(**c) for c in selected_raw]
 
-SHOP_LIMIT = 50
+from Grabber.core.constants import SHOP_LIMIT
 ADMINS = list(set(sudo_users + [OWNER_ID]))
 SHOP_BANNER = config.PHOTO_URL[0]
 
@@ -96,8 +96,8 @@ async def send_shop_hub(message_or_query):
         if isinstance(message_or_query, types.CallbackQuery):
             try:
                 await message_or_query.message.edit_text(text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
-            except:
-                pass
+            except Exception as e:
+                LOGGER.debug(f"Non-critical fallback error: {e}")
         else:
             await message_or_query.reply_text(text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
 
@@ -300,7 +300,10 @@ async def buy_character(_, query: types.CallbackQuery):
 
     user_update = await user_collection.update_one(
         {"id": user_id, "zenith": {"$gte": price}},
-        {"$inc": {"zenith": -price}, "$push": {"characters": {"id": char.id, "name": char.name, "anime": char.anime, "rarity": char.rarity, "img_url": char.img_url}}}
+        {
+            "$inc": {"zenith": -price, "char_count": 1},
+            "$push": {"characters": {"id": char.id, "name": char.name, "anime": char.anime, "rarity": char.rarity, "img_url": char.img_url}}
+        }
     )
 
     if user_update.modified_count == 0:

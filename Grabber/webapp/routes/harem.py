@@ -8,12 +8,7 @@ from Grabber.core.utils import normalize_user_id
 
 router = APIRouter()
 
-def get_user_id_query(user_id):
-    try:
-        uid_int = int(user_id)
-        return {"id": {"$in": [uid_int, str(uid_int)]}}
-    except (ValueError, TypeError):
-        return {"id": str(user_id)}
+from Grabber.webapp.utils import get_user_id_query
 
 @router.get("/rarities")
 async def get_rarities(user_id: int = Depends(get_current_user)):
@@ -58,6 +53,19 @@ async def get_harem(
             "$match": {"characters.rarity": rarity}
         })
 
+    RARITY_SORT_ORDER = {
+        "⚪ Common": 0,
+        "🟢 Medium": 1,
+        "🟠 Rare": 2,
+        "🟡 Legendary": 3,
+        "💠 Cosmic": 4,
+        "💮 Exclusive": 5,
+        "🔮 Limited Edition": 6,
+        "🫧 Royal": 7,
+        "💎 Antique": 8,
+        "🎐 Celestial": 9,
+    }
+
     pipeline.extend([
         {"$group": {
             "_id": "$characters.id",
@@ -65,7 +73,16 @@ async def get_harem(
             "count": {"$sum": 1}
         }},
         {"$replaceRoot": {"newRoot": {"$mergeObjects": ["$doc", {"count": "$count"}]}}},
-        {"$sort": {"rarity": 1, "name": 1}}
+        {"$addFields": {
+            "_rarity_order": {"$switch": {
+                "branches": [
+                    {"case": {"$eq": ["$rarity", k]}, "then": v}
+                    for k, v in RARITY_SORT_ORDER.items()
+                ],
+                "default": 99
+            }}
+        }},
+        {"$sort": {"_rarity_order": 1, "name": 1}}
     ])
 
     skip = (page - 1) * limit

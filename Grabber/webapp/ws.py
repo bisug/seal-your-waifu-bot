@@ -15,6 +15,27 @@ async def leaderboard_ws(websocket: WebSocket):
         await websocket.close(code=1011)
         return
 
+    # Validate token from query param before proceeding
+    token = websocket.query_params.get("token")
+    if not token:
+        await websocket.send_text(json.dumps({"error": "Unauthorized: no token"}))
+        await websocket.close(code=4001)
+        return
+
+    # Validate token against Redis/MongoDB session store
+    if r:
+        user_id = await r.get(f"auth_token:{token}")
+    else:
+        from Grabber.database import sessions_collection
+        import time as _time
+        doc = await sessions_collection.find_one({"_id": f"auth_token:{token}"})
+        user_id = doc.get("user_id") if doc and doc.get("expires_at", 0) > _time.time() else None
+
+    if not user_id:
+        await websocket.send_text(json.dumps({"error": "Unauthorized: invalid or expired token"}))
+        await websocket.close(code=4001)
+        return
+
     # Subscribe to leaderboard changes in Redis
     pubsub = r.pubsub()
     await pubsub.subscribe("leaderboard_updates")

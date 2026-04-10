@@ -18,6 +18,37 @@ from urllib.parse import parse_qsl
 import asyncio
 from Grabber.core.cache import rebuild_leaderboard
 from Grabber.database import user_collection, sessions_collection
+from collections import defaultdict
+_init_rate_limits: dict = defaultdict(list)
+
+async def check_init_rate_limit(request: Request):
+    """IP-based rate limit for /secure_init: 10 req/60s per IP."""
+    client_ip = request.client.host if request.client else "unknown"
+    now = _time.time()
+    rate_key = f"rl_init:{client_ip}"
+
+    if r:
+        try:
+            async with r.pipeline(transaction=True) as pipe:
+                pipe.zremrangebyscore(rate_key, 0, now - 60)
+                pipe.zadd(rate_key, {str(now): now})
+                pipe.zcard(rate_key)
+                pipe.expire(rate_key, 60)
+                _, _, count, _ = await pipe.execute()
+            if count > 10:
+                raise HTTPException(status_code=429, detail="Too many requests. Try again later.")
+            return
+        except HTTPException:
+            raise
+        except Exception:
+            pass  # Redis error: fall through to local fallback
+
+    # Local fallback
+    history = [ts for ts in _init_rate_limits[client_ip] if now - ts < 60]
+    if len(history) >= 10:
+        raise HTTPException(status_code=429, detail="Too many requests. Try again later.")
+    history.append(now)
+    _init_rate_limits[client_ip] = history
 
 async def sync_leaderboard_periodic():
     """Background task to keep the Redis Top 1000 in sync with Mongo."""
@@ -78,7 +109,7 @@ async def add_security_headers(request: Request, call_next):
     return response
 
 @api_router.post("/secure_init")
-async def auth(request: Request):
+async def auth(request: Request, _: None = Depends(check_init_rate_limit)):
     data = await request.json()
     init_data = data.get("initData")
     token_provided = data.get("token")
@@ -154,6 +185,10 @@ async def auth(request: Request):
     
     return {"token": new_token}
 
+
+@app.get("/healthz")
+async def health_check():
+    return {"status": "ok"}
 
 # Include routers with obfuscated prefix
 api_version_prefix = os.getenv("API_VERSION_PREFIX", "v1_7b82")

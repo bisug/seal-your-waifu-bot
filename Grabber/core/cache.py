@@ -55,6 +55,18 @@ async def rset(key: str, value: str, ttl: int):
     except Exception as e:
         LOGGER.warning(f"Redis SET error [{key}]: {e}")
 
+async def _scan_keys(pattern: str) -> list:
+    """Non-blocking async SCAN replacement for KEYS. Safe for production Redis."""
+    if not _redis:
+        return []
+    keys = []
+    try:
+        async for key in _redis.scan_iter(match=pattern, count=100):
+            keys.append(key)
+    except Exception as e:
+        LOGGER.warning(f"Redis SCAN error [{pattern}]: {e}")
+    return keys
+
 async def check_memory_and_purge():
     """Smart memory management: Purges old keys if memory exceeds limit."""
     if not _redis: return
@@ -64,7 +76,7 @@ async def check_memory_and_purge():
         if used > MEM_LIMIT_BYTES:
             LOGGER.warning(f"Redis memory usage high ({used/1024/1024:.2f}MB). Purging old caches...")
             # Purge short-lived user caches and leaderboard entries
-            keys = await _redis.keys("user:*") + await _redis.keys("lb:*") + await _redis.keys("rank:*")
+            keys = (await _scan_keys("user:*")) + (await _scan_keys("lb:*")) + (await _scan_keys("rank:*"))
             if keys:
                 await _redis.delete(*keys[:50]) # Delete batches
     except Exception as e: LOGGER.debug(f"Purge error: {e}")
@@ -181,20 +193,20 @@ async def set_weekly_date(user_id: int, date_str: str):
 
 # ── Leaderboard cache ────────────────────────────────────────────
 
-def _lb_key(metric: str) -> str:
-    return f"lb:{metric}"
+def _lb_key(metric: str, limit: int = 10) -> str:
+    return f"lb:{metric}:{limit}"
 
-async def get_cached_leaderboard(metric: str) -> Optional[list]:
-    return await rget_json(_lb_key(metric))
+async def get_cached_leaderboard(metric: str, limit: int = 10) -> Optional[list]:
+    return await rget_json(_lb_key(metric, limit))
 
-async def set_cached_leaderboard(metric: str, data: list):
-    await rset_json(_lb_key(metric), data, TTL_LEADERBOARD)
+async def set_cached_leaderboard(metric: str, data: list, limit: int = 10):
+    await rset_json(_lb_key(metric, limit), data, TTL_LEADERBOARD)
 
 async def invalidate_leaderboard_cache():
     """Remove all cached leaderboard lists. Call after any major XP/Balance shift."""
     if not _redis: return
     try:
-        keys = await _redis.keys("lb:*")
+        keys = await _scan_keys("lb:*")
         if keys:
             await _redis.delete(*keys)
     except Exception as e:

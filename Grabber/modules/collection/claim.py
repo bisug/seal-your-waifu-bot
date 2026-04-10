@@ -33,10 +33,13 @@ async def check_groups_joined(user_id: int) -> bool:
         await app.get_chat_member(SECOND_JOIN, user_id)
         return True
     except errors.UserNotParticipant:
-        return False
+        return False  # Definitive: user is not a member
+    except errors.FloodWait as e:
+        LOGGER.warning(f"FloodWait during membership check for {user_id}: {e.value}s")
+        return True   # Fail-open: don't punish user for our rate limit
     except Exception as e:
-        LOGGER.error(f"FZS Check Error: {e}")
-        return False
+        LOGGER.error(f"Membership check error for {user_id}: {e}")
+        return True   # Fail-open: ambiguous error, let the user proceed
 
 @app.on_message(filters.command("claim"))
 async def claim_handler(_, message: types.Message):
