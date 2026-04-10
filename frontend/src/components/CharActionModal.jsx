@@ -59,7 +59,7 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="flex items-center justify-between p-4 bg-brand-neon/5 border border-brand-neon/20 rounded-2xl"
+                    className="flex items-center justify-between p-5 bg-brand-neon/5 border border-brand-neon/20 rounded-[2.5rem]"
                     >
                         <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 rounded-full bg-brand-neon/20 flex items-center justify-center text-brand-neon shadow-lg shadow-brand-neon/20">
@@ -86,7 +86,7 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="p-4 glass-panel rounded-2xl border border-brand-accent/30 bg-brand-accent/[0.02]"
+                    className="p-6 glass-panel rounded-[2.5rem] border border-brand-accent/30 bg-brand-accent/[0.02]"
                     >
                     <div className="text-center mb-5">
                         <p className="text-brand-accent font-black uppercase text-[10px] tracking-widest mb-1">Confirm Purchase?</p>

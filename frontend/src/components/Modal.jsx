@@ -39,7 +39,7 @@ export const Modal = ({ character, onClose, actions }) => {
                     animate={{ scale: 1, opacity: 1, y: 0 }}
                     exit={{ scale: 0.9, opacity: 0, y: 100 }}
                     transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                    className="relative w-[95vw] max-w-[400px] max-h-[min(94vh,620px)] bg-brand-midnight sm:border border-white/5 rounded-[2.5rem] overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.5)] flex flex-col"
+                    className="relative w-[92vw] max-w-[480px] max-h-[720px] bg-brand-midnight sm:border border-white/5 rounded-[3rem] overflow-hidden shadow-[0_0_120px_rgba(0,0,0,0.6)] flex flex-col"
                 >
                     {/* Floating Close Button */}
                     <button 
@@ -51,15 +51,15 @@ export const Modal = ({ character, onClose, actions }) => {
 
                     <div className="flex-1 overflow-y-auto no-scrollbar">
                         {/* Hero Section */}
-                        <div className="relative aspect-[4/3] w-full bg-slate-900/50 group">
+                        <div className="relative aspect-[4/5] w-full bg-slate-900/50 group">
                             <img 
                                 src={character.img_url} 
-                                className="w-full h-full object-contain p-2" 
+                                className="w-full h-full object-contain p-4" 
                                 alt={character.name} 
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-brand-midnight via-transparent to-transparent" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-brand-midnight via-transparent to-transparent opacity-90" />
                             
-                            <div className="absolute bottom-4 left-5 right-5">
+                            <div className="absolute bottom-6 left-7 right-7">
                                 <motion.div 
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
@@ -76,23 +76,23 @@ export const Modal = ({ character, onClose, actions }) => {
                                         {character.rarity}
                                     </p>
                                 </motion.div>
-                                <h2 className="text-[clamp(1.25rem,5vw,1.5rem)] font-black uppercase italic leading-none text-white tracking-tighter drop-shadow-2xl mb-1">{character.name}</h2>
-                                <p className="text-[clamp(0.45rem,2vw,0.5rem)] font-bold text-slate-500 uppercase tracking-[0.3em]">{character.anime}</p>
+                                <h2 className="text-[clamp(1.5rem,6vw,2.25rem)] font-black uppercase italic leading-none text-white tracking-tighter drop-shadow-2xl mb-2">{character.name}</h2>
+                                <p className="text-[clamp(0.5rem,2.5vw,0.65rem)] font-bold text-slate-500 uppercase tracking-[0.4em]">{character.anime}</p>
                             </div>
                         </div>
 
                         {/* Details Area */}
-                        <div className="px-5 pb-8 space-y-5">
+                        <div className="px-7 pb-10 space-y-7">
                             <div className="grid grid-cols-2 gap-2.5">
                                 <div className="bg-white/[0.03] border border-white/5 p-3.5 rounded-2xl">
-                                    <p className="text-[7px] font-bold text-slate-500 uppercase tracking-widest mb-1">Status</p>
-                                    <p className={cn("text-[10px] font-black", character.owned ? "text-brand-neon" : "text-brand-accent")}>
+                                    <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Status</p>
+                                    <p className={cn("text-[11px] font-black tracking-wider", character.owned ? "text-brand-neon" : "text-brand-accent")}>
                                         {character.owned ? "COLLECTED" : "AVAILABLE"}
                                     </p>
                                 </div>
-                                <div className="bg-white/[0.03] border border-white/5 p-3.5 rounded-2xl">
-                                    <p className="text-[7px] font-bold text-slate-500 uppercase tracking-widest mb-1">Quantity</p>
-                                    <p className="text-[10px] font-black text-white">{character.count > 0 ? `Batch x${character.count}` : "Unique"}</p>
+                                <div className="bg-white/[0.03] border border-white/5 p-4 rounded-2xl">
+                                    <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Quantity</p>
+                                    <p className="text-[11px] font-black text-white">{character.count > 0 ? `Batch x${character.count}` : "Unique"}</p>
                                 </div>
                             </div>
 
