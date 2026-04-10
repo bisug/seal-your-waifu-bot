@@ -1,5 +1,22 @@
 import re
 import html
+import logging
+
+LOGGER = logging.getLogger(__name__)
+
+def normalize_user_id(uid):
+    """
+    Normalizes a user ID that might be stored as an int, string, or 
+    a single-item list. Returns the ID as an integer.
+    """
+    if isinstance(uid, list):
+        if not uid: return 0
+        uid = uid[0]
+    try:
+        return int(uid)
+    except (ValueError, TypeError):
+        return 0
+
 
 def html_escape(text: str) -> str:
     """Escapes special characters for Telegram HTML."""
@@ -30,7 +47,8 @@ async def check_member_requirement(bot, chat, min_count=50):
         
     try:
         # 1. Check member count
-        count = await chat.get_members_count()
+        # In Pyrogram V2, get_chat_members_count is on the Client, not the Chat object.
+        count = await bot.get_chat_members_count(chat.id)
         if count < min_count:
             return False, "member_count", count
 
@@ -40,11 +58,24 @@ async def check_member_requirement(bot, chat, min_count=50):
             await bot.get_chat_member(chat.id, config.BOT_ID)
         except errors.UserNotParticipant:
             return False, "main_bot_missing", count
-        except Exception:
-            # Other errors (e.g. no permission to view members) - assume present to be safe
+        except Exception as e:
+            LOGGER.debug(f"Failed to fetch ID via pyrogram: {e}")# Other errors (e.g. no permission to view members) - assume present to be safe
             pass
 
         return True, None, count
-    except Exception:
+    except Exception as e:
+        LOGGER.error(f"Failed to resolve group name: {e}")
         # Generic fallback
         return True, None, 0
+
+async def send_media_dynamic(client, chat_id, media_url, **kwargs):
+    """Dynamically sends either a photo or a video based on the URL extension."""
+    if isinstance(media_url, str) and media_url.endswith(('.mp4', '.webm', '.gif')):
+        return await client.send_video(chat_id, video=media_url, **kwargs)
+    return await client.send_photo(chat_id, photo=media_url, **kwargs)
+
+async def reply_media_dynamic(message_obj, media_url, **kwargs):
+    """Dynamically replies with either a photo or a video based on the URL extension."""
+    if isinstance(media_url, str) and media_url.endswith(('.mp4', '.webm', '.gif')):
+        return await message_obj.reply_video(video=media_url, **kwargs)
+    return await message_obj.reply_photo(photo=media_url, **kwargs)

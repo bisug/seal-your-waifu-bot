@@ -1,3 +1,4 @@
+from Grabber.core.utils import reply_media_dynamic
 import random
 import asyncio
 from datetime import datetime, timezone
@@ -84,7 +85,7 @@ async def propose_command(_, message: types.Message):
                 f"<b>Anime:</b> {html_escape(char['anime'])}"
             )
             img_url = char['img_url']
-            await message.reply_photo(photo=img_url, caption=caption, parse_mode=ParseMode.HTML)
+            await reply_media_dynamic(message, img_url, caption=caption, parse_mode=ParseMode.HTML)
         else:
 
             await update_user_balance(user_id, 2000)
@@ -94,19 +95,19 @@ async def propose_command(_, message: types.Message):
 
         await update_user_balance(user_id, 2000)
         img = random.choice(acceptance_images)
-        await message.reply_photo(photo=img, caption="💍 <b>Proposal Accepted!</b>\nShe was flattered but busy. She sent you <b>2,000 Shards</b> as a gift!", parse_mode=ParseMode.HTML)
+        await reply_media_dynamic(message, img, caption="💍 <b>Proposal Accepted!</b>\nShe was flattered but busy. She sent you <b>2,000 Shards</b> as a gift!", parse_mode=ParseMode.HTML)
 
     elif roll < 43:
 
         await update_user_balance(user_id, 500)
         img = random.choice(acceptance_images)
-        await message.reply_photo(photo=img, caption="💍 <b>Proposal Accepted!</b>\nShe smiled and gave you <b>500 Shards</b> for your effort!", parse_mode=ParseMode.HTML)
+        await reply_media_dynamic(message, img, caption="💍 <b>Proposal Accepted!</b>\nShe smiled and gave you <b>500 Shards</b> for your effort!", parse_mode=ParseMode.HTML)
 
     else:
 
         img = random.choice(rejection_images)
         caption = random.choice(rejection_captions)
-        await message.reply_photo(photo=img, caption=f"💔 <b>Rejection!</b>\n{caption}", parse_mode=ParseMode.HTML)
+        await reply_media_dynamic(message, img, caption=f"💔 <b>Rejection!</b>\n{caption}", parse_mode=ParseMode.HTML)
 
 
     await update_user(user_id, {"$set": {"last_propose_date": now_date}})

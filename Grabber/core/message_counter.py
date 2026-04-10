@@ -14,7 +14,8 @@ special_rarity_thresholds = {
     "💠 Cosmic": 300,
     "💮 Exclusive": 600,
     "🔮 Limited Edition": 900,
-    "🫧 Royal": 1000
+    "🫧 Royal": 1200,
+    "💎 Antique": 1500
 }
 
 
@@ -62,7 +63,8 @@ async def message_counter(_, message: types.Message):
 
     # Check for special rarity milestones (e.g., every 300th message)
     for r_name, threshold in special_rarity_thresholds.items():
-        if count % int(threshold * multiplier) == 0:
+        threshold_int = int(threshold * multiplier)
+        if threshold_int > 0 and count % threshold_int == 0:
             await send_character(chat_id, r_name)
             return
 
@@ -80,7 +82,8 @@ async def message_counter(_, message: types.Message):
         base_freq = freq if freq is not None else 100
 
     # Trigger standard spawn if milestone is reached
-    if count % int(base_freq * multiplier) == 0:
+    base_freq_int = max(1, int(base_freq * multiplier))
+    if count % base_freq_int == 0:
         # Use different rarity weights if the chat is very active
         if active_count > 10:
             weights_map = ACTIVE_RARITY_WEIGHTS

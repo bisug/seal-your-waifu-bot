@@ -2,19 +2,6 @@ import time
 import random
 import datetime
 import asyncio
-from typing import Optional, Dict, Any
-from pyrogram import enums
-from pyrogram.enums import ParseMode
-from Grabber.core.utils import html_escape
-from Grabber.database import spawns_collection, message_counts_collection, user_totals_collection
-from Grabber import app, LOGGER, config
-from Grabber.core.waifu import get_or_load_characters
-
-# --- IN-MEMORY CACHE FOR PERFORMANCE ---
-import time
-import random
-import datetime
-import asyncio
 import json
 from typing import Optional, Dict, Any
 from pyrogram import enums
@@ -46,15 +33,25 @@ async def get_chat_state(chat_id: int) -> Dict[str, Any]:
         try:
             state = await _redis.hgetall(key)
             if state:
-                # Redis hgetall returns a dict of strings. We need to parse some.
-                # Special cases for nested objects like last_character
-                if "last_character" in state:
-                    try: state["last_character"] = json.loads(state["last_character"])
-                    except: pass
-                if "message_id" in state: state["message_id"] = int(state["message_id"])
-                if "spawn_order" in state: state["spawn_order"] = int(state["spawn_order"])
-                if "last_spawn_time" in state: state["last_spawn_time"] = float(state["last_spawn_time"])
-                return state
+                # Redis hgetall returns a dict of strings. We need to parse them.
+                parsed_state = {}
+                for k, v in state.items():
+                    # Handle basic types
+                    if v == "None": parsed_state[k] = None
+                    elif v == "True": parsed_state[k] = True
+                    elif v == "False": parsed_state[k] = False
+                    elif k == "last_character":
+                        try: parsed_state[k] = json.loads(v)
+                        except: parsed_state[k] = v
+                    elif k in ["message_id", "spawn_order"]:
+                        try: parsed_state[k] = int(v)
+                        except: parsed_state[k] = v
+                    elif k == "last_spawn_time":
+                        try: parsed_state[k] = float(v)
+                        except Exception: parsed_state[k] = v
+                    else:
+                        parsed_state[k] = v
+                return parsed_state
         except Exception as e:
             LOGGER.warning(f"Redis get_chat_state error: {e}")
     
@@ -67,7 +64,7 @@ async def get_chat_state(chat_id: int) -> Dict[str, Any]:
             if to_cache:
                 await _redis.hset(key, mapping=to_cache)
                 await _redis.expire(key, 3600) # 1h TTL
-        except: pass
+        except Exception as e: LOGGER.debug(f"Redis fallback cache error: {e}")
     return state or {}
 
 async def track_user_activity(chat_id: int, user_id: int):
@@ -77,7 +74,7 @@ async def track_user_activity(chat_id: int, user_id: int):
     try:
         await _redis.zadd(key, {str(user_id): time.time()})
         await _redis.expire(key, 600) # 10m TTL
-    except Exception: pass
+    except Exception as e: LOGGER.debug(f"Non-critical error (suppressed): {e}")
 
 async def get_active_user_count(chat_id: int) -> int:
     """Get count of users active in the last 10 minutes."""
@@ -88,7 +85,9 @@ async def get_active_user_count(chat_id: int) -> int:
         # Remove users older than 10 mins
         await _redis.zremrangebyscore(key, "-inf", now - 600)
         return await _redis.zcard(key)
-    except Exception: return 1
+    except Exception as e:
+        LOGGER.debug(f"Non-critical error: {e}")
+        return 1
 
 async def set_active_spawn(chat_id: int, character: Dict[str, Any], message_id: int):
     """Register active spawn in Redis and MongoDB."""
@@ -103,7 +102,7 @@ async def set_active_spawn(chat_id: int, character: Dict[str, Any], message_id: 
         try:
             await _redis.hset(key, mapping=data)
             await _redis.expire(key, 3600)
-        except Exception: pass
+        except Exception as e: LOGGER.debug(f"Redis operation bypassed: {e}")
     
     # Still write to MongoDB for absolute safety (active spawns are high-value)
     mongo_data = {
@@ -134,7 +133,7 @@ async def clear_active_spawn(chat_id: int, user_id: int) -> bool:
                 key = f"spawn:state:{chat_id}"
                 await _redis.hset(key, "first_correct_guess", str(user_id))
                 await _redis.hdel(key, "last_character", "message_id")
-            except Exception: pass
+            except Exception as e: LOGGER.debug(f"Redis operation bypassed: {e}")
         return True
     return False
 
@@ -156,7 +155,7 @@ async def increment_message_count(chat_id: int) -> int:
             count = await _redis.incr(key)
             await _redis.expire(key, 86400) # Ensure TTL on every increment
             return count
-        except Exception: pass
+        except Exception as e: LOGGER.debug(f"Redis operation bypassed: {e}")
     
     # Fallback to local
     count = await get_message_count(chat_id) + 1
@@ -173,7 +172,7 @@ async def increment_spawn_order(chat_id: int):
         try:
             await _redis.hincrby(key, "spawn_order", 1)
             return
-        except Exception: pass
+        except Exception as e: LOGGER.debug(f"Redis operation bypassed: {e}")
     
     # Fallback
     state = await get_chat_state(chat_id)
@@ -204,7 +203,8 @@ async def flush_cache_to_db():
         await asyncio.sleep(60)
         try:
             # Sync message counts
-            keys = await _redis.keys("msg_count:*")
+            from Grabber.core.cache import _scan_keys
+            keys = await _scan_keys("msg_count:*")
             for key in keys:
                 chat_id = key.split(":")[-1]
                 count = await _redis.get(key)
@@ -243,9 +243,11 @@ async def send_character(chat_id: int, rarity: str):
     )
 
     try:
-        msg = await app.send_photo(
+        from Grabber.core.utils import send_media_dynamic
+        msg = await send_media_dynamic(
+            client=app,
             chat_id=chat_id,
-            photo=character['img_url'],
+            media_url=character['img_url'],
             caption=caption,
             parse_mode=ParseMode.HTML
         )

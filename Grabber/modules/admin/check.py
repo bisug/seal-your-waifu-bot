@@ -1,3 +1,4 @@
+from Grabber.core.utils import reply_media_dynamic
 from pyrogram import filters, types, enums
 from pyrogram.enums import ParseMode
 from Grabber.core.utils import html_escape
@@ -21,8 +22,7 @@ async def check_character(_, message: types.Message) -> None:
                 f"<b>Character ID:</b> <code>{character['id']}</code>\n"
             )
 
-            await message.reply_photo(
-                photo=character['img_url'],
+            await reply_media_dynamic(message, character['img_url'],
                 caption=response_message,
                 parse_mode=ParseMode.HTML
             )

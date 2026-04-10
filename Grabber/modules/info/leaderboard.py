@@ -4,7 +4,7 @@ from pyrogram.enums import ParseMode
 from Grabber.core.utils import html_escape
 from Grabber import app, WEB_APP_URL
 from config import config
-from Grabber import user_collection, top_global_groups_collection, group_user_totals_collection
+from Grabber import user_collection, group_user_totals_collection
 from Grabber.core.progression import get_level_from_xp
 from Grabber.core.keyboard import get_webapp_button
 
@@ -22,13 +22,13 @@ async def get_top_users(metric: str, limit: int = 10):
     from Grabber.core.cache import get_cached_leaderboard, set_cached_leaderboard
 
     # Try Redis cache first
-    cached = await get_cached_leaderboard(metric)
+    cached = await get_cached_leaderboard(metric, limit)
     if cached is not None:
         return cached
 
     if metric == "harem":
         pipeline = [
-            {"$project": {"first_name": 1, "id": 1, "avatar": 1, "pass_type": 1, "char_count": {"$size": {"$ifNull": ["$characters", []]}}}},
+            {"$project": {"first_name": 1, "id": 1, "avatar": 1, "pass_type": 1, "char_count": {"$ifNull": ["$char_count", 0]}}},
             {"$sort": {"char_count": -1}},
             {"$limit": limit}
         ]
@@ -44,7 +44,7 @@ async def get_top_users(metric: str, limit: int = 10):
     results = await cursor.to_list(length=limit)
 
     # Cache the result
-    await set_cached_leaderboard(metric, results)
+    await set_cached_leaderboard(metric, results, limit)
     return results
 
 def build_leaderboard_text(metric: str, users: list):

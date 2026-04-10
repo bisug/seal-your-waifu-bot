@@ -16,13 +16,14 @@ class Database:
         self.db = self.client['Character_catchers']
 
         # Initialize collections
+        # NOTE: Legacy collection names contain intentional typos/suffixes (e.g. 'anime_characterss') 
+        # from early development. Do NOT "fix" these without a full database migration.
         self.anime_characters = self.db['anime_characterss']
         self.groups = self.db['total_groups']
         self.user_totals = self.db['user_totalssss']
         self.message_counts = self.db['message']
         self.users = self.db["user_collectionsss"]
         self.group_user_totals = self.db['group_user_totals']
-        self.top_global_groups = self.db['top_global_groupss']
         self.total_pm_users = self.db['total_pm_users']
         self.sudo_users = self.db['sudos']
         self.spawns = self.db['active_spawns']
@@ -30,6 +31,7 @@ class Database:
         self.quiz_questions = self.db['quiz_questions']
         self.gamebot_enabled_groups = self.db['nguess_enabled_groups']
         self.deletion_queue = self.db['deletion_queue']
+        self.daily_shop = self.db['daily_shop_inventory']
 
     async def ensure_indexes(self):
         """Create performance indexes. Each index is isolated so one failure doesn't block others."""
@@ -51,6 +53,7 @@ class Database:
             (self.users,             lambda c: c.create_index("characters.id")),
             (self.users,             lambda c: c.create_index([("id", 1), ("characters.id", 1)])),
             (self.anime_characters,  lambda c: c.create_index([("rarity", 1), ("name", 1)])),
+            (self.users,             lambda c: c.create_index("char_count", sparse=True)),
         ]
         failed = 0
         for collection, idx_fn in indexes:
@@ -75,7 +78,7 @@ except Exception as e:
 try:
     redis_url = config.REDIS_URL
     if not redis_url:
-        print("Warning: REDIS_URL not found in environment. Redis features will fail.")
+        LOGGER.error("REDIS_URL not found in environment. Core features (Session, Rankings, Locks) will be DISABLED.")
         r = None
     else:
         r = redis.from_url(redis_url, decode_responses=True)
@@ -93,7 +96,6 @@ user_totals_collection = seal_db.user_totals
 message_counts_collection = seal_db.message_counts
 user_collection = seal_db.users
 group_user_totals_collection = seal_db.group_user_totals
-top_global_groups_collection = seal_db.top_global_groups
 total_pm_users = seal_db.total_pm_users
 sudo_collection = seal_db.sudo_users
 spawns_collection = seal_db.spawns
@@ -101,3 +103,4 @@ sessions_collection = seal_db.sessions
 quiz_questions_collection = seal_db.quiz_questions
 gamebot_enabled_groups_collection = seal_db.gamebot_enabled_groups
 deletion_queue_collection = seal_db.deletion_queue
+daily_shop_collection = seal_db.daily_shop

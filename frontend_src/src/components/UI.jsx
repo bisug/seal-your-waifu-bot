@@ -1,7 +1,72 @@
-import React, { useState, createContext, useContext, useEffect, useCallback, useMemo, memo } from 'react';
+import React, { useState, createContext, useContext, useEffect, useCallback, useMemo, memo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Info, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { X, Info, CheckCircle2, AlertCircle, Loader2, Zap } from 'lucide-react';
 import { apiFetch } from '../api';
+import { toast } from 'react-hot-toast';
+import { cn, formatNumber } from '../utils';
+
+const RARITY_VISUALS = {
+    'Common': { 
+        bg: 'from-slate-500/20 to-slate-900', 
+        glow: 'shadow-slate-500/10',
+        text: 'text-slate-400',
+        border: 'border-white/5'
+    },
+    'Medium': { 
+        bg: 'from-emerald-500/20 to-slate-900', 
+        glow: 'shadow-emerald-500/10',
+        text: 'text-emerald-400',
+        border: 'border-emerald-500/20'
+    },
+    'Rare': { 
+        bg: 'from-blue-500/20 to-slate-900', 
+        glow: 'shadow-blue-500/20',
+        text: 'text-blue-400',
+        border: 'border-blue-500/30'
+    },
+    'Legendary': { 
+        bg: 'from-amber-500/30 to-slate-900', 
+        glow: 'shadow-amber-500/30',
+        text: 'text-amber-400',
+        border: 'border-amber-500/40'
+    },
+    'Cosmic': { 
+        bg: 'from-purple-500/40 to-slate-900', 
+        glow: 'shadow-purple-500/40 neon-shadow',
+        text: 'text-purple-400',
+        border: 'border-purple-500/50'
+    },
+    'Exclusive': { 
+        bg: 'from-rose-500/40 to-slate-900', 
+        glow: 'shadow-rose-500/40 neon-shadow',
+        text: 'text-rose-400',
+        border: 'border-rose-500/50'
+    },
+    'Limited Edition': { 
+        bg: 'from-orange-500/50 to-slate-900', 
+        glow: 'shadow-orange-500/50 neon-shadow',
+        text: 'text-orange-400',
+        border: 'border-orange-500/60'
+    },
+    'Royal': { 
+        bg: 'from-cyan-400/50 to-slate-900', 
+        glow: 'shadow-cyan-400/50 neon-shadow',
+        text: 'text-cyan-300',
+        border: 'border-cyan-400/70'
+    },
+    'Antique': { 
+        bg: 'from-yellow-200/40 to-slate-900', 
+        glow: 'shadow-yellow-200/40 neon-shadow',
+        text: 'text-yellow-200',
+        border: 'border-yellow-200/50'
+    },
+    'Celestial': { 
+        bg: 'from-white/40 to-slate-950', 
+        glow: 'shadow-white/40 neon-shadow',
+        text: 'text-white',
+        border: 'border-white/80'
+    },
+};
 
 /**
  * Animated Progress Bar for XP, Health, or Pass levels.
@@ -10,20 +75,22 @@ export const ProgressBar = ({ current, total, color = "bg-brand-neon", label }) 
   const percentage = Math.min(100, Math.max(0, (current / total) * 100));
 
   return (
-    <div className="w-full space-y-1">
+    <div className="w-full space-y-1.5">
       {label && (
-        <div className="flex justify-between text-xs font-medium text-slate-400 px-1 uppercase tracking-widest">
-          <span>{label}</span>
-          <span>{current.toLocaleString()} / {total.toLocaleString()}</span>
+        <div className="flex justify-between items-end text-[10px] font-black text-slate-400 px-0.5 uppercase tracking-widest">
+          <span className="opacity-70">{label}</span>
+          <span className="text-white/80 tabular-nums">{formatNumber(current)} / {formatNumber(total)}</span>
         </div>
       )}
-      <div className="h-2 w-full bg-slate-800/50 rounded-full overflow-hidden border border-white/5">
+      <div className="h-2 w-full bg-slate-900/50 rounded-full overflow-hidden border border-white/10 p-[1px]">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${percentage}%` }}
-          transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
-          className={`h-full ${color} neon-shadow shadow-current transition-all`}
-        />
+          transition={{ duration: 1.5, ease: [0.34, 1.56, 0.64, 1] }}
+          className={`h-full ${color} rounded-full neon-shadow shadow-current relative`}
+        >
+            <div className="absolute inset-0 bg-white/20 animate-pulse" />
+        </motion.div>
       </div>
     </div>
   );
@@ -103,6 +170,18 @@ export const ToastProvider = ({ children }) => {
 
 export const useToast = () => useContext(ToastContext);
 
+// Shallow array comparison utility
+function shallowEqual(obj1, obj2) {
+  if (obj1 === obj2) return true;
+  const keys1 = Object.keys(obj1 || {});
+  const keys2 = Object.keys(obj2 || {});
+  if (keys1.length !== keys2.length) return false;
+  for (let key of keys1) {
+      if (obj1[key] !== obj2[key]) return false;
+  }
+  return true;
+}
+
 /**
  * Standardized API Hook for managed loading/error/data states.
  * Includes optional caching and automatic dependency tracking.
@@ -112,11 +191,17 @@ export const useApi = (endpoint, options = {}, deps = []) => {
   const [loading, setLoading] = useState(!options.manual);
   const [error, setError] = useState(null);
 
+  const optionsRef = useRef(options);
+  
+  if (!shallowEqual(optionsRef.current, options)) {
+    optionsRef.current = options;
+  }
+
   const execute = useCallback(async (overrides = {}) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await apiFetch(endpoint, { ...options, ...overrides });
+      const res = await apiFetch(endpoint, { ...optionsRef.current, ...overrides });
       setData(res);
       return res;
     } catch (err) {
@@ -125,10 +210,10 @@ export const useApi = (endpoint, options = {}, deps = []) => {
     } finally {
       setLoading(false);
     }
-  }, [endpoint, JSON.stringify(options)]);
+  }, [endpoint]); // Safely drops the heavy JSON parse logic and binds to endpoint
 
   useEffect(() => {
-    if (!options.manual) {
+    if (!optionsRef.current.manual) {
       execute();
     }
   }, deps);
@@ -139,164 +224,168 @@ export const useApi = (endpoint, options = {}, deps = []) => {
 /**
  * Cinematic Detail Modal
  */
-export const Modal = ({ character, onClose }) => {
+/**
+ * Cinematic Detail Modal
+ */
+export const Modal = ({ character, onClose, actions }) => {
+    useEffect(() => {
+        if (character) {
+            const scroller = document.querySelector('.app-scroller');
+            if (scroller) scroller.style.overflow = 'hidden';
+            return () => {
+                const scroller = document.querySelector('.app-scroller');
+                if (scroller) scroller.style.overflow = 'auto';
+            };
+        }
+    }, [character]);
+
     if (!character) return null;
 
-    const rarityColors = {
-        'Common': 'from-slate-500/20 to-slate-900',
-        'Rare': 'from-blue-500/20 to-slate-900',
-        'Epic': 'from-purple-500/20 to-slate-900',
-        'Legendary': 'from-amber-500/20 to-slate-900',
-        'Mythical': 'from-red-500/20 to-slate-900',
-        'Celestial': 'from-cyan-400/20 to-slate-900',
-    };
-
-    const glowColors = {
-        'Common': 'shadow-slate-500/20',
-        'Rare': 'shadow-blue-500/40',
-        'Epic': 'shadow-purple-500/40',
-        'Legendary': 'shadow-amber-500/40',
-        'Mythical': 'shadow-red-500/40',
-        'Celestial': 'shadow-cyan-400/50 neon-shadow',
-    };
-
     return (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-end justify-center px-4 pb-12 pt-20"
-        >
-            <div className="absolute inset-0 bg-brand-midnight/80 backdrop-blur-md" onClick={onClose} />
-            
-            <motion.div
-                initial={{ y: "100%" }}
-                animate={{ y: 0 }}
-                exit={{ y: "100%" }}
-                transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                className={`relative w-full max-w-md glass-panel rounded-3xl overflow-hidden border-t-2 border-x border-white/10 flex flex-col pt-2 bg-gradient-to-b ${rarityColors[character.rarity] || 'from-slate-800/10 to-slate-900'}`}
+        <AnimatePresence>
+            <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-midnight/95 backdrop-blur-2xl"
             >
-                <div className="w-12 h-1.5 bg-white/10 rounded-full mx-auto mb-4" />
-                
-                <button 
-                  onClick={onClose}
-                  className="absolute top-4 right-4 p-2 rounded-full bg-white/5 text-white/50 hover:text-white transition-colors"
+                {/* Cinematic Ambient Glow */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                    <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] bg-brand-neon/10 blur-[150px] rounded-full" />
+                    <div className="absolute bottom-[-20%] right-[-20%] w-[80%] h-[80%] bg-brand-accent/5 blur-[150px] rounded-full" />
+                </div>
+
+                <div className="absolute inset-0" onClick={onClose} />
+
+                <motion.div 
+                    initial={{ scale: 0.9, opacity: 0, y: 100 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    exit={{ scale: 0.9, opacity: 0, y: 100 }}
+                    transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                    className="relative w-full max-w-sm max-h-[85vh] bg-brand-midnight sm:border border-white/5 rounded-[2.5rem] overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.5)] flex flex-col"
                 >
-                    <X size={20} />
-                </button>
-
-                <div className="px-6 pb-6 overflow-y-auto">
-                    <div className={`aspect-[3/4] rounded-2xl overflow-hidden border-2 border-white/5 mb-6 shadow-2xl ${glowColors[character.rarity]}`}>
-                        <img 
-                          src={character.img_url} 
-                          alt={character.name}
-                          className="w-full h-full object-cover"
-                        />
-                    </div>
-
-                    <div className="space-y-4 text-left">
-                        <div>
-                            <span className="px-2 py-0.5 rounded-lg bg-white/10 text-[10px] font-black uppercase tracking-widest text-brand-neon border border-white/5">
-                                {character.rarity}
-                            </span>
-                            <h2 className="text-2xl font-black mt-2 leading-tight uppercase tracking-tight">{character.name}</h2>
-                            <p className="text-slate-400 font-medium italic text-sm">{character.anime}</p>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
-                            <div className="space-y-1">
-                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Global ID</p>
-                                <p className="font-mono text-sm text-brand-neon">#{character.id}</p>
-                            </div>
-                            <div className="space-y-1">
-                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Duplicates</p>
-                                <p className="font-bold text-sm">x{character.count || 1}</p>
-                            </div>
-                        </div>
-                        
-                        <div className="flex items-center space-x-2 p-3 rounded-xl bg-white/5 border border-white/5 text-[10px] text-slate-400 font-medium italic">
-                            <Info size={14} className="text-brand-neon shrink-0" />
-                            <span>This character was captured in a group chat by this collector.</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div className="px-6 pb-6 pt-2">
+                    {/* Floating Close Button */}
                     <button 
-                      onClick={onClose}
-                      className="w-full py-4 rounded-2xl bg-white text-brand-midnight font-black uppercase tracking-widest text-xs hover:scale-[1.02] transition-transform active:scale-95"
+                        onClick={onClose} 
+                        className="absolute top-6 right-6 z-50 w-10 h-10 rounded-2xl bg-brand-midnight/60 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white/50 active:scale-95 transition-all hover:text-white"
                     >
-                        CLOSE DETAIL
+                        <X size={24} />
                     </button>
-                </div>
+
+                    <div className="flex-1 overflow-y-auto no-scrollbar">
+                        {/* Hero Section */}
+                        <div className="relative aspect-square w-full bg-slate-900/50 group">
+                            <img 
+                                src={character.img_url} 
+                                className="w-full h-full object-contain p-4" 
+                                alt={character.name} 
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-brand-midnight via-transparent to-transparent" />
+                            
+                            <div className="absolute bottom-6 left-6 right-6">
+                                <motion.div 
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className={cn(
+                                        "backdrop-blur-md border px-2 py-0.5 rounded-lg w-fit mb-2",
+                                        RARITY_VISUALS[character.rarity]?.border || "border-white/10",
+                                        RARITY_VISUALS[character.rarity]?.bg || "bg-white/10"
+                                    )}
+                                >
+                                    <p className={cn(
+                                        "text-[8px] font-black uppercase tracking-[0.3em]",
+                                        RARITY_VISUALS[character.rarity]?.text || "text-white"
+                                    )}>
+                                        {character.rarity}
+                                    </p>
+                                </motion.div>
+                                <h2 className="text-3xl font-black uppercase italic leading-none text-white tracking-tighter drop-shadow-2xl mb-1">{character.name}</h2>
+                                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.3em]">{character.anime}</p>
+                            </div>
+                        </div>
+
+                        {/* Details Area */}
+                        <div className="px-6 pb-12 space-y-6">
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-white/[0.03] border border-white/5 p-4 rounded-2xl">
+                                    <p className="text-[7px] font-bold text-slate-500 uppercase tracking-widest mb-1 mt-0.5">Status</p>
+                                    <p className={cn("text-xs font-black", character.owned ? "text-brand-neon" : "text-brand-accent")}>
+                                        {character.owned ? "COLLECTED" : "AVAILABLE"}
+                                    </p>
+                                </div>
+                                <div className="bg-white/[0.03] border border-white/5 p-4 rounded-2xl">
+                                    <p className="text-[7px] font-bold text-slate-500 uppercase tracking-widest mb-1 mt-0.5">Quantity</p>
+                                    <p className="text-xs font-black text-white">{character.count > 0 ? `Batch x${character.count}` : "Unique"}</p>
+                                </div>
+                            </div>
+
+                            {actions && <div className="w-full">{actions}</div>}
+                        </div>
+                    </div>
+                </motion.div>
             </motion.div>
-        </motion.div>
+        </AnimatePresence>
     );
 };
 
 /**
- * Unified Character/Item Card with rarity color coding.
- * Memoized to prevent redundant re-renders in large grids.
+ * Unified Character/Item Card
  */
 export const Card = memo(({ character, onClick }) => {
-    const [imgSrc, setImgSrc] = useState(character.img_url);
-    const [isLoaded, setIsLoaded] = useState(false);
-    
-    const DEFAULT_AVATAR = 'https://files.catbox.moe/2hsawz.jpg';
-
-    const rarityColors = {
-        'Common': 'border-slate-500/30 shadow-slate-500/10',
-        'Rare': 'border-blue-500/30 shadow-blue-500/20',
-        'Epic': 'border-purple-500/30 shadow-purple-500/20',
-        'Legendary': 'border-amber-500/30 shadow-amber-500/20',
-        'Mythical': 'border-red-500/30 shadow-red-500/20',
-        'Celestial': 'border-cyan-400/40 shadow-cyan-400/30 neon-shadow',
-    };
-
-    const getRarityClass = (rarity) => rarityColors[rarity] || 'border-slate-700/20 shadow-slate-700/5';
-
-    const handleImageError = () => {
-        if (imgSrc !== DEFAULT_AVATAR) {
-            setImgSrc(DEFAULT_AVATAR);
-        }
-    };
+    const isSpecial = ['Legendary', 'Cosmic', 'Exclusive', 'Limited Edition', 'Royal', 'Antique', 'Celestial'].includes(character.rarity);
 
     const handleClick = () => {
         window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
         if (onClick) onClick();
     };
 
+    const visuals = RARITY_VISUALS[character.rarity] || RARITY_VISUALS['Common'];
+
     return (
         <motion.div
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            whileHover={{ scale: 1.05, y: -5 }}
+            whileTap={{ scale: 0.95 }}
             onClick={handleClick}
-            className={`cursor-pointer overflow-hidden rounded-2xl glass-panel border transition-all ${getRarityClass(character.rarity)}`}
+            className={cn(
+                "relative rounded-[2rem] overflow-hidden aspect-[2/3] group transition-all duration-500 cursor-pointer",
+                "border bg-slate-900/60 backdrop-blur-xl shadow-2xl",
+                visuals.border,
+                visuals.glow,
+                isSpecial && "ring-1 ring-white/10"
+            )}
         >
-            <div className="aspect-[3/4] relative bg-slate-900/50">
-                {!isLoaded && (
-                    <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-                )}
-                <img 
-                    src={imgSrc} 
-                    alt={character.name}
-                    className={`w-full h-full object-cover transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
-                    onLoad={() => setIsLoaded(true)}
-                    onError={handleImageError}
-                    loading="lazy"
-                />
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-brand-midnight/90 to-transparent p-2.5 pt-6 text-left">
-                    <div className="flex justify-between items-end">
-                        <div className="flex-1 truncate">
-                             <p className="text-[8px] font-black text-brand-neon uppercase tracking-widest mb-0.5 opacity-80">{character.rarity}</p>
-                             <h3 className="text-[11px] font-bold truncate leading-tight uppercase tracking-tighter">{character.name}</h3>
-                        </div>
-                        {character.count > 1 && (
-                            <span className="ml-1 bg-brand-neon text-brand-midnight text-[8px] font-black px-1 rounded-sm shadow-sm">x{character.count}</span>
-                        )}
-                    </div>
+            <img
+                src={character.img_url || 'https://files.catbox.moe/2hsawz.jpg'}
+                alt={character.name}
+                decoding="async"
+                className="w-full h-full object-cover object-top grayscale-[0.2] group-hover:grayscale-0 transition-all duration-700 group-hover:scale-110"
+            />
+            
+            {/* View Indicator Overlay */}
+            <div className="absolute inset-0 bg-brand-midnight/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-2xl bg-brand-neon/20 backdrop-blur-md border border-brand-neon/40 flex items-center justify-center text-brand-neon transform scale-50 group-hover:scale-100 transition-transform duration-500">
+                    <Zap size={20} />
                 </div>
             </div>
+
+            <div className="absolute inset-0 bg-gradient-to-t from-brand-midnight via-transparent to-transparent opacity-80" />
+            
+            <div className="absolute bottom-4 inset-x-4">
+                <p className="text-[10px] font-black uppercase text-white tracking-widest line-clamp-1 mb-1">
+                    {character.name}
+                </p>
+                <div className="flex items-center space-x-1.5 opacity-60">
+                    <div className={cn("w-1.5 h-1.5 rounded-full", isSpecial ? "animate-pulse" : "bg-slate-500", visuals.text.replace('text-', 'bg-'))} />
+                    <span className={cn("text-[8px] font-bold uppercase tracking-widest", visuals.text)}>{character.rarity}</span>
+                </div>
+            </div>
+            
+            {character.count > 1 && (
+                <div className="absolute top-4 right-4 px-2 py-1 rounded-xl bg-brand-neon text-brand-midnight text-[10px] font-black shadow-xl shadow-brand-neon/20">
+                    x{character.count}
+                </div>
+            )}
         </motion.div>
     );
 });
+
