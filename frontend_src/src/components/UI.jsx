@@ -308,13 +308,13 @@ export const Modal = ({ character, onClose, actions }) => {
                         <div className="px-8 pt-4 pb-12 space-y-8">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="bg-white/[0.03] border border-white/5 p-5 rounded-3xl">
-                                    <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Neural Match</p>
+                                    <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Registry Status</p>
                                     <p className={cn("text-sm font-black", character.owned ? "text-brand-neon" : "text-brand-accent")}>
-                                        {character.owned ? "CERTIFIED" : "UNSTABLE"}
+                                        {character.owned ? "COLLECTED" : "AVAILABLE"}
                                     </p>
                                 </div>
                                 <div className="bg-white/[0.03] border border-white/5 p-5 rounded-3xl">
-                                    <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Asset Registry</p>
+                                    <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Harem Storage</p>
                                     <p className="text-sm font-black text-white">{character.count > 0 ? `BATCH x${character.count}` : "UNIQUE UNIT"}</p>
                                 </div>
                             </div>
@@ -324,11 +324,11 @@ export const Modal = ({ character, onClose, actions }) => {
                             <div className="opacity-40">
                                 <div className="flex items-center space-x-2 text-slate-400 mb-3">
                                     <Info size={14} />
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Neural Archive Entry</span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Bio Archive Entry</span>
                                 </div>
                                 <p className="text-xs leading-relaxed italic text-slate-400 uppercase font-bold tracking-tight">
-                                    The entity known as {character.name} originated from {character.anime}. 
-                                    Synchronizing this unit with your core yields recursive metadata updates.
+                                    The character {character.name} is from {character.anime}. 
+                                    Adding them to your harem unlocks new possibilities.
                                 </p>
                             </div>
                         </div>

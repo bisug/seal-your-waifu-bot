@@ -25,13 +25,13 @@ export const Quests = () => {
       const res = await apiFetch(`/quests/claim/${questId}`, { method: 'POST' });
       if (res.success) {
         window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
-        toast.success(`Quantum Yield: +${rewardXp} XP`);
+        toast.success(`Reward: +${rewardXp} XP`);
         fetchQuests();
         refreshUser();
       }
     } catch (err) {
       window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('error');
-      toast.error(err.message || 'Transmission failed');
+      toast.error(err.message || 'Failed to claim');
     } finally {
       setClaiming(null);
     }
@@ -76,7 +76,7 @@ export const Quests = () => {
              {isClaimed ? (
                <div className="flex items-center space-x-1.5 text-slate-600 opacity-60">
                   <CheckCircle2 size={12} />
-                  <span className="text-[10px] font-black uppercase">ARCHIVED</span>
+                  <span className="text-[10px] font-black uppercase">CLAIMED</span>
                </div>
              ) : isCompleted ? (
                 <motion.button 
@@ -86,7 +86,7 @@ export const Quests = () => {
                   className="flex items-center space-x-2 bg-brand-neon px-4 py-2 rounded-lg text-brand-midnight text-[10px] font-black uppercase tracking-widest shadow-lg shadow-brand-neon/20 hover:scale-105 transition-all"
                 >
                   {claiming === quest.id ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-                  <span>{claiming === quest.id ? 'SYNCING...' : 'CLAIM REWARD'}</span>
+                  <span>{claiming === quest.id ? 'CLAIMING...' : 'CLAIM REWARD'}</span>
                 </motion.button>
              ) : (
                 <div className="flex items-center space-x-1.5 text-slate-700">
@@ -105,7 +105,7 @@ export const Quests = () => {
       <header className="mb-8 px-2">
         <div className="flex items-center space-x-2 text-brand-neon mb-1 text-[11px]">
           <Sparkles size={16} />
-          <span className="font-black uppercase tracking-[0.3em]">Neural Objectives</span>
+          <span className="font-black uppercase tracking-[0.3em]">Harem Quests</span>
         </div>
         <h1 className="text-2xl font-black uppercase tracking-tight">Active Quests</h1>
       </header>
@@ -115,7 +115,7 @@ export const Quests = () => {
       ) : (
       <div className="space-y-8">
           <section>
-            <h2 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 px-2">Daily Assignments</h2>
+            <h2 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 px-2">Daily Quests</h2>
             <div className="space-y-3">
               {(quests?.daily || []).map(q => <QuestItem key={q.id} quest={q} />)}
             </div>

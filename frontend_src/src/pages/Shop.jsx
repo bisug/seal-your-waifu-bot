@@ -41,7 +41,7 @@ export const Shop = ({ onCharClick }) => {
         const res = await apiFetch(`/shop/buy/character/${charId}`, { method: 'POST' });
         if (res.status === 'success') {
           window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
-          toast.success('Asset integrated successfully');
+          toast.success('Character added to harem');
           await refreshUserRef.current();
           await fetchShopDataRef.current();
         }
@@ -59,7 +59,7 @@ export const Shop = ({ onCharClick }) => {
       <header className="mb-6 flex justify-between items-end px-2">
         <div>
           <h1 className="text-2xl font-black uppercase tracking-tight">Market</h1>
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Premium Collection</p>
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Acquire Waifus</p>
         </div>
         <div className="flex items-center space-x-2 bg-brand-neon/10 border border-brand-neon/20 px-3 py-1.5 rounded-xl shadow-[0_0_15px_rgba(0,242,255,0.1)]">
           <Zap size={14} className="text-brand-neon" />
@@ -157,7 +157,7 @@ export const Shop = ({ onCharClick }) => {
                   </div>
                 ))
               ) : (
-                <div className="py-20 text-center opacity-40 italic text-xs uppercase tracking-widest font-bold">No data found in hatchery</div>
+                <div className="py-20 text-center opacity-40 italic text-xs uppercase tracking-widest font-bold">No data found in harem hatchery</div>
               )}
             </motion.div>
           )}
@@ -178,7 +178,7 @@ export const Shop = ({ onCharClick }) => {
              ) : (
                <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="w-full max-w-sm text-center">
                   <div className="mb-4">
-                     <p className="text-brand-neon font-black uppercase tracking-widest mb-2 font-black italic">! UNBOXED !</p>
+                     <p className="text-brand-neon font-black uppercase tracking-widest mb-2 font-black italic">! SEALED !</p>
                      <h2 className="text-3xl font-black uppercase italic leading-none text-white tracking-tighter">{newChar.name}</h2>
                   </div>
                   <div className="aspect-[3/4] rounded-3xl overflow-hidden border-4 border-brand-neon shadow-[0_0_50px_rgba(0,242,255,0.3)] mb-8 relative">

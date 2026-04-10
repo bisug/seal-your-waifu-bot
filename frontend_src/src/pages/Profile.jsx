@@ -118,8 +118,8 @@ export const Profile = ({ onCharClick }) => {
       <div className="px-4 -mt-4 relative z-30 grid grid-cols-3 gap-2.5 mb-8">
         {[
           { icon: Shield, label: 'XP', value: user.stats?.xp || 0, color: 'text-brand-neon', bg: 'bg-brand-neon/5' },
-          { icon: Zap, label: 'Zenith', value: user.stats?.zenith || 0, color: 'text-brand-accent', bg: 'bg-brand-accent/5' },
-          { icon: Users, label: 'Assets', value: user.stats?.total_characters || 0, color: 'text-white', bg: 'bg-white/5' },
+          { icon: Zap, label: 'Zenith ⧫', value: user.stats?.zenith || 0, color: 'text-brand-accent', bg: 'bg-brand-accent/5' },
+          { icon: Users, label: 'Collection', value: user.stats?.total_characters || 0, color: 'text-white', bg: 'bg-white/5' },
         ].map((stat, i) => (
           <div key={i} className={`glass-panel p-3 rounded-2xl border border-white/10 flex flex-col items-center ${stat.bg} backdrop-blur-md`}>
             <div className={`${stat.color} mb-1.5 opacity-80`}>
@@ -143,7 +143,7 @@ export const Profile = ({ onCharClick }) => {
       {/* Harem Grid Search & Header */}
       <section className="px-4">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-500">My Collection</h2>
+          <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-500">My Harem</h2>
           <div className="flex items-center space-x-1 text-[10px] font-black text-brand-neon uppercase tracking-widest bg-brand-neon/5 px-2.5 py-1 rounded-lg border border-brand-neon/10 shadow-[0_0_10px_rgba(0,255,255,0.05)]">
             <Trophy size={10} />
             <span>Rank #{user.stats?.rank || '---'}</span>
@@ -154,7 +154,7 @@ export const Profile = ({ onCharClick }) => {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
           <input 
             type="text" 
-            placeholder="Search collector files..." 
+            placeholder="Search your harem..." 
             className="w-full bg-slate-900/40 border border-white/10 rounded-xl py-3 pl-11 pr-4 text-xs focus:border-brand-neon/50 outline-none transition-all placeholder:text-slate-600 font-bold uppercase tracking-widest backdrop-blur-sm"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -188,7 +188,7 @@ export const Profile = ({ onCharClick }) => {
           <div className="glass-panel p-10 rounded-3xl border border-white/5 text-center flex flex-col items-center opacity-80">
             <Users size={40} className="text-slate-800 mb-4" />
             <p className="text-slate-500 text-[11px] font-bold uppercase tracking-widest italic leading-relaxed">
-              No matching records.<br/>Try adjusting your scanner.
+              No characters found in your harem.<br/>Try adjusting your search.
             </p>
           </div>
         )}

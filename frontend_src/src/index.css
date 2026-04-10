@@ -2,18 +2,18 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400..900&display=swap');
 
 @theme {
-  --color-brand-midnight: #080a12;
-  --color-brand-deep: #0f121d;
-  --color-brand-accent: #3b82f6;
-  --color-brand-neon: #00f2ff;
-  --color-brand-glass: rgba(15, 18, 29, 0.7);
+  --color-brand-midnight: #060d0b;
+  --color-brand-deep: #0a1a15;
+  --color-brand-accent: #10b981;
+  --color-brand-neon: #34d399;
+  --color-brand-glass: rgba(10, 26, 21, 0.7);
   --color-brand-glass-border: rgba(255, 255, 255, 0.1);
 }
 
 :root {
   color-scheme: dark;
-  --background: #080a12;
-  --foreground: #f8fafc;
+  --background: #060d0b;
+  --foreground: #f0fdf4;
   
   /* Premium Density Spacing System */
   --space-1: 0.2rem;   /* 3.2px */
@@ -96,14 +96,14 @@ button, a {
 .bg-mesh {
   background-color: var(--color-brand-midnight);
   background-image: 
-    radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(0, 242, 255, 0.1) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.1) 0px, transparent 50%),
-    radial-gradient(at 0% 100%, rgba(0, 242, 255, 0.05) 0px, transparent 50%);
+    radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(52, 211, 153, 0.1) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(52, 211, 153, 0.05) 0px, transparent 50%);
 }
 
 .neon-shadow {
-  box-shadow: 0 0 20px rgba(0, 242, 255, 0.25);
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.25);
 }
 
 /* Cinematic Shimmer for Skeleton Loaders */

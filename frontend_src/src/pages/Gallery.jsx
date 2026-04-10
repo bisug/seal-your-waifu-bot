@@ -140,14 +140,14 @@ export const Gallery = ({ onCharClick }) => {
           {loading && items.length > 0 && (
             <div className="flex items-center space-x-3 bg-white/5 px-6 py-3 rounded-2xl border border-white/10 animate-pulse">
               <Loader2 size={14} className="animate-spin text-brand-neon" />
-              <span className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em]">Syncing Archive Data...</span>
+              <span className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em]">Loading Harem Data...</span>
             </div>
           )}
 
           {!hasMore && items.length > 0 && (
             <div className="flex flex-col items-center space-y-2 opacity-30">
               <div className="h-px w-24 bg-gradient-to-r from-transparent via-slate-700 to-transparent mb-2" />
-              <span className="text-[11px] font-black text-slate-600 uppercase tracking-[0.3em]">End of Collection Archive</span>
+              <span className="text-[11px] font-black text-slate-600 uppercase tracking-[0.3em]">End of Harem List</span>
             </div>
           )}
 
