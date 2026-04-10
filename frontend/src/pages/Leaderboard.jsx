@@ -1,4 +1,4 @@
-import React, { useState, memo } from 'react';
+import React, { useState, memo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Medal, Loader2, Users, Star, TrendingUp } from 'lucide-react';
 import { useApi } from '../components/UI';
