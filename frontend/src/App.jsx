@@ -10,6 +10,7 @@ import { Modal, ToastProvider, useToast } from './components/UI';
 import { Zap } from 'lucide-react';
 import { apiFetch } from './api';
 import { formatNumber } from './utils';
+import { CharActionModal } from './components/CharActionModal';
 
 // Lazy load pages for extreme performance
 const Gallery = lazy(() => import('./pages/Gallery').then(m => ({ default: m.Gallery })));

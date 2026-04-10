@@ -148,7 +148,7 @@ const EmptyState = ({ icon: Icon, message }) => (
 );
 
 export const Hatchery = () => {
-  const { user, loading: userLoading } = useUser();
+  const { user, loading: userLoading, refreshUser } = useUser();
   const { incubateEgg, hatchEgg, loading, hatchingResult, setHatchingResult } = useEggActions();
   const [activeTab, setActiveTab] = useState('eggs'); // 'eggs' or 'pets'
 
