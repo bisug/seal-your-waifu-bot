@@ -1,10 +1,16 @@
 import React, { useState, useEffect, Suspense, lazy, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Loader2 } from 'lucide-react';
 import { UserProvider, useUser } from './context/UserContext';
 import { TabNavigation } from './components/TabNavigation';
+import { IntroLoading } from './components/IntroLoading';
 import { Profile } from './pages/Profile';
 import { NotFound } from './pages/NotFound';
 import { Modal, ToastProvider } from './components/UI';
+import { Zap } from 'lucide-react';
+import { apiFetch } from './api';
+import { toast } from 'react-hot-toast';
+import { formatNumber } from './utils';
 
 // Lazy load pages for extreme performance
 const Gallery = lazy(() => import('./pages/Gallery').then(m => ({ default: m.Gallery })));
@@ -12,6 +18,7 @@ const Quests = lazy(() => import('./pages/Quests').then(m => ({ default: m.Quest
 const Leaderboard = lazy(() => import('./pages/Leaderboard').then(m => ({ default: m.Leaderboard })));
 const Pass = lazy(() => import('./pages/Pass').then(m => ({ default: m.Pass })));
 const Shop = lazy(() => import('./pages/Shop').then(m => ({ default: m.Shop })));
+const Hatchery = lazy(() => import('./pages/Hatchery').then(m => ({ default: m.Hatchery })));
 
 // Cinematic Error Boundary for high-deployment stability
 class ErrorBoundary extends React.Component {
@@ -21,7 +28,7 @@ class ErrorBoundary extends React.Component {
   }
 
   static getDerivedStateFromError(error) {
-    return { hasError: true };
+    return { hasError: true, error };
   }
 
   componentDidCatch(error, errorInfo) {
@@ -32,13 +39,18 @@ class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       return (
         <div className="flex-1 flex flex-col items-center justify-center p-12 text-center min-h-svh bg-brand-midnight">
-          <h2 className="text-brand-accent font-black mb-4 uppercase tracking-[0.3em]">Critical Overload</h2>
-          <p className="text-slate-500 text-[10px] mb-8 uppercase tracking-widest">A UI module has desynchronized. Initiate recovery?</p>
+          <div className="mb-8 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl max-w-sm">
+             <h2 className="text-red-500 font-black mb-2 uppercase tracking-[0.3em]">System Error</h2>
+             <p className="text-[10px] text-red-400 font-mono break-all">{this.state.error?.toString() || 'Unknown Error'}</p>
+          </div>
+          
+          <p className="text-slate-500 text-[10px] mb-8 uppercase tracking-widest">A module failure occurred. Re-establish connection?</p>
+          
           <button 
             onClick={() => window.location.reload()}
-            className="px-10 py-5 rounded-2xl bg-brand-accent text-brand-midnight font-black uppercase text-[10px] tracking-[0.2em] shadow-xl shadow-brand-accent/20"
+            className="px-8 py-4 bg-brand-accent text-white font-black rounded-2xl uppercase tracking-widest text-[11px] neon-shadow shadow-brand-accent/50 active:scale-95 transition-transform"
           >
-            RESTABILIZE
+            RECONNECT
           </button>
         </div>
       );
@@ -47,30 +59,6 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-const LoadingScreen = () => (
-  <div className="fixed inset-0 bg-brand-midnight flex flex-col items-center justify-center p-12 bg-mesh overflow-hidden">
-    {/* Ambient Glows */}
-    <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-neon/5 blur-[120px] rounded-full" />
-    <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-brand-accent/5 blur-[120px] rounded-full" />
-    <motion.div 
-      animate={{ 
-        scale: [1, 1.1, 1],
-        opacity: [0.5, 1, 0.5] 
-      }}
-      transition={{ 
-        repeat: Infinity, 
-        duration: 2,
-        ease: "easeInOut"
-      }}
-      className="w-24 h-24 mb-8 relative"
-    >
-      <div className="absolute inset-0 rounded-full border-4 border-brand-neon opacity-20" />
-      <div className="absolute inset-0 rounded-full border-t-4 border-brand-neon animate-spin" />
-      <div className="absolute inset-4 rounded-full bg-brand-neon/10 flex items-center justify-center blur-sm transform scale-150 animate-pulse" />
-    </motion.div>
-    <p className="text-brand-neon font-black uppercase tracking-[0.5em] text-[10px] animate-pulse">Syncing Protocols</p>
-  </div>
-);
 
 const AppContent = () => {
   const { user, loading, error } = useUser();
@@ -86,21 +74,41 @@ const AppContent = () => {
 
   const [activeTab, setActiveTab] = useState(getInitialTab());
   const [selectedChar, setSelectedChar] = useState(null);
+  const [purchaseStage, setPurchaseStage] = useState('idle'); // 'idle', 'confirm', 'buying'
+
+  // Reset stage when modal closes or changes
+  useEffect(() => {
+    if (!selectedChar) setPurchaseStage('idle');
+  }, [selectedChar]);
 
   // Native Telegram Integration: Back Button & Haptics
   useEffect(() => {
     const tg = window.Telegram?.WebApp;
     if (!tg) return;
 
-    if (selectedChar) {
-      tg.BackButton.show();
-      tg.BackButton.onClick(() => setSelectedChar(null));
-    } else {
-      tg.BackButton.hide();
+    try {
+      if (selectedChar) {
+        tg.BackButton?.show?.();
+        tg.BackButton?.onClick?.(() => setSelectedChar(null));
+      } else {
+        tg.BackButton?.hide?.();
+      }
+
+      // Theme Sync: Only call if method exists (not all Telegram versions)
+      tg.setHeaderColor?.('#0A0A0B');
+      tg.setBackgroundColor?.('#0A0A0B');
+      tg.expand?.();
+    } catch (e) {
+      // Silently ignore Telegram API errors on older clients
+      console.warn('Telegram API error (non-critical):', e.message);
     }
 
     return () => {
-      tg.BackButton.offClick(() => setSelectedChar(null));
+      try {
+        tg.BackButton?.offClick?.(() => setSelectedChar(null));
+      } catch (e) {
+        // ignore
+      }
     };
   }, [selectedChar]);
 
@@ -115,7 +123,7 @@ const AppContent = () => {
     setActiveTab(tab);
   }, []);
 
-  if (loading) return <LoadingScreen />;
+  if (loading) return <IntroLoading />;
 
   if (error || (!loading && !user)) {
     return (
@@ -134,9 +142,9 @@ const AppContent = () => {
             </div>
           </motion.div>
           
-          <h2 className="text-brand-accent font-black mb-2 uppercase tracking-[0.3em] text-xl">Signal Interrupted</h2>
+          <h2 className="text-brand-accent font-black mb-2 uppercase tracking-[0.3em] text-xl">Connection Lost</h2>
           <p className="text-slate-500 text-[10px] mb-10 leading-relaxed uppercase tracking-widest max-w-[200px] mx-auto">
-            {error || "Authentication handshake timeout. Please re-open the portal."}
+            {error || "Authentication timed out. Please restart the bot."}
           </p>
           
           <div className="space-y-4">
@@ -144,7 +152,7 @@ const AppContent = () => {
               onClick={() => window.location.reload()}
               className="w-full px-10 py-5 rounded-2xl bg-brand-accent text-brand-midnight font-black uppercase text-[10px] tracking-[0.2em] shadow-xl shadow-brand-accent/20 transition-all active:scale-95 flex items-center justify-center gap-3"
             >
-              RE-ESTABLISH LINK
+              RETRY
             </button>
             <button 
               onClick={() => { localStorage.clear(); window.location.reload(); }}
@@ -159,18 +167,18 @@ const AppContent = () => {
   }
 
   return (
-    <div className="flex-1 flex flex-col">
+    <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-brand-midnight">
       <AnimatePresence mode="wait">
         <motion.main
           key={activeTab}
-          initial={{ opacity: 0, x: 10 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -10 }}
-          transition={{ duration: 0.2 }}
-          className="flex-1 adaptive-px relative bg-mesh"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15, ease: 'easeOut' }}
+          className="app-scroller adaptive-px bg-mesh overflow-x-hidden"
         >
           <Suspense fallback={
-            <div className="flex-1 flex items-center justify-center bg-brand-midnight bg-mesh">
+            <div className="flex items-center justify-center h-full bg-brand-midnight bg-mesh">
               <Loader2 size={24} className="animate-spin text-brand-neon/20" />
             </div>
           }>
@@ -180,9 +188,8 @@ const AppContent = () => {
             {activeTab === 'leaderboard' && <Leaderboard />}
             {activeTab === 'pass' && <Pass />}
             {activeTab === 'shop' && <Shop onCharClick={setSelectedChar} />}
-            
-            {/* Cinematic 404 Fallback */}
-            {!['profile', 'gallery', 'quests', 'leaderboard', 'pass', 'shop'].includes(activeTab) && (
+            {activeTab === 'incubation' && <Hatchery />}
+            {!['profile', 'gallery', 'quests', 'leaderboard', 'pass', 'shop', 'incubation'].includes(activeTab) && (
               <NotFound onReset={() => setActiveTab('profile')} />
             )}
           </Suspense>
@@ -191,9 +198,127 @@ const AppContent = () => {
 
       <AnimatePresence>
         {selectedChar && (
-          <Modal 
-            character={selectedChar} 
-            onClose={() => setSelectedChar(null)} 
+          <Modal
+            character={selectedChar}
+            onClose={() => setSelectedChar(null)}
+            actions={
+              activeTab === 'profile' && selectedChar.count > 1 ? (
+                <button 
+                  onClick={() => {
+                    const tg = window.Telegram?.WebApp;
+                    const msg = `Sell 1 x ${selectedChar.name} for Zenith ⧫?`;
+                    
+                    const callback = async (confirmed) => {
+                      if (!confirmed) return;
+                      try {
+                          await apiFetch('/recycle', { 
+                              method: 'POST', 
+                              body: JSON.stringify([selectedChar.id]) 
+                          });
+                          toast.success('Character sold');
+                          setSelectedChar(null);
+                          window.dispatchEvent(new CustomEvent('user-data-refresh'));
+                      } catch (err) {
+                          toast.error(err.message || 'Fusion failed');
+                      }
+                    };
+
+                    if (tg?.showConfirm) {
+                      tg.showConfirm(msg, callback);
+                    } else if (window.confirm(msg)) {
+                      callback(true);
+                    }
+                  }}
+                  className="w-full py-3.5 rounded-xl bg-brand-accent/10 border border-brand-accent/20 text-brand-accent text-[10px] font-black uppercase tracking-widest hover:bg-brand-accent/20 transition-all flex items-center justify-center space-x-2 mb-4"
+                >
+                    <Zap size={14} />
+                    <span>Sell Duplicate</span>
+                </button>
+              ) : activeTab === 'shop' && !selectedChar.owned ? (
+                <div className="w-full space-y-4">
+                  <AnimatePresence mode="wait">
+                    {purchaseStage === 'idle' ? (
+                      <motion.div 
+                        key="idle" 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="flex items-center justify-between p-4 bg-brand-neon/5 border border-brand-neon/20 rounded-2xl"
+                      >
+                         <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 rounded-full bg-brand-neon/20 flex items-center justify-center text-brand-neon shadow-lg shadow-brand-neon/20">
+                               <Zap size={20} />
+                            </div>
+                            <div>
+                               <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Price</p>
+                               <p className="text-sm font-black text-white">⧫ {formatNumber(selectedChar.zenith_price || 5)}</p>
+                            </div>
+                         </div>
+                         <button 
+                            onClick={() => {
+                                window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
+                                setPurchaseStage('confirm');
+                            }}
+                            className="px-8 py-3 rounded-2xl bg-brand-neon text-brand-midnight text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-brand-neon/30 active:scale-95 transition-all"
+                         >
+                            BUY
+                         </button>
+                      </motion.div>
+                    ) : purchaseStage === 'confirm' || purchaseStage === 'buying' ? (
+                      <motion.div 
+                        key="confirm"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="p-5 glass-panel rounded-3xl border border-brand-accent/30 bg-brand-accent/[0.02]"
+                      >
+                        <div className="text-center mb-5">
+                           <p className="text-brand-accent font-black uppercase text-[10px] tracking-widest mb-1">Confirm Purchase?</p>
+                           <p className="text-slate-500 text-[9px] uppercase font-bold">Zenith Balance: ⧫ {formatNumber(user?.stats?.zenith)}</p>
+                        </div>
+                        
+                        <div className="flex space-x-3">
+                           <button 
+                              onClick={() => setPurchaseStage('idle')}
+                              disabled={purchaseStage === 'buying'}
+                              className="flex-1 py-3.5 rounded-xl border border-white/10 text-slate-500 text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all"
+                           >
+                              CANCEL
+                           </button>
+                           <button 
+                              onClick={async () => {
+                                 setPurchaseStage('buying');
+                                 try {
+                                     const res = await apiFetch(`/shop/buy/character/${selectedChar.id}`, { method: 'POST' });
+                                     if (res.status === 'success') {
+                                         window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
+                                         toast.success('Character added to harem');
+                                         setSelectedChar(null);
+                                         // Trigger refresh events
+                                         window.dispatchEvent(new CustomEvent('user-data-refresh'));
+                                         window.dispatchEvent(new CustomEvent('shop-data-refresh'));
+                                     }
+                                 } catch (err) {
+                                     toast.error(err.message || 'Transaction failed');
+                                     setPurchaseStage('confirm');
+                                 }
+                              }}
+                              disabled={purchaseStage === 'buying'}
+                              className="flex-[1.5] py-3.5 rounded-xl bg-brand-accent text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-brand-accent/20 active:scale-95 transition-all flex items-center justify-center"
+                           >
+                              {purchaseStage === 'buying' ? (
+                                <Loader2 size={16} className="animate-spin" />
+                              ) : (
+                                'CONFIRM PURCHASE'
+                              )}
+                           </button>
+                        </div>
+                      </motion.div>
+                    ) : null}
+                  </AnimatePresence>
+                </div>
+              ) : null
+            }
           />
         )}
       </AnimatePresence>

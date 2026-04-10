@@ -345,10 +345,6 @@ async def claim_quest_callback(_, query: types.CallbackQuery):
     user_id = query.from_user.id
     quest_id = query.data.split(":")[1]
 
-    quests = await get_user_quests(user_id)
-    quest_data = quests.get(quest_id, {})
-
-
     if quest_id in QUEST_POOL:
         quest_info = QUEST_POOL[quest_id]
     elif quest_id in WEEKLY_POOL:
@@ -363,22 +359,21 @@ async def claim_quest_callback(_, query: types.CallbackQuery):
     else:
         return await query.answer("❌ Quest not found!", show_alert=True)
 
-    if quest_data.get("claimed", False):
-        return await query.answer("❌ Already claimed!", show_alert=True)
+    result = await user_collection.update_one(
+        {
+            "id": {"$in": [user_id, str(user_id)]},
+            f"quests.{quest_id}.claimed": {"$ne": True},
+            f"quests.{quest_id}.progress": {"$gte": quest_info["target"]}
+        },
+        {"$set": {f"quests.{quest_id}.claimed": True}}
+    )
 
-    if quest_data.get("progress", 0) < quest_info["target"]:
-        return await query.answer("❌ Quest not completed yet!", show_alert=True)
-
+    if result.modified_count == 0:
+        return await query.answer("❌ Already claimed or quest not complete!", show_alert=True)
 
     reward_xp = quest_info["reward_xp"]
     await add_xp(user_id, reward_xp, f"quest_{quest_id}")
 
-    await user_collection.update_one(
-        {"id": {"$in": [user_id, str(user_id)]}},
-        {"$set": {f"quests.{quest_id}.claimed": True}}
-    )
-
     await query.answer(f"🎉 +{reward_xp} XP!", show_alert=True)
-
 
     await view_quests(None, query.message, edit_message=True)

@@ -23,7 +23,9 @@ async def get_next_sequence_number(sequence_name: str) -> int:
     )
     return sequence_document['sequence_value']
 
-async def upload_image_to_catbox(file_path: str) -> str or None:
+from typing import Optional
+
+async def upload_image_to_catbox(file_path: str) -> Optional[str]:
     """
     Upload an image file to Catbox.moe and return the URL.
     """
@@ -45,7 +47,7 @@ async def upload_image_to_catbox(file_path: str) -> str or None:
         LOGGER.error(f"Catbox Upload Error: {e}")
         return None
 
-async def upload_image_to_imgbb(file_path: str) -> str or None:
+async def upload_image_to_imgbb(file_path: str) -> Optional[str]:
     """
     Upload an image file to ImgBB and return the URL.
     """
@@ -68,6 +70,25 @@ async def upload_image_to_imgbb(file_path: str) -> str or None:
         LOGGER.error(f"ImgBB Upload Error: {e}")
         return None
 
+async def upload_media_safely(file_path: str) -> Optional[str]:
+    """
+    Maximized wrapper for uploading media.
+    1. Tries Catbox first (supports all media).
+    2. If Catbox fails and the file is NOT a video/GIF, tries ImgBB.
+    """
+    url = await upload_image_to_catbox(file_path)
+    if url:
+        return url
+        
+    if not str(file_path).endswith(('.mp4', '.webm', '.gif')):
+        LOGGER.warning(f"Catbox failed for {file_path}. Falling back to ImgBB...")
+        url = await upload_image_to_imgbb(file_path)
+        if url:
+            return url
+            
+    LOGGER.error(f"Complete upload failure for {file_path}")
+    return None
+
 async def add_character_to_db(char_data: dict) -> str:
     """
     Add a new character to the database with a unique generated ID.
@@ -77,7 +98,7 @@ async def add_character_to_db(char_data: dict) -> str:
     await collection.insert_one(char_data)
     return char_id
 
-async def get_character_by_id(char_id: str) -> dict or None:
+async def get_character_by_id(char_id: str) -> Optional[dict]:
     """
     Fetch character data from the database using its ID.
     """
@@ -96,9 +117,13 @@ async def get_or_load_characters(rarity: str) -> list:
     """
     now = time.time()
     if rarity not in characters_by_rarity or now - _cache_timestamps.get(rarity, 0) > CACHE_TTL:
-        cursor = collection.find({"rarity": rarity}, projection={"_id": 0})
-        chars = await cursor.to_list(length=None)
-        random.shuffle(chars)
+        MAX_CACHED_PER_RARITY = 500
+        cursor = collection.aggregate([
+            {"$match": {"rarity": rarity}},
+            {"$sample": {"size": MAX_CACHED_PER_RARITY}},
+            {"$project": {"_id": 0}}
+        ])
+        chars = await cursor.to_list(length=MAX_CACHED_PER_RARITY)
         characters_by_rarity[rarity] = chars
         _cache_timestamps[rarity] = now
     return characters_by_rarity[rarity]

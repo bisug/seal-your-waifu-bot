@@ -2,6 +2,7 @@ import React, { useState, memo } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Medal, Loader2, Users, Star, TrendingUp } from 'lucide-react';
 import { useApi } from '../components/UI';
+import { formatNumber } from '../utils';
 
 const LeaderboardItem = memo(({ user, index, metric, getMetricIcon }) => (
   <motion.div
@@ -25,7 +26,7 @@ const LeaderboardItem = memo(({ user, index, metric, getMetricIcon }) => (
       <p className="text-[11px] font-black truncate tracking-tight mb-0.5">{user.name}</p>
       <div className="flex items-center space-x-1 text-slate-500">
          {getMetricIcon()}
-         <span className="text-[11px] truncate font-bold uppercase">{user.value.toLocaleString()} {metric.toUpperCase()}</span>
+         <span className="text-[11px] truncate font-bold uppercase">{formatNumber(user.value)} {metric.toUpperCase()}</span>
       </div>
     </div>
   </motion.div>
@@ -38,11 +39,11 @@ export const Leaderboard = () => {
     initialData: []
   }, [metric]);
 
-  const getMetricIcon = () => {
+  const getMetricIcon = useCallback(() => {
     if (metric === 'level') return <TrendingUp size={14} />;
     if (metric === 'zenith') return <Star size={14} />;
     return <Users size={14} />;
-  };
+  }, [metric]);
 
   const handleMetricSelection = (metricId) => {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
@@ -50,7 +51,7 @@ export const Leaderboard = () => {
   };
 
   return (
-    <div className="pb-32 pt-6 px-4 uppercase tracking-[0.2em] font-black">
+    <div className="pb-8 pt-6 px-4 uppercase tracking-[0.2em] font-black">
       <header className="mb-8 px-2">
         <div className="flex items-center space-x-2 text-brand-neon mb-1 text-[11px]">
           <Trophy size={16} />

@@ -1,3 +1,4 @@
+from Grabber.core.utils import reply_media_dynamic
 from pyrogram import types, enums, filters, errors
 from pyrogram.enums import ParseMode
 from Grabber import app, PHOTO_URL, SUPPORT_CHAT, UPDATE_CHAT, LOGGER, WEB_APP_URL, user_collection, collection, total_pm_users
@@ -139,8 +140,7 @@ async def start_handler(_, message: types.Message):
                         f"<b>Rarity:</b> {html_escape(character['rarity'])}\n"
                         f"<b>Character ID:</b> <code>{character['id']}</code>\n"
                     )
-                    await message.reply_photo(
-                        photo=character['img_url'],
+                    await reply_media_dynamic(message, character['img_url'],
                         caption=response_message,
                         parse_mode=ParseMode.HTML
                     )
@@ -201,8 +201,7 @@ async def start_handler(_, message: types.Message):
     if is_private:
         first_name = html_escape(message.from_user.first_name)
         text = START_TEXT.format(first_name=first_name, bot_name=config.BOT_NAME)
-        await message.reply_photo(
-            photo=random_photo(),
+        await reply_media_dynamic(message, random_photo(),
             caption=text,
             reply_markup=markup,
             parse_mode=ParseMode.HTML

@@ -28,7 +28,7 @@ export const Gallery = ({ onCharClick }) => {
     setLoading(true);
     try {
       const currentPage = isNew ? 1 : page;
-      const data = await apiFetch(`/gallery?page=${currentPage}&limit=24&search=${search}&rarity=${rarity}`);
+      const data = await apiFetch(`/gallery?page=${currentPage}&limit=24&search=${encodeURIComponent(search)}&rarity=${encodeURIComponent(rarity)}`);
       
       if (isNew) {
         setItems(data.items);
@@ -36,7 +36,7 @@ export const Gallery = ({ onCharClick }) => {
         setItems(prev => [...prev, ...data.items]);
       }
       
-      setHasMore(data.items.length === 24);
+      setHasMore((isNew ? data.items.length : items.length + data.items.length) < data.total);
     } catch (err) {
       console.error('Gallery fetch error:', err);
     } finally {
@@ -62,28 +62,28 @@ export const Gallery = ({ onCharClick }) => {
   }, [page]);
 
   return (
-    <div className="pb-24 pt-6 px-4">
-      {/* Search & Filter Header */}
-      <section className="mb-6 space-y-3">
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+    <div className="pb-8 pt-0 px-4 relative min-h-full">
+      {/* Premium Search & Filter Header */}
+      <section className="sticky top-0 z-30 bg-brand-midnight/80 backdrop-blur-xl pt-4 pb-3 mb-5 -mx-4 px-4 space-y-3 border-b border-white/5 shadow-2xl">
+        <div className="relative group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-brand-neon transition-colors" size={14} />
           <input 
             type="text" 
             placeholder="Search characters or anime..." 
-            className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm focus:border-brand-neon outline-none transition-all placeholder:text-slate-600 font-medium"
+            className="w-full bg-slate-900/40 border border-white/10 rounded-xl py-3 pl-11 pr-4 text-xs focus:border-brand-neon/50 outline-none transition-all placeholder:text-slate-600 font-bold tracking-tight backdrop-blur-sm"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
         
         <ScrollArea>
-           {['', 'Common', 'Rare', 'Epic', 'Legendary', 'Mythical', 'Celestial'].map((r) => (
-            <button
+           {['', 'Common', 'Medium', 'Rare', 'Legendary', 'Cosmic', 'Exclusive', 'Limited Edition', 'Royal', 'Antique', 'Celestial'].map((r) => (
+            <button 
               key={r}
               onClick={() => { setRarity(r); setPage(1); }}
-              className={`px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest whitespace-nowrap transition-all border ${
+              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] whitespace-nowrap transition-all border ${
                 rarity === r 
-                ? 'bg-brand-neon text-brand-midnight border-brand-neon shadow-lg shadow-brand-neon/20' 
+                ? 'bg-brand-neon text-brand-midnight border-brand-neon shadow-lg shadow-brand-neon/30 scale-105' 
                 : 'bg-white/5 text-slate-500 border-white/5 hover:border-white/10'
               }`}
             >
@@ -95,7 +95,7 @@ export const Gallery = ({ onCharClick }) => {
 
       {/* Gallery Grid */}
       <section>
-        <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
           <AnimatePresence mode="popLayout">
             {items.map((char, i) => (
               <motion.div
@@ -120,11 +120,19 @@ export const Gallery = ({ onCharClick }) => {
                 )}
               </motion.div>
             ))}
+            
+            {loading && items.length === 0 && Array.from({ length: 12 }).map((_, i) => (
+              <motion.div
+                key={`skeleton-${i}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <CardSkeleton />
+              </motion.div>
+            ))}
           </AnimatePresence>
-          
-          {loading && items.length === 0 && Array.from({ length: 12 }).map((_, i) => (
-            <CardSkeleton key={`skeleton-${i}`} />
-          ))}
         </div>
 
         {/* Status Indicators */}
@@ -132,14 +140,14 @@ export const Gallery = ({ onCharClick }) => {
           {loading && items.length > 0 && (
             <div className="flex items-center space-x-3 bg-white/5 px-6 py-3 rounded-2xl border border-white/10 animate-pulse">
               <Loader2 size={14} className="animate-spin text-brand-neon" />
-              <span className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em]">Syncing Archive Data...</span>
+              <span className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em]">Loading Harem Data...</span>
             </div>
           )}
 
           {!hasMore && items.length > 0 && (
             <div className="flex flex-col items-center space-y-2 opacity-30">
               <div className="h-px w-24 bg-gradient-to-r from-transparent via-slate-700 to-transparent mb-2" />
-              <span className="text-[11px] font-black text-slate-600 uppercase tracking-[0.3em]">End of Collection Archive</span>
+              <span className="text-[11px] font-black text-slate-600 uppercase tracking-[0.3em]">End of Harem List</span>
             </div>
           )}
 

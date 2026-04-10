@@ -1,28 +1,70 @@
 from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.middleware.gzip import GZipMiddleware
 from Grabber.webapp.auth import validate_init_data, create_session, r
 from Grabber.webapp.api import router as api_router
 from Grabber.webapp.ws import router as ws_router
-from Grabber import start_bots, stop_bots
+from Grabber import start_bots, stop_bots, LOGGER
 from config import config
 from contextlib import asynccontextmanager
 import os
 import logging
+import json
+import time as _time
+from urllib.parse import parse_qsl
 
 import asyncio
 from Grabber.core.cache import rebuild_leaderboard
-from Grabber.database import user_collection
+from Grabber.database import user_collection, sessions_collection
+from collections import defaultdict
+_init_rate_limits: dict = defaultdict(list)
+
+async def check_init_rate_limit(request: Request):
+    """IP-based rate limit for /secure_init: 10 req/60s per IP."""
+    client_ip = request.client.host if request.client else "unknown"
+    now = _time.time()
+    rate_key = f"rl_init:{client_ip}"
+
+    if r:
+        try:
+            async with r.pipeline(transaction=True) as pipe:
+                pipe.zremrangebyscore(rate_key, 0, now - 60)
+                pipe.zadd(rate_key, {str(now): now})
+                pipe.zcard(rate_key)
+                pipe.expire(rate_key, 60)
+                _, _, count, _ = await pipe.execute()
+            if count > 10:
+                raise HTTPException(status_code=429, detail="Too many requests. Try again later.")
+            return
+        except HTTPException:
+            raise
+        except Exception:
+            pass  # Redis error: fall through to local fallback
+
+    # Local fallback
+    history = [ts for ts in _init_rate_limits[client_ip] if now - ts < 60]
+    if len(history) >= 10:
+        raise HTTPException(status_code=429, detail="Too many requests. Try again later.")
+    history.append(now)
+    _init_rate_limits[client_ip] = history
+
+_lb_rebuild_in_progress = False
 
 async def sync_leaderboard_periodic():
     """Background task to keep the Redis Top 1000 in sync with Mongo."""
+    global _lb_rebuild_in_progress
+    await asyncio.sleep(60) # Delay on startup to allow app to settle
     while True:
-        try:
-            await rebuild_leaderboard(user_collection)
-        except Exception as e:
-            logging.error(f"Error in periodic leaderboard sync: {e}")
+        if not _lb_rebuild_in_progress:
+            _lb_rebuild_in_progress = True
+            try:
+                await rebuild_leaderboard(user_collection)
+            except Exception as e:
+                logging.error(f"Error in periodic leaderboard sync: {e}")
+            finally:
+                _lb_rebuild_in_progress = False
         # Sync every hour (3600 seconds)
         await asyncio.sleep(3600)
 
@@ -48,8 +90,12 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+from fastapi import HTTPException as FastAPIHTTPException
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    if isinstance(exc, FastAPIHTTPException):
+        raise exc
     logging.error(f"Unhandled Exception: {exc}", exc_info=True)
     return JSONResponse(
         status_code=500,
@@ -75,7 +121,7 @@ async def add_security_headers(request: Request, call_next):
     return response
 
 @api_router.post("/secure_init")
-async def auth(request: Request):
+async def auth(request: Request, _: None = Depends(check_init_rate_limit)):
     data = await request.json()
     init_data = data.get("initData")
     token_provided = data.get("token")
@@ -94,8 +140,6 @@ async def auth(request: Request):
     # Fallback to provided token if init_data is missing or invalid
     if not user_id and token_provided:
         if not r:
-            from Grabber.database import sessions_collection
-            import time as _time
             token_doc = await sessions_collection.find_one({"_id": f"auth_token:{token_provided}"})
             if token_doc and token_doc.get("expires_at", 0) > _time.time():
                 user_id = token_doc.get("user_id")
@@ -116,8 +160,8 @@ async def auth(request: Request):
         try:
             if await r.get(sync_key):
                 should_sync = False
-        except Exception:
-            pass
+        except Exception as e:
+            LOGGER.debug(f"Redis sync check failed: {e}")
 
     if should_sync:
         # Update Avatar and Name in DB
@@ -127,8 +171,6 @@ async def auth(request: Request):
             
         if init_data:
             try:
-                import json
-                from urllib.parse import parse_qsl
                 vals = dict(parse_qsl(init_data))
                 if 'user' in vals:
                     uobj = json.loads(vals['user'])
@@ -136,21 +178,29 @@ async def auth(request: Request):
                         updates['first_name'] = uobj['first_name']
                     if uobj.get('username'): 
                         updates['username'] = uobj['username']
-            except Exception:
-                pass
+            except Exception as e:
+                LOGGER.debug(f"InitData payload unparseable: {e}")
                 
         if updates:
-            from Grabber.database import user_collection
+            try:
+                user_id_int = int(user_id)
+            except ValueError:
+                user_id_int = user_id
             await user_collection.update_one(
-                {"id": {"$in": [user_id, str(user_id)]}},
+                {"id": user_id_int},
                 {"$set": updates}
             )
             if r:
                 try: await r.setex(sync_key, 3600, "1")
-                except: pass
+                except Exception as e: 
+                    LOGGER.debug(f"Redis string write failed: {e}")
     
     return {"token": new_token}
 
+
+@app.get("/healthz")
+async def health_check():
+    return {"status": "ok"}
 
 # Include routers with obfuscated prefix
 api_version_prefix = os.getenv("API_VERSION_PREFIX", "v1_7b82")
@@ -171,8 +221,6 @@ if os.path.exists(frontend_path):
             raise HTTPException(status_code=404, detail="Resource not found")
             
         index_file = os.path.join(frontend_path, "index.html")
-        from fastapi.responses import FileResponse
         return FileResponse(index_file)
 else:
-    # Development fallback or warning
-    pass
+    LOGGER.warning("Frontend UI missing: React build missing or inactive.")

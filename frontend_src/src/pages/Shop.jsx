@@ -4,120 +4,73 @@ import { apiFetch } from '../api';
 import { Card, CardSkeleton, useApi } from '../components/UI';
 import { ShoppingBag, Zap, Timer, PackageOpen, Loader2, Check } from 'lucide-react';
 import { useUser } from '../context/UserContext';
-import { useMainButton } from '../hooks/useMainButton';
+import { toast } from 'react-hot-toast';
+import { formatNumber } from '../utils';
+
+import { useEggActions } from '../hooks/useEggActions';
 
 export const Shop = ({ onCharClick }) => {
   const { user, refreshUser } = useUser();
   const [activeTab, setActiveTab] = useState('market');
-  const [hatching, setHatching] = useState(false);
-  const [buyingId, setBuyingId] = useState(null);
-  const [newChar, setNewChar] = useState(null);
-  const [selectedForPurchase, setSelectedForPurchase] = useState(null);
+  const { incubateEgg, hatchEgg, loading: hatching, hatchingResult: newChar, setHatchingResult: setNewChar } = useEggActions();
 
-  const { show: showMain, hide: hideMain, setProgress: setMainProgress } = useMainButton();
+  const handleTabChange = (tabId) => {
+    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
+    setActiveTab(tabId);
+  };
 
   const { data: marketItems, loading, execute: fetchShopData } = useApi('/shop/characters', { 
     initialData: [],
     manual: activeTab !== 'market'
   }, [activeTab]);
 
-  const handleTabChange = (tabId) => {
-    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
-    setActiveTab(tabId);
-    setSelectedForPurchase(null);
-    hideMain();
-  };
+  // Use refs for callbacks to ensure the event listener always uses the latest functions
+  // without needing to re-bind the listener (avoiding memory leaks or missed events)
+  const fetchShopDataRef = React.useRef(fetchShopData);
+  const refreshUserRef = React.useRef(refreshUser);
 
-  const buyCharacter = async (charId, price) => {
-    setBuyingId(charId);
-    setMainProgress(true);
-    try {
-      const res = await apiFetch(`/shop/buy/character/${charId}`, { method: 'POST' });
-      if (res.status === 'success') {
-        window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
-        setSelectedForPurchase(null);
-        hideMain();
-        await refreshUser();
-        await fetchShopData();
-      }
-    } catch (err) {
-      window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('error');
-      window.Telegram?.WebApp?.showAlert(err.message);
-    } finally {
-      setBuyingId(null);
-      setMainProgress(false);
-    }
-  };
-
-  // Handle MainButton visibility based on selection
   useEffect(() => {
-    if (selectedForPurchase && !selectedForPurchase.owned && activeTab === 'market') {
-      showMain(
-        `BUY ${selectedForPurchase.name} (✧ ${selectedForPurchase.zenith_price || 500})`,
-        () => buyCharacter(selectedForPurchase.id, selectedForPurchase.zenith_price)
-      );
-    } else {
-      hideMain();
-    }
-  }, [selectedForPurchase, activeTab]);
+    fetchShopDataRef.current = fetchShopData;
+    refreshUserRef.current = refreshUser;
+  }, [fetchShopData, refreshUser]);
 
-  const incubateEgg = async (eggId) => {
-    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
-    try {
-      await apiFetch(`/eggs/incubate/${eggId}`, { method: 'POST' });
-      refreshUser();
-    } catch (err) {
-      window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('error');
-      window.Telegram?.WebApp?.showAlert(err.message);
-    }
-  };
-
-  const hatchEgg = async (eggId) => {
-    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('heavy');
-    setHatching(true);
-    try {
-      const res = await apiFetch(`/eggs/hatch/${eggId}`, { method: 'POST' });
-      if (res.status === 'success') {
-         window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
-         setNewChar(res.character);
-         refreshUser();
-      } else {
-         window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('error');
-         window.Telegram?.WebApp?.showAlert(res.message);
+  useEffect(() => {
+    const handlePurchase = async (e) => {
+      const { charId } = e.detail;
+      try {
+        const res = await apiFetch(`/shop/buy/character/${charId}`, { method: 'POST' });
+        if (res.status === 'success') {
+          window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
+          toast.success('Character added to harem');
+          await refreshUserRef.current();
+          await fetchShopDataRef.current();
+        }
+      } catch (err) {
+        toast.error(err.message || 'Transaction failed');
       }
-    } catch (err) {
-      window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('error');
-      window.Telegram?.WebApp?.showAlert(err.message);
-    } finally {
-      setHatching(false);
-    }
-  };
+    };
 
-  const handleCardClick = (char) => {
-    if (char.owned) {
-       onCharClick(char);
-    } else {
-       setSelectedForPurchase(char === selectedForPurchase ? null : char);
-    }
-  };
+    window.addEventListener('shop-data-refresh', fetchShopDataRef.current);
+    return () => window.removeEventListener('shop-data-refresh', fetchShopDataRef.current);
+  }, []); // Bind once on mount
 
   return (
-    <div className="pb-32 pt-6 px-4">
+    <div className="pb-8 pt-6 px-4">
       <header className="mb-6 flex justify-between items-end px-2">
         <div>
           <h1 className="text-2xl font-black uppercase tracking-tight">Market</h1>
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Premium Collection</p>
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Acquire Waifus</p>
         </div>
         <div className="flex items-center space-x-2 bg-brand-neon/10 border border-brand-neon/20 px-3 py-1.5 rounded-xl shadow-[0_0_15px_rgba(0,242,255,0.1)]">
           <Zap size={14} className="text-brand-neon" />
-          <span className="text-sm font-black text-brand-neon">{user?.stats?.zenith?.toLocaleString() || 0}</span>
+          <span className="text-sm font-black text-brand-neon">{formatNumber(user?.stats?.zenith)}</span>
         </div>
       </header>
 
       <div className="flex p-1.5 bg-white/5 rounded-2xl mb-8 border border-white/5">
         {[
           { id: 'market', icon: ShoppingBag, label: 'Market' },
-          { id: 'eggs', icon: Timer, label: 'Hatchery' },
+          { id: 'eggs', icon: Timer, label: 'Incubation' },
         ].map(tab => (
           <button
             key={tab.id}
@@ -132,8 +85,8 @@ export const Shop = ({ onCharClick }) => {
         ))}
       </div>
 
-      {loading && activeTab === 'market' && !marketItems.length ? (
-        <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6 gap-4">
+      {loading && activeTab === 'market' && !(Array.isArray(marketItems) && marketItems.length) ? (
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
           {Array.from({ length: 12 }).map((_, i) => (
             <CardSkeleton key={`shop-skeleton-${i}`} />
           ))}
@@ -141,9 +94,9 @@ export const Shop = ({ onCharClick }) => {
       ) : (
         <AnimatePresence mode="wait">
           {activeTab === 'market' && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} key="market" className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6 gap-4">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} key="market" className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                 <AnimatePresence mode="popLayout">
-                  {marketItems.map((char, i) => (
+                  {(Array.isArray(marketItems) ? marketItems : []).map((char, i) => (
                     <motion.div 
                       key={char.id} 
                       layout
@@ -155,21 +108,14 @@ export const Shop = ({ onCharClick }) => {
                       <div className={char.owned ? 'opacity-40 grayscale-[0.5]' : ''}>
                          <Card 
                            character={char} 
-                           onClick={() => handleCardClick(char)} 
+                           onClick={() => onCharClick(char)} 
                          />
                       </div>
                       
                       {char.owned && (
-                        <div className="absolute top-2 right-2 bg-brand-neon text-brand-midnight rounded-full p-1 shadow-lg z-20 border border-brand-midnight scale-75">
-                          <Check size={12} strokeWidth={4} />
+                        <div className="absolute top-1.5 right-1.5 bg-brand-neon text-brand-midnight rounded-full p-0.5 shadow-lg z-20 border border-brand-midnight scale-75">
+                          <Check size={11} strokeWidth={4} />
                         </div>
-                      )}
-
-                      {selectedForPurchase?.id === char.id && !char.owned && (
-                        <motion.div 
-                           layoutId="selection-ring"
-                           className="absolute inset-0 border-2 border-brand-neon rounded-2xl pointer-events-none z-30 shadow-[0_0_20px_rgba(0,242,255,0.4)]"
-                        />
                       )}
                     </motion.div>
                   ))}
@@ -180,7 +126,7 @@ export const Shop = ({ onCharClick }) => {
           {activeTab === 'eggs' && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} key="eggs" className="space-y-4">
               {user?.eggs?.length > 0 ? (
-                user.eggs.map(egg => (
+                (user.eggs || []).map(egg => (
                   <div key={egg.id} className="glass-panel p-5 rounded-2xl border border-white/5 flex items-center space-x-4 bg-mesh">
                     <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-brand-midnight border border-white/5 relative overflow-hidden">
                       <div className="absolute inset-0 bg-brand-neon/5 blur-xl animate-pulse" />
@@ -211,7 +157,7 @@ export const Shop = ({ onCharClick }) => {
                   </div>
                 ))
               ) : (
-                <div className="py-20 text-center opacity-40 italic text-xs uppercase tracking-widest font-bold">No data found in hatchery</div>
+                <div className="py-20 text-center opacity-40 italic text-xs uppercase tracking-widest font-bold">No data found in harem hatchery</div>
               )}
             </motion.div>
           )}
@@ -232,7 +178,7 @@ export const Shop = ({ onCharClick }) => {
              ) : (
                <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="w-full max-w-sm text-center">
                   <div className="mb-4">
-                     <p className="text-brand-neon font-black uppercase tracking-widest mb-2 font-black italic">! UNBOXED !</p>
+                     <p className="text-brand-neon font-black uppercase tracking-widest mb-2 font-black italic">! SEALED !</p>
                      <h2 className="text-3xl font-black uppercase italic leading-none text-white tracking-tighter">{newChar.name}</h2>
                   </div>
                   <div className="aspect-[3/4] rounded-3xl overflow-hidden border-4 border-brand-neon shadow-[0_0_50px_rgba(0,242,255,0.3)] mb-8 relative">

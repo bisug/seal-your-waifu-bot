@@ -10,7 +10,7 @@ from Grabber.database import (
     client, db, collection, group_collection,
     user_totals_collection, message_counts_collection,
     user_collection, group_user_totals_collection,
-    top_global_groups_collection, total_pm_users, sudo_collection,
+    total_pm_users, sudo_collection,
     spawns_collection, sessions_collection, quiz_questions_collection,
     gamebot_enabled_groups_collection
 )
@@ -86,8 +86,8 @@ class SealClient(Client):
             LOGGER.error(f"[{self.name}] Error sending message to {chat_id}: {e}")
             return None
 
-    async def send_photo_safe(self, chat_id, photo, *args, _retries=0, **kwargs):
-        """Sends a photo while handling FloodWait and optional auto-deletion."""
+    async def send_media_safe(self, chat_id, media_url, *args, _retries=0, **kwargs):
+        """Sends a photo or video while handling FloodWait and optional auto-deletion."""
         auto_delete = kwargs.pop("auto_delete", 0)
         
         # Handle reply_to_message_id deprecation
@@ -97,7 +97,10 @@ class SealClient(Client):
                 kwargs["reply_parameters"] = types.ReplyParameters(message_id=reply_id)
 
         try:
-            msg = await self.send_photo(chat_id, photo, *args, **kwargs)
+            if isinstance(media_url, str) and media_url.endswith(('.mp4', '.webm', '.gif')):
+                msg = await self.send_video(chat_id, video=media_url, *args, **kwargs)
+            else:
+                msg = await self.send_photo(chat_id, photo=media_url, *args, **kwargs)
             if msg and auto_delete:
                 from Grabber.core.deletion import schedule_deletion
                 await schedule_deletion(chat_id, msg.id, auto_delete, bot_name=self.name)
@@ -109,9 +112,9 @@ class SealClient(Client):
             LOGGER.warning(f"[{self.name}] FloodWait detected: Sleeping for {e.value}s")
             await asyncio.sleep(e.value)
             if auto_delete: kwargs["auto_delete"] = auto_delete
-            return await self.send_photo_safe(chat_id, photo, *args, _retries=_retries+1, **kwargs)
+            return await self.send_media_safe(chat_id, media_url, *args, _retries=_retries+1, **kwargs)
         except Exception as e:
-            LOGGER.error(f"[{self.name}] Error sending photo to {chat_id}: {e}")
+            LOGGER.error(f"[{self.name}] Error sending media to {chat_id}: {e}")
             return None
 
     async def edit_message_text_safe(self, chat_id, message_id, text, *args, _retries=0, **kwargs):
@@ -291,9 +294,6 @@ class SealClient(Client):
 
 app = SealClient(name="MainBot", bot_token=config.TOKEN)
 game_bot = SealClient(name="GameBot", bot_token=config.SUB_TOKEN)
-
-# Userbot is disabled
-userbot = None
 
 # For backward compatibility and modularity
 Grabber = app
