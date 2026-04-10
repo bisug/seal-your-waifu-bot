@@ -262,75 +262,64 @@ export const Modal = ({ character, onClose, actions }) => {
                     animate={{ scale: 1, opacity: 1, y: 0 }}
                     exit={{ scale: 0.9, opacity: 0, y: 100 }}
                     transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                    className="relative w-full max-w-lg h-[100dvh] sm:h-auto sm:max-h-[90vh] bg-brand-midnight sm:border border-white/5 sm:rounded-[3rem] overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.5)] flex flex-col"
+                    className="relative w-full max-w-sm max-h-[85vh] bg-brand-midnight sm:border border-white/5 rounded-[2.5rem] overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.5)] flex flex-col"
                 >
                     {/* Floating Close Button */}
                     <button 
                         onClick={onClose} 
-                        className="absolute top-8 right-8 z-50 w-12 h-12 rounded-2xl bg-brand-midnight/40 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white/50 active:scale-95 transition-all hover:text-white"
+                        className="absolute top-6 right-6 z-50 w-10 h-10 rounded-2xl bg-brand-midnight/60 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white/50 active:scale-95 transition-all hover:text-white"
                     >
                         <X size={24} />
                     </button>
 
                     <div className="flex-1 overflow-y-auto no-scrollbar">
                         {/* Hero Section */}
-                        <div className="relative aspect-[4/5] sm:aspect-video w-full group">
+                        <div className="relative aspect-square w-full bg-slate-900/50 group">
                             <img 
                                 src={character.img_url} 
-                                className="w-full h-full object-cover" 
+                                className="w-full h-full object-contain p-4" 
                                 alt={character.name} 
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-brand-midnight via-brand-midnight/20 to-transparent" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-brand-midnight via-transparent to-transparent" />
                             
-                            <div className="absolute bottom-10 left-8 right-8">
+                            <div className="absolute bottom-6 left-6 right-6">
                                 <motion.div 
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     className={cn(
-                                        "backdrop-blur-md border px-3 py-1 rounded-lg w-fit mb-4",
+                                        "backdrop-blur-md border px-2 py-0.5 rounded-lg w-fit mb-2",
                                         RARITY_VISUALS[character.rarity]?.border || "border-white/10",
                                         RARITY_VISUALS[character.rarity]?.bg || "bg-white/10"
                                     )}
                                 >
                                     <p className={cn(
-                                        "text-[10px] font-black uppercase tracking-[0.3em]",
+                                        "text-[8px] font-black uppercase tracking-[0.3em]",
                                         RARITY_VISUALS[character.rarity]?.text || "text-white"
                                     )}>
                                         {character.rarity}
                                     </p>
                                 </motion.div>
-                                <h2 className="text-4xl sm:text-5xl font-black uppercase italic leading-none text-white tracking-tighter drop-shadow-2xl mb-2">{character.name}</h2>
-                                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-[0.3em]">{character.anime}</p>
+                                <h2 className="text-3xl font-black uppercase italic leading-none text-white tracking-tighter drop-shadow-2xl mb-1">{character.name}</h2>
+                                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.3em]">{character.anime}</p>
                             </div>
                         </div>
 
                         {/* Details Area */}
-                        <div className="px-8 pt-4 pb-12 space-y-8">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-white/[0.03] border border-white/5 p-5 rounded-3xl">
-                                    <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Registry Status</p>
-                                    <p className={cn("text-sm font-black", character.owned ? "text-brand-neon" : "text-brand-accent")}>
+                        <div className="px-6 pb-12 space-y-6">
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-white/[0.03] border border-white/5 p-4 rounded-2xl">
+                                    <p className="text-[7px] font-bold text-slate-500 uppercase tracking-widest mb-1 mt-0.5">Status</p>
+                                    <p className={cn("text-xs font-black", character.owned ? "text-brand-neon" : "text-brand-accent")}>
                                         {character.owned ? "COLLECTED" : "AVAILABLE"}
                                     </p>
                                 </div>
-                                <div className="bg-white/[0.03] border border-white/5 p-5 rounded-3xl">
-                                    <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Harem Storage</p>
-                                    <p className="text-sm font-black text-white">{character.count > 0 ? `BATCH x${character.count}` : "UNIQUE UNIT"}</p>
+                                <div className="bg-white/[0.03] border border-white/5 p-4 rounded-2xl">
+                                    <p className="text-[7px] font-bold text-slate-500 uppercase tracking-widest mb-1 mt-0.5">Quantity</p>
+                                    <p className="text-xs font-black text-white">{character.count > 0 ? `Batch x${character.count}` : "Unique"}</p>
                                 </div>
                             </div>
 
                             {actions && <div className="w-full">{actions}</div>}
-
-                            <div className="opacity-40">
-                                <div className="flex items-center space-x-2 text-slate-400 mb-3">
-                                    <Info size={14} />
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Bio Archive Entry</span>
-                                </div>
-                                <p className="text-xs leading-relaxed italic text-slate-400 uppercase font-bold tracking-tight">
-                                    The character {character.name} is from {character.anime}. 
-                                    Adding them to your harem unlocks new possibilities.
-                                </p>
-                            </div>
                         </div>
                     </div>
                 </motion.div>
@@ -369,7 +358,7 @@ export const Card = memo(({ character, onClick }) => {
                 src={character.img_url || 'https://files.catbox.moe/2hsawz.jpg'}
                 alt={character.name}
                 decoding="async"
-                className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-700 group-hover:scale-110"
+                className="w-full h-full object-cover object-top grayscale-[0.2] group-hover:grayscale-0 transition-all duration-700 group-hover:scale-110"
             />
             
             {/* View Indicator Overlay */}
