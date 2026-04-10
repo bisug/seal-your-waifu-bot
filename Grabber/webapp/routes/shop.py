@@ -7,13 +7,13 @@ from Grabber.database import user_collection, collection
 from Grabber.core.constants import SHOP_RARITY, SHOP_LIMIT, RARITY_PRICES, PASS_PRICES
 from Grabber.modules.economy.shop import get_daily_shop_characters
 from Grabber.modules.progression.pet import PET_SHOP
-from Grabber.core.pass_data import PASS_TRACKS, MAX_PASS_LEVEL
+from Grabber.core.pass_config import PASS_TRACKS, MAX_PASS_LEVEL
 from Grabber.core.progression import get_user_progress
 from Grabber.core.utils import normalize_user_id
 
 router = APIRouter()
 
-from Grabber.webapp.utils import get_user_id_query
+from Grabber.core.utils import get_user_id_query
 
 @router.get("/shop/hub")
 async def get_shop_hub(user: dict = Depends(get_current_user_data)):

@@ -6,7 +6,7 @@ from pyrogram.enums import ParseMode
 from pymongo import ReturnDocument
 from Grabber import app, game_bot
 from Grabber import collection, user_collection, sessions_collection, gamebot_enabled_groups_collection, LOGGER, OWNER_ID
-from Grabber.core.game import update_user_balance
+from Grabber.core.balance import update_user_balance
 from Grabber.core.utils import html_escape, check_member_requirement
 
 # Local cache is no longer used for character data to ensure persistence

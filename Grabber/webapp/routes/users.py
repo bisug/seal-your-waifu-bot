@@ -5,7 +5,7 @@ from config import config
 from Grabber import LOGGER
 from Grabber.webapp.auth import get_current_user, get_current_user_data, r
 from Grabber.database import user_collection
-from Grabber.webapp.models import UserProfileResponse
+from Grabber.webapp.schemas import UserProfileResponse
 from Grabber.core.progression import get_user_progress, get_level_from_xp
 from Grabber.core.cache import get_user_rank, get_total_ranked_users, update_user_rank, rebuild_leaderboard
 from Grabber.core.utils import normalize_user_id

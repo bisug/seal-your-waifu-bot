@@ -10,7 +10,7 @@ export default defineConfig({
     tailwindcss(),
   ],
   build: {
-    outDir: '../Grabber/frontend',
+    outDir: '../Grabber/static',
     emptyOutDir: true,
   },
   resolve: {

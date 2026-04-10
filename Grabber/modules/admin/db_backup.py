@@ -4,9 +4,9 @@ from pyrogram.enums import ParseMode
 from Grabber import app, LOGGER
 
 
-ALLOWED_USER_ID = 6574393060
+from config import config
 
-@app.on_message(filters.command("mongobackup") & filters.user(ALLOWED_USER_ID))
+@app.on_message(filters.command("mongobackup") & filters.user(config.OWNER_ID))
 async def mongo_backup(_, message: types.Message) -> None:
 
 

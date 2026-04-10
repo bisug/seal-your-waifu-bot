@@ -95,7 +95,7 @@ async def check_and_grant_rewards(user_id: int, old_level: int, new_level: int, 
     pass_type = user.get("pass_type", "free")
     claimed_levels = set(user.get("claimed_levels", []))
     
-    from Grabber.core.pass_data import PASS_TRACKS
+    from Grabber.core.pass_config import PASS_TRACKS
     import uuid
 
     total_coins_earned = 0
