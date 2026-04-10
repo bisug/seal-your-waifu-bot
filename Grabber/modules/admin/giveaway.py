@@ -76,7 +76,10 @@ async def claimwaifu(_, message: types.Message):
 
             await user_collection.update_one(
                 {'id': user_id},
-                {'$push': {'characters': waifu}},
+                {
+                    '$push': {'characters': waifu},
+                    '$inc': {'char_count': 1}
+                },
                 upsert=True
             )
 

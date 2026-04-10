@@ -19,32 +19,46 @@ METRICS = {
 }
 
 async def get_top_users(metric: str, limit: int = 10):
-    from Grabber.core.cache import get_cached_leaderboard, set_cached_leaderboard
+    from Grabber.core.cache import _zset_key, r
+    from Grabber.database import user_collection
+    
+    key = _zset_key(metric)
+    if r:
+        try:
+            # 1. Try to get Top N from Redis ZSET
+            uids = await r.zrevrange(key, 0, limit - 1, withscores=True)
+            if uids:
+                # Convert back to list of dicts. We need names and avatars, so we fetch from Mongo in ONE batch.
+                user_ids = [int(u[0]) for u in uids]
+                mongo_users = await user_collection.find({"id": {"$in": user_ids}}).to_list(length=limit)
+                # Re-sort to match ZSET order and add the score
+                user_map = {int(u["id"]): u for u in mongo_users}
+                results = []
+                for uid, score in uids:
+                    u = user_map.get(int(uid))
+                    if u:
+                        u[METRICS[metric]["field"]] = int(score)
+                        results.append(u)
+                return results
+        except Exception as e:
+            LOGGER.warning(f"Redis ZSET leaderboard fetch failed for {metric}: {e}")
 
-    # Try Redis cache first
-    cached = await get_cached_leaderboard(metric, limit)
-    if cached is not None:
-        return cached
-
-    if metric == "harem":
-        pipeline = [
-            {"$project": {"first_name": 1, "id": 1, "avatar": 1, "pass_type": 1, "char_count": {"$ifNull": ["$char_count", 0]}}},
-            {"$sort": {"char_count": -1}},
-            {"$limit": limit}
-        ]
-    else:
-        field = METRICS[metric]["field"]
-        pipeline = [
-            {"$project": {"first_name": 1, "id": 1, "avatar": 1, "pass_type": 1, field: {"$ifNull": [f"${field}", 0]}}},
-            {"$sort": {field: -1}},
-            {"$limit": limit}
-        ]
-
+    # 2. Fallback to MongoDB aggregation if Redis fails or ZSET is empty
+    field = METRICS[metric]["field"]
+    pipeline = [
+        {"$project": {"first_name": 1, "id": 1, "avatar": 1, "pass_type": 1, field: {"$ifNull": [f"${field}", 0]}}},
+        {"$sort": {field: -1}},
+        {"$limit": limit}
+    ]
     cursor = user_collection.aggregate(pipeline)
     results = await cursor.to_list(length=limit)
 
-    # Cache the result
-    await set_cached_leaderboard(metric, results, limit)
+    # 3. Trigger background rebuild if ZSET was empty
+    if r:
+        from Grabber.core.cache import rebuild_leaderboard
+        import asyncio
+        asyncio.create_task(rebuild_leaderboard(user_collection, metric=metric))
+
     return results
 
 def build_leaderboard_text(metric: str, users: list):

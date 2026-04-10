@@ -65,14 +65,18 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
         char_format = FORMATS[current_idx % len(FORMATS)]
         first_name = user.get('first_name', 'User')
 
+        harem_text = "\n".join(header_lines)
+        total_chars_count = user.get('char_count', len(all_chars))
+
         header_lines = [
             f"🎒 <b>{escape(first_name)}'s Collection</b>",
             "━━━━━━━━━━━━━━━━━━━━━",
             f"📑 <b>Page:</b> <code>{page + 1}/{total_pages}</code>",
-            f"✨ <b>Characters:</b> <code>{len(all_chars)}</code> total",
+            f"✨ <b>Characters:</b> <code>{total_chars_count}</code> total",
             ""
         ]
         harem_text = "\n".join(header_lines)
+
 
         start_idx = page * per_page
         end_idx = start_idx + per_page

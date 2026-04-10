@@ -212,82 +212,103 @@ async def invalidate_leaderboard_cache():
     except Exception as e:
         LOGGER.warning(f"Failed to invalidate leaderboard cache: {e}")
 
-# ── Unified XP Ranking (ZSET) ──────────────────────────────────
+# ── Unified XP/Harem/Balance Rankings (ZSET) ──────────────────
+# Generic ZSET keys based on metrics
+def _zset_key(metric: str) -> str:
+    # Map metrics to Redis keys
+    mapping = {
+        "level": "user_xp_leaderboard",
+        "harem": "user_harem_leaderboard",
+        "shards": "user_shards_leaderboard",
+        "zenith": "user_zenith_leaderboard",
+        "guesses": "user_guesses_leaderboard"
+    }
+    return mapping.get(metric, f"user_{metric}_leaderboard")
 
-_RANK_KEY = "user_xp_leaderboard"
 
-async def update_user_rank(user_id: int, xp: int):
-    """Update user score in the global ZSET and CAP it to Top 500 for memory."""
+async def update_user_rank(user_id: int, score: int, metric: str = "level"):
+    """Update user score in the specific metric's ZSET and CAP it for memory."""
     if not _redis: return
+    key = _zset_key(metric)
     try:
-        await _redis.zadd(_RANK_KEY, {str(user_id): xp})
-        # SMART: Only keep the top 500 in the fast cache to stay within 30MB
-        await _redis.zremrangebyrank(_RANK_KEY, 0, -501)
+        await _redis.zadd(key, {str(user_id): score})
+        # SMART: Only keep the top 1000 in the fast cache to stay within 30MB
+        await _redis.zremrangebyrank(key, 0, -1001)
     except Exception as e:
-        LOGGER.warning(f"Redis ZSET update error: {e}")
+        LOGGER.warning(f"Redis ZSET update error [{metric}]: {e}")
 
-async def get_user_rank(user_id: int) -> Optional[int]:
-    """Get 1-based rank from ZSET. Returns None on miss."""
+
+async def get_user_rank(user_id: int, metric: str = "level") -> Optional[int]:
+    """Get 1-based rank from metric ZSET. Returns None on miss."""
     if not _redis: return None
+    key = _zset_key(metric)
     try:
-        rank = await _redis.zrevrank(_RANK_KEY, str(user_id))
+        rank = await _redis.zrevrank(key, str(user_id))
         return (rank + 1) if rank is not None else None
     except Exception:
         return None
 
-async def get_total_ranked_users() -> int:
+
+async def get_total_ranked_users(metric: str = "level") -> int:
     if not _redis: return 0
-    try: return await _redis.zcard(_RANK_KEY)
+    key = _zset_key(metric)
+    try: return await _redis.zcard(key)
     except Exception: return 0
+
 
 _rebuild_lock = None
 
-async def rebuild_leaderboard(user_collection):
+async def rebuild_leaderboard(user_collection, metric: str = "level"):
     """
-    Cold-rebuild the Redis XP ZSET from MongoDB with 30MB memory safety.
-    Only pulls Top 1,000 users to keep the fast cache small.
-    Includes a guard to prevent concurrent rebuilds.
+    Cold-rebuild a specific Redis ZSET from MongoDB with memory safety.
     """
     global _rebuild_lock
     if _rebuild_lock is None:
         import asyncio
         _rebuild_lock = asyncio.Lock()
         
-    if _rebuild_lock.locked():
-        LOGGER.info("Leaderboard rebuild already in progress, skipping redundant request.")
-        return
-        
     async with _rebuild_lock:
         if not _redis: return
+        key = _zset_key(metric)
+        
+        # Metric mapping to Mongo fields
+        mongo_fields = {
+            "level": "xp",
+            "harem": "char_count",
+            "shards": "balance",
+            "zenith": "zenith",
+            "guesses": "guess_count"
+        }
+        field = mongo_fields.get(metric, "xp")
+        
         try:
-            LOGGER.info("Starting safe XP ZSET rebuild from MongoDB (Top 1000)...")
-            # Get Top 1,000 users by XP descending
-            cursor = user_collection.find({"xp": {"$gt": 0}}, {"id": 1, "xp": 1}).sort("xp", -1).limit(1000)
+            LOGGER.info(f"Starting safe {metric} ZSET rebuild from MongoDB...")
+            # Get Top 1,000 users by specific field descending
+            cursor = user_collection.find({field: {"$gt": 0}}, {"id": 1, field: 1}).sort(field, -1).limit(1000)
             
             # Clear the old set first
-            await _redis.delete(_RANK_KEY)
+            await _redis.delete(key)
             
             batch = {}
             count = 0
             async for user in cursor:
                 uid = str(user.get("id"))
-                xp = user.get("xp", 0)
-                if uid and xp:
-                    batch[uid] = xp
+                score = user.get(field, 0)
+                if uid and score:
+                    batch[uid] = score
                     count += 1
                 
-                # Batch write every 100 users for performance
                 if len(batch) >= 100:
-                    await _redis.zadd(_RANK_KEY, batch)
+                    await _redis.zadd(key, batch)
                     batch = {}
             
-            # Final batch
             if batch:
-                await _redis.zadd(_RANK_KEY, batch)
+                await _redis.zadd(key, batch)
                 
-            LOGGER.info(f"XP ZSET rebuild complete. Synchronized {count} top users.")
+            LOGGER.info(f"{metric} ZSET rebuild complete. Synchronized {count} top users.")
         except Exception as e:
-            LOGGER.error(f"Failed to rebuild XP ZSET in memory-safe mode: {e}")
+            LOGGER.error(f"Failed to rebuild {metric} ZSET: {e}")
+
 
 
 # ── Sessions (replaces MongoDB sessions) ─────────────────────────
