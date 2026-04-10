@@ -1,3 +1,5 @@
+from Grabber.core.utils import send_media_dynamic
+from Grabber.core.utils import reply_media_dynamic
 import random
 from pyrogram import filters, types, enums, errors
 from pyrogram.enums import ParseMode
@@ -31,10 +33,13 @@ async def check_groups_joined(user_id: int) -> bool:
         await app.get_chat_member(SECOND_JOIN, user_id)
         return True
     except errors.UserNotParticipant:
-        return False
+        return False  # Definitive: user is not a member
+    except errors.FloodWait as e:
+        LOGGER.warning(f"FloodWait during membership check for {user_id}: {e.value}s")
+        return True   # Fail-open: don't punish user for our rate limit
     except Exception as e:
-        LOGGER.error(f"FZS Check Error: {e}")
-        return False
+        LOGGER.error(f"Membership check error for {user_id}: {e}")
+        return True   # Fail-open: ambiguous error, let the user proceed
 
 @app.on_message(filters.command("claim"))
 async def claim_handler(_, message: types.Message):
@@ -89,16 +94,13 @@ async def show_preview(message_or_query, user_id):
     try:
         if isinstance(message_or_query, types.CallbackQuery):
             await message_or_query.message.delete()
-            await app.send_photo(
-                message_or_query.message.chat.id,
-                char['img_url'],
+            await send_media_dynamic(app, message_or_query.message.chat.id, media_url=char['img_url'],
                 caption=preview_text,
                 reply_markup=markup,
                 parse_mode=ParseMode.HTML
             )
         else:
-            await message_or_query.reply_photo(
-                char['img_url'],
+            await reply_media_dynamic(message_or_query, char['img_url'],
                 caption=preview_text,
                 reply_markup=markup,
                 parse_mode=ParseMode.HTML

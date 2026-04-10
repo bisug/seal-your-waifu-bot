@@ -1,3 +1,4 @@
+from Grabber.core.utils import reply_media_dynamic
 import random
 from datetime import datetime, timedelta, timezone
 from pyrogram import filters, enums, types
@@ -60,18 +61,20 @@ async def daily_command_handler(_, message: types.Message):
     else:
         streak = 1
 
-    # Cap streak at 7 for reward lookup, then cycle back to 1 for storage
-    reward_streak = min(streak, 7)
+    # Cap streak for storage first, then derive reward streak
     if streak > 7:
         streak = 1  # Reset for next cycle
+    reward_streak = min(streak, 7)
 
     reward_coins = STREAK_REWARDS.get(reward_streak, 100)
     
     # Add Pass bonus
     pass_type = user.get("pass_type", "free")
     multiplier = 1.5 if pass_type == "elite" else 1.2 if pass_type == "premium" else 1.0
-    reward_coins = int(reward_coins * multiplier)
-    pass_bonus_text = f"\n💎 <b>Pass Bonus:</b> +{int(reward_coins - (reward_coins/multiplier))} ⬪" if multiplier > 1.0 else ""
+    base_coins = reward_coins
+    reward_coins = int(base_coins * multiplier)
+    bonus_coins = reward_coins - base_coins
+    pass_bonus_text = f"\n💎 <b>Pass Bonus:</b> +{bonus_coins} ⬪" if multiplier > 1.0 else ""
 
     # Give Rewards
     await app.send_chat_action(message.chat.id, enums.ChatAction.UPLOAD_PHOTO)
@@ -100,7 +103,7 @@ async def daily_command_handler(_, message: types.Message):
         f"🔥 <b>Streak:</b> {streak}/7 Days"
     )
 
-    await message.reply_photo(char['img_url'], caption=caption, parse_mode=ParseMode.HTML)
+    await reply_media_dynamic(message, char['img_url'], caption=caption, parse_mode=ParseMode.HTML)
 
 @app.on_message(filters.command("weekly") & filters.group)
 async def weekly_command_handler(_, message: types.Message):
@@ -129,9 +132,11 @@ async def weekly_command_handler(_, message: types.Message):
 
     pass_type = user.get("pass_type", "free")
     multiplier = 1.5 if pass_type == "elite" else 1.2 if pass_type == "premium" else 1.0
-    reward_coins = int(2000 * multiplier)
+    base_coins = 2000
+    reward_coins = int(base_coins * multiplier)
     xp_reward = int(500 * multiplier)
-    pass_bonus_text = f"\n💎 (+{int(reward_coins - (reward_coins/multiplier))} Pass Bonus)" if multiplier > 1.0 else ""
+    bonus_coins = reward_coins - base_coins
+    pass_bonus_text = f"\n💎 (+{bonus_coins} Pass Bonus)" if multiplier > 1.0 else ""
 
     await update_user(user_id, {
         "$set": {"last_weekly_date": now_str},

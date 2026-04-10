@@ -1,3 +1,4 @@
+from Grabber.core.utils import reply_media_dynamic
 import random
 import string
 from pyrogram import filters, enums, types
@@ -94,7 +95,7 @@ async def claimwaifu(_, message: types.Message):
                 f"Rarity: {html_escape(waifu['rarity'])}\n"
                 f"ID: <code>{waifu['id']}</code>\n"
             )
-            await message.reply_photo(photo=waifu['img_url'], caption=response_text, parse_mode=ParseMode.HTML)
+            await reply_media_dynamic(message, waifu['img_url'], caption=response_text, parse_mode=ParseMode.HTML)
 
             log_text = (
                 f'Waifu claimed by <a href="tg://user?id={message.from_user.id}">{html_escape(message.from_user.first_name)}</a> (ID: <code>{user_id}</code>):\n'

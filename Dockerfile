@@ -26,6 +26,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+RUN apt-get update && apt-get install -y --no-install-recommends curl && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
 # Copy wheels from builder and install
 COPY --from=builder /app/wheels /wheels
 RUN pip install --upgrade pip && \
@@ -40,4 +43,6 @@ USER botuser
 COPY --chown=botuser:botuser . .
 
 # Default command (will be overridden by Procfile/heroku.yml)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-8080}/healthz || exit 1
 CMD ["python", "-m", "Grabber"]

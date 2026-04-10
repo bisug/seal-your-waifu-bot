@@ -15,6 +15,21 @@ async def leaderboard_ws(websocket: WebSocket):
         await websocket.close(code=1011)
         return
 
+    # Validate token from query param before proceeding
+    token = websocket.query_params.get("token")
+    if not token:
+        await websocket.send_text(json.dumps({"error": "Unauthorized: no token"}))
+        await websocket.close(code=4001)
+        return
+
+    # Validate token against Redis session store
+    user_id = await r.get(f"auth_token:{token}")
+
+    if not user_id:
+        await websocket.send_text(json.dumps({"error": "Unauthorized: invalid or expired token"}))
+        await websocket.close(code=4001)
+        return
+
     # Subscribe to leaderboard changes in Redis
     pubsub = r.pubsub()
     await pubsub.subscribe("leaderboard_updates")
@@ -35,12 +50,22 @@ async def leaderboard_ws(websocket: WebSocket):
         except WebSocketDisconnect:
             pass
 
+    async def heartbeat():
+        """Send a ping every 25s to keep the connection alive through proxies."""
+        try:
+            while True:
+                await asyncio.sleep(25)
+                await websocket.send_text('{"type":"ping"}')
+        except Exception:
+            pass  # Swallow — connection closed normally
+
     try:
-        # Run both listeners concurrently; when either finishes, cancel the other
+        # Run listeners concurrently; when any finishes, cancel the others
         redis_task = asyncio.create_task(listen_redis())
         client_task = asyncio.create_task(listen_client())
+        hb_task = asyncio.create_task(heartbeat())
         done, pending = await asyncio.wait(
-            [redis_task, client_task],
+            [redis_task, client_task, hb_task],
             return_when=asyncio.FIRST_COMPLETED
         )
         for task in pending:
@@ -49,5 +74,6 @@ async def leaderboard_ws(websocket: WebSocket):
         await pubsub.unsubscribe("leaderboard_updates")
         try:
             await websocket.close()
-        except Exception:
-            pass
+        except Exception as e:
+            from Grabber import LOGGER
+            LOGGER.debug(f"Websocket close error: {e}")

@@ -7,10 +7,40 @@ import logging
 from urllib.parse import parse_qsl
 from fastapi import Request, HTTPException, Security, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from Grabber.database import r
+from Grabber.database import r, sessions_collection, user_collection
 from config import config
 
+import asyncio
+from typing import Dict
+from collections import defaultdict
+
 security = HTTPBearer()
+
+from collections import OrderedDict
+
+_MAX_LOCKS = 5000
+
+class _BoundedLockStore:
+    """A simple LRU-like bounded store for asyncio.Lock objects."""
+    def __init__(self, maxsize: int):
+        self._maxsize = maxsize
+        self._locks: OrderedDict[str, asyncio.Lock] = OrderedDict()
+        self._store_lock = asyncio.Lock()
+
+    async def get(self, key: str) -> asyncio.Lock:
+        async with self._store_lock:
+            if key not in self._locks:
+                if len(self._locks) >= self._maxsize:
+                    # Evict oldest entry
+                    self._locks.popitem(last=False)
+                self._locks[key] = asyncio.Lock()
+            else:
+                # Mark as recently used
+                self._locks.move_to_end(key)
+            return self._locks[key]
+
+_user_locks: _BoundedLockStore = _BoundedLockStore(_MAX_LOCKS)
+
 
 def validate_init_data(init_data: str):
     """
@@ -32,10 +62,15 @@ def validate_init_data(init_data: str):
         h = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
         
         if hmac.compare_digest(h, msg_hash):
+            auth_date = int(vals.get('auth_date', 0))
+            if time.time() - auth_date > 86400: # 24 hours expiry
+                return False
             return vals
     except Exception:
         pass
     return False
+
+_fallback_rate_limits = defaultdict(list)
 
 async def create_session(user_data: dict):
     """Creates a Redis session for the user."""
@@ -53,7 +88,6 @@ async def create_session(user_data: dict):
     token_key = f"auth_token:{token}"
     
     if not r:
-        from Grabber.database import sessions_collection
         expiry = time.time() + 3600
         # Store in MongoDB for fallback support
         await sessions_collection.update_one(
@@ -78,11 +112,14 @@ async def get_current_user(auth: HTTPAuthorizationCredentials = Security(securit
     """Middleware to validate session token and handle rate limiting."""
     token = auth.credentials
     if not r:
-        from Grabber.database import sessions_collection
         token_doc = await sessions_collection.find_one({"_id": f"auth_token:{token}"})
         if not token_doc or token_doc.get("expires_at", 0) < time.time():
             raise HTTPException(status_code=401, detail="Invalid or expired session")
-        return int(token_doc["user_id"])
+        raw = token_doc.get("user_id", "")
+        try:
+            return int(str(raw).strip())
+        except (ValueError, TypeError):
+            raise HTTPException(status_code=401, detail="Invalid session data")
 
     user_id = await r.get(f"auth_token:{token}")
     if not user_id:
@@ -103,7 +140,31 @@ async def get_current_user(auth: HTTPAuthorizationCredentials = Security(securit
         if count > 30:
             raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in a minute.")
     except Exception as e:
-        # Fix #4: Log properly, not just print. Request is allowed through on transient Redis error.
-        logging.warning(f"Rate limiting skipped due to Redis error (request allowed): {e}")
+        if isinstance(e, HTTPException):
+            raise e
+        logging.warning(f"Rate limiting skipped due to Redis error, using local fallback: {e}")
+        
+        # Periodically clean up old rate limit entries to avoid memory leak
+        if len(_fallback_rate_limits) > 1000:
+            stale = [uid for uid, hist in list(_fallback_rate_limits.items()) if not [ts for ts in hist if now - ts < 60]]
+            for uid in stale:
+                if uid in _fallback_rate_limits:
+                    del _fallback_rate_limits[uid]
+                    
+        history = _fallback_rate_limits[user_id]
+        history = [ts for ts in history if now - ts < 60]
+        if len(history) >= 30:
+            _fallback_rate_limits[user_id] = history
+            raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in a minute.")
+        history.append(now)
+        _fallback_rate_limits[user_id] = history
 
     return int(user_id)
+
+async def get_current_user_data(user_id: int = Depends(get_current_user)):
+    """Dependency to fetch the full user document from the database efficiently."""
+    # Provide a unified way to fetch the DB object and replace scattered queries
+    user = await user_collection.find_one({"id": int(user_id)})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user

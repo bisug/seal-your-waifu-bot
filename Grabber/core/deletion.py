@@ -43,8 +43,8 @@ async def deletion_worker():
                     await client.delete_messages(chat_id, message_id)
                 except (errors.Forbidden, errors.MessageDeleteForbidden):
                     pass
-                except Exception:
-                    pass
+                except Exception as e:
+                    LOGGER.debug(f"Failed to delete old message {message_id}: {e}")
 
                 processed_ids.append(msg["_id"])
 
