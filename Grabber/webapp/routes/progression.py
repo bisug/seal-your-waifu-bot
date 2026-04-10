@@ -144,9 +144,11 @@ async def hatch_egg(egg_id: str, user: dict = Depends(get_current_user_data)):
         success, result = await process_egg_hatch(uid_int, egg)
         
         if not success:
-             msg = result.replace("<b>", "").replace("</b>", "").replace("💥 ", "").replace("⚠️ ", "").replace("\n", " ")
-             status_code = "exploded" if "exploded" in result else "error"
-             return {"status": status_code, "message": msg}
+            # FIX: Raise a proper HTTP error instead of returning 200 OK with a status field.
+            # Returning 200 means apiFetch never throws, so the frontend silently
+            # misses the failure and cannot display an error toast to the user.
+            msg = result.replace("<b>", "").replace("</b>", "").replace("💥 ", "").replace("⚠️ ", "").replace("\n", " ")
+            raise HTTPException(status_code=422, detail=msg)
              
         character = result
         return {

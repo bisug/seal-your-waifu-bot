@@ -3,14 +3,17 @@ const API_BASE = `/api/${import.meta.env.VITE_API_PREFIX ?? 'v1_7b82'}`;
 // On mobile, the SDK may not be injected yet when the JS module first evaluates.
 const getTg = () => window.Telegram?.WebApp;
 
-let sessionToken = localStorage.getItem('auth_token');
+// FIX: Use sessionStorage instead of localStorage.
+// Telegram re-provides initData on every app open, so persistence across sessions
+// is unnecessary. sessionStorage limits the exposure window significantly.
+let sessionToken = sessionStorage.getItem('auth_token');
 
 export const setSessionToken = (token) => {
   sessionToken = token;
   if (token) {
-    localStorage.setItem('auth_token', token);
+    sessionStorage.setItem('auth_token', token);
   } else {
-    localStorage.removeItem('auth_token');
+    sessionStorage.removeItem('auth_token');
   }
 };
 
@@ -18,7 +21,31 @@ export const setSessionToken = (token) => {
  * Universal fetch wrapper for the Seal-bot FastAPI backend.
  * Handles authentication headers and standard error reporting.
  */
+
+// FIX: Replace boolean isRefreshing with a proper refresh queue.
+// When a 401 is received while a refresh is already in progress,
+// queue the caller's Promise so it retries after the new token is ready,
+// instead of silently failing.
 let isRefreshing = false;
+let refreshSubscribers = []; // Array of { resolve, reject, endpoint, options, retries }
+
+function subscribeToRefresh(endpoint, options, retries) {
+  return new Promise((resolve, reject) => {
+    refreshSubscribers.push({ resolve, reject, endpoint, options, retries });
+  });
+}
+
+function flushRefreshSubscribers(newToken) {
+  refreshSubscribers.forEach(({ resolve, endpoint, options, retries }) => {
+    resolve(apiFetch(endpoint, options, retries));
+  });
+  refreshSubscribers = [];
+}
+
+function rejectRefreshSubscribers(err) {
+  refreshSubscribers.forEach(({ reject }) => reject(err));
+  refreshSubscribers = [];
+}
 
 export async function apiFetch(endpoint, options = {}, retries = 2) {
   const url = `${API_BASE}${endpoint}`;
@@ -39,21 +66,34 @@ export async function apiFetch(endpoint, options = {}, retries = 2) {
     const response = await fetch(url, { ...options, headers, signal: controller.signal });
     clearTimeout(timeoutId);
     
-    // Automatic Handshake Recovery: If 401, session might be dead. Try to re-init once.
-    if (response.status === 401 && !isRefreshing) {
+    // Automatic Handshake Recovery: If 401, re-init session once.
+    // All concurrent requests that also 401 are queued and retried after recovery.
+    if (response.status === 401) {
+      if (isRefreshing) {
+        // Another request is already refreshing — queue this one
+        return subscribeToRefresh(endpoint, options, retries);
+      }
+
       isRefreshing = true;
       try {
         const newToken = await secureInit();
         if (newToken) {
           isRefreshing = false;
-          return apiFetch(endpoint, options, retries); // Retry with new token
+          flushRefreshSubscribers(newToken);
+          return apiFetch(endpoint, options, retries);
         }
+        // Re-auth failed — reject all queued requests
+        setSessionToken(null);
+        const authErr = new Error('Session expired. Please reopen the app.');
+        rejectRefreshSubscribers(authErr);
+        isRefreshing = false;
+        throw authErr;
       } catch (err) {
+        isRefreshing = false;
+        rejectRefreshSubscribers(err);
         console.error(`[API ERROR] ${options.method || 'GET'} ${endpoint}:`, err);
         throw err;
       }
-      isRefreshing = false;
-      setSessionToken(null);
     }
 
     if (!response.ok) {
@@ -82,7 +122,8 @@ export async function apiFetch(endpoint, options = {}, retries = 2) {
 export async function secureInit(avatarUrl = null) {
   const tg = getTg(); // Read at call time, not module load time
   const initData = tg?.initData;
-  const storedToken = localStorage.getItem('auth_token');
+  // Check sessionStorage for an existing token to avoid redundant re-auths
+  const storedToken = sessionStorage.getItem('auth_token');
 
   const payload = {
     initData: initData || null,

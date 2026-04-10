@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy, useCallback } from 'react';
+import React, { useState, useEffect, Suspense, lazy, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import { UserProvider, useUser } from './context/UserContext';
@@ -6,10 +6,9 @@ import { TabNavigation } from './components/TabNavigation';
 import { IntroLoading } from './components/IntroLoading';
 import { Profile } from './pages/Profile';
 import { NotFound } from './pages/NotFound';
-import { Modal, ToastProvider } from './components/UI';
+import { Modal, ToastProvider, useToast } from './components/UI';
 import { Zap } from 'lucide-react';
 import { apiFetch } from './api';
-import { toast } from 'react-hot-toast';
 import { formatNumber } from './utils';
 
 // Lazy load pages for extreme performance
@@ -62,6 +61,7 @@ class ErrorBoundary extends React.Component {
 
 const AppContent = () => {
   const { user, loading, error } = useUser();
+  const { addToast } = useToast();
   
   // Intelligence: Read the start_param for deep-linking (e.g., Shop/Gallery/Profile)
   const getInitialTab = () => {
@@ -76,6 +76,11 @@ const AppContent = () => {
   const [selectedChar, setSelectedChar] = useState(null);
   const [purchaseStage, setPurchaseStage] = useState('idle'); // 'idle', 'confirm', 'buying'
 
+  // FIX: Stable ref for the BackButton handler to prevent accumulating listeners.
+  // Telegram's BackButton.onClick is additive (like addEventListener), so we must
+  // offClick the previous handler before registering a new one each render cycle.
+  const backHandlerRef = useRef(null);
+
   // Reset stage when modal closes or changes
   useEffect(() => {
     if (!selectedChar) setPurchaseStage('idle');
@@ -87,10 +92,20 @@ const AppContent = () => {
     if (!tg) return;
 
     try {
+      // FIX: Always remove the previous handler before adding a new one.
+      // BackButton.onClick is additive — not calling offClick first causes
+      // the handler to fire N times (once per render that registered it).
+      if (backHandlerRef.current) {
+        tg.BackButton?.offClick?.(backHandlerRef.current);
+      }
+
       if (selectedChar) {
+        const handler = () => setSelectedChar(null);
+        backHandlerRef.current = handler;
         tg.BackButton?.show?.();
-        tg.BackButton?.onClick?.(() => setSelectedChar(null));
+        tg.BackButton?.onClick?.(handler);
       } else {
+        backHandlerRef.current = null;
         tg.BackButton?.hide?.();
       }
 
@@ -105,7 +120,9 @@ const AppContent = () => {
 
     return () => {
       try {
-        tg.BackButton?.offClick?.(() => setSelectedChar(null));
+        if (backHandlerRef.current) {
+          tg?.BackButton?.offClick?.(backHandlerRef.current);
+        }
       } catch (e) {
         // ignore
       }
@@ -215,11 +232,11 @@ const AppContent = () => {
                               method: 'POST', 
                               body: JSON.stringify([selectedChar.id]) 
                           });
-                          toast.success('Character sold');
+                          addToast('Character sold', 'success');
                           setSelectedChar(null);
                           window.dispatchEvent(new CustomEvent('user-data-refresh'));
                       } catch (err) {
-                          toast.error(err.message || 'Fusion failed');
+                          addToast(err.message || 'Fusion failed', 'error');
                       }
                     };
 
@@ -286,23 +303,23 @@ const AppContent = () => {
                               CANCEL
                            </button>
                            <button 
-                              onClick={async () => {
-                                 setPurchaseStage('buying');
-                                 try {
-                                     const res = await apiFetch(`/shop/buy/character/${selectedChar.id}`, { method: 'POST' });
-                                     if (res.status === 'success') {
-                                         window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
-                                         toast.success('Character added to harem');
-                                         setSelectedChar(null);
-                                         // Trigger refresh events
-                                         window.dispatchEvent(new CustomEvent('user-data-refresh'));
-                                         window.dispatchEvent(new CustomEvent('shop-data-refresh'));
-                                     }
-                                 } catch (err) {
-                                     toast.error(err.message || 'Transaction failed');
-                                     setPurchaseStage('confirm');
-                                 }
-                              }}
+                               onClick={async () => {
+                                  setPurchaseStage('buying');
+                                  try {
+                                      const res = await apiFetch(`/shop/buy/character/${selectedChar.id}`, { method: 'POST' });
+                                      if (res.status === 'success') {
+                                          window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
+                                          addToast('Character added to harem', 'success');
+                                          setSelectedChar(null);
+                                          // Trigger refresh events
+                                          window.dispatchEvent(new CustomEvent('user-data-refresh'));
+                                          window.dispatchEvent(new CustomEvent('shop-data-refresh'));
+                                      }
+                                  } catch (err) {
+                                      addToast(err.message || 'Transaction failed', 'error');
+                                      setPurchaseStage('confirm');
+                                  }
+                               }}
                               disabled={purchaseStage === 'buying'}
                               className="flex-[1.5] py-3.5 rounded-xl bg-brand-accent text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-brand-accent/20 active:scale-95 transition-all flex items-center justify-center"
                            >

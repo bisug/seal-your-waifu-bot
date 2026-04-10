@@ -152,7 +152,10 @@ async def recycle_characters(
                 "$inc": {
                     "zenith": total_reward,
                     "char_count": -removed_count
-                }
+                },
+                # FIX: Prevent char_count from going negative if it was previously
+                # desynchronised. $max floors the field at 0 after the decrement.
+                "$max": {"char_count": 0}
             }
         )
         
@@ -188,12 +191,10 @@ async def get_gallery(
     total = result[0]["metadata"][0]["total"] if result and result[0].get("metadata") else 0
     items = result[0]["data"] if result else []
 
-    # Optimization: Use projection to fetch ONLY needed IDs, avoiding loading massive character blobs
-    user_doc = await user_collection.find_one(
-        get_user_id_query(user["id"]), 
-        {"characters.id": 1}
-    )
-    owned_ids = set(c.get("id") for c in (user_doc.get("characters") or []))
+    # FIX: Use the already-fetched user doc from get_current_user_data.
+    # The previous code issued a second find_one to get character IDs,
+    # wasting a full DB round-trip on every gallery page load.
+    owned_ids = set(c.get("id") for c in (user.get("characters") or []))
 
     for item in items:
         item["_id"] = str(item["_id"])
