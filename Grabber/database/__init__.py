@@ -16,6 +16,8 @@ class Database:
         self.db = self.client['Character_catchers']
 
         # Initialize collections
+        # NOTE: Legacy collection names contain intentional typos/suffixes (e.g. 'anime_characterss') 
+        # from early development. Do NOT "fix" these without a full database migration.
         self.anime_characters = self.db['anime_characterss']
         self.groups = self.db['total_groups']
         self.user_totals = self.db['user_totalssss']
@@ -76,7 +78,7 @@ except Exception as e:
 try:
     redis_url = config.REDIS_URL
     if not redis_url:
-        print("Warning: REDIS_URL not found in environment. Redis features will fail.")
+        LOGGER.error("REDIS_URL not found in environment. Core features (Session, Rankings, Locks) will be DISABLED.")
         r = None
     else:
         r = redis.from_url(redis_url, decode_responses=True)

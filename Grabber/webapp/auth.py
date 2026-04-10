@@ -25,17 +25,19 @@ class _BoundedLockStore:
     def __init__(self, maxsize: int):
         self._maxsize = maxsize
         self._locks: OrderedDict[str, asyncio.Lock] = OrderedDict()
+        self._store_lock = asyncio.Lock()
 
-    def __getitem__(self, key: str) -> asyncio.Lock:
-        if key not in self._locks:
-            if len(self._locks) >= self._maxsize:
-                # Evict oldest entry
-                self._locks.popitem(last=False)
-            self._locks[key] = asyncio.Lock()
-        else:
-            # Mark as recently used
-            self._locks.move_to_end(key)
-        return self._locks[key]
+    async def get(self, key: str) -> asyncio.Lock:
+        async with self._store_lock:
+            if key not in self._locks:
+                if len(self._locks) >= self._maxsize:
+                    # Evict oldest entry
+                    self._locks.popitem(last=False)
+                self._locks[key] = asyncio.Lock()
+            else:
+                # Mark as recently used
+                self._locks.move_to_end(key)
+            return self._locks[key]
 
 _user_locks: _BoundedLockStore = _BoundedLockStore(_MAX_LOCKS)
 
@@ -113,7 +115,11 @@ async def get_current_user(auth: HTTPAuthorizationCredentials = Security(securit
         token_doc = await sessions_collection.find_one({"_id": f"auth_token:{token}"})
         if not token_doc or token_doc.get("expires_at", 0) < time.time():
             raise HTTPException(status_code=401, detail="Invalid or expired session")
-        return int(token_doc["user_id"])
+        raw = token_doc.get("user_id", "")
+        try:
+            return int(str(raw).strip())
+        except (ValueError, TypeError):
+            raise HTTPException(status_code=401, detail="Invalid session data")
 
     user_id = await r.get(f"auth_token:{token}")
     if not user_id:

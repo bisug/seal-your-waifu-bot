@@ -109,7 +109,7 @@ async def recycle_characters(
     user_id: int = Depends(get_current_user)
 ):
     uid_str = str(user_id)
-    async with _user_locks[uid_str]:
+    async with await _user_locks.get(uid_str):
         # Fetch fresh data under lock
         user = await user_collection.find_one(get_user_id_query(user_id))
         if not user:
@@ -144,13 +144,14 @@ async def recycle_characters(
         # Resolve exact user id integer for mongo query compatibility
         uid_int = normalize_user_id(user["id"])
 
+        removed_count = len(owned_chars) - len(new_harem)
         await user_collection.update_one(
             get_user_id_query(uid_int),
             {
                 "$set": {"characters": new_harem},
                 "$inc": {
                     "zenith": total_reward,
-                    "char_count": -len(char_ids)
+                    "char_count": -removed_count
                 }
             }
         )
@@ -187,7 +188,12 @@ async def get_gallery(
     total = result[0]["metadata"][0]["total"] if result and result[0].get("metadata") else 0
     items = result[0]["data"] if result else []
 
-    owned_ids = set(c.get("id") for c in (user.get("characters") or []))
+    # Optimization: Use projection to fetch ONLY needed IDs, avoiding loading massive character blobs
+    user_doc = await user_collection.find_one(
+        get_user_id_query(user["id"]), 
+        {"characters.id": 1}
+    )
+    owned_ids = set(c.get("id") for c in (user_doc.get("characters") or []))
 
     for item in items:
         item["_id"] = str(item["_id"])

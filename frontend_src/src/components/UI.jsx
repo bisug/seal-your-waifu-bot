@@ -170,6 +170,18 @@ export const ToastProvider = ({ children }) => {
 
 export const useToast = () => useContext(ToastContext);
 
+// Shallow array comparison utility
+function shallowEqual(obj1, obj2) {
+  if (obj1 === obj2) return true;
+  const keys1 = Object.keys(obj1 || {});
+  const keys2 = Object.keys(obj2 || {});
+  if (keys1.length !== keys2.length) return false;
+  for (let key of keys1) {
+      if (obj1[key] !== obj2[key]) return false;
+  }
+  return true;
+}
+
 /**
  * Standardized API Hook for managed loading/error/data states.
  * Includes optional caching and automatic dependency tracking.
@@ -181,18 +193,7 @@ export const useApi = (endpoint, options = {}, deps = []) => {
 
   const optionsRef = useRef(options);
   
-  // Shallow array comparison utility
-  const isShallowEqual = (obj1, obj2) => {
-    const keys1 = Object.keys(obj1);
-    const keys2 = Object.keys(obj2);
-    if (keys1.length !== keys2.length) return false;
-    for (let key of keys1) {
-        if (obj1[key] !== obj2[key]) return false;
-    }
-    return true;
-  };
-
-  if (!isShallowEqual(optionsRef.current, options)) {
+  if (!shallowEqual(optionsRef.current, options)) {
     optionsRef.current = options;
   }
 

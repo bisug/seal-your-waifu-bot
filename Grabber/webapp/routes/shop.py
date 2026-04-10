@@ -43,7 +43,7 @@ async def buy_character_api(char_id: str, user_id: int = Depends(get_current_use
     uid_str = str(user_id)
     
     # Critical section: Lock exact user so spam clicks don't bypass checks
-    async with _user_locks[uid_str]:
+    async with await _user_locks.get(uid_str):
         user_raw = await user_collection.find_one(get_user_id_query(user_id))
         if not user_raw: raise HTTPException(status_code=404, detail="User not found")
         
@@ -110,9 +110,9 @@ async def get_shop_pets(user: dict = Depends(get_current_user_data)):
 @router.post("/shop/buy/pet/{pet_index}")
 async def buy_pet_api(pet_index: int, user_id: int = Depends(get_current_user)):
     uid_str = str(user_id)
-    async with _user_locks[uid_str]:
+    async with await _user_locks.get(uid_str):
         from Grabber.modules.progression.pet import perform_pet_purchase
-        result = await perform_pet_purchase(user_id, pet_index)
+        result = await perform_pet_purchase(user_id, pet_index, user_collection, get_user_id_query)
         if result is True:
             return {"status": "success"}
         raise HTTPException(status_code=400, detail=str(result).replace("❌ ", "").replace("🔒 ", ""))
@@ -131,7 +131,7 @@ async def upgrade_pass_api(tier: str, user_id: int = Depends(get_current_user)):
     if tier not in PASS_PRICES: raise HTTPException(status_code=400, detail="Invalid tier")
     
     uid_str = str(user_id)
-    async with _user_locks[uid_str]:
+    async with await _user_locks.get(uid_str):
         user = await user_collection.find_one(get_user_id_query(user_id))
         if not user: raise HTTPException(status_code=404, detail="User not found")
         
@@ -170,7 +170,7 @@ async def get_pass_data(user: dict = Depends(get_current_user_data)):
 @router.post("/claim_bank")
 async def claim_pass_bank(user_id: int = Depends(get_current_user)):
     uid_str = str(user_id)
-    async with _user_locks[uid_str]:
+    async with await _user_locks.get(uid_str):
         user = await user_collection.find_one(get_user_id_query(user_id))
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
@@ -213,19 +213,86 @@ async def claim_pass_bank(user_id: int = Depends(get_current_user)):
         
         return {"message": f"Claimed {shards} Shards and {len(eggs_to_add)} Eggs!", "shards": shards, "eggs": len(eggs_to_add)}
 
+@router.post("/claim_level/{level}")
+async def claim_pass_level(level: int, user_id: int = Depends(get_current_user)):
+    if level < 1 or level > MAX_PASS_LEVEL:
+        raise HTTPException(status_code=400, detail="Invalid level")
+        
+    uid_str = str(user_id)
+    async with await _user_locks.get(uid_str):
+        user = await user_collection.find_one(get_user_id_query(user_id))
+        if not user: raise HTTPException(status_code=404, detail="User not found")
+        
+        progress = await get_user_progress(user_id, user_data=user)
+        if progress["level"] < level:
+            raise HTTPException(status_code=400, detail=f"Level {level} not reached yet")
+            
+        claimed = user.get("pass_claimed", [])
+        if level in claimed:
+            raise HTTPException(status_code=400, detail="Level reward already claimed")
+            
+        reward_data = PASS_TRACKS.get(level)
+        if not reward_data:
+            raise HTTPException(status_code=404, detail="No rewards found for this level")
+            
+        pass_type = user.get("pass_type", "free")
+        # Rewards are cumulative (you get free + your tier)
+        to_award = [reward_data["free"]]
+        if pass_type != "free":
+            to_award.append(reward_data[pass_type])
+            
+        shards = 0
+        eggs = []
+        
+        for r in to_award:
+            if r["type"] == "shards":
+                shards += r["amount"]
+            elif r["type"] == "egg":
+                tier_id = r.get("tier", 1)
+                tier_names = {1: "gold", 2: "void", 3: "rare", 4: "legendary", 5: "celestial"}
+                tier_name = tier_names.get(tier_id, "gold")
+                eggs.append({
+                    "id": f"bp_{level}_{uuid.uuid4().hex[:6]}",
+                    "tier": tier_name,
+                    "name": f"{tier_name.capitalize()} Egg",
+                    "status": "fresh"
+                })
+        
+        updates = {"$push": {"pass_claimed": level}}
+        if shards > 0:
+            updates["$inc"] = {"balance": shards}
+        if eggs:
+            if "$push" in updates: # Handle multiple pushes
+                updates["$push"] = {**updates["$push"], "eggs": {"$each": eggs}}
+            else:
+                updates["$push"] = {"eggs": {"$each": eggs}}
+        
+        await user_collection.update_one(get_user_id_query(user_id), updates)
+        return {"status": "success", "shards": shards, "eggs": len(eggs)}
+
 @router.post("/buy_level")
 async def api_buy_level(levels: int = Query(1, ge=1, le=50), user_id: int = Depends(get_current_user)):
     uid_str = str(user_id)
-    async with _user_locks[uid_str]:
+    async with await _user_locks.get(uid_str):
         cost = levels * 5000
         user = await user_collection.find_one(get_user_id_query(user_id))
         
         if not user or user.get("balance", 0) < cost:
             raise HTTPException(status_code=400, detail=f"Insufficient Shards (Need {cost})")
             
-        await user_collection.update_one(get_user_id_query(user_id), {"$inc": {"balance": -cost}})
+        deduct_result = await user_collection.update_one(
+            {**get_user_id_query(user_id), "balance": {"$gte": cost}},
+            {"$inc": {"balance": -cost}}
+        )
+        if deduct_result.modified_count == 0:
+            raise HTTPException(status_code=400, detail="Insufficient Shards (concurrent check failed)")
         
-        from Grabber.core.progression import add_xp
-        await add_xp(user_id, levels * 100, "shop_buylevel")
+        try:
+            from Grabber.core.progression import add_xp
+            await add_xp(user_id, levels * 100, "shop_buylevel")
+        except Exception as e:
+            LOGGER.error(f"buy_level XP add failed for user {user_id}, rolling back: {e}")
+            await user_collection.update_one(get_user_id_query(user_id), {"$inc": {"balance": cost}})
+            raise HTTPException(status_code=500, detail="Transaction failed. Your shards have been refunded.")
         
         return {"status": "success", "message": f"Bought {levels} levels for {cost} Shards!"}

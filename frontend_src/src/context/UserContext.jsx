@@ -23,7 +23,9 @@ export const UserProvider = ({ children }) => {
   useEffect(() => {
     const init = async () => {
       try {
-        const token = await secureInit();
+        const tg = window.Telegram?.WebApp;
+        const avatarUrl = tg?.initDataUnsafe?.user?.photo_url || null;
+        const token = await secureInit(avatarUrl);
         if (token) {
           await refreshUser();
         } else {

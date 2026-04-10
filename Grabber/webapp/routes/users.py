@@ -11,6 +11,9 @@ from Grabber.core.cache import get_user_rank, get_total_ranked_users, update_use
 from Grabber.core.utils import normalize_user_id
 from Grabber.modules.progression.pet import DEFAULT_PET
 import json
+from datetime import datetime
+from Grabber.modules.economy.hunt import TIER_MAP
+from Grabber.modules.progression.achievements import ACHIEVEMENTS
 
 router = APIRouter()
 
@@ -43,7 +46,6 @@ async def get_me(user: dict = Depends(get_current_user_data)):
 
     percentile = round((1 - (rank / max(total_users, 1))) * 100, 1)
     
-    from Grabber.modules.progression.achievements import ACHIEVEMENTS
     raw_achievements = user.get("achievements") or []
     enriched_achievements = []
     for ach_id in raw_achievements:
@@ -122,12 +124,10 @@ async def get_me(user: dict = Depends(get_current_user_data)):
 
     # Handle Eggs
     eggs = user.get("eggs", [])
-    from datetime import datetime
     processed_eggs = []
     for egg in eggs:
         if isinstance(egg, str):
             # Resolve numeric or string tier to a cleaner name for the WebApp
-            from Grabber.modules.economy.hunt import TIER_MAP
             tier_key = TIER_MAP.get(egg, egg)
             processed_eggs.append({
                 "id": f"mig_{int(datetime.now().timestamp())}",
@@ -160,10 +160,12 @@ async def get_me(user: dict = Depends(get_current_user_data)):
     
     return resp_data
 
-@router.get("/profile", response_model=UserProfileResponse)
-async def get_profile_legacy(user: dict = Depends(get_current_user_data)):
+from fastapi.responses import RedirectResponse
+
+@router.get("/profile", include_in_schema=False)
+async def get_profile_legacy():
     """Backward compatibility for old client versions."""
-    return await get_me(user)
+    return RedirectResponse(url="./me", status_code=307)
 
 @router.get("/leaderboard")
 async def get_leaderboard(
@@ -227,5 +229,5 @@ async def get_stats(user: dict = Depends(get_current_user_data)):
         "percentile": round(percentile, 2),
         "total_games": user.get("total_games", 0),
         "win_rate": user.get("win_rate", 0),
-        "total_captured": len(user.get("characters", []))
+        "total_captured": user.get("char_count") or len(user.get("characters", []))
     }

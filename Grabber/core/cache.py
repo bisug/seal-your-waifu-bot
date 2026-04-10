@@ -240,41 +240,54 @@ async def get_total_ranked_users() -> int:
     try: return await _redis.zcard(_RANK_KEY)
     except Exception: return 0
 
+_rebuild_lock = None
+
 async def rebuild_leaderboard(user_collection):
     """
     Cold-rebuild the Redis XP ZSET from MongoDB with 30MB memory safety.
     Only pulls Top 1,000 users to keep the fast cache small.
+    Includes a guard to prevent concurrent rebuilds.
     """
-    if not _redis: return
-    try:
-        LOGGER.info("Starting safe XP ZSET rebuild from MongoDB (Top 1000)...")
-        # Get Top 1,000 users by XP descending
-        cursor = user_collection.find({"xp": {"$gt": 0}}, {"id": 1, "xp": 1}).sort("xp", -1).limit(1000)
+    global _rebuild_lock
+    if _rebuild_lock is None:
+        import asyncio
+        _rebuild_lock = asyncio.Lock()
         
-        # Clear the old set first
-        await _redis.delete(_RANK_KEY)
+    if _rebuild_lock.locked():
+        LOGGER.info("Leaderboard rebuild already in progress, skipping redundant request.")
+        return
         
-        batch = {}
-        count = 0
-        async for user in cursor:
-            uid = str(user.get("id"))
-            xp = user.get("xp", 0)
-            if uid and xp:
-                batch[uid] = xp
-                count += 1
+    async with _rebuild_lock:
+        if not _redis: return
+        try:
+            LOGGER.info("Starting safe XP ZSET rebuild from MongoDB (Top 1000)...")
+            # Get Top 1,000 users by XP descending
+            cursor = user_collection.find({"xp": {"$gt": 0}}, {"id": 1, "xp": 1}).sort("xp", -1).limit(1000)
             
-            # Batch write every 100 users for performance
-            if len(batch) >= 100:
+            # Clear the old set first
+            await _redis.delete(_RANK_KEY)
+            
+            batch = {}
+            count = 0
+            async for user in cursor:
+                uid = str(user.get("id"))
+                xp = user.get("xp", 0)
+                if uid and xp:
+                    batch[uid] = xp
+                    count += 1
+                
+                # Batch write every 100 users for performance
+                if len(batch) >= 100:
+                    await _redis.zadd(_RANK_KEY, batch)
+                    batch = {}
+            
+            # Final batch
+            if batch:
                 await _redis.zadd(_RANK_KEY, batch)
-                batch = {}
-        
-        # Final batch
-        if batch:
-            await _redis.zadd(_RANK_KEY, batch)
-            
-        LOGGER.info(f"XP ZSET rebuild complete. Synchronized {count} top users.")
-    except Exception as e:
-        LOGGER.error(f"Failed to rebuild XP ZSET in memory-safe mode: {e}")
+                
+            LOGGER.info(f"XP ZSET rebuild complete. Synchronized {count} top users.")
+        except Exception as e:
+            LOGGER.error(f"Failed to rebuild XP ZSET in memory-safe mode: {e}")
 
 
 # ── Sessions (replaces MongoDB sessions) ─────────────────────────
