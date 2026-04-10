@@ -4,6 +4,7 @@ import uuid
 from Grabber import LOGGER
 from Grabber.webapp.auth import get_current_user, get_current_user_data, _user_locks
 from Grabber.database import user_collection, collection
+from Grabber.core.cache import sync_user_to_redis
 from Grabber.core.constants import SHOP_RARITY, SHOP_LIMIT, RARITY_PRICES, PASS_PRICES
 from Grabber.modules.economy.shop import get_daily_shop_characters
 from Grabber.modules.progression.pet import PET_SHOP
@@ -93,6 +94,7 @@ async def buy_character_api(char_id: str, user_id: int = Depends(get_current_use
         from Grabber.modules.progression.achievements import check_achievements
         await update_quest_progress(user_id, "big_spender", price)
         await check_achievements(user_id)
+        await sync_user_to_redis(user_id)
         
         return {"status": "success", "char_name": char_raw["name"]}
 
@@ -150,6 +152,7 @@ async def upgrade_pass_api(tier: str, user_id: int = Depends(get_current_user)):
             q,
             {"$set": {"pass_type": tier}, "$inc": {"zenith": -price}}
         )
+        await sync_user_to_redis(user_id)
         return {"status": "success", "new_tier": tier}
 
 @router.get("/pass_data")

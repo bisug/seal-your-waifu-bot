@@ -15,6 +15,7 @@ import logging
 import asyncio
 
 from Grabber.core.cache import rebuild_leaderboard
+from Grabber.core.worker import background_maintenance
 from Grabber.database import user_collection
 
 _lb_rebuild_in_progress = False
@@ -44,12 +45,14 @@ async def lifespan(app: FastAPI):
     logging.info("Starting Telegram bots and ranking sync task...")
     await start_bots()
     sync_task = asyncio.create_task(sync_leaderboard_periodic())
+    worker_task = asyncio.create_task(background_maintenance())
     
     yield
     
     # Shutdown: Stop the Telegram bots and our sync task
     logging.info("Stopping Telegram bots and background tasks...")
     sync_task.cancel()
+    worker_task.cancel()
     await stop_bots()
 
 app = FastAPI(

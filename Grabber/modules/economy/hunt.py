@@ -14,8 +14,9 @@ from Grabber.modules.progression.quests import update_quest_progress
 from Grabber.modules.progression.achievements import check_achievements
 from Grabber.modules.collection.rarities import RARITY_MAP
 from Grabber.core.keyboard import get_webapp_button
-from Grabber.core.cache import invalidate_user_cache
+from Grabber.core.cache import invalidate_user_cache, sync_user_to_redis
 from config import config
+from Grabber.core.utils import get_now_utc
 
 
 EGG_TIERS = {
@@ -141,7 +142,7 @@ async def hunt_cmd(_, message: types.Message):
             upsert=True
         )
 
-        await invalidate_user_cache(user_id)
+        await sync_user_to_redis(user_id)
 
 
         await update_quest_progress(user_id, "egg_hunter", 1)
@@ -314,7 +315,7 @@ async def egg_incubate_callback(_, query: types.CallbackQuery):
         wait_min = int(wait_min * 0.5)
 
 
-    ready_time = datetime.now() + timedelta(minutes=wait_min)
+    ready_time = get_now_utc() + timedelta(minutes=wait_min)
 
     # Use ID-based update to be safe from positional shifts
     # If legacy egg (string), we target by position since it has no ID
@@ -412,6 +413,7 @@ async def process_egg_hatch(user_id: int, egg: dict):
         return False, "⚠️ This egg was already hatched!"
 
     await add_xp(user_id, 15, "egg_hatch")
+    await sync_user_to_redis(user_id)
     return True, character
 
 

@@ -5,6 +5,7 @@ from Grabber.database import user_collection, collection
 from Grabber.webapp.schemas import PaginatedResponse
 from Grabber.core.constants import PAYOUTS
 from Grabber.core.utils import normalize_user_id
+from Grabber.core.cache import sync_user_to_redis
 
 router = APIRouter()
 
@@ -158,6 +159,8 @@ async def recycle_characters(
                 "$max": {"char_count": 0}
             }
         )
+        
+        await sync_user_to_redis(user_id)
         
         return {"status": "success", "reward": total_reward, "count": len(char_ids)}
 

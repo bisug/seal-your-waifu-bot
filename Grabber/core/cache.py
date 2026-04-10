@@ -22,6 +22,7 @@ from typing import Any, Optional, List
 from Grabber.database import r as _redis
 r = _redis
 from Grabber import LOGGER
+from Grabber.core.utils import get_now_utc
 
 # ── TTLs (seconds) optimized for 30MB ──────────────────────────
 TTL_USER        = 60      # 1 minute (Fast refresh to save space)
@@ -309,6 +310,36 @@ async def rebuild_leaderboard(user_collection, metric: str = "level"):
             LOGGER.info(f"{metric} ZSET rebuild complete. Synchronized {count} top users.")
         except Exception as e:
             LOGGER.error(f"Failed to rebuild {metric} ZSET: {e}")
+
+async def sync_user_to_redis(user_id: int, user_doc: dict = None):
+    """
+    Synchronizes a user's critical metrics (Level, Harem, Balance, Zenith, Guesses) 
+    to Redis ZSETs instantly. Used after major state changes to prevent drift.
+    """
+    if not _redis: return
+    if not user_doc:
+        from Grabber.database import user_collection
+        user_doc = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
+    
+    if not user_doc: return
+    
+    uid_str = str(user_id)
+    try:
+        pipe = _redis.pipeline()
+        
+        # 1. Update all leaderboard scores
+        pipe.zadd(_zset_key("level"),   {uid_str: user_doc.get("xp", 0)})
+        pipe.zadd(_zset_key("harem"),   {uid_str: user_doc.get("char_count", 0)})
+        pipe.zadd(_zset_key("shards"),  {uid_str: user_doc.get("balance", 0)})
+        pipe.zadd(_zset_key("zenith"),  {uid_str: user_doc.get("zenith", 0)})
+        pipe.zadd(_zset_key("guesses"), {uid_str: user_doc.get("guess_count", 0)})
+        
+        # 2. Invalidate string caches
+        pipe.delete(f"user:{user_id}", f"balance:{user_id}")
+        
+        await pipe.execute()
+    except Exception as e:
+        LOGGER.warning(f"Failed to sync user {user_id} to Redis: {e}")
 
 
 
