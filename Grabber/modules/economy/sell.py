@@ -3,7 +3,7 @@ from pyrogram.enums import ButtonStyle, ParseMode
 from Grabber import app
 from Grabber.core.utils import html_escape
 from Grabber.core.user import get_user_data, remove_char_from_user
-from Grabber.core.game import update_user_balance
+from Grabber.core.balance import update_user_balance
 
 SELL_PRICES = {
     "⚪ Common": 50,

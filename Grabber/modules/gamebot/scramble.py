@@ -4,7 +4,7 @@ import re
 from pyrogram import filters, types
 from pyrogram.enums import ParseMode
 from Grabber import game_bot, collection, sessions_collection, user_collection, LOGGER, BOT_USERNAME
-from Grabber.core.game import update_user_balance
+from Grabber.core.balance import update_user_balance
 from Grabber.core.utils import html_escape, check_member_requirement
 
 # Game settings

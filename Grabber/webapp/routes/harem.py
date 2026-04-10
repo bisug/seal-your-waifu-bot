@@ -2,13 +2,13 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Body
 from Grabber.webapp.auth import get_current_user, get_current_user_data, _user_locks
 from Grabber.database import user_collection, collection
-from Grabber.webapp.models import PaginatedResponse
+from Grabber.webapp.schemas import PaginatedResponse
 from Grabber.core.constants import PAYOUTS
 from Grabber.core.utils import normalize_user_id
 
 router = APIRouter()
 
-from Grabber.webapp.utils import get_user_id_query
+from Grabber.core.utils import get_user_id_query
 
 @router.get("/rarities")
 async def get_rarities(user_id: int = Depends(get_current_user)):

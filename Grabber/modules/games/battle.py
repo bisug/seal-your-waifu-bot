@@ -6,7 +6,7 @@ from pyrogram.enums import ParseMode
 from Grabber.core.utils import html_escape
 from Grabber import app
 from Grabber import LOGGER
-from Grabber.core.game import get_user_balance, update_user_balance, check_and_deduct
+from Grabber.core.balance import get_user_balance, update_user_balance, check_and_deduct
 from Grabber.core.sessions import create_session, get_session, delete_session
 from Grabber.core.user import get_active_pet
 from Grabber.core.progression import add_xp
