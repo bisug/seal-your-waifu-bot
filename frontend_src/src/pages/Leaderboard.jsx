@@ -39,11 +39,11 @@ export const Leaderboard = () => {
     initialData: []
   }, [metric]);
 
-  const getMetricIcon = () => {
+  const getMetricIcon = useCallback(() => {
     if (metric === 'level') return <TrendingUp size={14} />;
     if (metric === 'zenith') return <Star size={14} />;
     return <Users size={14} />;
-  };
+  }, [metric]);
 
   const handleMetricSelection = (metricId) => {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');

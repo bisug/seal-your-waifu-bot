@@ -50,13 +50,21 @@ async def check_init_rate_limit(request: Request):
     history.append(now)
     _init_rate_limits[client_ip] = history
 
+_lb_rebuild_in_progress = False
+
 async def sync_leaderboard_periodic():
     """Background task to keep the Redis Top 1000 in sync with Mongo."""
+    global _lb_rebuild_in_progress
+    await asyncio.sleep(60) # Delay on startup to allow app to settle
     while True:
-        try:
-            await rebuild_leaderboard(user_collection)
-        except Exception as e:
-            logging.error(f"Error in periodic leaderboard sync: {e}")
+        if not _lb_rebuild_in_progress:
+            _lb_rebuild_in_progress = True
+            try:
+                await rebuild_leaderboard(user_collection)
+            except Exception as e:
+                logging.error(f"Error in periodic leaderboard sync: {e}")
+            finally:
+                _lb_rebuild_in_progress = False
         # Sync every hour (3600 seconds)
         await asyncio.sleep(3600)
 
@@ -82,8 +90,12 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+from fastapi import HTTPException as FastAPIHTTPException
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    if isinstance(exc, FastAPIHTTPException):
+        raise exc
     logging.error(f"Unhandled Exception: {exc}", exc_info=True)
     return JSONResponse(
         status_code=500,

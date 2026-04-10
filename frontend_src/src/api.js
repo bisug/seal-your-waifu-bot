@@ -1,4 +1,4 @@
-const API_BASE = '/api/v1_7b82';
+const API_BASE = `/api/${import.meta.env.VITE_API_PREFIX ?? 'v1_7b82'}`;
 // FIX: Read Telegram SDK at CALL TIME, not at module load time.
 // On mobile, the SDK may not be injected yet when the JS module first evaluates.
 const getTg = () => window.Telegram?.WebApp;
@@ -49,14 +49,18 @@ export async function apiFetch(endpoint, options = {}, retries = 2) {
           return apiFetch(endpoint, options, retries); // Retry with new token
         }
       } catch (err) {
-        console.error("Auth Recovery Failed:", err);
+        console.error(`[API ERROR] ${options.method || 'GET'} ${endpoint}:`, err);
+        throw err;
       }
       isRefreshing = false;
       setSessionToken(null);
     }
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      const contentType = response.headers.get("content-type");
+      const errorData = contentType && contentType.includes("application/json") 
+        ? await response.json().catch(() => ({})) 
+        : { detail: await response.text() };
       throw new Error(errorData.detail || `API error: ${response.status}`);
     }
 
