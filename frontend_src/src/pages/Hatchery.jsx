@@ -37,13 +37,13 @@ const PetCard = ({ pet, isActive, onSelect }) => {
         </div>
         {isActive && (
           <div className="bg-brand-neon text-brand-midnight text-[8px] font-black uppercase px-1.5 py-0.5 rounded tracking-tighter shadow-lg">
-            Active Squad
+            Active
           </div>
         )}
       </div>
 
       <h4 className="text-[13px] font-black uppercase tracking-tight text-white mb-0.5">{pet.name}</h4>
-      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-3">{pet.type || 'Nanotech Support'}</p>
+      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-3">{pet.type || 'Support Pet'}</p>
       
       <div className="pt-3 border-t border-white/5 space-y-1">
          <div className="flex items-center space-x-1.5 text-brand-neon">
@@ -51,7 +51,7 @@ const PetCard = ({ pet, isActive, onSelect }) => {
             <span className="text-[9px] font-black uppercase tracking-widest">{pet.ability || 'Standard'}</span>
          </div>
          <p className="text-[8px] leading-tight text-slate-500 font-medium line-clamp-2">
-            {pet.desc || 'Standard surveillance and support unit.'}
+            {pet.desc || 'A loyal support pet.'}
          </p>
       </div>
     </button>
@@ -95,7 +95,7 @@ const EggCard = ({ egg, onIncubate, onHatch, loading }) => {
       </div>
       
       <div className="flex-1 relative z-10">
-        <h4 className="text-[14px] font-black uppercase tracking-tight text-white mb-0.5">{egg.name || 'Unknown Pod'}</h4>
+        <h4 className="text-[14px] font-black uppercase tracking-tight text-white mb-0.5">{egg.name || 'Unknown Egg'}</h4>
         <div className="flex items-center space-x-2">
            <span className={`text-[10px] font-bold uppercase tracking-widest ${theme.color}`}>{egg.tier} System</span>
            <div className="w-1 h-1 rounded-full bg-slate-700" />
@@ -110,7 +110,7 @@ const EggCard = ({ egg, onIncubate, onHatch, loading }) => {
             disabled={loading}
             className="bg-white text-brand-midnight text-[10px] font-black uppercase px-6 py-3 rounded-xl tracking-widest active:scale-95 transition-all shadow-lg"
           >
-            Initiate
+            Incubate
           </button>
         ) : (
           <div className="flex flex-col items-end">
@@ -185,7 +185,7 @@ export const Hatchery = () => {
   if (userLoading) return (
     <div className="p-10 flex flex-col items-center justify-center min-h-[60vh]">
        <Loader2 className="animate-spin text-brand-neon/20 mb-4" size={32} />
-       <p className="text-slate-600 text-[10px] font-black uppercase tracking-widest">Scanning Pod Signatures...</p>
+       <p className="text-slate-600 text-[10px] font-black uppercase tracking-widest">Loading Eggs...</p>
     </div>
   );
   
@@ -196,7 +196,7 @@ export const Hatchery = () => {
       <section className="mb-8 text-center relative">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-brand-neon/5 blur-[60px] rounded-full pointer-events-none" />
         <h1 className="text-2xl font-black uppercase tracking-[0.3em] mb-2 text-white">Hatchery</h1>
-        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest opacity-60">Nanobotic Lifeform Management</p>
+        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest opacity-60">Collect and Hatch Eggs</p>
       </section>
 
       <div className="flex bg-white/5 p-1 rounded-2xl mb-8 border border-white/5">
@@ -210,7 +210,7 @@ export const Hatchery = () => {
           >
             <div className="flex items-center justify-center space-x-2">
               {tab === 'eggs' ? <Egg size={14} /> : <Zap size={14} />}
-              <span>{tab === 'eggs' ? `PODS (${formatNumber(user.eggs?.length)})` : 'PET SQUAD'}</span>
+              <span>{tab === 'eggs' ? `EGGS (${formatNumber(user.eggs?.length)})` : 'PETS'}</span>
             </div>
           </button>
         ))}
@@ -236,7 +236,7 @@ export const Hatchery = () => {
                 />
               ))
             ) : (
-              <EmptyState icon={Egg} message="No pods detected. High-tier eggs are generated via the Elite Pass." />
+              <EmptyState icon={Egg} message="No eggs found. Get eggs from the Shop or Seasonal Pass." />
             )}
           </motion.section>
         ) : (
@@ -258,7 +258,7 @@ export const Hatchery = () => {
               ))
             ) : (
               <div className="col-span-2">
-                <EmptyState icon={Zap} message="No companions active. Purchase support units in the Shop." />
+                <EmptyState icon={Zap} message="No pets found. Purchase pets in the Shop." />
               </div>
             )}
           </motion.section>
@@ -274,8 +274,8 @@ export const Hatchery = () => {
               className="w-full max-w-sm"
             >
               <div className="text-center mb-8">
-                 <h3 className="text-brand-neon font-black uppercase tracking-[0.4em] text-sm mb-2">Lifeform Detected</h3>
-                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Integrating personality to matrix</p>
+                 <h3 className="text-brand-neon font-black uppercase tracking-[0.4em] text-sm mb-2">Character Hatched!</h3>
+                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Added to your harem</p>
               </div>
 
               <div className="relative">
@@ -287,7 +287,7 @@ export const Hatchery = () => {
                 onClick={() => setHatchingResult(null)}
                 className="w-full mt-12 py-5 rounded-2xl bg-white text-brand-midnight font-black uppercase text-[11px] tracking-[0.3em] active:scale-95 transition-all shadow-xl"
               >
-                Close Portal
+                Close
               </button>
             </motion.div>
           </div>

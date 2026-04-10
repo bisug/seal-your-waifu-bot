@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import { UserProvider, useUser } from './context/UserContext';
 import { TabNavigation } from './components/TabNavigation';
+import { IntroLoading } from './components/IntroLoading';
 import { Profile } from './pages/Profile';
 import { NotFound } from './pages/NotFound';
 import { Modal, ToastProvider } from './components/UI';
@@ -39,17 +40,17 @@ class ErrorBoundary extends React.Component {
       return (
         <div className="flex-1 flex flex-col items-center justify-center p-12 text-center min-h-svh bg-brand-midnight">
           <div className="mb-8 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl max-w-sm">
-             <h2 className="text-red-500 font-black mb-2 uppercase tracking-[0.3em]">Critical Overload</h2>
-             <p className="text-[10px] text-red-400 font-mono break-all">{this.state.error?.toString() || 'Unknown Error Signature'}</p>
+             <h2 className="text-red-500 font-black mb-2 uppercase tracking-[0.3em]">System Error</h2>
+             <p className="text-[10px] text-red-400 font-mono break-all">{this.state.error?.toString() || 'Unknown Error'}</p>
           </div>
           
-          <p className="text-slate-500 text-[10px] mb-8 uppercase tracking-widest">A UI module has desynchronized. Initiate recovery?</p>
+          <p className="text-slate-500 text-[10px] mb-8 uppercase tracking-widest">A module failure occurred. Re-establish connection?</p>
           
           <button 
             onClick={() => window.location.reload()}
             className="px-8 py-4 bg-brand-accent text-white font-black rounded-2xl uppercase tracking-widest text-[11px] neon-shadow shadow-brand-accent/50 active:scale-95 transition-transform"
           >
-            RESTABILIZE
+            RECONNECT
           </button>
         </div>
       );
@@ -58,30 +59,6 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-const LoadingScreen = () => (
-  <div className="fixed inset-0 bg-brand-midnight flex flex-col items-center justify-center p-12 bg-mesh overflow-hidden">
-    {/* Ambient Glows */}
-    <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-neon/5 blur-[120px] rounded-full" />
-    <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-brand-accent/5 blur-[120px] rounded-full" />
-    <motion.div 
-      animate={{ 
-        scale: [1, 1.1, 1],
-        opacity: [0.5, 1, 0.5] 
-      }}
-      transition={{ 
-        repeat: Infinity, 
-        duration: 2,
-        ease: "easeInOut"
-      }}
-      className="w-24 h-24 mb-8 relative"
-    >
-      <div className="absolute inset-0 rounded-full border-4 border-brand-neon opacity-20" />
-      <div className="absolute inset-0 rounded-full border-t-4 border-brand-neon animate-spin" />
-      <div className="absolute inset-4 rounded-full bg-brand-neon/10 flex items-center justify-center blur-sm transform scale-150 animate-pulse" />
-    </motion.div>
-    <p className="text-brand-neon font-black uppercase tracking-[0.5em] text-[10px] animate-pulse">Syncing Protocols</p>
-  </div>
-);
 
 const AppContent = () => {
   const { user, loading, error } = useUser();
@@ -140,7 +117,7 @@ const AppContent = () => {
     setActiveTab(tab);
   }, []);
 
-  if (loading) return <LoadingScreen />;
+  if (loading) return <IntroLoading />;
 
   if (error || (!loading && !user)) {
     return (
@@ -159,9 +136,9 @@ const AppContent = () => {
             </div>
           </motion.div>
           
-          <h2 className="text-brand-accent font-black mb-2 uppercase tracking-[0.3em] text-xl">Signal Interrupted</h2>
+          <h2 className="text-brand-accent font-black mb-2 uppercase tracking-[0.3em] text-xl">Connection Lost</h2>
           <p className="text-slate-500 text-[10px] mb-10 leading-relaxed uppercase tracking-widest max-w-[200px] mx-auto">
-            {error || "Authentication handshake timeout. Please re-open the portal."}
+            {error || "Authentication timed out. Please restart the bot."}
           </p>
           
           <div className="space-y-4">
@@ -169,7 +146,7 @@ const AppContent = () => {
               onClick={() => window.location.reload()}
               className="w-full px-10 py-5 rounded-2xl bg-brand-accent text-brand-midnight font-black uppercase text-[10px] tracking-[0.2em] shadow-xl shadow-brand-accent/20 transition-all active:scale-95 flex items-center justify-center gap-3"
             >
-              RE-ESTABLISH LINK
+              RETRY
             </button>
             <button 
               onClick={() => { localStorage.clear(); window.location.reload(); }}
@@ -223,7 +200,7 @@ const AppContent = () => {
                 <button 
                   onClick={() => {
                     const tg = window.Telegram?.WebApp;
-                    const msg = `Recycle 1 x ${selectedChar.name} for Zenith?`;
+                    const msg = `Sell 1 x ${selectedChar.name} for Zenith ⧫?`;
                     
                     const callback = async (confirmed) => {
                       if (!confirmed) return;
@@ -232,7 +209,7 @@ const AppContent = () => {
                               method: 'POST', 
                               body: JSON.stringify([selectedChar.id]) 
                           });
-                          toast.success('Nexus Fusion Complete');
+                          toast.success('Character sold');
                           setSelectedChar(null);
                           window.dispatchEvent(new CustomEvent('user-data-refresh'));
                       } catch (err) {
@@ -249,7 +226,7 @@ const AppContent = () => {
                   className="w-full py-3.5 rounded-xl bg-brand-accent/10 border border-brand-accent/20 text-brand-accent text-[10px] font-black uppercase tracking-widest hover:bg-brand-accent/20 transition-all flex items-center justify-center space-x-2 mb-4"
                 >
                     <Zap size={14} />
-                    <span>Recycle Duplicate</span>
+                    <span>Sell Duplicate</span>
                 </button>
               ) : activeTab === 'shop' && !selectedChar.owned ? (
                 <div className="space-y-4">
@@ -259,8 +236,8 @@ const AppContent = () => {
                            <Zap size={20} />
                         </div>
                         <div>
-                           <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Buy Value</p>
-                           <p className="text-sm font-black text-white">✧ {formatNumber(selectedChar.zenith_price || 5)}</p>
+                           <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Price</p>
+                           <p className="text-sm font-black text-white">⧫ {formatNumber(selectedChar.zenith_price || 5)}</p>
                         </div>
                      </div>
                      <button 
@@ -283,7 +260,7 @@ const AppContent = () => {
                         }}
                         className="px-6 py-3 rounded-2xl bg-brand-neon text-brand-midnight text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-brand-neon/30 active:scale-95 transition-all"
                      >
-                        BUY NOW
+                        BUY
                      </button>
                   </div>
                 </div>
