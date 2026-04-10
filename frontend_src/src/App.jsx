@@ -182,8 +182,8 @@ const AppContent = () => {
             {activeTab === 'leaderboard' && <Leaderboard />}
             {activeTab === 'pass' && <Pass />}
             {activeTab === 'shop' && <Shop onCharClick={setSelectedChar} />}
-            {activeTab === 'hatchery' && <Hatchery />}
-            {!['profile', 'gallery', 'quests', 'leaderboard', 'pass', 'shop', 'hatchery'].includes(activeTab) && (
+            {activeTab === 'incubation' && <Hatchery />}
+            {!['profile', 'gallery', 'quests', 'leaderboard', 'pass', 'shop', 'incubation'].includes(activeTab) && (
               <NotFound onReset={() => setActiveTab('profile')} />
             )}
           </Suspense>
