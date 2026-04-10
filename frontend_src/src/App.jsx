@@ -270,7 +270,7 @@ const AppContent = () => {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="p-5 glass-panel rounded-3xl border border-brand-accent/30 bg-brand-accent/[0.02]"
+                        className="p-4 glass-panel rounded-2xl border border-brand-accent/30 bg-brand-accent/[0.02]"
                       >
                         <div className="text-center mb-5">
                            <p className="text-brand-accent font-black uppercase text-[10px] tracking-widest mb-1">Confirm Purchase?</p>
