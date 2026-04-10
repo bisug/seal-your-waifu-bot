@@ -70,7 +70,7 @@ export const Shop = ({ onCharClick }) => {
       <div className="flex p-1.5 bg-white/5 rounded-2xl mb-8 border border-white/5">
         {[
           { id: 'market', icon: ShoppingBag, label: 'Market' },
-          { id: 'eggs', icon: Timer, label: 'Hatchery' },
+          { id: 'eggs', icon: Timer, label: 'Incubation' },
         ].map(tab => (
           <button
             key={tab.id}

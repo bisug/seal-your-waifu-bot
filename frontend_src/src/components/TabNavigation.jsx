@@ -7,7 +7,7 @@ export const TabNavigation = ({ activeTab, onNavigate }) => {
     { id: 'profile', icon: User, label: 'Profile' },
     { id: 'gallery', icon: Search, label: 'Gallery' },
     { id: 'quests', icon: LayoutGrid, label: 'Quests' },
-    { id: 'hatchery', icon: Egg, label: 'Hatchery' },
+    { id: 'incubation', icon: Egg, label: 'Incubation' },
     { id: 'leaderboard', icon: Trophy, label: 'Rank' },
     { id: 'pass', icon: Star, label: 'Pass' },
     { id: 'shop', icon: ShoppingBag, label: 'Shop' },
@@ -37,7 +37,7 @@ export const TabNavigation = ({ activeTab, onNavigate }) => {
                 initial={false}
                 animate={{
                   scale: isActive ? 1.1 : 1,
-                  color: isActive ? '#00f2ff' : '#64748b',
+                  color: isActive ? '#34d399' : '#64748b',
                 }}
                 className={cn(
                   "p-1 rounded-lg transition-colors",
