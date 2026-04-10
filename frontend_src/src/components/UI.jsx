@@ -262,7 +262,7 @@ export const Modal = ({ character, onClose, actions }) => {
                     animate={{ scale: 1, opacity: 1, y: 0 }}
                     exit={{ scale: 0.9, opacity: 0, y: 100 }}
                     transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                    className="relative w-[92vw] max-w-[380px] max-h-[min(90vh,580px)] bg-brand-midnight sm:border border-white/5 rounded-[2.5rem] overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.5)] flex flex-col"
+                    className="relative w-[95vw] max-w-[400px] max-h-[min(94vh,620px)] bg-brand-midnight sm:border border-white/5 rounded-[2.5rem] overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.5)] flex flex-col"
                 >
                     {/* Floating Close Button */}
                     <button 
@@ -299,8 +299,8 @@ export const Modal = ({ character, onClose, actions }) => {
                                         {character.rarity}
                                     </p>
                                 </motion.div>
-                                <h2 className="text-2xl font-black uppercase italic leading-none text-white tracking-tighter drop-shadow-2xl mb-1">{character.name}</h2>
-                                <p className="text-[8px] font-bold text-slate-500 uppercase tracking-[0.3em]">{character.anime}</p>
+                                <h2 className="text-[clamp(1.25rem,5vw,1.5rem)] font-black uppercase italic leading-none text-white tracking-tighter drop-shadow-2xl mb-1">{character.name}</h2>
+                                <p className="text-[clamp(0.45rem,2vw,0.5rem)] font-bold text-slate-500 uppercase tracking-[0.3em]">{character.anime}</p>
                             </div>
                         </div>
 
@@ -370,13 +370,13 @@ export const Card = memo(({ character, onClick }) => {
 
             <div className="absolute inset-0 bg-gradient-to-t from-brand-midnight via-transparent to-transparent opacity-80" />
             
-            <div className="absolute bottom-4 inset-x-4">
-                <p className="text-[10px] font-black uppercase text-white tracking-widest line-clamp-1 mb-1">
+            <div className="absolute bottom-3 inset-x-3">
+                <p className="text-[clamp(0.55rem,2.5vw,0.65rem)] font-black uppercase text-white tracking-widest line-clamp-1 mb-0.5">
                     {character.name}
                 </p>
-                <div className="flex items-center space-x-1.5 opacity-60">
-                    <div className={cn("w-1.5 h-1.5 rounded-full", isSpecial ? "animate-pulse" : "bg-slate-500", visuals.text.replace('text-', 'bg-'))} />
-                    <span className={cn("text-[8px] font-bold uppercase tracking-widest", visuals.text)}>{character.rarity}</span>
+                <div className="flex items-center space-x-1 opacity-60">
+                    <div className={cn("w-1 h-1 rounded-full", isSpecial ? "animate-pulse" : "bg-slate-500", visuals.text.replace('text-', 'bg-'))} />
+                    <span className={cn("text-[clamp(0.45rem,2vw,0.5rem)] font-bold uppercase tracking-widest", visuals.text)}>{character.rarity}</span>
                 </div>
             </div>
             

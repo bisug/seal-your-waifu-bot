@@ -61,7 +61,7 @@ export const Pass = () => {
              <Sparkles size={16} />
              <span className="text-[10px]">Neural Protocol</span>
            </div>
-           <h1 className="text-2xl tracking-tight">Season 1 Pass</h1>
+           <h1 className="text-[clamp(1.25rem,5vw,1.75rem)] tracking-tight">Season 1 Pass</h1>
         </div>
         <div className="bg-brand-midnight border border-white/5 px-3 py-1.5 rounded-xl">
            <p className="text-[8px] text-slate-500 mb-0.5">MATRIX LEVEL</p>
@@ -85,7 +85,7 @@ export const Pass = () => {
               initial={{ opacity: 0, x: 20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="flex items-center space-x-8 group"
+              className="flex items-center space-x-3 group"
             >
               <div className={`relative z-10 w-12 h-12 rounded-2xl flex items-center justify-center border-2 transition-all ${
                 isReached ? 'border-brand-neon bg-brand-neon/10 text-brand-neon shadow-lg shadow-brand-neon/20' : 'border-white/10 bg-white/5 text-slate-700'
