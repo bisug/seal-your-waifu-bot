@@ -8,7 +8,7 @@ from Grabber.core.utils import html_escape
 from Grabber import app
 from Grabber import collection, user_collection
 from Grabber.core.user import get_user_data, add_char_to_user, update_user
-from Grabber.core.game import update_user_balance
+from Grabber.core.balance import update_user_balance
 
 
 start_messages = [

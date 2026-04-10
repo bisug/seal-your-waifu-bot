@@ -7,7 +7,7 @@ from pyrogram.enums import ParseMode
 from Grabber.core.utils import html_escape, check_member_requirement
 from Grabber import app, game_bot
 from Grabber import LOGGER, quiz_questions_collection
-from Grabber.core.game import update_user_balance, get_user_balance
+from Grabber.core.balance import update_user_balance, get_user_balance
 
 
 QUIZ_API_URL = "https://opentdb.com/api.php?amount=1&category=31"

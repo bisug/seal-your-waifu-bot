@@ -9,8 +9,9 @@ loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
 
 from pyrogram import idle
-from Grabber import app, game_bot, LOGGER, start_bots, stop_bots
-import Grabber.core.user_sync  # Register global message sync handlers
+from Grabber import app, game_bot, LOGGER
+from Grabber.runner import start_bots, stop_bots
+import Grabber.core.sync_handler  # Register global message sync handlers
 
 
 
