@@ -27,30 +27,30 @@ const PetCard = ({ pet, isActive, onSelect }) => {
   return (
     <button 
       onClick={onSelect}
-      className={`glass-panel p-4 rounded-3xl border text-left relative transition-all active:scale-95 ${
+      className={`glass-panel p-3 rounded-2xl border text-left relative transition-all active:scale-95 ${
         isActive ? 'border-brand-neon/40 ring-1 ring-brand-neon/20 shadow-lg shadow-brand-neon/5' : 'border-white/5 opacity-60 grayscale hover:opacity-100'
       }`}
     >
-      <div className="flex justify-between items-start mb-4">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isActive ? 'bg-brand-neon/10 text-brand-neon' : 'bg-slate-800 text-slate-500'}`}>
-          <Icon size={20} />
+      <div className="flex justify-between items-start mb-2">
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isActive ? 'bg-brand-neon/10 text-brand-neon' : 'bg-slate-800 text-slate-500'}`}>
+          <Icon size={16} />
         </div>
         {isActive && (
-          <div className="bg-brand-neon text-brand-midnight text-[8px] font-black uppercase px-1.5 py-0.5 rounded tracking-tighter shadow-lg">
+          <div className="bg-brand-neon text-brand-midnight text-[7px] font-black uppercase px-1 py-0.5 rounded tracking-tighter shadow-lg">
             Active
           </div>
         )}
       </div>
 
-      <h4 className="text-[13px] font-black uppercase tracking-tight text-white mb-0.5">{pet.name}</h4>
-      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-3">{pet.type || 'Support Pet'}</p>
+      <h4 className="text-[11px] font-black uppercase tracking-tight text-white mb-0">{pet.name}</h4>
+      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-2">{pet.type || 'Support Pet'}</p>
       
-      <div className="pt-3 border-t border-white/5 space-y-1">
-         <div className="flex items-center space-x-1.5 text-brand-neon">
-            <Icon size={10} />
-            <span className="text-[9px] font-black uppercase tracking-widest">{pet.ability || 'Standard'}</span>
+      <div className="pt-2 border-t border-white/5 space-y-0.5">
+         <div className="flex items-center space-x-1 text-brand-neon mb-0.5">
+            <Icon size={8} />
+            <span className="text-[8px] font-black uppercase tracking-widest">{pet.ability || 'Standard'}</span>
          </div>
-         <p className="text-[8px] leading-tight text-slate-500 font-medium line-clamp-2">
+         <p className="text-[8px] leading-tight text-slate-500 font-medium line-clamp-1">
             {pet.desc || 'A loyal support pet.'}
          </p>
       </div>
