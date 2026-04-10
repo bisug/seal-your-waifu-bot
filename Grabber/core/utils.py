@@ -17,6 +17,13 @@ def normalize_user_id(uid):
     except (ValueError, TypeError):
         return 0
 
+def get_user_id_query(user_id):
+    """
+    Returns a MongoDB query mapping for user IDs, resolving type inconsistencies
+    between integers and strings stored dynamically in MongoDB collections.
+    """
+    uid_int = normalize_user_id(user_id)
+    return {"id": {"$in": [uid_int, str(uid_int)]}}
 
 def html_escape(text: str) -> str:
     """Escapes special characters for Telegram HTML."""
