@@ -20,6 +20,7 @@ import json
 import time
 from typing import Any, Optional, List
 from Grabber.database import r as _redis
+r = _redis
 from Grabber import LOGGER
 
 # ── TTLs (seconds) optimized for 30MB ──────────────────────────
