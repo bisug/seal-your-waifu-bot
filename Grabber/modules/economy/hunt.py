@@ -8,7 +8,7 @@ from pyrogram import filters, types, enums, errors
 from pyrogram.enums import ParseMode
 from Grabber.core.utils import html_escape
 from Grabber import user_collection, collection, app, WEB_APP_URL
-from Grabber.core.user import add_pet_xp
+from Grabber.core.user import add_pet_xp, get_user_filter
 from Grabber.core.progression import add_xp
 from Grabber.modules.progression.quests import update_quest_progress
 from Grabber.modules.progression.achievements import check_achievements
@@ -133,13 +133,14 @@ async def hunt_cmd(_, message: types.Message):
 
         # Single atomic write: balance + all eggs at once
         await user_collection.update_one(
-            {"id": user_id},
+            get_user_filter(user_id),
             {
                 "$inc": {"balance": shards},
                 "$push": {"eggs": {"$each": eggs_to_push}}
             },
             upsert=True
         )
+
         await invalidate_user_cache(user_id)
 
 
@@ -154,7 +155,8 @@ async def hunt_cmd(_, message: types.Message):
         )
     else:
         # No egg — single write for shards only
-        await user_collection.update_one({"id": user_id}, {"$inc": {"balance": shards}}, upsert=True)
+        await user_collection.update_one(get_user_filter(user_id), {"$inc": {"balance": shards}}, upsert=True)
+
         await invalidate_user_cache(user_id)
         await msg.edit_text(
             f"🌲 <b>Hunt Complete!</b>\n\n"

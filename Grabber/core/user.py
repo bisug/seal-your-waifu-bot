@@ -1,6 +1,15 @@
 from Grabber.database import user_collection
 from Grabber.core.cache import invalidate_user_cache, get_cached_user, set_cached_user
-from typing import Optional
+from typing import Optional, Any
+
+def get_user_filter(user_id: Any) -> dict:
+    """Returns a MongoDB filter that matches both integer and string IDs."""
+    try:
+        uid_int = int(user_id)
+        return {"id": {"$in": [uid_int, str(uid_int)]}}
+    except (ValueError, TypeError):
+        return {"id": user_id}
+
 
 async def get_user_data(user_id: int) -> Optional[dict]:
     """
@@ -10,39 +19,45 @@ async def get_user_data(user_id: int) -> Optional[dict]:
     cached = await get_cached_user(user_id)
     if cached is not None:
         return cached
-    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
+    user = await user_collection.find_one(get_user_filter(user_id))
     if user:
         await set_cached_user(user_id, user)
     return user
+
 
 async def update_user(user_id: int, update_query: dict):
     """
     Apply a MongoDB update query to a user's document and invalidate cache.
     """
-    await user_collection.update_one({"id": {"$in": [user_id, str(user_id)]}}, update_query, upsert=True)
+    await user_collection.update_one(get_user_filter(user_id), update_query, upsert=True)
     await invalidate_user_cache(user_id)
+
 
 async def add_char_to_user(user_id: int, character: dict):
     """
     Add a character object to the user's collection and invalidate cache.
     """
     await user_collection.update_one(
-        {"id": {"$in": [user_id, str(user_id)]}},
+        get_user_filter(user_id),
         {"$push": {"characters": character}, "$inc": {"char_count": 1}},
         upsert=True
     )
     await invalidate_user_cache(user_id)
+
 
 async def remove_char_from_user(user_id: int, char_id: str) -> bool:
     """
     Remove a character from the user's collection by its ID.
     Returns True if the character was found and removed.
     """
+    filt = get_user_filter(user_id)
+    filt["characters.id"] = char_id
     res = await user_collection.update_one(
-        {"id": {"$in": [user_id, str(user_id)]}, "characters.id": char_id},
+        filt,
         {"$pull": {"characters": {"id": char_id}}, "$inc": {"char_count": -1}}
     )
     return res.modified_count > 0
+
 
 async def get_active_pet(user_id: int) -> dict:
     """
