@@ -28,7 +28,7 @@ export const Gallery = ({ onCharClick }) => {
     setLoading(true);
     try {
       const currentPage = isNew ? 1 : page;
-      const data = await apiFetch(`/gallery?page=${currentPage}&limit=24&search=${search}&rarity=${rarity}`);
+      const data = await apiFetch(`/gallery?page=${currentPage}&limit=24&search=${encodeURIComponent(search)}&rarity=${encodeURIComponent(rarity)}`);
       
       if (isNew) {
         setItems(data.items);
@@ -36,7 +36,7 @@ export const Gallery = ({ onCharClick }) => {
         setItems(prev => [...prev, ...data.items]);
       }
       
-      setHasMore(data.items.length === 24);
+      setHasMore((isNew ? data.items.length : items.length + data.items.length) < data.total);
     } catch (err) {
       console.error('Gallery fetch error:', err);
     } finally {

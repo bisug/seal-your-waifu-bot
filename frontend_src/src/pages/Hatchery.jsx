@@ -4,6 +4,7 @@ import { useUser } from '../context/UserContext';
 import { apiFetch } from '../api';
 import { toast } from 'react-hot-toast';
 import { Card, ProgressBar, Skeleton } from '../components/UI';
+import { useEggActions } from '../hooks/useEggActions';
 import { Egg, Zap, Clock, ChevronRight, Sparkles, Shield, Flame, Wind, Loader2 } from 'lucide-react';
 import { formatNumber } from '../utils';
 
@@ -147,40 +148,16 @@ const EmptyState = ({ icon: Icon, message }) => (
 );
 
 export const Hatchery = () => {
-  const { user, loading: userLoading, refreshUser } = useUser();
-  const [loading, setLoading] = useState(false);
+  const { user, loading: userLoading } = useUser();
+  const { incubateEgg, hatchEgg, loading, hatchingResult, setHatchingResult } = useEggActions();
   const [activeTab, setActiveTab] = useState('eggs'); // 'eggs' or 'pets'
-  const [hatchingResult, setHatchingResult] = useState(null);
 
   const handleIncubate = async (eggId) => {
-    setLoading(true);
-    try {
-      await apiFetch(`/eggs/incubate/${eggId}`, { method: 'POST' });
-      toast.success('Incubation Matrix Active');
-      await refreshUser();
-    } catch (err) {
-      toast.error(err.message || 'Calibration failure');
-    } finally {
-      setLoading(false);
-    }
+    await incubateEgg(eggId);
   };
 
   const handleHatch = async (eggId) => {
-    setLoading(true);
-    try {
-      const res = await apiFetch(`/eggs/hatch/${eggId}`, { method: 'POST' });
-      if (res.status === 'success') {
-        setHatchingResult(res.character);
-        toast.success('Lifeform Detected');
-      } else {
-        toast.error(res.message || 'Incubation Failure');
-      }
-      await refreshUser();
-    } catch (err) {
-      toast.error(err.message || 'Hatch protocol interrupted');
-    } finally {
-      setLoading(false);
-    }
+    await hatchEgg(eggId);
   };
 
   // Audit: Scroll Lock for hatching result

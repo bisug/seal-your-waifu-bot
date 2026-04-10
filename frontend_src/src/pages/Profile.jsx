@@ -31,7 +31,7 @@ export const Profile = ({ onCharClick }) => {
     try {
       const currentPage = isNew ? 1 : page;
       // Note: Backend /harem already handles grouping/counting duplicates
-      const data = await apiFetch(`/harem?page=${currentPage}&limit=24&search=${search}`);
+      const data = await apiFetch(`/harem?page=${currentPage}&limit=24&search=${encodeURIComponent(search)}`);
       
       if (isNew) {
         setItems(data.items);
@@ -39,7 +39,7 @@ export const Profile = ({ onCharClick }) => {
         setItems(prev => [...prev, ...data.items]);
       }
       
-      setHasMore(data.items.length === 24);
+      setHasMore((isNew ? data.items.length : items.length + data.items.length) < data.total);
     } catch (err) {
       console.error('Harem fetch error:', err);
     } finally {

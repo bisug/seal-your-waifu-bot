@@ -18,10 +18,14 @@ export const Quests = () => {
   const claimQuest = async (questId) => {
     setClaiming(questId);
     try {
+      const allQuests = [...(quests?.daily || []), ...(quests?.weekly || [])];
+      const questInfo = allQuests.find(q => q.id === questId);
+      const rewardXp = questInfo?.reward_xp || 0;
+      
       const res = await apiFetch(`/quests/claim/${questId}`, { method: 'POST' });
       if (res.success) {
         window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
-        toast.success(`Quantum Yield: +${claimingQuestReward} XP`);
+        toast.success(`Quantum Yield: +${rewardXp} XP`);
         fetchQuests();
         refreshUser();
       }
@@ -39,12 +43,6 @@ export const Quests = () => {
     const all = [...daily, ...weekly];
     return all.find(q => q.progress >= q.target && !q.claimed);
   }, [quests]);
-
-  const claimingQuestReward = useMemo(() => {
-    if (!claiming) return 0;
-    const all = [...(quests?.daily || []), ...(quests?.weekly || [])];
-    return all.find(q => q.id === claiming) ?.reward_xp || 0;
-  }, [claiming, quests]);
 
   const QuestItem = ({ quest }) => {
     const isCompleted = quest.progress >= quest.target;

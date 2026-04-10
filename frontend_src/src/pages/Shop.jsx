@@ -7,46 +7,16 @@ import { useUser } from '../context/UserContext';
 import { toast } from 'react-hot-toast';
 import { formatNumber } from '../utils';
 
+import { useEggActions } from '../hooks/useEggActions';
+
 export const Shop = ({ onCharClick }) => {
   const { user, refreshUser } = useUser();
   const [activeTab, setActiveTab] = useState('market');
-  const [hatching, setHatching] = useState(false);
-  const [newChar, setNewChar] = useState(null);
+  const { incubateEgg, hatchEgg, loading: hatching, hatchingResult: newChar, setHatchingResult: setNewChar } = useEggActions();
+
   const handleTabChange = (tabId) => {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
     setActiveTab(tabId);
-  };
-
-  const incubateEgg = async (eggId) => {
-    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
-    try {
-      await apiFetch(`/eggs/incubate/${eggId}`, { method: 'POST' });
-      refreshUser();
-    } catch (err) {
-      window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('error');
-      window.Telegram?.WebApp?.showAlert(err.message);
-    }
-  };
-
-  const hatchEgg = async (eggId) => {
-    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('heavy');
-    setHatching(true);
-    try {
-      const res = await apiFetch(`/eggs/hatch/${eggId}`, { method: 'POST' });
-      if (res.status === 'success') {
-         window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
-         setNewChar(res.character);
-         refreshUser();
-      } else {
-         window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('error');
-         window.Telegram?.WebApp?.showAlert(res.message);
-      }
-    } catch (err) {
-      window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('error');
-      window.Telegram?.WebApp?.showAlert(err.message);
-    } finally {
-      setHatching(false);
-    }
   };
 
   const { data: marketItems, loading, execute: fetchShopData } = useApi('/shop/characters', { 
@@ -54,7 +24,16 @@ export const Shop = ({ onCharClick }) => {
     manual: activeTab !== 'market'
   }, [activeTab]);
 
-  // Handle purchases via global event dispatched by Modal
+  // Use refs for callbacks to ensure the event listener always uses the latest functions
+  // without needing to re-bind the listener (avoiding memory leaks or missed events)
+  const fetchShopDataRef = React.useRef(fetchShopData);
+  const refreshUserRef = React.useRef(refreshUser);
+
+  useEffect(() => {
+    fetchShopDataRef.current = fetchShopData;
+    refreshUserRef.current = refreshUser;
+  }, [fetchShopData, refreshUser]);
+
   useEffect(() => {
     const handlePurchase = async (e) => {
       const { charId } = e.detail;
@@ -63,8 +42,8 @@ export const Shop = ({ onCharClick }) => {
         if (res.status === 'success') {
           window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
           toast.success('Asset integrated successfully');
-          await refreshUser();
-          await fetchShopData();
+          await refreshUserRef.current();
+          await fetchShopDataRef.current();
         }
       } catch (err) {
         toast.error(err.message || 'Transaction failed');
@@ -73,7 +52,7 @@ export const Shop = ({ onCharClick }) => {
 
     window.addEventListener('shop-buy-character', handlePurchase);
     return () => window.removeEventListener('shop-buy-character', handlePurchase);
-  }, [fetchShopData]);
+  }, []); // Bind once on mount
 
   return (
     <div className="pb-8 pt-6 px-4">

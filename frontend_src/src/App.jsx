@@ -221,19 +221,29 @@ const AppContent = () => {
             actions={
               activeTab === 'profile' && selectedChar.count > 1 ? (
                 <button 
-                  onClick={async () => {
-                    try {
-                        const confirm = window.confirm(`Recycle 1 x ${selectedChar.name} for Zenith?`);
-                        if (!confirm) return;
-                        await apiFetch('/recycle', { 
-                            method: 'POST', 
-                            body: JSON.stringify([selectedChar.id]) 
-                        });
-                        toast.success('Nexus Fusion Complete');
-                        setSelectedChar(null);
-                        window.dispatchEvent(new CustomEvent('user-data-refresh'));
-                    } catch (err) {
-                        toast.error(err.message || 'Fusion failed');
+                  onClick={() => {
+                    const tg = window.Telegram?.WebApp;
+                    const msg = `Recycle 1 x ${selectedChar.name} for Zenith?`;
+                    
+                    const callback = async (confirmed) => {
+                      if (!confirmed) return;
+                      try {
+                          await apiFetch('/recycle', { 
+                              method: 'POST', 
+                              body: JSON.stringify([selectedChar.id]) 
+                          });
+                          toast.success('Nexus Fusion Complete');
+                          setSelectedChar(null);
+                          window.dispatchEvent(new CustomEvent('user-data-refresh'));
+                      } catch (err) {
+                          toast.error(err.message || 'Fusion failed');
+                      }
+                    };
+
+                    if (tg?.showConfirm) {
+                      tg.showConfirm(msg, callback);
+                    } else if (window.confirm(msg)) {
+                      callback(true);
                     }
                   }}
                   className="w-full py-3.5 rounded-xl bg-brand-accent/10 border border-brand-accent/20 text-brand-accent text-[10px] font-black uppercase tracking-widest hover:bg-brand-accent/20 transition-all flex items-center justify-center space-x-2 mb-4"
@@ -255,10 +265,20 @@ const AppContent = () => {
                      </div>
                      <button 
                         onClick={() => {
-                            const confirm = window.confirm(`Authorize purchase of ${selectedChar.name}?`);
-                            if (confirm) {
-                                window.dispatchEvent(new CustomEvent('shop-buy-character', { detail: { charId: String(selectedChar.id) } }));
-                                setSelectedChar(null);
+                            const tg = window.Telegram?.WebApp;
+                            const msg = `Authorize purchase of ${selectedChar.name}?`;
+                            
+                            const callback = (confirmed) => {
+                                if (confirmed) {
+                                    window.dispatchEvent(new CustomEvent('shop-buy-character', { detail: { charId: String(selectedChar.id) } }));
+                                    setSelectedChar(null);
+                                }
+                            };
+
+                            if (tg?.showConfirm) {
+                                tg.showConfirm(msg, callback);
+                            } else if (window.confirm(msg)) {
+                                callback(true);
                             }
                         }}
                         className="px-6 py-3 rounded-2xl bg-brand-neon text-brand-midnight text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-brand-neon/30 active:scale-95 transition-all"
