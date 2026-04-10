@@ -20,14 +20,17 @@ from Grabber.database import user_collection
 _lb_rebuild_in_progress = False
 
 async def sync_leaderboard_periodic():
-    """Background task to keep the Redis Top 1000 in sync with Mongo."""
+    """Background task to keep the Redis Top 1000 in sync with Mongo for all metrics."""
     global _lb_rebuild_in_progress
     await asyncio.sleep(60) # Delay on startup to allow app to settle
+    metrics = ["level", "harem", "shards", "zenith", "guesses"]
     while True:
         if not _lb_rebuild_in_progress:
             _lb_rebuild_in_progress = True
             try:
-                await rebuild_leaderboard(user_collection)
+                for metric in metrics:
+                    await rebuild_leaderboard(user_collection, metric=metric)
+                    await asyncio.sleep(2) # Smooth out IO bursts
             except Exception as e:
                 logging.error(f"Error in periodic leaderboard sync: {e}")
             finally:

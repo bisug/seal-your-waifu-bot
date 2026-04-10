@@ -5,6 +5,7 @@ from pyrogram import filters, types, errors, enums
 from pyrogram.enums import ButtonStyle, ParseMode
 from Grabber.core.utils import html_escape
 from Grabber import app, collection, user_collection, sudo_users, OWNER_ID, LOGGER, WEB_APP_URL
+from Grabber.core.user import get_user_filter
 from Grabber.database.models import Character, User
 from config import config
 from Grabber.core.sessions import create_session, get_session
@@ -144,8 +145,9 @@ async def send_shop_message(message, user_id):
     char = chars[page]
     price = RARITY_PRICES.get(char.rarity, 5)
 
-    user_raw = await user_collection.find_one({"id": user_id})
+    user_raw = await user_collection.find_one(get_user_filter(user_id))
     user = User(**user_raw) if user_raw else None
+
     zenith_balance = user.zenith if user else 0
 
     sold_count = getattr(char, "sold_count", 0)
@@ -267,8 +269,9 @@ async def buy_character(_, query: types.CallbackQuery):
     if owner_id and user_id != owner_id:
         return await query.answer("❌ This is not your purchase!", show_alert=True)
 
-    user_raw = await user_collection.find_one({"id": user_id})
+    user_raw = await user_collection.find_one(get_user_filter(user_id))
     user_data = User(**user_raw) if user_raw else None
+
     owned = user_data.characters if user_data else []
 
     char_raw = await collection.find_one({"id": char_id})
@@ -298,8 +301,11 @@ async def buy_character(_, query: types.CallbackQuery):
         await query.message.edit_caption(f"❌ <b>SOLD OUT</b>\n\nSomeone bought the last copy of {html_escape(char.name)}!", parse_mode=ParseMode.HTML)
         return
 
+    user_filt = get_user_filter(user_id)
+    user_filt["zenith"] = {"$gte": price}
     user_update = await user_collection.update_one(
-        {"id": user_id, "zenith": {"$gte": price}},
+        user_filt,
+
         {
             "$inc": {"zenith": -price, "char_count": 1},
             "$push": {"characters": {"id": char.id, "name": char.name, "anime": char.anime, "rarity": char.rarity, "img_url": char.img_url}}
@@ -333,11 +339,13 @@ async def buy_level_cmd(_, message: types.Message):
         
     cost = levels * 5000 # 5000 shards per level
     
-    user = await user_collection.find_one({"id": user_id})
+    user = await user_collection.find_one(get_user_filter(user_id))
+
     if not user or user.get("balance", 0) < cost:
         return await message.reply_text(f"❌ You need <b>{cost:,}</b> ⬪ Shards to buy {levels} levels.", parse_mode=ParseMode.HTML)
         
-    await user_collection.update_one({"id": user_id}, {"$inc": {"balance": -cost}})
+    await user_collection.update_one(get_user_filter(user_id), {"$inc": {"balance": -cost}})
+
     
     from Grabber.core.progression import add_xp
     await add_xp(user_id, levels * 100, "shop_buylevel")

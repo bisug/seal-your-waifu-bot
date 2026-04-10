@@ -174,23 +174,10 @@ async def get_leaderboard(
     metric: str = Query("harem", pattern="^(harem|shards|zenith|level|guesses)$"),
     limit: int = Query(50, ge=1, le=100)
 ):
-    cache_key = f"leaderboard:{metric}:{limit}"
-    cached = await r.get(cache_key) if r else None
-    if cached:
-        return json.loads(cached)
-        
-    from Grabber.modules.info.leaderboard import get_top_users
+    from Grabber.modules.info.leaderboard import get_top_users, METRICS
     users = await get_top_users(metric, limit)
     
-    metric_map = {
-        "harem": "char_count",
-        "shards": "balance",
-        "zenith": "zenith",
-        "level": "xp",
-        "guesses": "guess_count"
-    }
-    field = metric_map.get(metric, "xp")
-    
+    field = METRICS[metric]["field"]
     response_data = []
     for i, u in enumerate(users, 1):
         processed = {
@@ -204,8 +191,6 @@ async def get_leaderboard(
             processed["level"] = get_level_from_xp(processed["value"])
         response_data.append(processed)
         
-    if r:
-        await r.setex(cache_key, 300, json.dumps(response_data))
     return response_data
 
 @router.get("/stats")
