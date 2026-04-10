@@ -125,12 +125,14 @@ async def get_me(user: dict = Depends(get_current_user_data)):
     # Handle Eggs
     eggs = user.get("eggs", [])
     processed_eggs = []
-    for egg in eggs:
+    for idx, egg in enumerate(eggs):
         if isinstance(egg, str):
             # Resolve numeric or string tier to a cleaner name for the WebApp
             tier_key = TIER_MAP.get(egg, egg)
+            # FIX: Include idx to prevent ID collision when multiple legacy string-type
+            # eggs are migrated in the same second (datetime.now() has second precision).
             processed_eggs.append({
-                "id": f"mig_{int(datetime.now().timestamp())}",
+                "id": f"mig_{int(datetime.now().timestamp())}_{idx}",
                 "tier": tier_key,
                 "name": f"{tier_key.capitalize()} Egg",
                 "status": "fresh",

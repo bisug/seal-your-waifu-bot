@@ -224,9 +224,6 @@ export const useApi = (endpoint, options = {}, deps = []) => {
 /**
  * Cinematic Detail Modal
  */
-/**
- * Cinematic Detail Modal
- */
 export const Modal = ({ character, onClose, actions }) => {
     useEffect(() => {
         if (character) {
