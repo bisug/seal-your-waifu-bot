@@ -72,8 +72,13 @@ const AppContent = () => {
     return 'profile';
   };
 
-  const [activeTab, setActiveTab] = useState(getInitialTab());
   const [selectedChar, setSelectedChar] = useState(null);
+  const [purchaseStage, setPurchaseStage] = useState('idle'); // 'idle', 'confirm', 'buying'
+
+  // Reset stage when modal closes or changes
+  useEffect(() => {
+    if (!selectedChar) setPurchaseStage('idle');
+  }, [selectedChar]);
 
   // Native Telegram Integration: Back Button & Haptics
   useEffect(() => {
@@ -229,40 +234,87 @@ const AppContent = () => {
                     <span>Sell Duplicate</span>
                 </button>
               ) : activeTab === 'shop' && !selectedChar.owned ? (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-brand-neon/5 border border-brand-neon/20 rounded-2xl">
-                     <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 rounded-full bg-brand-neon/20 flex items-center justify-center text-brand-neon shadow-lg shadow-brand-neon/20">
-                           <Zap size={20} />
+                <div className="w-full space-y-4">
+                  <AnimatePresence mode="wait">
+                    {purchaseStage === 'idle' ? (
+                      <motion.div 
+                        key="idle" 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="flex items-center justify-between p-4 bg-brand-neon/5 border border-brand-neon/20 rounded-2xl"
+                      >
+                         <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 rounded-full bg-brand-neon/20 flex items-center justify-center text-brand-neon shadow-lg shadow-brand-neon/20">
+                               <Zap size={20} />
+                            </div>
+                            <div>
+                               <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Price</p>
+                               <p className="text-sm font-black text-white">⧫ {formatNumber(selectedChar.zenith_price || 5)}</p>
+                            </div>
+                         </div>
+                         <button 
+                            onClick={() => {
+                                window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
+                                setPurchaseStage('confirm');
+                            }}
+                            className="px-8 py-3 rounded-2xl bg-brand-neon text-brand-midnight text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-brand-neon/30 active:scale-95 transition-all"
+                         >
+                            BUY
+                         </button>
+                      </motion.div>
+                    ) : purchaseStage === 'confirm' || purchaseStage === 'buying' ? (
+                      <motion.div 
+                        key="confirm"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="p-5 glass-panel rounded-3xl border border-brand-accent/30 bg-brand-accent/[0.02]"
+                      >
+                        <div className="text-center mb-5">
+                           <p className="text-brand-accent font-black uppercase text-[10px] tracking-widest mb-1">Confirm Purchase?</p>
+                           <p className="text-slate-500 text-[9px] uppercase font-bold">Zenith Balance: ⧫ {formatNumber(user?.stats?.zenith)}</p>
                         </div>
-                        <div>
-                           <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Price</p>
-                           <p className="text-sm font-black text-white">⧫ {formatNumber(selectedChar.zenith_price || 5)}</p>
+                        
+                        <div className="flex space-x-3">
+                           <button 
+                              onClick={() => setPurchaseStage('idle')}
+                              disabled={purchaseStage === 'buying'}
+                              className="flex-1 py-3.5 rounded-xl border border-white/10 text-slate-500 text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all"
+                           >
+                              CANCEL
+                           </button>
+                           <button 
+                              onClick={async () => {
+                                 setPurchaseStage('buying');
+                                 try {
+                                     const res = await apiFetch(`/shop/buy/character/${selectedChar.id}`, { method: 'POST' });
+                                     if (res.status === 'success') {
+                                         window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
+                                         toast.success('Character added to harem');
+                                         setSelectedChar(null);
+                                         // Trigger refresh events
+                                         window.dispatchEvent(new CustomEvent('user-data-refresh'));
+                                         window.dispatchEvent(new CustomEvent('shop-data-refresh'));
+                                     }
+                                 } catch (err) {
+                                     toast.error(err.message || 'Transaction failed');
+                                     setPurchaseStage('confirm');
+                                 }
+                              }}
+                              disabled={purchaseStage === 'buying'}
+                              className="flex-[1.5] py-3.5 rounded-xl bg-brand-accent text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-brand-accent/20 active:scale-95 transition-all flex items-center justify-center"
+                           >
+                              {purchaseStage === 'buying' ? (
+                                <Loader2 size={16} className="animate-spin" />
+                              ) : (
+                                'CONFIRM PURCHASE'
+                              )}
+                           </button>
                         </div>
-                     </div>
-                     <button 
-                        onClick={() => {
-                            const tg = window.Telegram?.WebApp;
-                            const msg = `Authorize purchase of ${selectedChar.name}?`;
-                            
-                            const callback = (confirmed) => {
-                                if (confirmed) {
-                                    window.dispatchEvent(new CustomEvent('shop-buy-character', { detail: { charId: String(selectedChar.id) } }));
-                                    setSelectedChar(null);
-                                }
-                            };
-
-                            if (tg?.showConfirm) {
-                                tg.showConfirm(msg, callback);
-                            } else if (window.confirm(msg)) {
-                                callback(true);
-                            }
-                        }}
-                        className="px-6 py-3 rounded-2xl bg-brand-neon text-brand-midnight text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-brand-neon/30 active:scale-95 transition-all"
-                     >
-                        BUY
-                     </button>
-                  </div>
+                      </motion.div>
+                    ) : null}
+                  </AnimatePresence>
                 </div>
               ) : null
             }

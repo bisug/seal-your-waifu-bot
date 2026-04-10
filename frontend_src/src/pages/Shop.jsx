@@ -50,8 +50,8 @@ export const Shop = ({ onCharClick }) => {
       }
     };
 
-    window.addEventListener('shop-buy-character', handlePurchase);
-    return () => window.removeEventListener('shop-buy-character', handlePurchase);
+    window.addEventListener('shop-data-refresh', fetchShopDataRef.current);
+    return () => window.removeEventListener('shop-data-refresh', fetchShopDataRef.current);
   }, []); // Bind once on mount
 
   return (
