@@ -1,6 +1,11 @@
 import re
 import html
 import logging
+from datetime import datetime, timezone
+
+def get_now_utc() -> datetime:
+    """Returns the current aware UTC datetime."""
+    return datetime.now(timezone.utc)
 
 LOGGER = logging.getLogger(__name__)
 

@@ -6,7 +6,8 @@ from Grabber.webapp.schemas import QuestsResponse
 from Grabber.modules.progression.quests import get_user_quests, QUEST_POOL, WEEKLY_POOL, add_xp
 from Grabber.core.constants import EGG_TIERS
 from Grabber.modules.progression.pet import DEFAULT_PET
-from Grabber.core.utils import normalize_user_id
+from Grabber.core.utils import normalize_user_id, get_now_utc
+from Grabber.core.cache import sync_user_to_redis
 
 router = APIRouter()
 
@@ -59,6 +60,7 @@ async def claim_quest(quest_id: str, user_id: int = Depends(get_current_user)):
         raise HTTPException(status_code=400, detail="Already claimed or processing")
         
     await add_xp(user_id, info["reward_xp"], f"quest_{quest_id}")
+    await sync_user_to_redis(user_id)
     
     return {"success": True, "reward_xp": info["reward_xp"]}
 
@@ -103,7 +105,7 @@ async def incubate_egg(egg_id: str, user: dict = Depends(get_current_user_data))
         if active_pet.get("ability") == "Caregiver":
             wait_min = int(wait_min * 0.5)
             
-        ready_time = datetime.now() + timedelta(minutes=wait_min)
+        ready_time = get_now_utc() + timedelta(minutes=wait_min)
         
         q = get_user_id_query(uid_int)
         q["eggs.id"] = egg_id
@@ -138,7 +140,7 @@ async def hatch_egg(egg_id: str, user: dict = Depends(get_current_user_data)):
              raise HTTPException(status_code=400, detail="Egg not ready or not found")
              
         h_time = egg.get("hatch_time")
-        if h_time and datetime.now() < h_time:
+        if h_time and get_now_utc().replace(tzinfo=None) < h_time.replace(tzinfo=None):
             raise HTTPException(status_code=400, detail="Egg still incubating")
 
         success, result = await process_egg_hatch(uid_int, egg)
