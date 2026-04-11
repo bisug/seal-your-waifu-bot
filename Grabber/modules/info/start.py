@@ -13,21 +13,16 @@ from Grabber.core.user import get_user_filter, get_user_id
 LOGGER.info("Loading Start module...")
 
 START_TEXT = """
-<b>✨ Welcome to {bot_name}! ✨</b>
+<b>✨ {bot_name}</b>
 
-<b>Hey {first_name}!</b> 👋
-I’m your ultimate companion for <b>Anime Character Collecting & PvP Battles!</b>
+<blockquote>“In the world of anime, some seek power, others seek glory. But a true <b>Collector</b> seeks them all.”</blockquote>
 
-━━━━━━━━━━━━━━━━━━━━━━━━
-<b>🔥 What can I do?</b>
-🌸 <b>Catch</b> thousands of anime characters.
-⚔️ <b>Battle</b> friends in strategic duels.
-🐣 <b>Hatch</b> eggs & raise powerful pets.
-🎫 <b>Rank Up</b> & unlock exclusive rewards.
-🏰 <b>Build</b> your Harem & dominate the leaderboard!
-━━━━━━━━━━━━━━━━━━━━━━━━
+<b>Greetings, Collector {first_name}!</b> 👋
+I am your ultimate companion for character collecting and strategic duels.
 
-<i>Add me to your group & start your adventure!</i> 🚀
+🌸 <b>Catch</b> • ⚔️ <b>Duel</b> • 🐣 <b>Hatch</b> • 🏰 <b>Collect</b>
+
+<i>Add me to a group to begin your journey!</i> 🚀
 """
 
 

@@ -141,7 +141,8 @@ async def trade_callback_handler(_, query: types.CallbackQuery):
     await update_quest_progress(receiver_id, "trader", 1)
 
     await query.message.edit_text(
-        f"✅ Trade successful between <code>{sender_id}</code> and <code>{receiver_id}</code>!",
+        f"✅ <b>Trade successful!</b>\n"
+        f"🤝 <a href=\"tg://user?id={sender_id}\">Collector {sender_id}</a> ↔️ <a href=\"tg://user?id={receiver_id}\">Collector {receiver_id}</a>",
         parse_mode=ParseMode.HTML
     )
     LOGGER.info(f"Trade complete: {sender_id} <-> {receiver_id}")
