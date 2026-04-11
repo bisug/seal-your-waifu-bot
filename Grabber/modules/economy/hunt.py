@@ -27,6 +27,9 @@ TIER_MAP = {"1": "common", "2": "gold", "3": "void", "4": "gold", "5": "void"}
 
 def load_handlers(bot):
     """Explicitly register handlers to the bot instance. Resolves multi-bot ghosting."""
+    if bot.name != "MainBot":
+        return
+        
     # Hunt command
     bot.add_handler(MessageHandler(hunt_cmd, filters.command("hunt")), group=0)
     # Eggs/Inventory command
