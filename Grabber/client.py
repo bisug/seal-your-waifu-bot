@@ -214,6 +214,12 @@ class SealClient(Client):
 
         LOGGER.info(f"SealClient started as {me.first_name} (@{me.username}).")
 
+        # DEBUG: Direct handler to verify dispatcher health
+        @self.on_message(filters.command("debug_hunt"), group=-100)
+        async def direct_debug_hunt(c, m):
+            LOGGER.info(f"DEBUG_HUNT hit by {m.from_user.id if m.from_user else 'unknown'}")
+            await m.reply_text("✅ <b>Direct Debug Hunt: Dispatcher is Alive!</b>", parse_mode=ParseMode.HTML)
+
     async def _set_commands_internal(self):
         try:
             from Grabber.modules.info.start import HELP_DATA
