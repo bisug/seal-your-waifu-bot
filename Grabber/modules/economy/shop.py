@@ -122,9 +122,6 @@ async def hub_callback_handler(_, query: types.CallbackQuery):
     elif choice == "pass":
         import Grabber.modules.progression.battlepass as pass_module
         await pass_module.view_pass_inline(query)
-    elif choice == "egg":
-        import Grabber.modules.economy.hunt as hunt_module
-        await hunt_module.show_egg_page(query, 0, query.from_user.id)
 
 @app.on_callback_query(filters.regex(r"^shop_back_(\d+)$"))
 async def shop_back_handler(_, query: types.CallbackQuery):

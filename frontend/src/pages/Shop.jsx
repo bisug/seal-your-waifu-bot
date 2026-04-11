@@ -67,102 +67,42 @@ export const Shop = ({ onCharClick }) => {
         </div>
       </header>
 
-      <div className="flex p-1.5 bg-white/5 rounded-2xl mb-8 border border-white/5">
-        {[
-          { id: 'market', icon: ShoppingBag, label: 'Market' },
-          { id: 'eggs', icon: Timer, label: 'Incubation' },
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => handleTabChange(tab.id)}
-            className={`flex-1 flex items-center justify-center space-x-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-              activeTab === tab.id ? 'bg-white text-brand-midnight shadow-lg' : 'text-slate-500 hover:text-white'
-            }`}
-          >
-            <tab.icon size={14} />
-            <span>{tab.label}</span>
-          </button>
-        ))}
-      </div>
-
-      {loading && activeTab === 'market' && !(Array.isArray(marketItems) && marketItems.length) ? (
+      {loading && !(Array.isArray(marketItems) && marketItems.length) ? (
         <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
           {Array.from({ length: 12 }).map((_, i) => (
             <CardSkeleton key={`shop-skeleton-${i}`} />
           ))}
         </div>
       ) : (
-        <AnimatePresence mode="wait">
-          {activeTab === 'market' && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} key="market" className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-                <AnimatePresence mode="popLayout">
-                  {(Array.isArray(marketItems) ? marketItems : []).map((char, i) => (
-                    <motion.div 
-                      key={char.id} 
-                      layout
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: (i % 8) * 0.05 }}
-                      className="relative"
-                    >
-                      <div className={char.owned ? 'opacity-40 grayscale-[0.5]' : ''}>
-                         <Card 
-                           character={char} 
-                           onClick={() => onCharClick(char)} 
-                         />
-                      </div>
-                      
-                      {char.owned && (
-                        <div className="absolute top-1.5 right-1.5 bg-brand-neon text-brand-midnight rounded-full p-0.5 shadow-lg z-20 border border-brand-midnight scale-75">
-                          <Check size={11} strokeWidth={4} />
-                        </div>
-                      )}
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-            </motion.div>
-          )}
-
-          {activeTab === 'eggs' && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} key="eggs" className="space-y-4">
-              {user?.eggs?.length > 0 ? (
-                (user.eggs || []).map(egg => (
-                  <div key={egg.id} className="glass-panel p-5 rounded-2xl border border-white/5 flex items-center space-x-4 bg-mesh">
-                    <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-brand-midnight border border-white/5 relative overflow-hidden">
-                      <div className="absolute inset-0 bg-brand-neon/5 blur-xl animate-pulse" />
-                      <PackageOpen className={egg.status === 'incubating' ? 'animate-bounce text-brand-neon' : 'text-white/20'} />
-                    </div>
-                    <div className="flex-1 text-left">
-                       <h3 className="text-xs font-black uppercase tracking-widest">{egg.name || 'Unknown Egg'}</h3>
-                       <p className="text-[10px] text-slate-500 font-bold mb-2 uppercase">{egg.tier} TIER</p>
-                       {egg.status === 'incubating' && (
-                          <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
-                             <motion.div initial={{ width: 0 }} animate={{ width: '100%' }} transition={{ duration: egg.remaining_mins * 60 }} className="h-full bg-brand-neon" />
-                          </div>
-                       )}
-                    </div>
-                    <div>
-                      {egg.status === 'fresh' ? (
-                        <button onClick={() => incubateEgg(egg.id)} className="px-4 py-2 rounded-lg bg-brand-neon text-brand-midnight text-[10px] font-black uppercase tracking-widest shadow-lg shadow-brand-neon/20 transition-all active:scale-95">INCUBATE</button>
-                      ) : (
-                        <button 
-                          disabled={egg.remaining_mins > 0} 
-                          onClick={() => hatchEgg(egg.id)} 
-                          className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${egg.remaining_mins <= 0 ? 'bg-brand-neon text-brand-midnight shadow-lg shadow-brand-neon/20 active:scale-95' : 'bg-white/5 text-slate-600 border border-white/5'}`}
-                        >
-                          {egg.remaining_mins <= 0 ? 'HATCH' : `${egg.remaining_mins}M`}
-                        </button>
-                      )}
-                    </div>
+        <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+            <AnimatePresence mode="popLayout">
+              {(Array.isArray(marketItems) ? marketItems : []).map((char, i) => (
+                <motion.div 
+                  key={char.id} 
+                  layout
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: (i % 8) * 0.05 }}
+                  className="relative"
+                >
+                  <div className={char.owned ? 'opacity-40 grayscale-[0.5]' : ''}>
+                     <Card 
+                       character={char} 
+                       onClick={() => onCharClick(char)} 
+                     />
                   </div>
-                ))
-              ) : (
-                <div className="py-20 text-center opacity-40 italic text-xs uppercase tracking-widest font-bold">No data found in harem hatchery</div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
+                  
+                  {char.owned && (
+                    <div className="absolute top-1.5 right-1.5 bg-brand-neon text-brand-midnight rounded-full p-0.5 shadow-lg z-20 border border-brand-midnight scale-75">
+                      <Check size={11} strokeWidth={4} />
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+        </div>
       )}
+}
 
       {/* Cinematic Reveal remains as is for maximum impact */}
       <AnimatePresence>

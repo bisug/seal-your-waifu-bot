@@ -92,7 +92,7 @@ async def get_me(user: dict = Depends(get_current_user_data)):
             "all": clean_titles
         },
         "current_pet": None,
-        "owned_pets": [],
+        "pets": [],
         "eggs": []
     }
 
@@ -120,7 +120,7 @@ async def get_me(user: dict = Depends(get_current_user_data)):
         if p_data["is_active"]:
             resp_data["current_pet"] = p_data
 
-    resp_data["owned_pets"] = formatted_pets
+    resp_data["pets"] = formatted_pets
 
     # Handle Eggs
     eggs = user.get("eggs", [])
