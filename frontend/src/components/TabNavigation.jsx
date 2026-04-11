@@ -34,32 +34,32 @@ export const TabNavigation = ({ activeTab, onNavigate }) => {
               <motion.div
                 initial={false}
                 animate={{
-                  scale: isActive ? 1.05 : 1,
-                  color: isActive ? '#34d399' : '#475569',
+                  y: isActive ? -4 : 0,
+                  color: isActive ? '#34d399' : '#64748b',
                 }}
                 className={cn(
-                  "p-1.5 rounded-xl transition-colors relative",
-                  isActive ? "bg-brand-neon/5" : "text-slate-500"
+                  "p-2.5 rounded-2xl transition-all duration-300 relative",
+                  isActive ? "bg-brand-neon/10 shadow-[0_0_20px_rgba(52,211,153,0.1)]" : ""
                 )}
               >
                 <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
               </motion.div>
               
               <span className={cn(
-                "text-[9px] font-black uppercase tracking-[0.2em] mt-1 transition-all duration-300",
-                isActive ? "text-brand-neon opacity-100" : "text-slate-600 opacity-60"
+                "text-[9px] font-black uppercase tracking-[0.2em] mt-1.5 transition-all duration-300",
+                isActive ? "text-brand-neon opacity-100" : "text-slate-500 opacity-60"
               )}>
                 {tab.label}
               </span>
 
               {isActive && (
                 <motion.div
-                  layoutId="activeTabUnderline"
-                  className="absolute -bottom-3 inset-x-0 h-1 rounded-full bg-brand-neon neon-shadow shadow-brand-neon/50 z-10 mx-auto w-10"
+                  layoutId="activeTabGlow"
+                  className="absolute -bottom-3 inset-x-0 h-1 rounded-full bg-brand-neon neon-shadow shadow-brand-neon/40 z-10 mx-auto w-10"
                   transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                 />
               )}
-            </button>
+            </motion.button>
           );
         })}
       </div>
