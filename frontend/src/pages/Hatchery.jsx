@@ -227,7 +227,7 @@ export const Hatchery = () => {
   if (!user) return null;
 
   return (
-    <div className="pb-8 pt-6 px-4 max-w-lg mx-auto">
+    <div className="pb-24 pt-6 px-4 max-w-lg mx-auto">
       <section className="mb-8 text-center relative pt-4">
         <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-48 h-48 bg-brand-neon/5 blur-[80px] rounded-full pointer-events-none" />
         <motion.div 

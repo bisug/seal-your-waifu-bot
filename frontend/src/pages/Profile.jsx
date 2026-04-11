@@ -95,7 +95,7 @@ export const Profile = ({ onCharClick }) => {
   if (!user) return null;
 
   return (
-    <div className="pb-8">
+    <div className="pb-28">
       {/* Premium Hero Section */}
       <section className="relative h-44 overflow-hidden flex flex-col justify-end px-4 pb-5">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-brand-midnight/60 to-brand-midnight z-10" />
@@ -204,15 +204,14 @@ export const Profile = ({ onCharClick }) => {
         
         {items.length > 0 || loading ? (
           <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-             <AnimatePresence mode="popLayout">
+             <AnimatePresence>
                {items.map((char, i) => (
                  <motion.div
                    key={`${char.id}-${i}`}
                    ref={i === items.length - 1 ? lastElementRef : null}
-                   layout
                    initial={{ opacity: 0, scale: 0.9, y: 10 }}
                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                   transition={{ delay: (i % 8) * 0.05 }}
+                   transition={{ delay: Math.min((i % 8) * 0.05, 0.4) }}
                  >
                    <Card 
                     character={char} 
