@@ -17,16 +17,22 @@ export const Profile = ({ onCharClick }) => {
   const [availableRarities, setAvailableRarities] = useState([]);
   
   const observer = useRef();
+  const loadingRef = useRef(loading);
+  const hasMoreRef = useRef(hasMore);
+
+  useEffect(() => { loadingRef.current = loading; }, [loading]);
+  useEffect(() => { hasMoreRef.current = hasMore; }, [hasMore]);
+
   const lastElementRef = useCallback(node => {
-    if (loading) return;
+    if (loadingRef.current) return;
     if (observer.current) observer.current.disconnect();
     observer.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMore) {
+      if (entries[0].isIntersecting && hasMoreRef.current && !loadingRef.current) {
         setPage(prev => prev + 1);
       }
     });
     if (node) observer.current.observe(node);
-  }, [loading, hasMore]);
+  }, []);
 
   const fetchHarem = useCallback(async (isNew = false) => {
     setLoading(true);

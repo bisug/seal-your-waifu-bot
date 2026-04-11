@@ -22,7 +22,7 @@ export const Market = ({ onCharClick }) => {
   return (
     <div className="flex-1 flex flex-col min-h-0">
       {/* Internal Sub-Nav */}
-      <div className="sticky top-0 z-40 bg-brand-midnight/60 backdrop-blur-xl border-b border-white/5 px-4 pt-4 pb-2">
+      <div className="sticky top-0 z-40 bg-brand-midnight/60 backdrop-blur-xl border-b border-white/5 px-4 pb-2" style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}>
         <div className="flex p-1 bg-white/5 rounded-xl border border-white/5 max-w-xs mx-auto mb-2">
           {[
             { id: 'shop', icon: ShoppingBag, label: 'Market' },
