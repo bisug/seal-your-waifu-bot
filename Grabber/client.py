@@ -175,10 +175,19 @@ class SealClient(Client):
         from Grabber.modules import ALL_MODULES
         for module_name in ALL_MODULES:
             try:
-                importlib.import_module(f"Grabber.modules.{module_name}")
-                LOGGER.info(f"Loaded Module: {module_name}")
+                module = importlib.import_module(f"Grabber.modules.{module_name}")
+                
+                # Check for explicit handler registration function
+                if hasattr(module, "load_handlers"):
+                    module.load_handlers(self)
+                    LOGGER.info(f"Loaded Module (Explicit): {module_name}")
+                else:
+                    LOGGER.info(f"Loaded Module (Decorator): {module_name}")
+                    
             except Exception as e:
                 LOGGER.error(f"Failed to load module {module_name}: {e}")
+                import traceback
+                LOGGER.error(traceback.format_exc())
         LOGGER.info(f"Loaded {len(ALL_MODULES)} modules.")
 
         # Sync bot commands with Telegram
@@ -215,12 +224,6 @@ class SealClient(Client):
                 LOGGER.warning(f"Failed to initiate startup report: {e}")
 
         LOGGER.info(f"SealClient started as {me.first_name} (@{me.username}).")
-
-        # DEBUG: Direct handler to verify dispatcher health
-        @self.on_message(filters.command("debug_hunt"), group=-100)
-        async def direct_debug_hunt(c, m):
-            LOGGER.info(f"DEBUG_HUNT hit by {m.from_user.id if m.from_user else 'unknown'}")
-            await m.reply_text("✅ <b>Direct Debug Hunt: Dispatcher is Alive!</b>", parse_mode=ParseMode.HTML)
 
     async def _set_commands_internal(self):
         try:
