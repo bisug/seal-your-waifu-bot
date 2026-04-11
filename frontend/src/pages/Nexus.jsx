@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { target, Trophy, Star, LayoutGrid, Sparkles } from 'lucide-react';
+import { Trophy, Star, LayoutGrid, Sparkles } from 'lucide-react';
 import { Quests } from './Quests';
 import { Pass } from './Pass';
 import { Leaderboard } from './Leaderboard';
