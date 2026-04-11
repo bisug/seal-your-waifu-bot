@@ -4,9 +4,11 @@ import logging
 import pyrogram
 from Grabber.core.utils import get_now_utc
 from Grabber.database import r as _redis, collection
+from config import config
 
 LOGGER = logging.getLogger(__name__)
 
+# System Banner for Logs (No emojis, professional terminal style)
 ASCII_BANNER = r"""
    _____   ______            _         ____    ____  _______ 
   / ___/  / ____/           / \       / __ \  / __ \/__   __/
@@ -36,6 +38,7 @@ async def send_startup_report(client, chat_id, module_count: int):
         py_ver = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
         pg_ver = pyrogram.__version__
         os_platform = platform.system()
+        os_arch = platform.machine()
         
         # Database Checks
         redis_status = "STABLE" if _redis else "DISABLED"
@@ -50,13 +53,14 @@ async def send_startup_report(client, chat_id, module_count: int):
         now = get_now_utc().strftime("%Y-%m-%d %H:%M:%S")
 
         report = (
-            "<code>[ PROJET SEAL - SYSTEM STATUS REPORT ]</code>\n"
+            "<code>[ PROJECT SEAL - SYSTEM STATUS REPORT ]</code>\n"
             "<code>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</code>\n"
             f"<code>BOT IDENTITY     : {me.first_name} (@{me.username})</code>\n"
             f"<code>BOT ID           : {me.id}</code>\n"
+            f"<code>OWNER ID         : {config.OWNER_ID}</code>\n"
             f"<code>PYTHON VERSION   : {py_ver}</code>\n"
             f"<code>PYROGRAM VERSION : {pg_ver}</code>\n"
-            f"<code>OPERATING SYSTEM : {os_platform}</code>\n"
+            f"<code>OPERATING SYSTEM : {os_platform} ({os_arch})</code>\n"
             f"<code>LOADED MODULES   : {module_count}</code>\n"
             f"<code>CHARACTER COUNT  : {total_chars}</code>\n"
             f"<code>MONGODB STATUS   : {mongo_status}</code>\n"
