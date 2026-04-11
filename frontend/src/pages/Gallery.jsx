@@ -111,7 +111,7 @@ export const Gallery = ({ onCharClick }) => {
 
       {/* Gallery Grid */}
       <section>
-        <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+        <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
           <AnimatePresence>
             {items.map((char, i) => (
               <motion.div
