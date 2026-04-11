@@ -1,3 +1,4 @@
+import re
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Body
 from Grabber.webapp.auth import get_current_user, get_current_user_data, _user_locks
@@ -39,7 +40,8 @@ async def get_harem(
     ]
 
     if search:
-        search_regex = {"$regex": search, "$options": "i"}
+        search = search.strip()
+        search_regex = {"$regex": re.escape(search), "$options": "i"}
         pipeline.append({
             "$match": {
                 "$or": [
@@ -174,10 +176,10 @@ async def get_gallery(
 ):
     match_query = {}
     if search:
-        search = search.strip()
+        search_escaped = re.escape(search.strip())
         match_query["$or"] = [
-            {"name": {"$regex": search, "$options": "i"}},
-            {"anime": {"$regex": search, "$options": "i"}}
+            {"name": {"$regex": search_escaped, "$options": "i"}},
+            {"anime": {"$regex": search_escaped, "$options": "i"}}
         ]
     if rarity:
         match_query["rarity"] = rarity.strip()
