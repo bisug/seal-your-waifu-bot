@@ -48,10 +48,16 @@ async def buy_character_api(char_id: str, user_id: int = Depends(get_current_use
         user_raw = await user_collection.find_one(get_user_id_query(user_id))
         if not user_raw: raise HTTPException(status_code=404, detail="User not found")
         
-        char_raw = await collection.find_one({"id": char_id})
-        if not char_raw or char_raw.get("rarity") != SHOP_RARITY:
-            raise HTTPException(status_code=404, detail="Character not available in shop")
+        chars = await get_daily_shop_characters()
+        shop_ids = [c.id for c in chars]
         
+        if char_id not in shop_ids:
+            raise HTTPException(status_code=404, detail="Character has rotated out of the shop")
+            
+        char_raw = await collection.find_one({"id": char_id})
+        if not char_raw:
+            raise HTTPException(status_code=404, detail="Character not found")
+
         price = RARITY_PRICES.get(char_raw.get("rarity"), 5)
         if user_raw.get("zenith", 0) < price:
             LOGGER.info(f"Shop Purchase Error: User {user_id} has insufficient Zenith ({user_raw.get('zenith', 0)}) for price {price}")
