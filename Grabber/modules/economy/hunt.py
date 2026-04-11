@@ -57,7 +57,7 @@ def get_egg_roll(luck_multiplier):
 async def hunt_cmd(_, message: types.Message):
     user_id = message.from_user.id
 
-    user = await user_collection.find_one({"id": user_id}) or {}
+    user = await user_collection.find_one(get_user_filter(user_id)) or {}
     pets = user.get("pets", [DEFAULT_PET])
     current = user.get("current_pet", DEFAULT_PET["name"])
     pet = next((p for p in pets if p["name"] == current), DEFAULT_PET)
@@ -173,7 +173,7 @@ async def eggs_cmd(_, message: types.Message):
 
 async def show_egg_page(message_or_query, page: int, user_id: int):
 
-    user = await user_collection.find_one({"id": user_id}) or {}
+    user = await user_collection.find_one(get_user_filter(user_id)) or {}
     eggs = user.get("eggs", [])
 
     if not eggs:
@@ -297,7 +297,7 @@ async def egg_incubate_callback(_, query: types.CallbackQuery):
         return await query.answer("❌ This is not your egg!", show_alert=True)
 
     user_id = owner_id
-    user = await user_collection.find_one({"id": user_id}) or {}
+    user = await user_collection.find_one(get_user_filter(user_id)) or {}
     eggs = user.get("eggs", [])
 
     if page >= len(eggs):
@@ -320,7 +320,7 @@ async def egg_incubate_callback(_, query: types.CallbackQuery):
     # Use ID-based update to be safe from positional shifts
     # If legacy egg (string), we target by position since it has no ID
     if isinstance(egg, str):
-        query_filter = {"id": user_id}
+        query_filter = get_user_filter(user_id)
         update_op = {"$set": {f"eggs.{page}": {
             "id": f"migrated_{page}_{int(time.time())}",
             "tier": TIER_MAP.get(egg, egg),
@@ -329,7 +329,8 @@ async def egg_incubate_callback(_, query: types.CallbackQuery):
             "name": EGG_TIERS.get(TIER_MAP.get(egg, egg), EGG_TIERS["common"])["name"]
         }}}
     else:
-        query_filter = {"id": user_id, "eggs.id": egg.get("id")}
+        query_filter = get_user_filter(user_id)
+        query_filter["eggs.id"] = egg.get("id")
         update_op = {
             "$set": {
                 "eggs.$.status": "incubating",
@@ -355,7 +356,7 @@ async def egg_hatch_callback(_, query: types.CallbackQuery):
     from Grabber.webapp.auth import _user_locks
     uid_str = str(user_id)
     async with _user_locks[uid_str]:
-        user = await user_collection.find_one({"id": user_id}) or {}
+        user = await user_collection.find_one(get_user_filter(user_id)) or {}
         eggs = user.get("eggs", [])
 
         if page >= len(eggs):
@@ -385,7 +386,7 @@ async def process_egg_hatch(user_id: int, egg: dict):
     """
     if egg.get("is_corrupted", False) and random.random() < 0.5:
         # Remove egg atomically on explosion
-        await user_collection.update_one({"id": user_id}, {"$pull": {"eggs": {"id": egg["id"]}}})
+        await user_collection.update_one(get_user_filter(user_id), {"$pull": {"eggs": {"id": egg["id"]}}})
         return False, "💥 <b>The egg exploded!</b>\nIt was corrupted..."
 
     rarity_pool = EGG_TIERS.get(egg["tier"], EGG_TIERS["common"])["pool"]
@@ -400,8 +401,10 @@ async def process_egg_hatch(user_id: int, egg: dict):
     character = random.choice(waifus)
 
     # ATOMIC: Pull egg AND push character in one operation.
+    query_filter = get_user_filter(user_id)
+    query_filter["eggs.id"] = egg["id"]
     result = await user_collection.update_one(
-        {"id": user_id, "eggs.id": egg["id"]},
+        query_filter,
         {
             "$pull": {"eggs": {"id": egg["id"]}},
             "$push": {"characters": character},
