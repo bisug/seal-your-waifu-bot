@@ -36,6 +36,14 @@ def html_escape(text: str) -> str:
         return ""
     return html.escape(text, quote=False)
 
+def format_currency(amount: int, symbol: str = "⬪") -> str:
+    """Formats an integer amount with commas and appends a symbol."""
+    try:
+        if not amount: return f"0 {symbol}"
+        return f"{int(amount):,} {symbol}"
+    except (ValueError, TypeError):
+        return f"0 {symbol}"
+
 def md_escape(text: str) -> str:
     """Escapes special characters for Telegram MarkdownV2."""
     if not text:

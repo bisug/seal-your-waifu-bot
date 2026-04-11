@@ -148,11 +148,14 @@ async def hunt_cmd(bot, message: types.Message):
 
         # 7. Final Response
         found_egg_desc = f"🥚 <b>{html_escape(eggs_to_push[0]['name'])}</b> discovered!" if eggs_to_push else ""
+        from Grabber.core.utils import format_currency
+        shards_text = format_currency(shards)
+        
         final_text = (
-            f"🌲 <b>Hunt Complete!</b>\n\n"
+            f"🌲 <b>Hunt Complete, Collector!</b>\n\n"
             f"{'🎁 <b>Egg Found!</b>' if eggs_to_push else '<i>No eggs found this time.</i>'}\n"
             f"{found_egg_desc}\n"
-            f"<b>+{shards} Shards</b>{bonus_text}\n"
+            f"<b>+{shards_text}</b>{bonus_text}\n"
             f"🆙 <b>+{xp_gain} XP</b> for {html_escape(pet['name'])}"
         )
         await msg.edit_text(final_text, parse_mode=ParseMode.HTML)
@@ -213,7 +216,7 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
                 action_button = types.InlineKeyboardButton("🎁 Hatch Egg", callback_data=f"egg_hatch:{page}:{user_id}")
 
     text = (
-        f"🥚 <b>Egg Inventory</b>\n\n"
+        f"🥚 <b>Collector Stash</b>\n\n"
         f"<b>{html_escape(egg.get('name', tier_info['name']) if isinstance(egg, dict) else tier_info['name'])}</b>\n"
         f"{status_display}\n\n"
         f"<i>Egg {page + 1} of {len(eggs)}</i>"
