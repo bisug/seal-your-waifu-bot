@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Zap, Loader2 } from 'lucide-react';
+import { Activity, Loader2 } from 'lucide-react';
 import { Modal, useToast } from './UI';
 import { apiFetch } from '../api';
 import { formatNumber } from '../utils';
@@ -45,7 +45,7 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                 }}
                 className="w-full py-3.5 rounded-xl bg-brand-accent/10 border border-brand-accent/20 text-brand-accent text-[10px] font-black uppercase tracking-widest hover:bg-brand-accent/20 transition-all flex items-center justify-center space-x-2 mb-4"
             >
-                <Zap size={16} />
+                <Activity size={16} />
                 <span>Sell Duplicate</span>
             </button>
         );
@@ -63,7 +63,7 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                     >
                         <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 rounded-full bg-brand-neon/20 flex items-center justify-center text-brand-neon shadow-lg shadow-brand-neon/20">
-                            <Zap size={20} />
+                            <Activity size={20} />
                         </div>
                         <div>
                             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Price</p>

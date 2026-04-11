@@ -1,13 +1,13 @@
 import { motion } from 'framer-motion';
 import { cn } from '../utils';
-import { User, Search, Trophy, ShoppingBag, Star, LayoutGrid, Egg, Zap } from 'lucide-react';
+import { User, Search, Trophy, ShoppingBag, Star, LayoutGrid, Egg, Activity } from 'lucide-react';
 
 export const TabNavigation = ({ activeTab, onNavigate }) => {
   const tabs = [
     { id: 'profile', icon: User, label: 'Harem' },
     { id: 'incubation', icon: Egg, label: 'Hatchery' },
     { id: 'market', icon: ShoppingBag, label: 'Market' },
-    { id: 'nexus', icon: Zap, label: 'Nexus' },
+    { id: 'nexus', icon: Activity, label: 'Nexus' },
   ];
 
   const handleNavigate = (tabId) => {
