@@ -13,11 +13,8 @@ import { formatNumber } from './utils';
 import { CharActionModal } from './components/CharActionModal';
 
 // Lazy load pages for extreme performance
-const Gallery = lazy(() => import('./pages/Gallery').then(m => ({ default: m.Gallery })));
-const Quests = lazy(() => import('./pages/Quests').then(m => ({ default: m.Quests })));
-const Leaderboard = lazy(() => import('./pages/Leaderboard').then(m => ({ default: m.Leaderboard })));
-const Pass = lazy(() => import('./pages/Pass').then(m => ({ default: m.Pass })));
-const Shop = lazy(() => import('./pages/Shop').then(m => ({ default: m.Shop })));
+const Market = lazy(() => import('./pages/Market').then(m => ({ default: m.Market })));
+const Nexus = lazy(() => import('./pages/Nexus').then(m => ({ default: m.Nexus })));
 const Hatchery = lazy(() => import('./pages/Hatchery').then(m => ({ default: m.Hatchery })));
 
 // Cinematic Error Boundary for high-deployment stability
@@ -67,9 +64,8 @@ const AppContent = () => {
   // Intelligence: Read the start_param for deep-linking (e.g., Shop/Gallery/Profile)
   const getInitialTab = () => {
     const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
-    if (startParam === 'shop') return 'shop';
-    if (startParam === 'gallery') return 'gallery';
-    if (startParam === 'leaderboard') return 'leaderboard';
+    if (startParam === 'shop' || startParam === 'market' || startParam === 'gallery') return 'market';
+    if (startParam === 'leaderboard' || startParam === 'pass' || startParam === 'quests') return 'nexus';
     return 'profile';
   };
 
@@ -201,13 +197,10 @@ const AppContent = () => {
             </div>
           }>
             {activeTab === 'profile' && <Profile onCharClick={setSelectedChar} />}
-            {activeTab === 'gallery' && <Gallery onCharClick={setSelectedChar} />}
-            {activeTab === 'quests' && <Quests />}
-            {activeTab === 'leaderboard' && <Leaderboard />}
-            {activeTab === 'pass' && <Pass />}
-            {activeTab === 'shop' && <Shop onCharClick={setSelectedChar} />}
+            {activeTab === 'market' && <Market onCharClick={setSelectedChar} />}
+            {activeTab === 'nexus' && <Nexus />}
             {activeTab === 'incubation' && <Hatchery />}
-            {!['profile', 'gallery', 'quests', 'leaderboard', 'pass', 'shop', 'incubation'].includes(activeTab) && (
+            {!['profile', 'market', 'nexus', 'incubation'].includes(activeTab) && (
               <NotFound onReset={() => setActiveTab('profile')} />
             )}
           </Suspense>
