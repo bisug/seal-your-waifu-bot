@@ -21,6 +21,12 @@ export const UserProvider = ({ children }) => {
   };
 
   useEffect(() => {
+    const handleRefresh = () => refreshUser();
+    window.addEventListener('user-data-refresh', handleRefresh);
+    return () => window.removeEventListener('user-data-refresh', handleRefresh);
+  }, []);
+
+  useEffect(() => {
     const init = async () => {
       try {
         const tg = window.Telegram?.WebApp;
