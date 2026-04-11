@@ -139,6 +139,9 @@ class SealClient(Client):
         self.bot_id = me.id
         self.first_name = me.first_name
 
+        from Grabber.core.startup import print_banner
+        print_banner()
+
         if self.name == "MainBot":
             config.BOT_USERNAME = me.username
             config.BOT_ID = me.id
@@ -189,6 +192,13 @@ class SealClient(Client):
                 LOGGER.info("Mini App Menu button configured.")
             except Exception as e:
                 LOGGER.error(f"Failed to configure Mini App Menu button: {e}")
+
+            # Send creative startup report to group
+            try:
+                from Grabber.core.startup import send_startup_report
+                asyncio.create_task(send_startup_report(self, config.GROUP_ID, len(ALL_MODULES)))
+            except Exception as e:
+                LOGGER.warning(f"Failed to initiate startup report: {e}")
 
         LOGGER.info(f"SealClient started as {me.first_name} (@{me.username}).")
 
