@@ -2,13 +2,15 @@ import sys
 import platform
 import logging
 import pyrogram
+import asyncio
+from pyrogram import enums, errors
 from Grabber.core.utils import get_now_utc
 from Grabber.database import r as _redis, collection
 from config import config
 
 LOGGER = logging.getLogger(__name__)
 
-# System Banner for Logs (No emojis, professional terminal style)
+# System Banner for Logs
 ASCII_BANNER = r"""
    _____   ______            _         ____    ____  _______ 
   / ___/  / ____/           / \       / __ \  / __ \/__   __/
@@ -28,23 +30,21 @@ def print_banner():
 
 async def send_startup_report(client, chat_id, module_count: int):
     """
-    Sends a detailed but simple system status report to the logs group.
-    No emojis. Professional monospaced formatting.
+    Sends a detailed system status report. 
+    Attempts to send to the designated group, falling back to Owner PM if unavailable.
     """
     try:
         me = await client.get_me()
         
-        # Gather System Data
+        # System Data Preparation
         py_ver = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
         pg_ver = pyrogram.__version__
         os_platform = platform.system()
         os_arch = platform.machine()
         
-        # Database Checks
         redis_status = "STABLE" if _redis else "DISABLED"
         mongo_status = "STABLE"
         
-        # Character Library Statistics
         try:
             total_chars = await collection.count_documents({})
         except Exception:
@@ -70,7 +70,22 @@ async def send_startup_report(client, chat_id, module_count: int):
             "<code>STATUS: OPERATIONAL | HANDLERS: READY</code>"
         )
 
-        await client.send_message(chat_id, report)
-        
+        # Attempt to resolve peer and send message
+        try:
+            # For supergroups, get_chat can help "resolve" the peer for Pyrogram
+            if isinstance(chat_id, int) and str(chat_id).startswith("-100"):
+                try:
+                    await client.get_chat(chat_id)
+                except Exception:
+                    pass
+            
+            await client.send_message(chat_id, report)
+        except (errors.PeerIdInvalid, errors.ChannelInvalid, errors.ChatWriteForbidden):
+            LOGGER.warning(f"Dedicated Logs Group ({chat_id}) inaccessible. Falling back to Owner PM.")
+            await client.send_message(config.OWNER_ID, f"⚠️ <b>Logs Group Inaccessible</b>\n\n{report}")
+        except Exception as e:
+            LOGGER.error(f"Startup report primary delivery failed: {e}")
+            await client.send_message(config.OWNER_ID, report)
+            
     except Exception as e:
-        LOGGER.warning(f"Failed to send startup report: {e}")
+        LOGGER.warning(f"Critical failure in startup report logic: {e}")
