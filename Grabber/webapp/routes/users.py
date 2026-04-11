@@ -10,7 +10,7 @@ from Grabber.webapp.schemas import UserProfileResponse
 from Grabber.core.progression import get_user_progress, get_level_from_xp
 from Grabber.core.cache import get_user_rank, get_total_ranked_users, update_user_rank, rebuild_leaderboard
 from Grabber.core.utils import normalize_user_id
-from Grabber.modules.progression.pet import DEFAULT_PET
+from Grabber.modules.progression.pet import DEFAULT_PET, get_effective_affection
 import json
 from datetime import datetime
 from Grabber.modules.economy.hunt import TIER_MAP
@@ -103,6 +103,14 @@ async def get_me(user: dict = Depends(get_current_user_data)):
     
     formatted_pets = []
     for p in user_pets:
+        eff_affection = get_effective_affection(p)
+        if eff_affection >= 80:
+            mood = "🥰 Happy"
+        elif eff_affection <= 20:
+            mood = "😢 Sad"
+        else:
+            mood = "😐 Neutral"
+            
         p_data = {
             "name": p["name"],
             "level": p.get("level", 1),
@@ -115,6 +123,8 @@ async def get_me(user: dict = Depends(get_current_user_data)):
             "ability": p.get("ability", "None"),
             "desc": p.get("desc", ""),
             "img": p.get("img", ""),
+            "affection": eff_affection,
+            "mood": mood,
             "is_active": p["name"] == current_pet_name
         }
         formatted_pets.append(p_data)
