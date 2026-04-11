@@ -38,8 +38,9 @@ PASS_PRICES = {
 }
 
 # Eggs
+CORRUPTED_EGG_CHANCE = 5
 EGG_TIERS = {
-    "common": {"wait_min": 30},
-    "gold": {"wait_min": 120},
-    "void": {"wait_min": 360}
+    "common": {"name": "Common Egg", "chance": 70, "pool": ["⚪ Common", "🟢 Medium"], "wait_min": 5},
+    "gold":   {"name": "Golden Egg", "chance": 25, "pool": ["🟠 Rare", "🟡 Legendary"], "wait_min": 30},
+    "void":   {"name": "Void Egg",   "chance": 5,  "pool": ["💠 Cosmic", "💮 Exclusive"], "wait_min": 180}
 }
