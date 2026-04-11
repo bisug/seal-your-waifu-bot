@@ -68,7 +68,7 @@ export const Gallery = ({ onCharClick }) => {
   }, [page]);
 
   return (
-    <div className="pb-8 pt-0 px-4 relative min-h-full">
+    <div className="pb-32 pt-0 px-4 relative min-h-full">
       {/* Premium Search & Filter Header */}
       <section className="sticky top-0 z-30 bg-brand-midnight/80 backdrop-blur-xl pt-4 pb-3 mb-5 -mx-4 px-4 space-y-3 border-b border-white/5 shadow-2xl">
         <div className="relative group">
@@ -112,12 +112,11 @@ export const Gallery = ({ onCharClick }) => {
       {/* Gallery Grid */}
       <section>
         <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-          <AnimatePresence mode="popLayout">
+          <AnimatePresence>
             {items.map((char, i) => (
               <motion.div
                 key={`${char.id}-${i}`}
                 ref={i === items.length - 1 ? lastElementRef : null}
-                layout
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.8 }}

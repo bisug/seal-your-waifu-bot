@@ -41,7 +41,7 @@ export const Shop = ({ onCharClick }) => {
   }, []); // Bind once on mount
 
   return (
-    <div className="pb-8 pt-6 px-4">
+    <div className="pb-32 pt-6 px-4">
       <header className="mb-6 flex justify-between items-end px-2">
         <div>
           <h1 className="text-2xl font-black uppercase tracking-tight">Market</h1>
@@ -61,14 +61,13 @@ export const Shop = ({ onCharClick }) => {
         </div>
       ) : (
         <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-            <AnimatePresence mode="popLayout">
+            <AnimatePresence>
               {(Array.isArray(marketItems) ? marketItems : []).map((char, i) => (
                 <motion.div 
                   key={char.id} 
-                  layout
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: (i % 8) * 0.05 }}
+                  transition={{ delay: Math.min((i % 8) * 0.05, 0.4) }}
                   className="relative"
                 >
                   <div className={char.owned ? 'opacity-40 grayscale-[0.5]' : ''}>
