@@ -102,7 +102,7 @@ export const Shop = ({ onCharClick }) => {
             </AnimatePresence>
         </div>
       )}
-}
+
 
       {/* Cinematic Reveal remains as is for maximum impact */}
       <AnimatePresence>
