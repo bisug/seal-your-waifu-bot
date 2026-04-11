@@ -35,23 +35,9 @@ export const Shop = ({ onCharClick }) => {
   }, [fetchShopData, refreshUser]);
 
   useEffect(() => {
-    const handlePurchase = async (e) => {
-      const { charId } = e.detail;
-      try {
-        const res = await apiFetch(`/shop/buy/character/${charId}`, { method: 'POST' });
-        if (res.status === 'success') {
-          window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
-          toast.success('Character added to harem');
-          await refreshUserRef.current();
-          await fetchShopDataRef.current();
-        }
-      } catch (err) {
-        toast.error(err.message || 'Transaction failed');
-      }
-    };
-
-    window.addEventListener('shop-data-refresh', fetchShopDataRef.current);
-    return () => window.removeEventListener('shop-data-refresh', fetchShopDataRef.current);
+    const refreshHandler = (e) => fetchShopDataRef.current();
+    window.addEventListener('shop-data-refresh', refreshHandler);
+    return () => window.removeEventListener('shop-data-refresh', refreshHandler);
   }, []); // Bind once on mount
 
   return (

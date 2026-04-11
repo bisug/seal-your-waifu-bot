@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Zap } from 'lucide-react';
 import { cn } from '../utils';
@@ -14,6 +14,10 @@ export const Card = memo(({ character, onClick }) => {
 
     const visuals = RARITY_VISUALS[character.rarity] || RARITY_VISUALS['Common'];
     const [imgError, setImgError] = React.useState(false);
+
+    useEffect(() => {
+        setImgError(false);
+    }, [character.img_url]);
 
     return (
         <motion.div
