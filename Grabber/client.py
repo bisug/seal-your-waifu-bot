@@ -2,7 +2,8 @@ import logging
 import asyncio
 import importlib
 import re
-from pyrogram import Client, types, errors, filters
+from pyrogram import Client, types, errors, filters, enums
+from pyrogram.enums import ParseMode
 from pyrogram.handlers import MessageHandler
 from config import config
 
@@ -175,6 +176,7 @@ class SealClient(Client):
         for module_name in ALL_MODULES:
             try:
                 importlib.import_module(f"Grabber.modules.{module_name}")
+                LOGGER.info(f"Loaded Module: {module_name}")
             except Exception as e:
                 LOGGER.error(f"Failed to load module {module_name}: {e}")
         LOGGER.info(f"Loaded {len(ALL_MODULES)} modules.")
