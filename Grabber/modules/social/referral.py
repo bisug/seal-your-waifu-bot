@@ -9,7 +9,7 @@ async def referrals_cmd(_, message: types.Message):
     user = await user_collection.find_one({"id": user_id})
 
     if not user:
-        await message.reply_text("❌ You need to start the bot first!")
+        await message.reply_text("❌ You need to start the bot first!", parse_mode=ParseMode.HTML)
         return
 
 

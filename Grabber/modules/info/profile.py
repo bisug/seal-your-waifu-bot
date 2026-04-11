@@ -68,20 +68,16 @@ async def profile_handler(_, message: types.Message):
 
 
     profile_text = (
-        f"<b>🌟 {user_name}'s Profile 🌟</b>\n"
-        f"━━━━━━━━━━━━━━━━━━━━━\n"
-        f"🆔 <b>ID:</b> <code>{user_id}</code>\n"
+        f"<b>🌟 Collector Profile: {user_name} 🌟</b>\n\n"
+        f"🆔 <b>Collector ID:</b> <code>{user_id}</code>\n"
         f"🎫 <b>Battle Pass:</b> {pass_type}\n\n"
         f"⭐ <b>Level:</b> <code>{level}</code>\n"
-        f"📊 <b>XP:</b> {xp_bar} <code>{xp_current}/{xp_needed}</code>\n"
-        f"━━━━━━━━━━━━━━━━━━━━━\n"
+        f"📊 <b>XP:</b> {xp_bar} <code>{xp_current}/{xp_needed}</code>\n\n"
         f"<b>Shards:</b> {user_balance:,} ⬪\n"
-        f"<b>Zenith:</b> {zenith:,} ⧫\n"
-        f"━━━━━━━━━━━━━━━━━━━━━\n"
+        f"<b>Zenith:</b> {zenith:,} ⧫\n\n"
         f"🍱 <b>Collected:</b> {char_count}/{total_db_chars}\n"
         f"❤️ <b>Favorite:</b> <code>{fav_name}</code>\n"
-        f"🐾 <b>Active Pet:</b> <code>{pet_text}</code>\n"
-        f"━━━━━━━━━━━━━━━━━━━━━\n"
+        f"🐾 <b>Active Pet:</b> <code>{pet_text}</code>\n\n"
         f"<b>📚 Collection By Rarity</b>\n"
     )
 

@@ -9,14 +9,14 @@ from Grabber.core.sessions import create_session, get_session, delete_session
 async def gift_command(_, message: types.Message):
 
     if not message.reply_to_message:
-        await message.reply_text("⚠️ Please reply to the user you want to gift to.")
+        await message.reply_text("⚠️ Please reply to the user you want to gift to.", parse_mode=ParseMode.HTML)
         return
 
     sender_id = message.from_user.id
     receiver_id = message.reply_to_message.from_user.id
 
     if sender_id == receiver_id:
-        await message.reply_text("⚠️ You cannot gift yourself!")
+        await message.reply_text("⚠️ You cannot gift yourself!", parse_mode=ParseMode.HTML)
         return
 
     if len(message.command) < 2:
@@ -128,7 +128,7 @@ async def gift_callback(_, query: types.CallbackQuery):
 
     await query.message.edit_text(
         f"✅ <b>Gift Sent!</b>\n\n"
-        f"You successfully gifted <b>{html_escape(character['name'])}</b> to the user!",
+        f"You successfully gifted <b>{html_escape(character['name'])}</b> to the fellow Collector!",
         parse_mode=ParseMode.HTML
     )
     LOGGER.info(f"Gift: {sender_id} -> {receiver_id} | Char: {char_id}")

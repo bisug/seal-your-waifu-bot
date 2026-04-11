@@ -150,7 +150,7 @@ async def battle_challenge_handler(_, message: types.Message):
         return await message.reply_text("❌ You don't have enough Shards!", parse_mode=ParseMode.HTML)
 
     if await get_user_balance(defender.id) < bet:
-        return await message.reply_text(f"❌ {defender.first_name} doesn't have enough Shards!", parse_mode=ParseMode.HTML)
+        return await message.reply_text(f"❌ <b>{html_escape(defender.first_name)}</b> doesn't have enough Shards!", parse_mode=ParseMode.HTML)
 
 
     battle_id = f"bt_{attacker.id}_{defender.id}"
@@ -161,7 +161,7 @@ async def battle_challenge_handler(_, message: types.Message):
     ]])
 
     await message.reply_to_message.reply_text(
-        f"⚔ <a href=\"tg://user?id={attacker.id}\">{html_escape(attacker.first_name)}</a> challenged you to a battle for {bet} ⬪!",
+        f"⚔ <a href=\"tg://user?id={attacker.id}\">{html_escape(attacker.first_name)}</a> challenged you to a battle for <b>{bet:,} ⬪</b>!",
         reply_markup=markup,
         parse_mode=ParseMode.HTML
     )
