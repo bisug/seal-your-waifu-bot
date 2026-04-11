@@ -42,7 +42,10 @@ async def rget(key: str) -> Optional[str]:
     if not _redis:
         return None
     try:
-        return await _redis.get(key)
+        return await asyncio.wait_for(_redis.get(key), timeout=3.0)
+    except asyncio.TimeoutError:
+        LOGGER.warning(f"Redis GET timeout [{key}]")
+        return None
     except Exception as e:
         LOGGER.warning(f"Redis GET error [{key}]: {e}")
         return None
@@ -54,7 +57,9 @@ async def rset(key: str, value: str, ttl: int):
     try:
         # Check memory before setting large key or frequently
         await check_memory_and_purge()
-        await _redis.setex(key, ttl, value)
+        await asyncio.wait_for(_redis.setex(key, ttl, value), timeout=3.0)
+    except asyncio.TimeoutError:
+        LOGGER.warning(f"Redis SET timeout [{key}]")
     except Exception as e:
         LOGGER.warning(f"Redis SET error [{key}]: {e}")
 
@@ -157,13 +162,17 @@ async def is_on_cooldown(domain: str, user_id: int, duration: int) -> tuple[bool
     key = _cooldown_key(domain, user_id)
     try:
         # SET key 1 EX duration NX — only sets if key doesn't exist
-        result = await _redis.set(key, "1", ex=duration, nx=True)
+        # Wrapped in wait_for to prevent silent hangs
+        result = await asyncio.wait_for(_redis.set(key, "1", ex=duration, nx=True), timeout=2.5)
         if result:
             # Key was newly set → not on cooldown
             return False, 0
         # Key already existed → on cooldown
-        ttl = await _redis.ttl(key)
+        ttl = await asyncio.wait_for(_redis.ttl(key), timeout=2.5)
         return True, max(0, ttl)
+    except asyncio.TimeoutError:
+        LOGGER.warning(f"Redis cooldown timeout [{key}]. Failsafe: Allow access.")
+        return False, 0
     except Exception as e:
         LOGGER.warning(f"Redis cooldown error [{key}]: {e}")
         return False, 0
