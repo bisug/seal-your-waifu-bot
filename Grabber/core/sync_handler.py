@@ -1,7 +1,8 @@
-from pyrogram import filters
+from pyrogram import filters, ContinuePropagation
 from Grabber import app, game_bot
 from Grabber.database import user_collection, r
 import logging
+import asyncio
 
 LOGGER = logging.getLogger(__name__)
 
@@ -30,11 +31,11 @@ async def sync_user_data(message):
 @app.on_message(filters.regex(r"^/"), group=-20)
 async def app_sync_user(client, message):
     """Handler for MainBot to trigger user data sync on commands."""
-    message.continue_propagation()
+    raise ContinuePropagation
     asyncio.create_task(sync_user_data(message))
 
 @game_bot.on_message(filters.regex(r"^/"), group=-20)
 async def game_bot_sync_user(client, message):
     """Handler for GameBot to trigger user data sync on commands."""
-    message.continue_propagation()
+    raise ContinuePropagation
     asyncio.create_task(sync_user_data(message))

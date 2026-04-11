@@ -97,30 +97,6 @@ class SealClient(Client):
         except Exception as e:
             LOGGER.error(f"[{self.name}] Failed to send media to {chat_id}: {e}")
             return None
-            reply_id = kwargs.pop("reply_to_message_id")
-            if reply_id:
-                kwargs["reply_parameters"] = types.ReplyParameters(message_id=reply_id)
-
-        try:
-            if isinstance(media_url, str) and media_url.endswith(('.mp4', '.webm', '.gif')):
-                msg = await self.send_video(chat_id, video=media_url, *args, **kwargs)
-            else:
-                msg = await self.send_photo(chat_id, photo=media_url, *args, **kwargs)
-            if msg and auto_delete:
-                from Grabber.core.deletion import schedule_deletion
-                await schedule_deletion(chat_id, msg.id, auto_delete, bot_name=self.name)
-            return msg
-        except errors.FloodWait as e:
-            if _retries >= 3:
-                LOGGER.error(f"[{self.name}] FloodWait retry limit reached for {chat_id}")
-                return None
-            LOGGER.warning(f"[{self.name}] FloodWait detected: Sleeping for {e.value}s")
-            await asyncio.sleep(e.value)
-            if auto_delete: kwargs["auto_delete"] = auto_delete
-            return await self.send_media_safe(chat_id, media_url, *args, _retries=_retries+1, **kwargs)
-        except Exception as e:
-            LOGGER.error(f"[{self.name}] Error sending media to {chat_id}: {e}")
-            return None
 
     async def edit_message_text_safe(self, chat_id, message_id, text, *args, _retries=0, **kwargs):
         """Edits message text while handling FloodWait."""
