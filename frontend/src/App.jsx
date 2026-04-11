@@ -195,7 +195,7 @@ const AppContent = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.15, ease: 'easeOut' }}
+          transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
           className="app-scroller adaptive-px bg-mesh overflow-x-hidden"
         >
           <Suspense fallback={

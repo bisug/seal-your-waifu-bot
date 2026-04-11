@@ -24,14 +24,17 @@ const ABILITY_ICONS = {
 const StatBar = ({ icon: Icon, value, max = 300, color = "bg-brand-neon" }) => (
   <div className="flex items-center space-x-2">
     <Icon size={10} className="text-slate-500 shrink-0" />
-    <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
+    <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5 shadow-inner">
       <motion.div 
         initial={{ width: 0 }}
         animate={{ width: `${(value / max) * 100}%` }}
-        className={`h-full ${color} shadow-[0_0_5px_rgba(16,185,129,0.3)]`}
-      />
+        transition={{ type: "spring", damping: 20, stiffness: 100 }}
+        className={`h-full ${color} shadow-[0_0_12px_rgba(16,185,129,0.3)] relative`}
+      >
+        <div className="absolute inset-0 bg-white/20 animate-shimmer" />
+      </motion.div>
     </div>
-    <span className="text-[9px] font-mono font-black text-slate-300 w-6 text-right">{value}</span>
+    <span className="text-[9px] font-mono font-black text-slate-300 w-6 text-right leading-none">{value}</span>
   </div>
 );
 
@@ -312,28 +315,48 @@ export const Hatchery = () => {
 
       <AnimatePresence>
         {hatchingResult && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-brand-midnight/90 backdrop-blur-xl">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-brand-midnight/95 backdrop-blur-3xl overflow-hidden">
             <motion.div 
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="w-full max-w-sm"
+              initial={{ scale: 0 }}
+              animate={{ rotate: [0, 90, 180, 270, 360] }}
+              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              className="absolute w-[800px] h-[800px] bg-brand-neon/5 blur-[120px] rounded-full pointer-events-none"
+            />
+            
+            <motion.div 
+              initial={{ scale: 0.5, opacity: 0, y: 50 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 1.1, opacity: 0 }}
+              transition={{ type: "spring", bounce: 0.4, duration: 0.8 }}
+              className="w-full max-w-sm relative z-20"
             >
-              <div className="text-center mb-8">
-                 <h3 className="text-brand-neon font-black uppercase tracking-[0.4em] text-sm mb-2">Character Hatched!</h3>
-                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Added to your harem</p>
+              <div className="text-center mb-10">
+                 <motion.div
+                   initial={{ opacity: 0, y: -20 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   transition={{ delay: 0.5 }}
+                 >
+                   <h3 className="text-brand-neon font-black uppercase tracking-[0.5em] text-[10px] mb-3">Sync Accomplished</h3>
+                   <h2 className="text-2xl font-black text-white uppercase tracking-wider">New Unit Acquired</h2>
+                 </motion.div>
               </div>
 
-              <div className="relative">
-                <div className="absolute -inset-10 bg-brand-neon/10 blur-[100px] rounded-full animate-pulse" />
-                <Card character={hatchingResult} />
+              <div className="relative group">
+                <div className="absolute -inset-20 bg-brand-neon/15 blur-[100px] rounded-full animate-pulse" />
+                <div className="absolute -inset-1 bg-gradient-to-r from-brand-neon/0 via-brand-neon/40 to-brand-neon/0 blur-xl opacity-50 group-hover:opacity-100 transition-opacity" />
+                <Card character={hatchingResult} className="shadow-2xl shadow-brand-neon/10" />
               </div>
 
-              <button 
+              <motion.button 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1 }}
                 onClick={() => setHatchingResult(null)}
-                className="w-full mt-12 py-5 rounded-2xl bg-white text-brand-midnight font-black uppercase text-[11px] tracking-[0.3em] active:scale-95 transition-all shadow-xl"
+                whileTap={{ scale: 0.95 }}
+                className="w-full mt-14 py-5 rounded-3xl bg-white text-brand-midnight font-black uppercase text-[11px] tracking-[0.4em] transition-all shadow-[0_20px_40px_rgba(255,255,255,0.1)] active:shadow-none"
               >
-                Close
-              </button>
+                Return to Core
+              </motion.button>
             </motion.div>
           </div>
         )}
