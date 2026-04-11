@@ -18,6 +18,7 @@ Key prefixes:
 
 import json
 import time
+import asyncio
 from typing import Any, Optional, List
 from Grabber.database import r as _redis
 r = _redis
@@ -258,17 +259,14 @@ async def get_total_ranked_users(metric: str = "level") -> int:
     except Exception: return 0
 
 
-_rebuild_lock = None
+# FIX: Create the lock at module level — no lazy init, no global mutation needed.
+# asyncio.Lock() is safe to instantiate at module level in Python 3.10+.
+_rebuild_lock = asyncio.Lock()
 
 async def rebuild_leaderboard(user_collection, metric: str = "level"):
     """
     Cold-rebuild a specific Redis ZSET from MongoDB with memory safety.
     """
-    global _rebuild_lock
-    if _rebuild_lock is None:
-        import asyncio
-        _rebuild_lock = asyncio.Lock()
-        
     async with _rebuild_lock:
         if not _redis: return
         key = _zset_key(metric)

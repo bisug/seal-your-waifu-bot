@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { cn } from '../utils';
-import { User, Search, Trophy, ShoppingBag, Star, LayoutGrid, Egg } from 'lucide-react';
+import { User, Search, Trophy, ShoppingBag, Star, LayoutGrid, Egg, Zap } from 'lucide-react';
 
 export const TabNavigation = ({ activeTab, onNavigate }) => {
   const tabs = [
