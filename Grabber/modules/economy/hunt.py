@@ -17,7 +17,7 @@ from Grabber.modules.collection.rarities import RARITY_MAP
 from Grabber.core.keyboard import get_webapp_button
 from Grabber.core.cache import invalidate_user_cache, sync_user_to_redis, is_on_cooldown as redis_cooldown
 from Grabber.core.utils import html_escape, get_now_utc, reply_media_dynamic
-from Grabber.modules.progression.pet import DEFAULT_PET
+from Grabber.modules.progression.pet import DEFAULT_PET, get_effective_affection
 from Grabber.core.constants import EGG_TIERS, CORRUPTED_EGG_CHANCE
 
 # Configuration
@@ -66,9 +66,18 @@ async def hunt_cmd(bot, message: types.Message):
         current_pet_name = user.get("current_pet", DEFAULT_PET["name"])
         pet = next((p for p in pets if p.get("name") == current_pet_name), DEFAULT_PET)
         
+        affection = get_effective_affection(pet)
+        aff_multiplier = 1.0
+        if affection >= 80:
+            aff_multiplier = 1.2
+        elif affection <= 20:
+            aff_multiplier = 0.8
+            
         ability = pet.get("ability", "None")
-        luck = pet.get("luck", 0.1)
-        cooldown_duration = 50 if ability == "Speedster" else 60
+        luck = pet.get("luck", 0.1) * aff_multiplier
+        
+        base_cd = 50 if ability == "Speedster" else 60
+        cooldown_duration = int(base_cd / aff_multiplier)
 
         # 2. Cooldown Check (Safe Fail-Open)
         try:
@@ -94,19 +103,22 @@ async def hunt_cmd(bot, message: types.Message):
             shards = int(shards * 1.2)
             bonus_text += "\n💎 <b>+20% Premium Bonus!</b>"
 
-        if ability == "Scavenger" and random.random() < 0.2:
+        scavenger_chance = 0.2 * aff_multiplier
+        if ability == "Scavenger" and random.random() < scavenger_chance:
             shards *= 2
             bonus_text += "\n<b>Double Shards!</b> (Scavenger)"
 
         # Calculate XP
         xp_gain = random.randint(10, 20)
+        luck_modifier = 1.0 + (0.05 * aff_multiplier)
         if ability == "Beginner's Luck":
-            xp_gain = int(xp_gain * 1.05)
+            xp_gain = int(xp_gain * luck_modifier)
 
         # 4. Loot Determination
         eggs_to_push = []
         base_drop_chance = 15 * (1 + luck)
-        extra_drop = (ability == "Hoarder" and random.random() < 0.05)
+        hoarder_chance = 0.05 * aff_multiplier
+        extra_drop = (ability == "Hoarder" and random.random() < hoarder_chance)
 
         if random.uniform(0, 100) <= base_drop_chance or extra_drop:
             tier_key = get_egg_roll(luck)
@@ -277,7 +289,13 @@ async def egg_incubate_callback(_, query: types.CallbackQuery):
     
     wait_min = tier_info["wait_min"]
     if active_pet.get("ability") == "Caregiver":
-        wait_min = int(wait_min * 0.5)
+        affection = get_effective_affection(active_pet)
+        aff_multiplier = 1.0
+        if affection >= 80:
+            aff_multiplier = 1.2
+        elif affection <= 20:
+            aff_multiplier = 0.8
+        wait_min = int(wait_min * (0.5 / aff_multiplier))
 
     ready_time = get_now_utc() + timedelta(minutes=wait_min)
 
