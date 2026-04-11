@@ -16,48 +16,58 @@ export const Card = memo(({ character, onClick }) => {
 
     return (
         <motion.div
-            whileHover={{ scale: 1.05, y: -5 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.02, y: -5 }}
+            whileTap={{ scale: 0.98 }}
             onClick={handleClick}
             className={cn(
-                "relative rounded-[2rem] overflow-hidden aspect-[2/3] group transition-all duration-500 cursor-pointer",
-                "border bg-slate-900/60 backdrop-blur-xl shadow-2xl",
+                "relative rounded-[1.5rem] overflow-hidden aspect-[2/3] group transition-all duration-500 cursor-pointer",
+                "border bg-slate-900 shadow-2xl",
                 visuals.border,
                 visuals.glow,
-                isSpecial && "ring-1 ring-white/10"
+                isSpecial && "ring-1 ring-white/20"
             )}
         >
+            {/* Main Character Image */}
             <img
                 src={character.img_url || 'https://files.catbox.moe/2hsawz.jpg'}
                 alt={character.name}
                 decoding="async"
-                className="w-full h-full object-cover object-top grayscale-[0.2] group-hover:grayscale-0 transition-all duration-700 group-hover:scale-110"
+                className="absolute inset-0 w-full h-full object-cover object-top transition-all duration-700 group-hover:scale-110"
             />
             
-            {/* View Indicator Overlay */}
-            <div className="absolute inset-0 bg-brand-midnight/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                <div className="w-12 h-12 rounded-2xl bg-brand-neon/20 backdrop-blur-md border border-brand-neon/40 flex items-center justify-center text-brand-neon transform scale-50 group-hover:scale-100 transition-transform duration-500">
-                    <Zap size={20} />
-                </div>
+            {/* Cinematic Gradient Overlays */}
+            <div className="absolute inset-0 bg-gradient-to-t from-brand-midnight via-transparent to-black/20" />
+            
+            {/* Rarity Badge - Top Left */}
+            <div className={cn(
+                "absolute top-3 left-3 px-2 py-0.5 rounded-full border backdrop-blur-md z-20 flex items-center space-x-1 shadow-lg",
+                visuals.bg.split(' ')[0], // Base color for pill
+                visuals.border
+            )}>
+                <div className={cn("w-1.5 h-1.5 rounded-full", isSpecial ? "animate-pulse" : "", visuals.text.replace('text-', 'bg-'))} />
+                <span className={cn("text-[8px] font-black uppercase tracking-widest", visuals.text)}>
+                    {character.rarity}
+                </span>
             </div>
 
-            <div className="absolute inset-0 bg-gradient-to-t from-brand-midnight via-transparent to-transparent opacity-80" />
-            
-            <div className="absolute bottom-3 inset-x-3">
-                <p className="text-[clamp(0.55rem,2.5vw,0.65rem)] font-black uppercase text-white tracking-widest line-clamp-1 mb-0.5">
-                    {character.name}
-                </p>
-                <div className="flex items-center space-x-1 opacity-60">
-                    <div className={cn("w-1 h-1 rounded-full", isSpecial ? "animate-pulse" : "bg-slate-500", visuals.text.replace('text-', 'bg-'))} />
-                    <span className={cn("text-[clamp(0.45rem,2vw,0.5rem)] font-bold uppercase tracking-widest", visuals.text)}>{character.rarity}</span>
-                </div>
-            </div>
-            
+            {/* Count Badge - Top Right */}
             {character.count > 1 && (
-                <div className="absolute top-4 right-4 px-2 py-1 rounded-xl bg-brand-neon text-brand-midnight text-[10px] font-black shadow-xl shadow-brand-neon/20">
+                <div className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-brand-midnight/60 backdrop-blur-md border border-white/10 text-white text-[9px] font-black z-20">
                     x{character.count}
                 </div>
             )}
+
+            {/* Bottom Content Area */}
+            <div className="absolute bottom-0 inset-x-0 p-4 pt-10 bg-gradient-to-t from-brand-midnight to-transparent">
+                <h3 className="text-[12px] font-black uppercase text-white tracking-widest leading-tight drop-shadow-md group-hover:text-brand-neon transition-colors">
+                    {character.name}
+                </h3>
+            </div>
+
+            {/* Interaction Glow */}
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
+                <div className={cn("absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t opacity-40", visuals.bg.split(' ')[0])} />
+            </div>
         </motion.div>
     );
 });
