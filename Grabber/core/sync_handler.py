@@ -6,6 +6,7 @@ import logging
 LOGGER = logging.getLogger(__name__)
 
 async def sync_user_data(message):
+    """Update user first name and username in the database periodically."""
     if not message.from_user:
         return
     user_id = message.from_user.id
@@ -28,10 +29,12 @@ async def sync_user_data(message):
 
 @app.on_message(filters.regex(r"^/"), group=-20)
 async def app_sync_user(client, message):
+    """Handler for MainBot to trigger user data sync on commands."""
     await sync_user_data(message)
     message.continue_propagation()
 
 @game_bot.on_message(filters.regex(r"^/"), group=-20)
 async def game_bot_sync_user(client, message):
+    """Handler for GameBot to trigger user data sync on commands."""
     await sync_user_data(message)
     message.continue_propagation()

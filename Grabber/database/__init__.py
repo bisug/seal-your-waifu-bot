@@ -7,11 +7,9 @@ LOGGER = logging.getLogger(__name__)
 
 
 class Database:
-    """
-    Database abstraction layer.
-    Manages the MongoDB connection and collection references.
-    """
+    """Database abstraction layer for MongoDB connections."""
     def __init__(self, uri):
+        """Initialize MongoDB client and collection references."""
         self.client = AsyncIOMotorClient(uri)
         self.db = self.client['Character_catchers']
 

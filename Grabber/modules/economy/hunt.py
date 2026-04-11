@@ -26,12 +26,12 @@ EGG_TIERS = {
 }
 
 
-# Mapping for numeric tiers (from Battle Pass) to EGG_TIERS keys
+# Mapping for numeric tiers from Battle Pass to internal tier keys
 TIER_MAP = {
     "1": "common",
     "2": "gold",
     "3": "void",
-    "4": "gold", # Fallback for legendary if not defined
+    "4": "gold",
     "5": "void"
 }
 
@@ -42,10 +42,8 @@ CORRUPTED_EGG_CHANCE = 5
 from Grabber.modules.progression.pet import DEFAULT_PET
 
 def get_egg_roll(luck_multiplier):
-
+    """Determine the tier of the egg found based on character luck."""
     roll = random.uniform(0, 100)
-
-
     void_c = EGG_TIERS["void"]["chance"] * (1 + luck_multiplier)
     gold_c = EGG_TIERS["gold"]["chance"] * (1 + luck_multiplier)
 
@@ -132,7 +130,7 @@ async def hunt_cmd(_, message: types.Message):
             eggs_to_push.append(extra_egg)
             bonus_text += "\n🥚 <b>Bonus Egg Found!</b> (Hoarder)"
 
-        # Single atomic write: balance + all eggs at once
+        # Atomic database update to save progress
         await user_collection.update_one(
             get_user_filter(user_id),
             {

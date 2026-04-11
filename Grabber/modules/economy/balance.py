@@ -12,6 +12,7 @@ from Grabber.core.user import get_user_filter
 
 @app.on_message(filters.command(["balance", "bal"]))
 async def balance_cmd(_, message: types.Message):
+    """Retrieve and display the user's Shards and Zenith balance."""
     user_id = message.from_user.id
     user = await user_collection.find_one(get_user_filter(user_id))
 
@@ -34,6 +35,7 @@ async def balance_cmd(_, message: types.Message):
 
 @app.on_message(filters.command("pay") & filters.reply)
 async def pay_cmd(_, message: types.Message):
+    """Initiate a Shard payment to another user via reply."""
     sender_id = message.from_user.id
     sender_name = message.from_user.first_name
     recipient = message.reply_to_message.from_user
@@ -70,6 +72,7 @@ async def pay_cmd(_, message: types.Message):
 
 @app.on_callback_query(filters.regex(r"^pay_"))
 async def pay_callback_handler(_, query: types.CallbackQuery):
+    """Handle the confirmation or cancellation of a payment."""
     sender_id = query.from_user.id
     data = query.data.split("_")
     action = data[1]
