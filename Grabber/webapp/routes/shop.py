@@ -267,15 +267,15 @@ async def claim_pass_level(level: int, user_id: int = Depends(get_current_user))
                     "status": "fresh"
                 })
         
-        updates = {"$push": {"claimed_levels": level}}
+        # Build the $push doc up front to avoid fragile spread-merge patterns.
+        push_ops: dict = {"claimed_levels": level}
+        if eggs:
+            push_ops["eggs"] = {"$each": eggs}
+
+        updates: dict = {"$push": push_ops}
         if shards > 0:
             updates["$inc"] = {"balance": shards}
-        if eggs:
-            if "$push" in updates: # Handle multiple pushes
-                updates["$push"] = {**updates["$push"], "eggs": {"$each": eggs}}
-            else:
-                updates["$push"] = {"eggs": {"$each": eggs}}
-        
+
         await user_collection.update_one(get_user_id_query(user_id), updates)
         return {"status": "success", "shards": shards, "eggs": len(eggs)}
 

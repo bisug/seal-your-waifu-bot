@@ -1,5 +1,6 @@
 import asyncio
 import re
+import hashlib
 from fastapi import APIRouter, Depends, HTTPException, Query
 from config import config
 from Grabber import LOGGER
@@ -129,10 +130,12 @@ async def get_me(user: dict = Depends(get_current_user_data)):
         if isinstance(egg, str):
             # Resolve numeric or string tier to a cleaner name for the WebApp
             tier_key = TIER_MAP.get(egg, egg)
-            # FIX: Include idx to prevent ID collision when multiple legacy string-type
-            # eggs are migrated in the same second (datetime.now() has second precision).
+            # FIX: Use a hash of user_id+idx instead of datetime.now() so the ID
+            # is stable across multiple /me calls. The old timestamp-based ID
+            # changed every request, breaking any frontend lookup by egg ID.
+            stable_id = hashlib.md5(f"{user_id}_{idx}".encode()).hexdigest()[:12]
             processed_eggs.append({
-                "id": f"mig_{int(datetime.now().timestamp())}_{idx}",
+                "id": f"mig_{stable_id}",
                 "tier": tier_key,
                 "name": f"{tier_key.capitalize()} Egg",
                 "status": "fresh",

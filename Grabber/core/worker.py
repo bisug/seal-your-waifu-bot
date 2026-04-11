@@ -76,7 +76,9 @@ async def verify_top_users_consistency():
     and fixes any discrepancies.
     """
     # Check top 50 by char_count
-    cursor = user_collection.find({}).sort("char_count", -1).limit(50)
+    # FIX: Use {$exists: true} so MongoDB can use the sparse char_count index.
+    # find({}).sort() on a sparse index may fall back to a full collection scan.
+    cursor = user_collection.find({"char_count": {"$exists": True}}).sort("char_count", -1).limit(50)
     fixed = 0
     async for user in cursor:
         actual_count = len(user.get("characters") or [])
