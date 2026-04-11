@@ -55,7 +55,7 @@ class UserProfileResponse(BaseModel):
     achievements: List[AchievementModel] = Field(default_factory=list)
     titles: TitlesModel
     current_pet: Optional[PetModel] = None
-    owned_pets: List[PetModel] = Field(default_factory=list)
+    pets: List[PetModel] = Field(default_factory=list)
     eggs: List[EggModel] = Field(default_factory=list)
 
 class CharacterModel(BaseModel):
