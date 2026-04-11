@@ -4,13 +4,10 @@ import { User, Search, Trophy, ShoppingBag, Star, LayoutGrid, Egg } from 'lucide
 
 export const TabNavigation = ({ activeTab, onNavigate }) => {
   const tabs = [
-    { id: 'profile', icon: User, label: 'Profile' },
-    { id: 'gallery', icon: Search, label: 'Gallery' },
-    { id: 'quests', icon: LayoutGrid, label: 'Quests' },
-    { id: 'incubation', icon: Egg, label: 'Incubation' },
-    { id: 'leaderboard', icon: Trophy, label: 'Rank' },
-    { id: 'pass', icon: Star, label: 'Pass' },
-    { id: 'shop', icon: ShoppingBag, label: 'Shop' },
+    { id: 'profile', icon: User, label: 'Harem' },
+    { id: 'incubation', icon: Egg, label: 'Hatchery' },
+    { id: 'market', icon: ShoppingBag, label: 'Market' },
+    { id: 'nexus', icon: Zap, label: 'Nexus' },
   ];
 
   const handleNavigate = (tabId) => {
