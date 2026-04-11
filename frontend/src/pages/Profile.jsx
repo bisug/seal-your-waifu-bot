@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useUser } from '../context/UserContext';
 import { apiFetch } from '../api';
 import { ProgressBar, Card, Skeleton, CardSkeleton } from '../components/UI';
-import { Shield, Zap, Users, Trophy, Search, Loader2 } from 'lucide-react';
+import { Shield, Activity, Users, Trophy, Search, Loader2 } from 'lucide-react';
 import { formatNumber } from '../utils';
 
 export const Profile = ({ onCharClick }) => {
@@ -131,7 +131,7 @@ export const Profile = ({ onCharClick }) => {
       <div className="px-4 -mt-4 relative z-30 grid grid-cols-3 gap-2.5 mb-8">
         {[
           { icon: Shield, label: 'XP', value: user.stats?.xp || 0, color: 'text-brand-neon', bg: 'bg-brand-neon/5' },
-          { icon: Zap, label: 'Zenith ⧫', value: user.stats?.zenith || 0, color: 'text-brand-accent', bg: 'bg-brand-accent/5' },
+          { icon: Activity, label: 'Zenith ⧫', value: user.stats?.zenith || 0, color: 'text-brand-accent', bg: 'bg-brand-accent/5' },
           { icon: Users, label: 'Collection', value: user.stats?.total_characters || 0, color: 'text-white', bg: 'bg-white/5' },
         ].map((stat, i) => (
           <div key={i} className={`glass-panel p-3 rounded-2xl border border-white/10 flex flex-col items-center ${stat.bg} backdrop-blur-md`}>

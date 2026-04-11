@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Cpu, Activity, Zap } from 'lucide-react';
+import { Shield, Cpu } from 'lucide-react';
 
 const BOOT_LOGS = [
   "Initializing Harem System...",

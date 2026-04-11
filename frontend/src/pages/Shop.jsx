@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '../api';
 import { Card, CardSkeleton, useApi } from '../components/UI';
-import { ShoppingBag, Zap, Timer, PackageOpen, Loader2, Check } from 'lucide-react';
+import { ShoppingBag, Activity, Timer, PackageOpen, Loader2, Check } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 import { toast } from 'react-hot-toast';
 import { formatNumber } from '../utils';
@@ -48,7 +48,7 @@ export const Shop = ({ onCharClick }) => {
           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Acquire Waifus</p>
         </div>
         <div className="flex items-center space-x-2 bg-brand-neon/10 border border-brand-neon/20 px-3 py-1.5 rounded-xl shadow-[0_0_15px_rgba(0,242,255,0.1)]">
-          <Zap size={14} className="text-brand-neon" />
+          <Activity size={14} className="text-brand-neon" />
           <span className="text-sm font-black text-brand-neon">{formatNumber(user?.stats?.zenith)}</span>
         </div>
       </header>
