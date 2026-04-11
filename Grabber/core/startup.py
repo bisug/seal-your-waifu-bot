@@ -2,90 +2,75 @@ import sys
 import platform
 import logging
 import pyrogram
-import asyncio
-from pyrogram import enums, errors
+from pyrogram import Client, enums, errors
 from Grabber.core.utils import get_now_utc
 from Grabber.database import r as _redis, collection
 from config import config
 
 LOGGER = logging.getLogger(__name__)
 
-# System Banner for Logs
-ASCII_BANNER = r"""
-   _____   ______            _         ____    ____  _______ 
-  / ___/  / ____/           / \       / __ \  / __ \/__   __/
-  \__ \  / __/             / _ \     / / / / / / / /  / /   
- ___/ / / /___            / ___ \   / /_/ / / /_/ /  / /    
-/____/ /_____/           /_/   \_\ /_____/  \____/  /_/     
 
- PROJECT SEAL - SYSTEM STATUS: ONLINE
-"""
-
-def print_banner():
-    """Prints the project banner to the system logs."""
-    for line in ASCII_BANNER.split("\n"):
-        if line.strip():
-            print(f"\033[96m{line}\033[0m")
-    LOGGER.info("Seal Bot startup successful.")
-
-async def send_startup_report(client, chat_id, module_count: int):
+async def send_startup_report(client: Client, chat_id: int, module_count: int) -> None:
     """
-    Sends a detailed system status report. 
-    Attempts to send to the designated group, falling back to Owner PM if unavailable.
+    Send a clean system status report to a logs group (fallback to owner PM).
     """
     try:
         me = await client.get_me()
-        
-        # System Data Preparation
+
+        # System info
         py_ver = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
         pg_ver = pyrogram.__version__
         os_platform = platform.system()
         os_arch = platform.machine()
-        
-        redis_status = "STABLE" if _redis else "DISABLED"
-        mongo_status = "STABLE"
-        
+
+        # Redis status
+        redis_status = "✅ CONNECTED" if _redis and await _redis.ping() else "❌ DISCONNECTED"
+
+        # MongoDB status & character count
+        mongo_status = "❌ DISCONNECTED"
+        total_chars = "UNKNOWN"
         try:
             total_chars = await collection.count_documents({})
-        except Exception:
-            total_chars = "UNKNOWN"
+            mongo_status = "✅ CONNECTED"
+        except Exception as db_err:
+            LOGGER.warning(f"MongoDB health check failed: {db_err}")
 
         now = get_now_utc().strftime("%Y-%m-%d %H:%M:%S")
 
+        # Clean, modern report without decorative lines
         report = (
-            "<code>[ PROJECT SEAL - SYSTEM STATUS REPORT ]</code>\n"
-            "<code>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</code>\n"
-            f"<code>BOT IDENTITY     : {me.first_name} (@{me.username})</code>\n"
-            f"<code>BOT ID           : {me.id}</code>\n"
-            f"<code>OWNER ID         : {config.OWNER_ID}</code>\n"
-            f"<code>PYTHON VERSION   : {py_ver}</code>\n"
-            f"<code>PYROGRAM VERSION : {pg_ver}</code>\n"
-            f"<code>OPERATING SYSTEM : {os_platform} ({os_arch})</code>\n"
-            f"<code>LOADED MODULES   : {module_count}</code>\n"
-            f"<code>CHARACTER COUNT  : {total_chars}</code>\n"
-            f"<code>MONGODB STATUS   : {mongo_status}</code>\n"
-            f"<code>REDIS STATUS     : {redis_status}</code>\n"
-            f"<code>SYSTEM TIME      : {now}</code>\n"
-            "<code>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</code>\n"
-            "<code>STATUS: OPERATIONAL | HANDLERS: READY</code>"
+            f"<b>📡 PROJECT SEAL · SYSTEM STATUS</b>\n"
+            f"<code>Bot</code>        → {me.first_name} (@{me.username})  <code>({me.id})</code>\n"
+            f"<code>Owner</code>      → <code>{config.OWNER_ID}</code>\n"
+            f"<code>Python</code>     → {py_ver}\n"
+            f"<code>Pyrogram</code>   → {pg_ver}\n"
+            f"<code>OS</code>         → {os_platform} ({os_arch})\n"
+            f"<code>Modules</code>    → {module_count} loaded\n"
+            f"<code>Characters</code> → {total_chars}\n"
+            f"<code>MongoDB</code>    → {mongo_status}\n"
+            f"<code>Redis</code>      → {redis_status}\n"
+            f"<code>System time</code>→ {now}\n"
+            f"\n✨ <b>STATUS: OPERATIONAL · HANDLERS READY</b>"
         )
 
-        # Attempt to resolve peer and send message
+        # Try sending to logs group, fallback to owner
         try:
-            # For supergroups, get_chat can help "resolve" the peer for Pyrogram
-            if isinstance(chat_id, int) and str(chat_id).startswith("-100"):
-                try:
-                    await client.get_chat(chat_id)
-                except Exception:
-                    pass
-            
-            await client.send_message(chat_id, report)
-        except (errors.PeerIdInvalid, errors.ChannelInvalid, errors.ChatWriteForbidden):
-            LOGGER.warning(f"Dedicated Logs Group ({chat_id}) inaccessible. Falling back to Owner PM.")
-            await client.send_message(config.OWNER_ID, f"⚠️ <b>Logs Group Inaccessible</b>\n\n{report}")
+            await client.send_message(chat_id, report, parse_mode=enums.ParseMode.HTML)
+        except (errors.PeerIdInvalid, errors.ChannelInvalid, errors.ChatWriteForbidden) as e:
+            LOGGER.warning(f"Logs group {chat_id} inaccessible: {e}. Falling back to owner PM.")
+            fallback_msg = f"⚠️ <b>Logs group unreachable</b>\n\n{report}"
+            await client.send_message(config.OWNER_ID, fallback_msg, parse_mode=enums.ParseMode.HTML)
         except Exception as e:
-            LOGGER.error(f"Startup report primary delivery failed: {e}")
-            await client.send_message(config.OWNER_ID, report)
-            
+            LOGGER.error(f"Unexpected error sending startup report: {e}")
+            await client.send_message(config.OWNER_ID, report, parse_mode=enums.ParseMode.HTML)
+
     except Exception as e:
-        LOGGER.warning(f"Critical failure in startup report logic: {e}")
+        LOGGER.critical(f"Failed to generate startup report: {e}")
+        try:
+            await client.send_message(
+                config.OWNER_ID,
+                f"❌ <b>Startup report failed</b>\nError: {e}",
+                parse_mode=enums.ParseMode.HTML
+            )
+        except Exception:
+            LOGGER.critical("Could not notify owner about startup failure.")
