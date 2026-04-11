@@ -18,6 +18,7 @@ RARITY_ICONS = {
 
 @app.on_message(filters.command(["profile", "myprofile", "me", "status", "mystatus"]))
 async def profile_handler(_, message: types.Message):
+    """Generate and display the user's progress and collection profile."""
     user_id = message.from_user.id
     user_data = await get_user_data(user_id)
 

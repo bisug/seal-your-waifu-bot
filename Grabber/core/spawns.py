@@ -11,10 +11,9 @@ from Grabber.database import spawns_collection, message_counts_collection, user_
 from Grabber import app, LOGGER, config
 from Grabber.core.waifu import get_or_load_characters
 
-# --- REDIS KEYS ---
-# msg_count:{chat_id} -> str (int)
-# spawn:state:{chat_id} -> hash
-# spawn:active_users:{chat_id} -> zset (uid: timestamp)
+# Configuration for standard Redis key prefixes
+# Chat state keys: spawn:state:{chat_id}
+# Active user tracking: spawn:active_users:{chat_id}
 
 async def _rget(key: str) -> Optional[str]:
     if not _redis: return None
@@ -64,8 +63,7 @@ async def get_chat_state(chat_id: int) -> Dict[str, Any]:
                 if to_cache:
                     await _redis.hset(key, mapping=to_cache)
             else:
-                # FIX: Cache a sentinel for groups with no state so repeated messages
-                # from a new group don't hit MongoDB on every single message.
+                # Cache a negative sentinel to avoid redundant DB lookups for new groups
                 await _redis.hset(key, mapping={"_no_state": "1"})
             await _redis.expire(key, 3600) # 1h TTL
         except Exception as e: LOGGER.debug(f"Redis fallback cache error: {e}")
@@ -137,7 +135,8 @@ async def clear_active_spawn(chat_id: int, user_id: int) -> bool:
                 key = f"spawn:state:{chat_id}"
                 await _redis.hset(key, "first_correct_guess", str(user_id))
                 await _redis.hdel(key, "last_character", "message_id")
-            except Exception as e: LOGGER.debug(f"Redis operation bypassed: {e}")
+            except Exception as e:
+                LOGGER.debug(f"Persistence error: {e}")
         return True
     return False
 
@@ -255,6 +254,7 @@ async def send_character(chat_id: int, rarity: str):
             caption=caption,
             parse_mode=ParseMode.HTML
         )
+        # Register the spawn as active in the persistent state
         await set_active_spawn(chat_id, character, msg.id)
 
     except Exception as e:

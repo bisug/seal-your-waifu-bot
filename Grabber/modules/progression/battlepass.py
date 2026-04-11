@@ -21,6 +21,7 @@ PASS_EMOJI = {
 
 @app.on_message(filters.command("pass"))
 async def view_pass(_, message: types.Message):
+    """View the user's current Battle Pass progress and tier."""
     user_id = message.from_user.id
     progress = await get_user_progress(user_id)
 
@@ -72,6 +73,7 @@ async def view_pass(_, message: types.Message):
 
 
 async def view_pass_inline(query: types.CallbackQuery):
+    """Display the Battle Pass menu as an inline callback response."""
     user_id = query.from_user.id
     progress = await get_user_progress(user_id)
 

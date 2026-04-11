@@ -119,6 +119,7 @@ HELP_DATA = {
 
 @app.on_message(filters.command("start"))
 async def start_handler(_, message: types.Message):
+    """Entry point for the bot. Handles new users and referral links."""
     user_id = message.from_user.id
     existing_user = await user_collection.find_one(get_user_filter(user_id))
 
@@ -212,7 +213,8 @@ async def start_handler(_, message: types.Message):
 
 @app.on_callback_query(filters.regex(r"^st:(h|b)"))
 async def start_callback_handler(_, query: types.CallbackQuery):
-    await query.answer()  # Dismiss spinner instantly
+    """Handle navigation back to the start menu from help or collection pages."""
+    await query.answer()
     is_private = query.message.chat.type == enums.ChatType.PRIVATE
     builder = KeyboardBuilder()
     builder.add_button("Add to Group", url=f"https://t.me/{config.BOT_USERNAME}?startgroup=true")
@@ -239,7 +241,8 @@ async def start_callback_handler(_, query: types.CallbackQuery):
 
 @app.on_callback_query(filters.regex(r"^help:(.+)"))
 async def help_callback_handler(_, query: types.CallbackQuery):
-    await query.answer()  # Dismiss spinner instantly
+    """Handle navigation within the multi-category help menu."""
+    await query.answer()
     module = query.data.split(":")[1].upper()
     if module == "MAIN":
         data = HELP_DATA["MAIN"]

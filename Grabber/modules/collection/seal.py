@@ -15,8 +15,8 @@ AUTHORIZED_USERS = set(sudo_users + [OWNER_ID])
 
 @app.on_message(filters.command("seal") & filters.group)
 async def seal_handler(_, message: types.Message):
+    """Handle core character catching logic for standard spawn messages."""
     chat_id = message.chat.id
-    user_id = message.from_user.id
 
 
     state = await get_chat_state(chat_id)
@@ -57,7 +57,7 @@ async def seal_handler(_, message: types.Message):
         is_match = non_trivial and guess_words.issubset(correct_words)
 
     if is_match:
-        # Atomically try to claim the character
+        # Atomic claim check to prevent race conditions during catch
         if not await clear_active_spawn(chat_id, user_id):
             return # Someone else caught it already
 
@@ -116,11 +116,13 @@ async def seal_handler(_, message: types.Message):
 
 @app.on_message(filters.command("messagecount") & filters.group)
 async def messagecount_handler(_, message: types.Message):
+    """View the total message count registered for the current chat."""
     count = await get_message_count(message.chat.id)
     await message.reply_text(f"📊 <b>Total messages in this chat:</b> <code>{count}</code>", parse_mode=ParseMode.HTML)
 
 @app.on_message(filters.command("cnow") & filters.group)
 async def cnow_handler(_, message: types.Message):
+    """Force a character spawn (Owner/Sudo only)."""
     if message.from_user.id not in AUTHORIZED_USERS:
         return # Ignore non-owners
 

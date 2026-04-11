@@ -71,13 +71,12 @@ async def check_member_requirement(bot, chat, min_count=50):
         except errors.UserNotParticipant:
             return False, "main_bot_missing", count
         except Exception as e:
-            LOGGER.debug(f"Failed to fetch ID via pyrogram: {e}")# Other errors (e.g. no permission to view members) - assume present to be safe
+            LOGGER.debug(f"User participation check failed: {e}")
             pass
 
         return True, None, count
     except Exception as e:
-        LOGGER.error(f"Failed to resolve group name: {e}")
-        # Generic fallback
+        LOGGER.error(f"Group membership resolution error: {e}")
         return True, None, 0
 
 async def send_media_dynamic(client, chat_id, media_url, **kwargs):
