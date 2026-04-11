@@ -100,6 +100,7 @@ async def check_and_grant_rewards(user_id: int, old_level: int, new_level: int, 
 
     total_coins_earned = 0
     eggs_awarded = []
+    newly_claimed = []  # Tracks only levels claimed in this call (for $addToSet)
     
     bank_shards = 0
     bank_eggs = {} # tier: count
@@ -119,6 +120,12 @@ async def check_and_grant_rewards(user_id: int, old_level: int, new_level: int, 
         if level in claimed_levels:
             continue
             
+        # FIX: Track *newly* claimed levels separately so we can use $addToSet
+        # instead of the old $set which overwrote the whole array. Two concurrent
+        # reward grants (e.g. rapid XP from two sources) both fetching the same
+        # stale claimed_levels and writing back would silently erase each other's
+        # additions. $addToSet is atomic — MongoDB handles deduplication server-side.
+        newly_claimed.append(level)
         claimed_levels.add(level)
         track = PASS_TRACKS.get(level)
         
@@ -172,7 +179,10 @@ async def check_and_grant_rewards(user_id: int, old_level: int, new_level: int, 
             bank_shards += elite_extra
 
     # Perform DB Updates
-    updates = {"$set": {"claimed_levels": list(claimed_levels)}}
+    updates = {}
+    # Use $addToSet instead of $set so concurrent grants don't overwrite each other
+    if newly_claimed:
+        updates["$addToSet"] = {"claimed_levels": {"$each": newly_claimed}}
     if total_coins_earned > 0:
         updates.setdefault("$inc", {})["balance"] = total_coins_earned
         
@@ -184,7 +194,7 @@ async def check_and_grant_rewards(user_id: int, old_level: int, new_level: int, 
     if eggs_awarded:
         updates["$push"] = {"eggs": {"$each": eggs_awarded}}
 
-    if updates.get("$inc") or updates.get("$push") or updates.get("$set"):
+    if updates.get("$inc") or updates.get("$push") or updates.get("$addToSet"):
         await user_collection.update_one(
             {"id": {"$in": [user_id, str(user_id)]}},
             updates

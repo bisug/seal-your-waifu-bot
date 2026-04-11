@@ -57,13 +57,17 @@ async def get_chat_state(chat_id: int) -> Dict[str, Any]:
     
     # Fallback to MongoDB
     state = await spawns_collection.find_one({"chat_id": chat_id})
-    if state and _redis:
-        # Repopulate Redis
+    if _redis:
         try:
-            to_cache = {k: (json.dumps(v) if isinstance(v, dict) else str(v)) for k, v in state.items() if k != "_id"}
-            if to_cache:
-                await _redis.hset(key, mapping=to_cache)
-                await _redis.expire(key, 3600) # 1h TTL
+            if state:
+                to_cache = {k: (json.dumps(v) if isinstance(v, dict) else str(v)) for k, v in state.items() if k != "_id"}
+                if to_cache:
+                    await _redis.hset(key, mapping=to_cache)
+            else:
+                # FIX: Cache a sentinel for groups with no state so repeated messages
+                # from a new group don't hit MongoDB on every single message.
+                await _redis.hset(key, mapping={"_no_state": "1"})
+            await _redis.expire(key, 3600) # 1h TTL
         except Exception as e: LOGGER.debug(f"Redis fallback cache error: {e}")
     return state or {}
 

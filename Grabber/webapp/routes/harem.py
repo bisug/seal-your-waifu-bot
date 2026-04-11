@@ -121,6 +121,8 @@ async def recycle_characters(
         owned_chars = user.get("characters", [])
         if not owned_chars:
             raise HTTPException(status_code=400, detail="Harem is empty")
+
+        stored_char_count = user.get("char_count", len(owned_chars))
             
         from collections import Counter
         to_recycle_counts = Counter(char_ids)
@@ -148,17 +150,14 @@ async def recycle_characters(
         uid_int = normalize_user_id(user["id"])
 
         removed_count = len(owned_chars) - len(new_harem)
+        # FIX: MongoDB raises a write conflict if $inc and $max target the same
+        # field in one operation. Compute the final clamped value here instead.
+        new_char_count = max(0, stored_char_count - removed_count)
         await user_collection.update_one(
             get_user_id_query(uid_int),
             {
-                "$set": {"characters": new_harem},
-                "$inc": {
-                    "zenith": total_reward,
-                    "char_count": -removed_count
-                },
-                # FIX: Prevent char_count from going negative if it was previously
-                # desynchronised. $max floors the field at 0 after the decrement.
-                "$max": {"char_count": 0}
+                "$set": {"characters": new_harem, "char_count": new_char_count},
+                "$inc": {"zenith": total_reward}
             }
         )
         

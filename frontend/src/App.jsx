@@ -129,7 +129,7 @@ const AppContent = () => {
   const handleNavigate = useCallback((tab) => {
     const tg = window.Telegram?.WebApp;
     // Context-Aware Haptics: Profile & Shop get more 'Weight'
-    if (tab === 'profile' || tab === 'shop') {
+    if (tab === 'profile' || tab === 'market') {
       tg?.HapticFeedback?.impactOccurred('medium');
     } else {
       tg?.HapticFeedback?.impactOccurred('light');
@@ -171,6 +171,9 @@ const AppContent = () => {
             <button 
               onClick={() => { 
                 if (window.confirm("Are you sure you want to perform a Deep Reset? This will wipe your local session data.")) {
+                  // FIX: Auth token lives in sessionStorage, not localStorage.
+                  // Clear both so the reset actually removes the stale session.
+                  sessionStorage.clear();
                   localStorage.clear(); 
                   window.location.reload(); 
                 }

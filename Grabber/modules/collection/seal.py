@@ -50,8 +50,11 @@ async def seal_handler(_, message: types.Message):
     
     # RULE 2: Subset Match (e.g., 'Light' or 'Yagami' catches 'Light Yagami')
     # All words in guess must be one of the words in the correct name.
+    # Guard: every guess word must be >1 char to prevent trivial captures like
+    # `/seal d` matching 'Monkey D. Luffy' (d ∈ {monkey, d, luffy} → True).
     if not is_match and guess_words:
-        is_match = guess_words.issubset(correct_words)
+        non_trivial = all(len(w) > 1 for w in guess_words)
+        is_match = non_trivial and guess_words.issubset(correct_words)
 
     if is_match:
         # Atomically try to claim the character

@@ -71,7 +71,15 @@ async def leaderboard_ws(websocket: WebSocket):
         for task in pending:
             task.cancel()
     finally:
-        await pubsub.unsubscribe("leaderboard_updates")
+        # FIX: Unsubscribe and fully close the pubsub connection in its own
+        # try/except so that a WebSocketDisconnect from websocket.close()
+        # below cannot skip aclose() and leak the Redis subscription.
+        try:
+            await pubsub.unsubscribe("leaderboard_updates")
+            await pubsub.aclose()
+        except Exception as e:
+            from Grabber import LOGGER
+            LOGGER.debug(f"Pubsub teardown error: {e}")
         try:
             await websocket.close()
         except Exception as e:
