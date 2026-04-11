@@ -24,11 +24,22 @@ class SealClient(Client):
             system_version="Linux",
             workdir="Grabber")
 
+    async def resolve_peer_safe(self, chat_id):
+        """Attempts to resolve a peer ID in the bot's cache to avoid PeerIdInvalid errors."""
+        try:
+            if isinstance(chat_id, int):
+                # Only attempt background resolution for numeric IDs
+                await self.get_chat(chat_id)
+                return True
+        except Exception:
+            pass
+        return False
+
     async def send_message_safe(self, chat_id, text, *args, _retries=0, **kwargs):
-        """Sends a message while handling FloodWait and optional auto-deletion."""
+        """Sends a message while handling FloodWait, Peer resolution, and auto-deletion."""
         auto_delete = kwargs.pop("auto_delete", 0)
         
-        # Handle reply_to_message_id deprecation
+        # Handle reply_parameters logic
         if "reply_to_message_id" in kwargs and "reply_parameters" not in kwargs:
             reply_id = kwargs.pop("reply_to_message_id")
             if reply_id:
@@ -42,22 +53,50 @@ class SealClient(Client):
             return msg
         except errors.FloodWait as e:
             if _retries >= 3:
-                LOGGER.error(f"[{self.name}] FloodWait retry limit reached for {chat_id}")
+                LOGGER.error(f"[{self.name}] FloodWait limit reached for {chat_id}")
                 return None
-            LOGGER.warning(f"[{self.name}] FloodWait detected: Sleeping for {e.value}s")
             await asyncio.sleep(e.value)
-            if auto_delete: kwargs["auto_delete"] = auto_delete
             return await self.send_message_safe(chat_id, text, *args, _retries=_retries+1, **kwargs)
+        except (errors.PeerIdInvalid, errors.ChannelInvalid) as e:
+            if _retries == 0:
+                LOGGER.info(f"[{self.name}] Resolving peer {chat_id} after {type(e).__name__}")
+                await self.resolve_peer_safe(chat_id)
+                return await self.send_message_safe(chat_id, text, *args, _retries=1, **kwargs)
+            LOGGER.error(f"[{self.name}] Peer resolution failed for {chat_id}: {e}")
+            return None
         except Exception as e:
-            LOGGER.error(f"[{self.name}] Error sending message to {chat_id}: {e}")
+            LOGGER.error(f"[{self.name}] Failed to send message to {chat_id}: {e}")
             return None
 
     async def send_media_safe(self, chat_id, media_url, *args, _retries=0, **kwargs):
-        """Sends a photo or video while handling FloodWait and optional auto-deletion."""
+        """Sends a photo or video while handling FloodWait, Peer resolution, and auto-deletion."""
         auto_delete = kwargs.pop("auto_delete", 0)
         
-        # Handle reply_to_message_id deprecation
+        # Handle reply_parameters logic
         if "reply_to_message_id" in kwargs and "reply_parameters" not in kwargs:
+            reply_id = kwargs.pop("reply_to_message_id")
+            if reply_id:
+                kwargs["reply_parameters"] = types.ReplyParameters(message_id=reply_id)
+
+        try:
+            from Grabber.core.utils import send_media_dynamic
+            msg = await send_media_dynamic(self, chat_id, media_url, *args, **kwargs)
+            if msg and auto_delete:
+                from Grabber.core.deletion import schedule_deletion
+                await schedule_deletion(chat_id, msg.id, auto_delete, bot_name=self.name)
+            return msg
+        except errors.FloodWait as e:
+            if _retries >= 2: return None
+            await asyncio.sleep(e.value)
+            return await self.send_media_safe(chat_id, media_url, *args, _retries=_retries+1, **kwargs)
+        except (errors.PeerIdInvalid, errors.ChannelInvalid) as e:
+            if _retries == 0:
+                await self.resolve_peer_safe(chat_id)
+                return await self.send_media_safe(chat_id, media_url, *args, _retries=1, **kwargs)
+            return None
+        except Exception as e:
+            LOGGER.error(f"[{self.name}] Failed to send media to {chat_id}: {e}")
+            return None
             reply_id = kwargs.pop("reply_to_message_id")
             if reply_id:
                 kwargs["reply_parameters"] = types.ReplyParameters(message_id=reply_id)
