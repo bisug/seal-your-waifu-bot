@@ -2,13 +2,19 @@ from Grabber.database import user_collection
 from Grabber.core.cache import invalidate_user_cache, get_cached_user, set_cached_user
 from typing import Optional, Any
 
-def get_user_filter(user_id: Any) -> dict:
-    """Returns a MongoDB filter that matches both integer and string IDs."""
+def get_user_id(user_id: Any) -> int:
+    """Returns the user ID as a concrete integer for updates and indexing."""
     try:
-        uid_int = int(user_id)
-        return {"id": {"$in": [uid_int, str(uid_int)]}}
+        if isinstance(user_id, list) and user_id:
+            user_id = user_id[0]
+        return int(user_id)
     except (ValueError, TypeError):
-        return {"id": user_id}
+        return 0
+
+def get_user_filter(user_id: Any) -> dict:
+    """Returns a MongoDB filter that matches both integer and string IDs (For queries)."""
+    uid = get_user_id(user_id)
+    return {"id": {"$in": [uid, str(uid)]}}
 
 
 async def get_user_data(user_id: int) -> Optional[dict]:
@@ -28,17 +34,19 @@ async def get_user_data(user_id: int) -> Optional[dict]:
 async def update_user(user_id: int, update_query: dict):
     """
     Apply a MongoDB update query to a user's document and invalidate cache.
+    Uses concrete ID for upsert safety.
     """
-    await user_collection.update_one(get_user_filter(user_id), update_query, upsert=True)
+    await user_collection.update_one({"id": get_user_id(user_id)}, update_query, upsert=True)
     await invalidate_user_cache(user_id)
 
 
 async def add_char_to_user(user_id: int, character: dict):
     """
     Add a character object to the user's collection and invalidate cache.
+    Uses concrete ID for upsert safety.
     """
     await user_collection.update_one(
-        get_user_filter(user_id),
+        {"id": get_user_id(user_id)},
         {"$push": {"characters": character}, "$inc": {"char_count": 1}},
         upsert=True
     )

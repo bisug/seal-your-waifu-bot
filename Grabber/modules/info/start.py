@@ -8,7 +8,7 @@ from Grabber.modules.progression.achievements import check_achievements
 from Grabber.modules.progression.pet import DEFAULT_PET
 from config import config
 from Grabber.core.keyboard import KeyboardBuilder, get_webapp_button
-from Grabber.core.user import get_user_filter
+from Grabber.core.user import get_user_filter, get_user_id
 
 LOGGER.info("Loading Start module...")
 
@@ -163,7 +163,7 @@ async def start_handler(_, message: types.Message):
                     upgraded_pet["atk"] += 18
                     upgraded_pet["spd"] += 9
                     await user_collection.update_one(
-                        get_user_filter(user_id),
+                        {"id": get_user_id(user_id)},
                         {"$set": {"balance": 1500, "pets": [upgraded_pet], "current_pet": upgraded_pet["name"], "referred_by": referrer_id}},
                         upsert=True
                     )
