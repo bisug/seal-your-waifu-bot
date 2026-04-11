@@ -31,21 +31,17 @@ async def sync_user_data(message):
 @app.on_message(filters.regex(r"^/"), group=-20)
 async def app_sync_user(client, message):
     """Handler for MainBot to trigger user data sync on commands."""
-    try:
-        if message.from_user:
-            asyncio.create_task(sync_user_data(message))
-    except Exception as e:
-        LOGGER.error(f"App sync error: {e}")
-    finally:
-        raise ContinuePropagation
+    content = message.text or message.caption or ""
+    LOGGER.info(f"MainBot received potential command: {content[:50]}")
+    if message.from_user:
+        asyncio.create_task(sync_user_data(message))
+    raise ContinuePropagation
 
 @game_bot.on_message(filters.regex(r"^/"), group=-20)
 async def game_bot_sync_user(client, message):
     """Handler for GameBot to trigger user data sync on commands."""
-    try:
-        if message.from_user:
-            asyncio.create_task(sync_user_data(message))
-    except Exception as e:
-        LOGGER.error(f"GameBot sync error: {e}")
-    finally:
-        raise ContinuePropagation
+    content = message.text or message.caption or ""
+    LOGGER.info(f"GameBot received potential command: {content[:50]}")
+    if message.from_user:
+        asyncio.create_task(sync_user_data(message))
+    raise ContinuePropagation
