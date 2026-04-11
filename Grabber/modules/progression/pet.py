@@ -4,7 +4,10 @@ from pyrogram.enums import ButtonStyle, ParseMode
 from Grabber.core.utils import html_escape
 from Grabber import app, user_collection, PHOTO_URL, LOGGER, WEB_APP_URL
 from Grabber.core.keyboard import get_webapp_button, KeyboardBuilder
+from Grabber.core.cache import is_on_cooldown as redis_cooldown
+from Grabber.core.user import add_pet_xp
 from config import config
+import time
 
 
 DEFAULT_PET = {
@@ -18,15 +21,17 @@ DEFAULT_PET = {
     "owned": True,
     "ability": "Beginner's Luck",
     "desc": "+5% XP Gain",
-    "img": PHOTO_URL[0]
+    "img": PHOTO_URL[0],
+    "affection": 50,
+    "last_interacted": 0
 }
 
 
 PET_SHOP = [
-    {"name": "Blaze Fang 🐺", "luck": 0.15, "hp": 180, "atk": 30, "spd": 15, "level": 1, "xp": 0, "zenith_price": 2, "req_level": 0, "ability": "Scavenger", "desc": "20% Chance for Double Shards", "img": "https://i.ibb.co/fd1qPVJs/file-89.jpg"},
-    {"name": "Shadow Panther 🐆", "luck": 0.25, "hp": 140, "atk": 40, "spd": 35, "level": 1, "xp": 0, "zenith_price": 5, "req_level": 10, "ability": "Speedster", "desc": "-10s Hunt Cooldown", "img": "https://i.ibb.co/8CdC5QG/file-86.jpg"},
-    {"name": "Cosmic Phoenix 🦅", "luck": 0.35, "hp": 220, "atk": 25, "spd": 25, "level": 1, "xp": 0, "zenith_price": 12, "req_level": 15, "ability": "Caregiver", "desc": "50% Faster Egg Hatching", "img": "https://i.ibb.co/b5CrL8rp/file-84.jpg"},
-    {"name": "Mystic Dragon 🐲", "luck": 0.50, "hp": 300, "atk": 45, "spd": 10, "level": 1, "xp": 0, "zenith_price": 25, "req_level": 20, "ability": "Hoarder", "desc": "5% Chance for Bonus Egg", "img": "https://files.catbox.moe/7kvcqj.jpg"},
+    {"name": "Blaze Fang 🐺", "luck": 0.15, "hp": 180, "atk": 30, "spd": 15, "level": 1, "xp": 0, "zenith_price": 2, "req_level": 0, "ability": "Scavenger", "desc": "20% Chance for Double Shards", "img": "https://i.ibb.co/fd1qPVJs/file-89.jpg", "affection": 50, "last_interacted": 0},
+    {"name": "Shadow Panther 🐆", "luck": 0.25, "hp": 140, "atk": 40, "spd": 35, "level": 1, "xp": 0, "zenith_price": 5, "req_level": 10, "ability": "Speedster", "desc": "-10s Hunt Cooldown", "img": "https://i.ibb.co/8CdC5QG/file-86.jpg", "affection": 50, "last_interacted": 0},
+    {"name": "Cosmic Phoenix 🦅", "luck": 0.35, "hp": 220, "atk": 25, "spd": 25, "level": 1, "xp": 0, "zenith_price": 12, "req_level": 15, "ability": "Caregiver", "desc": "50% Faster Egg Hatching", "img": "https://i.ibb.co/b5CrL8rp/file-84.jpg", "affection": 50, "last_interacted": 0},
+    {"name": "Mystic Dragon 🐲", "luck": 0.50, "hp": 300, "atk": 45, "spd": 10, "level": 1, "xp": 0, "zenith_price": 25, "req_level": 20, "ability": "Hoarder", "desc": "5% Chance for Bonus Egg", "img": "https://files.catbox.moe/7kvcqj.jpg", "affection": 50, "last_interacted": 0},
 ]
 
 
@@ -172,6 +177,19 @@ async def buypet_cmd(_, message: types.Message):
         await message.reply_text(result, parse_mode=ParseMode.HTML)
 
 
+def get_effective_affection(pet: dict) -> int:
+    base_affection = pet.get("affection", 50)
+    last_interacted = pet.get("last_interacted", 0)
+    
+    if last_interacted == 0:
+        return base_affection
+        
+    days_passed = (time.time() - last_interacted) / 86400.0
+    decay = int(days_passed * 5)
+    
+    effective_affection = max(0, base_affection - decay)
+    return effective_affection
+
 async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
     user = await user_collection.find_one({"id": user_id})
     pets = user.get("pets", [DEFAULT_PET])
@@ -193,11 +211,20 @@ async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
     xp = pet.get("xp", 0)
     needed = level * 100
 
+    eff_affection = get_effective_affection(pet)
+    if eff_affection >= 80:
+        mood = "🥰 Happy"
+    elif eff_affection <= 20:
+        mood = "😢 Sad"
+    else:
+        mood = "😐 Neutral"
+
     caption = (
         f"🐾 <b>Your Pet</b>\n"
         f"📛 Name: <b>{html_escape(pet['name'])}</b>\n"
         f"⚡ Ability: <b>{html_escape(pet.get('ability', 'None'))}</b>\n"
         f"📊 Level: <code>{level}</code> | XP: <code>{xp}/{needed}</code>\n"
+        f"💖 Affection: <code>{eff_affection}/100</code> ({mood})\n"
         f"❤️ HP: <code>{pet.get('hp', 100)}</code> | ⚔️ ATK: <code>{pet.get('atk', 10)}</code> | ⚡ SPD: <code>{pet.get('spd', 10)}</code>\n"
         f"🍀 Luck: <code>{int(pet['luck'] * 100)}%</code>\n\n"
         f"{'✅ <b>Active Pet</b>' if is_active else '⚠️ <i>Inactive</i>'}"
@@ -332,3 +359,73 @@ async def setpet_callback(_, query: types.CallbackQuery):
     await user_collection.update_one({"id": user_id}, {"$set": {"current_pet": new_pet["name"]}})
     await query.answer(f"✅ {new_pet['name']} is now your active pet.")
     await send_mypet_page(query, index, user_id)
+
+@app.on_message(filters.command("feed"))
+async def feed_pet_cmd(_, message: types.Message):
+    user_id = message.from_user.id
+    
+    on_cd, secs = await redis_cooldown("feed_pet", user_id, 14400) # 4 hours
+    if on_cd:
+        return await message.reply_text(f"⏳ Your pet is full! Try again in <b>{int(secs/60)}m {secs%60}s</b>.", parse_mode=ParseMode.HTML)
+        
+    user = await user_collection.find_one({"id": user_id})
+    if not user or "current_pet" not in user:
+        return await message.reply_text("❌ You don't have an active pet to feed.")
+        
+    active_pet_name = user["current_pet"]
+    pets = user.get("pets", [])
+    pet_index = next((i for i, p in enumerate(pets) if p["name"] == active_pet_name), -1)
+    
+    if pet_index == -1:
+        return await message.reply_text("❌ Active pet not found.")
+        
+    pet = pets[pet_index]
+    current_affection = get_effective_affection(pet)
+    new_affection = min(100, current_affection + 15)
+    
+    await user_collection.update_one(
+        {"id": user_id},
+        {"$set": {
+            f"pets.{pet_index}.affection": new_affection,
+            f"pets.{pet_index}.last_interacted": time.time()
+        }}
+    )
+    
+    await message.reply_text(f"🍲 You fed <b>{active_pet_name}</b>!\n💖 Affection increased to <b>{new_affection}/100</b>.", parse_mode=ParseMode.HTML)
+
+@app.on_message(filters.command("train"))
+async def train_pet_cmd(_, message: types.Message):
+    user_id = message.from_user.id
+    
+    on_cd, secs = await redis_cooldown("train_pet", user_id, 7200) # 2 hours
+    if on_cd:
+        return await message.reply_text(f"⏳ Your pet is tired! Try training again in <b>{int(secs/60)}m {secs%60}s</b>.", parse_mode=ParseMode.HTML)
+        
+    user = await user_collection.find_one({"id": user_id})
+    if not user or "current_pet" not in user:
+        return await message.reply_text("❌ You don't have an active pet to train.")
+        
+    active_pet_name = user["current_pet"]
+    pets = user.get("pets", [])
+    pet_index = next((i for i, p in enumerate(pets) if p["name"] == active_pet_name), -1)
+    
+    if pet_index == -1:
+        return await message.reply_text("❌ Active pet not found.")
+        
+    pet = pets[pet_index]
+    current_affection = get_effective_affection(pet)
+    new_affection = min(100, current_affection + 10)
+    
+    # Update affection
+    await user_collection.update_one(
+        {"id": user_id},
+        {"$set": {
+            f"pets.{pet_index}.affection": new_affection,
+            f"pets.{pet_index}.last_interacted": time.time()
+        }}
+    )
+    
+    # Add XP
+    await add_pet_xp(user_id, active_pet_name, 5)
+    
+    await message.reply_text(f"⚔️ You trained <b>{active_pet_name}</b>!\n💖 Affection increased to <b>{new_affection}/100</b>.\n🆙 Gained <b>+5 XP</b>.", parse_mode=ParseMode.HTML)
