@@ -13,6 +13,7 @@ export const Card = memo(({ character, onClick }) => {
     };
 
     const visuals = RARITY_VISUALS[character.rarity] || RARITY_VISUALS['Common'];
+    const [imgError, setImgError] = React.useState(false);
 
     return (
         <motion.div
@@ -28,12 +29,20 @@ export const Card = memo(({ character, onClick }) => {
             )}
         >
             {/* Main Character Image */}
-            <img
-                src={character.img_url || 'https://files.catbox.moe/2hsawz.jpg'}
-                alt={character.name}
-                decoding="async"
-                className="absolute inset-0 w-full h-full object-cover object-top transition-all duration-700 group-hover:scale-110"
-            />
+            {!imgError ? (
+                <img
+                    src={character.img_url || 'https://files.catbox.moe/2hsawz.jpg'}
+                    alt={character.name}
+                    decoding="async"
+                    onError={() => setImgError(true)}
+                    className="absolute inset-0 w-full h-full object-cover object-top transition-all duration-700 group-hover:scale-110"
+                />
+            ) : (
+                <div className="absolute inset-0 bg-slate-900 flex flex-col items-center justify-center space-y-2 opacity-40">
+                    <Zap size={24} className="text-slate-600 animate-pulse" />
+                    <span className="text-[8px] font-black uppercase tracking-[0.3em] text-slate-700 text-center px-4">Image Missing</span>
+                </div>
+            )}
             
             {/* Cinematic Gradient Overlays */}
             <div className="absolute inset-0 bg-gradient-to-t from-brand-midnight via-transparent to-black/20" />
