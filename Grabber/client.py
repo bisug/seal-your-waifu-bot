@@ -178,9 +178,6 @@ class SealClient(Client):
         self.bot_id = me.id
         self.first_name = me.first_name
 
-        from Grabber.core.startup import print_banner
-        print_banner()
-
         if self.name == "MainBot":
             config.BOT_USERNAME = me.username
             config.BOT_ID = me.id
