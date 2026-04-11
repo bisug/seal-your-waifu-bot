@@ -132,7 +132,7 @@ async def hunt_cmd(_, message: types.Message):
 
         # Atomic database update to save progress
         await user_collection.update_one(
-            {"id": get_user_id(user_id)},
+            get_user_filter(user_id),
             {
                 "$inc": {"balance": shards},
                 "$push": {"eggs": {"$each": eggs_to_push}}
@@ -154,7 +154,7 @@ async def hunt_cmd(_, message: types.Message):
         )
     else:
         # No egg — single write for shards only
-        await user_collection.update_one({"id": get_user_id(user_id)}, {"$inc": {"balance": shards}}, upsert=True)
+        await user_collection.update_one(get_user_filter(user_id), {"$inc": {"balance": shards}}, upsert=True)
 
         await invalidate_user_cache(user_id)
         await msg.edit_text(
@@ -212,8 +212,9 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
         action_button = types.InlineKeyboardButton("Start Incubation", callback_data=f"egg_incubate:{page}", style=enums.ButtonStyle.SUCCESS)
     elif status == "incubating":
         hatch_time = egg.get("hatch_time")
-        if hatch_time and datetime.now() < hatch_time:
-            remaining = hatch_time - datetime.now()
+        now = get_now_utc()
+        if hatch_time and now < hatch_time:
+            remaining = hatch_time - now
             mins_left = int(remaining.total_seconds() / 60)
             status_display = f"⏳ <b>Status:</b> Incubating\n⏱️ <b>Time Left:</b> {mins_left} minutes"
             action_button = types.InlineKeyboardButton("Incubating...", callback_data="egg_wait")
@@ -302,7 +303,9 @@ async def egg_incubate_callback(_, query: types.CallbackQuery):
         return await query.answer("❌ Egg not found!", show_alert=True)
 
     egg = eggs[page]
-    tier_info = EGG_TIERS.get(egg.get("tier", "common"))
+    raw_tier = egg.get("tier", "common") if isinstance(egg, dict) else egg
+    tier_key = TIER_MAP.get(str(raw_tier), str(raw_tier))
+    tier_info = EGG_TIERS.get(tier_key, EGG_TIERS["common"])
 
 
     pets = user.get("pets", [DEFAULT_PET])
@@ -353,7 +356,7 @@ async def egg_hatch_callback(_, query: types.CallbackQuery):
     user_id = owner_id
     from Grabber.webapp.auth import _user_locks
     uid_str = str(user_id)
-    async with _user_locks[uid_str]:
+    async with await _user_locks.get(uid_str):
         user = await user_collection.find_one(get_user_filter(user_id)) or {}
         eggs = user.get("eggs", [])
 
@@ -367,8 +370,9 @@ async def egg_hatch_callback(_, query: types.CallbackQuery):
             return await query.answer("❌ Egg is not incubating!", show_alert=True)
 
         ready_time = egg.get("hatch_time")
-        if ready_time and datetime.now() < ready_time:
-            remaining = int((ready_time - datetime.now()).total_seconds() / 60)
+        now = get_now_utc()
+        if ready_time and now < ready_time:
+            remaining = int((ready_time - now).total_seconds() / 60)
             return await query.answer(f"⏳ Still incubating! {remaining}m left.", show_alert=True)
 
 
