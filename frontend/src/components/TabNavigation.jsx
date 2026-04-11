@@ -19,16 +19,17 @@ export const TabNavigation = ({ activeTab, onNavigate }) => {
 
   return (
     <nav className="flex-shrink-0 glass-panel border-t border-white/10 pt-2 backdrop-blur-3xl bg-brand-midnight/60 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}>
-      <div className="max-w-screen-sm mx-auto grid grid-cols-7 gap-0.5 px-0.5">
+      <div className="max-w-screen-sm mx-auto grid grid-cols-4 gap-1 px-2">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
 
           return (
-            <button
+            <motion.button
               key={tab.id}
               onClick={() => handleNavigate(tab.id)}
-              className="relative flex flex-col items-center justify-center py-2.5 min-h-[44px] transition-transform active:scale-90"
+              whileTap={{ scale: 0.9 }}
+              className="relative flex flex-col items-center justify-center py-2 min-h-[44px]"
             >
               <motion.div
                 initial={false}

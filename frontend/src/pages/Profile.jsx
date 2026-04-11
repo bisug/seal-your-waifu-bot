@@ -155,55 +155,57 @@ export const Profile = ({ onCharClick }) => {
 
       {/* Harem Grid Search & Header */}
       <section className="px-4">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-500">My Harem</h2>
-          <div className="flex items-center space-x-1 text-[10px] font-black text-brand-neon uppercase tracking-widest bg-brand-neon/5 px-2.5 py-1 rounded-lg border border-brand-neon/10 shadow-[0_0_10px_rgba(0,255,255,0.05)]">
-            <Trophy size={10} />
-            <span>Rank #{user.stats?.rank || '---'}</span>
+        <div className="sticky-header px-4 py-3 -mx-4 mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-500">My Harem</h2>
+            <div className="flex items-center space-x-1 text-[10px] font-black text-brand-neon uppercase tracking-widest bg-brand-neon/5 px-2.5 py-1 rounded-lg border border-brand-neon/10 shadow-[0_0_10px_rgba(0,255,255,0.05)]">
+              <Trophy size={10} />
+              <span>Rank #{user.stats?.rank || '---'}</span>
+            </div>
           </div>
-        </div>
 
-        <div className="space-y-4 mb-6">
-          <div className="flex space-x-2 overflow-x-auto no-scrollbar py-1 scroll-fade-mask">
-            <button 
-              onClick={() => { setRarity(''); setPage(1); }}
-              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] whitespace-nowrap transition-all border ${
-                rarity === '' 
-                ? 'bg-brand-neon text-brand-midnight border-brand-neon shadow-lg shadow-brand-neon/30 scale-105' 
-                : 'bg-white/5 text-slate-500 border-white/5 hover:border-white/10'
-              }`}
-            >
-              All Tiers
-            </button>
-            {availableRarities.map((r) => (
+          <div className="space-y-3">
+            <div className="flex space-x-2 overflow-x-auto no-scrollbar py-0.5 scroll-fade-mask">
               <button 
-                key={r}
-                onClick={() => { setRarity(r); setPage(1); }}
+                onClick={() => { setRarity(''); setPage(1); }}
                 className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] whitespace-nowrap transition-all border ${
-                  rarity === r 
+                  rarity === '' 
                   ? 'bg-brand-neon text-brand-midnight border-brand-neon shadow-lg shadow-brand-neon/30 scale-105' 
                   : 'bg-white/5 text-slate-500 border-white/5 hover:border-white/10'
                 }`}
               >
-                {r.replace(/^[^\s]+\s/, '')}
+                All Tiers
               </button>
-            ))}
-          </div>
+              {availableRarities.map((r) => (
+                <button 
+                  key={r}
+                  onClick={() => { setRarity(r); setPage(1); }}
+                  className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] whitespace-nowrap transition-all border ${
+                    rarity === r 
+                    ? 'bg-brand-neon text-brand-midnight border-brand-neon shadow-lg shadow-brand-neon/30 scale-105' 
+                    : 'bg-white/5 text-slate-500 border-white/5 hover:border-white/10'
+                  }`}
+                >
+                  {r.split(' ')[1] || r}
+                </button>
+              ))}
+            </div>
 
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
-            <input 
-              type="text" 
-              placeholder="Search your harem..." 
-              className="w-full bg-slate-900/40 border border-white/10 rounded-xl py-3 pl-11 pr-4 text-xs focus:border-brand-neon/50 outline-none transition-all placeholder:text-slate-600 font-bold uppercase tracking-widest backdrop-blur-sm"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={14} />
+              <input 
+                type="text" 
+                placeholder="Search collection..." 
+                className="w-full bg-slate-900/40 border border-white/10 rounded-xl py-3 pl-11 pr-4 text-[11px] focus:border-brand-neon/50 outline-none transition-all placeholder:text-slate-600 font-bold uppercase tracking-widest backdrop-blur-sm"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
           </div>
         </div>
         
         {items.length > 0 || loading ? (
-          <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+          <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
              <AnimatePresence>
                {items.map((char, i) => (
                  <motion.div
