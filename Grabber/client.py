@@ -10,8 +10,8 @@ LOGGER = logging.getLogger(__name__)
 
 class SealClient(Client):
     """
-    Custom Client subclass for Seal-Bot.
-    Consolidated into __init__.py for simpler project structure.
+    Main entry point for the Seal Telegram Client.
+    Handles initialization, module loading, and command registration.
     """
     def __init__(self, name="Grabber", bot_token=None):
         super().__init__(
@@ -209,7 +209,9 @@ class SealClient(Client):
             }
             COMMON_CMDS = {
                 "start": "Start the bot & interactive intro",
-                "help": "Show available commands and usage guide"
+                "help": "Show available commands and usage guide",
+                "profile": "View your stats & character collection",
+                "balance": "Check Shards & Zenith balance"
             }
 
             if self.name == "GameBot":

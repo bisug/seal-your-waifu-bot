@@ -8,6 +8,7 @@ from Grabber.modules.progression.achievements import check_achievements
 from Grabber.modules.progression.pet import DEFAULT_PET
 from config import config
 from Grabber.core.keyboard import KeyboardBuilder, get_webapp_button
+from Grabber.core.user import get_user_filter
 
 LOGGER.info("Loading Start module...")
 
@@ -49,8 +50,7 @@ HELP_DATA = {
 
 🔹 <code>/start</code> - Start the bot & view intro
 🔹 <code>/help</code> - Show this interactive help menu
-🔹 <code>/webapp</code> - Open the Shop & Gallery Mini-App
-🔹 <code>/seal &lt;name&gt;</code> - Catch a spawned character
+🔹 <code>/search</code> - Hunt for a specific waifu
 🔹 <code>/harem</code> - View your character collection
 🔹 <code>/fav &lt;id&gt;</code> - Set a favorite character
 🔹 <code>/trade &lt;user&gt; &lt;amount&gt;</code> - Trade characters/items
@@ -64,7 +64,8 @@ HELP_DATA = {
 🔹 <code>/petshop</code> - Buy powerful pets with unique stats
 🔹 <code>/mypet</code> - Manage active pet &amp; view stats
 🔹 <code>/hunt</code> - Send pet to find loot, Shards &amp; eggs
-🔹 <code>/eggs</code> - Manage and hatch your eggs
+🔹 <code>/eggs</code> - Manage your eggs inventory
+🔹 <code>/hatch</code> - Open the incubation chamber
 """,
     },
     "BATTLE": {
@@ -86,10 +87,10 @@ HELP_DATA = {
 
 🔹 <code>/stats</code> - Global bot statistics
 🔹 <code>/rarities</code> - Character counts by rarity
-🔹 <code>/ctop</code> - Top chat members (Chat Leaderboard)
+🔹 <code>/ctop</code> - Top members in this chat
 🔹 <code>/mtop</code> - Global rich leaderboard (Shards)
 🔹 <code>/ping</code> - Real-time system status
-🔹 <code>/help</code> - Show this interactive menu
+🔹 <code>/webapp</code> - Open the Shop/Gallery Mini-App
 """,
     },
     "PROGRESSION": {
@@ -119,7 +120,7 @@ HELP_DATA = {
 @app.on_message(filters.command("start"))
 async def start_handler(_, message: types.Message):
     user_id = message.from_user.id
-    existing_user = await user_collection.find_one({"id": user_id})
+    existing_user = await user_collection.find_one(get_user_filter(user_id))
 
     await total_pm_users.update_one(
         {"_id": user_id},
@@ -161,11 +162,11 @@ async def start_handler(_, message: types.Message):
                     upgraded_pet["atk"] += 18
                     upgraded_pet["spd"] += 9
                     await user_collection.update_one(
-                        {"id": user_id},
+                        get_user_filter(user_id),
                         {"$set": {"balance": 1500, "pets": [upgraded_pet], "current_pet": upgraded_pet["name"], "referred_by": referrer_id}},
                         upsert=True
                     )
-                    await user_collection.update_one({"id": referrer_id}, {"$inc": {"balance": 500, "referrals_count": 1, "referrals_earned": 500}})
+                    await user_collection.update_one(get_user_filter(referrer_id), {"$inc": {"balance": 500, "referrals_count": 1, "referrals_earned": 500}})
                     await add_xp(referrer_id, 50, "referral")
                     await check_achievements(referrer_id)
                     try:
