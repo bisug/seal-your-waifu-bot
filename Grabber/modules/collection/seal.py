@@ -17,6 +17,7 @@ AUTHORIZED_USERS = set(sudo_users + [OWNER_ID])
 async def seal_handler(_, message: types.Message):
     """Handle core character catching logic for standard spawn messages."""
     chat_id = message.chat.id
+    user_id = message.from_user.id
 
 
     state = await get_chat_state(chat_id)
