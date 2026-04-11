@@ -133,7 +133,7 @@ class SealClient(Client):
 
         import Grabber
 
-        # 1. Fetch identity and update config
+        # Configure bot identity and store in config
         me = await self.get_me()
         self.username = me.username
         self.bot_id = me.id
@@ -150,12 +150,12 @@ class SealClient(Client):
         else:
             Grabber.GAME_BOT_USERNAME = me.username
 
-        # 2. Register Global Handlers
+        # Register message counter for groups
         if self.name == "MainBot":
             from Grabber.core.message_counter import message_counter
             self.add_handler(MessageHandler(message_counter, filters.group & ~filters.command(["seal", "messagecount"])), group=1)
 
-        # 3. Load Modules
+        # Load dynamic modules from modules package
         from Grabber.modules import ALL_MODULES
         for module_name in ALL_MODULES:
             try:
@@ -164,23 +164,21 @@ class SealClient(Client):
                 LOGGER.error(f"Failed to load module {module_name}: {e}")
         LOGGER.info(f"Loaded {len(ALL_MODULES)} modules.")
 
-        # 4. Set Bot Commands
+        # Sync bot commands with Telegram
         await self._set_commands_internal()
 
         if self.name == "MainBot":
-            # 5. Ensure DB indexes are created (only needs to run once)
+            # Database and Background tasks
             from Grabber.database import seal_db
             await seal_db.ensure_indexes()
 
-            # 6. Start Persistent Deletion Worker
             from Grabber.core.deletion import deletion_worker
             asyncio.create_task(deletion_worker())
 
-            # 7. Start cache flush worker to persist in-memory state to DB
             from Grabber.core.spawns import flush_cache_to_db
             asyncio.create_task(flush_cache_to_db())
 
-            # 8. Automate Mini App Menu Button
+            # Configure Mini-App menu button
             try:
                 await self.set_chat_menu_button(
                     menu_button=types.MenuButtonWebApp(
@@ -188,9 +186,9 @@ class SealClient(Client):
                         web_app=types.WebAppInfo(url=f"{config.WEB_APP_URL}#shop")
                     )
                 )
-                LOGGER.info("Mini App Menu Button (Shop) configured successfully.")
+                LOGGER.info("Mini App Menu button configured.")
             except Exception as e:
-                LOGGER.error(f"Failed to configure Mini App Menu Button: {e}")
+                LOGGER.error(f"Failed to configure Mini App Menu button: {e}")
 
         LOGGER.info(f"SealClient started as {me.first_name} (@{me.username}).")
 

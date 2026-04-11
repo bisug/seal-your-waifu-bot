@@ -25,13 +25,13 @@ r = _redis
 from Grabber import LOGGER
 from Grabber.core.utils import get_now_utc
 
-# ── TTLs (seconds) optimized for 30MB ──────────────────────────
-TTL_USER        = 60      # 1 minute (Fast refresh to save space)
-TTL_LEADERBOARD = 300     # 5 minutes
-TTL_SESSION     = 1800    # 30 minutes
-TTL_DAILY       = 24 * 3600 # 24h
-TTL_WEEKLY      = 7 * 24 * 3600
-TTL_GAMEBOT     = 300     # 5 minutes
+# Time-To-Live (TTL) settings for cache persistence (in seconds)
+TTL_USER        = 60
+TTL_LEADERBOARD = 300
+TTL_SESSION     = 1800
+TTL_DAILY       = 86400
+TTL_WEEKLY      = 604800
+TTL_GAMEBOT     = 300
 MEM_LIMIT_BYTES = 25 * 1024 * 1024 # 25MB Soft limit for auto-purge
 
 
