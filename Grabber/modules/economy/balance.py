@@ -8,7 +8,7 @@ from Grabber import app
 from Grabber import collection, OWNER_ID, SUPPORT_GROUP_ID, LOGGER
 from Grabber.core.balance import get_user_balance, update_user_balance, check_and_deduct
 from Grabber.database import user_collection
-from Grabber.core.user import get_user_filter
+from Grabber.core.user import get_user_filter, get_user_id
 
 @app.on_message(filters.command(["balance", "bal"]))
 async def balance_cmd(_, message: types.Message):
@@ -124,7 +124,7 @@ async def bonus_cmd(_, message: types.Message):
         return await message.reply_text("❌ Already claimed stay tuned!")
 
     await update_user_balance(user_id, 3000)
-    await user_collection.update_one(get_user_filter(user_id), {"$set": {"bonus_claimed": True}})
+    await user_collection.update_one({"id": get_user_id(user_id)}, {"$set": {"bonus_claimed": True}})
     await message.reply_text("🎁 You've claimed 3000 ⬪!")
 
 @app.on_message(filters.command("mtop"))
