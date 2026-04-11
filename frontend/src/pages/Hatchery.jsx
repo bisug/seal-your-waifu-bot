@@ -210,7 +210,7 @@ export const Hatchery = () => {
           >
             <div className="flex items-center justify-center space-x-2">
               {tab === 'eggs' ? <Egg size={14} /> : <Zap size={14} />}
-              <span>{tab === 'eggs' ? `EGGS (${formatNumber(user.eggs?.length)})` : 'PETS'}</span>
+              <span>{tab === 'eggs' ? `EGGS (${formatNumber(user.eggs?.length)})` : `PETS (${formatNumber(user.pets?.length)})`}</span>
             </div>
           </button>
         ))}
@@ -252,7 +252,7 @@ export const Hatchery = () => {
                 <PetCard 
                   key={pet.name} 
                   pet={pet} 
-                  isActive={user.current_pet === pet.name}
+                  isActive={user.current_pet?.name === pet.name}
                   onSelect={() => handleSetPet(pet.name)}
                 />
               ))
