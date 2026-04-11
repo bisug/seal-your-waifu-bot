@@ -145,13 +145,60 @@ export const Profile = ({ onCharClick }) => {
       </div>
 
       {/* Progress Section */}
-      <section className="px-4 mb-8">
+      <section className="px-4 mb-6">
         <ProgressBar 
           current={user.stats?.xp_current || 0} 
           total={user.stats?.xp_needed || 1000} 
           label="Exp Progression"
         />
       </section>
+
+      {/* Active Pet Section */}
+      {user.current_pet && (
+        <section className="px-4 mb-8">
+          <div className="glass-panel p-4 rounded-3xl border border-white/5 relative overflow-hidden backdrop-blur-md">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-brand-accent/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
+            
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-500">Active Pet</h2>
+              <span className="text-[9px] font-black text-brand-accent tracking-widest uppercase border border-brand-accent/20 bg-brand-accent/5 px-2 py-0.5 rounded-lg">
+                {user.current_pet.mood}
+              </span>
+            </div>
+            
+            <div className="flex gap-4">
+              <div className="w-16 h-16 shrink-0 rounded-2xl overflow-hidden border border-white/10 shadow-lg bg-black/40">
+                <img src={user.current_pet.img} alt={user.current_pet.name} className="w-full h-full object-cover" />
+              </div>
+              
+              <div className="flex-1 flex flex-col justify-center">
+                <div className="flex justify-between items-start mb-1">
+                  <h3 className="font-black text-white text-base tracking-tight leading-none">{user.current_pet.name}</h3>
+                  <span className="text-[10px] font-black text-slate-300">
+                    LVL {user.current_pet.level}
+                  </span>
+                </div>
+                
+                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                  <Activity size={10} className="text-brand-neon" /> {user.current_pet.ability}
+                </p>
+                
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-brand-accent transition-all duration-1000" 
+                      style={{ width: `${Math.min(100, (user.current_pet.xp / user.current_pet.xp_needed) * 100)}%` }}
+                    />
+                  </div>
+                  <span className="text-[9px] font-mono text-slate-500">
+                    {user.current_pet.xp}/{user.current_pet.xp_needed}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Harem Grid Search & Header */}
       <section className="px-4">
