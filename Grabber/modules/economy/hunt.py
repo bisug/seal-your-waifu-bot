@@ -6,8 +6,9 @@ import traceback
 from datetime import datetime, timedelta, timezone
 from pyrogram import filters, types, enums, errors
 from pyrogram.enums import ParseMode
+from pyrogram.handlers import MessageHandler, CallbackQueryHandler
 
-from Grabber import app, user_collection, collection, WEB_APP_URL, LOGGER as GLOBAL_LOGGER
+from Grabber import user_collection, collection, WEB_APP_URL
 from Grabber.core.user import add_pet_xp, get_user_filter, get_user_id
 from Grabber.core.progression import add_xp
 from Grabber.modules.progression.quests import update_quest_progress
@@ -30,6 +31,20 @@ EGG_TIERS = {
 TIER_MAP = {"1": "common", "2": "gold", "3": "void", "4": "gold", "5": "void"}
 CORRUPTED_EGG_CHANCE = 5
 
+def load_handlers(bot):
+    """Explicitly register handlers to the bot instance. Resolves multi-bot ghosting."""
+    # Hunt command
+    bot.add_handler(MessageHandler(hunt_cmd, filters.command("hunt")), group=0)
+    # Eggs/Inventory command
+    bot.add_handler(MessageHandler(eggs_cmd, filters.command(["eggs", "hatch"])), group=0)
+    # Callbacks
+    bot.add_handler(CallbackQueryHandler(egg_page_callback, filters.regex(r"^egg_page:(\d+):(\d+)$")), group=0)
+    bot.add_handler(CallbackQueryHandler(egg_incubate_callback, filters.regex(r"^egg_incubate:(\d+):(\d+)$")), group=0)
+    bot.add_handler(CallbackQueryHandler(egg_hatch_callback, filters.regex(r"^egg_hatch:(\d+):(\d+)$")), group=0)
+    bot.add_handler(CallbackQueryHandler(egg_noop_callback, filters.regex(r"^egg_noop$")), group=0)
+    
+    LOGGER.info(f"Registered Hunt & Egg handlers for {bot.name}")
+
 def get_egg_roll(luck_multiplier):
     """Determine the tier of the egg found based on luck."""
     roll = random.uniform(0, 100)
@@ -40,13 +55,12 @@ def get_egg_roll(luck_multiplier):
     if roll <= (void_c + gold_c): return "gold"
     return "common"
 
-@app.on_message(filters.command("hunt"))
-async def hunt_cmd(client, message: types.Message):
+async def hunt_cmd(bot, message: types.Message):
     """Refactored Hunt Command: High durability, atomic updates."""
     user_id = message.from_user.id if message.from_user else None
     if not user_id: return
 
-    LOGGER.info(f"HUNT_START: User {user_id}")
+    LOGGER.info(f"HUNT_START: User {user_id} via {bot.name}")
     
     try:
         # 1. Fetch User and Active Pet
@@ -151,8 +165,7 @@ async def hunt_cmd(client, message: types.Message):
         await message.reply_text(f"❌ <b>Hunt Error:</b> <code>{e}</code>", parse_mode=ParseMode.HTML)
 
 
-@app.on_message(filters.command(["eggs", "hatch"]))
-async def eggs_cmd(client, message: types.Message):
+async def eggs_cmd(bot, message: types.Message):
     """View egg inventory."""
     user_id = message.from_user.id if message.from_user else None
     if not user_id: return
@@ -235,17 +248,17 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
     except Exception as e:
         LOGGER.debug(f"Egg UI error: {e}")
 
-@app.on_callback_query(filters.regex(r"^egg_page:(\d+):(\d+)$"))
 async def egg_page_callback(_, query: types.CallbackQuery):
-    page, owner_id = map(int, query.match.groups())
+    data = query.data.split(":")
+    page, owner_id = int(data[1]), int(data[2])
     if query.from_user.id != owner_id:
         return await query.answer("❌ Not your inventory!", show_alert=True)
     await query.answer()
     await show_egg_page(query, page, owner_id)
 
-@app.on_callback_query(filters.regex(r"^egg_incubate:(\d+):(\d+)$"))
 async def egg_incubate_callback(_, query: types.CallbackQuery):
-    page, owner_id = map(int, query.match.groups())
+    data = query.data.split(":")
+    page, owner_id = int(data[1]), int(data[2])
     if query.from_user.id != owner_id:
         return await query.answer("❌ Not your egg!", show_alert=True)
 
@@ -280,9 +293,9 @@ async def egg_incubate_callback(_, query: types.CallbackQuery):
     await query.answer(f"🌡️ Incubation started! Ready in {wait_min}m.", show_alert=True)
     await show_egg_page(query, page, owner_id)
 
-@app.on_callback_query(filters.regex(r"^egg_hatch:(\d+):(\d+)$"))
 async def egg_hatch_callback(_, query: types.CallbackQuery):
-    page, owner_id = map(int, query.match.groups())
+    data = query.data.split(":")
+    page, owner_id = int(data[1]), int(data[2])
     if query.from_user.id != owner_id:
         return await query.answer("❌ Not your egg!", show_alert=True)
 
@@ -351,6 +364,5 @@ async def crack_open_egg_logic(query: types.CallbackQuery, user_id: int, egg: di
         parse_mode=ParseMode.HTML
     )
 
-@app.on_callback_query(filters.regex(r"^egg_noop$"))
 async def egg_noop_callback(_, query: types.CallbackQuery):
     await query.answer()
