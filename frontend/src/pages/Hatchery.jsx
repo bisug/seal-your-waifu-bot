@@ -5,7 +5,7 @@ import { apiFetch } from '../api';
 import { toast } from 'react-hot-toast';
 import { Card, ProgressBar, Skeleton } from '../components/UI';
 import { useEggActions } from '../hooks/useEggActions';
-import { Egg, Zap, Clock, ChevronRight, Sparkles, Shield, Flame, Wind, Loader2 } from 'lucide-react';
+import { Egg, Zap, Clock, ChevronRight, Sparkles, Shield, Flame, Wind, Loader2, Heart, Swords } from 'lucide-react';
 import { formatNumber } from '../utils';
 
 const EGG_THEMES = {
@@ -21,38 +21,73 @@ const ABILITY_ICONS = {
   Swift: Wind
 };
 
+const StatBar = ({ icon: Icon, value, max = 300, color = "bg-brand-neon" }) => (
+  <div className="flex items-center space-x-2">
+    <Icon size={10} className="text-slate-500 shrink-0" />
+    <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
+      <motion.div 
+        initial={{ width: 0 }}
+        animate={{ width: `${(value / max) * 100}%` }}
+        className={`h-full ${color} shadow-[0_0_5px_rgba(16,185,129,0.3)]`}
+      />
+    </div>
+    <span className="text-[9px] font-mono font-black text-slate-300 w-6 text-right">{value}</span>
+  </div>
+);
+
 const PetCard = ({ pet, isActive, onSelect }) => {
   const Icon = ABILITY_ICONS[pet.ability] || Zap;
   
   return (
     <button 
       onClick={onSelect}
-      className={`glass-panel p-3 rounded-2xl border text-left relative transition-all active:scale-95 ${
-        isActive ? 'border-brand-neon/40 ring-1 ring-brand-neon/20 shadow-lg shadow-brand-neon/5' : 'border-white/5 opacity-60 grayscale hover:opacity-100'
+      className={`glass-panel p-0 rounded-2xl border text-left relative transition-all active:scale-95 group overflow-hidden ${
+        isActive ? 'border-brand-neon/40 ring-1 ring-brand-neon/20 shadow-lg shadow-brand-neon/5' : 'border-white/5 opacity-80 grayscale-[0.5] hover:opacity-100 hover:grayscale-0'
       }`}
     >
-      <div className="flex justify-between items-start mb-2">
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isActive ? 'bg-brand-neon/10 text-brand-neon' : 'bg-slate-800 text-slate-500'}`}>
-          <Icon size={16} />
-        </div>
-        {isActive && (
-          <div className="bg-brand-neon text-brand-midnight text-[9px] font-black uppercase px-2 py-0.5 rounded-lg tracking-tighter shadow-lg shadow-brand-neon/20 border border-white/20">
-            Active
-          </div>
-        )}
+      {/* Background Pet Image */}
+      <div className="relative h-28 overflow-hidden">
+         <img 
+            src={pet.img || 'https://files.catbox.moe/2hsawz.jpg'} 
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+            alt={pet.name} 
+         />
+         <div className="absolute inset-0 bg-gradient-to-t from-brand-deep via-transparent to-transparent" />
+         
+         {/* Active Badge */}
+         {isActive && (
+            <div className="absolute top-2 right-2 bg-brand-neon text-brand-midnight text-[8px] font-black uppercase px-2 py-0.5 rounded-lg tracking-tighter shadow-lg border border-white/20 z-20">
+              Active
+            </div>
+         )}
       </div>
 
-      <h4 className="text-[11px] font-black uppercase tracking-tight text-white mb-0">{pet.name}</h4>
-      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-2">{pet.type || 'Support Pet'}</p>
-      
-      <div className="pt-2 border-t border-white/5 space-y-0.5">
-         <div className="flex items-center space-x-1 text-brand-neon mb-0.5">
-            <Icon size={8} />
-            <span className="text-[8px] font-black uppercase tracking-widest">{pet.ability || 'Standard'}</span>
-         </div>
-         <p className="text-[8px] leading-tight text-slate-500 font-medium line-clamp-1">
-            {pet.desc || 'A loyal support pet.'}
-         </p>
+      <div className="p-3 bg-brand-deep/80 backdrop-blur-md relative z-10 -mt-2">
+        <div className="flex justify-between items-center mb-1">
+          <h4 className="text-[11px] font-black uppercase tracking-tight text-white mb-0 truncate flex-1 pr-2">{pet.name}</h4>
+          <span className="text-[10px] font-black font-mono text-brand-neon">LV. {pet.level}</span>
+        </div>
+        
+        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-3 opacity-60">
+           {pet.ability || 'Standard Pet'}
+        </p>
+        
+        <div className="space-y-1.5 mb-3">
+           <StatBar icon={Heart} value={pet.hp || 100} max={500} color="bg-rose-500" />
+           <StatBar icon={Swords} value={pet.atk || 10} max={100} color="bg-amber-500" />
+           <StatBar icon={Wind} value={pet.spd || 10} max={100} color="bg-cyan-500" />
+        </div>
+
+        <div className="pt-2 border-t border-white/5">
+           <div className="flex items-center space-x-2">
+              <div className="p-1 rounded bg-white/5 border border-white/5 text-brand-neon shrink-0">
+                 <Icon size={10} />
+              </div>
+              <p className="text-[8px] leading-tight text-slate-500 font-medium line-clamp-1 italic">
+                 {pet.desc || 'A loyal support pet.'}
+              </p>
+           </div>
+        </div>
       </div>
     </button>
   );
@@ -63,7 +98,6 @@ const EggCard = ({ egg, onIncubate, onHatch, loading }) => {
   const isIncubating = egg.status === 'incubating';
   const [timeLeft, setTimeLeft] = useState('');
   
-  // Real-time countdown
   useEffect(() => {
     if (!isIncubating || !egg.hatch_time) return;
     
@@ -71,7 +105,6 @@ const EggCard = ({ egg, onIncubate, onHatch, loading }) => {
       const now = new Date();
       const end = new Date(egg.hatch_time);
       const diff = end - now;
-      
       if (diff <= 0) {
         setTimeLeft('READY');
       } else {
@@ -80,7 +113,6 @@ const EggCard = ({ egg, onIncubate, onHatch, loading }) => {
         setTimeLeft(`${mins}:${secs < 10 ? '0' : ''}${secs}`);
       }
     };
-    
     update();
     const timer = setInterval(update, 1000);
     return () => clearInterval(timer);
@@ -89,17 +121,20 @@ const EggCard = ({ egg, onIncubate, onHatch, loading }) => {
   const isReady = timeLeft === 'READY';
 
   return (
-    <div className={`glass-panel p-5 rounded-3xl border ${theme.border} flex items-center space-x-4 relative overflow-hidden group`}>
-      <div className={`w-14 h-14 rounded-2xl ${theme.bg} ${theme.color} flex items-center justify-center relative z-10`}>
-        <Egg size={28} className={isIncubating ? 'animate-bounce' : ''} />
+    <div className={`glass-panel p-4 rounded-[2rem] border ${theme.border} flex items-center space-x-4 relative overflow-hidden transition-all group hover:bg-white/[0.02]`}>
+      <div className={`w-16 h-16 rounded-[1.25rem] ${theme.bg} ${theme.color} flex items-center justify-center relative z-10 border border-white/10 shadow-inner`}>
+        <Egg size={32} className={`${isIncubating ? 'animate-bounce' : 'group-hover:scale-110 transition-transform'} drop-shadow-2xl`} />
+        {isIncubating && (
+           <div className="absolute inset-0 border-2 border-brand-neon/30 rounded-[1.25rem] animate-pulse" />
+        )}
       </div>
       
       <div className="flex-1 relative z-10">
-        <h4 className="text-[14px] font-black uppercase tracking-tight text-white mb-0.5">{egg.name || 'Unknown Egg'}</h4>
+        <h4 className="text-[14px] font-black uppercase tracking-[0.1em] text-white mb-0.5">{egg.name || 'Unknown Egg'}</h4>
         <div className="flex items-center space-x-2">
-           <span className={`text-[10px] font-bold uppercase tracking-widest ${theme.color}`}>{egg.tier} System</span>
-           <div className="w-1 h-1 rounded-full bg-slate-700" />
-           <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{egg.status}</span>
+           <span className={`text-[9px] font-black uppercase tracking-widest ${theme.color}`}>{egg.tier} core</span>
+           <div className="w-1 h-1 rounded-full bg-slate-800" />
+           <span className="text-[9px] font-black uppercase tracking-widest text-slate-600">{egg.status}</span>
         </div>
       </div>
 
@@ -108,31 +143,31 @@ const EggCard = ({ egg, onIncubate, onHatch, loading }) => {
           <button 
             onClick={onIncubate}
             disabled={loading}
-            className="bg-white text-brand-midnight text-[10px] font-black uppercase px-6 py-3 rounded-xl tracking-widest active:scale-95 transition-all shadow-lg"
+            className="h-11 px-6 rounded-2xl bg-white text-brand-midnight text-[10px] font-black uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all"
           >
             Incubate
           </button>
         ) : (
           <div className="flex flex-col items-end">
-             <div className="flex items-center space-x-2 mb-1">
-                <Clock size={12} className="text-brand-neon" />
-                <span className="text-[12px] font-black font-mono text-brand-neon">{timeLeft}</span>
+             <div className="flex items-center space-x-2 mb-1 bg-brand-neon/10 px-3 py-1 rounded-full border border-brand-neon/20">
+                <Clock size={10} className="text-brand-neon animate-spin-slow" />
+                <span className="text-[12px] font-black font-mono text-brand-neon leading-none">{timeLeft}</span>
              </div>
              {isReady && (
                <button 
                  onClick={onHatch}
                  disabled={loading}
-                 className="bg-brand-neon text-brand-midnight text-[10px] font-black uppercase px-6 py-2.5 rounded-xl tracking-widest animate-pulse shadow-[0_0_15px_rgba(0,255,255,0.3)]"
+                 className="mt-2 h-10 px-6 rounded-2xl bg-brand-neon text-brand-midnight text-[10px] font-black uppercase tracking-[0.2em] animate-pulse shadow-[0_0_20px_rgba(16,185,129,0.4)]"
                >
-                 Hatch
+                 Hatch Now
                </button>
              )}
           </div>
         )}
       </div>
 
-      <div className="absolute right-0 bottom-0 translate-x-1/4 translate-y-1/4 opacity-5 group-hover:opacity-10 transition-opacity">
-         <Egg size={120} />
+      <div className="absolute -right-2 -bottom-2 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity pointer-events-none">
+         <Egg size={140} />
       </div>
     </div>
   );
@@ -193,10 +228,20 @@ export const Hatchery = () => {
 
   return (
     <div className="pb-8 pt-6 px-4 max-w-lg mx-auto">
-      <section className="mb-8 text-center relative">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-brand-neon/5 blur-[60px] rounded-full pointer-events-none" />
-        <h1 className="text-2xl font-black uppercase tracking-[0.3em] mb-2 text-white">Incubation</h1>
-        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest opacity-60">Collect and Hatch Eggs</p>
+      <section className="mb-8 text-center relative pt-4">
+        <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-48 h-48 bg-brand-neon/5 blur-[80px] rounded-full pointer-events-none" />
+        <motion.div 
+            initial={{ y: -10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="inline-block px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-4 backdrop-blur-md"
+        >
+            <div className="flex items-center space-x-2">
+                <Sparkles size={14} className="text-brand-neon" />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Advanced Hatchery</span>
+            </div>
+        </motion.div>
+        <h1 className="text-3xl font-black uppercase tracking-[0.1em] mb-2 text-white">Incubation</h1>
+        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest opacity-60">Manage companions and hatch cores</p>
       </section>
 
       <div className="flex bg-white/5 p-1 rounded-2xl mb-8 border border-white/5">
