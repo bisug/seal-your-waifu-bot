@@ -7,7 +7,6 @@ import { IntroLoading } from './components/IntroLoading';
 import { Profile } from './pages/Profile';
 import { NotFound } from './pages/NotFound';
 import { Modal, ToastProvider, useToast } from './components/UI';
-import { Zap } from 'lucide-react';
 import { apiFetch } from './api';
 import { formatNumber } from './utils';
 import { CharActionModal } from './components/CharActionModal';

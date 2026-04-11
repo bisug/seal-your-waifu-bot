@@ -5,7 +5,7 @@ import { apiFetch } from '../api';
 import { toast } from 'react-hot-toast';
 import { Card, ProgressBar, Skeleton } from '../components/UI';
 import { useEggActions } from '../hooks/useEggActions';
-import { Egg, Zap, Clock, ChevronRight, Sparkles, Shield, Flame, Wind, Loader2, Heart, Swords } from 'lucide-react';
+import { Egg, Activity, Clock, ChevronRight, Sparkles, Shield, Flame, Wind, Loader2, Heart, Swords } from 'lucide-react';
 import { formatNumber } from '../utils';
 
 const EGG_THEMES = {
@@ -36,7 +36,7 @@ const StatBar = ({ icon: Icon, value, max = 300, color = "bg-brand-neon" }) => (
 );
 
 const PetCard = ({ pet, isActive, onSelect }) => {
-  const Icon = ABILITY_ICONS[pet.ability] || Zap;
+  const Icon = ABILITY_ICONS[pet.ability] || Activity;
   
   return (
     <button 
@@ -254,7 +254,7 @@ export const Hatchery = () => {
             }`}
           >
             <div className="flex items-center justify-center space-x-2">
-              {tab === 'eggs' ? <Egg size={14} /> : <Zap size={14} />}
+              {tab === 'eggs' ? <Egg size={14} /> : <Activity size={14} />}
               <span>{tab === 'eggs' ? `EGGS (${formatNumber(user.eggs?.length)})` : `PETS (${formatNumber(user.pets?.length)})`}</span>
             </div>
           </button>
@@ -303,7 +303,7 @@ export const Hatchery = () => {
               ))
             ) : (
               <div className="col-span-2">
-                <EmptyState icon={Zap} message="No pets found. Purchase pets in the Shop." />
+                <EmptyState icon={Activity} message="No pets found. Purchase pets in the Shop." />
               </div>
             )}
           </motion.section>

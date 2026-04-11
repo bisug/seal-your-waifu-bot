@@ -1,6 +1,6 @@
 import React, { memo, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Zap } from 'lucide-react';
+import { Activity } from 'lucide-react';
 import { cn } from '../utils';
 import { RARITY_VISUALS } from './Rarity';
 
@@ -43,7 +43,7 @@ export const Card = memo(({ character, onClick }) => {
                 />
             ) : (
                 <div className="absolute inset-0 bg-slate-900 flex flex-col items-center justify-center space-y-2 opacity-40">
-                    <Zap size={24} className="text-slate-600 animate-pulse" />
+                    <Activity size={24} className="text-slate-600 animate-pulse" />
                     <span className="text-[8px] font-black uppercase tracking-[0.3em] text-slate-700 text-center px-4">Image Missing</span>
                 </div>
             )}
