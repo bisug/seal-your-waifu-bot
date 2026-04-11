@@ -18,8 +18,8 @@ export const TabNavigation = ({ activeTab, onNavigate }) => {
   };
 
   return (
-    <nav className="flex-shrink-0 glass-panel border-t border-white/10 pt-2 backdrop-blur-3xl bg-brand-midnight/60 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}>
-      <div className="max-w-screen-sm mx-auto grid grid-cols-4 gap-1 px-2">
+    <nav className="flex-shrink-0 glass-panel border-t border-white/10 pt-3 backdrop-blur-3xl bg-brand-midnight/70 shadow-[0_-15px_40px_rgba(0,0,0,0.4)]" style={{ paddingBottom: 'calc(1.1rem + env(safe-area-inset-bottom))' }}>
+      <div className="max-w-screen-sm mx-auto flex justify-between px-8">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -29,7 +29,7 @@ export const TabNavigation = ({ activeTab, onNavigate }) => {
               key={tab.id}
               onClick={() => handleNavigate(tab.id)}
               whileTap={{ scale: 0.9 }}
-              className="relative flex flex-col items-center justify-center py-2 min-h-[44px]"
+              className="relative flex flex-col items-center justify-center min-w-[64px] py-1"
             >
               <motion.div
                 initial={false}
@@ -42,15 +42,23 @@ export const TabNavigation = ({ activeTab, onNavigate }) => {
                   isActive ? "bg-brand-neon/5" : "text-slate-500"
                 )}
               >
-                <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
-                {isActive && (
-                  <motion.div
-                    layoutId="activeTab"
-                    className="absolute -bottom-2 inset-x-2 h-0.5 rounded-full bg-brand-neon neon-shadow shadow-brand-neon/50 z-10"
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                  />
-                )}
+                <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
               </motion.div>
+              
+              <span className={cn(
+                "text-[9px] font-black uppercase tracking-[0.2em] mt-1 transition-all duration-300",
+                isActive ? "text-brand-neon opacity-100" : "text-slate-600 opacity-60"
+              )}>
+                {tab.label}
+              </span>
+
+              {isActive && (
+                <motion.div
+                  layoutId="activeTabUnderline"
+                  className="absolute -bottom-3 inset-x-0 h-1 rounded-full bg-brand-neon neon-shadow shadow-brand-neon/50 z-10 mx-auto w-10"
+                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                />
+              )}
             </button>
           );
         })}
