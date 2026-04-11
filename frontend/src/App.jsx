@@ -169,7 +169,12 @@ const AppContent = () => {
               RETRY
             </button>
             <button 
-              onClick={() => { localStorage.clear(); window.location.reload(); }}
+              onClick={() => { 
+                if (window.confirm("Are you sure you want to perform a Deep Reset? This will wipe your local session data.")) {
+                  localStorage.clear(); 
+                  window.location.reload(); 
+                }
+              }}
               className="w-full py-4 text-slate-600 text-[8px] font-bold uppercase tracking-[0.2em] hover:text-slate-400 transition-colors"
             >
               Deep Reset (Recovery Mode)
