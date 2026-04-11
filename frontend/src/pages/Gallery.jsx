@@ -11,6 +11,7 @@ export const Gallery = ({ onCharClick }) => {
   const [rarity, setRarity] = useState('');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [availableRarities, setAvailableRarities] = useState([]);
 
   const observer = useRef();
   const lastElementRef = useCallback(node => {
@@ -54,6 +55,11 @@ export const Gallery = ({ onCharClick }) => {
     return () => clearTimeout(delayDebounceFn);
   }, [search, rarity]);
 
+  // Fetch available rarities once
+  useEffect(() => {
+    apiFetch('/rarities').then(setAvailableRarities).catch(console.error);
+  }, []);
+
   // Infinite scroll trigger
   useEffect(() => {
     if (page > 1) {
@@ -77,7 +83,17 @@ export const Gallery = ({ onCharClick }) => {
         </div>
         
         <ScrollArea>
-           {['', 'Common', 'Medium', 'Rare', 'Legendary', 'Cosmic', 'Exclusive', 'Limited Edition', 'Royal', 'Antique', 'Celestial'].map((r) => (
+           <button 
+             onClick={() => { setRarity(''); setPage(1); }}
+             className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] whitespace-nowrap transition-all border ${
+               rarity === '' 
+               ? 'bg-brand-neon text-brand-midnight border-brand-neon shadow-lg shadow-brand-neon/30 scale-105' 
+               : 'bg-white/5 text-slate-500 border-white/5 hover:border-white/10'
+             }`}
+           >
+             All Tiers
+           </button>
+           {availableRarities.map((r) => (
             <button 
               key={r}
               onClick={() => { setRarity(r); setPage(1); }}
@@ -87,7 +103,7 @@ export const Gallery = ({ onCharClick }) => {
                 : 'bg-white/5 text-slate-500 border-white/5 hover:border-white/10'
               }`}
             >
-              {r || 'All Tiers'}
+              {r.replace(/^[^\s]+\s/, '')}
             </button>
           ))}
         </ScrollArea>

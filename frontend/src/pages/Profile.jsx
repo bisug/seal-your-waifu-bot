@@ -13,6 +13,8 @@ export const Profile = ({ onCharClick }) => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [search, setSearch] = useState('');
+  const [rarity, setRarity] = useState('');
+  const [availableRarities, setAvailableRarities] = useState([]);
   
   const observer = useRef();
   const lastElementRef = useCallback(node => {
@@ -31,7 +33,7 @@ export const Profile = ({ onCharClick }) => {
     try {
       const currentPage = isNew ? 1 : page;
       // Note: Backend /harem already handles grouping/counting duplicates
-      const data = await apiFetch(`/harem?page=${currentPage}&limit=24&search=${encodeURIComponent(search)}`);
+      const data = await apiFetch(`/harem?page=${currentPage}&limit=24&search=${encodeURIComponent(search)}&rarity=${encodeURIComponent(rarity)}`);
       
       if (isNew) {
         setItems(data.items);
@@ -45,16 +47,21 @@ export const Profile = ({ onCharClick }) => {
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [page, search, rarity]);
 
-  // Initial fetch and search debounce
+  // Initial fetch and search/rarity debounce
   useEffect(() => {
     const timer = setTimeout(() => {
       setPage(1);
       fetchHarem(true);
     }, 400);
     return () => clearTimeout(timer);
-  }, [search]);
+  }, [search, rarity]);
+
+  // Fetch available rarities once
+  useEffect(() => {
+    apiFetch('/rarities').then(setAvailableRarities).catch(console.error);
+  }, []);
 
   // Infinite scroll trigger
   useEffect(() => {
@@ -150,15 +157,43 @@ export const Profile = ({ onCharClick }) => {
           </div>
         </div>
 
-        <div className="relative mb-6">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
-          <input 
-            type="text" 
-            placeholder="Search your harem..." 
-            className="w-full bg-slate-900/40 border border-white/10 rounded-xl py-3 pl-11 pr-4 text-xs focus:border-brand-neon/50 outline-none transition-all placeholder:text-slate-600 font-bold uppercase tracking-widest backdrop-blur-sm"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+        <div className="space-y-4 mb-6">
+          <div className="flex space-x-2 overflow-x-auto no-scrollbar py-1 scroll-fade-mask">
+            <button 
+              onClick={() => { setRarity(''); setPage(1); }}
+              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] whitespace-nowrap transition-all border ${
+                rarity === '' 
+                ? 'bg-brand-neon text-brand-midnight border-brand-neon shadow-lg shadow-brand-neon/30 scale-105' 
+                : 'bg-white/5 text-slate-500 border-white/5 hover:border-white/10'
+              }`}
+            >
+              All Tiers
+            </button>
+            {availableRarities.map((r) => (
+              <button 
+                key={r}
+                onClick={() => { setRarity(r); setPage(1); }}
+                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] whitespace-nowrap transition-all border ${
+                  rarity === r 
+                  ? 'bg-brand-neon text-brand-midnight border-brand-neon shadow-lg shadow-brand-neon/30 scale-105' 
+                  : 'bg-white/5 text-slate-500 border-white/5 hover:border-white/10'
+                }`}
+              >
+                {r.replace(/^[^\s]+\s/, '')}
+              </button>
+            ))}
+          </div>
+
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
+            <input 
+              type="text" 
+              placeholder="Search your harem..." 
+              className="w-full bg-slate-900/40 border border-white/10 rounded-xl py-3 pl-11 pr-4 text-xs focus:border-brand-neon/50 outline-none transition-all placeholder:text-slate-600 font-bold uppercase tracking-widest backdrop-blur-sm"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
         </div>
         
         {items.length > 0 || loading ? (
