@@ -6,6 +6,13 @@ import { Gallery } from './Gallery';
 
 export const Market = ({ onCharClick }) => {
   const [activeTab, setActiveTab] = useState('shop'); // 'shop' or 'gallery'
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    const handleRefresh = () => setRefreshKey(prev => prev + 1);
+    window.addEventListener('shop-data-refresh', handleRefresh);
+    return () => window.removeEventListener('shop-data-refresh', handleRefresh);
+  }, []);
 
   const handleTabChange = (tabId) => {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
@@ -39,7 +46,7 @@ export const Market = ({ onCharClick }) => {
         <AnimatePresence mode="wait">
           {activeTab === 'shop' ? (
             <motion.div
-              key="shop"
+              key={`shop-${refreshKey}`}
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 10 }}
@@ -50,7 +57,7 @@ export const Market = ({ onCharClick }) => {
             </motion.div>
           ) : (
             <motion.div
-              key="gallery"
+              key={`gallery-${refreshKey}`}
               initial={{ opacity: 0, x: 10 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -10 }}

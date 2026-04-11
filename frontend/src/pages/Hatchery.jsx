@@ -36,7 +36,7 @@ const PetCard = ({ pet, isActive, onSelect }) => {
           <Icon size={16} />
         </div>
         {isActive && (
-          <div className="bg-brand-neon text-brand-midnight text-[7px] font-black uppercase px-1 py-0.5 rounded tracking-tighter shadow-lg">
+          <div className="bg-brand-neon text-brand-midnight text-[9px] font-black uppercase px-2 py-0.5 rounded-lg tracking-tighter shadow-lg shadow-brand-neon/20 border border-white/20">
             Active
           </div>
         )}
