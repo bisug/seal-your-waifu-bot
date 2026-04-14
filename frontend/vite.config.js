@@ -13,7 +13,7 @@ export default defineConfig({
     tailwindcss(),
   ],
   build: {
-    outDir: '../Grabber/static',
+    outDir: 'dist',
     emptyOutDir: true,
   },
   resolve: {
