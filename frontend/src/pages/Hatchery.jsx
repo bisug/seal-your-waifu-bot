@@ -5,7 +5,7 @@ import { apiFetch } from '../api';
 
 import { Card, ProgressBar, Skeleton, useToast } from '../components/UI';
 import { useEggActions } from '../hooks/useEggActions';
-import { Egg, Activity, Clock, ChevronRight, Sparkles, Shield, Flame, Wind, Loader2, Heart, Swords } from 'lucide-react';
+import { Egg, Activity, Clock, ChevronRight, Sparkles, Shield, Flame, Wind, Loader2, Heart, Swords, ShoppingBag } from 'lucide-react';
 import { formatNumber } from '../utils';
 
 const EGG_THEMES = {
@@ -43,7 +43,7 @@ const PetCard = ({ pet, isActive, onSelect }) => {
   
   return (
     <button 
-      onClick={onSelect}
+      onClick={() => onSelect({ ...pet, owned: true })}
       className={`glass-panel p-0 rounded-2xl border text-left relative transition-all active:scale-95 group overflow-hidden ${
         isActive ? 'border-brand-neon/40 ring-1 ring-brand-neon/20 shadow-lg shadow-brand-neon/5' : 'border-white/5 opacity-80 grayscale-[0.5] hover:opacity-100 hover:grayscale-0'
       }`}
@@ -185,7 +185,7 @@ const EmptyState = ({ icon: Icon, message }) => (
   </div>
 );
 
-export const Hatchery = () => {
+export const Hatchery = ({ onPetClick }) => {
   const { user, loading: userLoading, refreshUser } = useUser();
   const { addToast } = useToast();
   const { incubateEgg, hatchEgg, loading, hatchingResult, setHatchingResult } = useEggActions();
@@ -290,20 +290,42 @@ export const Hatchery = () => {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="grid grid-cols-2 gap-3"
           >
+            <div className="flex justify-between items-center mb-4 px-1">
+               <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Companions List</span>
+               <button 
+                onClick={() => window.dispatchEvent(new CustomEvent('nav-market-pets'))}
+                className="text-brand-neon text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 bg-brand-neon/10 px-3 py-1.5 rounded-lg border border-brand-neon/20 active:scale-95 transition-all"
+               >
+                 <ShoppingBag size={10} /> Buy More
+               </button>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
             {user.pets && user.pets.length > 0 ? (
               user.pets.map((pet) => (
                 <PetCard 
                   key={pet.name} 
                   pet={pet} 
                   isActive={user.current_pet?.name === pet.name}
-                  onSelect={() => handleSetPet(pet.name)}
+                  onSelect={onPetClick}
                 />
               ))
             ) : (
               <div className="col-span-2">
-                <EmptyState icon={Activity} message="No pets found. Purchase pets in the Shop." />
+                <div className="glass-panel p-12 rounded-[2.5rem] border border-white/5 text-center flex flex-col items-center">
+                  <Activity size={40} className="text-slate-800 mb-6" />
+                  <p className="text-slate-400 text-[11px] font-bold uppercase tracking-widest leading-relaxed max-w-[200px] mb-8">
+                    No active companions detected in your hatchery.
+                  </p>
+                  <button 
+                    onClick={() => {
+                        window.dispatchEvent(new CustomEvent('nav-market-pets'));
+                    }}
+                    className="px-8 py-4 rounded-2xl bg-brand-neon text-brand-midnight text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-brand-neon/20 active:scale-95 transition-all"
+                  >
+                    Visit Pet Shop
+                  </button>
+                </div>
               </div>
             )}
           </motion.section>

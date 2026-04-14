@@ -5,7 +5,7 @@ import { Shop } from './Shop';
 import { Gallery } from './Gallery';
 import { PetShop } from './PetShop';
 
-export const Market = ({ onCharClick }) => {
+export const Market = ({ onCharClick, onPetClick }) => {
   const [activeTab, setActiveTab] = useState('shop'); // 'shop', 'gallery', 'pets'
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -79,7 +79,7 @@ export const Market = ({ onCharClick }) => {
               transition={{ duration: 0.2 }}
               className="h-full overflow-y-auto"
             >
-              <PetShop />
+              <PetShop onPetClick={onPetClick} />
             </motion.div>
           )}
         </AnimatePresence>
