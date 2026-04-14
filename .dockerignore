@@ -1,9 +1,10 @@
 # Git
 .git
 .gitignore
+.gitattributes
 
 # Python
-__pycache__
+__pycache__/
 *.py[cod]
 *$py.class
 *.so
@@ -20,6 +21,7 @@ parts/
 sdist/
 var/
 wheels/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
@@ -30,14 +32,29 @@ venv/
 env/
 .venv/
 .env
+.python-version
 
-# IDEs
+# IDEs and Editors
 .idea/
 .vscode/
 *.swp
 *.swo
+.DS_Store
+
+# Frontend source and local tools
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+# We exclude the whole frontend folder from the final COPY . . 
+# but stages can still COPY frontend/ specifically if needed.
+# However, if we COPY . . in the final stage, we want to skip frontend.
+frontend/
 
 # Project specific
 db.sqlite3
 *.log
 local_config.py
+sample.env
+scripts/
+Grabber/scratch/
+Grabber/static/
