@@ -247,13 +247,6 @@ const AppContent = () => {
       </AnimatePresence>
 
       <TabNavigation activeTab={activeTab} onNavigate={handleNavigate} />
-      
-      {/* Build Signature for Verification */}
-      <div className="fixed bottom-[env(safe-area-inset-bottom)] left-0 w-full flex justify-center pb-0.5 pointer-events-none z-[100]">
-        <span className="text-[6px] font-mono text-white/5 uppercase tracking-[0.3em]">
-          Core v2.5.0-sig-8ad2
-        </span>
-      </div>
     </div>
   );
 };
