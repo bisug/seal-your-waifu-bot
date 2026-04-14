@@ -60,7 +60,9 @@ COPY --chown=botuser:botuser Procfile /app/
 COPY --chown=botuser:botuser heroku.yml /app/
 
 # Copy compiled frontend assets from Stage 1 into the Grabber static folder
-COPY --from=frontend-builder --chown=botuser:botuser /app/Grabber/static /app/Grabber/static
+# We explicitly target the 'dist' folder and ensure the destination is fresh
+RUN rm -rf /app/Grabber/static && mkdir -p /app/Grabber/static
+COPY --from=frontend-builder --chown=botuser:botuser /app/frontend/dist/ /app/Grabber/static/
 
 USER botuser
 
