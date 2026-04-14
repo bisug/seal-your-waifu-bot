@@ -55,6 +55,7 @@ RUN useradd -m -u 1000 botuser && \
 COPY --chown=botuser:botuser Grabber/ /app/Grabber/
 COPY --chown=botuser:botuser config.py /app/
 COPY --chown=botuser:botuser .python-version /app/
+COPY --chown=botuser:botuser runtime.txt /app/
 COPY --chown=botuser:botuser Procfile /app/
 COPY --chown=botuser:botuser heroku.yml /app/
 
