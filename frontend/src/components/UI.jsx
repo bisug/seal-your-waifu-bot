@@ -18,7 +18,7 @@ export const Skeleton = ({ className }) => (
 );
 
 export const CardSkeleton = () => (
-  <div className="rounded-[1.5rem] glass-panel border border-white/5 overflow-hidden aspect-[2/3]">
+  <div className="rounded-[1.5rem] glass-panel border border-white/5 overflow-hidden aspect-[3/4]">
     <div className="h-full p-4 flex flex-col justify-end space-y-3">
       <Skeleton className="h-2.5 w-1/3 rounded-full" />
       <Skeleton className="h-3.5 w-2/3 rounded-full" />
