@@ -10,6 +10,7 @@ import { Modal, ToastProvider, useToast } from './components/UI';
 import { apiFetch } from './api';
 import { formatNumber } from './utils';
 import { CharActionModal } from './components/CharActionModal';
+import { PetActionModal } from './components/PetActionModal';
 
 // Lazy load pages for extreme performance
 const Market = lazy(() => import('./pages/Market').then(m => ({ default: m.Market })));
@@ -70,6 +71,7 @@ const AppContent = () => {
 
   const [activeTab, setActiveTab] = useState(getInitialTab());
   const [selectedChar, setSelectedChar] = useState(null);
+  const [selectedPet, setSelectedPet] = useState(null);
   const [purchaseStage, setPurchaseStage] = useState('idle'); // 'idle', 'confirm', 'buying'
 
   // FIX: Stable ref for the BackButton handler to prevent accumulating listeners.
@@ -95,8 +97,11 @@ const AppContent = () => {
         tg.BackButton?.offClick?.(backHandlerRef.current);
       }
 
-      if (selectedChar) {
-        const handler = () => setSelectedChar(null);
+      if (selectedChar || selectedPet) {
+        const handler = () => {
+          setSelectedChar(null);
+          setSelectedPet(null);
+        };
         backHandlerRef.current = handler;
         tg.BackButton?.show?.();
         tg.BackButton?.onClick?.(handler);
@@ -114,16 +119,25 @@ const AppContent = () => {
       console.warn('Telegram API error (non-critical):', e.message);
     }
 
+    const handleMarketPets = () => {
+      setActiveTab('market');
+      // We can also trigger a sub-tab change if needed, but 'market' usually remembers last sub-tab
+      // or we can use a timeout to let the page load then trigger it.
+    };
+
+    window.addEventListener('nav-market-pets', handleMarketPets);
+
     return () => {
       try {
         if (backHandlerRef.current) {
           tg?.BackButton?.offClick?.(backHandlerRef.current);
         }
+        window.removeEventListener('nav-market-pets', handleMarketPets);
       } catch (e) {
         // ignore
       }
     };
-  }, [selectedChar]);
+  }, [selectedChar, selectedPet]);
 
   const handleNavigate = useCallback((tab) => {
     const tg = window.Telegram?.WebApp;
@@ -204,9 +218,9 @@ const AppContent = () => {
             </div>
           }>
             {activeTab === 'profile' && <Profile onCharClick={setSelectedChar} />}
-            {activeTab === 'market' && <Market onCharClick={setSelectedChar} />}
+            {activeTab === 'market' && <Market onCharClick={setSelectedChar} onPetClick={setSelectedPet} />}
             {activeTab === 'nexus' && <Nexus />}
-            {activeTab === 'incubation' && <Hatchery />}
+            {activeTab === 'incubation' && <Hatchery onPetClick={setSelectedPet} />}
             {!['profile', 'market', 'nexus', 'incubation'].includes(activeTab) && (
               <NotFound onReset={() => setActiveTab('profile')} />
             )}
@@ -220,6 +234,13 @@ const AppContent = () => {
             selectedChar={selectedChar}
             setSelectedChar={setSelectedChar}
             activeTab={activeTab}
+            user={user}
+          />
+        )}
+        {selectedPet && (
+          <PetActionModal
+            selectedPet={selectedPet}
+            setSelectedPet={setSelectedPet}
             user={user}
           />
         )}

@@ -7,7 +7,7 @@ import { useUser } from '../context/UserContext';
 
 import { formatNumber } from '../utils';
 
-export const PetShop = () => {
+export const PetShop = ({ onPetClick }) => {
   const { user, refreshUser } = useUser();
   const { addToast } = useToast();
   const [buyingIndex, setBuyingIndex] = useState(null);
@@ -79,8 +79,9 @@ export const PetShop = () => {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
-                className={`flex gap-4 p-4 rounded-3xl border border-white/10 backdrop-blur-md glass-panel relative overflow-hidden ${
-                  isOwned || isLocked ? 'opacity-60 grayscale-[0.3]' : ''
+                onClick={() => onPetClick && onPetClick({ ...pet, shopIndex: i, owned: isOwned })}
+                className={`flex gap-4 p-4 rounded-3xl border border-white/10 backdrop-blur-md glass-panel relative overflow-hidden transition-all active:scale-[0.98] cursor-pointer ${
+                  isOwned || isLocked ? 'opacity-80 grayscale-[0.3]' : 'hover:border-brand-neon/30 hover:bg-white/[0.02]'
                 }`}
               >
                 {/* Background flair */}
@@ -114,25 +115,17 @@ export const PetShop = () => {
                   
                   <div className="mt-auto">
                     {isOwned ? (
-                      <button disabled className="w-full py-2 bg-white/10 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2">
-                        <Check size={12} /> Owned
-                      </button>
+                      <div className="w-full py-2 bg-brand-neon/10 text-brand-neon rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 border border-brand-neon/20">
+                        <Check size={11} strokeWidth={3} /> Owned
+                      </div>
                     ) : isLocked ? (
-                      <button disabled className="w-full py-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2">
-                        Req Lvl {pet.req_level}
-                      </button>
+                      <div className="w-full py-2 bg-red-500/10 text-red-500 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 border border-red-500/10">
+                         Req Lvl {pet.req_level}
+                      </div>
                     ) : (
-                      <button 
-                        onClick={() => handleBuy(i, pet)}
-                        disabled={buyingIndex === i}
-                        className="w-full py-2 bg-brand-neon text-brand-midnight rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-transform"
-                      >
-                        {buyingIndex === i ? (
-                          <Loader2 size={12} className="animate-spin" />
-                        ) : (
-                          <>Buy for {pet.zenith_price} <Activity size={10} /></>
-                        )}
-                      </button>
+                      <div className="w-full py-2 bg-white/5 text-white/50 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 border border-white/5">
+                        Preview & Buy
+                      </div>
                     )}
                   </div>
                 </div>
