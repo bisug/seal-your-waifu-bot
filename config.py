@@ -42,7 +42,7 @@ class Config:
     IMGBB_API_KEY = os.getenv("IMGBB_API_KEY", "REDACTED_API_HASH")
     
     # --- WEBAPP CONFIG ---
-    WEB_APP_URL = os.getenv("WEB_APP_URL", "https://example-app-01-seal-6d4f0ddd98e4.herokuapp.com")
+    WEB_APP_URL = os.getenv("WEB_APP_URL", "https://example.com")
     MINI_APP_SHORT_NAME = os.getenv("MINI_APP_SHORT_NAME", "app") # The 'Short Name' you set in BotFather
     API_VERSION_PREFIX = os.getenv("API_VERSION_PREFIX", "v1_7b82")
 

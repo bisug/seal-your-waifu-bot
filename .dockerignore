@@ -41,10 +41,6 @@ env/
 *.swo
 .DS_Store
 
-# Frontend source and local tools
-frontend/node_modules/
-frontend/dist/
-frontend/.env
 # We exclude these specific frontend paths to keep the context slim
 # but we NO LONGER ignore the whole frontend/ folder so the builder can see the source.
 
