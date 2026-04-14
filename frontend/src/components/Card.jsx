@@ -25,7 +25,7 @@ export const Card = memo(({ character, onClick }) => {
             whileTap={{ scale: 0.98 }}
             onClick={handleClick}
             className={cn(
-                "relative rounded-[1.5rem] overflow-hidden aspect-[2/3] group transition-all duration-500 cursor-pointer",
+                "relative rounded-[1.5rem] overflow-hidden aspect-[3/4] group transition-all duration-500 cursor-pointer",
                 "border bg-slate-900 shadow-2xl",
                 visuals.border,
                 visuals.glow,

@@ -19,7 +19,7 @@ export const TabNavigation = ({ activeTab, onNavigate }) => {
 
   return (
     <nav className="flex-shrink-0 glass-panel border-t border-white/10 pt-3 backdrop-blur-3xl bg-brand-midnight/70 shadow-[0_-15px_40px_rgba(0,0,0,0.4)]" style={{ paddingBottom: 'calc(1.1rem + env(safe-area-inset-bottom))' }}>
-      <div className="max-w-screen-sm mx-auto flex justify-between px-8">
+      <div className="max-w-screen-sm mx-auto flex justify-around px-4">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;

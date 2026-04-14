@@ -70,9 +70,16 @@ export const Shop = ({ onCharClick }) => {
                      />
                   </div>
                   
-                  {char.owned && (
+                  {char.owned ? (
                     <div className="absolute top-1.5 right-1.5 bg-brand-neon text-brand-midnight rounded-full p-0.5 shadow-lg z-20 border border-brand-midnight scale-75">
                       <Check size={11} strokeWidth={4} />
+                    </div>
+                  ) : (
+                    <div className="absolute bottom-2 right-2 left-2 z-20 flex justify-end">
+                       <div className="bg-brand-midnight/80 backdrop-blur-md border border-brand-neon/30 px-2 py-1 rounded-lg flex items-center space-x-1.5 shadow-xl">
+                          <Activity size={10} className="text-brand-neon" />
+                          <span className="text-[9px] font-black text-white leading-none">⧫ {formatNumber(char.zenith_price || 5)}</span>
+                       </div>
                     </div>
                   )}
                 </motion.div>
