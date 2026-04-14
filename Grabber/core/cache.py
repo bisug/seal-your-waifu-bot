@@ -161,6 +161,21 @@ async def get_cached_balance(user_id: int) -> Optional[int]:
 async def set_cached_balance(user_id: int, balance: int):
     await rset_json(f"balance:{user_id}", balance, TTL_USER)
 
+# --- SESSION MANAGEMENT (BOT) ---
+
+def _session_key(session_id: str) -> str:
+    return f"session:{session_id}"
+
+async def create_session(session_id: str, data: dict, ttl: int = TTL_SESSION):
+    """Create a temporary session for multi-step bot flows."""
+    await rset_json(_session_key(session_id), data, ttl)
+
+async def get_session(session_id: str) -> Optional[dict]:
+    return await rget_json(_session_key(session_id))
+
+async def delete_session(session_id: str):
+    await rdel(_session_key(session_id))
+
 def _zset_key(metric: str) -> str:
     # Map metrics to Redis keys
     mapping = {
