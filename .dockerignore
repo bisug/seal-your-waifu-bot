@@ -45,10 +45,8 @@ env/
 frontend/node_modules/
 frontend/dist/
 frontend/.env
-# We exclude the whole frontend folder from the final COPY . . 
-# but stages can still COPY frontend/ specifically if needed.
-# However, if we COPY . . in the final stage, we want to skip frontend.
-frontend/
+# We exclude these specific frontend paths to keep the context slim
+# but we NO LONGER ignore the whole frontend/ folder so the builder can see the source.
 
 # Project specific
 db.sqlite3
