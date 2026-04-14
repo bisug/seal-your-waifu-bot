@@ -56,7 +56,6 @@ COPY --chown=botuser:botuser Grabber/ /app/Grabber/
 COPY --chown=botuser:botuser config.py /app/
 COPY --chown=botuser:botuser .python-version /app/
 COPY --chown=botuser:botuser runtime.txt /app/
-COPY --chown=botuser:botuser Procfile /app/
 COPY --chown=botuser:botuser heroku.yml /app/
 
 # Copy compiled frontend assets from Stage 1 into the Grabber static folder
