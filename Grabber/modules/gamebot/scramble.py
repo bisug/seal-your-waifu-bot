@@ -1,26 +1,68 @@
 import random
 import time
 import re
+import asyncio
 from pyrogram import filters, types
 from pyrogram.enums import ParseMode
-from Grabber import game_bot, collection, sessions_collection, user_collection, LOGGER, BOT_USERNAME
+from Grabber import game_bot, collection, sessions_collection, user_collection, LOGGER
 from Grabber.core.balance import update_user_balance
 from Grabber.core.utils import html_escape, check_member_requirement
 
 # Game settings
 TIMEOUT = 60  # 1 minute
-RETRY_LIMIT = 3
 REWARD = 100
 
 def scramble_word(word):
-    """Shuffles the characters in a word and joins them with hyphens for readability."""
-    chars = list(word.upper())
-    random.shuffle(chars)
+    """Shuffles the characters in a word and joins them with hyphens for readability.
+    Ensures the scrambled word is not the same as the original.
+    """
+    word_upper = word.upper()
+    chars = list(word_upper)
+    if len(chars) <= 1:
+        return "-".join(chars)
+    
+    scrambled = "".join(chars)
+    attempts = 0
+    while scrambled == word_upper and attempts < 10:
+        random.shuffle(chars)
+        scrambled = "".join(chars)
+        attempts += 1
+    
     return "-".join(chars)
+
+async def game_timeout_manager(chat_id, start_time):
+    """Wait for TIMEOUT and then check if the game is still active."""
+    await asyncio.sleep(TIMEOUT)
+    
+    session = await sessions_collection.find_one({"_id": f"scramble:{chat_id}"})
+    if session and session.get("start_time") == start_time:
+        # Game still active and it's the SAME session (not a new one)
+        await sessions_collection.delete_one({"_id": f"scramble:{chat_id}"})
+        
+        target = session.get("target_word", "Unknown")
+        char_name = session.get("original_name", "Unknown")
+        
+        text = (
+            f"⏱ <b>Time's up!</b>\n"
+            f"The word was: <b>{html_escape(target)}</b>\n"
+            f"Character: <b>{html_escape(char_name)}</b>"
+        )
+        await game_bot.send_message_safe(chat_id, text)
 
 async def start_scramble_game(chat_id):
     """Fetches a character and starts a new scramble session."""
     try:
+        # Anti-spam: Check for active session
+        existing = await sessions_collection.find_one({"_id": f"scramble:{chat_id}"})
+        if existing:
+            elapsed = time.time() - existing.get("start_time", 0)
+            if elapsed < TIMEOUT:
+                return await game_bot.send_message_safe(
+                    chat_id, 
+                    f"⚠️ <b>Game Active:</b> A scramble game is already in progress! Use <code>/scramble</code> again in {int(TIMEOUT - elapsed)}s if no one identifies it.",
+                    auto_delete=30
+                )
+
         # Fetch a random character
         cursor = collection.aggregate([{"$sample": {"size": 1}}])
         res = await cursor.to_list(length=1)
@@ -28,19 +70,21 @@ async def start_scramble_game(chat_id):
             return await game_bot.send_message_safe(chat_id, "❌ <b>Database Error:</b> No characters found.")
 
         char = res[0]
-        # Clean name: remove special chars and pick the first part if it's too long or complex
-        # We'll use the full name but simplified
         original_name = char['name']
+        
+        # Clean name: remove special chars
         clean_name = re.sub(r'[^a-zA-Z0-9\s]', '', original_name).strip()
-        
-        # If it's multi-word, we might want to pick one word to make it fun but not impossible
         name_parts = clean_name.split()
-        target_word = random.choice(name_parts) if name_parts else clean_name
         
-        if len(target_word) < 3: # Too short? use the whole thing
-             target_word = "".join(name_parts)
-
+        # Selection logic: pick a word with length >= 4 if possible
+        candidates = [p for p in name_parts if len(p) >= 4]
+        if not candidates:
+             candidates = name_parts if name_parts else [clean_name]
+             
+        target_word = random.choice(candidates)
         scrambled = scramble_word(target_word)
+        
+        start_time = time.time()
         
         # Store session
         await sessions_collection.update_one(
@@ -50,8 +94,7 @@ async def start_scramble_game(chat_id):
                 "target_word": target_word,
                 "original_name": original_name,
                 "scrambled": scrambled,
-                "retries": 0,
-                "start_time": time.time()
+                "start_time": start_time
             }},
             upsert=True
         )
@@ -61,14 +104,17 @@ async def start_scramble_game(chat_id):
             f"Series: <b>{html_escape(char['anime'])}</b>\n"
             f"Letters: <code>{scrambled}</code>\n\n"
             f"💰 <b>Reward:</b> {REWARD} Shards\n"
-            f"⏱ <b>Time:</b> 1 minute | 🔄 <b>Retries:</b> {RETRY_LIMIT}"
+            f"⏱ <b>Time:</b> 1 minute"
         )
 
         await game_bot.send_message_safe(chat_id, text, parse_mode=ParseMode.HTML)
+        
+        # Active timeout monitor
+        asyncio.create_task(game_timeout_manager(chat_id, start_time))
 
     except Exception as e:
         LOGGER.error(f"Error in start_scramble_game: {e}")
-        await game_bot.send_message_safe(chat_id, "❌ <b>Error:</b> Could not start the game.")
+        await game_bot.send_message_safe(chat_id, "❌ <b>Error:</b> Could not authorize the game transponder.")
 
 @game_bot.on_message(filters.command("scramble"))
 async def scramble_cmd_handler(_, message: types.Message):
@@ -97,54 +143,36 @@ async def scramble_guess_handler(_, message: types.Message):
         return
 
     chat_id = message.chat.id
+    # Quick check for session without heavy DB load if possible, but we need the session data
     session = await sessions_collection.find_one({"_id": f"scramble:{chat_id}"})
     
     if not session:
         return
 
-    # Check timeout
-    if time.time() - session["start_time"] > TIMEOUT:
-        await sessions_collection.delete_one({"_id": f"scramble:{chat_id}"})
-        await game_bot.send_message_safe(
-            chat_id,
-            f"⏱ <b>Time's up!</b>\nThe word was: <b>{html_escape(session['target_word'])}</b> (from {html_escape(session['original_name'])})",
-            parse_mode=ParseMode.HTML,
-            reply_parameters=types.ReplyParameters(message_id=message.id)
-        )
+    # Check timeout (secondary protection)
+    if time.time() - session["start_time"] > TIMEOUT + 5: # 5s buffer for the worker
+        # Let the worker handle it or clean up if it missed
         return
 
     guess = message.text.lower().strip()
     target = session["target_word"].lower()
 
     if guess == target:
-        # Correct!
+        # Correct! Attempt to delete session first to prevent double-wins
+        res = await sessions_collection.delete_one({"_id": f"scramble:{chat_id}", "start_time": session["start_time"]})
+        if res.deleted_count == 0:
+            return # Someone else got it or timed out
+
         user_id = message.from_user.id
         await update_user_balance(user_id, REWARD)
-        await sessions_collection.delete_one({"_id": f"scramble:{chat_id}"})
         
         mention = f'<a href="tg://user?id={user_id}">{html_escape(message.from_user.first_name)}</a>'
         await game_bot.send_message_safe(
             chat_id,
             f"🎉 {mention} unscrambled it correctly!\n"
             f"✅ The word was: <b>{html_escape(session['target_word'])}</b>\n"
+            f"👤 Character: <b>{html_escape(session['original_name'])}</b>\n"
             f"💰 <b>Reward:</b> +{REWARD} Shards",
             parse_mode=ParseMode.HTML,
             reply_parameters=types.ReplyParameters(message_id=message.id)
         )
-    else:
-        # Wrong guess, increment retries
-        session = await sessions_collection.find_one_and_update(
-            {"_id": f"scramble:{chat_id}"},
-            {"$inc": {"retries": 1}},
-            return_document=True
-        )
-        
-        if session["retries"] >= RETRY_LIMIT:
-            await sessions_collection.delete_one({"_id": f"scramble:{chat_id}"})
-            await game_bot.send_message_safe(
-                chat_id,
-                f"❌ <b>Game Over!</b> Max retries reached.\n"
-                f"The word was: <b>{html_escape(session['target_word'])}</b>",
-                parse_mode=ParseMode.HTML,
-                reply_parameters=types.ReplyParameters(message_id=message.id)
-            )

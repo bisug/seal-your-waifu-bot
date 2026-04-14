@@ -15,7 +15,8 @@ async def gamebot_start_handler(_, message: types.Message):
         "<b>Available Commands:</b>\n"
         "🔹 <code>/nguess</code> - Identify a character from their image\n"
         "🔹 <code>/quiz</code> - Test your anime knowledge for Shards\n"
-        "🔹 <code>/scramble</code> - Unscramble the shuffled character name\n\n"
+        "🔹 <code>/scramble</code> - Unscramble the shuffled character name\n"
+        "🔹 <code>/bid &lt;amount&gt;</code> - Participate in live Character Auctions\n\n"
         f"<i>Check out {main_bot_mention} for the full Seal-Bot experience!</i>"
     )
     
