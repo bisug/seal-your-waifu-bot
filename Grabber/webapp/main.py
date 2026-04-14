@@ -18,10 +18,10 @@ from Grabber.core.cache import rebuild_leaderboard
 from Grabber.core.worker import background_maintenance
 from Grabber.database import user_collection
 
-_lb_rebuild_in_progress = False  # Kept for backward compat; no longer used
+
 
 async def sync_leaderboard_periodic():
-    """Background task to keep the Redis Top 1000 in sync with Mongo for all metrics."""
+    """Sync Redis ZSETs with MongoDB periodically."""
     await asyncio.sleep(60) # Delay on startup to allow app to settle
     metrics = ["level", "harem", "shards", "zenith", "guesses"]
     while True:
@@ -36,18 +36,14 @@ async def sync_leaderboard_periodic():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Start the Telegram bots and the rank sync task
-    logging.info("Starting Telegram bots and ranking sync task...")
+    # Startup
     await start_bots()
     sync_task = asyncio.create_task(sync_leaderboard_periodic())
     worker_task = asyncio.create_task(background_maintenance())
     
     yield
     
-    # Shutdown: Stop the Telegram bots and our sync task
-    logging.info("Stopping Telegram bots and background tasks...")
-    sync_task.cancel()
-    worker_task.cancel()
+    # Shutdown
     await stop_bots()
 
 app = FastAPI(
@@ -82,7 +78,7 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
-    """Inject basic security headers into every API response."""
+    """Inject basic security headers."""
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
     # Note: X-Frame-Options must NOT be 'DENY' for Telegram Mini Apps to function in a frame.
@@ -104,10 +100,7 @@ if os.path.exists(frontend_path):
     
     @app.get("/{full_path:path}", include_in_schema=False)
     async def serve_frontend(request: Request, full_path: str):
-        # Critical Protection: Do NOT intercept API or Asset calls.
-        api_prefix = f"api/{api_version_prefix}"
         if full_path.startswith("api/") or full_path.startswith("assets/"):
-            # If we reached here for an API/Asset path, it means the actual route doesn't exist.
             raise HTTPException(status_code=404, detail="Resource not found")
             
         index_file = os.path.join(frontend_path, "index.html")

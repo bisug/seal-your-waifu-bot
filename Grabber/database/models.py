@@ -27,6 +27,7 @@ class User(BaseModel):
     guess_count: int = 0
 
     pass_type: str = "free" # free, premium, elite
+    version: int = 0
 
 class Character(BaseModel):
     id: str

@@ -6,6 +6,7 @@ from Grabber.core.user import get_user_data, update_user
 from Grabber.core.utils import html_escape
 from Grabber.core.sessions import create_session, get_session, delete_session
 from Grabber.modules.progression.quests import update_quest_progress
+from Grabber.core.cache import invalidate_user_cache
 
 @app.on_message(filters.command("trade") & filters.group)
 async def trade_handler(_, message: types.Message):
@@ -58,8 +59,6 @@ async def trade_handler(_, message: types.Message):
 @app.on_callback_query(filters.regex(r"^tr_(c|x):"))
 async def trade_callback_handler(_, query: types.CallbackQuery):
     action, trade_id = query.data.split(":")
-
-
     trade_info = await get_session(trade_id)
 
     if not trade_info:
@@ -82,9 +81,10 @@ async def trade_callback_handler(_, query: types.CallbackQuery):
 
     s_char, r_char = trade_info["s_char"], trade_info["r_char"]
 
-                                    # Verification: Ensure both still own the characters using ID-based check
     sender = await get_user_data(sender_id)
     receiver = await get_user_data(receiver_id)
+    if not sender or not receiver:
+        return await query.answer("❌ User data not found.", show_alert=True)
 
     s_char_verify = next((c for c in sender.get('characters', []) if c.get('id') == s_char['id']), None)
     r_char_verify = next((c for c in receiver.get('characters', []) if c.get('id') == r_char['id']), None)
@@ -100,35 +100,30 @@ async def trade_callback_handler(_, query: types.CallbackQuery):
     await query.answer("Processing trade...", cache_time=1)
     await delete_session(trade_id)
 
-    # 2. Atomic Database Updates
+    # 2. Swap exactly one instance using positional $set to avoid mass-deletion bug
     from Grabber.database import user_collection
     try:
+        # Update Sender: Replace their giving char with the taking char
         sender_result = await user_collection.update_one(
             {"id": {"$in": [sender_id, str(sender_id)]}, "characters.id": s_char['id']},
-            {
-                "$pull": {"characters": {"id": s_char['id']}},
-                "$push": {"characters": r_char}
-            }
+            {"$set": {"characters.$": r_char}}
         )
         if sender_result.modified_count == 0:
             raise ValueError(f"Sender {sender_id} no longer owns char {s_char['id']}")
 
+        # Update Receiver: Replace their giving char with the taking char
         receiver_result = await user_collection.update_one(
             {"id": {"$in": [receiver_id, str(receiver_id)]}, "characters.id": r_char['id']},
-            {
-                "$pull": {"characters": {"id": r_char['id']}},
-                "$push": {"characters": s_char}
-            }
+            {"$set": {"characters.$": s_char}}
         )
         if receiver_result.modified_count == 0:
-            # Compensate: give the sender their char back
+            # Rollback Sender: Swap it back (using the ID of the char we just gave them)
             await user_collection.update_one(
-                {"id": {"$in": [sender_id, str(sender_id)]}},
-                {"$pull": {"characters": {"id": r_char['id']}}, "$push": {"characters": s_char}}
+                {"id": {"$in": [sender_id, str(sender_id)]}, "characters.id": r_char['id']},
+                {"$set": {"characters.$": s_char}}
             )
             raise ValueError(f"Receiver {receiver_id} no longer owns char {r_char['id']}, rolled back.")
 
-        from Grabber.core.cache import invalidate_user_cache
         await invalidate_user_cache(sender_id)
         await invalidate_user_cache(receiver_id)
 
@@ -136,7 +131,6 @@ async def trade_callback_handler(_, query: types.CallbackQuery):
         LOGGER.error(f"Trade DB Error: {e}")
         return await query.message.edit_text("❌ Trade failed: One of the characters was no longer available.", parse_mode=ParseMode.HTML)
 
-    # 3. Quests & Achievements
     await update_quest_progress(sender_id, "trader", 1)
     await update_quest_progress(receiver_id, "trader", 1)
 
