@@ -2,6 +2,7 @@ import React, { useState, memo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Medal, Loader2, Users, Star, TrendingUp } from 'lucide-react';
 import { useApi } from '../components/UI';
+import { Avatar } from '../components/Avatar';
 import { formatNumber } from '../utils';
 
 const LeaderboardItem = memo(({ user, index, metric, getMetricIcon }) => (
@@ -14,11 +15,11 @@ const LeaderboardItem = memo(({ user, index, metric, getMetricIcon }) => (
     }`}
   >
     <div className="w-8 text-center text-brand-neon">
-       {index < 3 ? <Medal className={index === 0 ? 'text-brand-neon shadow-[0_0_10px_rgba(0,255,255,0.3)]' : index === 1 ? 'text-slate-300' : 'text-amber-600'} size={20} /> : <span className="text-[11px] text-slate-600 font-black">#{index+1}</span>}
+       {index < 3 ? <Medal className={index === 0 ? 'text-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.4)]' : index === 1 ? 'text-slate-300' : 'text-amber-600'} size={20} /> : <span className="text-[11px] text-slate-600 font-black">#{index+1}</span>}
     </div>
     
     <div className="relative">
-       <img src={user.avatar || 'https://files.catbox.moe/2hsawz.jpg'} className="w-10 h-10 rounded-full border border-white/10 object-cover" alt="Avatar" />
+       <Avatar src={user.avatar} className="w-10 h-10 rounded-full object-cover" alt="Avatar" />
        {index === 0 && <div className="absolute -top-1 -right-1 w-3 h-3 bg-brand-neon rounded-full animate-ping" />}
     </div>
 
@@ -81,6 +82,11 @@ export const Leaderboard = () => {
 
       {loading && !items.length ? (
         <div className="flex justify-center py-20"><Loader2 className="animate-spin text-brand-neon" /></div>
+      ) : !loading && items.length === 0 ? (
+        <div className="flex flex-col items-center py-20 text-center opacity-60">
+          <Trophy size={40} className="text-slate-800 mb-4" />
+          <p className="text-slate-500 text-[11px] font-bold uppercase tracking-widest">No rankings yet.</p>
+        </div>
       ) : (
         <div className="space-y-3">
           {items.map((user, i) => (

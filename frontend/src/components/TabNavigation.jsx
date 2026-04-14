@@ -4,7 +4,7 @@ import { User, Search, Trophy, ShoppingBag, Star, LayoutGrid, Egg, Activity } fr
 
 export const TabNavigation = ({ activeTab, onNavigate }) => {
   const tabs = [
-    { id: 'profile', icon: User, label: 'Harem' },
+    { id: 'profile', icon: User, label: 'Profile' },
     { id: 'incubation', icon: Egg, label: 'Hatchery' },
     { id: 'market', icon: ShoppingBag, label: 'Market' },
     { id: 'nexus', icon: Activity, label: 'Nexus' },
@@ -55,6 +55,7 @@ export const TabNavigation = ({ activeTab, onNavigate }) => {
               {isActive && (
                 <motion.div
                   layoutId="activeTabGlow"
+                  initial={false}
                   className="absolute -bottom-3 inset-x-0 h-1 rounded-full bg-brand-neon neon-shadow shadow-brand-neon/40 z-10 mx-auto w-10"
                   transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                 />

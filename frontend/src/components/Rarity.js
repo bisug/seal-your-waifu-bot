@@ -3,60 +3,70 @@ export const RARITY_VISUALS = {
         bg: 'from-slate-500/20 to-slate-900', 
         glow: 'shadow-slate-500/10',
         text: 'text-slate-400',
-        border: 'border-white/5'
+        border: 'border-white/5',
+        pill: 'bg-slate-700/40',
     },
     'Medium': { 
         bg: 'from-emerald-500/20 to-slate-900', 
         glow: 'shadow-emerald-500/10',
         text: 'text-emerald-400',
-        border: 'border-emerald-500/20'
+        border: 'border-emerald-500/20',
+        pill: 'bg-emerald-900/60',
     },
     'Rare': { 
         bg: 'from-blue-500/20 to-slate-900', 
         glow: 'shadow-blue-500/20',
         text: 'text-blue-400',
-        border: 'border-blue-500/30'
+        border: 'border-blue-500/30',
+        pill: 'bg-blue-900/60',
     },
     'Legendary': { 
         bg: 'from-amber-500/30 to-slate-900', 
         glow: 'shadow-amber-500/30',
         text: 'text-amber-400',
-        border: 'border-amber-500/40'
+        border: 'border-amber-500/40',
+        pill: 'bg-amber-900/60',
     },
     'Cosmic': { 
         bg: 'from-purple-500/40 to-slate-900', 
         glow: 'shadow-purple-500/40 neon-shadow',
         text: 'text-purple-400',
-        border: 'border-purple-500/50'
+        border: 'border-purple-500/50',
+        pill: 'bg-purple-900/60',
     },
     'Exclusive': { 
         bg: 'from-rose-500/40 to-slate-900', 
         glow: 'shadow-rose-500/40 neon-shadow',
         text: 'text-rose-400',
-        border: 'border-rose-500/50'
+        border: 'border-rose-500/50',
+        pill: 'bg-rose-900/60',
     },
     'Limited Edition': { 
         bg: 'from-orange-500/50 to-slate-900', 
         glow: 'shadow-orange-500/50 neon-shadow',
         text: 'text-orange-400',
-        border: 'border-orange-500/60'
+        border: 'border-orange-500/60',
+        pill: 'bg-orange-900/60',
     },
     'Royal': { 
         bg: 'from-cyan-400/50 to-slate-900', 
         glow: 'shadow-cyan-400/50 neon-shadow',
         text: 'text-cyan-300',
-        border: 'border-cyan-400/70'
+        border: 'border-cyan-400/70',
+        pill: 'bg-cyan-900/60',
     },
     'Antique': { 
         bg: 'from-yellow-200/40 to-slate-900', 
         glow: 'shadow-yellow-200/40 neon-shadow',
         text: 'text-yellow-200',
-        border: 'border-yellow-200/50'
+        border: 'border-yellow-200/50',
+        pill: 'bg-yellow-900/60',
     },
     'Celestial': { 
         bg: 'from-white/40 to-slate-950', 
         glow: 'shadow-white/40 neon-shadow',
         text: 'text-white',
-        border: 'border-white/80'
+        border: 'border-white/80',
+        pill: 'bg-white/10',
     },
 };

@@ -136,14 +136,13 @@ async def get_me(user: dict = Depends(get_current_user_data)):
     # Handle Eggs
     eggs = user.get("eggs", [])
     processed_eggs = []
+    import uuid
+    migration_needed = False
     for idx, egg in enumerate(eggs):
         if isinstance(egg, str):
-            # Resolve numeric or string tier to a cleaner name for the WebApp
+            migration_needed = True
             tier_key = TIER_MAP.get(egg, egg)
-            # FIX: Use a hash of user_id+idx instead of datetime.now() so the ID
-            # is stable across multiple /me calls. The old timestamp-based ID
-            # changed every request, breaking any frontend lookup by egg ID.
-            stable_id = hashlib.md5(f"{user_id}_{idx}".encode()).hexdigest()[:12]
+            stable_id = str(uuid.uuid4())[:12]
             processed_eggs.append({
                 "id": f"mig_{stable_id}",
                 "tier": tier_key,
@@ -172,6 +171,14 @@ async def get_me(user: dict = Depends(get_current_user_data)):
             "remaining_mins": rem_mins
         })
     resp_data["eggs"] = processed_eggs
+    
+    if migration_needed:
+        from Grabber.core.utils import get_user_id_query
+        db_eggs = [{k: v for k, v in e.items() if k != "remaining_mins"} for e in processed_eggs]
+        asyncio.create_task(user_collection.update_one(
+            get_user_id_query(int(user_id)),
+            {"$set": {"eggs": db_eggs}}
+        ))
     
     return resp_data
 
