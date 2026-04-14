@@ -13,9 +13,7 @@ class Database:
         self.client = AsyncIOMotorClient(uri)
         self.db = self.client['Character_catchers']
 
-        # Initialize collections
-        # NOTE: Legacy collection names contain intentional typos/suffixes (e.g. 'anime_characterss') 
-        # from early development. Do NOT "fix" these without a full database migration.
+        # NOTE: Legacy collection names contain intentional typos (e.g. 'user_totalssss')
         self.anime_characters = self.db['anime_characterss']
         self.groups = self.db['total_groups']
         self.user_totals = self.db['user_totalssss']
@@ -32,7 +30,7 @@ class Database:
         self.daily_shop = self.db['daily_shop_inventory']
 
     async def ensure_indexes(self):
-        """Create performance indexes. Each index is isolated so one failure doesn't block others."""
+        """Create performance indexes for all collections."""
         indexes = [
             (self.users,             lambda c: c.create_index("id", unique=True, sparse=True)),
             (self.anime_characters,  lambda c: c.create_index("id", unique=True, sparse=True)),
@@ -52,6 +50,9 @@ class Database:
             (self.users,             lambda c: c.create_index([("id", 1), ("characters.id", 1)])),
             (self.anime_characters,  lambda c: c.create_index([("rarity", 1), ("name", 1)])),
             (self.users,             lambda c: c.create_index("char_count", sparse=True)),
+            # Search Performance Indexes (Multi-key for harem filtering)
+            (self.users,             lambda c: c.create_index([("id", 1), ("characters.rarity", 1), ("characters.name", 1)])),
+            (self.users,             lambda c: c.create_index([("id", 1), ("characters.anime", 1)])),
         ]
         failed = 0
         for collection, idx_fn in indexes:
@@ -74,12 +75,10 @@ except Exception as e:
 
 # Initialize Redis
 try:
-    redis_url = config.REDIS_URL
-    if not redis_url:
-        LOGGER.error("REDIS_URL not found in environment. Core features (Session, Rankings, Locks) will be DISABLED.")
+    if not config.REDIS_URL:
         r = None
     else:
-        r = redis.from_url(redis_url, decode_responses=True)
+        r = redis.from_url(config.REDIS_URL, decode_responses=True)
 except Exception as e:
     print(f"Failed to initialize Redis: {e}")
     r = None
