@@ -317,36 +317,34 @@ async def egg_hatch_callback(_, query: types.CallbackQuery):
     if query.from_user.id != owner_id:
         return await query.answer("❌ Not your egg!", show_alert=True)
 
-    from Grabber.webapp.auth import _user_locks
-    async with await _user_locks.get(str(owner_id)):
-        user = await user_collection.find_one(get_user_filter(owner_id)) or {}
-        eggs = user.get("eggs", [])
-        if page >= len(eggs): return await query.answer("❌ Egg not found!")
+    user = await user_collection.find_one(get_user_filter(owner_id)) or {}
+    eggs = user.get("eggs", [])
+    if page >= len(eggs): return await query.answer("❌ Egg not found!")
+    
+    egg = eggs[page]
+    if egg.get("status") != "incubating":
+        return await query.answer("❌ Not ready to hatch!")
         
-        egg = eggs[page]
-        if egg.get("status") != "incubating":
-            return await query.answer("❌ Not ready to hatch!")
-            
-        hatch_time = egg.get("hatch_time")
-        if hatch_time and get_now_utc() < hatch_time.replace(tzinfo=timezone.utc):
-            return await query.answer("⏳ Still incubating!")
+    hatch_time = egg.get("hatch_time")
+    if hatch_time and get_now_utc() < hatch_time.replace(tzinfo=timezone.utc):
+        return await query.answer("⏳ Still incubating!")
 
-        # Restore process_egg_hatch compatibility
-        success, result = await process_egg_hatch(owner_id, egg)
-        if not success:
-            return await query.message.edit_text(result, parse_mode=ParseMode.HTML)
-            
-        character = result
-        await query.message.edit_text("🎉 <b>Success! Sending details...</b>", parse_mode=ParseMode.HTML)
-        await reply_media_dynamic(query.message, character["img_url"],
-            caption=(
-                f"🐣 <b>Hatched Successfully!</b>\n\n"
-                f"📛 <b>{html_escape(character['name'])}</b>\n"
-                f"✨ <b>{html_escape(character['rarity'])}</b>\n"
-                f"🎬 {html_escape(character['anime'])}"
-            ),
-            parse_mode=ParseMode.HTML
-        )
+    # Restore process_egg_hatch compatibility
+    success, result = await process_egg_hatch(owner_id, egg)
+    if not success:
+        return await query.message.edit_text(result, parse_mode=ParseMode.HTML)
+        
+    character = result
+    await query.message.edit_text("🎉 <b>Success! Sending details...</b>", parse_mode=ParseMode.HTML)
+    await reply_media_dynamic(query.message, character["img_url"],
+        caption=(
+            f"🐣 <b>Hatched Successfully!</b>\n\n"
+            f"📛 <b>{html_escape(character['name'])}</b>\n"
+            f"✨ <b>{html_escape(character['rarity'])}</b>\n"
+            f"🎬 {html_escape(character['anime'])}"
+        ),
+        parse_mode=ParseMode.HTML
+    )
 
 async def process_egg_hatch(user_id: int, egg: dict) -> tuple[bool, any]:
     """Compatibility function for both bot callbacks and webapp requests."""

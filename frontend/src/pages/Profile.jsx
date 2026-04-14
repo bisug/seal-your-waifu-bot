@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useUser } from '../context/UserContext';
 import { apiFetch } from '../api';
 import { ProgressBar, Card, Skeleton, CardSkeleton } from '../components/UI';
+import { Avatar } from '../components/Avatar';
 import { Shield, Activity, Users, Trophy, Search, Loader2 } from 'lucide-react';
 import { formatNumber } from '../utils';
 
@@ -17,29 +18,35 @@ export const Profile = ({ onCharClick }) => {
   const [availableRarities, setAvailableRarities] = useState([]);
   
   const observer = useRef();
-  const loadingRef = useRef(loading);
-  const hasMoreRef = useRef(hasMore);
-
-  useEffect(() => { loadingRef.current = loading; }, [loading]);
-  useEffect(() => { hasMoreRef.current = hasMore; }, [hasMore]);
+  const searchAbortController = useRef(null);
 
   const lastElementRef = useCallback(node => {
-    if (loadingRef.current) return;
+    if (loading) return;
     if (observer.current) observer.current.disconnect();
     observer.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMoreRef.current && !loadingRef.current) {
+      if (entries[0].isIntersecting && hasMore && !loading) {
         setPage(prev => prev + 1);
       }
     });
     if (node) observer.current.observe(node);
-  }, []);
+  }, [loading, hasMore]);
 
   const fetchHarem = useCallback(async (isNew = false) => {
     setLoading(true);
+    
+    if (isNew) {
+      if (searchAbortController.current) {
+        searchAbortController.current.abort();
+      }
+      searchAbortController.current = new AbortController();
+    }
+    
     try {
       const currentPage = isNew ? 1 : page;
-      // Note: Backend /harem already handles grouping/counting duplicates
-      const data = await apiFetch(`/harem?page=${currentPage}&limit=24&search=${encodeURIComponent(search)}&rarity=${encodeURIComponent(rarity)}`);
+      const data = await apiFetch(
+        `/harem?page=${currentPage}&limit=24&search=${encodeURIComponent(search)}&rarity=${encodeURIComponent(rarity)}`,
+        { signal: searchAbortController.current?.signal }
+      );
       
       if (isNew) {
         setItems(data.items);
@@ -47,8 +54,9 @@ export const Profile = ({ onCharClick }) => {
         setItems(prev => [...prev, ...data.items]);
       }
       
-      setHasMore((isNew ? data.items.length : items.length + data.items.length) < data.total);
+      setHasMore(data.items.length === 24);
     } catch (err) {
+      if (err.name === 'AbortError') return; // Ignore aborted requests
       console.error('Harem fetch error:', err);
     } finally {
       setLoading(false);
@@ -84,7 +92,7 @@ export const Profile = ({ onCharClick }) => {
        <div className="grid grid-cols-3 gap-3 mb-8">
           {[1,2,3].map(i => <Skeleton key={i} className="h-16 rounded-2xl" />)}
        </div>
-       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+       <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
           {Array.from({ length: 9 }).map((_, i) => (
             <CardSkeleton key={`prof-skeleton-${i}`} />
           ))}
@@ -97,7 +105,7 @@ export const Profile = ({ onCharClick }) => {
   return (
     <div className="pb-28">
       {/* Premium Hero Section */}
-      <section className="relative h-44 overflow-hidden flex flex-col justify-end px-4 pb-5">
+      <section className="relative min-h-[11rem] overflow-hidden flex flex-col justify-end px-4 pb-5">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-brand-midnight/60 to-brand-midnight z-10" />
         <div className="absolute inset-0 bg-mesh opacity-30 z-0 scale-150 animate-pulse" />
         <img 
@@ -108,9 +116,11 @@ export const Profile = ({ onCharClick }) => {
         
         <div className="relative z-20 flex items-center space-x-4">
           <div className="relative group">
-            <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-brand-neon neon-shadow bg-brand-midnight transform transition-transform group-hover:scale-105">
-              <img src={user.avatar || 'https://files.catbox.moe/2hsawz.jpg'} className="w-full h-full object-cover" alt="User" />
-            </div>
+            <Avatar 
+              src={user.avatar} 
+              alt="User" 
+              className="w-16 h-16 rounded-2xl border-2 border-brand-neon neon-shadow transform transition-transform group-hover:scale-105"
+            />
             <div className="absolute -bottom-1.5 -right-1.5 bg-brand-neon text-brand-midnight text-[10px] font-black px-2 py-0.5 rounded-md shadow-lg shadow-brand-neon/40 ring-2 ring-brand-midnight">
               LVL {user.stats?.level || 1}
             </div>
@@ -243,7 +253,7 @@ export const Profile = ({ onCharClick }) => {
               <input 
                 type="text" 
                 placeholder="Search collection..." 
-                className="w-full bg-slate-900/40 border border-white/10 rounded-xl py-3 pl-11 pr-4 text-[11px] focus:border-brand-neon/50 outline-none transition-all placeholder:text-slate-600 font-bold uppercase tracking-widest backdrop-blur-sm"
+                className="w-full bg-slate-900/40 border border-white/10 rounded-xl py-3 pl-11 pr-4 text-[11px] focus:border-brand-neon/50 outline-none transition-all placeholder:text-slate-600 font-bold tracking-widest backdrop-blur-sm"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -251,8 +261,8 @@ export const Profile = ({ onCharClick }) => {
           </div>
         </div>
         
-        {items.length > 0 || loading ? (
-          <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
+        {items.length > 0 || (loading && page > 1) ? (
+          <div className={`grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2 transition-opacity duration-300 ${loading && page === 1 ? 'opacity-40 grayscale-[0.3]' : 'opacity-100'}`}>
              <AnimatePresence>
                {items.map((char, i) => (
                  <motion.div
@@ -269,8 +279,14 @@ export const Profile = ({ onCharClick }) => {
                  </motion.div>
                ))}
              </AnimatePresence>
-             {loading && Array.from({ length: 6 }).map((_, i) => (
+             {loading && page > 1 && Array.from({ length: 6 }).map((_, i) => (
                 <CardSkeleton key={`loading-${i}`} />
+             ))}
+          </div>
+        ) : loading && page === 1 ? (
+          <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
+             {Array.from({ length: 18 }).map((_, i) => (
+                <CardSkeleton key={`loading-new-${i}`} />
              ))}
           </div>
         ) : (

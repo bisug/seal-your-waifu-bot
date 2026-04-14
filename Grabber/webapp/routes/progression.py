@@ -80,86 +80,82 @@ async def set_active_pet(pet_name: str, user: dict = Depends(get_current_user_da
 
 @router.post("/eggs/incubate/{egg_id}")
 async def incubate_egg(egg_id: str, user: dict = Depends(get_current_user_data)):
-    from Grabber.webapp.auth import _user_locks
     uid_int = normalize_user_id(user["id"])
-    uid_str = str(uid_int)
     
-    async with await _user_locks.get(uid_str):
-        fresh_user = await user_collection.find_one(get_user_id_query(uid_int))
-        if not fresh_user:
-            raise HTTPException(status_code=404, detail="User not found")
+    fresh_user = await user_collection.find_one(get_user_id_query(uid_int))
+    if not fresh_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    eggs = fresh_user.get("eggs", [])
+    egg = next((e for e in eggs if isinstance(e, dict) and e.get("id") == egg_id), None)
+    if not egg:
+        raise HTTPException(status_code=404, detail="Egg not found")
         
-        eggs = fresh_user.get("eggs", [])
-        egg = next((e for e in eggs if isinstance(e, dict) and e.get("id") == egg_id), None)
-        if not egg:
-            raise HTTPException(status_code=404, detail="Egg not found")
-            
-        if egg.get("status") != "fresh":
-            raise HTTPException(status_code=400, detail="Egg already incubating or hatched")
-            
-        tier_info = EGG_TIERS.get(egg.get("tier", "common"), {"wait_min": 30})
-        wait_min = tier_info["wait_min"]
+    if egg.get("status") != "fresh":
+        raise HTTPException(status_code=400, detail="Egg already incubating or hatched")
         
-        pets = fresh_user.get("pets", [DEFAULT_PET])
-        active_pet = next((p for p in pets if p["name"] == fresh_user.get("current_pet")), {})
-        if active_pet.get("ability") == "Caregiver":
-            wait_min = int(wait_min * 0.5)
-            
-        ready_time = get_now_utc() + timedelta(minutes=wait_min)
+    tier_info = EGG_TIERS.get(egg.get("tier", "common"), {"wait_min": 30})
+    wait_min = tier_info["wait_min"]
+    
+    pets = fresh_user.get("pets", [DEFAULT_PET])
+    active_pet = next((p for p in pets if p["name"] == fresh_user.get("current_pet")), {})
+    if active_pet.get("ability") == "Caregiver":
+        wait_min = int(wait_min * 0.5)
         
-        q = get_user_id_query(uid_int)
-        q["eggs.id"] = egg_id
-        await user_collection.update_one(
-            q,
-            {
-                "$set": {
-                    "eggs.$.status": "incubating",
-                    "eggs.$.hatch_time": ready_time
-                }
+    ready_time = get_now_utc() + timedelta(minutes=wait_min)
+    
+    q = get_user_id_query(uid_int)
+    # Ensure egg is exactly in 'fresh' state to avoid double incubation
+    q["eggs"] = {"$elemMatch": {"id": egg_id, "status": "fresh"}}
+    res = await user_collection.update_one(
+        q,
+        {
+            "$set": {
+                "eggs.$.status": "incubating",
+                "eggs.$.hatch_time": ready_time
             }
-        )
-        return {"status": "success", "ready_at": ready_time.isoformat(), "wait_min": wait_min}
+        }
+    )
+    if res.modified_count == 0:
+        raise HTTPException(status_code=400, detail="Egg status changed concurrently. Please refresh.")
+        
+    return {"status": "success", "ready_at": ready_time.isoformat(), "wait_min": wait_min}
 
 @router.post("/eggs/hatch/{egg_id}")
 async def hatch_egg(egg_id: str, user: dict = Depends(get_current_user_data)):
     from Grabber.modules.economy.hunt import process_egg_hatch
-    from Grabber.webapp.auth import _user_locks
 
     uid_int = normalize_user_id(user["id"])
-    uid_str = str(uid_int)
 
-    async with await _user_locks.get(uid_str):
-        fresh_user = await user_collection.find_one(get_user_id_query(uid_int))
-        if not fresh_user:
-            raise HTTPException(status_code=404, detail="User not found")
-            
-        eggs = fresh_user.get("eggs", [])
-        egg = next((e for e in eggs if isinstance(e, dict) and e.get("id") == egg_id), None)
+    fresh_user = await user_collection.find_one(get_user_id_query(uid_int))
+    if not fresh_user:
+        raise HTTPException(status_code=404, detail="User not found")
         
-        if not egg or egg.get("status") != "incubating":
-             raise HTTPException(status_code=400, detail="Egg not ready or not found")
-             
-        h_time = egg.get("hatch_time")
-        if h_time and get_now_utc().replace(tzinfo=None) < h_time.replace(tzinfo=None):
-            raise HTTPException(status_code=400, detail="Egg still incubating")
+    eggs = fresh_user.get("eggs", [])
+    egg = next((e for e in eggs if isinstance(e, dict) and e.get("id") == egg_id), None)
+    
+    if not egg or egg.get("status") != "incubating":
+         raise HTTPException(status_code=400, detail="Egg not ready or not found")
+         
+    h_time = egg.get("hatch_time")
+    if h_time and get_now_utc().replace(tzinfo=None) < h_time.replace(tzinfo=None):
+        raise HTTPException(status_code=400, detail="Egg still incubating")
 
-        success, result = await process_egg_hatch(uid_int, egg)
-        
-        if not success:
-            # FIX: Raise a proper HTTP error instead of returning 200 OK with a status field.
-            # Returning 200 means apiFetch never throws, so the frontend silently
-            # misses the failure and cannot display an error toast to the user.
-            msg = result.replace("<b>", "").replace("</b>", "").replace("💥 ", "").replace("⚠️ ", "").replace("\n", " ")
-            raise HTTPException(status_code=422, detail=msg)
-             
-        character = result
-        return {
-            "status": "success",
-            "character": {
-                "id": character["id"],
-                "name": character["name"],
-                "anime": character["anime"],
-                "rarity": character["rarity"],
-                "img_url": character["img_url"]
-            }
+    # Atomic guarantees are handled gracefully inside process_egg_hatch without locks
+    success, result = await process_egg_hatch(uid_int, egg)
+    
+    if not success:
+        msg = result.replace("<b>", "").replace("</b>", "").replace("💥 ", "").replace("⚠️ ", "").replace("\n", " ")
+        raise HTTPException(status_code=422, detail=msg)
+         
+    character = result
+    return {
+        "status": "success",
+        "character": {
+            "id": character["id"],
+            "name": character["name"],
+            "anime": character["anime"],
+            "rarity": character["rarity"],
+            "img_url": character["img_url"]
         }
+    }

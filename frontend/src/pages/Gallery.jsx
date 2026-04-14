@@ -37,7 +37,7 @@ export const Gallery = ({ onCharClick }) => {
         setItems(prev => [...prev, ...data.items]);
       }
       
-      setHasMore((isNew ? data.items.length : items.length + data.items.length) < data.total);
+      setHasMore(data.items.length === 24);
     } catch (err) {
       console.error('Gallery fetch error:', err);
     } finally {
@@ -155,7 +155,7 @@ export const Gallery = ({ onCharClick }) => {
           {loading && items.length > 0 && (
             <div className="flex items-center space-x-3 bg-white/5 px-6 py-3 rounded-2xl border border-white/10 animate-pulse">
               <Loader2 size={14} className="animate-spin text-brand-neon" />
-              <span className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em]">Loading Harem Data...</span>
+              <span className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em]">Loading Catalog...</span>
             </div>
           )}
 

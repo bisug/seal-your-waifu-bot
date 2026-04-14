@@ -62,6 +62,12 @@ export async function apiFetch(endpoint, options = {}, retries = 2) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 12000);
 
+  if (options.signal) {
+    options.signal.addEventListener('abort', () => {
+      controller.abort();
+    });
+  }
+
   try {
     const response = await fetch(url, { ...options, headers, signal: controller.signal });
     clearTimeout(timeoutId);

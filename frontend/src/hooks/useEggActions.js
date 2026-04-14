@@ -1,10 +1,11 @@
 import { useState, useCallback } from 'react';
 import { apiFetch } from '../api';
 import { useUser } from '../context/UserContext';
-import { toast } from 'react-hot-toast';
+import { useToast } from '../components/UI';
 
 export const useEggActions = () => {
   const { refreshUser } = useUser();
+  const { addToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [hatchingResult, setHatchingResult] = useState(null);
 
@@ -14,14 +15,14 @@ export const useEggActions = () => {
     setLoading(true);
     try {
       await apiFetch(`/eggs/incubate/${eggId}`, { method: 'POST' });
-      toast.success('Incubation Matrix Active');
+      addToast('Incubation Matrix Active', 'success');
       await refreshUser();
       return true;
     } catch (err) {
       tg?.HapticFeedback?.notificationOccurred('error');
       const msg = err.message || 'Calibration failure';
       if (tg?.showAlert) tg.showAlert(msg);
-      else toast.error(msg);
+      else addToast(msg, 'error');
       return false;
     } finally {
       setLoading(false);
@@ -37,21 +38,21 @@ export const useEggActions = () => {
       if (res.status === 'success') {
         tg?.HapticFeedback?.notificationOccurred('success');
         setHatchingResult(res.character);
-        toast.success('Lifeform Detected');
+        addToast('Lifeform Detected', 'success');
         await refreshUser();
         return res.character;
       } else {
         tg?.HapticFeedback?.notificationOccurred('error');
         const msg = res.message || 'Incubation Failure';
         if (tg?.showAlert) tg.showAlert(msg);
-        else toast.error(msg);
+        else addToast(msg, 'error');
         return null;
       }
     } catch (err) {
       tg?.HapticFeedback?.notificationOccurred('error');
       const msg = err.message || 'Hatch protocol interrupted';
       if (tg?.showAlert) tg.showAlert(msg);
-      else toast.error(msg);
+      else addToast(msg, 'error');
       return null;
     } finally {
       setLoading(false);

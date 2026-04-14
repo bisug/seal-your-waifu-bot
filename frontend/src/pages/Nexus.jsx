@@ -37,7 +37,7 @@ export const Nexus = () => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-y-auto no-scrollbar">
         <AnimatePresence mode="wait">
           {activeTab === 'quests' && (
             <motion.div
