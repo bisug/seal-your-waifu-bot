@@ -142,6 +142,25 @@ async def get_cached_leaderboard(metric: str, limit: int = 10) -> Optional[list]
 async def set_cached_leaderboard(metric: str, data: list, limit: int = 10):
     await rset_json(_lb_key(metric, limit), data, TTL_LEADERBOARD)
 
+# --- USER & BALANCE CACHING ---
+
+async def invalidate_user_cache(user_id: int):
+    """Remove user and balance strings from Redis."""
+    if not _redis: return
+    await rdel(f"user:{user_id}", f"balance:{user_id}")
+
+async def get_cached_user(user_id: int) -> Optional[dict]:
+    return await rget_json(f"user:{user_id}")
+
+async def set_cached_user(user_id: int, user_data: dict):
+    await rset_json(f"user:{user_id}", user_data, TTL_USER)
+
+async def get_cached_balance(user_id: int) -> Optional[int]:
+    return await rget_json(f"balance:{user_id}")
+
+async def set_cached_balance(user_id: int, balance: int):
+    await rset_json(f"balance:{user_id}", balance, TTL_USER)
+
 def _zset_key(metric: str) -> str:
     # Map metrics to Redis keys
     mapping = {
