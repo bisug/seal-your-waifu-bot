@@ -161,6 +161,31 @@ async def get_cached_balance(user_id: int) -> Optional[int]:
 async def set_cached_balance(user_id: int, balance: int):
     await rset_json(f"balance:{user_id}", balance, TTL_USER)
 
+# --- DAILY & WEEKLY COOLDOWNS ---
+
+async def get_daily_date(user_id: int) -> Optional[str]:
+    return await rget(f"daily:{user_id}")
+
+async def set_daily_date(user_id: int, date_str: str):
+    await rset(f"daily:{user_id}", date_str, TTL_DAILY)
+
+async def get_weekly_date(user_id: int) -> Optional[str]:
+    return await rget(f"weekly:{user_id}")
+
+async def set_weekly_date(user_id: int, date_str: str):
+    await rset(f"weekly:{user_id}", date_str, TTL_WEEKLY)
+
+# --- LEADERBOARD CACHE INVALIDATION ---
+
+async def invalidate_leaderboard_cache(metric: str = None):
+    """Clear specific or all leaderboard caches in Redis."""
+    if not _redis: return
+    if metric:
+        await rdel(_lb_key(metric, 10))
+    else:
+        keys = await _scan_keys("lb:*")
+        if keys: await rdel(*keys)
+
 # --- SESSION MANAGEMENT (BOT) ---
 
 def _session_key(session_id: str) -> str:
