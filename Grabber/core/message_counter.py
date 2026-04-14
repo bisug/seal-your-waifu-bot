@@ -13,11 +13,17 @@ from Grabber.core.waifu import get_or_load_characters
 from Grabber.modules.collection.rarities import RARITY_WEIGHTS, ACTIVE_RARITY_WEIGHTS
 
 special_rarity_thresholds = {
-    "💠 Cosmic": 250,
-    "💮 Exclusive": 500,
-    "🔮 Limited Edition": 750,
-    "🫧 Royal": 1000,
-    "💎 Antique": 1250
+    "🎞️ AMV": 2500,
+    "🎐 Celestial": 2250,
+    "💎 Antique": 2000,
+    "🫧 Royal": 1750,
+    "🔮 Limited Edition": 1500,
+    "💮 Exclusive": 1250,
+    "💠 Cosmic": 1000,
+    "🟡 Legendary": 700,
+    "🟠 Rare": 450,
+    "🟢 Medium": 250,
+    "⚪ Common": 100
 }
 
 

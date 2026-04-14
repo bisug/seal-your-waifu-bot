@@ -10,23 +10,29 @@ RARITY_MAP = {
 }
 
 RARITY_WEIGHTS = {
-    "⚪ Common": 35,
-    "🟢 Medium": 30,
-    "🟠 Rare": 20,
+    "⚪ Common": 25,
+    "🟢 Medium": 20,
+    "🟠 Rare": 15,
     "🟡 Legendary": 10,
-    "💠 Cosmic": 3,
-    "💮 Exclusive": 1.5,
-    "🔮 Limited Edition": 0.5
+    "💠 Cosmic": 8,
+    "💮 Exclusive": 6,
+    "🔮 Limited Edition": 5,
+    "🫧 Royal": 4,
+    "💎 Antique": 3,
+    "🎐 Celestial": 2,
+    "🎞️ AMV": 2
 }
 
 ACTIVE_RARITY_WEIGHTS = {
-    "🟢 Medium": 35,
-    "🟠 Rare": 30,
-    "🟡 Legendary": 20,
-    "💠 Cosmic": 10,
-    "💮 Exclusive": 4,
-    "🔮 Limited Edition": 1,
-    "🎞️ AMV": 2
+    "🟠 Rare": 20,
+    "🟡 Legendary": 15,
+    "💠 Cosmic": 15,
+    "💮 Exclusive": 12,
+    "🔮 Limited Edition": 10,
+    "🫧 Royal": 8,
+    "💎 Antique": 7,
+    "🎐 Celestial": 6,
+    "🎞️ AMV": 7
 }
 
 @app.on_message(filters.command("rarities"))
