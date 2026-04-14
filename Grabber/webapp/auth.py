@@ -16,18 +16,10 @@ from collections import defaultdict
 
 security = HTTPBearer()
 
-from collections import OrderedDict
-
-# Bounded lock store was fundamentally flawed for application locking and multi-worker setups.
-# Proceeding without memory locks. Rely strictly on DB-layer atomic operators for concurrency control.
-
 
 
 def validate_init_data(init_data: str):
-    """
-    Validates the data received from the Telegram Web App.
-    Based on: https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app
-    """
+    """Validates data received from Telegram Web App."""
     if not init_data:
         return False
         
@@ -57,10 +49,9 @@ _MAX_FALLBACK = 5000
 _fallback_rate_limits = OrderedDict()
 
 async def create_session(user_data: dict):
-    """Creates a Redis session for the user."""
+    """Creates a Redis session with MongoDB fallback."""
     user_id = user_data.get('id')
     if not user_id:
-        # Extract user_id from json string if needed
         user_json = json.loads(user_data.get('user', '{}'))
         user_id = user_json.get('id')
         
@@ -73,7 +64,6 @@ async def create_session(user_data: dict):
     
     if not r:
         expiry = time.time() + 3600
-        # Store in MongoDB for fallback support
         await sessions_collection.update_one(
             {"_id": session_key},
             {"$set": {"token": token, "expires_at": expiry}},
@@ -93,7 +83,7 @@ async def create_session(user_data: dict):
     return token, user_id
 
 async def get_current_user(auth: HTTPAuthorizationCredentials = Security(security)):
-    """Middleware to validate session token and handle rate limiting."""
+    """Middleware to validate session and handle rate limiting."""
     token = auth.credentials
     if not r:
         token_doc = await sessions_collection.find_one({"_id": f"auth_token:{token}"})
@@ -144,8 +134,7 @@ async def get_current_user(auth: HTTPAuthorizationCredentials = Security(securit
     return int(user_id)
 
 async def get_current_user_data(user_id: int = Depends(get_current_user)):
-    """Dependency to fetch the full user document from the database efficiently."""
-    # Provide a unified way to fetch the DB object and replace scattered queries
+    """Dependency to fetch the full user document."""
     user = await user_collection.find_one({"id": int(user_id)})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")

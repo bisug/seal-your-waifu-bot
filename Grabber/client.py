@@ -10,10 +10,7 @@ from config import config
 LOGGER = logging.getLogger(__name__)
 
 class SealClient(Client):
-    """
-    Main entry point for the Seal Telegram Client.
-    Handles initialization, module loading, and command registration.
-    """
+    """Custom Telegram Client for the Seal bot ecosystem."""
     def __init__(self, name="Grabber", bot_token=None):
         super().__init__(
             name=name,
@@ -166,26 +163,18 @@ class SealClient(Client):
         else:
             Grabber.GAME_BOT_USERNAME = me.username
 
-        # Register message counter for groups
-        if self.name == "MainBot":
-            from Grabber.core.message_counter import message_counter
-            self.add_handler(MessageHandler(message_counter, filters.group & ~filters.command(["seal", "messagecount"])), group=1)
-
-        # Load dynamic modules from modules package
+        # Dynamic Module Loading
         from Grabber.modules import ALL_MODULES
         for module_name in ALL_MODULES:
             try:
                 module = importlib.import_module(f"Grabber.modules.{module_name}")
-                
-                # Check for explicit handler registration function
                 if hasattr(module, "load_handlers"):
                     module.load_handlers(self)
-                    LOGGER.info(f"Loaded Module (Explicit): {module_name}")
+                    LOGGER.info(f"Loaded (Explicit): {module_name}")
                 else:
-                    LOGGER.info(f"Loaded Module (Decorator): {module_name}")
-                    
+                    LOGGER.info(f"Loaded (Decorator): {module_name}")
             except Exception as e:
-                LOGGER.error(f"Failed to load module {module_name}: {e}")
+                LOGGER.error(f"Failed to load {module_name}: {e}")
                 import traceback
                 LOGGER.error(traceback.format_exc())
         LOGGER.info(f"Loaded {len(ALL_MODULES)} modules.")
@@ -194,7 +183,6 @@ class SealClient(Client):
         await self._set_commands_internal()
 
         if self.name == "MainBot":
-            # Database and Background tasks
             from Grabber.database import seal_db
             await seal_db.ensure_indexes()
 

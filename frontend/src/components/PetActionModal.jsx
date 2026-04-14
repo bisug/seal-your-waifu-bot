@@ -19,8 +19,8 @@ const StatBox = ({ icon: Icon, label, value, colorClass }) => (
 
 export const PetActionModal = ({ selectedPet, setSelectedPet, user, onPurchaseSuccess }) => {
     const { addToast } = useToast();
-    const [purchaseStage, setPurchaseStage] = useState('idle'); // 'idle', 'confirm', 'buying'
-    const [setStage, setSetStage] = useState('idle'); // 'idle', 'setting'
+    const [purchaseStage, setPurchaseStage] = useState('idle');
+    const [setStage, setSetStage] = useState('idle');
 
     useEffect(() => {
         if (!selectedPet) {
@@ -87,7 +87,6 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user, onPurchaseSu
                     transition={{ type: "spring", damping: 25, stiffness: 200 }}
                     className="relative w-full max-w-md bg-brand-midnight border border-white/10 rounded-[3rem] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
                 >
-                    {/* Header/Close */}
                     <button 
                         onClick={() => setSelectedPet(null)}
                         className="absolute top-6 right-6 z-50 w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-white/40 active:scale-90"
@@ -96,7 +95,6 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user, onPurchaseSu
                     </button>
 
                     <div className="overflow-y-auto no-scrollbar pb-10">
-                        {/* Pet Image */}
                         <div className="relative aspect-video w-full p-4 bg-gradient-to-b from-brand-neon/5 to-transparent">
                             <img 
                                 src={selectedPet.img} 
@@ -106,7 +104,6 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user, onPurchaseSu
                             <div className="absolute inset-0 bg-gradient-to-t from-brand-midnight via-transparent to-transparent" />
                         </div>
 
-                        {/* Pet Info */}
                         <div className="px-8 -mt-6 relative z-10 text-center">
                             <div className="inline-block px-3 py-1 rounded-full bg-brand-neon/10 border border-brand-neon/20 mb-3">
                                 <span className="text-[9px] font-black uppercase tracking-[0.2em] text-brand-neon">Companion Hub</span>
@@ -116,7 +113,6 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user, onPurchaseSu
                                 {selectedPet.ability || 'Standard Companion'}
                             </p>
 
-                            {/* Stats Grid */}
                             <div className="grid grid-cols-2 gap-3 mb-10">
                                 <StatBox icon={Heart} label="Vitality" value={selectedPet.hp || 100} colorClass="text-red-400" />
                                 <StatBox icon={Swords} label="Power" value={selectedPet.atk || 10} colorClass="text-orange-400" />
@@ -124,7 +120,6 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user, onPurchaseSu
                                 <StatBox icon={Sparkles} label="Luck" value={`${((selectedPet.luck || 0) * 100).toFixed(0)}%`} colorClass="text-brand-accent" />
                             </div>
 
-                            {/* Description */}
                             <div className="bg-white/[0.02] border border-white/5 p-5 rounded-[2rem] mb-10 text-left">
                                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
                                     <Activity size={12} className="text-brand-neon" />
@@ -135,7 +130,6 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user, onPurchaseSu
                                 </p>
                             </div>
 
-                            {/* Actions */}
                             <div className="space-y-4">
                                 {isOwned ? (
                                     <button 

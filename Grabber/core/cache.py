@@ -1,19 +1,6 @@
 """
-Centralized Redis cache layer for Seal-Bot.
-
-All methods are safe-by-default: if Redis is unavailable (r is None or raises),
-callers receive None and fall back to MongoDB. This ensures the bot works even
-if Redis goes down.
-
-Key prefixes:
-  user:{id}          → full user document JSON, TTL 5m
-  balance:{id}       → int shard balance, TTL 5m
-  cooldown:{key}     → Unix timestamp float, TTL = cooldown duration
-  lb:{metric}        → leaderboard JSON list, TTL 5m
-  session:{id}       → session JSON, TTL = caller-specified (default 1h)
-  gamebot_groups     → Redis set of enabled chat_ids, TTL 10m
-  daily:{id}         → last daily date string YYYY-MM-DD, TTL 48h
-  weekly:{id}        → last weekly date string YYYY-MM-DD, TTL 8d
+Centralized Redis cache layer. All methods are failsafe (falls back to MongoDB).
+Key prefixes: user, balance, cooldown, lb, session, gamebot_groups.
 """
 
 import json
@@ -25,17 +12,14 @@ r = _redis
 from Grabber import LOGGER
 from Grabber.core.utils import get_now_utc
 
-# Time-To-Live (TTL) settings for cache persistence (in seconds)
+# TTL settings (seconds)
 TTL_USER        = 60
 TTL_LEADERBOARD = 300
 TTL_SESSION     = 1800
 TTL_DAILY       = 86400
 TTL_WEEKLY      = 604800
 TTL_GAMEBOT     = 300
-MEM_LIMIT_BYTES = 25 * 1024 * 1024 # 25MB Soft limit for auto-purge
-
-
-# ── Low-level helpers ────────────────────────────────────────────
+MEM_LIMIT_BYTES = 25 * 1024 * 1024 
 
 async def rget(key: str) -> Optional[str]:
     """Get a string value from Redis. Returns None on miss or error."""
@@ -99,8 +83,6 @@ async def rdel(*keys: str):
         LOGGER.warning(f"Redis DEL error {keys}: {e}")
 
 
-# ── JSON helpers ─────────────────────────────────────────────────
-
 async def rget_json(key: str) -> Optional[Any]:
     raw = await rget(key)
     if raw is None:
@@ -116,37 +98,6 @@ async def rset_json(key: str, value: Any, ttl: int):
     except Exception as e:
         LOGGER.warning(f"Redis SET_JSON error [{key}]: {e}")
 
-
-# ── User cache ───────────────────────────────────────────────────
-
-def _user_key(user_id: int) -> str:
-    return f"user:{user_id}"
-
-def _balance_key(user_id: int) -> str:
-    return f"balance:{user_id}"
-
-async def get_cached_user(user_id: int) -> Optional[dict]:
-    """Return cached user document or None."""
-    return await rget_json(_user_key(user_id))
-
-async def set_cached_user(user_id: int, user_doc: dict):
-    """Cache a user document for TTL_USER seconds."""
-    await rset_json(_user_key(user_id), user_doc, TTL_USER)
-
-async def invalidate_user_cache(user_id: int):
-    """Remove user + balance cache entries. Call after any write to user doc."""
-    await rdel(_user_key(user_id), _balance_key(user_id))
-
-async def get_cached_balance(user_id: int) -> Optional[int]:
-    """Return cached shard balance or None."""
-    raw = await rget(_balance_key(user_id))
-    return int(raw) if raw is not None else None
-
-async def set_cached_balance(user_id: int, balance: int):
-    await rset(_balance_key(user_id), str(balance), TTL_USER)
-
-
-# ── Cooldown helpers (replaces in-memory dicts) ──────────────────
 
 def _cooldown_key(domain: str, user_id: int) -> str:
     return f"cooldown:{domain}:{user_id}"
@@ -182,29 +133,6 @@ async def reset_cooldown(domain: str, user_id: int):
     await rdel(_cooldown_key(domain, user_id))
 
 
-# ── Daily / Weekly claim timestamps ──────────────────────────────
-
-def _daily_key(user_id: int) -> str:
-    return f"daily:{user_id}"
-
-def _weekly_key(user_id: int) -> str:
-    return f"weekly:{user_id}"
-
-async def get_daily_date(user_id: int) -> Optional[str]:
-    return await rget(_daily_key(user_id))
-
-async def set_daily_date(user_id: int, date_str: str):
-    await rset(_daily_key(user_id), date_str, TTL_DAILY)
-
-async def get_weekly_date(user_id: int) -> Optional[str]:
-    return await rget(_weekly_key(user_id))
-
-async def set_weekly_date(user_id: int, date_str: str):
-    await rset(_weekly_key(user_id), date_str, TTL_WEEKLY)
-
-
-# ── Leaderboard cache ────────────────────────────────────────────
-
 def _lb_key(metric: str, limit: int = 10) -> str:
     return f"lb:{metric}:{limit}"
 
@@ -214,18 +142,6 @@ async def get_cached_leaderboard(metric: str, limit: int = 10) -> Optional[list]
 async def set_cached_leaderboard(metric: str, data: list, limit: int = 10):
     await rset_json(_lb_key(metric, limit), data, TTL_LEADERBOARD)
 
-async def invalidate_leaderboard_cache():
-    """Remove all cached leaderboard lists. Call after any major XP/Balance shift."""
-    if not _redis: return
-    try:
-        keys = await _scan_keys("lb:*")
-        if keys:
-            await _redis.delete(*keys)
-    except Exception as e:
-        LOGGER.warning(f"Failed to invalidate leaderboard cache: {e}")
-
-# ── Unified XP/Harem/Balance Rankings (ZSET) ──────────────────
-# Generic ZSET keys based on metrics
 def _zset_key(metric: str) -> str:
     # Map metrics to Redis keys
     mapping = {
@@ -349,43 +265,6 @@ async def sync_user_to_redis(user_id: int, user_doc: dict = None):
         LOGGER.warning(f"Failed to sync user {user_id} to Redis: {e}")
 
 
-
-# ── Sessions (replaces MongoDB sessions) ─────────────────────────
-
-def _session_key(session_id: str) -> str:
-    return f"session:{session_id}"
-
-async def create_session(session_id: str, data: dict, ttl: int = TTL_SESSION):
-    """Store a session in Redis with TTL. Falls back to MongoDB if Redis unavailable."""
-    if _redis:
-        await rset_json(_session_key(session_id), data, ttl)
-    else:
-        # MongoDB fallback
-        from Grabber.database import sessions_collection
-        import time as _time
-        data["_id"] = session_id
-        data["created_at"] = _time.time()
-        await sessions_collection.replace_one({"_id": session_id}, data, upsert=True)
-
-async def get_session(session_id: str) -> Optional[dict]:
-    """Retrieve session from Redis, falling back to MongoDB."""
-    if _redis:
-        result = await rget_json(_session_key(session_id))
-        if result is not None:
-            return result
-    # MongoDB fallback
-    from Grabber.database import sessions_collection
-    return await sessions_collection.find_one({"_id": session_id})
-
-async def delete_session(session_id: str):
-    """Delete a session from Redis and MongoDB."""
-    if _redis:
-        await rdel(_session_key(session_id))
-    from Grabber.database import sessions_collection
-    await sessions_collection.delete_one({"_id": session_id})
-
-
-# ── Nguess enabled groups set ─────────────────────────────────────
 
 _GAMEBOT_KEY = "gamebot_groups"
 

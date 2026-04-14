@@ -3,7 +3,7 @@ from Grabber.core.cache import invalidate_user_cache, get_cached_user, set_cache
 from typing import Optional, Any
 
 def get_user_id(user_id: Any) -> int:
-    """Returns the user ID as a concrete integer for updates and indexing."""
+    """Returns the user ID as a concrete integer."""
     try:
         if isinstance(user_id, list) and user_id:
             user_id = user_id[0]
@@ -12,16 +12,13 @@ def get_user_id(user_id: Any) -> int:
         return 0
 
 def get_user_filter(user_id: Any) -> dict:
-    """Returns a MongoDB filter that matches both integer and string IDs (For queries)."""
+    """Returns a MongoDB filter for both integer and string IDs."""
     uid = get_user_id(user_id)
     return {"id": {"$in": [uid, str(uid)]}}
 
 
 async def get_user_data(user_id: int) -> Optional[dict]:
-    """
-    Fetch all data associated with a user.
-    Checks Redis first, then MongoDB.
-    """
+    """Fetch user data with Redis cache fallback."""
     cached = await get_cached_user(user_id)
     if cached is not None:
         return cached
@@ -32,45 +29,38 @@ async def get_user_data(user_id: int) -> Optional[dict]:
 
 
 async def update_user(user_id: int, update_query: dict):
-    """
-    Apply a MongoDB update query to a user's document and invalidate cache.
-    Uses concrete ID for upsert safety.
-    """
+    """Apply MongoDB update and invalidate cache. Increments version for OCC."""
+    if "$inc" not in update_query:
+        update_query["$inc"] = {}
+    update_query["$inc"]["version"] = 1
+    
     await user_collection.update_one({"id": get_user_id(user_id)}, update_query, upsert=True)
     await invalidate_user_cache(user_id)
 
 
 async def add_char_to_user(user_id: int, character: dict):
-    """
-    Add a character object to the user's collection and invalidate cache.
-    Uses concrete ID for upsert safety.
-    """
+    """Add a character to user collection and invalidate cache."""
     await user_collection.update_one(
         {"id": get_user_id(user_id)},
-        {"$push": {"characters": character}, "$inc": {"char_count": 1}},
+        {"$push": {"characters": character}, "$inc": {"char_count": 1, "version": 1}},
         upsert=True
     )
     await invalidate_user_cache(user_id)
 
 
 async def remove_char_from_user(user_id: int, char_id: str) -> bool:
-    """
-    Remove a character from the user's collection by its ID.
-    Returns True if the character was found and removed.
-    """
+    """Remove a character by ID and return success status."""
     filt = get_user_filter(user_id)
     filt["characters.id"] = char_id
     res = await user_collection.update_one(
         filt,
-        {"$pull": {"characters": {"id": char_id}}, "$inc": {"char_count": -1}}
+        {"$pull": {"characters": {"id": char_id}}, "$inc": {"char_count": -1, "version": 1}}
     )
     return res.modified_count > 0
 
 
 async def get_active_pet(user_id: int) -> dict:
-    """
-    Retrieve the data for the user's currently active pet.
-    """
+    """Retrieve currently active pet data."""
     user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
     if not user or "current_pet" not in user:
         return None
@@ -80,11 +70,7 @@ async def get_active_pet(user_id: int) -> dict:
     return next((p for p in pets if p["name"] == current_pet_name), None)
 
 async def add_pet_xp(user_id: int, pet_name: str, xp_amount: int):
-    """
-    Adds XP to a pet. Uses find_one_and_update with return_document=True
-    to get the post-update state in a single round-trip and check for level-up
-    without an extra re-fetch.
-    """
+    """Adds XP to pet and handles level-ups."""
     user = await user_collection.find_one_and_update(
         {"id": {"$in": [user_id, str(user_id)]}, "pets.name": pet_name},
         {"$inc": {"pets.$.xp": xp_amount}},

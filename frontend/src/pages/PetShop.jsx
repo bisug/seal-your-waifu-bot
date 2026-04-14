@@ -21,9 +21,7 @@ export const PetShop = ({ onPetClick }) => {
   const handleBuy = async (index, pet) => {
     if (buyingIndex !== null) return;
     
-    // Optimistic verification
     if (current_level < pet.req_level) {
-      toast.error(`Requires Level ${pet.req_level}`);
       return;
     }
     if ((user?.stats?.zenith || 0) < pet.zenith_price) {
@@ -84,15 +82,12 @@ export const PetShop = ({ onPetClick }) => {
                   isOwned || isLocked ? 'opacity-80 grayscale-[0.3]' : 'hover:border-brand-neon/30 hover:bg-white/[0.02]'
                 }`}
               >
-                {/* Background flair */}
                 <div className="absolute top-0 right-0 w-32 h-32 bg-brand-neon/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
                 
-                {/* Image */}
                 <div className="w-24 h-24 shrink-0 rounded-2xl overflow-hidden border border-white/20 shadow-lg bg-black/40">
                   <img src={pet.img} alt={pet.name} className="w-full h-full object-cover" />
                 </div>
                 
-                {/* Info */}
                 <div className="flex-1 flex flex-col pt-1">
                   <h3 className="font-black text-white text-lg tracking-tight leading-none mb-1">{pet.name}</h3>
                   <p className="text-[9px] font-bold text-brand-neon uppercase tracking-widest mb-3 flex items-center gap-1">
@@ -100,7 +95,6 @@ export const PetShop = ({ onPetClick }) => {
                     <span>{pet.ability}</span>
                   </p>
                   
-                  {/* Stats Map */}
                   <div className="grid grid-cols-2 gap-y-1 gap-x-2 mb-3">
                     <div className="flex items-center gap-1.5 text-[10px] text-slate-300 font-mono">
                       <Heart size={10} className="text-red-400" /> {pet.hp}

@@ -145,23 +145,22 @@ async def recycle_characters(
             new_harem.append(char)
             
     uid_int = normalize_user_id(user["id"])
-
     removed_count = len(owned_chars) - len(new_harem)
     new_char_count = max(0, stored_char_count - removed_count)
     
-    q = get_user_id_query(uid_int)
-    # OCC Verification: Ensure exactly the same number of characters exist as when we loaded it.
-    q["$expr"] = {"$eq": [{"$size": {"$ifNull": ["$characters", []]}}, original_harem_len]}
+    # OCC: Ensure user hasn't modified harem since load
+    current_version = user.get("version", 0)
+    q = {"id": uid_int, "version": current_version}
     
     res = await user_collection.update_one(
         q,
         {
             "$set": {"characters": new_harem, "char_count": new_char_count},
-            "$inc": {"zenith": total_reward}
+            "$inc": {"zenith": total_reward, "version": 1}
         }
     )
     if res.modified_count == 0:
-        raise HTTPException(status_code=409, detail="Harem modified during transaction. Please try again.")
+        raise HTTPException(status_code=409, detail="User data modified during transaction. Please try again.")
     
     await sync_user_to_redis(user_id)
     return {"status": "success", "reward": total_reward, "count": len(char_ids)}
@@ -196,9 +195,7 @@ async def get_gallery(
     total = result[0]["metadata"][0]["total"] if result and result[0].get("metadata") else 0
     items = result[0]["data"] if result else []
 
-    # FIX: Use the already-fetched user doc from get_current_user_data.
-    # The previous code issued a second find_one to get character IDs,
-    # wasting a full DB round-trip on every gallery page load.
+    # Optimization: Use user doc from get_current_user_data to avoid redundant DB call
     owned_ids = set(c.get("id") for c in (user.get("characters") or []))
 
     for item in items:
