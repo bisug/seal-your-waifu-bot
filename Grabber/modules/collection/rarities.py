@@ -10,14 +10,13 @@ RARITY_MAP = {
 }
 
 RARITY_WEIGHTS = {
-    "⚪ Common": 50,
-    "🟢 Medium": 25,
-    "🟠 Rare": 15,
-    "🟡 Legendary": 6,
+    "⚪ Common": 35,
+    "🟢 Medium": 30,
+    "🟠 Rare": 20,
+    "🟡 Legendary": 10,
     "💠 Cosmic": 3,
-    "💮 Exclusive": 0.8,
-    "🔮 Limited Edition": 0.2,
-    "🎞️ AMV": 1
+    "💮 Exclusive": 1.5,
+    "🔮 Limited Edition": 0.5
 }
 
 ACTIVE_RARITY_WEIGHTS = {
