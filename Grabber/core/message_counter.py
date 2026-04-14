@@ -8,14 +8,16 @@ from Grabber.core.spawns import (
     send_character, get_spawn_order, increment_spawn_order,
     get_chat_state, track_user_activity, get_active_user_count
 )
+from Grabber.modules.gamebot.auction import trigger_auction
+from Grabber.core.waifu import get_or_load_characters
 from Grabber.modules.collection.rarities import RARITY_WEIGHTS, ACTIVE_RARITY_WEIGHTS
 
 special_rarity_thresholds = {
-    "💠 Cosmic": 300,
-    "💮 Exclusive": 600,
-    "🔮 Limited Edition": 900,
-    "🫧 Royal": 1200,
-    "💎 Antique": 1500
+    "💠 Cosmic": 250,
+    "💮 Exclusive": 500,
+    "🔮 Limited Edition": 750,
+    "🫧 Royal": 1000,
+    "💎 Antique": 1250
 }
 
 
@@ -49,6 +51,12 @@ async def message_counter(_, message: types.Message):
     if current_time - last_spawn_time < 60:
         return
 
+    # HARDENING: Prevent overlapping spawns during active auctions
+    from Grabber.database import sessions_collection
+    active_auction = await sessions_collection.find_one({"_id": f"auction:{chat_id}"})
+    if active_auction:
+        return
+
     # Small random chance for a Royal spawn regardless of message count
     if random.random() < 0.001:
         await send_character(chat_id, "🫧 Royal")
@@ -74,12 +82,12 @@ async def message_counter(_, message: types.Message):
     active_count = await get_active_user_count(chat_id)
 
     if active_count >= 6:
-        base_freq = 50
+        base_freq = 40
     elif active_count >= 3:
-        base_freq = 75
+        base_freq = 60
     else:
         freq = await get_chat_frequency(chat_id)
-        base_freq = freq if freq is not None else 100
+        base_freq = min(freq, 80) if freq is not None else 80
 
     # Trigger standard spawn if milestone is reached
     base_freq_int = max(1, int(base_freq * multiplier))
@@ -95,7 +103,17 @@ async def message_counter(_, message: types.Message):
 
         selected_rarity = random.choices(rarities, weights=weights, k=1)[0]
 
+        # REFACTORED: Automated Auction Logic
+        # Auctions have a 1% chance to trigger for Rare or Legendary characters.
+        if "Rare" in selected_rarity or "Legendary" in selected_rarity:
+            if random.random() < 0.01:
+                # Fetch a random character of this rarity
+                chars = await get_or_load_characters(selected_rarity)
+                if chars:
+                    char = random.choice(chars)
+                    await trigger_auction(chat_id, char)
+                    await increment_spawn_order(chat_id)
+                    return
+
         await send_character(chat_id, selected_rarity)
-
-
         await increment_spawn_order(chat_id)
