@@ -3,11 +3,12 @@ import { motion } from 'framer-motion';
 import { Award, Lock, Sparkles, ChevronRight, Loader2, CheckCircle2 } from 'lucide-react';
 import { apiFetch } from '../api';
 import { useUser } from '../context/UserContext';
-import { useApi } from '../components/UI';
-import { toast } from 'react-hot-toast';
+import { useApi, useToast } from '../components/UI';
+
 
 export const Pass = () => {
   const { user, refreshUser } = useUser();
+  const { addToast } = useToast();
   const { data: passData, loading: passLoading, execute: fetchPassData } = useApi('/pass_data');
   const [claiming, setClaiming] = React.useState(null);
   const [upgrading, setUpgrading] = React.useState(false);
@@ -18,12 +19,12 @@ export const Pass = () => {
     try {
       const res = await apiFetch(`/claim_level/${level}`, { method: 'POST' });
       if (res.status === 'success') {
-        toast.success(`CLAIMED: ${res.shards} SHARDS & ${res.eggs} EGGS`);
+        addToast(`CLAIMED: ${res.shards} SHARDS & ${res.eggs} EGGS`, 'success');
         await fetchPassData();
         await refreshUser();
       }
     } catch (err) {
-      toast.error(err.message || 'Claim failed');
+      addToast(err.message || 'Claim failed', 'error');
     } finally {
       setClaiming(null);
     }
@@ -34,12 +35,12 @@ export const Pass = () => {
     try {
       const res = await apiFetch(`/shop/upgrade_pass/${tier}`, { method: 'POST' });
       if (res.status === 'success') {
-        toast.success(`${tier.toUpperCase()} PROTOCOL ACTIVATED`);
+        addToast(`${tier.toUpperCase()} PROTOCOL ACTIVATED`, 'success');
         await fetchPassData();
         await refreshUser();
       }
     } catch (err) {
-      toast.error(err.message || 'Upgrade failed');
+      addToast(err.message || 'Upgrade failed', 'error');
     } finally {
       setUpgrading(false);
     }
@@ -61,7 +62,7 @@ export const Pass = () => {
              <Sparkles size={16} />
              <span className="text-[10px]">Neural Protocol</span>
            </div>
-           <h1 className="text-[clamp(1.25rem,5vw,1.75rem)] tracking-tight">Season 1 Pass</h1>
+           <h1 className="text-[clamp(1.25rem,5vw,1.75rem)] tracking-tight">{passData.season_name || 'Season 1'} Pass</h1>
         </div>
         <div className="bg-brand-midnight border border-white/5 px-3 py-1.5 rounded-xl">
            <p className="text-[8px] text-slate-500 mb-0.5">MATRIX LEVEL</p>
@@ -75,8 +76,10 @@ export const Pass = () => {
         {milestones.map((lvl) => {
           const isReached = userLevel >= lvl;
           const isClaimed = Array.isArray(claimedLevels) ? claimedLevels.includes(lvl) : false;
-          const track = passData.tracks[lvl];
-          const reward = track[passData.pass_type] || track['free'];
+          const track = passData.tracks?.[lvl];
+          if (!track) return null;
+          const reward = track[passData.pass_type] ?? track['free'];
+          if (!reward) return null;
           const rewardLabel = reward.type === 'shards' ? `${reward.amount} Shards` : `${reward.tier === 2 ? 'Rare' : 'Common'} Egg`;
 
           return (
@@ -133,7 +136,7 @@ export const Pass = () => {
              className="w-full py-4 rounded-2xl bg-brand-neon text-brand-midnight text-[11px] font-black tracking-[0.3em] flex items-center justify-center space-x-2 active:scale-95 transition-all shadow-lg shadow-brand-neon/20"
            >
               {upgrading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-              <span>ACTIVATE PREMIUM (✧ 500)</span>
+              <span>ACTIVATE PREMIUM (⧫ 500)</span>
            </button>
          ) : passData.pass_type === 'premium' ? (
            <button 
@@ -142,7 +145,7 @@ export const Pass = () => {
              className="w-full py-4 rounded-2xl bg-brand-accent text-white text-[11px] font-black tracking-[0.3em] flex items-center justify-center space-x-2 active:scale-95 transition-all shadow-lg"
            >
               {upgrading ? <Loader2 size={16} className="animate-spin" /> : <Award size={16} />}
-              <span>UPGRADE TO ELITE (✧ 1500)</span>
+              <span>UPGRADE TO ELITE (⧫ 1500)</span>
            </button>
          ) : (
            <div className="w-full py-4 rounded-2xl bg-white/5 border border-white/10 text-brand-neon text-[11px] font-black tracking-[0.3em]">

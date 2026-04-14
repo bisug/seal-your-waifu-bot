@@ -1,28 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '../api';
 import { Card, CardSkeleton, useApi } from '../components/UI';
 import { ShoppingBag, Activity, Timer, PackageOpen, Loader2, Check } from 'lucide-react';
 import { useUser } from '../context/UserContext';
-import { toast } from 'react-hot-toast';
+
 import { formatNumber } from '../utils';
 
 import { useEggActions } from '../hooks/useEggActions';
 
 export const Shop = ({ onCharClick }) => {
   const { user, refreshUser } = useUser();
-  const [activeTab, setActiveTab] = useState('market');
   const { incubateEgg, hatchEgg, loading: hatching, hatchingResult: newChar, setHatchingResult: setNewChar } = useEggActions();
-
-  const handleTabChange = (tabId) => {
-    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
-    setActiveTab(tabId);
-  };
 
   const { data: marketItems, loading, execute: fetchShopData } = useApi('/shop/characters', { 
     initialData: [],
-    manual: activeTab !== 'market'
-  }, [activeTab]);
+  }, []);
 
   // Use refs for callbacks to ensure the event listener always uses the latest functions
   // without needing to re-bind the listener (avoiding memory leaks or missed events)
@@ -45,7 +38,7 @@ export const Shop = ({ onCharClick }) => {
       <header className="mb-6 flex justify-between items-end px-2">
         <div>
           <h1 className="text-2xl font-black uppercase tracking-tight">Market</h1>
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Acquire Waifus</p>
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Acquire Characters</p>
         </div>
         <div className="flex items-center space-x-2 bg-brand-neon/10 border border-brand-neon/20 px-3 py-1.5 rounded-xl shadow-[0_0_15px_rgba(0,242,255,0.1)]">
           <Activity size={14} className="text-brand-neon" />
@@ -55,7 +48,7 @@ export const Shop = ({ onCharClick }) => {
 
       {loading && !(Array.isArray(marketItems) && marketItems.length) ? (
         <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-          {Array.from({ length: 12 }).map((_, i) => (
+          {Array.from({ length: 20 }).map((_, i) => (
             <CardSkeleton key={`shop-skeleton-${i}`} />
           ))}
         </div>

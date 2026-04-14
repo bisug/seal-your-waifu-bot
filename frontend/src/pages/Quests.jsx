@@ -2,13 +2,14 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { apiFetch } from '../api';
 import { useUser } from '../context/UserContext';
-import { toast } from 'react-hot-toast';
+
 import { CheckCircle2, Shield, Loader2, Sparkles, Target } from 'lucide-react';
-import { ProgressBar, useApi } from '../components/UI';
+import { ProgressBar, useApi, useToast } from '../components/UI';
 import { formatNumber } from '../utils';
 
 export const Quests = () => {
   const { refreshUser } = useUser();
+  const { addToast } = useToast();
   const [claiming, setClaiming] = useState(null);
   
   const { data: quests, loading, execute: fetchQuests } = useApi('/quests', { 
@@ -25,13 +26,13 @@ export const Quests = () => {
       const res = await apiFetch(`/quests/claim/${questId}`, { method: 'POST' });
       if (res.success) {
         window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
-        toast.success(`Reward: +${rewardXp} XP`);
+        addToast(`Reward: +${rewardXp} XP`, 'success');
         fetchQuests();
         refreshUser();
       }
     } catch (err) {
       window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('error');
-      toast.error(err.message || 'Failed to claim');
+      addToast(err.message || 'Failed to claim', 'error');
     } finally {
       setClaiming(null);
     }
@@ -112,6 +113,11 @@ export const Quests = () => {
 
       {loading && !(quests?.daily?.length) ? (
         <div className="flex justify-center py-20"><Loader2 className="animate-spin text-brand-neon" /></div>
+      ) : !quests?.daily?.length && !quests?.weekly?.length ? (
+        <div className="flex flex-col items-center py-20 text-center opacity-60">
+          <Target size={40} className="text-slate-800 mb-4" />
+          <p className="text-slate-500 text-[11px] font-bold uppercase tracking-widest">No active quests right now.</p>
+        </div>
       ) : (
       <div className="space-y-8">
           <section>

@@ -44,7 +44,7 @@ export const Market = ({ onCharClick }) => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-y-auto no-scrollbar">
         <AnimatePresence mode="wait">
           {activeTab === 'shop' && (
             <motion.div

@@ -18,7 +18,7 @@ export const NotFound = ({ onReset }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[500] bg-brand-midnight flex flex-col items-center justify-center p-8 text-center overflow-hidden">
+    <div className="absolute inset-0 z-[500] bg-brand-midnight flex flex-col items-center justify-center p-8 text-center overflow-hidden">
       {/* Background Cinematic Shimmer */}
       <div className="absolute inset-0 opacity-20 blur-3xl scale-125 animate-shimmer pointer-events-none" 
            style={{ background: 'radial-gradient(circle at center, var(--color-brand-neon), transparent 70%)' }} />
@@ -48,7 +48,7 @@ export const NotFound = ({ onReset }) => {
         
         <h2 className="text-2xl font-black uppercase tracking-widest mb-4">SIGNAL LOST</h2>
         <p className="text-xs font-bold text-slate-500 uppercase tracking-widest max-w-[240px] leading-relaxed mb-10">
-          You have reached a region outside the known sectors of the Seal-bot universe. 
+          You've wandered beyond the known sectors. Return to base and re-establish connection.
         </p>
 
         <button 

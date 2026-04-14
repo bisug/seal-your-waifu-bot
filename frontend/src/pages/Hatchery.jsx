@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUser } from '../context/UserContext';
 import { apiFetch } from '../api';
-import { toast } from 'react-hot-toast';
-import { Card, ProgressBar, Skeleton } from '../components/UI';
+
+import { Card, ProgressBar, Skeleton, useToast } from '../components/UI';
 import { useEggActions } from '../hooks/useEggActions';
 import { Egg, Activity, Clock, ChevronRight, Sparkles, Shield, Flame, Wind, Loader2, Heart, Swords } from 'lucide-react';
 import { formatNumber } from '../utils';
@@ -187,6 +187,7 @@ const EmptyState = ({ icon: Icon, message }) => (
 
 export const Hatchery = () => {
   const { user, loading: userLoading, refreshUser } = useUser();
+  const { addToast } = useToast();
   const { incubateEgg, hatchEgg, loading, hatchingResult, setHatchingResult } = useEggActions();
   const [activeTab, setActiveTab] = useState('eggs'); // 'eggs' or 'pets'
 
@@ -198,25 +199,21 @@ export const Hatchery = () => {
     await hatchEgg(eggId);
   };
 
-  // Audit: Scroll Lock for hatching result
+  // Fix: Use body class for scroll lock instead of direct selector mutation
   useEffect(() => {
     if (hatchingResult) {
-      const scroller = document.querySelector('.app-scroller');
-      if (scroller) scroller.style.overflow = 'hidden';
-      return () => {
-        const scroller = document.querySelector('.app-scroller');
-        if (scroller) scroller.style.overflow = 'auto';
-      };
+      document.body.classList.add('no-scroll');
+      return () => document.body.classList.remove('no-scroll');
     }
   }, [hatchingResult]);
 
   const handleSetPet = async (petName) => {
     try {
       await apiFetch(`/pets/set_active/${petName}`, { method: 'POST' });
-      toast.success(`${petName} Synced to Core`);
+      addToast(`${petName} Synced to Core`, 'success');
       await refreshUser();
     } catch (err) {
-      toast.error(err.message || 'Sync failed');
+      addToast(err.message || 'Sync failed', 'error');
     }
   };
 

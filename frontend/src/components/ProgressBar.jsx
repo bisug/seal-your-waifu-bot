@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { formatNumber } from '../utils';
 
 export const ProgressBar = ({ current, total, color = "bg-brand-neon", label }) => {
-  const percentage = Math.min(100, Math.max(0, (current / total) * 100));
+  const percentage = total > 0 ? Math.min(100, Math.max(0, (current / total) * 100)) : 0;
 
   return (
     <div className="w-full space-y-1.5">
@@ -20,7 +20,7 @@ export const ProgressBar = ({ current, total, color = "bg-brand-neon", label }) 
           transition={{ duration: 1.5, ease: [0.34, 1.56, 0.64, 1] }}
           className={`h-full ${color} rounded-full neon-shadow shadow-current relative`}
         >
-            <div className="absolute inset-0 bg-white/20 animate-pulse" />
+            <div className="absolute inset-0 bg-white/20 rounded-full" />
         </motion.div>
       </div>
     </div>

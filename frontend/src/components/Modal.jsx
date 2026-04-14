@@ -7,12 +7,8 @@ import { RARITY_VISUALS } from './Rarity';
 export const Modal = ({ character, onClose, actions }) => {
     useEffect(() => {
         if (character) {
-            const scroller = document.querySelector('.app-scroller');
-            if (scroller) scroller.style.overflow = 'hidden';
-            return () => {
-                const scroller = document.querySelector('.app-scroller');
-                if (scroller) scroller.style.overflow = 'auto';
-            };
+            document.body.classList.add('no-scroll');
+            return () => document.body.classList.remove('no-scroll');
         }
     }, [character]);
 
@@ -44,14 +40,14 @@ export const Modal = ({ character, onClose, actions }) => {
                     {/* Floating Close Button */}
                     <button 
                         onClick={onClose} 
-                        className="absolute top-6 right-6 z-50 w-10 h-10 rounded-2xl bg-brand-midnight/60 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white/50 active:scale-95 transition-all hover:text-white"
+                        className="absolute top-6 right-6 z-50 w-11 h-11 rounded-2xl bg-brand-midnight/60 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white/50 active:scale-95 transition-all hover:text-white"
                     >
                         <X size={24} />
                     </button>
 
                     <div className="flex-1 overflow-y-auto no-scrollbar">
                         {/* Hero Section */}
-                        <div className="relative aspect-[9/16] w-full bg-slate-900/50 group">
+                        <div className="relative w-full bg-slate-900/50 group" style={{ height: 'min(55vh, 420px)' }}>
                             <img 
                                 src={character.img_url} 
                                 className="w-full h-full object-contain p-2" 

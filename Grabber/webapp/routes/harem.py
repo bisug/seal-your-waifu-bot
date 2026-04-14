@@ -1,7 +1,7 @@
 import re
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Body
-from Grabber.webapp.auth import get_current_user, get_current_user_data, _user_locks
+from Grabber.webapp.auth import get_current_user, get_current_user_data
 from Grabber.database import user_collection, collection
 from Grabber.webapp.schemas import PaginatedResponse
 from Grabber.core.constants import PAYOUTS
@@ -111,59 +111,60 @@ async def recycle_characters(
     char_ids: List[str] = Body(...), 
     user_id: int = Depends(get_current_user)
 ):
-    uid_str = str(user_id)
-    async with await _user_locks.get(uid_str):
-        # Fetch fresh data under lock
-        user = await user_collection.find_one(get_user_id_query(user_id))
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-            
-        owned_chars = user.get("characters", [])
-        if not owned_chars:
-            raise HTTPException(status_code=400, detail="Harem is empty")
+    user = await user_collection.find_one(get_user_id_query(user_id))
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    owned_chars = user.get("characters", [])
+    if not owned_chars:
+        raise HTTPException(status_code=400, detail="Harem is empty")
 
-        stored_char_count = user.get("char_count", len(owned_chars))
+    stored_char_count = user.get("char_count", len(owned_chars))
+    original_harem_len = len(owned_chars)
+        
+    from collections import Counter
+    to_recycle_counts = Counter(char_ids)
+    
+    total_reward = 0
+    current_counts = Counter(c["id"] for c in owned_chars)
+    
+    for rid, rcount in to_recycle_counts.items():
+        if current_counts[rid] < rcount:
+             raise HTTPException(status_code=400, detail=f"Insufficient duplicates for ID {rid}")
+             
+    new_harem = []
+    temp_counts = Counter(to_recycle_counts)
+    
+    for char in owned_chars:
+        cid = char["id"]
+        if temp_counts[cid] > 0:
+            rarity = char.get("rarity", "⚪ Common")
+            total_reward += PAYOUTS.get(rarity, 10)
+            temp_counts[cid] -= 1
+        else:
+            new_harem.append(char)
             
-        from collections import Counter
-        to_recycle_counts = Counter(char_ids)
-        
-        total_reward = 0
-        current_counts = Counter(c["id"] for c in owned_chars)
-        
-        for rid, rcount in to_recycle_counts.items():
-            if current_counts[rid] < rcount:
-                 raise HTTPException(status_code=400, detail=f"Insufficient duplicates for ID {rid}")
-                 
-        new_harem = []
-        temp_counts = Counter(to_recycle_counts)
-        
-        for char in owned_chars:
-            cid = char["id"]
-            if temp_counts[cid] > 0:
-                rarity = char.get("rarity", "⚪ Common")
-                total_reward += PAYOUTS.get(rarity, 10)
-                temp_counts[cid] -= 1
-            else:
-                new_harem.append(char)
-                
-        # Resolve exact user id integer for mongo query compatibility
-        uid_int = normalize_user_id(user["id"])
+    uid_int = normalize_user_id(user["id"])
 
-        removed_count = len(owned_chars) - len(new_harem)
-        # FIX: MongoDB raises a write conflict if $inc and $max target the same
-        # field in one operation. Compute the final clamped value here instead.
-        new_char_count = max(0, stored_char_count - removed_count)
-        await user_collection.update_one(
-            get_user_id_query(uid_int),
-            {
-                "$set": {"characters": new_harem, "char_count": new_char_count},
-                "$inc": {"zenith": total_reward}
-            }
-        )
-        
-        await sync_user_to_redis(user_id)
-        
-        return {"status": "success", "reward": total_reward, "count": len(char_ids)}
+    removed_count = len(owned_chars) - len(new_harem)
+    new_char_count = max(0, stored_char_count - removed_count)
+    
+    q = get_user_id_query(uid_int)
+    # OCC Verification: Ensure exactly the same number of characters exist as when we loaded it.
+    q["$expr"] = {"$eq": [{"$size": {"$ifNull": ["$characters", []]}}, original_harem_len]}
+    
+    res = await user_collection.update_one(
+        q,
+        {
+            "$set": {"characters": new_harem, "char_count": new_char_count},
+            "$inc": {"zenith": total_reward}
+        }
+    )
+    if res.modified_count == 0:
+        raise HTTPException(status_code=409, detail="Harem modified during transaction. Please try again.")
+    
+    await sync_user_to_redis(user_id)
+    return {"status": "success", "reward": total_reward, "count": len(char_ids)}
 
 @router.get("/gallery", response_model=PaginatedResponse)
 async def get_gallery(

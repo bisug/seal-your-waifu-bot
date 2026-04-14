@@ -1,21 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '../api';
-import { useApi } from '../components/UI';
-import { Heart, Activity, Check, Download, Zap, Shield, Loader2 } from 'lucide-react';
+import { useApi, useToast } from '../components/UI';
+import { Heart, Activity, Check, Zap, Loader2 } from 'lucide-react';
 import { useUser } from '../context/UserContext';
-import { toast } from 'react-hot-toast';
+
 import { formatNumber } from '../utils';
 
 export const PetShop = () => {
   const { user, refreshUser } = useUser();
+  const { addToast } = useToast();
   const [buyingIndex, setBuyingIndex] = useState(null);
 
   const { data, loading, execute: fetchShopData, error } = useApi('/shop/pets', {
     initialData: { pets: [], owned: [], current_level: 1 }
   });
 
-  const { pets, owned, current_level } = data;
+  const { pets = [], owned = [], current_level = 1 } = data || {};
 
   const handleBuy = async (index, pet) => {
     if (buyingIndex !== null) return;
@@ -34,12 +35,12 @@ export const PetShop = () => {
     try {
       await apiFetch(`/shop/buy/pet/${index}`, { method: 'POST' });
       window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
-      toast.success(`Bought ${pet.name}!`);
+      addToast(`Bought ${pet.name}!`, 'success');
       fetchShopData(); // Refresh UI to show owned
       refreshUser(); // Refresh user balance & current_pet
     } catch (err) {
       window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('error');
-      toast.error(err.message || 'Purchase failed');
+      addToast(err.message || 'Purchase failed', 'error');
     } finally {
       setBuyingIndex(null);
     }
@@ -104,7 +105,7 @@ export const PetShop = () => {
                       <Heart size={10} className="text-red-400" /> {pet.hp}
                     </div>
                     <div className="flex items-center gap-1.5 text-[10px] text-slate-300 font-mono">
-                      <Shield size={10} className="text-orange-400" /> {pet.atk}
+                      <Zap size={10} className="text-orange-400" /> {pet.atk}
                     </div>
                     <div className="flex items-center gap-1.5 text-[10px] text-slate-300 font-mono col-span-2 text-brand-accent">
                        Luck {(pet.luck * 100).toFixed(0)}%

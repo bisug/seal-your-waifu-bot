@@ -9,7 +9,7 @@ export const Card = memo(({ character, onClick }) => {
 
     const handleClick = () => {
         window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
-        if (onClick) onClick();
+        if (onClick) onClick(character);
     };
 
     const visuals = RARITY_VISUALS[character.rarity] || RARITY_VISUALS['Common'];
@@ -54,7 +54,7 @@ export const Card = memo(({ character, onClick }) => {
             {/* Rarity Badge - Top Left */}
             <div className={cn(
                 "absolute top-3 left-3 px-2 py-0.5 rounded-full border backdrop-blur-md z-20 flex items-center space-x-1 shadow-lg",
-                visuals.bg.split(' ')[0], // Base color for pill
+                visuals.pill || 'bg-slate-700/40',
                 visuals.border
             )}>
                 <div className={cn("w-1.5 h-1.5 rounded-full", isSpecial ? "animate-pulse" : "", visuals.text.replace('text-', 'bg-'))} />

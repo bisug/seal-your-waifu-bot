@@ -18,28 +18,9 @@ security = HTTPBearer()
 
 from collections import OrderedDict
 
-_MAX_LOCKS = 5000
+# Bounded lock store was fundamentally flawed for application locking and multi-worker setups.
+# Proceeding without memory locks. Rely strictly on DB-layer atomic operators for concurrency control.
 
-class _BoundedLockStore:
-    """A simple LRU-like bounded store for asyncio.Lock objects."""
-    def __init__(self, maxsize: int):
-        self._maxsize = maxsize
-        self._locks: OrderedDict[str, asyncio.Lock] = OrderedDict()
-        self._store_lock = asyncio.Lock()
-
-    async def get(self, key: str) -> asyncio.Lock:
-        async with self._store_lock:
-            if key not in self._locks:
-                if len(self._locks) >= self._maxsize:
-                    # Evict oldest entry
-                    self._locks.popitem(last=False)
-                self._locks[key] = asyncio.Lock()
-            else:
-                # Mark as recently used
-                self._locks.move_to_end(key)
-            return self._locks[key]
-
-_user_locks: _BoundedLockStore = _BoundedLockStore(_MAX_LOCKS)
 
 
 def validate_init_data(init_data: str):
@@ -69,8 +50,11 @@ def validate_init_data(init_data: str):
     except Exception:
         pass
     return False
+from collections import OrderedDict
 
-_fallback_rate_limits = defaultdict(list)
+# Enforce a strict max cap to prevent DDoS memory leak if Redis dies
+_MAX_FALLBACK = 5000
+_fallback_rate_limits = OrderedDict()
 
 async def create_session(user_data: dict):
     """Creates a Redis session for the user."""
@@ -144,20 +128,18 @@ async def get_current_user(auth: HTTPAuthorizationCredentials = Security(securit
             raise e
         logging.warning(f"Rate limiting skipped due to Redis error, using local fallback: {e}")
         
-        # Periodically clean up old rate limit entries to avoid memory leak
-        if len(_fallback_rate_limits) > 1000:
-            stale = [uid for uid, hist in list(_fallback_rate_limits.items()) if not [ts for ts in hist if now - ts < 60]]
-            for uid in stale:
-                if uid in _fallback_rate_limits:
-                    del _fallback_rate_limits[uid]
-                    
-        history = _fallback_rate_limits[user_id]
+        # Enforce LRU cleanup to avoid memory leak if Redis falls over
+        history = _fallback_rate_limits.get(user_id, [])
         history = [ts for ts in history if now - ts < 60]
         if len(history) >= 30:
             _fallback_rate_limits[user_id] = history
+            _fallback_rate_limits.move_to_end(user_id)
             raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in a minute.")
         history.append(now)
         _fallback_rate_limits[user_id] = history
+        _fallback_rate_limits.move_to_end(user_id)
+        while len(_fallback_rate_limits) > _MAX_FALLBACK:
+            _fallback_rate_limits.popitem(last=False)
 
     return int(user_id)
 
