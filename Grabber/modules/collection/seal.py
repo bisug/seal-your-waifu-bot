@@ -94,11 +94,14 @@ async def seal_handler(_, message: types.Message):
         )
 
 
-        await add_xp(user_id, 10, "character_catch")
-        await update_quest_progress(user_id, "catch_master", 1)
-        await update_quest_progress(user_id, "weekly_catch", 1)
+        # Run independent post-catch operations concurrently (3 sequential DB writes → 1 parallel wait)
+        await asyncio.gather(
+            add_xp(user_id, 10, "character_catch"),
+            update_quest_progress(user_id, "catch_master", 1),
+            update_quest_progress(user_id, "weekly_catch", 1),
+        )
 
-
+        # check_achievements reads XP/character state, so it runs after the gather above
         await check_achievements(user_id)
 
 

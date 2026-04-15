@@ -93,18 +93,6 @@ async def send_media_dynamic(client, chat_id, media_url, **kwargs):
     """Dynamically sends either a photo or a video based on the URL extension."""
     from pyrogram import errors
 
-    # PEER RESOLUTION: Ensure the channel peer is cached to avoid CHANNEL_INVALID
-    try:
-        await client.get_chat(chat_id)
-    except errors.PeerIdInvalid:
-        LOGGER.error(f"Post Failure: Chat ID {chat_id} is fundamentally invalid.")
-        return None
-    except errors.ChatWriteForbidden:
-        LOGGER.error(f"Post Failure: Bot is not an Admin or cannot write to {chat_id}.")
-        return None
-    except Exception as pe:
-        LOGGER.debug(f"Peer Resolution Warning: {pe}")
-
     if isinstance(media_url, str) and media_url.endswith(('.mp4', '.webm', '.gif')):
         return await client.send_video(chat_id, video=media_url, **kwargs)
     return await client.send_photo(chat_id, photo=media_url, **kwargs)

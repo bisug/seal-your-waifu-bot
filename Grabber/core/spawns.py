@@ -241,14 +241,16 @@ async def send_character(chat_id: int, rarity: str):
     )
 
     try:
-        from Grabber.core.utils import send_media_dynamic
-        msg = await send_media_dynamic(
-            client=app,
-            chat_id=chat_id,
+        # Use the safe wrapper to handle FloodWait automatically with exponential backoff
+        msg = await app.send_media_safe(
+            chat_id,
             media_url=character['img_url'],
             caption=caption,
             parse_mode=ParseMode.HTML
         )
+        if not msg:
+            LOGGER.warning(f"send_character: failed to send spawn to {chat_id} (FloodWait or peer error)")
+            return
         # Register the spawn as active in the persistent state
         await set_active_spawn(chat_id, character, msg.id)
 

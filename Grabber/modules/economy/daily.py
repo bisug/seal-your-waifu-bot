@@ -80,7 +80,6 @@ async def daily_command_handler(_, message: types.Message):
     pass_bonus_text = f"\n<b>Pass Bonus:</b> +{bonus_coins} ⬪" if multiplier > 1.0 else ""
 
     # Give Rewards
-    await app.send_chat_action(message.chat.id, enums.ChatAction.UPLOAD_PHOTO)
     char = await get_daily_waifu()
 
     if not char:
