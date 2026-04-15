@@ -44,3 +44,13 @@ EGG_TIERS = {
     "gold":   {"name": "Golden Egg", "chance": 25, "pool": ["🟠 Rare", "🟡 Legendary"], "wait_min": 30},
     "void":   {"name": "Void Egg",   "chance": 5,  "pool": ["💠 Cosmic", "💮 Exclusive"], "wait_min": 180}
 }
+
+# Leaderboard Metrics
+METRIC_ORDER = ["harem", "shards", "zenith", "level", "guesses"]
+METRICS = {
+    "harem": {"label": "Harem", "field": "char_count", "icon": "◈"},
+    "shards": {"label": "Shards", "field": "balance", "icon": "⬪"},
+    "zenith": {"label": "Zenith", "field": "zenith", "icon": "⧫"},
+    "level": {"label": "Level", "field": "xp", "icon": "◉"},
+    "guesses": {"label": "Guesses", "field": "guess_count", "icon": "◎"}
+}
