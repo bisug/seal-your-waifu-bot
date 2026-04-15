@@ -54,6 +54,15 @@ async def sudolist_handler(_, message: types.Message):
 
     text = "👤 <b>Sudo Users List:</b>\n\n"
     for s in sudos:
-        text += f"• <code>{s['user_id']}</code>\n"
+        user_id = s['user_id']
+        try:
+            user = await app.get_users(user_id)
+            from html import escape
+            first_name = escape(user.first_name or "")
+            name = f"<a href=\"tg://user?id={user_id}\">{first_name}</a>"
+        except Exception:
+            name = "<i>Unknown User</i>"
+            
+        text += f"• <code>{user_id}</code> — {name}\n"
 
     await message.reply_text(text, parse_mode=ParseMode.HTML)
