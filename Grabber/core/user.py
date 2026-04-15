@@ -1,7 +1,7 @@
 from typing import Any, Optional
 
 from Grabber.core.cache import (get_cached_user, invalidate_user_cache,
-                                set_cached_user)
+                                set_cached_user, update_user_rank)
 from Grabber.database import user_collection
 
 
@@ -58,6 +58,9 @@ async def add_char_to_user(user_id: int, character: dict):
         {"$push": {"characters": character}, "$inc": {"char_count": 1, "version": 1}},
         upsert=True
     )
+    # Sync with Redis Harem Leaderboard
+    new_count = (await user_collection.find_one({"id": get_user_id(user_id)}, {"char_count": 1}))["char_count"]
+    await update_user_rank(user_id, new_count, metric="harem")
     await invalidate_user_cache(user_id)
 
 
@@ -69,6 +72,9 @@ async def remove_char_from_user(user_id: int, char_id: str) -> bool:
         filt,
         {"$pull": {"characters": {"id": char_id}}, "$inc": {"char_count": -1, "version": 1}}
     )
+    if res.modified_count > 0:
+        new_count = (await user_collection.find_one({"id": get_user_id(user_id)}, {"char_count": 1}))["char_count"]
+        await update_user_rank(user_id, new_count, metric="harem")
     return res.modified_count > 0
 
 
