@@ -194,14 +194,20 @@ async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
     user = await user_collection.find_one(get_user_filter(user_id))
     
     if not user or not user.get("pets"):
-        # Initialize default user data if missing
-        user = {"id": get_user_id(user_id), "pets": [DEFAULT_PET.copy()], "current_pet": DEFAULT_PET["name"]}
-        await user_collection.update_one(get_user_filter(user_id), {"$setOnInsert": user}, upsert=True)
-        # Fetch again to be sure
+        # Force initialization even for existing users
+        initial_pets = [DEFAULT_PET.copy()]
+        await user_collection.update_one(
+            get_user_filter(user_id),
+            {"$set": {"pets": initial_pets, "current_pet": DEFAULT_PET["name"]}, "$setOnInsert": {"id": get_user_id(user_id)}},
+            upsert=True
+        )
         user = await user_collection.find_one(get_user_filter(user_id))
         
     pets = user.get("pets", [DEFAULT_PET])
-    current = user.get("current_pet", DEFAULT_PET["name"])
+    current = user.get("current_pet")
+    if not current and pets:
+        current = pets[0]["name"]
+        await user_collection.update_one(get_user_filter(user_id), {"$set": {"current_pet": current}})
 
     if not pets:
         text = "You have no pets. Use /petshop to buy one."
@@ -378,21 +384,26 @@ async def feed_pet_cmd(_, message: types.Message):
         
     user = await user_collection.find_one(get_user_filter(user_id))
     if not user or not user.get("pets"):
-        # Auto-initialize for new users
+        # Force initialization for users without pets
+        initial_pets = [DEFAULT_PET.copy()]
         await user_collection.update_one(
             get_user_filter(user_id),
-            {"$setOnInsert": {"id": get_user_id(user_id), "pets": [DEFAULT_PET.copy()], "current_pet": DEFAULT_PET["name"]}},
+            {"$set": {"pets": initial_pets, "current_pet": DEFAULT_PET["name"]}, "$setOnInsert": {"id": get_user_id(user_id)}},
             upsert=True
         )
         user = await user_collection.find_one(get_user_filter(user_id))
         
-    active_pet_name = user.get("current_pet", DEFAULT_PET["name"])
     pets = user.get("pets", [])
+    active_pet_name = user.get("current_pet")
+    if not active_pet_name and pets:
+        active_pet_name = pets[0]["name"]
+    
     pet_index = next((i for i, p in enumerate(pets) if p["name"] == active_pet_name), -1)
     
     if pet_index == -1:
-        return await message.reply_text("Active pet not found.")
-        
+        pet_list_str = ", ".join([p["name"] for p in pets])
+        return await message.reply_text(f"❌ <b>Active Pet Error:</b> '{active_pet_name}' not found.\nAvailable: {pet_list_str}")
+    
     pet = pets[pet_index]
     current_affection = get_effective_affection(pet)
     new_affection = min(100, current_affection + 15)
@@ -417,21 +428,26 @@ async def train_pet_cmd(_, message: types.Message):
         
     user = await user_collection.find_one(get_user_filter(user_id))
     if not user or not user.get("pets"):
-        # Auto-initialize for new users
+        # Force initialization for users without pets
+        initial_pets = [DEFAULT_PET.copy()]
         await user_collection.update_one(
             get_user_filter(user_id),
-            {"$setOnInsert": {"id": get_user_id(user_id), "pets": [DEFAULT_PET.copy()], "current_pet": DEFAULT_PET["name"]}},
+            {"$set": {"pets": initial_pets, "current_pet": DEFAULT_PET["name"]}, "$setOnInsert": {"id": get_user_id(user_id)}},
             upsert=True
         )
         user = await user_collection.find_one(get_user_filter(user_id))
         
-    active_pet_name = user.get("current_pet", DEFAULT_PET["name"])
     pets = user.get("pets", [])
+    active_pet_name = user.get("current_pet")
+    if not active_pet_name and pets:
+        active_pet_name = pets[0]["name"]
+    
     pet_index = next((i for i, p in enumerate(pets) if p["name"] == active_pet_name), -1)
     
     if pet_index == -1:
-        return await message.reply_text("Active pet not found.")
-        
+        pet_list_str = ", ".join([p["name"] for p in pets])
+        return await message.reply_text(f"❌ <b>Active Pet Error:</b> '{active_pet_name}' not found.\nAvailable: {pet_list_str}")
+    
     pet = pets[pet_index]
     current_affection = get_effective_affection(pet)
     new_affection = min(100, current_affection + 10)
