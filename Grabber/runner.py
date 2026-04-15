@@ -1,6 +1,6 @@
 import asyncio
 
-from Grabber import app, game_bot
+from Grabber import app, game_bot, userbot
 
 
 async def start_bots():
@@ -19,7 +19,11 @@ async def start_bots():
 
     await app.start()
     await game_bot.start()
+    if userbot:
+        await userbot.start()
 
 async def stop_bots():
     await app.stop()
     await game_bot.stop()
+    if userbot:
+        await userbot.stop()

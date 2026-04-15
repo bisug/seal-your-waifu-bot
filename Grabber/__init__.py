@@ -47,6 +47,7 @@ WEB_APP_URL = config.WEB_APP_URL
 
 app = SealClient(name="MainBot", bot_token=config.TOKEN)
 game_bot = SealClient(name="GameBot", bot_token=config.SUB_TOKEN)
+userbot = SealClient(name="UserBot", session_string=config.STRING_SESSION) if config.STRING_SESSION else None
 
 # For backward compatibility and modularity
 Grabber = app
