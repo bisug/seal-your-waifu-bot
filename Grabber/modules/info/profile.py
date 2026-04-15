@@ -35,8 +35,10 @@ async def profile_handler(_, message: types.Message):
 
 
     chars = user_data.get('characters', [])
-    char_count = len(chars)
-    total_db_chars = await collection.count_documents({})
+    char_count = user_data.get('char_count')
+    if char_count is None:
+        char_count = len(chars)
+    total_db_chars = await collection.estimated_document_count()
 
 
     progress_percent = (char_count / total_db_chars * 100) if total_db_chars > 0 else 0
@@ -57,7 +59,8 @@ async def profile_handler(_, message: types.Message):
     pet_text = html_escape(f"{active_pet['name']} (Lvl {active_pet.get('level', 1)})") if active_pet else "None"
 
 
-    fav_id = user_data.get('favorites', [None])[0]
+    favs = user_data.get('favorites', [])
+    fav_id = favs[0] if favs else None
     fav_char = next((c for c in chars if str(c.get('id')) == str(fav_id)), None)
     fav_name = html_escape(fav_char['name']) if fav_char else "None"
 
