@@ -12,7 +12,7 @@ from Grabber.client import SealClient
 from Grabber.database import (client, collection, db,
                               gamebot_enabled_groups_collection,
                               group_collection, group_user_totals_collection,
-                              message_counts_collection,
+                              message_counts_collection, quiz_questions_collection,
                               scraped_characters_collection, sessions_collection,
                               spawns_collection, sudo_collection,
                               total_pm_users, user_collection,
