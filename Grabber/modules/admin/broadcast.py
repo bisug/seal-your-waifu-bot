@@ -72,8 +72,10 @@ async def broadcast_handler(_, message: types.Message):
                         f"👤 Users: <code>{success_u}</code> ok / <code>{failed_u}</code> fail",
                         parse_mode=ParseMode.HTML
                     )
+                except errors.FloodWait as e:
+                    await asyncio.sleep(e.value)
                 except Exception:
-                    pass
+                    pass  # Never let a status edit stall the broadcast loop
 
         # Clean up unreachable users in bulk
         if blocked_users:

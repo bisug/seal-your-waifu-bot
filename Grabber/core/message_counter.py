@@ -61,10 +61,23 @@ async def message_counter(_, message: types.Message):
         return
 
     # HARDENING: Prevent overlapping spawns during active auctions
-    from Grabber.database import sessions_collection
-    active_auction = await sessions_collection.find_one({"_id": f"auction:{chat_id}"})
-    if active_auction:
-        return
+    # Use Redis EXISTS (O(1)) instead of a MongoDB find_one on every message
+    from Grabber.database import r as _redis
+    if _redis:
+        try:
+            if await _redis.exists(f"auction:{chat_id}"):
+                return
+        except Exception:
+            # Fallback to MongoDB if Redis is unavailable
+            from Grabber.database import sessions_collection
+            active_auction = await sessions_collection.find_one({"_id": f"auction:{chat_id}"}, projection={"_id": 1})
+            if active_auction:
+                return
+    else:
+        from Grabber.database import sessions_collection
+        active_auction = await sessions_collection.find_one({"_id": f"auction:{chat_id}"}, projection={"_id": 1})
+        if active_auction:
+            return
 
     # Small random chance for a Royal spawn regardless of message count
     if random.random() < 0.001:

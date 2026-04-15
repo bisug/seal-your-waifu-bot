@@ -153,8 +153,16 @@ async def upload_waifu_handler(_, message: types.Message):
         )
 
     except errors.FloodWait as e:
-        await asyncio.sleep(e.value)
-        return await upload_waifu_handler(_, message)
+        LOGGER.warning(f"[Upload] FloodWait {e.value}s — retrying gallery send once...")
+        await asyncio.sleep(e.value + 2)
+        try:
+            sent_msg = await send_media_dynamic(app, GALLERY_CHANNEL_ID, final_url, caption=caption, parse_mode=ParseMode.HTML)
+            char_data = {'img_url': final_url, 'name': char_name, 'anime': anime_name, 'rarity': rarity_text, 'message_id': sent_msg.id}
+            char_id = await add_character_to_db(char_data)
+            invalidate_character_cache(rarity_text)
+            await status.edit_text(f"✅ <b>Waifu Uploaded!</b>\nID: <code>{char_id}</code>\nName: {char_name}", parse_mode=ParseMode.HTML)
+        except Exception as retry_err:
+            await status.edit_text(f"❌ Upload failed after FloodWait retry: {html_escape(str(retry_err))}")
     except Exception as e:
         LOGGER.error(f"Upload Failure: {e}")
         await status.edit_text(f"❌ Error: {html_escape(str(e))}")

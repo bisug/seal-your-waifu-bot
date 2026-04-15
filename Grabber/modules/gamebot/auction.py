@@ -17,6 +17,11 @@ from Grabber.database import sessions_collection, user_collection
 TIMEOUT = 120  # 2 minutes
 MIN_INCREMENT = 100
 SNIPING_EXTENSION = 15  # seconds
+_TIMER_INTERVAL = 20   # seconds between timer caption updates (was 15)
+_MIN_EDIT_GAP = 5      # minimum seconds between any two edits to the same message
+
+# Track last edit time per auction message to prevent double-edits during bidding wars
+_last_edit_times: dict = {}
 
 RARITY_STARTING_BIDS = {
     "🟠 Rare": 200,
@@ -47,11 +52,12 @@ def get_auction_text(char, highest_bid, bidder_name, time_left):
 async def auction_timer_task(chat_id, start_time):
     """Manages the auction lifecycle, updates, and finalization."""
     while True:
-        await asyncio.sleep(15) # Update every 15s to avoid flood
+        # Add jitter so multiple concurrent auctions don't all edit at the same second
+        await asyncio.sleep(_TIMER_INTERVAL + random.uniform(0, 4))
         
         session = await sessions_collection.find_one({"_id": f"auction:{chat_id}"})
         if not session or session.get("start_time") != start_time:
-            break # Session replaced or deleted
+            break  # Session replaced or deleted
 
         end_time = session["end_time"]
         now = time.time()
@@ -62,6 +68,12 @@ async def auction_timer_task(chat_id, start_time):
             await finalize_auction(chat_id, session)
             break
         
+        # Respect minimum edit gap (avoids double-edits when /bid also triggers an edit)
+        msg_id = session["message_id"]
+        last_edit = _last_edit_times.get((chat_id, msg_id), 0)
+        if now - last_edit < _MIN_EDIT_GAP:
+            continue
+        
         # Update the message caption
         char = session["char"]
         text = get_auction_text(char, session["highest_bid"], session.get("bidder_name", "None"), time_left)
@@ -69,16 +81,26 @@ async def auction_timer_task(chat_id, start_time):
         try:
             await game_bot.edit_message_caption_safe(
                 chat_id, 
-                session["message_id"], 
+                msg_id, 
                 caption=text,
                 parse_mode=ParseMode.HTML
             )
+            _last_edit_times[(chat_id, msg_id)] = time.time()
         except Exception as e:
             LOGGER.debug(f"Failed to update auction message in {chat_id}: {e}")
 
 async def finalize_auction(chat_id, session):
     """Ends the auction and awards the character."""
     await sessions_collection.delete_one({"_id": f"auction:{chat_id}"})
+    # Clear Redis auction flag so message_counter resumes normal spawns immediately
+    from Grabber.database import r as _redis
+    if _redis:
+        try:
+            await _redis.delete(f"auction:{chat_id}")
+        except Exception:
+            pass
+    # Clean up edit-time tracking
+    _last_edit_times.pop((chat_id, session.get("message_id")), None)
     
     winner_id = session["bidder_id"]
     winner_name = session.get("bidder_name", "Nobody")
@@ -148,12 +170,14 @@ async def trigger_auction(chat_id, character):
             upsert=True
         )
         
-        # 2. Update Redis Cache
+        # 2. Update Redis Cache (spawn cooldown + auction presence flag)
         if _redis:
             try:
                 key = f"spawn:state:{chat_id}"
                 await _redis.hset(key, "last_spawn_time", str(start_time))
-            except:
+                # Set auction flag so message_counter uses fast O(1) EXISTS check
+                await _redis.set(f"auction:{chat_id}", "1", ex=TIMEOUT + 60)
+            except Exception:
                 pass
 
         # Attempt to pin
@@ -268,12 +292,17 @@ async def bid_handler(_, message: types.Message):
         auto_delete=30
     )
     
-    # Proactively update the main message
-    char = session["char"]
-    time_left = new_end_time - time.time()
-    text = get_auction_text(char, bid_amount, user_name, time_left)
-    
-    try:
-        await game_bot.edit_message_caption_safe(chat_id, session["message_id"], caption=text, parse_mode=ParseMode.HTML)
-    except:
-        pass
+    # Proactively update the main message, but respect the minimum edit gap
+    # to avoid double-edits when auction_timer_task is also running
+    msg_id = session["message_id"]
+    now_ts = time.time()
+    last_edit = _last_edit_times.get((chat_id, msg_id), 0)
+    if now_ts - last_edit >= _MIN_EDIT_GAP:
+        char = session["char"]
+        time_left = new_end_time - now_ts
+        text = get_auction_text(char, bid_amount, user_name, time_left)
+        try:
+            await game_bot.edit_message_caption_safe(chat_id, msg_id, caption=text, parse_mode=ParseMode.HTML)
+            _last_edit_times[(chat_id, msg_id)] = time.time()
+        except Exception:
+            pass
