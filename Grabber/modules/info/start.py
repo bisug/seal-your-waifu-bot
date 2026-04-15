@@ -57,34 +57,34 @@ HELP_DATA = {
         "text": """
 <b>Core Commands</b>
 
-/start - Start the bot & view intro
-/help - Show this interactive help menu
-/search - Hunt for a specific waifu
-/harem - View your character collection
-/fav &lt;id&gt; - Set a favorite character
-/trade &lt;user&gt; &lt;amount&gt; - Trade characters/items
-/gift &lt;id&gt; - Gift a character to a user
+/start - Start the bot
+/help - Show help menu
+/search - Find a waifu
+/harem - Your collection
+/fav - Set favorite character
+/trade - Trade characters
+/gift - Gift characters
 """,
     },
     "PET": {
         "text": """
 <b>Pet System</b>
 
-/petshop - Buy powerful pets with unique stats
-/mypet - Manage active pet & view stats
-/hunt - Send pet to find loot, Shards & eggs
-/eggs - Manage your eggs inventory
-/hatch - Open the incubation chamber
+/petshop - Buy powerful pets
+/mypet - Manage your pet
+/hunt - Send pet to hunt
+/eggs - View your eggs
+/hatch - Hatch char eggs
 """,
     },
     "BATTLE": {
         "text": """
 <b>Battle & Economy</b>
 
-/battle &lt;amount&gt; - PvP duel
-/balance - Check your Shards & Zenith
-/exchange - Convert Shards into Zenith
-/shop - Universal Shop Hub
+/battle - Start a PvP duel
+/balance - Check your balance
+/exchange - Convert Shards
+/shop - Open the shop
 /daily - Claim daily rewards
 /weekly - Claim weekly bonus
 /top - Global leaderboard
@@ -94,26 +94,25 @@ HELP_DATA = {
         "text": """
 <b>Info & Stats</b>
 
-/stats - Global bot statistics
-/rarities - Character counts by rarity
-/ctop - Top members in this chat
-/mtop - Global rich leaderboard
-/ping - Real-time system status
-/webapp - Open the Shop/Gallery Mini-App
+/stats - Bot statistics
+/rarities - Character counts
+/ctop - Chat leaderboard
+/mtop - Rich leaderboard
+/ping - Check bot status
+/webapp - Open Mini-App
 """,
     },
     "PROGRESSION": {
         "text": """
 <b>Battle Pass & Progression</b>
 
-/pass - View your Battle Pass
-/quests - Daily & Weekly Quests
-/referrals - Invite friends & earn rewards
-/achievements - View lifetime milestones & titles
-/level - Check your level progress
+/pass - View Battle Pass
+/quests - Active quests
+/referrals - Invite friends
+/achievements - Milestones
+/level - Your level progress
 
-<i>Earn XP by catching, battling, and completing quests!</i>
-<i>Unlock rewards at levels 5, 10, 25, and 50</i>
+<i>Earn XP by catching and battling!</i>
 """,
     },
     "OWNER": {
