@@ -1,5 +1,6 @@
 import asyncio
 import random
+import re
 
 from pyrogram import enums, filters, types
 from pyrogram.enums import ParseMode
@@ -10,7 +11,7 @@ from Grabber.core.progression import add_xp
 from Grabber.core.spawns import (clear_active_spawn, get_chat_state,
                                  get_message_count, send_character)
 from Grabber.core.user import add_char_to_user
-from Grabber.core.utils import html_escape
+from Grabber.core.utils import html_escape, reply_media_dynamic
 from Grabber.modules.collection.rarities import RARITY_WEIGHTS
 from Grabber.modules.progression.achievements import check_achievements
 from Grabber.modules.progression.quests import update_quest_progress
@@ -20,6 +21,9 @@ AUTHORIZED_USERS = set(sudo_users + [OWNER_ID])
 @app.on_message(filters.command("seal") & filters.group)
 async def seal_handler(_, message: types.Message):
     """Handle core character catching logic for standard spawn messages."""
+    if not message.from_user:
+        return
+
     chat_id = message.chat.id
     user_id = message.from_user.id
 
@@ -41,8 +45,7 @@ async def seal_handler(_, message: types.Message):
     # Guess matching logic (REFINED PER USER REQUEST)
     # 1. Normalize both and remove common punctuation
     def normalize(text):
-        for char in ".,!?-": text = text.replace(char, " ")
-        return " ".join(text.lower().split())
+        return " ".join(re.sub(r'[^\w\s]', ' ', text).lower().split())
 
     guess_normalized = normalize(guess)
     correct_normalized = normalize(character['name'])
@@ -114,10 +117,7 @@ async def seal_handler(_, message: types.Message):
             f"Added to your harem!"
         )
 
-        from Grabber.core.utils import reply_media_dynamic
         await reply_media_dynamic(message, character['img_url'], caption=caption, parse_mode=ParseMode.HTML)
-    else:
-        await message.reply_text("Wrong name! Try again.")
 
 @app.on_message(filters.command("messagecount") & filters.group)
 async def messagecount_handler(_, message: types.Message):
@@ -128,7 +128,7 @@ async def messagecount_handler(_, message: types.Message):
 @app.on_message(filters.command("cnow") & filters.group)
 async def cnow_handler(_, message: types.Message):
     """Force a character spawn (Owner/Sudo only)."""
-    if message.from_user.id not in AUTHORIZED_USERS:
+    if not message.from_user or message.from_user.id not in AUTHORIZED_USERS:
         return # Ignore non-owners
 
     weights_map = RARITY_WEIGHTS
