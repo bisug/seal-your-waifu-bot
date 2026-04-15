@@ -45,4 +45,7 @@ class Config:
     MINI_APP_SHORT_NAME = os.getenv("MINI_APP_SHORT_NAME", "app") # The 'Short Name' you set in BotFather
     API_VERSION_PREFIX = os.getenv("API_VERSION_PREFIX", "v1_7b82")
 
+    # --- USERBOT CONFIG ---
+    STRING_SESSION = os.getenv("STRING_SESSION", "BQEyrwMApp5yi6-jKRCfwSBL2tVRNfSgDCGYMh61lWDKQnYwkDIQc6xaKuavcM_jCv0RYUEq1ye_hwpx5Mw-jRlDLGROn8eZ3RFQniaMALDiGnwsRWD82ReJsXV-zPsFlcf7nT60bis0bALIBAbKeR8gBcnba5q9tgmWXd11sSRmvQy9zgXJ7K8PM4Zvi_9sCOSuyQhd6R_NicLWTW3dIMUbwznCrWi8-FZA21kxD3YfitVEHyR_C4LUhkYPlP8iqkQzrxbIDwVZ8Zr-3gsw38u40PT1RqqjDyhIr8wl1KX4Pt3QUqAAttyiq5e5BaT2WLc7ga4Sxb_NwJqBKlNU0vRUnYHxegAAAAHXQT_PAA")
+
 config = Config()

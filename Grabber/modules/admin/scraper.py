@@ -7,7 +7,7 @@ from pyrogram.enums import ParseMode
 
 from config import config
 from Grabber import (GALLERY_CHANNEL_ID, LOGGER, OWNER_ID, app, collection,
-                     sudo_users)
+                     sudo_users, userbot)
 from Grabber.core.utils import send_media_dynamic
 from Grabber.core.waifu import (add_character_to_db,
                                 invalidate_character_cache,
@@ -101,17 +101,22 @@ async def scrape_group_command_handler(client, message):
     status = await message.reply_text(f"⏳ Scanning `{target_chat}` for characters...")
 
     try:
+        # Use userbot for scraping if available, otherwise fallback to app
+        client_to_use = userbot if userbot and userbot.is_connected else app
+        is_userbot = (client_to_use == userbot)
+
         # Resolve chat
         try:
-            chat = await app.get_chat(target_chat)
+            chat = await client_to_use.get_chat(target_chat)
         except Exception as e:
-            return await status.edit_text(f"❌ Could not access chat: {e}\nMake sure Bot is added to the group.")
+            error_tip = "Make sure Bot is added." if not is_userbot else "Make sure UserBot is a member."
+            return await status.edit_text(f"❌ Could not access chat: {e}\n{error_tip}")
 
         scraping_tasks[message.chat.id] = True
         sent_count = 0
         
         # Iterate backwards through history
-        async for msg in app.get_chat_history(chat.id, limit=300):
+        async for msg in client_to_use.get_chat_history(chat.id, limit=300):
             if message.chat.id not in scraping_tasks:
                 break
 
@@ -133,7 +138,7 @@ async def scrape_group_command_handler(client, message):
             try:
                 # Send for Review
                 # We download first to ensure we have a valid file to re-upload to our group
-                temp_path = await app.download_media(msg)
+                temp_path = await client_to_use.download_media(msg)
                 
                 review_caption = (
                     f"<b>🆕 Scraped Character!</b>\n\n"
