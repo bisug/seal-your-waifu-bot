@@ -2,8 +2,13 @@ import asyncio
 
 from Grabber import app, game_bot, userbot
 
+IS_STARTED = False
 
 async def start_bots():
+    global IS_STARTED
+    if IS_STARTED:
+        return
+    IS_STARTED = True
     # Fix for ASGI (Hypercorn/Uvicorn) event loop mismatch
     loop = asyncio.get_running_loop()
     
