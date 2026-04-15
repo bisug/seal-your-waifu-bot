@@ -5,15 +5,16 @@ from config import config
 from Grabber import (LOGGER, PHOTO_URL, SUPPORT_CHAT, UPDATE_CHAT, WEB_APP_URL,
                      app, collection, total_pm_users, user_collection)
 from Grabber.core.keyboard import KeyboardBuilder, get_webapp_button
-from Grabber.core.progression import add_xp
-from Grabber.core.user import get_user_filter, get_user_id
+from Grabber.core.progression import add_xp, get_user_progress
+from Grabber.core.user import get_user_filter, get_user_id, update_user
+from Grabber.core.cache import get_user_rank, get_total_ranked_users
 from Grabber.core.utils import html_escape, reply_media_dynamic
 from Grabber.modules.progression.achievements import check_achievements
 from Grabber.modules.progression.pet import DEFAULT_PET
 
 LOGGER.info("Loading Start module...")
 
-START_TEXT = """
+START_TEXT_NEW = """
 <b>✨ {bot_name}</b>
 
 <blockquote>“In the world of anime, some seek power, others seek glory. But a true <b>Collector</b> seeks them all.”</blockquote>
@@ -26,6 +27,18 @@ I am your ultimate companion for character collecting and strategic duels.
 <i>Add me to a group to begin your journey!</i> 🚀
 """
 
+START_TEXT_RETURNING = """
+<b>✨ {bot_name} Dashboard</b>
+
+<b>Welcome back, {first_name}!</b> 👋
+━━━━━━━━━━━━━━━━━━━━━
+💠 <b>Rank:</b> <code>#{rank}</code> / {total_ranked}
+🆙 <b>Level:</b> <code>{level}</code>
+💰 <b>Balance:</b> <code>{balance}</code> ⬪ | <code>{zenith}</code> ⧫
+👥 <b>Harem:</b> <code>{harem_size}</code> Unique Characters
+━━━━━━━━━━━━━━━━━━━━━
+<i>Select an option below to continue your journey!</i>
+"""
 
 HELP_DATA = {
     "MAIN": {
@@ -113,15 +126,69 @@ HELP_DATA = {
     }
 }
 
+async def render_start_message(user_id: int, first_name: str, is_private: bool, existing_user: dict = None):
+    """Helper method to dynamically build the Smart Dashboard for the start menu."""
+    builder = KeyboardBuilder()
+    builder.add_button("➕ Add to Group", url=f"https://t.me/{config.BOT_USERNAME}?startgroup=true")
+    
+    webapp_btn = get_webapp_button(is_private)
+    if webapp_btn:
+        builder.add_row(webapp_btn)
+
+    builder.add_row(
+        types.InlineKeyboardButton("💬 Support", url=f"https://t.me/{SUPPORT_CHAT}"),
+        types.InlineKeyboardButton("📢 Updates", url=f"https://t.me/{UPDATE_CHAT}")
+    )
+    builder.add_row(
+        types.InlineKeyboardButton("🎒 My Collection", callback_data="harem_view:self"),
+        types.InlineKeyboardButton("📚 Help Menu", callback_data="help:main", style=enums.ButtonStyle.PRIMARY)
+    )
+    markup = builder.build()
+
+    if not is_private:
+        return "✅ <b>I'm active and ready to drop characters!</b>", markup
+
+    if existing_user and existing_user.get("characters"):
+        progress = await get_user_progress(user_id, user_data=existing_user)
+        rank = await get_user_rank(user_id) or "N/A"
+        total_ranked = await get_total_ranked_users() or "???"
+        
+        balance = existing_user.get("balance", 0)
+        zenith = existing_user.get("zenith", 0)
+        
+        unique_chars = {c.get("id") for c in existing_user.get("characters", [])}
+        harem_size = len(unique_chars)
+        
+        text = START_TEXT_RETURNING.format(
+            bot_name=config.BOT_NAME,
+            first_name=html_escape(first_name),
+            rank=rank,
+            total_ranked=total_ranked,
+            level=progress['level'],
+            balance=f"{balance:,}",
+            zenith=f"{zenith:,}",
+            harem_size=f"{harem_size:,}"
+        )
+    else:
+        text = START_TEXT_NEW.format(
+            first_name=html_escape(first_name), 
+            bot_name=config.BOT_NAME
+        )
+        
+    return text, markup
+
+
 @app.on_message(filters.command("start"))
 async def start_handler(_, message: types.Message):
     """Entry point for the bot. Handles new users and referral links."""
     user_id = message.from_user.id
+    first_name_clean = message.from_user.first_name
+    
     existing_user = await user_collection.find_one(get_user_filter(user_id))
 
     await total_pm_users.update_one(
         {"_id": user_id},
-        {"$set": {"first_name": message.from_user.first_name, "username": message.from_user.username}},
+        {"$set": {"first_name": first_name_clean, "username": message.from_user.username}},
         upsert=True
     )
 
@@ -149,6 +216,28 @@ async def start_handler(_, message: types.Message):
             except Exception as e:
                 LOGGER.error(f"Locate Error: {e}")
                 pass
+        elif param.startswith("claim_"):
+            try:
+                code = param.split("_")[1]
+                from Grabber.modules.admin.giveaway import process_core_claim
+                success, result = await process_core_claim(app, message.from_user, code)
+                
+                if not success:
+                    await message.reply_text(result, parse_mode=ParseMode.HTML)
+                else:
+                    waifu = result
+                    response_text = (
+                        f'🎉 Congratulations <a href="tg://user?id={message.from_user.id}">{html_escape(message.from_user.first_name)}</a>!\n'
+                        f"You claimed a <b>{html_escape(waifu['rarity'])}</b> character!\n\n"
+                        f"Name: {html_escape(waifu['name'])}\n"
+                        f"Anime: {html_escape(waifu['anime'])}\n"
+                        f"ID: <code>{waifu['id']}</code>\n"
+                    )
+                    await reply_media_dynamic(message, waifu['img_url'], caption=response_text, parse_mode=ParseMode.HTML)
+                return
+            except Exception as e:
+                LOGGER.error(f"Claim Error: {e}")
+                pass
         elif not existing_user and param.startswith("ref_"):
             try:
                 referrer_id = int(param.split("_")[1])
@@ -158,18 +247,21 @@ async def start_handler(_, message: types.Message):
                     upgraded_pet["hp"] += 45
                     upgraded_pet["atk"] += 18
                     upgraded_pet["spd"] += 9
+                    
                     await user_collection.update_one(
                         {"id": get_user_id(user_id)},
-                        {"$set": {"balance": 1500, "pets": [upgraded_pet], "current_pet": upgraded_pet["name"], "referred_by": referrer_id}},
+                        {"$set": {"pets": [upgraded_pet], "current_pet": upgraded_pet["name"], "referred_by": referrer_id}},
                         upsert=True
                     )
-                    await user_collection.update_one(get_user_filter(referrer_id), {"$inc": {"balance": 500, "referrals_count": 1, "referrals_earned": 500}})
+                    await update_user(user_id, {"$inc": {"balance": 1500}})
+                    
+                    await update_user(referrer_id, {"$inc": {"balance": 500, "referrals_count": 1, "referrals_earned": 500}})
                     await add_xp(referrer_id, 50, "referral")
                     await check_achievements(referrer_id)
                     try:
                         await app.send_message(
                             referrer_id,
-                            f'🎉 <b>New Referral!</b>\n\n<a href="tg://user?id={message.from_user.id}">{html_escape(message.from_user.first_name)}</a> joined using your link.\n+500 ⬪ | +50 XP',
+                            f'🎉 <b>New Referral!</b>\n\n<a href="tg://user?id={message.from_user.id}">{html_escape(first_name_clean)}</a> joined using your link.\n+500 ⬪ | +50 XP',
                             parse_mode=ParseMode.HTML
                         )
                     except:
@@ -179,53 +271,31 @@ async def start_handler(_, message: types.Message):
                 pass
 
     is_private = message.chat.type == enums.ChatType.PRIVATE
-    builder = KeyboardBuilder()
-    builder.add_button("Add to Group", url=f"https://t.me/{config.BOT_USERNAME}?startgroup=true")
     
-    webapp_btn = get_webapp_button(is_private)
-    if webapp_btn:
-        builder.add_row(webapp_btn)
-
-    builder.add_row(
-        types.InlineKeyboardButton("Support", url=f"https://t.me/{SUPPORT_CHAT}"),
-        types.InlineKeyboardButton("Updates", url=f"https://t.me/{UPDATE_CHAT}")
-    )
-    builder.add_row(
-        types.InlineKeyboardButton("My Collection", callback_data="harem_view:self"),
-        types.InlineKeyboardButton("Help Menu", callback_data="help:main", style=enums.ButtonStyle.PRIMARY)
-    )
-    markup = builder.build()
+    # Refresh user state after referral DB logic just in case
+    if not existing_user:
+        existing_user = await user_collection.find_one(get_user_filter(user_id))
+        
+    text, markup = await render_start_message(user_id, first_name_clean, is_private, existing_user)
 
     if is_private:
-        first_name = html_escape(message.from_user.first_name)
-        text = START_TEXT.format(first_name=first_name, bot_name=config.BOT_NAME)
         await reply_media_dynamic(message, random_photo(),
             caption=text,
             reply_markup=markup,
             parse_mode=ParseMode.HTML
         )
     else:
-        await message.reply_text("✅ <b>I'm active and ready to drop characters!</b>", parse_mode=ParseMode.HTML)
+        await message.reply_text(text, parse_mode=ParseMode.HTML)
 
 @app.on_callback_query(filters.regex(r"^st:(h|b)"))
 async def start_callback_handler(_, query: types.CallbackQuery):
     """Handle navigation back to the start menu from help or collection pages."""
     await query.answer()
     is_private = query.message.chat.type == enums.ChatType.PRIVATE
-    builder = KeyboardBuilder()
-    builder.add_button("Add to Group", url=f"https://t.me/{config.BOT_USERNAME}?startgroup=true")
-    webapp_btn = get_webapp_button(is_private)
-    if webapp_btn:
-         builder.add_row(webapp_btn)
-    builder.add_row(
-        types.InlineKeyboardButton("Support", url=f"https://t.me/{SUPPORT_CHAT}"),
-        types.InlineKeyboardButton("Updates", url=f"https://t.me/{UPDATE_CHAT}")
-    )
-    builder.add_button("Help Menu", callback_data="help:main", style=enums.ButtonStyle.PRIMARY)
-    markup = builder.build()
-
-    first_name = html_escape(query.from_user.first_name)
-    text = START_TEXT.format(first_name=first_name, bot_name=config.BOT_NAME)
+    user_id = query.from_user.id
+    
+    existing_user = await user_collection.find_one(get_user_filter(user_id))
+    text, markup = await render_start_message(user_id, query.from_user.first_name, is_private, existing_user)
 
     try:
         if query.message.photo:

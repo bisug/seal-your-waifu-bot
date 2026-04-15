@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from pyrogram import enums, filters, types
 from pyrogram.enums import ButtonStyle, ParseMode
 
-from Grabber import LOGGER, OWNER_ID, SUPPORT_GROUP_ID, app, collection
+from Grabber import LOGGER, MAIN_GROUP_ID, OWNER_ID, app, collection
 from Grabber.core.balance import (check_and_deduct, get_user_balance,
                                   update_user_balance)
 from Grabber.core.user import get_user_filter, get_user_id
