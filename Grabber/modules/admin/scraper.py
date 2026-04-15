@@ -7,7 +7,7 @@ from pyrogram.enums import ParseMode
 
 from config import config
 from Grabber import (GALLERY_CHANNEL_ID, LOGGER, OWNER_ID, app, collection,
-                     sudo_users, userbot)
+                    scraped_characters_collection, sudo_users, userbot)
 from Grabber.core.utils import send_media_dynamic
 from Grabber.core.waifu import (add_character_to_db,
                                 invalidate_character_cache,
@@ -134,7 +134,8 @@ async def scrape_group_command_handler(client, message):
         sent_count = 0
         
         # Iterate backwards through history
-        async for msg in client_to_use.get_chat_history(chat.id, limit=300):
+        # Iterate backwards through history - Increased limit to catch more characters
+        async for msg in client_to_use.get_chat_history(chat.id, limit=5000):
             if message.chat.id not in scraping_tasks:
                 break
 
@@ -154,6 +155,11 @@ async def scrape_group_command_handler(client, message):
             # Check if exists locally
             exists = await collection.find_one({"name": name, "anime": anime})
             if exists:
+                continue
+                
+            # Check if already scraped/declined
+            already_scraped = await scraped_characters_collection.find_one({"name": name, "anime": anime})
+            if already_scraped:
                 continue
 
             try:
@@ -175,6 +181,9 @@ async def scrape_group_command_handler(client, message):
                 )
                 
                 if os.path.exists(temp_path): os.remove(temp_path)
+                
+                # Record as scraped to prevent re-sending
+                await scraped_characters_collection.insert_one({"name": name, "anime": anime})
                 
                 pending_characters.add((name.lower(), anime.lower()))
                 sent_count += 1
@@ -301,6 +310,8 @@ async def decline_scrape_callback(client, query):
         name = name_match.group(1).strip()
         anime = anime_match.group(1).strip()
         key = (name.lower(), anime.lower())
+        # We don't remove from scraped_characters_collection here 
+        # because the user explicitly wants them NOT to be re-sent.
         if key in pending_characters:
             pending_characters.remove(key)
 
