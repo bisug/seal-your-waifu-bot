@@ -1,13 +1,17 @@
-from Grabber.core.utils import reply_media_dynamic
+import os
+
 import httpx
-from pyrogram import filters, types, enums
+from pyrogram import enums, filters, types
 from pyrogram.enums import ParseMode
-from Grabber import app, LOGGER
+
 from config import config
+from Grabber import LOGGER, app
+from Grabber.core.utils import reply_media_dynamic
+from Grabber.core.waifu import upload_media_safely
 
 IMGBB_API_KEY = config.IMGBB_API_KEY
 
-from Grabber.core.waifu import upload_media_safely
+
 
 @app.on_message(filters.command("tgm"))
 async def tgm_cmd(_, message: types.Message) -> None:
@@ -28,7 +32,6 @@ async def tgm_cmd(_, message: types.Message) -> None:
 
         remote_url = await upload_media_safely(file_path)
 
-        import os
         if os.path.exists(file_path):
             os.remove(file_path)
 

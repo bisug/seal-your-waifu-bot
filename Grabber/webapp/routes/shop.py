@@ -1,20 +1,23 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
 import asyncio
 import uuid
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+
 from Grabber import LOGGER
-from Grabber.webapp.auth import get_current_user, get_current_user_data
-from Grabber.database import user_collection, collection
 from Grabber.core.cache import sync_user_to_redis
-from Grabber.core.constants import SHOP_RARITY, SHOP_LIMIT, RARITY_PRICES, PASS_PRICES
+from Grabber.core.constants import (PASS_PRICES, RARITY_PRICES, SHOP_LIMIT,
+                                    SHOP_RARITY)
+from Grabber.core.pass_config import MAX_PASS_LEVEL, PASS_TRACKS
+from Grabber.core.progression import get_user_progress
+from Grabber.core.utils import get_user_id_query, normalize_user_id
+from Grabber.database import collection, user_collection
 from Grabber.modules.economy.shop import get_daily_shop_characters
 from Grabber.modules.progression.pet import PET_SHOP
-from Grabber.core.pass_config import PASS_TRACKS, MAX_PASS_LEVEL
-from Grabber.core.progression import get_user_progress
-from Grabber.core.utils import normalize_user_id
+from Grabber.webapp.auth import get_current_user, get_current_user_data
 
 router = APIRouter()
 
-from Grabber.core.utils import get_user_id_query
+
 
 @router.get("/shop/hub")
 async def get_shop_hub(user: dict = Depends(get_current_user_data)):
@@ -93,8 +96,8 @@ async def buy_character_api(char_id: str, user_id: int = Depends(get_current_use
         await collection.update_one({"id": char_id}, {"$inc": {"sold_count": -1}}) # Rollback
         raise HTTPException(status_code=400, detail="Transaction failed or character already owned.")
 
-    from Grabber.modules.progression.quests import update_quest_progress
     from Grabber.modules.progression.achievements import check_achievements
+    from Grabber.modules.progression.quests import update_quest_progress
     await update_quest_progress(user_id, "big_spender", price)
     await check_achievements(user_id)
     await sync_user_to_redis(user_id)

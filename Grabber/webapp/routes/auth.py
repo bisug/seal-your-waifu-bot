@@ -1,11 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
-from Grabber.webapp.auth import validate_init_data, create_session, r
-from Grabber.database import sessions_collection, user_collection
-from Grabber import LOGGER
 import json
 import time as _time
-from urllib.parse import parse_qsl
 from collections import defaultdict
+from urllib.parse import parse_qsl
+
+from fastapi import APIRouter, Depends, HTTPException, Request
+
+from Grabber import LOGGER
+from Grabber.database import sessions_collection, user_collection
+from Grabber.webapp.auth import create_session, r, validate_init_data
 
 router = APIRouter()
 

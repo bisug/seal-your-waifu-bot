@@ -1,9 +1,11 @@
 import asyncio
 import logging
 from datetime import datetime, timedelta
-from Grabber.database import user_collection
-from Grabber.core.cache import sync_user_to_redis, _redis
+
 from Grabber import LOGGER
+from Grabber.core.cache import _redis, sync_user_to_redis
+from Grabber.database import user_collection
+
 
 async def background_maintenance():
     """
@@ -49,7 +51,7 @@ async def prune_legacy_eggs():
         
         for idx, egg in enumerate(eggs):
             if isinstance(egg, str):
-                from Grabber.modules.economy.hunt import TIER_MAP, EGG_TIERS
+                from Grabber.modules.economy.hunt import EGG_TIERS, TIER_MAP
                 tier = TIER_MAP.get(egg, egg)
                 tier_info = EGG_TIERS.get(tier, EGG_TIERS["common"])
                 new_eggs.append({

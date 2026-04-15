@@ -1,17 +1,17 @@
-from Grabber.core.utils import reply_media_dynamic
 import math
 import random
-from Grabber.core.utils import html_escape as escape
 from collections import Counter
-from typing import List, Dict, Union, Any
+from typing import Any, Dict, List, Union
 
-from pyrogram import filters, types, enums, errors
+from pyrogram import enums, errors, filters, types
 from pyrogram.enums import ParseMode
+
 from config import config
-from Grabber import app, WEB_APP_URL
-from Grabber import LOGGER
+from Grabber import LOGGER, WEB_APP_URL, app
+from Grabber.core.keyboard import KeyboardBuilder, get_paginated_keyboard
 from Grabber.core.user import get_user_data
-from Grabber.core.keyboard import get_paginated_keyboard, KeyboardBuilder
+from Grabber.core.utils import html_escape as escape
+from Grabber.core.utils import reply_media_dynamic
 
 FORMATS = [
     "⧉ {anime} [🎮] ⦋{page}/{total_pages}⦌\n⤷〔<b>{rarity}</b>〕 {name} (ID: <code>{id}</code>) ×{count}",

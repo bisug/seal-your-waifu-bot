@@ -1,10 +1,10 @@
-from Grabber.core.utils import reply_media_dynamic
-from pyrogram import filters, types, enums, errors
+from pyrogram import enums, errors, filters, types
 from pyrogram.enums import ButtonStyle, ParseMode
-from Grabber.core.utils import html_escape
-from Grabber import app
-from Grabber import LOGGER
+
+from Grabber import LOGGER, app
 from Grabber.core.user import get_user_data, update_user
+from Grabber.core.utils import html_escape, reply_media_dynamic
+
 
 @app.on_message(filters.command(["fav", "sfav"]))
 async def fav_handler(_, message: types.Message):

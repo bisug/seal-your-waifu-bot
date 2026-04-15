@@ -1,7 +1,9 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from Grabber.database import r
 import asyncio
 import json
+
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+
+from Grabber.database import r
 
 router = APIRouter()
 

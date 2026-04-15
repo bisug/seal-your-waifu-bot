@@ -1,20 +1,25 @@
 import asyncio
-import re
 import hashlib
+import json
+import re
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import RedirectResponse
+
 from config import config
 from Grabber import LOGGER
-from Grabber.webapp.auth import get_current_user, get_current_user_data, r
-from Grabber.database import user_collection
-from Grabber.webapp.schemas import UserProfileResponse
-from Grabber.core.progression import get_user_progress, get_level_from_xp
-from Grabber.core.cache import get_user_rank, get_total_ranked_users, update_user_rank, rebuild_leaderboard
+from Grabber.core.cache import (get_total_ranked_users, get_user_rank,
+                                rebuild_leaderboard, update_user_rank)
+from Grabber.core.progression import get_level_from_xp, get_user_progress
 from Grabber.core.utils import normalize_user_id
-from Grabber.modules.progression.pet import DEFAULT_PET, get_effective_affection
-import json
-from datetime import datetime
+from Grabber.database import user_collection
 from Grabber.modules.economy.hunt import TIER_MAP
 from Grabber.modules.progression.achievements import ACHIEVEMENTS
+from Grabber.modules.progression.pet import (DEFAULT_PET,
+                                             get_effective_affection)
+from Grabber.webapp.auth import get_current_user, get_current_user_data, r
+from Grabber.webapp.schemas import UserProfileResponse
 
 router = APIRouter()
 
@@ -182,7 +187,6 @@ async def get_me(user: dict = Depends(get_current_user_data)):
     
     return resp_data
 
-from fastapi.responses import RedirectResponse
 
 @router.get("/profile", include_in_schema=False)
 async def get_profile_legacy():
@@ -194,7 +198,7 @@ async def get_leaderboard(
     metric: str = Query("harem", pattern="^(harem|shards|zenith|level|guesses)$"),
     limit: int = Query(50, ge=1, le=100)
 ):
-    from Grabber.modules.info.leaderboard import get_top_users, METRICS
+    from Grabber.modules.info.leaderboard import METRICS, get_top_users
     users = await get_top_users(metric, limit)
     
     field = METRICS[metric]["field"]

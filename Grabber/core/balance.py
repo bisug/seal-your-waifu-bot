@@ -1,8 +1,9 @@
-from Grabber.database import user_collection
-from Grabber.core.cache import (
-    get_cached_balance, set_cached_balance, invalidate_user_cache
-)
 from typing import Optional
+
+from Grabber.core.cache import (get_cached_balance, invalidate_user_cache,
+                                set_cached_balance)
+from Grabber.database import user_collection
+
 
 async def get_user_balance(user_id: int) -> int:
     """

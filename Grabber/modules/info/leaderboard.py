@@ -1,12 +1,14 @@
 import html
-from pyrogram import filters, types, enums
+
+from pyrogram import enums, filters, types
 from pyrogram.enums import ParseMode
-from Grabber.core.utils import html_escape
-from Grabber import app, WEB_APP_URL
+
 from config import config
-from Grabber import user_collection, group_user_totals_collection
-from Grabber.core.progression import get_level_from_xp
+from Grabber import (WEB_APP_URL, app, group_user_totals_collection,
+                     user_collection)
 from Grabber.core.keyboard import get_webapp_button
+from Grabber.core.progression import get_level_from_xp
+from Grabber.core.utils import html_escape
 
 METRIC_ORDER = ["harem", "shards", "zenith", "level", "guesses"]
 
@@ -55,8 +57,9 @@ async def get_top_users(metric: str, limit: int = 10):
 
     # 3. Trigger background rebuild if ZSET was empty
     if r:
-        from Grabber.core.cache import rebuild_leaderboard
         import asyncio
+
+        from Grabber.core.cache import rebuild_leaderboard
         asyncio.create_task(rebuild_leaderboard(user_collection, metric=metric))
 
     return results

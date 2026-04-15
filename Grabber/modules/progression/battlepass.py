@@ -1,10 +1,11 @@
-from pyrogram import filters, types, enums
+from pyrogram import enums, filters, types
 from pyrogram.enums import ButtonStyle, ParseMode
-from Grabber import user_collection, app, WEB_APP_URL
-from config import config
-from Grabber.core.progression import get_user_progress, get_progress_bar, LEVEL_REWARDS
-from Grabber.core.keyboard import KeyboardBuilder, get_webapp_button
 
+from config import config
+from Grabber import WEB_APP_URL, app, user_collection
+from Grabber.core.keyboard import KeyboardBuilder, get_webapp_button
+from Grabber.core.progression import (LEVEL_REWARDS, get_progress_bar,
+                                      get_user_progress)
 
 PASS_PRICES = {
     "premium": 25,

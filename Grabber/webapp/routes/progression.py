@@ -1,17 +1,21 @@
-from fastapi import APIRouter, Depends, HTTPException
 from datetime import datetime, timedelta
-from Grabber.webapp.auth import get_current_user, get_current_user_data
-from Grabber.database import user_collection
-from Grabber.webapp.schemas import QuestsResponse
-from Grabber.modules.progression.quests import get_user_quests, QUEST_POOL, WEEKLY_POOL, add_xp
-from Grabber.core.constants import EGG_TIERS
-from Grabber.modules.progression.pet import DEFAULT_PET
-from Grabber.core.utils import normalize_user_id, get_now_utc
+
+from fastapi import APIRouter, Depends, HTTPException
+
 from Grabber.core.cache import sync_user_to_redis
+from Grabber.core.constants import EGG_TIERS
+from Grabber.core.utils import (get_now_utc, get_user_id_query,
+                                normalize_user_id)
+from Grabber.database import user_collection
+from Grabber.modules.progression.pet import DEFAULT_PET
+from Grabber.modules.progression.quests import (QUEST_POOL, WEEKLY_POOL,
+                                                add_xp, get_user_quests)
+from Grabber.webapp.auth import get_current_user, get_current_user_data
+from Grabber.webapp.schemas import QuestsResponse
 
 router = APIRouter()
 
-from Grabber.core.utils import get_user_id_query
+
 
 @router.get("/quests", response_model=QuestsResponse)
 async def get_quests(user_id: int = Depends(get_current_user)):

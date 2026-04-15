@@ -1,8 +1,9 @@
 import asyncio
-from motor.motor_asyncio import AsyncIOMotorClient
 import json
 import os
+
 from dotenv import load_dotenv
+from motor.motor_asyncio import AsyncIOMotorClient
 
 # Search for .env or use a default
 load_dotenv()

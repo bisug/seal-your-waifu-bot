@@ -1,12 +1,13 @@
-import httpx
+import asyncio
 import random
 import time
-import asyncio
-from typing import Dict, List
-from Grabber.database import collection, db
-from Grabber import LOGGER
-from config import config
+from typing import Dict, List, Optional
 
+import httpx
+
+from config import config
+from Grabber import LOGGER
+from Grabber.database import collection, db
 
 IMGBB_API_KEY = config.IMGBB_API_KEY
 
@@ -24,7 +25,7 @@ async def get_next_sequence_number(sequence_name: str) -> int:
     )
     return sequence_document['sequence_value']
 
-from typing import Optional
+
 
 async def upload_image_to_catbox(file_path: str) -> Optional[str]:
     """

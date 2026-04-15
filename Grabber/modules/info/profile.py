@@ -1,14 +1,15 @@
-from Grabber.core.utils import reply_media_dynamic
 import math
-from pyrogram import filters, types, enums
-from pyrogram.enums import ParseMode
-from Grabber import app, user_collection, PHOTO_URL, LOGGER, WEB_APP_URL
-from config import config
-from Grabber.core.utils import html_escape
-from Grabber.core.user import get_user_data, get_active_pet
-from Grabber.core.progression import get_user_progress, get_progress_bar
-from Grabber.database import collection
 import random
+
+from pyrogram import enums, filters, types
+from pyrogram.enums import ParseMode
+
+from config import config
+from Grabber import LOGGER, PHOTO_URL, WEB_APP_URL, app, user_collection
+from Grabber.core.progression import get_progress_bar, get_user_progress
+from Grabber.core.user import get_active_pet, get_user_data
+from Grabber.core.utils import html_escape, reply_media_dynamic
+from Grabber.database import collection
 
 RARITY_ICONS = {
     '⚪ Common': '⚪', '🟢 Medium': '🟢', '🟠 Rare': '🟠',

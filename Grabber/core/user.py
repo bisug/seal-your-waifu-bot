@@ -1,6 +1,9 @@
+from typing import Any, Optional
+
+from Grabber.core.cache import (get_cached_user, invalidate_user_cache,
+                                set_cached_user)
 from Grabber.database import user_collection
-from Grabber.core.cache import invalidate_user_cache, get_cached_user, set_cached_user
-from typing import Optional, Any
+
 
 def get_user_id(user_id: Any) -> int:
     """Returns the user ID as a concrete integer."""

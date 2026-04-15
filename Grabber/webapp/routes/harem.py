@@ -1,16 +1,18 @@
 import re
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, Body
-from Grabber.webapp.auth import get_current_user, get_current_user_data
-from Grabber.database import user_collection, collection
-from Grabber.webapp.schemas import PaginatedResponse
-from Grabber.core.constants import PAYOUTS
-from Grabber.core.utils import normalize_user_id
+
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
+
+from Grabber import LOGGER
 from Grabber.core.cache import sync_user_to_redis
+from Grabber.core.constants import PAYOUTS
+from Grabber.core.utils import get_user_id_query, normalize_user_id
+from Grabber.database import collection, user_collection
+from Grabber.webapp.auth import get_current_user, get_current_user_data
+from Grabber.webapp.schemas import PaginatedResponse
 
 router = APIRouter()
 
-from Grabber.core.utils import get_user_id_query
 
 @router.get("/rarities")
 async def get_rarities(user_id: int = Depends(get_current_user)):

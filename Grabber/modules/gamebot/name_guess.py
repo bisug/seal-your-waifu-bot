@@ -1,22 +1,24 @@
+import asyncio
 import random
 import re
-import asyncio
-from pyrogram import filters, types, errors
-from pyrogram.enums import ParseMode
+
 from pymongo import ReturnDocument
-from Grabber import app, game_bot
-from Grabber import collection, user_collection, sessions_collection, gamebot_enabled_groups_collection, LOGGER, OWNER_ID
+from pyrogram import errors, filters, types
+from pyrogram.enums import ParseMode
+
+from Grabber import (LOGGER, OWNER_ID, app, collection, game_bot,
+                     gamebot_enabled_groups_collection, sessions_collection,
+                     user_collection)
 from Grabber.core.balance import update_user_balance
-from Grabber.core.utils import html_escape, check_member_requirement
+from Grabber.core.deletion import schedule_deletion
+from Grabber.core.utils import check_member_requirement, html_escape
 
 # Local cache is no longer used for character data to ensure persistence
 # Active sessions are stored in sessions_collection with ID: "nguess:{chat_id}"
 
-from Grabber.core.utils import html_escape
 # Alias for backward compatibility within this file if needed, but better to use it directly
 escape_html = html_escape
 
-from Grabber.core.deletion import schedule_deletion
 
 # Send message safe is now handled by game_bot.send_message_safe and game_bot.send_media_safe
 
