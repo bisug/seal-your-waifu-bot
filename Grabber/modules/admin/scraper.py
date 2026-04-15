@@ -6,7 +6,7 @@ from pyrogram import enums, filters, types
 from pyrogram.enums import ParseMode
 
 from config import config
-from Grabber import (CHARA_CHANNEL_ID, LOGGER, OWNER_ID, app, collection,
+from Grabber import (GALLERY_CHANNEL_ID, LOGGER, OWNER_ID, app, collection,
                      sudo_users)
 from Grabber.core.utils import send_media_dynamic
 from Grabber.core.waifu import (add_character_to_db,
@@ -15,7 +15,7 @@ from Grabber.core.waifu import (add_character_to_db,
 from Grabber.modules.collection.rarities import RARITY_MAP
 
 # Hardcoded Review Group
-REVIEW_GROUP_ID = config.REVIEW_GROUP_ID
+LOG_GROUP_ID = config.LOG_GROUP_ID
 
 # Global state to manage active scraping tasks
 scraping_tasks = {}
@@ -142,7 +142,7 @@ async def scrape_group_command_handler(client, message):
                     "Select Rarity to Approve or Decline below:"
                 )
 
-                await send_media_dynamic(app, chat_id=REVIEW_GROUP_ID, media_url=temp_path,
+                await send_media_dynamic(app, chat_id=LOG_GROUP_ID, media_url=temp_path,
                     caption=review_caption,
                     reply_markup=get_review_keyboard(),
                     parse_mode=ParseMode.HTML
@@ -234,7 +234,7 @@ async def approve_scrape_callback(client, query):
             f"<i>Approved by Admin</i>"
         )
         
-        sent_msg = await send_media_dynamic(app, chat_id=CHARA_CHANNEL_ID, media_url=final_url,
+        sent_msg = await send_media_dynamic(app, chat_id=GALLERY_CHANNEL_ID, media_url=final_url,
             caption=channel_caption,
             parse_mode=ParseMode.HTML
         )

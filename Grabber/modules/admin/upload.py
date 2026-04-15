@@ -7,7 +7,7 @@ import httpx
 from pyrogram import enums, errors, filters, types
 from pyrogram.enums import ParseMode
 
-from Grabber import CHARA_CHANNEL_ID, LOGGER, OWNER_ID, app, sudo_users
+from Grabber import GALLERY_CHANNEL_ID, LOGGER, OWNER_ID, app, sudo_users
 from Grabber.core.utils import html_escape, send_media_dynamic
 from Grabber.core.waifu import (add_character_to_db,
                                 invalidate_character_cache,
@@ -127,7 +127,7 @@ async def upload_waifu_handler(_, message: types.Message):
 
         sent_msg = await send_media_dynamic(
             client=app,
-            chat_id=CHARA_CHANNEL_ID,
+            chat_id=GALLERY_CHANNEL_ID,
             media_url=final_url,
             caption=caption,
             parse_mode=ParseMode.HTML
@@ -176,7 +176,7 @@ async def delete_waifu_handler(_, message: types.Message):
         msg_id = character.get('message_id')
         if msg_id:
             try:
-                await app.delete_messages(CHARA_CHANNEL_ID, msg_id)
+                await app.delete_messages(GALLERY_CHANNEL_ID, msg_id)
             except:
                 pass
                 
