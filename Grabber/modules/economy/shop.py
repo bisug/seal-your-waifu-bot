@@ -7,7 +7,7 @@ from pyrogram.enums import ButtonStyle, ParseMode
 
 from config import config
 from Grabber import (LOGGER, OWNER_ID, WEB_APP_URL, app, collection,
-                     sudo_users, user_collection)
+                     sudo_users, user_collection, sudo_filter)
 from Grabber.core.constants import RARITY_PRICES, SHOP_LIMIT, SHOP_RARITY
 from Grabber.core.keyboard import KeyboardBuilder, get_webapp_button
 from Grabber.core.sessions import create_session, get_session
@@ -54,7 +54,7 @@ async def get_daily_shop_characters():
     
     return [Character(**c) for c in selected_raw]
 
-ADMINS = list(set(sudo_users + [OWNER_ID]))
+
 SHOP_BANNER = config.PHOTO_URL[0]
 
 @app.on_message(filters.command("cshop"))

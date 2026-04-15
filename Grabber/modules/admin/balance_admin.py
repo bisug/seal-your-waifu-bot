@@ -1,10 +1,8 @@
 from pyrogram import enums, filters, types
 from pyrogram.enums import ButtonStyle, ParseMode
 
-from Grabber import OWNER_ID, app, sudo_users, user_collection
+from Grabber import OWNER_ID, app, sudo_users, user_collection, sudo_filter
 from Grabber.core.utils import html_escape
-
-AUTHORIZED_CONSOLES = set(sudo_users + [OWNER_ID])
 
 async def get_target_user(message: types.Message):
 
@@ -28,10 +26,8 @@ async def get_target_user(message: types.Message):
         except (IndexError, ValueError):
             return None, None, None
 
-@app.on_message(filters.command("givecoin"))
+@app.on_message(filters.command("givecoin") & sudo_filter)
 async def give_coin_handler(_, message: types.Message):
-    if message.from_user.id not in AUTHORIZED_CONSOLES:
-        return await message.reply_text("❌ <b>Unauthorized. Only for Admins.</b>", parse_mode=ParseMode.HTML)
 
     user_id, amount, name = await get_target_user(message)
     if not user_id or amount <= 0:
@@ -57,10 +53,8 @@ async def give_coin_handler(_, message: types.Message):
         parse_mode=ParseMode.HTML
     )
 
-@app.on_message(filters.command("takecoin"))
+@app.on_message(filters.command("takecoin") & sudo_filter)
 async def take_coin_handler(_, message: types.Message):
-    if message.from_user.id not in AUTHORIZED_CONSOLES:
-        return await message.reply_text("❌ <b>Unauthorized. Only for Admins.</b>", parse_mode=ParseMode.HTML)
 
     user_id, amount, name = await get_target_user(message)
     if not user_id or amount <= 0:
@@ -88,7 +82,7 @@ async def take_coin_handler(_, message: types.Message):
 
 @app.on_callback_query(filters.regex(r"^admin_coin_"))
 async def admin_coin_callback(_, query: types.CallbackQuery):
-    if query.from_user.id not in AUTHORIZED_CONSOLES:
+    if query.from_user.id not in sudo_users and query.from_user.id != OWNER_ID:
         return await query.answer("❌ This is not for you!", show_alert=True)
 
     data = query.data.split("_")

@@ -7,7 +7,7 @@ from pyrogram.enums import ParseMode
 
 from config import config
 from Grabber import (GALLERY_CHANNEL_ID, LOGGER, OWNER_ID, app, collection,
-                    scraped_characters_collection, sudo_users, userbot)
+                    scraped_characters_collection, sudo_users, userbot, sudo_filter)
 from Grabber.core.utils import send_media_dynamic
 from Grabber.core.waifu import (add_character_to_db,
                                 invalidate_character_cache,
@@ -108,7 +108,7 @@ def get_review_keyboard():
     buttons.append([types.InlineKeyboardButton("❌ Decline", callback_data="rsc_dec")])
     return types.InlineKeyboardMarkup(buttons)
 
-@app.on_message(filters.command("scrape") & filters.user(sudo_users + [OWNER_ID]))
+@app.on_message(filters.command("scrape") & sudo_filter)
 async def scrape_group_command_handler(client, message):
     if len(message.command) < 2:
         return await message.reply_text("❌ Usage: `/scrape <group_id_or_username>`\nNote: Bot must be a member of the group.")
@@ -224,7 +224,7 @@ async def scrape_group_command_handler(client, message):
         if message.chat.id in scraping_tasks: del scraping_tasks[message.chat.id]
         await app.edit_message_text_safe(status.chat.id, status.id, f"❌ Scraper Failed: {e}")
 
-@app.on_message(filters.command("stop_scrape") & filters.user(sudo_users + [OWNER_ID]))
+@app.on_message(filters.command("stop_scrape") & sudo_filter)
 async def stop_scrape_handler(client, message):
     if message.chat.id in scraping_tasks:
         del scraping_tasks[message.chat.id]
@@ -234,7 +234,7 @@ async def stop_scrape_handler(client, message):
 
 @app.on_callback_query(filters.regex(r"^rsc_app:(\d+)$"))
 async def approve_scrape_callback(client, query):
-    if query.from_user.id not in (sudo_users + [OWNER_ID]):
+    if query.from_user.id not in sudo_users and query.from_user.id != OWNER_ID:
         return await query.answer("❌ Admin only.")
 
     rarity_num = int(query.data.split(":")[1])
@@ -322,7 +322,7 @@ async def approve_scrape_callback(client, query):
 
 @app.on_callback_query(filters.regex(r"^rsc_dec$"))
 async def decline_scrape_callback(client, query):
-    if query.from_user.id not in (sudo_users + [OWNER_ID]):
+    if query.from_user.id not in sudo_users and query.from_user.id != OWNER_ID:
         return await query.answer("❌ Admin only.")
         
     # Attempt to remove from pending_characters if possible
