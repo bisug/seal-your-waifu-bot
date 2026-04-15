@@ -27,8 +27,8 @@ class Config:
 
     # --- CHANNEL & GROUP IDS ---
     MAIN_GROUP_ID = int(os.getenv("MAIN_GROUP_ID", "-1002429397912"))
-    GALLERY_CHANNEL_ID = int(os.getenv("GALLERY_CHANNEL_ID", "-1002643258398"))
-    LOG_GROUP_ID = int(os.getenv("LOG_GROUP_ID", "-1002767033399"))
+    GALLERY_CHANNEL_ID = int(os.getenv("GALLERY_CHANNEL_ID", "-1003925872981"))
+    LOG_GROUP_ID = int(os.getenv("LOG_GROUP_ID", "-1002913644675"))
     
     # --- SOCIAL & CHATS ---
     SUPPORT_CHAT = os.getenv("SUPPORT_CHAT", "TNJBotSupport")
