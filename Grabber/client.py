@@ -149,6 +149,22 @@ class SealClient(Client):
                 LOGGER.error(f"[{self.name}] Error editing message caption in {chat_id}: {e}")
             return None
 
+    async def edit_message_reply_markup_safe(self, chat_id, message_id, reply_markup, *args, _retries=0, **kwargs):
+        """Edits message reply markup while handling FloodWait."""
+        try:
+            return await self.edit_message_reply_markup(chat_id, message_id, reply_markup, *args, **kwargs)
+        except errors.FloodWait as e:
+            if _retries >= 3:
+                LOGGER.error(f"[{self.name}] FloodWait retry limit reached for {chat_id}")
+                return None
+            LOGGER.warning(f"[{self.name}] FloodWait detected: Sleeping for {e.value}s")
+            await asyncio.sleep(e.value)
+            return await self.edit_message_reply_markup_safe(chat_id, message_id, reply_markup, *args, _retries=_retries+1, **kwargs)
+        except Exception as e:
+            if "MESSAGE_NOT_MODIFIED" not in str(e):
+                LOGGER.error(f"[{self.name}] Error editing message markup in {chat_id}: {e}")
+            return None
+
     async def start(self, *args, **kwargs):
         await super().start(*args, **kwargs)
 
