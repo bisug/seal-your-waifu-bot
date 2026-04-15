@@ -7,7 +7,7 @@ from config import config
 from Grabber import LOGGER, PHOTO_URL, WEB_APP_URL, app, user_collection
 from Grabber.core.cache import is_on_cooldown as redis_cooldown
 from Grabber.core.keyboard import KeyboardBuilder, get_webapp_button
-from Grabber.core.user import add_pet_xp
+from Grabber.core.user import add_pet_xp, get_user_filter, get_user_id
 from Grabber.core.utils import html_escape, reply_media_dynamic
 
 DEFAULT_PET = {
@@ -123,9 +123,9 @@ async def perform_pet_purchase(user_id, pet_index: int):
     if user_level < req_level:
         return f"You need to reach <b>Level {req_level}</b> to purchase this pet! (Current: {user_level})"
 
-    user = await user_collection.find_one({"id": user_id})
+    user = await user_collection.find_one(get_user_filter(user_id))
     if not user:
-        user = {"id": user_id, "balance": 0, "zenith": 0, "pets": [DEFAULT_PET.copy()], "current_pet": DEFAULT_PET["name"]}
+        user = {"id": get_user_id(user_id), "balance": 0, "zenith": 0, "pets": [DEFAULT_PET.copy()], "current_pet": DEFAULT_PET["name"]}
         await user_collection.insert_one(user)
 
     # 1. Check Ownership BEFORE deduction
@@ -141,7 +141,7 @@ async def perform_pet_purchase(user_id, pet_index: int):
 
     # 3. Atomic Deduction and Push
     update_result = await user_collection.update_one(
-        {"id": user_id, "zenith": {"$gte": price}},
+        {"id": get_user_id(user_id), "zenith": {"$gte": price}},
         {
             "$inc": {"zenith": -price},
             "$push": {"pets": pet},
@@ -191,7 +191,15 @@ def get_effective_affection(pet: dict) -> int:
     return effective_affection
 
 async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
-    user = await user_collection.find_one({"id": user_id})
+    user = await user_collection.find_one(get_user_filter(user_id))
+    
+    if not user or not user.get("pets"):
+        # Initialize default user data if missing
+        user = {"id": get_user_id(user_id), "pets": [DEFAULT_PET.copy()], "current_pet": DEFAULT_PET["name"]}
+        await user_collection.update_one(get_user_filter(user_id), {"$setOnInsert": user}, upsert=True)
+        # Fetch again to be sure
+        user = await user_collection.find_one(get_user_filter(user_id))
+        
     pets = user.get("pets", [DEFAULT_PET])
     current = user.get("current_pet", DEFAULT_PET["name"])
 
@@ -356,7 +364,7 @@ async def setpet_callback(_, query: types.CallbackQuery):
         return
 
     new_pet = pets[index]
-    await user_collection.update_one({"id": user_id}, {"$set": {"current_pet": new_pet["name"]}})
+    await user_collection.update_one(get_user_filter(user_id), {"$set": {"current_pet": new_pet["name"]}})
     await query.answer(f"{new_pet['name']} is now your active pet.")
     await send_mypet_page(query, index, user_id)
 
@@ -368,11 +376,17 @@ async def feed_pet_cmd(_, message: types.Message):
     if on_cd:
         return await message.reply_text(f"Your pet is full! Try again in <b>{int(secs/60)}m {secs%60}s</b>.", parse_mode=ParseMode.HTML)
         
-    user = await user_collection.find_one({"id": user_id})
-    if not user or "current_pet" not in user:
-        return await message.reply_text("You don't have an active pet to feed.")
+    user = await user_collection.find_one(get_user_filter(user_id))
+    if not user or not user.get("pets"):
+        # Auto-initialize for new users
+        await user_collection.update_one(
+            get_user_filter(user_id),
+            {"$setOnInsert": {"id": get_user_id(user_id), "pets": [DEFAULT_PET.copy()], "current_pet": DEFAULT_PET["name"]}},
+            upsert=True
+        )
+        user = await user_collection.find_one(get_user_filter(user_id))
         
-    active_pet_name = user["current_pet"]
+    active_pet_name = user.get("current_pet", DEFAULT_PET["name"])
     pets = user.get("pets", [])
     pet_index = next((i for i, p in enumerate(pets) if p["name"] == active_pet_name), -1)
     
@@ -384,7 +398,7 @@ async def feed_pet_cmd(_, message: types.Message):
     new_affection = min(100, current_affection + 15)
     
     await user_collection.update_one(
-        {"id": user_id},
+        get_user_filter(user_id),
         {"$set": {
             f"pets.{pet_index}.affection": new_affection,
             f"pets.{pet_index}.last_interacted": time.time()
@@ -401,11 +415,17 @@ async def train_pet_cmd(_, message: types.Message):
     if on_cd:
         return await message.reply_text(f"Your pet is tired! Try training again in <b>{int(secs/60)}m {secs%60}s</b>.", parse_mode=ParseMode.HTML)
         
-    user = await user_collection.find_one({"id": user_id})
-    if not user or "current_pet" not in user:
-        return await message.reply_text("You don't have an active pet to train.")
+    user = await user_collection.find_one(get_user_filter(user_id))
+    if not user or not user.get("pets"):
+        # Auto-initialize for new users
+        await user_collection.update_one(
+            get_user_filter(user_id),
+            {"$setOnInsert": {"id": get_user_id(user_id), "pets": [DEFAULT_PET.copy()], "current_pet": DEFAULT_PET["name"]}},
+            upsert=True
+        )
+        user = await user_collection.find_one(get_user_filter(user_id))
         
-    active_pet_name = user["current_pet"]
+    active_pet_name = user.get("current_pet", DEFAULT_PET["name"])
     pets = user.get("pets", [])
     pet_index = next((i for i, p in enumerate(pets) if p["name"] == active_pet_name), -1)
     
@@ -418,7 +438,7 @@ async def train_pet_cmd(_, message: types.Message):
     
     # Update affection
     await user_collection.update_one(
-        {"id": user_id},
+        get_user_filter(user_id),
         {"$set": {
             f"pets.{pet_index}.affection": new_affection,
             f"pets.{pet_index}.last_interacted": time.time()
