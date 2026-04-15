@@ -52,3 +52,10 @@ userbot = SealClient(name="UserBot", session_string=config.STRING_SESSION) if co
 # For backward compatibility and modularity
 Grabber = app
 nguess_bot = game_bot
+
+def _sudo_check(flt, client, message):
+    if not message.from_user:
+        return False
+    return message.from_user.id in sudo_users or message.from_user.id == OWNER_ID
+
+sudo_filter = filters.create(_sudo_check)
