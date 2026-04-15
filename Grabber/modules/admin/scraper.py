@@ -114,8 +114,13 @@ async def scrape_group_command_handler(client, message):
     status = await app.send_message_safe(message.chat.id, f"⏳ Scanning `{target_chat}` for characters...")
 
     try:
-        # Use userbot for scraping if available, otherwise fallback to app
-        client_to_use = userbot if userbot and userbot.is_connected else app
+        # Use userbot for scraping. If missing or disconnected, report error.
+        if config.STRING_SESSION:
+            if not userbot or not userbot.is_connected:
+                return await app.edit_message_text_safe(status.chat.id, status.id, "❌ <b>UserBot is configured but not connected.</b>\nPlease check Heroku logs for session errors (like AuthKeyDuplicated) or regenerate the session string.")
+            client_to_use = userbot
+        else:
+            client_to_use = app # Fallback for public groups
         is_userbot = (client_to_use == userbot)
 
         # Resolve chat
