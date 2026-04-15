@@ -24,25 +24,31 @@ pending_characters = set()
 def clean_text(text: str) -> str:
     """Cleans text of brackets, counts, emojis, and extra whitespace."""
     if not text: return ""
-    # Remove bracket items like [🎒] or [x1]
+    
+    # 1. Remove bracket items like [🎒] or [x1]
     text = re.sub(r'\[.*?\]', '', text)
-    # Remove count items like (x1) or (1/89)
-    text = re.sub(r'\(x\d+\)', '', text, flags=re.I)
-    text = re.sub(r'\(\d+/\d+\)', '', text)
     
-    # Remove trailing count like " x1" or " x10"
+    # 2. Remove parenthetical counts like (x1) or (1/89)
+    text = re.sub(r'\((?:x\s*)?\d+(?:/\d+)?\)', '', text, flags=re.I)
+    
+    # 3. Aggressively clean the end of the string to reveal IDs
+    # Remove symbols, emojis, and whitespace from the very end
+    text = re.sub(r'[^\w\s\.]+$', '', text)
+    
+    # 4. Remove trailing IDs (3+ digits) or counts like "x10"
+    # We use \b to ensure we don't cut into a name like "Area 51" if it's not at the end
     text = re.sub(r'\s+x\d+\s*$', '', text, flags=re.I)
-    
-    # Remove trailing IDs like " 546" or " 1234" (only if they are at least 3 digits and at the very end)
-    # We use 3 digits to avoid hitting anime names like "86"
     text = re.sub(r'\s+\d{3,}\s*$', '', text)
     
-    # Replace hyphens and underscores with spaces
-    text = text.replace('-', ' ').replace('_', ' ')
+    # 5. Handle cases where the ID might be stuck to the name "AnimeName12345" 
+    # but only if clearly a long ID (5+ digits)
+    text = re.sub(r'\d{5,}$', '', text)
     
-    # Preserve only normal text, numbers, spaces, and dots
+    # 6. Global symbol cleaning
+    text = text.replace('-', ' ').replace('_', ' ')
     text = re.sub(r'[^\w\s\.]+', '', text)
-    # Normalize multiple spaces
+    
+    # 7. Final normalization
     text = re.sub(r'\s+', ' ', text)
     return text.strip()
 
@@ -123,8 +129,10 @@ async def scrape_group_command_handler(client, message):
     try:
         # Use userbot for scraping. If missing or disconnected, report error.
         if config.STRING_SESSION:
-            if not userbot or not userbot.is_connected:
-                return await app.edit_message_text_safe(status.chat.id, status.id, "❌ <b>UserBot is configured but not connected.</b>\nPlease check Heroku logs for session errors (like AuthKeyDuplicated) or regenerate the session string.")
+            if not userbot:
+                 return await app.edit_message_text_safe(status.chat.id, status.id, "❌ <b>UserBot is not initialized.</b>\nThis usually means the STRING_SESSION was invalid or missing during startup.")
+            if not userbot.is_connected:
+                return await app.edit_message_text_safe(status.chat.id, status.id, "❌ <b>UserBot is configured but not connected.</b>\nPlease check Heroku logs for auth errors or regenerate your session string.")
             client_to_use = userbot
         else:
             client_to_use = app # Fallback for public groups
@@ -232,14 +240,17 @@ async def approve_scrape_callback(client, query):
     rarity_num = int(query.data.split(":")[1])
     
     # Parse info from caption using regex — resilient to caption format changes
+    # We strip HTML tags first to ensure the regex matches the clean text
     caption = query.message.caption or ""
+    clean_caption = re.sub(r'<[^>]+>', '', caption)
+    
     # Look for Name/Anime or Name/Series or Character/Anime pattern
-    name_match = re.search(r"(?:Name|Character):\s*(.+)", caption, re.I)
-    anime_match = re.search(r"(?:Anime|Series):\s*(.+)", caption, re.I)
+    name_match = re.search(r"(?:Name|Character):\s*(.+)", clean_caption, re.I)
+    anime_match = re.search(r"(?:Anime|Series):\s*(.+)", clean_caption, re.I)
     
     if not name_match or not anime_match:
         # Fallback to lines if regex fails
-        lines = caption.split("\n")
+        lines = clean_caption.split("\n")
         name, anime = None, None
         for line in lines:
             if "Name:" in line or "Character:" in line:
@@ -252,6 +263,11 @@ async def approve_scrape_callback(client, query):
     else:
         name = name_match.group(1).strip()
         anime = anime_match.group(1).strip()
+
+    # CRITICAL: Always run strings through clean_text one last time 
+    # to remove any trailing IDs that might have been in the review message
+    name = clean_text(name)
+    anime = clean_text(anime)
 
     key = (name.lower(), anime.lower())
     if key in pending_characters:
