@@ -1,6 +1,8 @@
-from motor.motor_asyncio import AsyncIOMotorClient
-import redis.asyncio as redis
 import logging
+
+import redis.asyncio as redis
+from motor.motor_asyncio import AsyncIOMotorClient
+
 from config import config
 
 LOGGER = logging.getLogger(__name__)

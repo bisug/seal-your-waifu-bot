@@ -1,23 +1,25 @@
-from fastapi import FastAPI, Depends, HTTPException, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse, FileResponse
-from fastapi.middleware.gzip import GZipMiddleware
-from Grabber.webapp.auth import validate_init_data, create_session, r
-from Grabber.webapp.api import router as api_router
-from Grabber.webapp.ws import router as ws_router
-from Grabber.runner import start_bots, stop_bots
-from Grabber import LOGGER
-from config import config
-from contextlib import asynccontextmanager
-import os
-import logging
 import asyncio
+import logging
+import os
+from contextlib import asynccontextmanager
 
+from fastapi import Depends, FastAPI
+from fastapi import HTTPException as FastAPIHTTPException
+from fastapi import Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+
+from config import config
+from Grabber import LOGGER
 from Grabber.core.cache import rebuild_leaderboard
 from Grabber.core.worker import background_maintenance
 from Grabber.database import user_collection
-
+from Grabber.runner import start_bots, stop_bots
+from Grabber.webapp.api import router as api_router
+from Grabber.webapp.auth import create_session, r, validate_init_data
+from Grabber.webapp.ws import router as ws_router
 
 
 async def sync_leaderboard_periodic():
@@ -54,7 +56,6 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-from fastapi import HTTPException as FastAPIHTTPException
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):

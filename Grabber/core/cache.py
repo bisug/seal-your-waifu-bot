@@ -3,14 +3,16 @@ Centralized Redis cache layer. All methods are failsafe (falls back to MongoDB).
 Key prefixes: user, balance, cooldown, lb, session, gamebot_groups.
 """
 
+import asyncio
 import json
 import time
-import asyncio
-from typing import Any, Optional, List
-from Grabber.database import r as _redis
-r = _redis
+from typing import Any, List, Optional
+
 from Grabber import LOGGER
 from Grabber.core.utils import get_now_utc
+from Grabber.database import r as _redis
+
+r = _redis
 
 # TTL settings (seconds)
 TTL_USER        = 60

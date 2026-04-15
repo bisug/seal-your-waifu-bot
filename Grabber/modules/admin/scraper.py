@@ -1,13 +1,18 @@
-from Grabber.core.utils import send_media_dynamic
-import re
 import asyncio
 import os
-from pyrogram import filters, types, enums
+import re
+
+from pyrogram import enums, filters, types
 from pyrogram.enums import ParseMode
-from Grabber import app, collection, OWNER_ID, CHARA_CHANNEL_ID, LOGGER
-from Grabber.core.waifu import upload_media_safely, add_character_to_db
-from Grabber.modules.collection.rarities import RARITY_MAP
+
 from config import config
+from Grabber import (CHARA_CHANNEL_ID, LOGGER, OWNER_ID, app, collection,
+                     sudo_users)
+from Grabber.core.utils import send_media_dynamic
+from Grabber.core.waifu import (add_character_to_db,
+                                invalidate_character_cache,
+                                upload_media_safely)
+from Grabber.modules.collection.rarities import RARITY_MAP
 
 # Hardcoded Review Group
 REVIEW_GROUP_ID = config.REVIEW_GROUP_ID
@@ -37,6 +42,10 @@ def smart_parse_character(text: str):
         (r"(?:\*Name\*|Name):\s*(?P<name>.*?)\n.*?(?:\*Anime\*|Anime|From):\s*(?P<anime>.*)", re.I | re.S),
         # Format 4: 📛 Name: Sabo ... 📺 Anime: One Piece
         (r"📛\s*Name:\s*(?P<name>.*?)\n.*?📺\s*Anime:\s*(?P<anime>.*)", re.I | re.S),
+        # Format: (Custom/Other) Name: ... Series: ...
+        (r"Name:\s*(?P<name>.*?)\n.*?Series:\s*(?P<anime>.*)", re.I | re.S),
+        # Format: (Character Hunt) Character: ... Anime: ...
+        (r"Character:\s*(?P<name>.*?)\n.*?Anime:\s*(?P<anime>.*)", re.I | re.S),
         # Format 5: - NAME: Fubuki ... - FROM: One Punch Man
         (r"NAME:\s*(?P<name>.*?)\n.*?FROM:\s*(?P<anime>.*)", re.I | re.S),
         # Format 2 & 6: 12790: Ryuuge Kisaki [👶] ... (Line above usually Anime)
@@ -58,11 +67,12 @@ def smart_parse_character(text: str):
 def get_review_keyboard():
     """Buttons for selecting rarity or declining a character."""
     buttons = []
-    # Rarity Choices (1-10)
+    # Rarity Choices (Dynamic based on RARITY_MAP)
     row = []
-    for i in range(1, 11):
-        rarity_full = RARITY_MAP.get(i, "Unknown")
-        rarity_name = rarity_full.split(" ")[1] if " " in rarity_full else rarity_full
+    for i in sorted(RARITY_MAP.keys()):
+        rarity_full = RARITY_MAP[i]
+        # Extract name part: "🟢 Medium" -> "Medium"
+        rarity_name = rarity_full.split(" ", 1)[1] if " " in rarity_full else rarity_full
         row.append(types.InlineKeyboardButton(rarity_name, callback_data=f"rsc_app:{i}"))
         if len(row) == 3:
             buttons.append(row)
@@ -72,7 +82,7 @@ def get_review_keyboard():
     buttons.append([types.InlineKeyboardButton("❌ Decline", callback_data="rsc_dec")])
     return types.InlineKeyboardMarkup(buttons)
 
-@app.on_message(filters.command("scrape") & filters.user(OWNER_ID))
+@app.on_message(filters.command("scrape") & filters.user(sudo_users + [OWNER_ID]))
 async def scrape_group_command_handler(client, message):
     if len(message.command) < 2:
         return await message.reply_text("❌ Usage: `/scrape <group_id_or_username>`\nNote: Bot must be a member of the group.")
@@ -156,7 +166,7 @@ async def scrape_group_command_handler(client, message):
         if message.chat.id in scraping_tasks: del scraping_tasks[message.chat.id]
         await status.edit_text(f"❌ Scraper Failed: {e}")
 
-@app.on_message(filters.command("stop_scrape") & filters.user(OWNER_ID))
+@app.on_message(filters.command("stop_scrape") & filters.user(sudo_users + [OWNER_ID]))
 async def stop_scrape_handler(client, message):
     if message.chat.id in scraping_tasks:
         del scraping_tasks[message.chat.id]
@@ -166,19 +176,32 @@ async def stop_scrape_handler(client, message):
 
 @app.on_callback_query(filters.regex(r"^rsc_app:(\d+)$"))
 async def approve_scrape_callback(client, query):
-    if query.from_user.id != OWNER_ID:
+    if query.from_user.id not in (sudo_users + [OWNER_ID]):
         return await query.answer("❌ Admin only.")
 
     rarity_num = int(query.data.split(":")[1])
     
     # Parse info from caption using regex — resilient to caption format changes
     caption = query.message.caption or ""
-    name_match = re.search(r"Name:\s*(.+)", caption)
-    anime_match = re.search(r"Anime:\s*(.+)", caption)
+    # Look for Name/Anime or Name/Series or Character/Anime pattern
+    name_match = re.search(r"(?:Name|Character):\s*(.+)", caption, re.I)
+    anime_match = re.search(r"(?:Anime|Series):\s*(.+)", caption, re.I)
+    
     if not name_match or not anime_match:
-        return await query.answer("❌ Error parsing metadata.")
-    name = name_match.group(1).strip()
-    anime = anime_match.group(1).strip()
+        # Fallback to lines if regex fails
+        lines = caption.split("\n")
+        name, anime = None, None
+        for line in lines:
+            if "Name:" in line or "Character:" in line:
+                name = line.split(":", 1)[1].strip()
+            if "Anime:" in line or "Series:" in line:
+                anime = line.split(":", 1)[1].strip()
+        
+        if not name or not anime:
+            return await query.answer("❌ Error parsing metadata.")
+    else:
+        name = name_match.group(1).strip()
+        anime = anime_match.group(1).strip()
 
     await query.answer("♻️ Re-hosting & Integrating...")
     await query.message.edit_reply_markup(None)
@@ -194,6 +217,7 @@ async def approve_scrape_callback(client, query):
             return await status_msg.edit_text("❌ Re-hosting failed.")
 
         rarity_text = RARITY_MAP[rarity_num]
+        invalidate_character_cache(rarity_text)
         
         # Post to Channel
         channel_caption = (
@@ -228,7 +252,7 @@ async def approve_scrape_callback(client, query):
 
 @app.on_callback_query(filters.regex(r"^rsc_dec$"))
 async def decline_scrape_callback(client, query):
-    if query.from_user.id != OWNER_ID:
+    if query.from_user.id not in (sudo_users + [OWNER_ID]):
         return await query.answer("❌ Admin only.")
     await query.answer("❌ Declined.")
     await query.message.delete()

@@ -1,18 +1,19 @@
-import hmac
-import hashlib
-import json
-import uuid
-import time
-import logging
-from urllib.parse import parse_qsl
-from fastapi import Request, HTTPException, Security, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from Grabber.database import r, sessions_collection, user_collection
-from config import config
-
 import asyncio
+import hashlib
+import hmac
+import json
+import logging
+import time
+import uuid
+from collections import OrderedDict, defaultdict
 from typing import Dict
-from collections import defaultdict
+from urllib.parse import parse_qsl
+
+from fastapi import Depends, HTTPException, Request, Security
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
+from config import config
+from Grabber.database import r, sessions_collection, user_collection
 
 security = HTTPBearer()
 
@@ -42,7 +43,6 @@ def validate_init_data(init_data: str):
     except Exception:
         pass
     return False
-from collections import OrderedDict
 
 # Enforce a strict max cap to prevent DDoS memory leak if Redis dies
 _MAX_FALLBACK = 5000

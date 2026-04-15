@@ -1,19 +1,22 @@
+import asyncio
 import importlib
+import logging
 import re
 import time
-import logging
-import asyncio
-from pyrogram import Client, enums, types, filters, errors
+
+from pyrogram import Client, enums, errors, filters, types
 from pyrogram.handlers import MessageHandler
+
 from config import config
-from Grabber.database import (
-    client, db, collection, group_collection,
-    user_totals_collection, message_counts_collection,
-    user_collection, group_user_totals_collection,
-    total_pm_users, sudo_collection,
-    spawns_collection, sessions_collection, quiz_questions_collection,
-    gamebot_enabled_groups_collection
-)
+from Grabber.client import SealClient
+from Grabber.database import (client, collection, db,
+                              gamebot_enabled_groups_collection,
+                              group_collection, group_user_totals_collection,
+                              message_counts_collection,
+                              quiz_questions_collection, sessions_collection,
+                              spawns_collection, sudo_collection,
+                              total_pm_users, user_collection,
+                              user_totals_collection)
 
 StartTime = time.time()
 
@@ -42,7 +45,6 @@ BOT_NAME = None
 CHARA_CHANNEL_ID = config.CHARA_CHANNEL_ID
 WEB_APP_URL = config.WEB_APP_URL
 
-from Grabber.client import SealClient
 
 app = SealClient(name="MainBot", bot_token=config.TOKEN)
 game_bot = SealClient(name="GameBot", bot_token=config.SUB_TOKEN)

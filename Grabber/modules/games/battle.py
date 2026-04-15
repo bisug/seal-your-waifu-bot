@@ -1,20 +1,20 @@
 import asyncio
 import random
 import time
-from pyrogram import filters, types, enums, errors
+
+from pyrogram import enums, errors, filters, types
 from pyrogram.enums import ParseMode
-from Grabber.core.utils import html_escape
-from Grabber import app
-from Grabber import LOGGER
-from Grabber.core.balance import get_user_balance, update_user_balance, check_and_deduct
-from Grabber.core.sessions import create_session, get_session, delete_session
-from Grabber.core.user import get_active_pet
-from Grabber.core.progression import add_xp
-from Grabber.modules.progression.quests import update_quest_progress
-from Grabber.modules.progression.achievements import check_achievements
 
+from Grabber import LOGGER, app
+from Grabber.core.balance import (check_and_deduct, get_user_balance,
+                                  update_user_balance)
 from Grabber.core.cache import is_on_cooldown as redis_cooldown
-
+from Grabber.core.progression import add_xp
+from Grabber.core.sessions import create_session, delete_session, get_session
+from Grabber.core.user import get_active_pet
+from Grabber.core.utils import html_escape
+from Grabber.modules.progression.achievements import check_achievements
+from Grabber.modules.progression.quests import update_quest_progress
 
 
 def calculate_stats(pet_data):

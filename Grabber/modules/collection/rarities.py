@@ -1,5 +1,6 @@
-from pyrogram import filters, types, enums
+from pyrogram import enums, filters, types
 from pyrogram.enums import ParseMode
+
 from Grabber import app
 from Grabber.database import collection
 
@@ -50,7 +51,7 @@ async def rarities_handler(_, message: types.Message):
     response = "<b>Character Counts by Rarity:</b>\n\n"
 
 
-    for i in range(1, 11):
+    for i in range(1, len(RARITY_MAP) + 1):
         rarity_name = RARITY_MAP.get(i)
         if rarity_name:
             count = rarity_counts.get(rarity_name, 0)

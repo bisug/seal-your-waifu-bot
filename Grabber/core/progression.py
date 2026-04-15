@@ -1,6 +1,7 @@
-from Grabber.database import user_collection
-from Grabber import LOGGER
+import math
 
+from Grabber import LOGGER
+from Grabber.database import user_collection
 
 LEVEL_CAP = 50
 
@@ -12,7 +13,7 @@ LEVEL_REWARDS = {
     50: {"free": 10000, "premium": 30000, "elite": 50000}
 }
 
-import math
+
 
 def get_level_from_xp(xp: int) -> int:
     """
@@ -95,8 +96,9 @@ async def check_and_grant_rewards(user_id: int, old_level: int, new_level: int, 
     pass_type = user.get("pass_type", "free")
     claimed_levels = set(user.get("claimed_levels", []))
     
-    from Grabber.core.pass_config import PASS_TRACKS
     import uuid
+
+    from Grabber.core.pass_config import PASS_TRACKS
 
     total_coins_earned = 0
     eggs_awarded = []

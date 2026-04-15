@@ -1,8 +1,11 @@
 import asyncio
 import time
+
 from pyrogram import errors
+
+from Grabber import LOGGER, app, game_bot
 from Grabber.database import deletion_queue_collection
-from Grabber import app, game_bot, LOGGER
+
 
 async def schedule_deletion(chat_id: int, message_id: int, delay: int = 300, bot_name: str = "MainBot"):
     """

@@ -1,8 +1,9 @@
-from pyrogram import filters, types, enums
+from pyrogram import enums, filters, types
 from pyrogram.enums import ParseMode
-from Grabber import app
-from Grabber import OWNER_ID, sudo_users, LOGGER
+
+from Grabber import LOGGER, OWNER_ID, app, sudo_users
 from Grabber.database import sudo_collection
+
 
 @app.on_message(filters.command("addsudo") & filters.user(OWNER_ID))
 async def addsudo_handler(_, message: types.Message):

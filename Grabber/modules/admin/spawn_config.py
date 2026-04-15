@@ -1,7 +1,9 @@
 
-from pyrogram import filters, types, enums
+from pyrogram import enums, filters, types
 from pyrogram.enums import ParseMode
-from Grabber import app, user_totals_collection, LOGGER
+
+from Grabber import LOGGER, app, user_totals_collection
+
 
 @app.on_message(filters.command("changetime") & filters.group)
 async def change_time(_, message: types.Message) -> None:

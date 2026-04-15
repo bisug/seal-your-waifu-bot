@@ -1,16 +1,19 @@
-import random
 import datetime
+import random
 import time
+
 from pyrogram import types
+
 from Grabber import config
-from Grabber.core.spawns import (
-    increment_message_count, get_chat_frequency,
-    send_character, get_spawn_order, increment_spawn_order,
-    get_chat_state, track_user_activity, get_active_user_count
-)
-from Grabber.modules.gamebot.auction import trigger_auction
+from Grabber.core.spawns import (get_active_user_count, get_chat_frequency,
+                                 get_chat_state, get_spawn_order,
+                                 increment_message_count,
+                                 increment_spawn_order, send_character,
+                                 track_user_activity)
 from Grabber.core.waifu import get_or_load_characters
-from Grabber.modules.collection.rarities import RARITY_WEIGHTS, ACTIVE_RARITY_WEIGHTS
+from Grabber.modules.collection.rarities import (ACTIVE_RARITY_WEIGHTS,
+                                                 RARITY_WEIGHTS)
+from Grabber.modules.gamebot.auction import trigger_auction
 
 special_rarity_thresholds = {
     "🎞️ AMV": 2500,
