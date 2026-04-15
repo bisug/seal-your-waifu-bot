@@ -240,59 +240,48 @@ class SealClient(Client):
 
     async def _set_commands_internal(self):
         try:
-            from Grabber.modules.info.start import HELP_DATA
             commands = []
-            command_pattern = re.compile(r"🔹\s+.*?/(?P<cmd>\w+).*?\s+-\s+(?P<desc>.+)")
-            seen_commands = set()
-
-            # Define bot-specific command lists
+            
+            # Simplified descriptions for GameBot
             GAMEBOT_CMDS = {
-                "nguess": "Start an anime character name guessing game",
-                "quiz": "Test your anime knowledge & win Shards!",
-                "scramble": "Unscramble the shuffled character name"
+                "nguess": "Guess character name",
+                "quiz": "Anime trivia quiz",
+                "scramble": "Unscramble name",
+                "top": "Global game stats",
+                "help": "How to play"
             }
-            COMMON_CMDS = {
-                "start": "Start the bot & interactive intro",
-                "help": "Show available commands and usage guide",
-                "profile": "View your stats & character collection",
-                "balance": "Check Shards & Zenith balance"
+            
+            # Simplified descriptions for MainBot (User-facing)
+            MAINBOT_CMDS = {
+                "start": "Start the bot",
+                "help": "Show help menu",
+                "profile": "Your profile & stats",
+                "balance": "Check your balance",
+                "harem": "Your collection",
+                "shop": "Open the shop",
+                "top": "Global leaderboard",
+                "daily": "Claim daily reward",
+                "quests": "Active quests",
+                "pass": "Battle Pass progress",
+                "battle": "Start a PvP duel",
+                "hunt": "Send pet on a hunt",
+                "hatch": "Hatch character eggs",
+                "trade": "Trade with users",
+                "search": "Find a character",
+                "ping": "Check bot status",
+                "ctop": "Chat leaderboard",
+                "mtop": "Rich leaderboard",
+                "rarities": "Character counts",
+                "referrals": "Invite friends",
+                "achievements": "Milestones",
+                "level": "Check level progress",
+                "webapp": "Open Mini-App"
             }
 
-            if self.name == "GameBot":
-                # GameBot: Only Games + Common
-                # 1. Add common commands first
-                for cmd, desc in COMMON_CMDS.items():
-                    commands.append(types.BotCommand(command=cmd, description=desc))
-                    seen_commands.add(cmd)
-                
-                # 2. Add game-specific commands
-                for cmd, desc in GAMEBOT_CMDS.items():
-                    if cmd not in seen_commands:
-                        commands.append(types.BotCommand(command=cmd, description=desc))
-                        seen_commands.add(cmd)
-            else:
-                # MainBot: All categories EXCEPT Games and Owner
-                for key, category in HELP_DATA.items():
-                    if key in ["OWNER", "GAMES"]:
-                        continue
-
-                    if "text" in category:
-                        for line in category["text"].split("\n"):
-                            match = command_pattern.search(line)
-                            if match:
-                                cmd = match.group("cmd")
-                                desc = match.group("desc").strip()
-                                
-                                # Safety: ensure we don't accidentally leak owner commands if they were in HELP_DATA
-                                if cmd in ["ngon", "ngoff", "nglist"]:
-                                    continue
-                                    
-                                if cmd not in seen_commands:
-                                    commands.append(types.BotCommand(command=cmd, description=desc[:100]))
-                                    seen_commands.add(cmd)
-
-            if "start" not in seen_commands:
-                commands.append(types.BotCommand("start", "Start the bot"))
+            target_cmds = GAMEBOT_CMDS if self.name == "GameBot" else MAINBOT_CMDS
+            
+            for cmd, desc in target_cmds.items():
+                commands.append(types.BotCommand(command=cmd, description=desc))
 
             if commands:
                 await self.set_bot_commands(commands)
