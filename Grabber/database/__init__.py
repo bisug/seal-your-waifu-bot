@@ -30,6 +30,7 @@ class Database:
         self.gamebot_enabled_groups = self.db['nguess_enabled_groups']
         self.deletion_queue = self.db['deletion_queue']
         self.daily_shop = self.db['daily_shop_inventory']
+        self.scraped_characters = self.db['scraped_characters']
 
     async def ensure_indexes(self):
         """Create performance indexes for all collections."""
@@ -55,6 +56,7 @@ class Database:
             # Search Performance Indexes (Multi-key for harem filtering)
             (self.users,             lambda c: c.create_index([("id", 1), ("characters.rarity", 1), ("characters.name", 1)])),
             (self.users,             lambda c: c.create_index([("id", 1), ("characters.anime", 1)])),
+            (self.scraped_characters, lambda c: c.create_index([("name", 1), ("anime", 1)], unique=True)),
         ]
         failed = 0
         for collection, idx_fn in indexes:
@@ -103,3 +105,4 @@ quiz_questions_collection = seal_db.quiz_questions
 gamebot_enabled_groups_collection = seal_db.gamebot_enabled_groups
 deletion_queue_collection = seal_db.deletion_queue
 daily_shop_collection = seal_db.daily_shop
+scraped_characters_collection = seal_db.scraped_characters
