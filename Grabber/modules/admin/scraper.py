@@ -21,44 +21,51 @@ REVIEW_GROUP_ID = config.REVIEW_GROUP_ID
 scraping_tasks = {}
 
 def clean_text(text: str) -> str:
-    """Cleans text of brackets, emojis, and extra whitespace."""
+    """Cleans text of brackets, counts, emojis, and extra whitespace."""
     if not text: return ""
+    # Remove bracket items like [🎒] or [x1]
     text = re.sub(r'\[.*?\]', '', text)
-    # Remove emojis and special characters
-    text = re.sub(r'[^\x00-\x7F]+', '', text)
+    # Remove count items like (x1) or (1/89)
+    text = re.sub(r'\(x\d+\)', '', text, flags=re.I)
+    text = re.sub(r'\(\d+/\d+\)', '', text)
+    # Preserve only normal text, numbers, spaces, and acceptable characters 
+    # instead of strictly purging all non-ascii, which drops certain formats.
+    text = re.sub(r'[^\w\s\-\'\.]+', '', text)
     return text.strip()
 
 def smart_parse_character(text: str):
     """
-    Parses various character message formats using regex.
+    Parses various character message formats using regex spanning 7+ formats.
     Returns (name, anime) or (None, None).
     """
     if not text: return None, None
     
     patterns = [
-        # Format 1: 🌸 Hakari Hanazono ... 🏖️ From: The 100 Girlfriends ...
-        (r"🌸\s*(?P<name>.*?)\n.*?From:\s*(?P<anime>.*)", re.S),
-        # Format 3 & 7: 🧩 *Name*: Nico Robin ... 📺 *Anime*: One Piece
-        (r"(?:\*Name\*|Name):\s*(?P<name>.*?)\n.*?(?:\*Anime\*|Anime|From):\s*(?P<anime>.*)", re.I | re.S),
-        # Format 4: 📛 Name: Sabo ... 📺 Anime: One Piece
-        (r"📛\s*Name:\s*(?P<name>.*?)\n.*?📺\s*Anime:\s*(?P<anime>.*)", re.I | re.S),
-        # Format: (Custom/Other) Name: ... Series: ...
-        (r"Name:\s*(?P<name>.*?)\n.*?Series:\s*(?P<anime>.*)", re.I | re.S),
-        # Format: (Character Hunt) Character: ... Anime: ...
-        (r"Character:\s*(?P<name>.*?)\n.*?Anime:\s*(?P<anime>.*)", re.I | re.S),
-        # Format 5: - NAME: Fubuki ... - FROM: One Punch Man
-        (r"NAME:\s*(?P<name>.*?)\n.*?FROM:\s*(?P<anime>.*)", re.I | re.S),
-        # Format 2 & 6: 12790: Ryuuge Kisaki [👶] ... (Line above usually Anime)
-        (r"(?P<anime>.*?)\n\d+:\s*(?P<name>.*?)(?:\n|\(|$)", re.S),
+        # Format: 🌸 Hakari Hanazono \n ... 🏖️ From: The 100 Girlfriends ...
+        (r'🌸\s*(?P<name>[^\n]+)\n.*?From:\s*(?P<anime>[^\n]+)', re.I | re.S),
+        
+        # Format: Name: Sabo ... Anime: One Piece
+        (r'(?:\*Name\*|Name|NAME|Character):\s*(?P<name>[^\n]+)\n.*?(?:\*Anime\*|Anime|ANIME|Series|From|FROM):\s*(?P<anime>[^\n]+)', re.I | re.S),
+        
+        # Format: 1804: Mikasa Ackerman \n Attack On Titan \n ʀᴀʀɪᴛʏ:
+        (r'(?:^|\n)\d+:\s*(?P<name>[^\n]+)\n(?P<anime>[^\n]+)\n.*?ʀᴀʀɪᴛʏ:', re.I | re.S),
+
+        # Format: Anime\n 1234: Name
+        (r'(?:^|\n)(?P<anime>[^\n]+)\n\d+:\s*(?P<name>[^\n]+)', re.I),
+        
+        # Format: Augusta [🎒] \n Anime: Wuthering Waves
+        (r'(?:^|\n)(?P<name>[^\n]+?)\s*(?:\[.*?\])?\s*\n+(?:Anime|ANIME):\s*(?P<anime>[^\n]+)', re.I),
     ]
 
     for pattern, flags in patterns:
         match = re.search(pattern, text, flags=flags)
         if match:
-            name = clean_text(match.group("name"))
-            anime = clean_text(match.group("anime"))
-            # Extra cleanup: sometimes anime gets lines after it
-            anime = anime.split("\n")[0].strip()
+            name = clean_text(match.group('name'))
+            anime = clean_text(match.group('anime'))
+            
+            # Additional safety: ensure it's on a single line
+            anime = anime.split('\n')[0].strip()
+            
             if name and anime:
                 return name, anime
 

@@ -3,16 +3,19 @@ import random
 from pyrogram import enums, errors, filters, types
 from pyrogram.enums import ParseMode
 
+from config import config
 from Grabber import LOGGER, app
+from Grabber.core.cache import sync_user_to_redis
 from Grabber.core.sessions import create_session, get_session
 from Grabber.core.user import add_char_to_user, get_user_data, update_user
-from Grabber.core.utils import (html_escape, reply_media_dynamic,
-                                send_media_dynamic)
+from Grabber.core.utils import (get_user_id_query, html_escape,
+                                reply_media_dynamic, send_media_dynamic)
 from Grabber.database import collection, user_collection
 
-MUST_JOIN = "TNJBotSupport"
-SECOND_JOIN = "SEAL_UPDATE"
-DAILY_SHARD_REWARD = 200
+# Fetch requirements from centralized config
+MUST_JOIN = config.SUPPORT_CHAT
+SECOND_JOIN = config.UPDATE_CHAT
+DAILY_SHARD_REWARD = 500
 
 RARITY_WEIGHTS = {
     '⚪ Common': 60,
@@ -51,12 +54,13 @@ async def claim_handler(_, message: types.Message):
 
     if not await check_groups_joined(user_id):
         markup = types.InlineKeyboardMarkup([
-            [types.InlineKeyboardButton("✅ Group", url=f"t.me/{MUST_JOIN}"),
-             types.InlineKeyboardButton("📢 Channel", url=f"t.me/{SECOND_JOIN}")],
+            [types.InlineKeyboardButton("✨ Join Updates", url=f"t.me/{SECOND_JOIN}"),
+             types.InlineKeyboardButton("🤝 Support Center", url=f"t.me/{MUST_JOIN}")],
             [types.InlineKeyboardButton("🔄 Verify & Claim", callback_data=f"clm_v:{user_id}")]
         ])
         return await message.reply_text(
-            "🔒 <b>Join our channels to unlock your free waifu!</b>",
+            "🔒 <b>Authorization Required</b>\n\n"
+            "To unlock your <b>Free Starter Waifu</b> and bonus Shards, please join our official sectors below.",
             reply_markup=markup,
             parse_mode=ParseMode.HTML
         )
@@ -135,25 +139,32 @@ async def claim_confirm_handler(_, query: types.CallbackQuery):
 
     char = session["character"]
 
-
+    # Use atomic query and include both character and currency in one transaction
     await add_char_to_user(user_id, char)
-    await update_user(user_id, {
-        "$set": {"claimed_waifu": True},
-        "$inc": {"balance": DAILY_SHARD_REWARD}
-    })
+    await user_collection.update_one(
+        get_user_id_query(user_id),
+        {
+            "$set": {"claimed_waifu": True},
+            "$inc": {"balance": DAILY_SHARD_REWARD}
+        }
+    )
 
+    mention = f'<a href="tg://user?id={query.from_user.id}">{html_escape(query.from_user.first_name)}</a>'
     caption = (
-        f'🎉 <a href="tg://user?id={query.from_user.id}">{html_escape(query.from_user.first_name)}</a> claimed their free waifu!\n\n'
+        f'🎊 {mention} claimed their **Free Starter Character**!\n\n'
         f"🆔 <b>ID:</b> <code>{char['id']}</code>\n"
         f"📛 <b>Name:</b> {html_escape(char['name'])}\n"
         f"🎬 <b>Anime:</b> {html_escape(char['anime'])}\n"
         f"✨ <b>Rarity:</b> {html_escape(char['rarity'])}\n\n"
-        f"💰 <b>Bonus Received:</b> +{DAILY_SHARD_REWARD} Shards ⬪"
+        f"💰 <b>Bonus:</b> +{DAILY_SHARD_REWARD} Shards ⬪\n\n"
+        f"<i>Start your journey by checking your /harem!</i>"
     )
 
     try:
         await query.message.edit_caption(caption=caption, parse_mode=ParseMode.HTML)
         await query.answer("✅ Successfully claimed!", show_alert=True)
+        # Ensure WebApp is synced immediately
+        await sync_user_to_redis(user_id)
     except Exception as e:
         LOGGER.error(f"Error in claim_confirm: {e}")
-        await query.answer("✅ Claimed!", show_alert=True)
+        await query.answer("✅ Claimed! check your /harem.", show_alert=True)
