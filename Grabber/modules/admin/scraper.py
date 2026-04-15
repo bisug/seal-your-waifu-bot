@@ -30,6 +30,13 @@ def clean_text(text: str) -> str:
     text = re.sub(r'\(x\d+\)', '', text, flags=re.I)
     text = re.sub(r'\(\d+/\d+\)', '', text)
     
+    # Remove trailing count like " x1" or " x10"
+    text = re.sub(r'\s+x\d+\s*$', '', text, flags=re.I)
+    
+    # Remove trailing IDs like " 546" or " 1234" (only if they are at least 3 digits and at the very end)
+    # We use 3 digits to avoid hitting anime names like "86"
+    text = re.sub(r'\s+\d{3,}\s*$', '', text)
+    
     # Replace hyphens and underscores with spaces
     text = text.replace('-', ' ').replace('_', ' ')
     
