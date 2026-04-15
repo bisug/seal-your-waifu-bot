@@ -15,113 +15,113 @@ from Grabber.modules.progression.pet import DEFAULT_PET
 LOGGER.info("Loading Start module...")
 
 START_TEXT_NEW = """
-<b>✨ {bot_name}</b>
+<b>{bot_name}</b>
 
 <blockquote>“In the world of anime, some seek power, others seek glory. But a true <b>Collector</b> seeks them all.”</blockquote>
 
-<b>Greetings, Collector {first_name}!</b> 👋
+<b>Greetings, Collector {first_name}!</b>
 I am your ultimate companion for character collecting and strategic duels.
 
-🌸 <b>Catch</b> • ⚔️ <b>Duel</b> • 🐣 <b>Hatch</b> • 🏰 <b>Collect</b>
+<b>Catch</b> • <b>Duel</b> • <b>Hatch</b> • <b>Collect</b>
 
-<i>Add me to a group to begin your journey!</i> 🚀
+<i>Add me to a group to begin your journey!</i>
 """
 
 START_TEXT_RETURNING = """
-<b>✨ {bot_name} Dashboard</b>
+<b>{bot_name} Dashboard</b>
 
-<b>Welcome back, {first_name}!</b> 👋
+<b>Welcome back, {first_name}!</b>
 ━━━━━━━━━━━━━━━━━━━━━
-💠 <b>Rank:</b> <code>#{rank}</code> / {total_ranked}
-🆙 <b>Level:</b> <code>{level}</code>
-💰 <b>Balance:</b> <code>{balance}</code> ⬪ | <code>{zenith}</code> ⧫
-👥 <b>Harem:</b> <code>{harem_size}</code> Unique Characters
+<b>Rank:</b> <code>#{rank}</code> / {total_ranked}
+<b>Level:</b> <code>{level}</code>
+<b>Balance:</b> <code>{balance}</code> ⬪ | <code>{zenith}</code> ⧫
+<b>Harem:</b> <code>{harem_size}</code> Unique Characters
 ━━━━━━━━━━━━━━━━━━━━━
 <i>Select an option below to continue your journey!</i>
 """
 
 HELP_DATA = {
     "MAIN": {
-        "text": "<b>📚 Seal Bot - Help Menu</b>\n\nSelect a category below to see available commands:",
+        "text": "<b>Seal Bot - Help Menu</b>\n\nSelect a category below to see available commands:",
         "buttons": [
-            [types.InlineKeyboardButton("🎮 Core Basics", callback_data="help:core", style=enums.ButtonStyle.PRIMARY),
-             types.InlineKeyboardButton("🐾 Pet System", callback_data="help:pet", style=enums.ButtonStyle.PRIMARY)],
-            [types.InlineKeyboardButton("⚔️ Battle & Economy", callback_data="help:battle", style=enums.ButtonStyle.PRIMARY),
-             types.InlineKeyboardButton("🎫 Progression", callback_data="help:progression", style=enums.ButtonStyle.PRIMARY)],
-            [types.InlineKeyboardButton("ℹ️ Info & Stats", callback_data="help:info", style=enums.ButtonStyle.PRIMARY),
-             types.InlineKeyboardButton("🛠 Admin Tools", callback_data="help:owner", style=enums.ButtonStyle.DANGER)],
-            [types.InlineKeyboardButton("⤾ Main Menu", callback_data="st:b")]
+            [types.InlineKeyboardButton("Core Basics", callback_data="help:core", style=enums.ButtonStyle.PRIMARY),
+             types.InlineKeyboardButton("Pet System", callback_data="help:pet", style=enums.ButtonStyle.PRIMARY)],
+            [types.InlineKeyboardButton("Battle & Economy", callback_data="help:battle", style=enums.ButtonStyle.PRIMARY),
+             types.InlineKeyboardButton("Progression", callback_data="help:progression", style=enums.ButtonStyle.PRIMARY)],
+            [types.InlineKeyboardButton("Info & Stats", callback_data="help:info", style=enums.ButtonStyle.PRIMARY),
+             types.InlineKeyboardButton("Admin Tools", callback_data="help:owner", style=enums.ButtonStyle.DANGER)],
+            [types.InlineKeyboardButton("Back to Dashboard", callback_data="st:b")]
         ]
     },
     "CORE": {
         "text": """
-<b>🎮 Core Commands</b>
+<b>Core Commands</b>
 
-🔹 <code>/start</code> - Start the bot & view intro
-🔹 <code>/help</code> - Show this interactive help menu
-🔹 <code>/search</code> - Hunt for a specific waifu
-🔹 <code>/harem</code> - View your character collection
-🔹 <code>/fav &lt;id&gt;</code> - Set a favorite character
-🔹 <code>/trade &lt;user&gt; &lt;amount&gt;</code> - Trade characters/items
-🔹 <code>/gift &lt;id&gt;</code> - Gift a character to a user
+/start - Start the bot & view intro
+/help - Show this interactive help menu
+/search - Hunt for a specific waifu
+/harem - View your character collection
+/fav &lt;id&gt; - Set a favorite character
+/trade &lt;user&gt; &lt;amount&gt; - Trade characters/items
+/gift &lt;id&gt; - Gift a character to a user
 """,
     },
     "PET": {
         "text": """
-<b>🐾 Pet System</b>
+<b>Pet System</b>
 
-🔹 <code>/petshop</code> - Buy powerful pets with unique stats
-🔹 <code>/mypet</code> - Manage active pet &amp; view stats
-🔹 <code>/hunt</code> - Send pet to find loot, Shards &amp; eggs
-🔹 <code>/eggs</code> - Manage your eggs inventory
-🔹 <code>/hatch</code> - Open the incubation chamber
+/petshop - Buy powerful pets with unique stats
+/mypet - Manage active pet & view stats
+/hunt - Send pet to find loot, Shards & eggs
+/eggs - Manage your eggs inventory
+/hatch - Open the incubation chamber
 """,
     },
     "BATTLE": {
         "text": """
-<b>⚔️ Battle &amp; Economy</b>
+<b>Battle & Economy</b>
 
-🔹 <code>/battle &lt;amount&gt;</code> - PvP duel (Turn-based strategy!)
-🔹 <code>/balance</code> - Check your Shards &amp; Zenith
-🔹 <code>/exchange</code> - Convert Shards into Zenith
-🔹 <code>/shop</code> - Universal Shop Hub (Chars, Pets, Items)
-🔹 <code>/daily</code> - Claim daily rewards (Streaks!)
-🔹 <code>/weekly</code> - Claim weekly bonus (Every 7 days)
-🔹 <code>/top</code> - Global leaderboard (Harem, Shards, Level)
+/battle &lt;amount&gt; - PvP duel
+/balance - Check your Shards & Zenith
+/exchange - Convert Shards into Zenith
+/shop - Universal Shop Hub
+/daily - Claim daily rewards
+/weekly - Claim weekly bonus
+/top - Global leaderboard
 """,
     },
     "INFO": {
         "text": """
-<b>ℹ️ Info &amp; Stats</b>
+<b>Info & Stats</b>
 
-🔹 <code>/stats</code> - Global bot statistics
-🔹 <code>/rarities</code> - Character counts by rarity
-🔹 <code>/ctop</code> - Top members in this chat
-🔹 <code>/mtop</code> - Global rich leaderboard (Shards)
-🔹 <code>/ping</code> - Real-time system status
-🔹 <code>/webapp</code> - Open the Shop/Gallery Mini-App
+/stats - Global bot statistics
+/rarities - Character counts by rarity
+/ctop - Top members in this chat
+/mtop - Global rich leaderboard
+/ping - Real-time system status
+/webapp - Open the Shop/Gallery Mini-App
 """,
     },
     "PROGRESSION": {
         "text": """
-<b>🎫 Battle Pass &amp; Progression</b>
+<b>Battle Pass & Progression</b>
 
-🔹 <code>/pass</code> - View your Battle Pass (Free/Premium/Elite)
-🔹 <code>/quests</code> - Daily &amp; Weekly Quests (Earn XP!)
-🔹 <code>/referrals</code> - Invite friends &amp; earn rewards
-🔹 <code>/achievements</code> - View lifetime milestones &amp; titles
-🔹 <code>/level</code> - Check your level progress
+/pass - View your Battle Pass
+/quests - Daily & Weekly Quests
+/referrals - Invite friends & earn rewards
+/achievements - View lifetime milestones & titles
+/level - Check your level progress
 
-<i>💡 Gain XP by catching, battling, and completing quests!</i>
-<i>🎁 Unlock rewards at levels 5, 10, 25, and 50</i>
+<i>Earn XP by catching, battling, and completing quests!</i>
+<i>Unlock rewards at levels 5, 10, 25, and 50</i>
 """,
     },
     "OWNER": {
         "text": """
-<b>🛠 Admin Tools</b>
+<b>Admin Tools</b>
 
-🔹 <code>/cnow</code> - [OWNER] Spawn a character immediately
-🔹 <code>/broadcast</code> - [OWNER] Send a global message
+/cnow - [OWNER] Spawn a character immediately
+/broadcast - [OWNER] Send a global message
 """,
     }
 }
@@ -129,19 +129,19 @@ HELP_DATA = {
 async def render_start_message(user_id: int, first_name: str, is_private: bool, existing_user: dict = None):
     """Helper method to dynamically build the Smart Dashboard for the start menu."""
     builder = KeyboardBuilder()
-    builder.add_button("➕ Add to Group", url=f"https://t.me/{config.BOT_USERNAME}?startgroup=true")
+    builder.add_button("Add to Group", url=f"https://t.me/{config.BOT_USERNAME}?startgroup=true")
     
     webapp_btn = get_webapp_button(is_private)
     if webapp_btn:
         builder.add_row(webapp_btn)
 
     builder.add_row(
-        types.InlineKeyboardButton("💬 Support", url=f"https://t.me/{SUPPORT_CHAT}"),
-        types.InlineKeyboardButton("📢 Updates", url=f"https://t.me/{UPDATE_CHAT}")
+        types.InlineKeyboardButton("Support", url=f"https://t.me/{SUPPORT_CHAT}"),
+        types.InlineKeyboardButton("Updates", url=f"https://t.me/{UPDATE_CHAT}")
     )
     builder.add_row(
-        types.InlineKeyboardButton("🎒 My Collection", callback_data="harem_view:self"),
-        types.InlineKeyboardButton("📚 Help Menu", callback_data="help:main", style=enums.ButtonStyle.PRIMARY)
+        types.InlineKeyboardButton("My Collection", callback_data="harem_view:self"),
+        types.InlineKeyboardButton("Help Menu", callback_data="help:main", style=enums.ButtonStyle.PRIMARY)
     )
     markup = builder.build()
 

@@ -78,10 +78,10 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
         total_chars_count = user.get('char_count', len(all_chars))
 
         harem_text = (
-            f"🎒 <b>{escape(first_name)}'s Collection</b>\n"
-            f"💠 <b>Rank:</b> <code>#{rank}</code> / {total_ranked}\n"
-            f"🆙 <b>Level:</b> <code>{progress['level']}</code>\n"
-            f"📊 <b>Stats:</b> <code>{len(unique_chars)}</code> Unique | <code>{total_chars_count}</code> Total\n"
+            f"<b>{escape(first_name)}'s Collection</b>\n"
+            f"<b>Rank:</b> <code>#{rank}</code> / {total_ranked}\n"
+            f"<b>Level:</b> <code>{progress['level']}</code>\n"
+            f"<b>Stats:</b> <code>{len(unique_chars)}</code> Unique | <code>{total_chars_count}</code> Total\n"
             "━━━━━━━━━━━━━━━━━━━━━\n\n"
         )
 
@@ -92,7 +92,7 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
         for char in current_slice:
             anime = char.get('anime', 'Mixed')
             if anime != last_anime:
-                harem_text += f"🎬 <b>{escape(anime)}</b>\n"
+                harem_text += f"<b>{escape(anime)}</b>\n"
                 last_anime = anime
                 
             char_id = char.get('id', 'N/A')
@@ -111,7 +111,7 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
         markup = get_paginated_keyboard(page, total_pages, "h", uid_int, is_private)
         builder = KeyboardBuilder()
         builder.keyboard = markup.inline_keyboard.copy()
-        builder.add_row(types.InlineKeyboardButton("🔍 Search Collection", switch_inline_query_current_chat=f"collection.{uid_int} "))
+        builder.add_row(types.InlineKeyboardButton("Search Collection", switch_inline_query_current_chat=f"collection.{uid_int} "))
         markup = builder.build()
 
         try:

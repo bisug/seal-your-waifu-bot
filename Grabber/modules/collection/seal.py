@@ -28,13 +28,13 @@ async def seal_handler(_, message: types.Message):
     character = state.get("last_character")
 
     if not character:
-        return await message.reply_text("❌ There's no character to collect right now!")
+        return await message.reply_text("There's no character to collect right now!")
 
     if state.get("first_correct_guess") is not None:
         return
 
     if len(message.command) < 2:
-        return await message.reply_text("❌ Provide the character's name! Usage: <code>/seal &lt;name&gt;</code>", parse_mode=ParseMode.HTML)
+        return await message.reply_text("Provide the character's name! Usage: <code>/seal &lt;name&gt;</code>", parse_mode=ParseMode.HTML)
 
     guess = " ".join(message.command[1:]).strip().lower()
     
@@ -107,23 +107,23 @@ async def seal_handler(_, message: types.Message):
                 pass
 
         caption = (
-            f"🎉 <b><a href=\"tg://user?id={message.from_user.id}\">{html_escape(message.from_user.first_name)}</a> caught the character!</b>\n\n"
-            f"📛 <b>Name:</b> {html_escape(character['name'])}\n"
-            f"✨ <b>Rarity:</b> {html_escape(character['rarity'])}\n"
-            f"🎬 <b>Anime:</b> {html_escape(character['anime'])}\n"
-            f"🧤 Added to your harem!"
+            f"<b><a href=\"tg://user?id={message.from_user.id}\">{html_escape(message.from_user.first_name)}</a> caught the character!</b>\n\n"
+            f"<b>Name:</b> {html_escape(character['name'])}\n"
+            f"<b>Rarity:</b> {html_escape(character['rarity'])}\n"
+            f"<b>Anime:</b> {html_escape(character['anime'])}\n"
+            f"Added to your harem!"
         )
 
         from Grabber.core.utils import reply_media_dynamic
         await reply_media_dynamic(message, character['img_url'], caption=caption, parse_mode=ParseMode.HTML)
     else:
-        await message.reply_text("❌ Wrong name! Try again.")
+        await message.reply_text("Wrong name! Try again.")
 
 @app.on_message(filters.command("messagecount") & filters.group)
 async def messagecount_handler(_, message: types.Message):
     """View the total message count registered for the current chat."""
     count = await get_message_count(message.chat.id)
-    await message.reply_text(f"📊 <b>Total messages in this chat:</b> <code>{count}</code>", parse_mode=ParseMode.HTML)
+    await message.reply_text(f"<b>Total messages in this chat:</b> <code>{count}</code>", parse_mode=ParseMode.HTML)
 
 @app.on_message(filters.command("cnow") & filters.group)
 async def cnow_handler(_, message: types.Message):
@@ -142,12 +142,12 @@ async def cnow_handler(_, message: types.Message):
 async def search_waifu(_, message: types.Message):
 
     keyboard = [
-        [types.InlineKeyboardButton("🔍 Search Waifu", switch_inline_query_current_chat="")]
+        [types.InlineKeyboardButton("Search Waifu", switch_inline_query_current_chat="")]
     ]
     reply_markup = types.InlineKeyboardMarkup(keyboard)
 
     await message.reply_text(
-        "🪄 To search for a waifu, click the button below!",
+        "To search for a waifu, click the button below!",
         reply_markup=reply_markup,
         parse_mode=ParseMode.HTML
     )
