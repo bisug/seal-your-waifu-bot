@@ -184,3 +184,8 @@ async def delete_waifu_handler(_, message: types.Message):
         await message.reply_text(f"✅ Deleted ID: <code>{char_id}</code> (<b>{character['name']}</b>)", parse_mode=ParseMode.HTML)
     else:
         await message.reply_text("❌ Character not found.", parse_mode=ParseMode.HTML)
+
+
+        await message.reply_text(f"✅ Deleted ID: <code>{char_id}</code> (<b>{character['name']}</b>)", parse_mode=ParseMode.HTML)
+    else:
+        await message.reply_text("❌ Character not found.", parse_mode=ParseMode.HTML)
