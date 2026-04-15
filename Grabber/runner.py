@@ -9,6 +9,27 @@ async def start_bots():
     if IS_STARTED:
         return
     IS_STARTED = True
+
+    try:
+        from Grabber.database import sudo_collection
+        from Grabber import sudo_users, LOGGER
+        
+        # Load Sudo Users from Database
+        cursor = sudo_collection.find({})
+        db_sudos = await cursor.to_list(length=None)
+        
+        loaded_count = 0
+        for s in db_sudos:
+            user_id = s.get('user_id')
+            if user_id and user_id not in sudo_users:
+                sudo_users.append(user_id)
+                loaded_count += 1
+                
+        if loaded_count > 0:
+            LOGGER.info(f"Loaded {loaded_count} sudo users from database.")
+    except Exception as e:
+        from Grabber import LOGGER
+        LOGGER.error(f"Failed to load sudo users from DB: {e}")
     # Fix for ASGI (Hypercorn/Uvicorn) event loop mismatch
     loop = asyncio.get_running_loop()
     

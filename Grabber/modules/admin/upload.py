@@ -8,7 +8,7 @@ from pyrogram import enums, errors, filters, types
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from pyrogram.enums import ParseMode
 
-from Grabber import GALLERY_CHANNEL_ID, LOGGER, OWNER_ID, app, sudo_users
+from Grabber import GALLERY_CHANNEL_ID, LOGGER, OWNER_ID, app, sudo_users, sudo_filter
 from Grabber.core.utils import html_escape, send_media_dynamic
 from Grabber.core.waifu import (add_character_to_db,
                                 invalidate_character_cache,
@@ -28,7 +28,7 @@ def get_rarity_help():
         f"{rarity_list}"
     )
 
-@app.on_message(filters.command("upload") & filters.user(sudo_users + [OWNER_ID]))
+@app.on_message(filters.command("upload") & sudo_filter)
 async def upload_waifu_handler(_, message: types.Message):
     # Use shlex to support quoted arguments (e.g. "Muzan Kibutsuji")
     cmd_text = message.text or message.caption
@@ -165,7 +165,7 @@ async def upload_waifu_handler(_, message: types.Message):
             except:
                 pass
 
-@app.on_message(filters.command(["delete", "del"]) & filters.user(sudo_users + [OWNER_ID]))
+@app.on_message(filters.command(["delete", "del"]) & sudo_filter)
 async def delete_waifu_handler(_, message: types.Message):
     if len(message.command) < 2:
         return await message.reply_text("❌ Usage: <code>/delete &lt;id&gt;</code>", parse_mode=ParseMode.HTML)
@@ -203,7 +203,7 @@ async def delete_waifu_handler(_, message: types.Message):
     )
 
 
-@app.on_callback_query(filters.regex(r"^del_") & filters.user(sudo_users + [OWNER_ID]))
+@app.on_callback_query(filters.regex(r"^del_") & sudo_filter)
 async def delete_callback_handler(_, query: types.CallbackQuery):
     data = query.data.split(":")
     action = data[0]

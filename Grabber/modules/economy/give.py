@@ -1,12 +1,12 @@
 from pyrogram import enums, filters, types
 from pyrogram.enums import ParseMode
 
-from Grabber import LOGGER, OWNER_ID, app, sudo_users, user_collection
+from Grabber import LOGGER, OWNER_ID, app, sudo_users, user_collection, sudo_filter
 from Grabber.core.utils import html_escape
 from Grabber.modules.progression.achievements import check_achievements
 from Grabber.modules.progression.quests import update_quest_progress
 
-AUTHORIZED_ADMINS = set(sudo_users + [OWNER_ID])
+
 
 @app.on_message(filters.command("givebalance"))
 async def give_balance(_, message: types.Message):
@@ -30,7 +30,7 @@ async def give_balance(_, message: types.Message):
         return
 
 
-    if sender_id in AUTHORIZED_ADMINS:
+    if sender_id in sudo_users or sender_id == OWNER_ID:
         await user_collection.update_one({'id': recipient_id}, {'$inc': {'balance': amount}}, upsert=True)
         await message.reply_text(f"{amount} ⬪ given to {html_escape(recipient.first_name)}!")
         LOGGER.info(f"ADMIN {sender_id} gave {amount} to {recipient_id}")
@@ -62,7 +62,7 @@ async def give_balance(_, message: types.Message):
 async def take_balance(_, message: types.Message):
     sender_id = message.from_user.id
 
-    if sender_id not in AUTHORIZED_ADMINS:
+    if sender_id not in sudo_users and sender_id != OWNER_ID:
         await message.reply_text("You are not authorized to take balance.")
         return
 
