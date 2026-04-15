@@ -4,35 +4,36 @@ from pyrogram import enums, filters, types
 from pyrogram.enums import ParseMode
 
 from config import config
-from Grabber import (WEB_APP_URL, app, group_user_totals_collection,
+from Grabber import (LOGGER, WEB_APP_URL, app, group_user_totals_collection,
                      user_collection)
+from Grabber.core.constants import METRIC_ORDER, METRICS
 from Grabber.core.keyboard import get_webapp_button
 from Grabber.core.progression import get_level_from_xp
 from Grabber.core.utils import html_escape
 
-METRIC_ORDER = ["harem", "shards", "zenith", "level", "guesses"]
 
-METRICS = {
-    "harem": {"label": "Harem", "field": "char_count", "icon": "◈"},
-    "shards": {"label": "Shards", "field": "balance", "icon": "⬪"},
-    "zenith": {"label": "Zenith", "field": "zenith", "icon": "⧫"},
-    "level": {"label": "Level", "field": "xp", "icon": "◉"},
-    "guesses": {"label": "Guesses", "field": "guess_count", "icon": "◎"}
-}
+# METRIC_ORDER and METRICS have been moved to Grabber.core.constants for centralization.
 
 async def get_top_users(metric: str, limit: int = 10):
-    from Grabber.core.cache import _zset_key, r
+    from Grabber.core.cache import (_zset_key, get_cached_leaderboard, r,
+                                    set_cached_leaderboard)
     from Grabber.database import user_collection
     
+    # 1. Try to get fully populated list from string cache
+    cached = await get_cached_leaderboard(metric, limit)
+    if cached:
+        return cached
+
     key = _zset_key(metric)
     if r:
         try:
-            # 1. Try to get Top N from Redis ZSET
+            # 2. Try to get Top N from Redis ZSET
             uids = await r.zrevrange(key, 0, limit - 1, withscores=True)
             if uids:
                 # Convert back to list of dicts. We need names and avatars, so we fetch from Mongo in ONE batch.
                 user_ids = [int(u[0]) for u in uids]
                 mongo_users = await user_collection.find({"id": {"$in": user_ids}}).to_list(length=limit)
+                
                 # Re-sort to match ZSET order and add the score
                 user_map = {int(u["id"]): u for u in mongo_users}
                 results = []
@@ -41,6 +42,9 @@ async def get_top_users(metric: str, limit: int = 10):
                     if u:
                         u[METRICS[metric]["field"]] = int(score)
                         results.append(u)
+                
+                if results:
+                    await set_cached_leaderboard(metric, results, limit)
                 return results
         except Exception as e:
             LOGGER.warning(f"Redis ZSET leaderboard fetch failed for {metric}: {e}")
@@ -177,6 +181,15 @@ async def leaderboard_info_callback(_, query: types.CallbackQuery):
 @app.on_message(filters.command("ctop") & filters.group)
 async def chat_leaderboard_handler(_, message: types.Message):
     chat_id = message.chat.id
+    from Grabber.core.cache import rget, rset
+    
+    # 1. Try Chat Cache (10 minute TTL)
+    cache_key = f"ctop_text:{chat_id}"
+    cached_text = await rget(cache_key)
+    if cached_text:
+        return await message.reply_text(cached_text, parse_mode=ParseMode.HTML)
+
+    await app.send_chat_action(chat_id, enums.ChatAction.TYPING)
 
     cursor = group_user_totals_collection.aggregate([
         {"$match": {"group_id": chat_id}},
@@ -189,17 +202,25 @@ async def chat_leaderboard_handler(_, message: types.Message):
     if not top_members:
         return await message.reply_text("No data yet for this group.", parse_mode=ParseMode.HTML)
 
-    # Batch fetch all users in a single API call instead of N sequential calls
     user_ids = [m["user_id"] for m in top_members]
     user_map = {}
-    try:
-        fetched = await app.get_users(user_ids)
-        if not isinstance(fetched, list):
-            fetched = [fetched]
-        for u in fetched:
-            user_map[u.id] = u.first_name
-    except Exception:
-        pass
+
+    # 2. Strategy: Attempt to resolve names from DB first to save Telegram API calls
+    mongo_users = await user_collection.find({"id": {"$in": user_ids}}, {"id": 1, "first_name": 1}).to_list(length=10)
+    for u in mongo_users:
+        user_map[int(u["id"])] = u.get("first_name", "User")
+
+    # 3. Fallback for missing names: Bulk Telegram API call
+    missing_ids = [uid for uid in user_ids if uid not in user_map]
+    if missing_ids:
+        try:
+            fetched = await app.get_users(missing_ids)
+            if not isinstance(fetched, list):
+                fetched = [fetched]
+            for u in fetched:
+                user_map[u.id] = u.first_name
+        except Exception:
+            pass
 
     text = f"<b>Top Members in {html_escape(message.chat.title)}</b>\n\n"
     for i, member in enumerate(top_members, 1):
@@ -207,4 +228,6 @@ async def chat_leaderboard_handler(_, message: types.Message):
         name = html_escape(user_map.get(uid, f"User {uid}"))
         text += f"{i}. {name} ➾ <b>{member['count']}</b>\n"
 
+    # 4. Save to cache
+    await rset(cache_key, text, 600)
     await message.reply_text(text, parse_mode=ParseMode.HTML)
