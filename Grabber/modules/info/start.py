@@ -87,7 +87,8 @@ HELP_DATA = {
 
 /battle - Start a PvP duel
 /balance - Check your balance
-/exchange - Convert Shards
+/zenith - Shards to Zenith
+/shard - Zenith to Shards
 /shop - Open the shop
 /daily - Claim daily rewards
 /weekly - Claim weekly bonus
