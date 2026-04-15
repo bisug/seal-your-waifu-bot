@@ -64,6 +64,8 @@ HELP_DATA = {
 /fav - Set favorite character
 /trade - Trade characters
 /gift - Gift characters
+/transfer - Full collection merge
+/claim - Claim waifu codes
 """,
     },
     "PET": {
@@ -75,6 +77,8 @@ HELP_DATA = {
 /hunt - Send pet to hunt
 /eggs - View your eggs
 /hatch - Hatch char eggs
+/feed - Feed your pet
+/train - Train your pet
 """,
     },
     "BATTLE": {
@@ -88,6 +92,9 @@ HELP_DATA = {
 /daily - Claim daily rewards
 /weekly - Claim weekly bonus
 /top - Global leaderboard
+/bet - Gamble Shards
+/pay - Send Shards to user
+/sell - Sell a character
 """,
     },
     "INFO": {
@@ -100,19 +107,24 @@ HELP_DATA = {
 /mtop - Rich leaderboard
 /ping - Check bot status
 /webapp - Open Mini-App
+/check - User status check
+/animes - Available anime list
+/sani - Search by anime
 """,
     },
     "PROGRESSION": {
         "text": """
-<b>Battle Pass & Progression</b>
+<b>Battle Pass & Progress</b>
 
 /pass - View Battle Pass
 /quests - Active quests
 /referrals - Invite friends
 /achievements - Milestones
 /level - Your level progress
+/propose - Propose to a user
+/seal - Use a seal item
 
-<i>Earn XP by catching and battling!</i>
+<i>Catch characters and battle to level up!</i>
 """,
     },
     "OWNER": {
