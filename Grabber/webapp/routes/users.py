@@ -2,7 +2,8 @@ import asyncio
 import hashlib
 import json
 import re
-from datetime import datetime
+import uuid
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import RedirectResponse
@@ -14,7 +15,7 @@ from Grabber.core.cache import (get_total_ranked_users, get_user_rank,
 from Grabber.core.progression import get_level_from_xp, get_user_progress
 from Grabber.core.utils import normalize_user_id
 from Grabber.database import user_collection
-from Grabber.modules.economy.hunt import TIER_MAP
+from Grabber.modules.economy.hunt import EGG_TIERS, TIER_MAP
 from Grabber.modules.progression.achievements import ACHIEVEMENTS
 from Grabber.modules.progression.pet import (DEFAULT_PET,
                                              get_effective_affection)
@@ -141,7 +142,6 @@ async def get_me(user: dict = Depends(get_current_user_data)):
     # Handle Eggs
     eggs = user.get("eggs", [])
     processed_eggs = []
-    import uuid
     migration_needed = False
     for idx, egg in enumerate(eggs):
         if isinstance(egg, str):
