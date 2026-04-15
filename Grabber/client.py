@@ -13,12 +13,18 @@ LOGGER = logging.getLogger(__name__)
 
 class SealClient(Client):
     """Custom Telegram Client for the Seal bot ecosystem."""
-    def __init__(self, name="Grabber", bot_token=None):
+    def __init__(self, name="Grabber", bot_token=None, session_string=None):
+        # Determine if we're using a bot token or a session string
+        actual_bot_token = bot_token if not session_string else None
+        if not actual_bot_token and not session_string and name != "UserBot":
+            actual_bot_token = config.TOKEN
+
         super().__init__(
             name=name,
             api_id=config.API_ID,
             api_hash=config.API_HASH,
-            bot_token=bot_token or config.TOKEN,
+            bot_token=actual_bot_token,
+            session_string=session_string,
             app_version="Seal-Bot v2",
             device_model="Seal-Server",
             system_version="Linux",
@@ -182,7 +188,8 @@ class SealClient(Client):
         LOGGER.info(f"Loaded {len(ALL_MODULES)} modules.")
 
         # Sync bot commands with Telegram
-        await self._set_commands_internal()
+        if self.name != "UserBot":
+            await self._set_commands_internal()
 
         if self.name == "MainBot":
             from Grabber.database import seal_db
