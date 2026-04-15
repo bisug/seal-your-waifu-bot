@@ -216,7 +216,7 @@ class SealClient(Client):
             # Send creative startup report to group
             try:
                 from Grabber.core.startup import send_startup_report
-                asyncio.create_task(send_startup_report(self, config.MAIN_GROUP_ID, len(ALL_MODULES)))
+                asyncio.create_task(send_startup_report(self, config.LOG_GROUP_ID, len(ALL_MODULES)))
             except Exception as e:
                 LOGGER.warning(f"Failed to initiate startup report: {e}")
 

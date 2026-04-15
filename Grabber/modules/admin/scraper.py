@@ -98,6 +98,13 @@ async def scrape_group_command_handler(client, message):
         return await message.reply_text("⚠️ A scraping task is already running. Use `/stop_scrape`.")
 
     target_chat = message.command[1]
+    # Handle numeric IDs (including negative ones for groups/channels)
+    try:
+        if target_chat.startswith("-") or target_chat.isdigit():
+            target_chat = int(target_chat)
+    except ValueError:
+        pass
+
     status = await message.reply_text(f"⏳ Scanning `{target_chat}` for characters...")
 
     try:
