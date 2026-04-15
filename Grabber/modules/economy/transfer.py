@@ -14,7 +14,7 @@ async def transfer_collection_command(_, message: types.Message):
     """
     if not message.reply_to_message:
         await message.reply_text(
-            "⚠️ <b>Usage:</b> Reply to the user you want to transfer your collection to with <code>/transfer</code>",
+            "<b>Usage:</b> Reply to the user you want to transfer your collection to with <code>/transfer</code>",
             parse_mode=ParseMode.HTML
         )
         return
@@ -23,17 +23,17 @@ async def transfer_collection_command(_, message: types.Message):
     receiver_id = message.reply_to_message.from_user.id
 
     if sender_id == receiver_id:
-        await message.reply_text("⚠️ You cannot transfer your collection to yourself!", parse_mode=ParseMode.HTML)
+        await message.reply_text("You cannot transfer your collection to yourself!", parse_mode=ParseMode.HTML)
         return
 
     if message.reply_to_message.from_user.is_bot:
-        await message.reply_text("⚠️ You cannot transfer your collection to a bot!", parse_mode=ParseMode.HTML)
+        await message.reply_text("You cannot transfer your collection to a bot!", parse_mode=ParseMode.HTML)
         return
 
     # Fetch sender data to verify characters
     sender_data = await get_user_data(sender_id)
     if not sender_data or not sender_data.get("characters"):
-        await message.reply_text("❌ You don't have any characters to transfer.", parse_mode=ParseMode.HTML)
+        await message.reply_text("You don't have any characters to transfer.", parse_mode=ParseMode.HTML)
         return
 
     char_count = len(sender_data["characters"])
@@ -50,10 +50,10 @@ async def transfer_collection_command(_, message: types.Message):
 
     receiver_name = message.reply_to_message.from_user.first_name
     caption = (
-        f"⚠️ <b>COLLECTION TRANSFER: STEP 1/2</b> ⚠️\n\n"
+        f"<b>COLLECTION TRANSFER: STEP 1/2</b>\n\n"
         f"You are initiating a transfer of your <b>ENTIRE collection</b> ({char_count} characters) "
         f"to <b>{html_escape(receiver_name)}</b>.\n\n"
-        f"🔴 <b>What happens?</b>\n"
+        f"<b>What happens?</b>\n"
         f"1. Your collection will be <b>merged</b> into theirs.\n"
         f"2. Your character list and count will be <b>CLEARED</b>.\n\n"
         f"<i>Do you wish to continue to the final confirmation?</i>"
@@ -61,8 +61,8 @@ async def transfer_collection_command(_, message: types.Message):
 
     markup = types.InlineKeyboardMarkup([
         [
-            types.InlineKeyboardButton("Next ➡️", callback_data=f"transfer_next:{session_id}"),
-            types.InlineKeyboardButton("❌ Cancel", callback_data=f"transfer_cancel:{session_id}")
+            types.InlineKeyboardButton("Next", callback_data=f"transfer_next:{session_id}"),
+            types.InlineKeyboardButton("Cancel", callback_data=f"transfer_cancel:{session_id}")
         ]
     ])
 
@@ -75,18 +75,18 @@ async def transfer_callback(_, query: types.CallbackQuery):
 
     session = await get_session(session_id)
     if not session:
-        await query.answer("❌ Session expired or invalid.", show_alert=True)
-        await query.message.edit_text("❌ This transfer session has expired.")
+        await query.answer("Session expired or invalid.", show_alert=True)
+        await query.message.edit_text("This transfer session has expired.")
         return
 
     sender_id = session["sender_id"]
     if query.from_user.id != sender_id:
-        await query.answer("❌ This is not your transfer session!", show_alert=True)
+        await query.answer("This is not your transfer session!", show_alert=True)
         return
 
     if action == "transfer_cancel":
         await delete_session(session_id)
-        await query.message.edit_text("✅ <b>Transfer cancelled.</b> Your collection is safe.", parse_mode=ParseMode.HTML)
+        await query.message.edit_text("<b>Transfer cancelled.</b> Your collection is safe.", parse_mode=ParseMode.HTML)
         await query.answer("Cancelled.")
         return
 
@@ -103,18 +103,18 @@ async def transfer_callback(_, query: types.CallbackQuery):
         receiver_name = receiver_user.first_name if receiver_user else f"ID: {receiver_id}"
 
         caption = (
-            f"🚫 <b>FINAL CONFIRMATION: STEP 2/2</b> 🚫\n\n"
+            f"<b>FINAL CONFIRMATION: STEP 2/2</b>\n\n"
             f"<b>ARE YOU ABSOLUTELY SURE?</b>\n\n"
             f"Target: <b>{html_escape(receiver_name)}</b>\n"
             f"Amount: <b>{char_count} characters</b>\n\n"
-            f"⚠️ <b>THIS ACTION CANNOT BE UNDONE.</b>\n"
+            f"<b>THIS ACTION CANNOT BE UNDONE.</b>\n"
             f"Clicking 'Confirm' will empty your collection completely."
         )
 
         markup = types.InlineKeyboardMarkup([
             [
-                types.InlineKeyboardButton("✅ YES, MERGE COLLECTIONS", callback_data=f"transfer_confirm:{session_id}"),
-                types.InlineKeyboardButton("❌ CANCEL", callback_data=f"transfer_cancel:{session_id}")
+                types.InlineKeyboardButton("YES, MERGE COLLECTIONS", callback_data=f"transfer_confirm:{session_id}"),
+                types.InlineKeyboardButton("CANCEL", callback_data=f"transfer_cancel:{session_id}")
             ]
         ])
 
@@ -125,7 +125,7 @@ async def transfer_callback(_, query: types.CallbackQuery):
     if action == "transfer_confirm":
         # Check if we reached step 2
         if session.get("step") != 2:
-            await query.answer("❌ Invalid sequence. Start over.", show_alert=True)
+            await query.answer("Invalid sequence. Start over.", show_alert=True)
             return
 
         # Proceed with Transfer
@@ -134,7 +134,7 @@ async def transfer_callback(_, query: types.CallbackQuery):
         # Re-fetch sender data to get fresh character list
         sender_data = await get_user_data(sender_id)
         if not sender_data or not sender_data.get("characters"):
-            await query.answer("❌ You no longer have any characters.", show_alert=True)
+            await query.answer("You no longer have any characters.", show_alert=True)
             await delete_session(session_id)
             return
 
@@ -160,7 +160,7 @@ async def transfer_callback(_, query: types.CallbackQuery):
             receiver_name = receiver_user.first_name if receiver_user else f"ID: {receiver_id}"
 
             await query.message.edit_text(
-                f"✅ <b>Collection Successfully Transferred!</b>\n\n"
+                f"<b>Collection Successfully Transferred!</b>\n\n"
                 f"Moved <b>{num_chars}</b> characters to <b>{html_escape(receiver_name)}</b>.\n"
                 f"Your harem is now empty.",
                 parse_mode=ParseMode.HTML
@@ -175,4 +175,4 @@ async def transfer_callback(_, query: types.CallbackQuery):
 
         except Exception as e:
             LOGGER.error(f"Error during collection transfer {sender_id}->{receiver_id}: {e}")
-            await query.answer("❌ An error occurred during the transfer. Please contact an admin.", show_alert=True)
+            await query.answer("An error occurred during the transfer. Please contact an admin.", show_alert=True)

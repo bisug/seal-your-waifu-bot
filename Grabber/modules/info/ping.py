@@ -32,18 +32,18 @@ def get_readable_time(seconds: int) -> str:
     ping_time += ":".join(time_list)
     return ping_time
 
-def status_emoji(percent):
+def status_flag(percent):
     if percent < 40:
-        return "🟢"
+        return "[Optimal]"
     elif percent < 75:
-        return "🟡"
+        return "[Normal]"
     else:
-        return "🔴"
+        return "[High Load]"
 
 @app.on_message(filters.command("ping"))
 async def ping(_, message: types.Message) -> None:
     start_time = time.time()
-    sent_msg = await message.reply_text("<b>⚡ Pinging...</b>", parse_mode=ParseMode.HTML)
+    sent_msg = await message.reply_text("<b>Pinging...</b>", parse_mode=ParseMode.HTML)
 
 
     end_time = time.time()
@@ -64,16 +64,16 @@ async def ping(_, message: types.Message) -> None:
     threads = proc.num_threads()
 
     caption = (
-        f"<b>🚀 System Status</b>\n\n"
-        f"<b>📡 Ping:</b> <code>{msg_ping:.2f} ms</code>\n"
-        f"<b>🗄️ DB Latency:</b> <code>{db_ping:.2f} ms</code>\n"
-        f"<b>⏳ Uptime:</b> <code>{uptime}</code>\n\n"
-        f"<b>🧠 RAM:</b> <code>{ram.percent}%</code> {status_emoji(ram.percent)}\n"
-        f"<b>🖥️ CPU:</b> <code>{cpu}%</code> {status_emoji(cpu)}\n\n"
-        f"<b>⚙️ Bot Memory:</b> <code>{proc_mem:.2f} MB</code>\n"
-        f"<b>🧵 Threads:</b> <code>{threads}</code>\n\n"
-        f"<b>🧰 OS:</b> <code>{platform.system()} {platform.release()}</code>\n"
-        f"<b>🐍 Python:</b> <code>{platform.python_version()}</code>"
+        f"<b>System Status</b>\n\n"
+        f"<b>Ping:</b> <code>{msg_ping:.2f} ms</code>\n"
+        f"<b>DB Latency:</b> <code>{db_ping:.2f} ms</code>\n"
+        f"<b>Uptime:</b> <code>{uptime}</code>\n\n"
+        f"<b>RAM Usage:</b> <code>{ram.percent}%</code> {status_flag(ram.percent)}\n"
+        f"<b>CPU Usage:</b> <code>{cpu}%</code> {status_flag(cpu)}\n\n"
+        f"<b>Bot Memory:</b> <code>{proc_mem:.2f} MB</code>\n"
+        f"<b>Threads:</b> <code>{threads}</code>\n\n"
+        f"<b>OS:</b> <code>{platform.system()} {platform.release()}</code>\n"
+        f"<b>Python:</b> <code>{platform.python_version()}</code>"
     )
 
     await sent_msg.edit_text(caption, parse_mode=ParseMode.HTML)
