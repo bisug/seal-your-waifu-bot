@@ -17,6 +17,12 @@ async def start_bots():
     if hasattr(game_bot, 'dispatcher'):
         game_bot.dispatcher.loop = loop
 
+    # Rebind UserBot
+    if userbot:
+        userbot.loop = loop
+        if hasattr(userbot, 'dispatcher'):
+            userbot.dispatcher.loop = loop
+
     await app.start()
     await game_bot.start()
     if userbot:
