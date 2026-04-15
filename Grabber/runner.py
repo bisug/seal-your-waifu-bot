@@ -31,16 +31,20 @@ async def start_bots():
     await app.start()
     await game_bot.start()
     if userbot:
+        from pyrogram.errors import AuthKeyInvalid, AuthKeyDuplicated, AuthKeyUnregistered, Unauthorized
         try:
-            from pyrogram.errors import AuthKeyInvalid, AuthKeyNotFound, Unauthorized
             await userbot.start()
-        except (AuthKeyInvalid, AuthKeyNotFound, Unauthorized) as e:
+        except (AuthKeyInvalid, AuthKeyDuplicated, AuthKeyUnregistered, Unauthorized) as e:
             from Grabber import LOGGER
             LOGGER.warning(f"UserBot failed to start (Auth Issue): {e}")
             LOGGER.warning("Scraper features will be disabled until STRING_SESSION is updated.")
         except Exception as e:
             from Grabber import LOGGER
-            LOGGER.error(f"UserBot failed to start (Unexpected): {e}")
+            if "AuthKeyNotFound" in type(e).__name__ or "Auth key not found" in str(e):
+                LOGGER.warning(f"UserBot failed to start (Session Not Found): {e}")
+                LOGGER.warning("Scraper features will be disabled until a valid STRING_SESSION is added.")
+            else:
+                LOGGER.error(f"UserBot failed to start (Unexpected): {e}")
 
 
 async def stop_bots():
