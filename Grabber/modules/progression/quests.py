@@ -17,7 +17,7 @@ QUEST_POOL = {
         "description": "Catch 5 characters",
         "target": 5,
         "reward_xp": 50,
-        "icon": "🎯",
+        "icon": "◉",
         "symbol": "◉"
     },
     "battle_veteran": {
@@ -25,7 +25,7 @@ QUEST_POOL = {
         "description": "Win 2 battles",
         "target": 2,
         "reward_xp": 75,
-        "icon": "⚔️",
+        "icon": "⚔",
         "symbol": "⚔"
     },
     "egg_hunter": {
@@ -33,7 +33,7 @@ QUEST_POOL = {
         "description": "Find 2 eggs while hunting",
         "target": 2,
         "reward_xp": 60,
-        "icon": "🥚",
+        "icon": "◈",
         "symbol": "◈"
     },
     "generous_soul": {
@@ -41,7 +41,7 @@ QUEST_POOL = {
         "description": "Gift Shards to a player",
         "target": 1,
         "reward_xp": 40,
-        "icon": "🎁",
+        "icon": "◆",
         "symbol": "◆"
     },
     "trader": {
@@ -49,7 +49,7 @@ QUEST_POOL = {
         "description": "Complete a trade",
         "target": 1,
         "reward_xp": 50,
-        "icon": "🤝",
+        "icon": "▨",
         "symbol": "▨"
     },
     "big_spender": {
@@ -57,7 +57,7 @@ QUEST_POOL = {
         "description": "Spend 1,000 Shards / 5 Zenith",
         "target": 5,
         "reward_xp": 100,
-        "icon": "💸",
+        "icon": "⬪",
         "symbol": "⬪"
     }
 }
@@ -69,7 +69,7 @@ WEEKLY_POOL = {
         "description": "Catch 50 characters this week",
         "target": 50,
         "reward_xp": 500,
-        "icon": "🏆",
+        "icon": "❂",
         "symbol": "❂"
     },
     "weekly_battle": {
@@ -77,7 +77,7 @@ WEEKLY_POOL = {
         "description": "Win 20 battles this week",
         "target": 20,
         "reward_xp": 600,
-        "icon": "⚔️",
+        "icon": "⚔",
         "symbol": "⚔"
     },
     "weekly_spender": {
@@ -96,7 +96,7 @@ PASS_MISSIONS = {
         "description": "Win 50 battles this week",
         "target": 50,
         "reward_xp": 1000,
-        "icon": "⚔️",
+        "icon": "⚔",
         "symbol": "⚔"
     },
     "pass_collector": {
@@ -104,7 +104,7 @@ PASS_MISSIONS = {
         "description": "Catch 100 characters this week",
         "target": 100,
         "reward_xp": 1000,
-        "icon": "🏆",
+        "icon": "❂",
         "symbol": "❂"
     },
     "pass_hatcher": {
@@ -112,7 +112,7 @@ PASS_MISSIONS = {
         "description": "Find 10 eggs",
         "target": 10,
         "reward_xp": 1500,
-        "icon": "🥚",
+        "icon": "◈",
         "symbol": "◈"
     }
 }
@@ -227,11 +227,11 @@ async def view_quests(_, message: types.Message, edit_message=False):
             await message.reply_text("🚫 No quests available right now.", parse_mode=ParseMode.HTML)
         return
 
-    text = "📋 <b>Quest Log</b>\n\n"
+    text = "<b>Quest Log</b>\n\n"
     buttons = []
 
 
-    text += "📅 <b>Daily Quests</b>\n"
+    text += "<b>Daily Quests</b>\n"
     has_daily = False
     for qid, qdata in quests.items():
         if qid not in QUEST_POOL: continue
@@ -260,7 +260,7 @@ async def view_quests(_, message: types.Message, edit_message=False):
     text += "\n"
 
 
-    text += "🗓️ <b>Weekly Challenges</b>\n"
+    text += "<b>Weekly Challenges</b>\n"
     has_weekly = False
     for qid, qdata in quests.items():
         if qid not in WEEKLY_POOL: continue
@@ -286,7 +286,7 @@ async def view_quests(_, message: types.Message, edit_message=False):
         text += f"{info['icon']} <b>{info['name']}</b>: {bar} {status}\n"
 
 
-    text += "\n🌟 <b>Pass Missions</b>\n"
+    text += "\n<b>Pass Missions</b>\n"
     has_pass = False
     for qid, qdata in quests.items():
         if qid not in PASS_MISSIONS: continue
@@ -320,8 +320,8 @@ async def view_quests(_, message: types.Message, edit_message=False):
     days_until_mon = (7 - now.weekday()) % 7
     if days_until_mon == 0 and d_left.total_seconds() < 86400: days_until_mon = 7
 
-    text += f"\n⏰ <b>Daily Reset:</b> <code>{int(d_left.total_seconds()//3600)}h</code>\n"
-    text += f"🗓️ <b>Weekly Reset:</b> <code>{days_until_mon} days</code>"
+    text += f"\n<b>Daily Reset:</b> <code>{int(d_left.total_seconds()//3600)}h</code>\n"
+    text += f"<b>Weekly Reset:</b> <code>{days_until_mon} days</code>"
 
     if not buttons:
         buttons = []
@@ -356,9 +356,9 @@ async def claim_quest_callback(_, query: types.CallbackQuery):
         user_raw = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
         pass_type = user_raw.get("pass_type", "free") if user_raw else "free"
         if pass_type == "free":
-            return await query.answer("❌ This mission requires a Premium or Elite Pass!", show_alert=True)
+            return await query.answer("This mission requires a Premium or Elite Pass!", show_alert=True)
     else:
-        return await query.answer("❌ Quest not found!", show_alert=True)
+        return await query.answer("Quest not found!", show_alert=True)
 
     result = await user_collection.update_one(
         {
@@ -370,11 +370,11 @@ async def claim_quest_callback(_, query: types.CallbackQuery):
     )
 
     if result.modified_count == 0:
-        return await query.answer("❌ Already claimed or quest not complete!", show_alert=True)
+        return await query.answer("Already claimed or quest not complete!", show_alert=True)
 
     reward_xp = quest_info["reward_xp"]
     await add_xp(user_id, reward_xp, f"quest_{quest_id}")
 
-    await query.answer(f"🎉 +{reward_xp} XP!", show_alert=True)
+    await query.answer(f"Claimed! +{reward_xp} XP!", show_alert=True)
 
     await view_quests(None, query.message, edit_message=True)

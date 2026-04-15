@@ -46,23 +46,23 @@ async def send_petshop_page(message_or_query_obj, page: int, user_id: int):
 
     caption = (
         f"<b>{html_escape(pet['name'])}</b>\n"
-        f"✨ Ability: <b>{html_escape(pet.get('ability', 'None'))}</b>\n"
-        f"📖 <i>{html_escape(pet.get('desc', 'No ability'))}</i>\n"
-        f"❤️ HP: {pet.get('hp', 100)} | ⚔️ ATK: {pet.get('atk', 10)} | ⚡ SPD: {pet.get('spd', 10)}\n"
-        f"🍀 Luck: {int(pet['luck'] * 100)}%\n"
-        f"💰 Price: <b>{pet['zenith_price']} ⧫</b>"
+        f"Ability: <b>{html_escape(pet.get('ability', 'None'))}</b>\n"
+        f"<i>{html_escape(pet.get('desc', 'No ability'))}</i>\n"
+        f"HP: {pet.get('hp', 100)} | ATK: {pet.get('atk', 10)} | SPD: {pet.get('spd', 10)}\n"
+        f"Luck: {int(pet['luck'] * 100)}%\n"
+        f"Price: <b>{pet['zenith_price']} ⬪</b>"
     )
 
     if is_locked:
-        caption += f"\n\n🔒 <b>Requires Level {req_level}</b> (You: {user_level})"
+        caption += f"\n\n<b>Requires Level {req_level}</b> (You: {user_level})"
 
 
-    buy_button_text = f"🔒 Locked (Lvl {req_level})" if is_locked else "Buy Now"
+    buy_button_text = f"Locked (Lvl {req_level})" if is_locked else "Buy Now"
     keyboard = [
         [
-            types.InlineKeyboardButton("⬅️ Prev", callback_data=f"shop_prev_{page}_{user_id}"),
+            types.InlineKeyboardButton("Prev", callback_data=f"shop_prev_{page}_{user_id}"),
             types.InlineKeyboardButton(buy_button_text, callback_data=f"shop_buy_{page}_{user_id}", style=enums.ButtonStyle.SUCCESS),
-            types.InlineKeyboardButton("Next ➡️", callback_data=f"shop_next_{page}_{user_id}")
+            types.InlineKeyboardButton("Next", callback_data=f"shop_next_{page}_{user_id}")
         ]
     ]
 
@@ -76,7 +76,7 @@ async def send_petshop_page(message_or_query_obj, page: int, user_id: int):
     if webapp_btn:
         keyboard.append([webapp_btn])
         
-    keyboard.append([types.InlineKeyboardButton("⤾ Back to Hub", callback_data="hub_main")])
+    keyboard.append([types.InlineKeyboardButton("Back to Hub", callback_data="hub_main")])
     reply_markup = types.InlineKeyboardMarkup(keyboard)
 
     try:
@@ -103,7 +103,7 @@ async def petshop(_, message: types.Message):
         builder.add_row(webapp_btn)
     
     markup = builder.build()
-    text = "🐾 <b>Open the Mini App to visit the Pet Shop!</b>"
+    text = "<b>Open the Mini App to visit the Pet Shop!</b>"
     await message.reply_text(text, reply_markup=markup, parse_mode=ParseMode.HTML)
 
 
@@ -113,7 +113,7 @@ async def perform_pet_purchase(user_id, pet_index: int):
     try:
         pet = PET_SHOP[pet_index]
     except IndexError:
-        return "❌ Invalid pet selection."
+        return "Invalid pet selection."
 
 
     user_progress = await get_user_progress(user_id)
@@ -121,7 +121,7 @@ async def perform_pet_purchase(user_id, pet_index: int):
     req_level = pet.get("req_level", 0)
 
     if user_level < req_level:
-        return f"🔒 You need to reach <b>Level {req_level}</b> to purchase this pet! (Current: {user_level})"
+        return f"You need to reach <b>Level {req_level}</b> to purchase this pet! (Current: {user_level})"
 
     user = await user_collection.find_one({"id": user_id})
     if not user:
@@ -130,14 +130,14 @@ async def perform_pet_purchase(user_id, pet_index: int):
 
     # 1. Check Ownership BEFORE deduction
     if any(p["name"] == pet["name"] for p in user.get("pets", [])):
-        return f"⚠️ You already own {pet['name']}."
+        return f"You already own {pet['name']}."
 
     # 2. Check Balance
     user_zenith = user.get("zenith", 0)
     price = pet["zenith_price"]
 
     if user_zenith < price:
-        return f"❌ You need <b>{price} ⧫ Zenith</b> to purchase this pet! (You have: {user_zenith} ⧫)"
+        return f"You need <b>{price} ⬪ Zenith</b> to purchase this pet! (You have: {user_zenith} ⬪)"
 
     # 3. Atomic Deduction and Push
     update_result = await user_collection.update_one(
@@ -150,7 +150,7 @@ async def perform_pet_purchase(user_id, pet_index: int):
     )
 
     if update_result.modified_count == 0:
-        return "❌ Purchase failed. Your balance may have changed. Please try again."
+        return "Purchase failed. Your balance may have changed. Please try again."
 
     return True
 
@@ -159,18 +159,18 @@ async def perform_pet_purchase(user_id, pet_index: int):
 @app.on_message(filters.command("buypet"))
 async def buypet_cmd(_, message: types.Message):
     if len(message.command) < 2:
-        return await message.reply_text("❌ Usage: <code>/buypet &lt;pet_id&gt;</code>", parse_mode=ParseMode.HTML)
+        return await message.reply_text("Usage: <code>/buypet &lt;pet_id&gt;</code>", parse_mode=ParseMode.HTML)
 
     try:
         pet_id = int(message.command[1])
     except ValueError:
-        return await message.reply_text("❌ Invalid pet ID.", parse_mode=ParseMode.HTML)
+        return await message.reply_text("Invalid pet ID.", parse_mode=ParseMode.HTML)
 
     result = await perform_pet_purchase(message.from_user.id, pet_id)
     if result is True:
         pet = PET_SHOP[pet_id]
         await reply_media_dynamic(message, pet["img"],
-            caption=f"✅ You bought <b>{html_escape(pet['name'])}</b> with {int(pet['luck']*100)}% luck!",
+            caption=f"You bought <b>{html_escape(pet['name'])}</b> with {int(pet['luck']*100)}% luck!",
             parse_mode=ParseMode.HTML
         )
     else:
@@ -213,28 +213,28 @@ async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
 
     eff_affection = get_effective_affection(pet)
     if eff_affection >= 80:
-        mood = "🥰 Happy"
+        mood = "Happy"
     elif eff_affection <= 20:
-        mood = "😢 Sad"
+        mood = "Sad"
     else:
-        mood = "😐 Neutral"
+        mood = "Neutral"
 
     caption = (
-        f"🐾 <b>Your Pet</b>\n"
-        f"📛 Name: <b>{html_escape(pet['name'])}</b>\n"
-        f"⚡ Ability: <b>{html_escape(pet.get('ability', 'None'))}</b>\n"
-        f"📊 Level: <code>{level}</code> | XP: <code>{xp}/{needed}</code>\n"
-        f"💖 Affection: <code>{eff_affection}/100</code> ({mood})\n"
-        f"❤️ HP: <code>{pet.get('hp', 100)}</code> | ⚔️ ATK: <code>{pet.get('atk', 10)}</code> | ⚡ SPD: <code>{pet.get('spd', 10)}</code>\n"
-        f"🍀 Luck: <code>{int(pet['luck'] * 100)}%</code>\n\n"
-        f"{'✅ <b>Active Pet</b>' if is_active else '⚠️ <i>Inactive</i>'}"
+        f"<b>Your Pet</b>\n"
+        f"Name: <b>{html_escape(pet['name'])}</b>\n"
+        f"Ability: <b>{html_escape(pet.get('ability', 'None'))}</b>\n"
+        f"Level: <code>{level}</code> | XP: <code>{xp}/{needed}</code>\n"
+        f"Affection: <code>{eff_affection}/100</code> ({mood})\n"
+        f"HP: <code>{pet.get('hp', 100)}</code> | ATK: <code>{pet.get('atk', 10)}</code> | SPD: <code>{pet.get('spd', 10)}</code>\n"
+        f"Luck: <code>{int(pet['luck'] * 100)}%</code>\n\n"
+        f"{'◉ <b>Active Pet</b>' if is_active else '◌ <i>Inactive</i>'}"
     )
 
     buttons = [
         [
-            types.InlineKeyboardButton("⬅️", callback_data=f"mypet_prev_{page}_{user_id}"),
+            types.InlineKeyboardButton("«", callback_data=f"mypet_prev_{page}_{user_id}"),
             types.InlineKeyboardButton("Set Active" if not is_active else "Active", callback_data=f"setpet_{page}_{user_id}", style=enums.ButtonStyle.PRIMARY),
-            types.InlineKeyboardButton("➡️", callback_data=f"mypet_next_{page}_{user_id}")
+            types.InlineKeyboardButton("»", callback_data=f"mypet_next_{page}_{user_id}")
         ]
     ]
 
@@ -276,7 +276,7 @@ async def mypet_cmd(_, message: types.Message):
         builder.add_row(webapp_btn)
     
     markup = builder.build()
-    text = "🐾 <b>Visit your Profile in the Mini App to manage your pets!</b>"
+    text = "<b>Visit your Profile in the Mini App to manage your pets!</b>"
     await message.reply_text(text, reply_markup=markup, parse_mode=ParseMode.HTML)
 
 @app.on_callback_query(filters.regex(r"^(shop|mypet)_(next|prev|view|buy)_(\d+)_(\d+)$"))
@@ -288,7 +288,7 @@ async def shop_mypet_navigation(_, query: types.CallbackQuery):
     owner_id = int(data[3])
 
     if query.from_user.id != owner_id:
-        return await query.answer("❌ This is not your menu!", show_alert=True)
+        return await query.answer("This is not your menu!", show_alert=True)
 
     await query.answer()  # Dismiss spinner instantly
 
@@ -301,10 +301,10 @@ async def shop_mypet_navigation(_, query: types.CallbackQuery):
             pass  # Keep exactly the same page
         elif action == "buy":
             pet = PET_SHOP[page]
-            text = f"⚠️ <b>Confirm Purchase</b>\n\nBuy <b>{html_escape(pet['name'])}</b> for <b>{pet['zenith_price']} ⧫</b>?"
+            text = f"<b>Confirm Purchase</b>\n\nBuy <b>{html_escape(pet['name'])}</b> for <b>{pet['zenith_price']} ⬪</b>?"
             keyboard = [[
-                types.InlineKeyboardButton("Confirm ✅", callback_data=f"petconfirm_{page}_{owner_id}", style=enums.ButtonStyle.SUCCESS),
-                types.InlineKeyboardButton("Cancel ❌", callback_data=f"shop_view_{page}_{owner_id}", style=enums.ButtonStyle.DANGER)
+                types.InlineKeyboardButton("Confirm", callback_data=f"petconfirm_{page}_{owner_id}", style=enums.ButtonStyle.SUCCESS),
+                types.InlineKeyboardButton("Cancel", callback_data=f"shop_view_{page}_{owner_id}", style=enums.ButtonStyle.DANGER)
             ]]
             await query.message.edit_caption(text, reply_markup=types.InlineKeyboardMarkup(keyboard))
             return
@@ -328,11 +328,11 @@ async def pet_confirm_callback(_, query: types.CallbackQuery):
     owner_id = int(data[2])
 
     if query.from_user.id != owner_id:
-        return await query.answer("❌ This is not your menu!", show_alert=True)
+        return await query.answer("This is not your menu!", show_alert=True)
 
     result = await perform_pet_purchase(owner_id, page)
     if result is True:
-        await query.answer(f"✅ Success! You bought {PET_SHOP[page]['name']}.", show_alert=True)
+        await query.answer(f"Success! You bought {PET_SHOP[page]['name']}.", show_alert=True)
         await send_mypet_page(query, 0, owner_id)
     else:
         await query.answer(str(result), show_alert=True)
@@ -345,7 +345,7 @@ async def setpet_callback(_, query: types.CallbackQuery):
     owner_id = int(data[2])
 
     if query.from_user.id != owner_id:
-        return await query.answer("❌ This is not your menu!", show_alert=True)
+        return await query.answer("This is not your menu!", show_alert=True)
 
     user_id = owner_id
     user = await user_collection.find_one({"id": user_id})
@@ -357,7 +357,7 @@ async def setpet_callback(_, query: types.CallbackQuery):
 
     new_pet = pets[index]
     await user_collection.update_one({"id": user_id}, {"$set": {"current_pet": new_pet["name"]}})
-    await query.answer(f"✅ {new_pet['name']} is now your active pet.")
+    await query.answer(f"{new_pet['name']} is now your active pet.")
     await send_mypet_page(query, index, user_id)
 
 @app.on_message(filters.command("feed"))
@@ -366,18 +366,18 @@ async def feed_pet_cmd(_, message: types.Message):
     
     on_cd, secs = await redis_cooldown("feed_pet", user_id, 14400) # 4 hours
     if on_cd:
-        return await message.reply_text(f"⏳ Your pet is full! Try again in <b>{int(secs/60)}m {secs%60}s</b>.", parse_mode=ParseMode.HTML)
+        return await message.reply_text(f"Your pet is full! Try again in <b>{int(secs/60)}m {secs%60}s</b>.", parse_mode=ParseMode.HTML)
         
     user = await user_collection.find_one({"id": user_id})
     if not user or "current_pet" not in user:
-        return await message.reply_text("❌ You don't have an active pet to feed.")
+        return await message.reply_text("You don't have an active pet to feed.")
         
     active_pet_name = user["current_pet"]
     pets = user.get("pets", [])
     pet_index = next((i for i, p in enumerate(pets) if p["name"] == active_pet_name), -1)
     
     if pet_index == -1:
-        return await message.reply_text("❌ Active pet not found.")
+        return await message.reply_text("Active pet not found.")
         
     pet = pets[pet_index]
     current_affection = get_effective_affection(pet)
@@ -391,7 +391,7 @@ async def feed_pet_cmd(_, message: types.Message):
         }}
     )
     
-    await message.reply_text(f"🍲 You fed <b>{active_pet_name}</b>!\n💖 Affection increased to <b>{new_affection}/100</b>.", parse_mode=ParseMode.HTML)
+    await message.reply_text(f"You fed <b>{active_pet_name}</b>!\nAffection increased to <b>{new_affection}/100</b>.", parse_mode=ParseMode.HTML)
 
 @app.on_message(filters.command("train"))
 async def train_pet_cmd(_, message: types.Message):
@@ -399,18 +399,18 @@ async def train_pet_cmd(_, message: types.Message):
     
     on_cd, secs = await redis_cooldown("train_pet", user_id, 7200) # 2 hours
     if on_cd:
-        return await message.reply_text(f"⏳ Your pet is tired! Try training again in <b>{int(secs/60)}m {secs%60}s</b>.", parse_mode=ParseMode.HTML)
+        return await message.reply_text(f"Your pet is tired! Try training again in <b>{int(secs/60)}m {secs%60}s</b>.", parse_mode=ParseMode.HTML)
         
     user = await user_collection.find_one({"id": user_id})
     if not user or "current_pet" not in user:
-        return await message.reply_text("❌ You don't have an active pet to train.")
+        return await message.reply_text("You don't have an active pet to train.")
         
     active_pet_name = user["current_pet"]
     pets = user.get("pets", [])
     pet_index = next((i for i, p in enumerate(pets) if p["name"] == active_pet_name), -1)
     
     if pet_index == -1:
-        return await message.reply_text("❌ Active pet not found.")
+        return await message.reply_text("Active pet not found.")
         
     pet = pets[pet_index]
     current_affection = get_effective_affection(pet)
@@ -428,4 +428,4 @@ async def train_pet_cmd(_, message: types.Message):
     # Add XP
     await add_pet_xp(user_id, active_pet_name, 5)
     
-    await message.reply_text(f"⚔️ You trained <b>{active_pet_name}</b>!\n💖 Affection increased to <b>{new_affection}/100</b>.\n🆙 Gained <b>+5 XP</b>.", parse_mode=ParseMode.HTML)
+    await message.reply_text(f"You trained <b>{active_pet_name}</b>!\nAffection increased to <b>{new_affection}/100</b>.\nGained <b>+5 XP</b>.", parse_mode=ParseMode.HTML)

@@ -13,11 +13,11 @@ from Grabber.core.utils import html_escape
 METRIC_ORDER = ["harem", "shards", "zenith", "level", "guesses"]
 
 METRICS = {
-    "harem": {"label": "🎒 Harem", "field": "char_count", "icon": "🍱"},
-    "shards": {"label": "⬪ Shards", "field": "balance", "icon": "⬪"},
-    "zenith": {"label": "⧫ Zenith", "field": "zenith", "icon": "⧫"},
-    "level": {"label": "⭐ Level", "field": "xp", "icon": "🆙"},
-    "guesses": {"label": "🎯 Guesses", "field": "guess_count", "icon": "🎯"}
+    "harem": {"label": "Harem", "field": "char_count", "icon": "◈"},
+    "shards": {"label": "Shards", "field": "balance", "icon": "⬪"},
+    "zenith": {"label": "Zenith", "field": "zenith", "icon": "⧫"},
+    "level": {"label": "Level", "field": "xp", "icon": "◉"},
+    "guesses": {"label": "Guesses", "field": "guess_count", "icon": "◎"}
 }
 
 async def get_top_users(metric: str, limit: int = 10):
@@ -67,8 +67,8 @@ async def get_top_users(metric: str, limit: int = 10):
 def build_leaderboard_text(metric: str, users: list):
 
     info = METRICS[metric]
-    text = f"🌐 <b>Global Leaderboard</b>\n"
-    text += f"📊 <b>Category:</b> {info['label']}\n"
+    text = f"<b>Global Leaderboard</b>\n"
+    text += f"<b>Category:</b> {info['label']}\n"
     text += "━━━━━━━━━━━━━━━━━━━━━\n\n"
 
     if not users:
@@ -79,9 +79,9 @@ def build_leaderboard_text(metric: str, users: list):
         name = html_escape(user.get('first_name', 'User'))
         pass_type = user.get("pass_type", "free")
         if pass_type == "elite":
-            name = f"👑 {name}"
+            name = f"{name} (Elite)"
         elif pass_type == "premium":
-            name = f"🌟 {name}"
+            name = f"{name} (Premium)"
         
         value = user.get(info['field'], 0)
 
@@ -111,9 +111,9 @@ def build_leaderboard_keyboard(current_metric: str, user_id: int, is_private: bo
 
     buttons = [
         [
-            types.InlineKeyboardButton("⬅️", callback_data=f"top_switch:{prev_metric}:{user_id}"),
+            types.InlineKeyboardButton("«", callback_data=f"top_switch:{prev_metric}:{user_id}"),
             types.InlineKeyboardButton(METRICS[current_metric]['label'], callback_data="top_info"),
-            types.InlineKeyboardButton("➡️", callback_data=f"top_switch:{next_metric}:{user_id}"),
+            types.InlineKeyboardButton("»", callback_data=f"top_switch:{next_metric}:{user_id}"),
         ]
     ]
 
@@ -123,7 +123,7 @@ def build_leaderboard_keyboard(current_metric: str, user_id: int, is_private: bo
         buttons.append([webapp_btn])
 
     buttons.append([
-        types.InlineKeyboardButton("❌ Close", callback_data=f"top_close:{user_id}")
+        types.InlineKeyboardButton("Close", callback_data=f"top_close:{user_id}")
     ])
     
     return types.InlineKeyboardMarkup(buttons)
@@ -147,7 +147,7 @@ async def leaderboard_callback(_, query: types.CallbackQuery):
     owner_id = int(data[2])
 
     if query.from_user.id != owner_id:
-        return await query.answer("❌ This is not your leaderboard!", show_alert=True)
+        return await query.answer("This is not your leaderboard!", show_alert=True)
 
     users = await get_top_users(metric)
     text = build_leaderboard_text(metric, users)
@@ -164,7 +164,7 @@ async def leaderboard_callback(_, query: types.CallbackQuery):
 async def leaderboard_close_callback(_, query: types.CallbackQuery):
     owner_id = int(query.data.split(":")[1])
     if query.from_user.id != owner_id:
-        return await query.answer("❌ This is not your leaderboard!", show_alert=True)
+        return await query.answer("This is not your leaderboard!", show_alert=True)
 
     await query.message.delete()
     await query.answer("Leaderboard closed.")
@@ -187,7 +187,7 @@ async def chat_leaderboard_handler(_, message: types.Message):
     top_members = await cursor.to_list(length=10)
 
     if not top_members:
-        return await message.reply_text("⚠️ No data yet for this group.", parse_mode=ParseMode.HTML)
+        return await message.reply_text("No data yet for this group.", parse_mode=ParseMode.HTML)
 
     # Batch fetch all users in a single API call instead of N sequential calls
     user_ids = [m["user_id"] for m in top_members]
@@ -201,7 +201,7 @@ async def chat_leaderboard_handler(_, message: types.Message):
     except Exception:
         pass
 
-    text = f"🏆 <b>Top Members in {html_escape(message.chat.title)}</b>\n\n"
+    text = f"<b>Top Members in {html_escape(message.chat.title)}</b>\n\n"
     for i, member in enumerate(top_members, 1):
         uid = member['user_id']
         name = html_escape(user_map.get(uid, f"User {uid}"))

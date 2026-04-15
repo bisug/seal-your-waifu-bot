@@ -12,7 +12,7 @@ async def exchange_command(_, message: types.Message):
 
     if len(message.command) < 2:
         return await message.reply_text(
-            "💱 <b>Shards → Zenith Exchange</b>\n\n"
+            "<b>Shards → Zenith Exchange</b>\n\n"
             "<b>Usage:</b> <code>/exchange &lt;amount&gt;</code>\n"
             "<b>Example:</b> <code>/exchange 50000</code>\n\n"
             "<b>Rate:</b> 10,000 ⬪ = 1 ⧫\n"
@@ -23,20 +23,20 @@ async def exchange_command(_, message: types.Message):
     try:
         shards_amount = int(message.command[1].replace(",", ""))
     except ValueError:
-        return await message.reply_text("❌ Invalid amount. Please enter a number.")
+        return await message.reply_text("Invalid amount. Please enter a number.")
 
     if shards_amount < 10000:
-        return await message.reply_text(f"❌ Minimum exchange is 10,000 ⬪ Shards (= 1 ⧫ Zenith).")
+        return await message.reply_text(f"Minimum exchange is 10,000 ⬪ Shards (= 1 ⧫ Zenith).")
 
     if shards_amount % 10000 != 0:
-        return await message.reply_text(f"❌ Amount must be divisible by 10,000 ⬪.")
+        return await message.reply_text(f"Amount must be divisible by 10,000 ⬪.")
 
     user = await user_collection.find_one({"id": user_id})
     current_shards = user.get("balance", 0) if user else 0
 
     if current_shards < shards_amount:
         return await message.reply_text(
-            f"❌ Insufficient Shards!\n\n"
+            f"Insufficient Shards!\n\n"
             f"You have: {current_shards:,} ⬪\n"
             f"Need: {shards_amount:,} ⬪"
         )
@@ -50,7 +50,7 @@ async def exchange_command(_, message: types.Message):
 
 
     confirmation_text = (
-        f"💱 <b>Exchange Confirmation</b>\n\n"
+        f"<b>Exchange Confirmation</b>\n\n"
         f"<b>Converting:</b> <code>{shards_amount:,}</code> ⬪ → <code>{zenith_amount:,}</code> ⧫\n\n"
         f"<b>Current Balance:</b>\n"
         f"Shards: <code>{current_shards:,}</code> ⬪\n"
@@ -63,8 +63,8 @@ async def exchange_command(_, message: types.Message):
 
     buttons = [
         [
-            types.InlineKeyboardButton("✅ Confirm", callback_data=f"exchange_confirm_{shards_amount}_{user_id}"),
-            types.InlineKeyboardButton("❌ Cancel", callback_data=f"exchange_cancel_{user_id}")
+            types.InlineKeyboardButton("Confirm", callback_data=f"exchange_confirm_{shards_amount}_{user_id}"),
+            types.InlineKeyboardButton("Cancel", callback_data=f"exchange_cancel_{user_id}")
         ]
     ]
 
@@ -83,14 +83,14 @@ async def exchange_confirm_callback(_, query: types.CallbackQuery):
     user_id = query.from_user.id
 
     if owner_id and user_id != owner_id:
-        return await query.answer("❌ This is not your exchange!", show_alert=True)
+        return await query.answer("This is not your exchange!", show_alert=True)
 
     user = await user_collection.find_one({"id": user_id})
     current_shards = user.get("balance", 0) if user else 0
 
 
     if current_shards < shards_amount:
-        await query.answer("❌ Insufficient Shards!", show_alert=True)
+        await query.answer("Insufficient Shards!", show_alert=True)
         return
 
     zenith_amount = shards_amount // 10000
@@ -113,7 +113,7 @@ async def exchange_confirm_callback(_, query: types.CallbackQuery):
     new_zenith = current_zenith + zenith_amount
 
     await query.message.edit_text(
-        f"✅ <b>Exchange Successful!</b>\n\n"
+        f"<b>Exchange Successful!</b>\n\n"
         f"Converted: <code>{shards_amount:,}</code> ⬪ → <code>{zenith_amount:,}</code> ⧫\n\n"
         f"<b>Your New Balance:</b>\n"
         f"Shards: <code>{new_shards:,}</code> ⬪\n"
@@ -127,9 +127,9 @@ async def exchange_confirm_callback(_, query: types.CallbackQuery):
 async def exchange_cancel_callback(_, query: types.CallbackQuery):
     owner_id = int(query.data.split("_")[2])
     if query.from_user.id != owner_id:
-        return await query.answer("❌ This is not your exchange!", show_alert=True)
+        return await query.answer("This is not your exchange!", show_alert=True)
     await query.message.edit_text(
-        "❌ <b>Exchange Cancelled</b>\n\n"
+        "<b>Exchange Cancelled</b>\n\n"
         "Your balance remains unchanged.",
         parse_mode=ParseMode.HTML
     )

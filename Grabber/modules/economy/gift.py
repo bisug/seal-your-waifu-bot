@@ -11,18 +11,18 @@ from Grabber.core.utils import html_escape
 async def gift_command(_, message: types.Message):
 
     if not message.reply_to_message:
-        await message.reply_text("⚠️ Please reply to the user you want to gift to.", parse_mode=ParseMode.HTML)
+        await message.reply_text("Please reply to the user you want to gift to.", parse_mode=ParseMode.HTML)
         return
 
     sender_id = message.from_user.id
     receiver_id = message.reply_to_message.from_user.id
 
     if sender_id == receiver_id:
-        await message.reply_text("⚠️ You cannot gift yourself!", parse_mode=ParseMode.HTML)
+        await message.reply_text("You cannot gift yourself!", parse_mode=ParseMode.HTML)
         return
 
     if len(message.command) < 2:
-        await message.reply_text("⚠️ Usage: <code>/gift &lt;character_id&gt;</code>", parse_mode=ParseMode.HTML)
+        await message.reply_text("Usage: <code>/gift &lt;character_id&gt;</code>", parse_mode=ParseMode.HTML)
         return
 
     character_id = message.command[1]
@@ -30,14 +30,14 @@ async def gift_command(_, message: types.Message):
 
     sender_data = await get_user_data(sender_id)
     if not sender_data:
-        await message.reply_text("❌ You don't have any characters.")
+        await message.reply_text("You don't have any characters.")
         return
 
     characters = sender_data.get("characters", [])
     character_to_gift = next((c for c in characters if str(c.get("id")) == character_id), None)
 
     if not character_to_gift:
-        await message.reply_text("❌ You don't own this character.")
+        await message.reply_text("You don't own this character.")
         return
 
 
@@ -53,16 +53,16 @@ async def gift_command(_, message: types.Message):
 
     receiver_name = message.reply_to_message.from_user.first_name
     caption = (
-        f"🎁 <b>Gift Confirmation</b>\n\n"
+        f"<b>Gift Confirmation</b>\n\n"
         f"Are you sure you want to gift <b>{html_escape(character_to_gift['name'])}</b> to <b>{html_escape(receiver_name)}</b>?\n"
-        f"🆔 ID: <code>{character_id}</code>\n"
-        f"⚠️ This action cannot be undone."
+        f"ID: <code>{character_id}</code>\n"
+        f"This action cannot be undone."
     )
 
     markup = types.InlineKeyboardMarkup([
         [
-            types.InlineKeyboardButton("✅ Confirm", callback_data=f"gift_confirm:{session_id}"),
-            types.InlineKeyboardButton("❌ Cancel", callback_data=f"gift_cancel:{session_id}")
+            types.InlineKeyboardButton("Confirm", callback_data=f"gift_confirm:{session_id}"),
+            types.InlineKeyboardButton("Cancel", callback_data=f"gift_cancel:{session_id}")
         ]
     ])
 
@@ -75,18 +75,18 @@ async def gift_callback(_, query: types.CallbackQuery):
 
     session = await get_session(session_id)
     if not session:
-        await query.answer("❌ Session expired or invalid.", show_alert=True)
-        await query.message.edit_text("❌ This gift session has expired.")
+        await query.answer("Session expired or invalid.", show_alert=True)
+        await query.message.edit_text("This gift session has expired.")
         return
 
     sender_id = session["sender_id"]
     if query.from_user.id != sender_id:
-        await query.answer("❌ This is not your gift session!", show_alert=True)
+        await query.answer("This is not your gift session!", show_alert=True)
         return
 
     if action == "gift_cancel":
         await delete_session(session_id)
-        await query.message.edit_text("❌ Gift cancelled.")
+        await query.message.edit_text("Gift cancelled.")
         await query.answer("Cancelled.")
         return
 
@@ -99,7 +99,7 @@ async def gift_callback(_, query: types.CallbackQuery):
 
     sender_db = await get_user_data(sender_id)
     if not sender_db or not sender_db.get("characters"):
-        await query.answer("❌ You no longer own this character.", show_alert=True)
+        await query.answer("You no longer own this character.", show_alert=True)
         await delete_session(session_id)
         return
 
@@ -114,7 +114,7 @@ async def gift_callback(_, query: types.CallbackQuery):
             break
 
     if index_to_remove == -1:
-        await query.answer("❌ You no longer own this character.", show_alert=True)
+        await query.answer("You no longer own this character.", show_alert=True)
         await delete_session(session_id)
         return
 
@@ -129,7 +129,7 @@ async def gift_callback(_, query: types.CallbackQuery):
     await delete_session(session_id)
 
     await query.message.edit_text(
-        f"✅ <b>Gift Sent!</b>\n\n"
+        f"<b>Gift Sent!</b>\n\n"
         f"You successfully gifted <b>{html_escape(character['name'])}</b> to the fellow Collector!",
         parse_mode=ParseMode.HTML
     )
