@@ -41,8 +41,18 @@ async def update_user(user_id: int, update_query: dict):
     await invalidate_user_cache(user_id)
 
 
+from Grabber import LOGGER
+
 async def add_char_to_user(user_id: int, character: dict):
     """Add a character to user collection and invalidate cache."""
+    # Safety Check: Prevent string IDs from corrupting the DB
+    if not isinstance(character, dict) or 'id' not in character:
+        LOGGER.error(f"Attempted to insert invalid character into {user_id}'s harem: {character}")
+        # Default placeholder to prevent catastrophic failures if it ever reaches here
+        if isinstance(character, str):
+            LOGGER.error("String passed instead of dict. Operation aborted to save DB integrity.")
+            return
+
     await user_collection.update_one(
         {"id": get_user_id(user_id)},
         {"$push": {"characters": character}, "$inc": {"char_count": 1, "version": 1}},
