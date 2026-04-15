@@ -19,6 +19,7 @@ LOG_GROUP_ID = config.LOG_GROUP_ID
 
 # Global state to manage active scraping tasks
 scraping_tasks = {}
+pending_characters = set()
 
 def clean_text(text: str) -> str:
     """Cleans text of brackets, counts, emojis, and extra whitespace."""
@@ -28,9 +29,14 @@ def clean_text(text: str) -> str:
     # Remove count items like (x1) or (1/89)
     text = re.sub(r'\(x\d+\)', '', text, flags=re.I)
     text = re.sub(r'\(\d+/\d+\)', '', text)
-    # Preserve only normal text, numbers, spaces, and acceptable characters 
-    # instead of strictly purging all non-ascii, which drops certain formats.
-    text = re.sub(r'[^\w\s\-\'\.]+', '', text)
+    
+    # Replace hyphens and underscores with spaces
+    text = text.replace('-', ' ').replace('_', ' ')
+    
+    # Preserve only normal text, numbers, spaces, and dots
+    text = re.sub(r'[^\w\s\.]+', '', text)
+    # Normalize multiple spaces
+    text = re.sub(r'\s+', ' ', text)
     return text.strip()
 
 def smart_parse_character(text: str):
@@ -105,7 +111,7 @@ async def scrape_group_command_handler(client, message):
     except ValueError:
         pass
 
-    status = await message.reply_text(f"⏳ Scanning `{target_chat}` for characters...")
+    status = await app.send_message_safe(message.chat.id, f"⏳ Scanning `{target_chat}` for characters...")
 
     try:
         # Use userbot for scraping if available, otherwise fallback to app
@@ -117,7 +123,7 @@ async def scrape_group_command_handler(client, message):
             chat = await client_to_use.get_chat(target_chat)
         except Exception as e:
             error_tip = "Make sure Bot is added." if not is_userbot else "Make sure UserBot is a member."
-            return await status.edit_text(f"❌ Could not access chat: {e}\n{error_tip}")
+            return await app.edit_message_text_safe(status.chat.id, status.id, f"❌ Could not access chat: {e}\n{error_tip}")
 
         scraping_tasks[message.chat.id] = True
         sent_count = 0
@@ -133,8 +139,11 @@ async def scrape_group_command_handler(client, message):
 
             caption = msg.caption or msg.text
             name, anime = smart_parse_character(caption)
-
             if not name or not anime:
+                continue
+
+            key = (name.lower(), anime.lower())
+            if key in pending_characters:
                 continue
 
             # Check if exists locally
@@ -162,11 +171,12 @@ async def scrape_group_command_handler(client, message):
                 
                 if os.path.exists(temp_path): os.remove(temp_path)
                 
+                pending_characters.add((name.lower(), anime.lower()))
                 sent_count += 1
-                await asyncio.sleep(2)
+                await asyncio.sleep(1.5)
 
-                if sent_count >= 15: # Batch limit
-                    await message.reply_text(f"✅ Batch of {sent_count} characters sent to review group. Run `/scrape` again for more.")
+                if sent_count >= 100: # Increased batch limit
+                    await app.send_message_safe(message.chat.id, f"✅ Batch of {sent_count} characters sent to review group. Run `/scrape` again for more.")
                     break
 
             except Exception as e:
@@ -176,22 +186,22 @@ async def scrape_group_command_handler(client, message):
         if message.chat.id in scraping_tasks:
             del scraping_tasks[message.chat.id]
             if sent_count == 0:
-                await message.reply_text("✅ Scraping complete. No new characters found.")
-            elif sent_count < 15:
-                await message.reply_text(f"✅ Scraping complete. Sent {sent_count} characters.")
+                await app.send_message_safe(message.chat.id, "✅ Scraping complete. No new characters found.")
+            elif sent_count < 100:
+                await app.send_message_safe(message.chat.id, f"✅ Scraping complete. Sent {sent_count} characters.")
 
     except Exception as e:
         LOGGER.error(f"Scraper Failed: {e}")
         if message.chat.id in scraping_tasks: del scraping_tasks[message.chat.id]
-        await status.edit_text(f"❌ Scraper Failed: {e}")
+        await app.edit_message_text_safe(status.chat.id, status.id, f"❌ Scraper Failed: {e}")
 
 @app.on_message(filters.command("stop_scrape") & filters.user(sudo_users + [OWNER_ID]))
 async def stop_scrape_handler(client, message):
     if message.chat.id in scraping_tasks:
         del scraping_tasks[message.chat.id]
-        await message.reply_text("🛑 Scraper task stopped.")
+        await app.send_message_safe(message.chat.id, "🛑 Scraper task stopped.")
     else:
-        await message.reply_text("ℹ️ No active scraper task.")
+        await app.send_message_safe(message.chat.id, "ℹ️ No active scraper task.")
 
 @app.on_callback_query(filters.regex(r"^rsc_app:(\d+)$"))
 async def approve_scrape_callback(client, query):
@@ -222,10 +232,14 @@ async def approve_scrape_callback(client, query):
         name = name_match.group(1).strip()
         anime = anime_match.group(1).strip()
 
-    await query.answer("♻️ Re-hosting & Integrating...")
-    await query.message.edit_reply_markup(None)
+    key = (name.lower(), anime.lower())
+    if key in pending_characters:
+        pending_characters.remove(key)
 
-    status_msg = await query.message.reply_text("📥 Re-hosting to Catbox...")
+    await query.answer("♻️ Re-hosting & Integrating...")
+    await app.edit_message_reply_markup_safe(query.message.chat.id, query.message.id, None)
+
+    status_msg = await app.send_message_safe(query.message.chat.id, "📥 Re-hosting to Catbox...")
 
     try:
         # Download from our own review group
@@ -233,7 +247,7 @@ async def approve_scrape_callback(client, query):
         final_url = await upload_media_safely(temp_path)
         
         if not final_url:
-            return await status_msg.edit_text("❌ Re-hosting failed.")
+            return await app.edit_message_text_safe(status_msg.chat.id, status_msg.id, "❌ Re-hosting failed.")
 
         rarity_text = RARITY_MAP[rarity_num]
         invalidate_character_cache(rarity_text)
@@ -262,16 +276,28 @@ async def approve_scrape_callback(client, query):
         
         char_id = await add_character_to_db(char_data)
         
-        await status_msg.edit_text(f"✅ <b>Integrated!</b>\nName: {name}\nID: <code>{char_id}</code>")
+        await app.edit_message_text_safe(status_msg.chat.id, status_msg.id, f"✅ <b>Integrated!</b>\nName: {name}\nID: <code>{char_id}</code>")
         await query.message.delete()
 
     except Exception as e:
         LOGGER.error(f"Approval Error: {e}")
-        await status_msg.edit_text(f"❌ Error: {e}")
+        await app.edit_message_text_safe(status_msg.chat.id, status_msg.id, f"❌ Error: {e}")
 
 @app.on_callback_query(filters.regex(r"^rsc_dec$"))
 async def decline_scrape_callback(client, query):
     if query.from_user.id not in (sudo_users + [OWNER_ID]):
         return await query.answer("❌ Admin only.")
+        
+    # Attempt to remove from pending_characters if possible
+    caption = query.message.caption or ""
+    name_match = re.search(r"(?:Name|Character):\s*(.+)", caption, re.I)
+    anime_match = re.search(r"(?:Anime|Series):\s*(.+)", caption, re.I)
+    if name_match and anime_match:
+        name = name_match.group(1).strip()
+        anime = anime_match.group(1).strip()
+        key = (name.lower(), anime.lower())
+        if key in pending_characters:
+            pending_characters.remove(key)
+
     await query.answer("❌ Declined.")
     await query.message.delete()
