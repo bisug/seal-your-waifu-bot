@@ -30,8 +30,7 @@ async def balance_cmd(_, message: types.Message):
         f"<b>Your Balance</b>\n\n"
         f"<b>Shards:</b> {shards:,} ⬪\n"
         f"<b>Zenith:</b> {zenith:,} ⧫\n\n"
-        f"<i>Exchange: 10,000 ⬪ = 1 ⧫</i>\n"
-        f"<i>Use <code>/exchange</code> to convert Shards to Zenith</i>"
+        f"<i>Use <code>/zenith</code> or <code>/shard</code> to exchange currency.</i>"
     )
 
     await message.reply_text(text, parse_mode=ParseMode.HTML)
