@@ -1,12 +1,15 @@
-import random
-import time
-import re
 import asyncio
+import random
+import re
+import time
+
 from pyrogram import filters, types
 from pyrogram.enums import ParseMode
-from Grabber import game_bot, collection, sessions_collection, user_collection, LOGGER
+
+from Grabber import (LOGGER, collection, game_bot, sessions_collection,
+                     user_collection)
 from Grabber.core.balance import update_user_balance
-from Grabber.core.utils import html_escape, check_member_requirement
+from Grabber.core.utils import check_member_requirement, html_escape
 
 # Game settings
 TIMEOUT = 60  # 1 minute

@@ -1,16 +1,19 @@
-import time
-import random
-import datetime
 import asyncio
+import datetime
 import json
-from typing import Optional, Dict, Any
+import random
+import time
+from typing import Any, Dict, Optional
+
 from pyrogram import enums
 from pyrogram.enums import ParseMode
-from Grabber.core.utils import html_escape
-from Grabber.database import spawns_collection, message_counts_collection, user_totals_collection, r as _redis
-from Grabber import app, LOGGER, config
-from Grabber.core.waifu import get_or_load_characters
 
+from Grabber import LOGGER, app, config
+from Grabber.core.utils import html_escape
+from Grabber.core.waifu import get_or_load_characters
+from Grabber.database import message_counts_collection
+from Grabber.database import r as _redis
+from Grabber.database import spawns_collection, user_totals_collection
 
 
 async def _rget(key: str) -> Optional[str]:

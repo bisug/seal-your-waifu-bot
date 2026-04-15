@@ -1,4 +1,5 @@
 import asyncio
+
 import nest_asyncio
 
 # Patch asyncio to be re-entrant first
@@ -9,11 +10,10 @@ loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
 
 from pyrogram import idle
-from Grabber import app, game_bot, LOGGER
-from Grabber.runner import start_bots, stop_bots
+
 import Grabber.core.sync_handler  # Register global message sync handlers
-
-
+from Grabber import LOGGER, app, game_bot
+from Grabber.runner import start_bots, stop_bots
 
 
 async def main():

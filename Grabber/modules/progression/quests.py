@@ -1,14 +1,15 @@
 import asyncio
-from datetime import datetime, timedelta, timezone
 import random
-from pyrogram import filters, types, enums
-from pyrogram.enums import ParseMode
-from Grabber.core.utils import html_escape
-from Grabber import user_collection, app, WEB_APP_URL
-from config import config
-from Grabber.core.progression import add_xp, get_progress_bar
-from Grabber.core.keyboard import get_webapp_button
+from datetime import datetime, timedelta, timezone
 
+from pyrogram import enums, filters, types
+from pyrogram.enums import ParseMode
+
+from config import config
+from Grabber import WEB_APP_URL, app, user_collection
+from Grabber.core.keyboard import get_webapp_button
+from Grabber.core.progression import add_xp, get_progress_bar
+from Grabber.core.utils import html_escape
 
 QUEST_POOL = {
     "catch_master": {

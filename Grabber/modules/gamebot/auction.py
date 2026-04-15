@@ -1,14 +1,17 @@
-import random
-import time
 import asyncio
+import random
 import re
-from pyrogram import filters, types, enums, errors
+import time
+
+from pyrogram import enums, errors, filters, types
 from pyrogram.enums import ParseMode
-from Grabber import game_bot, LOGGER
-from Grabber.database import sessions_collection, user_collection
-from Grabber.core.balance import get_user_balance, update_user_balance, check_and_deduct
-from Grabber.core.utils import html_escape, send_media_dynamic
+
+from Grabber import LOGGER, game_bot
+from Grabber.core.balance import (check_and_deduct, get_user_balance,
+                                  update_user_balance)
 from Grabber.core.user import add_char_to_user
+from Grabber.core.utils import html_escape, send_media_dynamic
+from Grabber.database import sessions_collection, user_collection
 
 # Auction Settings
 TIMEOUT = 120  # 2 minutes
@@ -133,9 +136,11 @@ async def trigger_auction(chat_id, character):
         if not msg: return
 
         # Synchronize with global spawn cooldown to prevent overlapping spawns
-        from Grabber.database import spawns_collection, r as _redis
         import json
-        
+
+        from Grabber.database import r as _redis
+        from Grabber.database import spawns_collection
+
         # 1. Update MongoDB
         await spawns_collection.update_one(
             {"chat_id": chat_id},

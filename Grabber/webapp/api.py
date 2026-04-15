@@ -1,11 +1,11 @@
 from fastapi import APIRouter
 
-# Import the refactored modular routes
-from .routes.users import router as users_router
+from .routes.auth import router as auth_router
 from .routes.harem import router as harem_router
 from .routes.progression import router as progression_router
 from .routes.shop import router as shop_router
-from .routes.auth import router as auth_router
+# Import the refactored modular routes
+from .routes.users import router as users_router
 
 # Create Master Router
 router = APIRouter()

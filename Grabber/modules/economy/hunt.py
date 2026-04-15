@@ -1,24 +1,28 @@
 import asyncio
+import logging
 import random
 import time
-import logging
 import traceback
 from datetime import datetime, timedelta, timezone
-from pyrogram import filters, types, enums, errors
-from pyrogram.enums import ParseMode
-from pyrogram.handlers import MessageHandler, CallbackQueryHandler
 
-from Grabber import user_collection, collection, WEB_APP_URL
-from Grabber.core.user import add_pet_xp, get_user_filter, get_user_id
-from Grabber.core.progression import add_xp
-from Grabber.modules.progression.quests import update_quest_progress
-from Grabber.modules.progression.achievements import check_achievements
-from Grabber.modules.collection.rarities import RARITY_MAP
+from pyrogram import enums, errors, filters, types
+from pyrogram.enums import ParseMode
+from pyrogram.handlers import CallbackQueryHandler, MessageHandler
+
+from Grabber import WEB_APP_URL, collection, user_collection
+from Grabber.core.cache import invalidate_user_cache
+from Grabber.core.cache import is_on_cooldown as redis_cooldown
+from Grabber.core.cache import sync_user_to_redis
+from Grabber.core.constants import CORRUPTED_EGG_CHANCE, EGG_TIERS
 from Grabber.core.keyboard import get_webapp_button
-from Grabber.core.cache import invalidate_user_cache, sync_user_to_redis, is_on_cooldown as redis_cooldown
-from Grabber.core.utils import html_escape, get_now_utc, reply_media_dynamic
-from Grabber.modules.progression.pet import DEFAULT_PET, get_effective_affection
-from Grabber.core.constants import EGG_TIERS, CORRUPTED_EGG_CHANCE
+from Grabber.core.progression import add_xp
+from Grabber.core.user import add_pet_xp, get_user_filter, get_user_id
+from Grabber.core.utils import get_now_utc, html_escape, reply_media_dynamic
+from Grabber.modules.collection.rarities import RARITY_MAP
+from Grabber.modules.progression.achievements import check_achievements
+from Grabber.modules.progression.pet import (DEFAULT_PET,
+                                             get_effective_affection)
+from Grabber.modules.progression.quests import update_quest_progress
 
 # Configuration
 LOGGER = logging.getLogger(__name__)

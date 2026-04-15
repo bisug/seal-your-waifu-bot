@@ -1,7 +1,9 @@
-from pyrogram import filters, types, enums
+from pyrogram import enums, filters, types
 from pyrogram.enums import ParseMode
-from Grabber import app, user_collection
+
 from config import config
+from Grabber import app, user_collection
+
 
 @app.on_message(filters.command("referrals"))
 async def referrals_cmd(_, message: types.Message):

@@ -1,5 +1,7 @@
 import asyncio
+
 from Grabber import app, game_bot
+
 
 async def start_bots():
     # Fix for ASGI (Hypercorn/Uvicorn) event loop mismatch

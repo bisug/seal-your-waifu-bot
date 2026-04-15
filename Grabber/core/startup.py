@@ -1,11 +1,14 @@
-import sys
-import platform
 import logging
+import platform
+import sys
+
 import pyrogram
 from pyrogram import Client, enums, errors
-from Grabber.core.utils import get_now_utc
-from Grabber.database import r as _redis, collection
+
 from config import config
+from Grabber.core.utils import get_now_utc
+from Grabber.database import collection
+from Grabber.database import r as _redis
 
 LOGGER = logging.getLogger(__name__)
 

@@ -1,8 +1,8 @@
-from Grabber import user_collection, app, LOGGER
-from Grabber.core.progression import add_xp
 from pyrogram import enums
 from pyrogram.enums import ParseMode
 
+from Grabber import LOGGER, app, user_collection
+from Grabber.core.progression import add_xp
 
 ACHIEVEMENTS = {
     "novice_collector": {

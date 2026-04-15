@@ -1,16 +1,20 @@
-import os
 import asyncio
-import urllib.parse
-import httpx
+import os
 import shlex
-from pyrogram import enums, filters, types, errors
+import urllib.parse
+
+import httpx
+from pyrogram import enums, errors, filters, types
 from pyrogram.enums import ParseMode
 
-from Grabber import app, sudo_users, OWNER_ID, CHARA_CHANNEL_ID, LOGGER
-from Grabber.core.waifu import upload_media_safely, add_character_to_db, invalidate_character_cache
+from Grabber import CHARA_CHANNEL_ID, LOGGER, OWNER_ID, app, sudo_users
+from Grabber.core.utils import html_escape, send_media_dynamic
+from Grabber.core.waifu import (add_character_to_db,
+                                invalidate_character_cache,
+                                upload_media_safely)
 from Grabber.database import collection
 from Grabber.modules.collection.rarities import RARITY_MAP
-from Grabber.core.utils import send_media_dynamic, html_escape
+
 
 def get_rarity_help():
     """Generates dynamic rarity map help text."""
@@ -114,17 +118,6 @@ async def upload_waifu_handler(_, message: types.Message):
             return await status.edit_text("❌ Media upload failed (Catbox/ImgBB reject).")
 
         # 3. Finalize Database
-        # PEER RESOLUTION: Force resolve and cache channel peer to avoid CHANNEL_INVALID
-        try:
-            await app.get_chat(CHARA_CHANNEL_ID)
-        except errors.PeerIdInvalid:
-            return await status.edit_text("❌ <b>Configuration Error:</b> The Character Channel ID provided is fundamentally invalid.")
-        except errors.ChatWriteForbidden:
-            return await status.edit_text("❌ <b>Permission Error:</b> The bot does not have permission to post in the Character Channel. Ensure I am an Admin!")
-        except Exception as pe:
-            LOGGER.warning(f"Peer Resolution Warning: {pe}")
-            # Continue anyway, send_media_dynamic might still work if it's cached eventually
-
         caption = (
             f"<b>Character Name:</b> {char_name}\n"
             f"<b>Anime Name:</b> {anime_name}\n"

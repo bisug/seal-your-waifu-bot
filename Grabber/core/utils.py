@@ -1,7 +1,8 @@
-import re
 import html
 import logging
+import re
 from datetime import datetime, timezone
+
 
 def get_now_utc() -> datetime:
     """Returns the current aware UTC datetime."""
@@ -60,6 +61,7 @@ async def check_member_requirement(bot, chat, min_count=50):
     Returns (bool, str_reason, current_count).
     """
     from pyrogram import enums, errors
+
     from config import config
 
     if chat.type in [enums.ChatType.PRIVATE, enums.ChatType.BOT]:
@@ -89,6 +91,20 @@ async def check_member_requirement(bot, chat, min_count=50):
 
 async def send_media_dynamic(client, chat_id, media_url, **kwargs):
     """Dynamically sends either a photo or a video based on the URL extension."""
+    from pyrogram import errors
+
+    # PEER RESOLUTION: Ensure the channel peer is cached to avoid CHANNEL_INVALID
+    try:
+        await client.get_chat(chat_id)
+    except errors.PeerIdInvalid:
+        LOGGER.error(f"Post Failure: Chat ID {chat_id} is fundamentally invalid.")
+        return None
+    except errors.ChatWriteForbidden:
+        LOGGER.error(f"Post Failure: Bot is not an Admin or cannot write to {chat_id}.")
+        return None
+    except Exception as pe:
+        LOGGER.debug(f"Peer Resolution Warning: {pe}")
+
     if isinstance(media_url, str) and media_url.endswith(('.mp4', '.webm', '.gif')):
         return await client.send_video(chat_id, video=media_url, **kwargs)
     return await client.send_photo(chat_id, photo=media_url, **kwargs)
