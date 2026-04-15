@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from pyrogram import enums, filters, types
 from pyrogram.enums import ParseMode
 
-from Grabber import LOGGER, SUPPORT_GROUP_ID, app
+from Grabber import LOGGER, MAIN_GROUP_ID, app
 from Grabber.core.cache import (get_daily_date, get_weekly_date,
                                 invalidate_leaderboard_cache,
                                 invalidate_user_cache, set_daily_date,
@@ -39,8 +39,8 @@ async def get_daily_waifu():
 
 @app.on_message(filters.command("daily") & filters.group)
 async def daily_command_handler(_, message: types.Message):
-    if message.chat.id != SUPPORT_GROUP_ID:
-        return await message.reply_text("❌ This command only works in the support group.", parse_mode=ParseMode.HTML)
+    if message.chat.id != MAIN_GROUP_ID:
+        return await message.reply_text("❌ This command only works in the main group.", parse_mode=ParseMode.HTML)
 
     user_id = message.from_user.id
     user = await get_user_data(user_id)
@@ -110,8 +110,8 @@ async def daily_command_handler(_, message: types.Message):
 
 @app.on_message(filters.command("weekly") & filters.group)
 async def weekly_command_handler(_, message: types.Message):
-    if message.chat.id != SUPPORT_GROUP_ID:
-        return await message.reply_text("❌ This command only works in the support group.", parse_mode=ParseMode.HTML)
+    if message.chat.id != MAIN_GROUP_ID:
+        return await message.reply_text("❌ This command only works in the main group.", parse_mode=ParseMode.HTML)
 
     user_id = message.from_user.id
     user = await get_user_data(user_id)

@@ -26,14 +26,12 @@ class Config:
     SUDO_USERS = [int(i.strip()) for i in os.getenv("SUDO_USERS", "7717913705, 6574393060, 6388703157, 6858372924").split(",") if i.strip().isdigit()]
 
     # --- CHANNEL & GROUP IDS ---
-    GROUP_ID = int(os.getenv("GROUP_ID", "-1002429397912"))
-    SUPPORT_ID = int(os.getenv("SUPPORT_ID", "-1002429397912"))
-    SUPPORT_GROUP_ID = int(os.getenv("SUPPORT_GROUP_ID", "-1002429397912"))
-    CHARA_CHANNEL_ID = int(os.getenv("CHARA_CHANNEL_ID", "-1002643258398"))
-    REVIEW_GROUP_ID = int(os.getenv("REVIEW_GROUP_ID", "-1002767033399"))
+    MAIN_GROUP_ID = int(os.getenv("MAIN_GROUP_ID", "-1002429397912"))
+    GALLERY_CHANNEL_ID = int(os.getenv("GALLERY_CHANNEL_ID", "-1002643258398"))
+    LOG_GROUP_ID = int(os.getenv("LOG_GROUP_ID", "-1002767033399"))
     
     # --- SOCIAL & CHATS ---
-    SUPPORT_CHAT = os.getenv("SUPPORT_CHAT", "seal_Your_WH_Group")
+    SUPPORT_CHAT = os.getenv("SUPPORT_CHAT", "TNJBotSupport")
     UPDATE_CHAT = os.getenv("UPDATE_CHAT", "SEAL_UPDATE")
     
     # --- MEDIA & ASSETS ---
