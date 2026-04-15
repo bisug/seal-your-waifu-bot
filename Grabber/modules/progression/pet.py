@@ -372,9 +372,9 @@ async def setpet_callback(_, query: types.CallbackQuery):
 async def feed_pet_cmd(_, message: types.Message):
     user_id = message.from_user.id
     
-    on_cd, secs = await redis_cooldown("feed_pet", user_id, 14400) # 4 hours
+    on_cd, secs = await redis_cooldown("feed_pet", user_id, 900) # 15 minutes
     if on_cd:
-        return await message.reply_text(f"Your pet is full! Try again in <b>{int(secs/60)}m {secs%60}s</b>.", parse_mode=ParseMode.HTML)
+        return await message.reply_text(f"🍱 <b>Your pet is full!</b>\nTry feeding again in <b>{int(secs/60)}m {secs%60}s</b>.", parse_mode=ParseMode.HTML)
         
     user = await user_collection.find_one(get_user_filter(user_id))
     if not user or not user.get("pets"):
@@ -410,14 +410,19 @@ async def feed_pet_cmd(_, message: types.Message):
         }}
     )
     
-    await message.reply_text(f"You fed <b>{active_pet_name}</b>!\nAffection increased to <b>{new_affection}/100</b>.", parse_mode=ParseMode.HTML)
+    caption = (
+        f"🍱 <b>Meal Time!</b>\n\n"
+        f"You fed <b>{active_pet_name}</b> with some delicious snacks!\n"
+        f"Affection: <code>{current_affection}</code> ➜ <b>{new_affection}/100</b> ❤️"
+    )
+    await message.reply_text(caption, parse_mode=ParseMode.HTML)
 
 async def train_pet_cmd(_, message: types.Message):
     user_id = message.from_user.id
     
-    on_cd, secs = await redis_cooldown("train_pet", user_id, 7200) # 2 hours
+    on_cd, secs = await redis_cooldown("train_pet", user_id, 1800) # 30 minutes
     if on_cd:
-        return await message.reply_text(f"Your pet is tired! Try training again in <b>{int(secs/60)}m {secs%60}s</b>.", parse_mode=ParseMode.HTML)
+        return await message.reply_text(f"⚔️ <b>Your pet is tired!</b>\nTry training again in <b>{int(secs/60)}m {secs%60}s</b>.", parse_mode=ParseMode.HTML)
         
     user = await user_collection.find_one(get_user_filter(user_id))
     if not user or not user.get("pets"):
@@ -457,7 +462,13 @@ async def train_pet_cmd(_, message: types.Message):
     # Add XP
     await add_pet_xp(user_id, active_pet_name, 5)
     
-    await message.reply_text(f"You trained <b>{active_pet_name}</b>!\nAffection increased to <b>{new_affection}/100</b>.\nGained <b>+5 XP</b>.", parse_mode=ParseMode.HTML)
+    caption = (
+        f"⚔️ <b>Training Session!</b>\n\n"
+        f"<b>{active_pet_name}</b> worked hard and improved its skills!\n"
+        f"Affection: <b>{new_affection}/100</b> ❤️\n"
+        f"XP Gained: <b>+5</b> ✨"
+    )
+    await message.reply_text(caption, parse_mode=ParseMode.HTML)
     
 def load_handlers(bot):
     """Explicitly register pet handlers. Resolves multi-bot ghosting."""
