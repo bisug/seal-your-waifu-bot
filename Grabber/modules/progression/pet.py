@@ -7,6 +7,7 @@ from config import config
 from Grabber import LOGGER, PHOTO_URL, WEB_APP_URL, app, user_collection
 from Grabber.core.cache import is_on_cooldown as redis_cooldown
 from Grabber.core.keyboard import KeyboardBuilder, get_webapp_button
+from pyrogram.handlers import CallbackQueryHandler, MessageHandler
 from Grabber.core.user import add_pet_xp, get_user_filter, get_user_id
 from Grabber.core.utils import html_escape, reply_media_dynamic
 
@@ -94,8 +95,7 @@ async def send_petshop_page(message_or_query_obj, page: int, user_id: int):
         LOGGER.error(f"Error in send_petshop_page: {e}")
 
 
-@app.on_message(filters.command("petshop"))
-async def petshop(_, message: types.Message):
+async def petshop_cmd(_, message: types.Message):
     is_private = message.chat.type == enums.ChatType.PRIVATE
     webapp_btn = get_webapp_button(is_private, path="#shop")
     builder = KeyboardBuilder()
@@ -156,7 +156,6 @@ async def perform_pet_purchase(user_id, pet_index: int):
 
 
 
-@app.on_message(filters.command("buypet"))
 async def buypet_cmd(_, message: types.Message):
     if len(message.command) < 2:
         return await message.reply_text("Usage: <code>/buypet &lt;pet_id&gt;</code>", parse_mode=ParseMode.HTML)
@@ -281,7 +280,6 @@ async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
         LOGGER.error(f"Error in send_mypet_page: {e}")
 
 
-@app.on_message(filters.command(["mypet", "pet", "pets"]))
 async def mypet_cmd(_, message: types.Message):
     is_private = message.chat.type == enums.ChatType.PRIVATE
     webapp_btn = get_webapp_button(is_private)
@@ -293,8 +291,7 @@ async def mypet_cmd(_, message: types.Message):
     text = "<b>Visit your Profile in the Mini App to manage your pets!</b>"
     await message.reply_text(text, reply_markup=markup, parse_mode=ParseMode.HTML)
 
-@app.on_callback_query(filters.regex(r"^(shop|mypet)_(next|prev|view|buy)_(\d+)_(\d+)$"))
-async def shop_mypet_navigation(_, query: types.CallbackQuery):
+async def shop_mypet_navigation_callback(_, query: types.CallbackQuery):
     data = query.data.split("_")
     action_type = data[0]
     action = data[1]
@@ -335,7 +332,6 @@ async def shop_mypet_navigation(_, query: types.CallbackQuery):
             page = (page - 1) % total
         await send_mypet_page(query, page, user_id)
 
-@app.on_callback_query(filters.regex(r"^petconfirm_(\d+)_(\d+)$"))
 async def pet_confirm_callback(_, query: types.CallbackQuery):
     data = query.data.split("_")
     page = int(data[1])
@@ -352,7 +348,6 @@ async def pet_confirm_callback(_, query: types.CallbackQuery):
         await query.answer(str(result), show_alert=True)
         await send_petshop_page(query, page, owner_id)
 
-@app.on_callback_query(filters.regex(r"^setpet_(\d+)_(\d+)$"))
 async def setpet_callback(_, query: types.CallbackQuery):
     data = query.data.split("_")
     index = int(data[1])
@@ -374,7 +369,6 @@ async def setpet_callback(_, query: types.CallbackQuery):
     await query.answer(f"{new_pet['name']} is now your active pet.")
     await send_mypet_page(query, index, user_id)
 
-@app.on_message(filters.command("feed"))
 async def feed_pet_cmd(_, message: types.Message):
     user_id = message.from_user.id
     
@@ -418,7 +412,6 @@ async def feed_pet_cmd(_, message: types.Message):
     
     await message.reply_text(f"You fed <b>{active_pet_name}</b>!\nAffection increased to <b>{new_affection}/100</b>.", parse_mode=ParseMode.HTML)
 
-@app.on_message(filters.command("train"))
 async def train_pet_cmd(_, message: types.Message):
     user_id = message.from_user.id
     
@@ -465,3 +458,22 @@ async def train_pet_cmd(_, message: types.Message):
     await add_pet_xp(user_id, active_pet_name, 5)
     
     await message.reply_text(f"You trained <b>{active_pet_name}</b>!\nAffection increased to <b>{new_affection}/100</b>.\nGained <b>+5 XP</b>.", parse_mode=ParseMode.HTML)
+    
+def load_handlers(bot):
+    """Explicitly register pet handlers. Resolves multi-bot ghosting."""
+    if bot.name != "MainBot":
+        return
+        
+    # Commands
+    bot.add_handler(MessageHandler(petshop_cmd, filters.command("petshop")), group=0)
+    bot.add_handler(MessageHandler(buypet_cmd, filters.command("buypet")), group=0)
+    bot.add_handler(MessageHandler(mypet_cmd, filters.command(["mypet", "pet", "pets"])), group=0)
+    bot.add_handler(MessageHandler(feed_pet_cmd, filters.command("feed")), group=0)
+    bot.add_handler(MessageHandler(train_pet_cmd, filters.command("train")), group=0)
+    
+    # Callback Queries
+    bot.add_handler(CallbackQueryHandler(shop_mypet_navigation_callback, filters.regex(r"^(shop|mypet)_(next|prev|view|buy)_(\d+)_(\d+)$")), group=0)
+    bot.add_handler(CallbackQueryHandler(pet_confirm_callback, filters.regex(r"^petconfirm_(\d+)_(\d+)$")), group=0)
+    bot.add_handler(CallbackQueryHandler(setpet_callback, filters.regex(r"^setpet_(\d+)_(\d+)$")), group=0)
+    
+    LOGGER.info(f"Registered Pet System handlers for {bot.name}")
