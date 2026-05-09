@@ -1,12 +1,8 @@
 import asyncio
 import time
-
-from pyrogram import errors
-
+from pyrogram import enums, errors, filters, types
 from Grabber import LOGGER, app, game_bot
 from Grabber.database import deletion_queue_collection
-
-
 async def schedule_deletion(chat_id: int, message_id: int, delay: int = 300, bot_name: str = "MainBot"):
     """
     Saves a message to the persistent deletion queue in MongoDB.
@@ -22,7 +18,6 @@ async def schedule_deletion(chat_id: int, message_id: int, delay: int = 300, bot
         "delete_at": delete_at,
         "bot_name": bot_name
     })
-
 async def deletion_worker():
     """
     Background worker that checks the MongoDB deletion queue every 60 seconds
@@ -37,13 +32,11 @@ async def deletion_worker():
             now = time.time()
             cursor = deletion_queue_collection.find({"delete_at": {"$lte": now}})
             expired_messages = await cursor.to_list(length=100)
-
             # Group by (chat_id, bot_name) so we can batch-delete per chat
             batches = defaultdict(list)
             for msg in expired_messages:
                 key = (msg["chat_id"], msg.get("bot_name", "MainBot"))
                 batches[key].append(msg)
-
             processed_ids = []
             for (chat_id, bot_name), msgs in batches.items():
                 client = game_bot if bot_name == "GameBot" else app
@@ -55,18 +48,23 @@ async def deletion_worker():
                 except errors.FloodWait as e:
                     LOGGER.warning(f"FloodWait {e.value}s during deletion for {chat_id}, skipping batch this cycle")
                     continue  # Skip — these will be retried next cycle
-                except (errors.Forbidden, errors.MessageDeleteForbidden):
+                except (errors.Forbidden, errors.MessageDeleteForbidden, errors.Unauthorized):
                     pass  # No delete permission — still mark as processed to avoid infinite retry
+                except errors.SlowmodeWait as e:
+                    LOGGER.warning(f"SlowmodeWait {e.value}s during deletion in {chat_id}")
+                    await asyncio.sleep(e.value)
+                    continue  # Skip marking as processed, retry next cycle
+                except errors.BadRequest as e:
+                    if "MESSAGE_ID_INVALID" in str(e) or "CHAT_ID_INVALID" in str(e):
+                        pass # Mark as processed
+                    else:
+                        LOGGER.debug(f"BadRequest in deletion batch {chat_id}: {e}")
                 except Exception as e:
                     LOGGER.debug(f"Failed to delete batch in {chat_id}: {e}")
                 processed_ids.extend([m["_id"] for m in msgs])
-
             # Single bulk delete for all processed entries
             if processed_ids:
                 await deletion_queue_collection.delete_many({"_id": {"$in": processed_ids}})
-
         except Exception as e:
             LOGGER.error(f"Error in deletion_worker loop: {e}")
-
         await asyncio.sleep(60)
-

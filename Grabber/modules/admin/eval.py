@@ -4,16 +4,15 @@ import os
 import textwrap
 import traceback
 from contextlib import redirect_stdout
-
-from pyrogram import enums, filters, types
+from pyrogram import enums, errors, filters, types
 from pyrogram.enums import ParseMode
 
 from config import config
 from Grabber import LOGGER, OWNER_ID, app, sudo_users
+from Grabber.core.utils import handle_errors
 
 namespaces = {}
 AUTHORIZED_USERS = [OWNER_ID]
-
 def namespace_of(chat_id, message):
     if chat_id not in namespaces:
         namespaces[chat_id] = {
@@ -25,44 +24,36 @@ def namespace_of(chat_id, message):
             "config": config,
         }
     return namespaces[chat_id]
-
 async def send_result(result, message: types.Message):
     if not result:
         return
-
     result = str(result)
     if len(result) > 2000:
         with io.BytesIO(str.encode(result)) as out_file:
             out_file.name = "output.txt"
             await message.reply_document(document=out_file)
     else:
-        await message.reply_text(f"<pre language=\"python\">{html.escape(result)}</pre>", parse_mode=ParseMode.HTML)
-
+        await message.reply_text(f"<pre language=\"python\">{html.escape(result)}</pre>", parse_mode=enums.ParseMode.HTML)
 def cleanup_code(code):
     if code.startswith("```") and code.endswith("```"):
         return "\n".join(code.split("\n")[1:-1])
     return code.strip("` \n")
-
 @app.on_message(filters.command(["e", "ev", "eva", "eval", "x", "ex", "exe", "exec", "py"]) & filters.user(AUTHORIZED_USERS))
+@handle_errors
 async def evaluate_or_execute(_, message: types.Message):
     content = message.text.split(None, 1)
     if len(content) < 2:
         return
-
     body = cleanup_code(content[1])
     env = namespace_of(message.chat.id, message)
-
     stdout = io.StringIO()
     to_compile = f'async def func():\n{textwrap.indent(body, "  ")}'
-
     try:
         exec(to_compile, env)
     except Exception as e:
         await send_result(f"{e.__class__.__name__}: {e}", message)
         return
-
     func = env["func"]
-
     try:
         with redirect_stdout(stdout):
             func_return = await func()
@@ -82,15 +73,14 @@ async def evaluate_or_execute(_, message: types.Message):
                     pass
         else:
             result = f"{value}{func_return}"
-
         if result:
             await send_result(result, message)
         elif value:
              await send_result(value, message)
-
 @app.on_message(filters.command("clearlocals") & filters.user(AUTHORIZED_USERS))
+@handle_errors
 async def clear_locals(_, message: types.Message):
     global namespaces
     if message.chat.id in namespaces:
         del namespaces[message.chat.id]
-    await message.reply_text("Cleared locales for this chat.", parse_mode=ParseMode.HTML)
+    await message.reply_text("Cleared locales for this chat.", parse_mode=enums.ParseMode.HTML)

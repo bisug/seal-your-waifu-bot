@@ -1,34 +1,25 @@
 import logging
 import sys
 import time
-
 StartTime = time.time()
-
-
 LOGGER = logging.getLogger(__name__)
-
-
 if sys.version_info[0] < 3 or sys.version_info[1] < 13:
     LOGGER.error(
         "You MUST have a python version of at least 3.13! Multiple features depend on this. Bot quitting."
     )
     quit(1)
-
 LOAD = []
 NO_LOAD = []
-
 def __list_all_modules():
     from pathlib import Path
     base = Path(__file__).parent
     all_modules = []
-    
     for py_file in sorted(base.rglob("*.py")):
         if py_file.name == "__init__.py":
             continue
         rel = py_file.relative_to(base)
         dotted = ".".join(rel.with_suffix("").parts)
         all_modules.append(dotted)
-
     if LOAD or NO_LOAD:
         to_load = LOAD
         if to_load:
@@ -38,22 +29,15 @@ def __list_all_modules():
             ):
                 LOGGER.error("Invalid loadorder names, Quitting...")
                 quit(1)
-
             all_modules = sorted(set(all_modules) - set(to_load))
             to_load = list(all_modules) + to_load
-
         else:
             to_load = all_modules
-
         if NO_LOAD:
             LOGGER.info("Not loading: {}".format(NO_LOAD))
             return [item for item in to_load if item not in NO_LOAD]
-
         return to_load
-
     return all_modules
-
-
 ALL_MODULES = __list_all_modules()
 LOGGER.info("Modules to load: %s", str(ALL_MODULES))
 __all__ = ALL_MODULES + ["ALL_MODULES"]
