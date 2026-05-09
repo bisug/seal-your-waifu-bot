@@ -49,8 +49,16 @@ async def start_bots():
         if hasattr(userbot, 'dispatcher'):
             userbot.dispatcher.loop = loop
 
-    await app.start()
-    await game_bot.start()
+    try:
+        await app.start()
+        await game_bot.start()
+    except AttributeError as e:
+        if "API key is required" in str(e):
+            from Grabber import LOGGER
+            LOGGER.critical("CRITICAL: API_ID and API_HASH are missing or invalid in environment variables!")
+            LOGGER.critical("Please set API_ID and API_HASH to start the bot.")
+            return
+        raise e
     if userbot:
         from pyrogram.errors import AuthKeyInvalid, AuthKeyDuplicated, AuthKeyUnregistered, Unauthorized
         try:
