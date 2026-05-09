@@ -4,10 +4,11 @@ from pyrogram.enums import ButtonStyle, ParseMode
 from Grabber import LOGGER, app, user_collection
 from Grabber.core.sessions import create_session, delete_session, get_session
 from Grabber.core.user import get_user_data, update_user
-from Grabber.core.utils import html_escape
+from Grabber.core.utils import handle_errors, html_escape
 
 
 @app.on_message(filters.command("gift"))
+@handle_errors
 async def gift_command(_, message: types.Message):
 
     if not message.reply_to_message:

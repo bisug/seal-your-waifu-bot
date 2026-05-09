@@ -1,11 +1,13 @@
-from pyrogram import enums, filters, types
+from pyrogram import errors, enums, filters, types
 from pyrogram.enums import ParseMode
 
 from config import config
 from Grabber import app, user_collection
+from Grabber.core.utils import handle_errors
 
 
 @app.on_message(filters.command("referrals"))
+@handle_errors
 async def referrals_cmd(_, message: types.Message):
     user_id = message.from_user.id
     user = await user_collection.find_one({"id": user_id})

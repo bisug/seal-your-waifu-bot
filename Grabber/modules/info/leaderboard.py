@@ -1,6 +1,6 @@
 import html
 
-from pyrogram import enums, filters, types
+from pyrogram import errors, enums, filters, types
 from pyrogram.enums import ParseMode
 
 from config import config
@@ -9,7 +9,7 @@ from Grabber import (LOGGER, WEB_APP_URL, app, group_user_totals_collection,
 from Grabber.core.constants import METRIC_ORDER, METRICS
 from Grabber.core.keyboard import get_webapp_button
 from Grabber.core.progression import get_level_from_xp
-from Grabber.core.utils import html_escape
+from Grabber.core.utils import handle_errors, html_escape
 
 
 # METRIC_ORDER and METRICS have been moved to Grabber.core.constants for centralization.
@@ -133,6 +133,7 @@ def build_leaderboard_keyboard(current_metric: str, user_id: int, is_private: bo
     return types.InlineKeyboardMarkup(buttons)
 
 @app.on_message(filters.command("top"))
+@handle_errors
 async def global_leaderboard_handler(_, message: types.Message):
     await app.send_chat_action(message.chat.id, enums.ChatAction.TYPING)
 
@@ -179,6 +180,7 @@ async def leaderboard_info_callback(_, query: types.CallbackQuery):
 
 
 @app.on_message(filters.command("ctop") & filters.group)
+@handle_errors
 async def chat_leaderboard_handler(_, message: types.Message):
     chat_id = message.chat.id
     from Grabber.core.cache import rget, rset
