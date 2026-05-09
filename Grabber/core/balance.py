@@ -1,10 +1,7 @@
 from typing import Optional
-
 from Grabber.core.cache import (get_cached_balance, invalidate_user_cache,
                                 set_cached_balance)
 from Grabber.database import user_collection
-
-
 async def get_user_balance(user_id: int) -> int:
     """
     Fetch the current shard balance for a user.
@@ -17,7 +14,6 @@ async def get_user_balance(user_id: int) -> int:
     balance = user.get("balance", 0) if user else 0
     await set_cached_balance(user_id, balance)
     return balance
-
 async def update_user_balance(user_id: int, amount: int):
     """
     Increment or decrement a user's balance, then invalidate cache.
@@ -28,7 +24,6 @@ async def update_user_balance(user_id: int, amount: int):
         upsert=True
     )
     await invalidate_user_cache(user_id)
-
 async def check_and_deduct(user_id: int, amount: int) -> bool:
     """
     Atomically check balance and deduct. Invalidates cache on success.
