@@ -1,10 +1,5 @@
 import asyncio
 
-import nest_asyncio
-
-# Patch asyncio to be re-entrant first
-nest_asyncio.apply()
-
 # Create our canonical event loop and set it as the global default
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
