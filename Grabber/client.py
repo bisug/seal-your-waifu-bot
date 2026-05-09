@@ -122,10 +122,8 @@ class SealClient(Client):
             return None
         except errors.BadRequest as e:
             LOGGER.error(f"[{self.name}] BadRequest in {chat_id}: {e}")
-<<<<<<< HEAD
-            LOGGER.error(f"[{self.name}] BadRequest in {chat_id}: {e}")
-=======
->>>>>>> beta
+            return None
+
             return None
         except Exception as e:
             LOGGER.error(f"[{self.name}] Failed to send media to {chat_id}: {e}")
@@ -154,12 +152,9 @@ class SealClient(Client):
             LOGGER.debug(f"[{self.name}] Permission denied in {chat_id}: {e}")
             return None
         except errors.BadRequest as e:
-<<<<<<< HEAD
-            LOGGER.error(f"[{self.name}] BadRequest in {chat_id}: {e}")
-=======
             if "MESSAGE_NOT_MODIFIED" not in str(e):
                 LOGGER.error(f"[{self.name}] BadRequest in {chat_id}: {e}")
->>>>>>> beta
+
             return None
         except Exception as e:
             LOGGER.error(f"[{self.name}] Error editing message text in {chat_id}: {e}")
@@ -188,12 +183,9 @@ class SealClient(Client):
             LOGGER.debug(f"[{self.name}] Permission denied in {chat_id}: {e}")
             return None
         except errors.BadRequest as e:
-<<<<<<< HEAD
-            LOGGER.error(f"[{self.name}] BadRequest in {chat_id}: {e}")
-=======
             if "MESSAGE_NOT_MODIFIED" not in str(e):
                 LOGGER.error(f"[{self.name}] BadRequest in {chat_id}: {e}")
->>>>>>> beta
+
             return None
         except Exception as e:
             LOGGER.error(f"[{self.name}] Error editing message caption in {chat_id}: {e}")
@@ -216,15 +208,9 @@ class SealClient(Client):
             LOGGER.debug(f"[{self.name}] Permission denied in {chat_id}: {e}")
             return None
         except errors.BadRequest as e:
-<<<<<<< HEAD
-            LOGGER.error(f"[{self.name}] BadRequest in {chat_id}: {e}")
-            return None
-        except Exception as e:
-            LOGGER.error(f"[{self.name}] Error editing message markup in {chat_id}: {e}")
-=======
             if "MESSAGE_NOT_MODIFIED" not in str(e):
                 LOGGER.error(f"[{self.name}] Error editing message markup in {chat_id}: {e}")
->>>>>>> beta
+
             return None
         except Exception as e:
             LOGGER.error(f"[{self.name}] Error editing message markup in {chat_id}: {e}")

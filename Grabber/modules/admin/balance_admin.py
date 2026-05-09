@@ -1,15 +1,9 @@
-<<<<<<< HEAD
 from pyrogram import enums, errors, filters, types
-from Grabber import OWNER_ID, app, sudo_users, user_collection, sudo_filter
-from Grabber.core.utils import handle_errors, html_escape
-=======
-from pyrogram import errors, enums, filters, types
 from pyrogram.enums import ButtonStyle, ParseMode
 
 from Grabber import OWNER_ID, app, sudo_users, user_collection, sudo_filter
 from Grabber.core.utils import handle_errors, html_escape
 
->>>>>>> beta
 async def get_target_user(message: types.Message):
     if message.reply_to_message:
         try:

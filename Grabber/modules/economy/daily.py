@@ -1,13 +1,8 @@
 import random
 from datetime import datetime, timedelta, timezone
-<<<<<<< HEAD
 from pyrogram import enums, errors, filters, types
-=======
-
-from pyrogram import errors, enums, filters, types
 from pyrogram.enums import ParseMode
 
->>>>>>> beta
 from Grabber import LOGGER, MAIN_GROUP_ID, app
 from Grabber.core.cache import (get_daily_date, get_weekly_date,
                                 invalidate_leaderboard_cache,

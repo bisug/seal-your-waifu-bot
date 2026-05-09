@@ -1,19 +1,11 @@
 from pymongo import AsyncMongoClient
-<<<<<<< HEAD
 from pyrogram import enums, errors, filters, types
-from config import config
-from Grabber import LOGGER, app
-from Grabber.core.utils import handle_errors
-=======
-from pyrogram import errors, enums, filters, types
 from pyrogram.enums import ParseMode
 
 from config import config
 from Grabber import LOGGER, app
 from Grabber.core.utils import handle_errors
 
-
->>>>>>> beta
 @app.on_message(filters.command("mongobackup") & filters.user(config.OWNER_ID))
 @handle_errors
 async def mongo_backup(_, message: types.Message) -> None:
