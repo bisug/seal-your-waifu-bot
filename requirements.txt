@@ -6,10 +6,9 @@ httpx
 psutil
 pydantic
 orjson
-redis>=7.4.0
+redis[hiredis]>=7.4.0
 fastapi
-hypercorn
-python-multipart
-websockets
+uvicorn[standard]
+uvloop
+httptools
 dnspython
-nest_asyncio
