@@ -247,7 +247,6 @@ class SealClient(Client):
                 "nguess": "Guess character name",
                 "quiz": "Anime trivia quiz",
                 "scramble": "Unscramble name",
-                "bid": "Place a bid on character",
                 "top": "Global game stats",
                 "help": "How to play"
             }
