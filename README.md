@@ -41,7 +41,7 @@ This version introduces a **Unified Web Service** architecture—the Bot and the
 
 - **Backend**: Python 3.13+, FastAPI (API), Kurigram (Telegram Framework)
 - **Frontend**: React 19, Vite 6, CSS-in-JS (Modern Aesthetics)
-- **Database**: MongoDB (Motor for Async), Redis (Caching Layer)
+- **Database**: MongoDB (PyMongo Async), Redis (Caching Layer)
 - **Infrastructure**: Docker Ready, Heroku/Render optimized (Procfile included)
 
 ## 🚀 Deployment
