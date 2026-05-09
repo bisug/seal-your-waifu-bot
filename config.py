@@ -14,7 +14,7 @@ class Config:
     BOT_NAME = None      # Fetched automatically at startup
 
     # --- TELEGRAM API CREDENTIALS ---
-    API_ID = int(os.getenv("API_ID", "25635673"))
+    API_ID = int(os.getenv("API_ID", "0"))
     API_HASH =""
 
     # --- DATABASE INFRASTRUCTURE ---
@@ -22,7 +22,7 @@ class Config:
     REDIS_URL =""
 
     # --- PRIVILEGED USERS ---
-    OWNER_ID = int(os.getenv("OWNER_ID", "7804972365"))
+    OWNER_ID = int(os.getenv("OWNER_ID", "0"))
     SUDO_USERS = [int(i.strip()) for i in os.getenv("SUDO_USERS", "7717913705, 6574393060, 6388703157, 6858372924").split(",") if i.strip().isdigit()]
 
     # --- CHANNEL & GROUP IDS ---

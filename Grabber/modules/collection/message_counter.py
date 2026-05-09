@@ -1,10 +1,12 @@
 import datetime
 import random
 import time
+import logging
 
-from pyrogram import types
+from pyrogram import filters, types
+from pyrogram.enums import ParseMode
 
-from Grabber import config
+from Grabber import app, config, LOGGER
 from Grabber.core.spawns import (get_active_user_count, get_chat_frequency,
                                  get_chat_state, get_spawn_order,
                                  increment_message_count,
@@ -14,6 +16,9 @@ from Grabber.core.waifu import get_or_load_characters
 from Grabber.modules.collection.rarities import (ACTIVE_RARITY_WEIGHTS,
                                                  RARITY_WEIGHTS)
 from Grabber.modules.gamebot.auction import trigger_auction
+
+# Use a specific logger for spawn tracking
+SPAWN_LOGGER = logging.getLogger("Grabber.spawns")
 
 special_rarity_thresholds = {
     "🎞️ AMV": 2500,
@@ -30,7 +35,8 @@ special_rarity_thresholds = {
 }
 
 
-async def message_counter(_, message: types.Message):
+@app.on_message(filters.group & ~filters.bot, group=1)
+async def message_counter_handler(_, message: types.Message):
     """
     Main handler for counting messages and triggering character spawns.
     Tracks user activity, increments chat message counts, and determines
@@ -43,77 +49,60 @@ async def message_counter(_, message: types.Message):
     chat_id = chat.id
     user_id = message.from_user.id
 
-
     # Track activity to determine chat "busyness"
     await track_user_activity(chat_id, user_id)
 
     # Increment and get the current message count for this chat
-    count = await increment_message_count(chat_id)
+    count = await increment_message_count(chat_id, user_id)
 
-
+    # Debug logging for every 10th message to avoid spam but show activity
+    if count % 10 == 0:
+        SPAWN_LOGGER.info(f"Chat {chat_id} reached {count} messages.")
 
     state = await get_chat_state(chat_id)
     last_spawn_time = state.get("last_spawn_time", 0)
     current_time = time.time()
 
-    # Prevent spawns if one happened very recently
+    # Prevent spawns if one happened very recently (60s cooldown)
     if current_time - last_spawn_time < 60:
         return
 
     # HARDENING: Prevent overlapping spawns during active auctions
-    # Use Redis EXISTS (O(1)) instead of a MongoDB find_one on every message
     from Grabber.database import r as _redis
     if _redis:
         try:
             if await _redis.exists(f"auction:{chat_id}"):
                 return
         except Exception:
-            # Fallback to MongoDB if Redis is unavailable
             from Grabber.database import sessions_collection
             active_auction = await sessions_collection.find_one({"_id": f"auction:{chat_id}"}, projection={"_id": 1})
-            if active_auction:
-                return
+            if active_auction: return
     else:
         from Grabber.database import sessions_collection
         active_auction = await sessions_collection.find_one({"_id": f"auction:{chat_id}"}, projection={"_id": 1})
-        if active_auction:
-            return
+        if active_auction: return
 
-    # Small random chance for a Royal spawn regardless of message count
+    # Small random chance (0.1%) for a Royal spawn regardless of message count
     if random.random() < 0.001:
+        SPAWN_LOGGER.info(f"Triggering RANDOM Royal spawn in {chat_id}")
         await send_character(chat_id, "🫧 Royal")
         return
 
+    from Grabber.core.spawn_utils import get_target_spawn_frequency
+    target_freq, active_count, multiplier = await get_target_spawn_frequency(chat_id)
 
-    # Check for "Golden Hour" (boosted spawn rates)
-    now = datetime.datetime.now(datetime.timezone.utc)
-    multiplier = 1.0
-    if 20 <= now.hour <= 22:
-        multiplier = 0.5
-
-    # Check for special rarity milestones (e.g., every 300th message)
+    # Check for special rarity milestones
     for r_name, threshold in special_rarity_thresholds.items():
         threshold_int = int(threshold * multiplier)
         if threshold_int > 0 and count % threshold_int == 0:
+            SPAWN_LOGGER.info(f"Milestone {r_name} reached at {count} in {chat_id}")
             await send_character(chat_id, r_name)
             return
 
-
-
-    # Standard spawn logic based on chat activity levels
-    active_count = await get_active_user_count(chat_id)
-
-    if active_count >= 6:
-        base_freq = 40
-    elif active_count >= 3:
-        base_freq = 60
-    else:
-        freq = await get_chat_frequency(chat_id)
-        base_freq = min(freq, 80) if freq is not None else 80
-
     # Trigger standard spawn if milestone is reached
-    base_freq_int = max(1, int(base_freq * multiplier))
-    if count % base_freq_int == 0:
+    if count % target_freq == 0:
+        SPAWN_LOGGER.info(f"Standard spawn triggered in {chat_id} (count={count}, freq={target_freq})")
+
         # Use different rarity weights if the chat is very active
         if active_count > 10:
             weights_map = ACTIVE_RARITY_WEIGHTS
@@ -125,14 +114,13 @@ async def message_counter(_, message: types.Message):
 
         selected_rarity = random.choices(rarities, weights=weights, k=1)[0]
 
-        # REFACTORED: Automated Auction Logic
-        # Auctions have a 1% chance to trigger for Rare or Legendary characters.
+        # REFACTORED: Automated Auction Logic (1% chance for Rare/Legendary)
         if "Rare" in selected_rarity or "Legendary" in selected_rarity:
             if random.random() < 0.01:
-                # Fetch a random character of this rarity
                 chars = await get_or_load_characters(selected_rarity)
                 if chars:
                     char = random.choice(chars)
+                    SPAWN_LOGGER.info(f"Triggering AUTOMATED AUCTION for {char['name']} in {chat_id}")
                     await trigger_auction(chat_id, char)
                     await increment_spawn_order(chat_id)
                     return

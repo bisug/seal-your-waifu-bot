@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import random
 import re
 
@@ -9,7 +10,8 @@ from Grabber import (LOGGER, OWNER_ID, app, group_user_totals_collection,
                      sudo_users, sudo_filter)
 from Grabber.core.progression import add_xp
 from Grabber.core.spawns import (clear_active_spawn, get_chat_state,
-                                 get_message_count, send_character)
+                                 get_message_count, send_character,
+                                 get_active_user_count, get_chat_frequency)
 from Grabber.core.user import add_char_to_user
 from Grabber.core.utils import html_escape, reply_media_dynamic
 from Grabber.modules.collection.rarities import RARITY_WEIGHTS
@@ -124,9 +126,26 @@ async def seal_handler(_, message: types.Message):
 
 @app.on_message(filters.command("messagecount") & filters.group)
 async def messagecount_handler(_, message: types.Message):
-    """View the total message count registered for the current chat."""
-    count = await get_message_count(message.chat.id)
-    await message.reply_text(f"<b>Total messages in this chat:</b> <code>{count}</code>", parse_mode=ParseMode.HTML)
+    """View the total message count and distance to next spawn."""
+    from Grabber.core.spawn_utils import get_target_spawn_frequency
+    chat_id = message.chat.id
+    count = await get_message_count(chat_id)
+
+    target_freq, active_count, multiplier = await get_target_spawn_frequency(chat_id)
+    remaining = target_freq - (count % target_freq)
+
+    response = (
+        f"📊 <b>Chat Activity Status</b>\n\n"
+        f"🔹 <b>Total Messages:</b> <code>{count}</code>\n"
+        f"🔹 <b>Active Users:</b> <code>{active_count}</code>\n"
+        f"🔹 <b>Spawn Frequency:</b> Every <code>{target_freq}</code> msgs\n"
+        f"⏳ <b>Next Spawn In:</b> <code>{remaining}</code> messages"
+    )
+
+    if multiplier < 1.0:
+        response += "\n\n🌟 <b>Golden Hour is active! Spawns are 2x faster.</b>"
+
+    await message.reply_text(response, parse_mode=ParseMode.HTML)
 
 @app.on_message(filters.command("cnow") & filters.group)
 async def cnow_handler(_, message: types.Message):
