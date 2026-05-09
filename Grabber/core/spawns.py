@@ -148,12 +148,16 @@ async def get_message_count(chat_id: int) -> int:
     await _rset(key, str(count), ex=86400) # 24h TTL for memory safety
     return count
 
-async def increment_message_count(chat_id: int) -> int:
+async def increment_message_count(chat_id: int, user_id: int) -> int:
     key = f"msg_count:{chat_id}"
     if _redis:
         try:
             count = await _redis.incr(key)
             await _redis.expire(key, 86400) # Ensure TTL on every increment
+            # We don't update MongoDB on EVERY message when Redis is working
+            # to save IO. flush_cache_to_db handles periodic sync.
+            # But we should still update the user-specific counter in Mongo if possible.
+            # For now, let's just do it in the fallback to be safe and fast.
             return count
         except Exception as e:
             LOGGER.debug(f"Redis incr failed for {chat_id}, falling back: {e}")
@@ -161,6 +165,13 @@ async def increment_message_count(chat_id: int) -> int:
     # Fallback to DB-backed manual tracking
     count = await get_message_count(chat_id) + 1
     await _rset(key, str(count), ex=86400)
+
+    # Also update MongoDB so the counter actually moves forward without Redis
+    await message_counts_collection.update_one(
+        {"chat_id": str(chat_id)},
+        {"$set": {"count": count}, "$inc": {f"users.{user_id}": 1}},
+        upsert=True
+    )
     return count
 
 async def get_spawn_order(chat_id: int) -> int:
@@ -186,7 +197,7 @@ async def get_chat_frequency(chat_id: int) -> int:
         freq = await _redis.hget(key, "_cached_frequency")
         if freq: return int(freq)
 
-    doc = await user_totals_collection.find_one({"chat_id": str(chat_id)}, projection={"message_frequency": 1})
+    doc = await user_totals_collection.find_one({"chat_id": {"$in": [chat_id, str(chat_id)]}}, projection={"message_frequency": 1})
     freq = int(doc["message_frequency"]) if doc and doc.get("message_frequency") else 100
     
     if _redis:
@@ -204,11 +215,11 @@ async def flush_cache_to_db():
             from Grabber.core.cache import _scan_keys
             keys = await _scan_keys("msg_count:*")
             for key in keys:
-                chat_id = key.split(":")[-1]
+                chat_id_str = key.split(":")[-1]
                 count = await _redis.get(key)
                 if count:
                     await message_counts_collection.update_one(
-                        {"chat_id": str(chat_id)},
+                        {"chat_id": chat_id_str},
                         {"$set": {"count": int(count)}},
                         upsert=True
                     )
