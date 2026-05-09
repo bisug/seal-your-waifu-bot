@@ -1,4 +1,4 @@
-from pyrogram import enums, types
+from pyrogram import errors, enums, types
 
 from config import config
 from Grabber import BOT_USERNAME, WEB_APP_URL

@@ -3,7 +3,7 @@ import datetime
 import random
 import re
 
-from pyrogram import enums, filters, types
+from pyrogram import enums, errors, filters, types
 from pyrogram.enums import ParseMode
 
 from Grabber import (LOGGER, OWNER_ID, app, group_user_totals_collection,
@@ -13,7 +13,7 @@ from Grabber.core.spawns import (clear_active_spawn, get_chat_state,
                                  get_message_count, send_character,
                                  get_active_user_count, get_chat_frequency)
 from Grabber.core.user import add_char_to_user
-from Grabber.core.utils import html_escape, reply_media_dynamic
+from Grabber.core.utils import handle_errors, html_escape, reply_media_dynamic
 from Grabber.modules.collection.rarities import RARITY_WEIGHTS
 from Grabber.modules.progression.achievements import check_achievements
 from Grabber.modules.progression.quests import update_quest_progress
@@ -21,6 +21,7 @@ from Grabber.modules.progression.quests import update_quest_progress
 
 
 @app.on_message(filters.command("seal") & filters.group)
+@handle_errors
 async def seal_handler(_, message: types.Message):
     """Handle core character catching logic for standard spawn messages."""
     if not message.from_user:
@@ -80,7 +81,7 @@ async def seal_handler(_, message: types.Message):
                 # Some Pyrogram versions require a list, others a single emoji;
                 # using the single emoji string is standard for most.
                 await app.send_reaction(chat_id, message_id=message.id, emoji=selected)
-            except Exception as e:
+            except errors.PyrogramError as e:
                 LOGGER.debug(f"Reaction task handled: {e}")
 
         asyncio.create_task(send_reactions())
@@ -111,7 +112,7 @@ async def seal_handler(_, message: types.Message):
         if spawn_msg_id:
             try:
                 await app.delete_messages(chat_id, spawn_msg_id)
-            except Exception:
+            except errors.PyrogramError:
                 pass
 
         caption = (
@@ -125,6 +126,7 @@ async def seal_handler(_, message: types.Message):
         await reply_media_dynamic(message, character['img_url'], caption=caption, parse_mode=ParseMode.HTML)
 
 @app.on_message(filters.command("messagecount") & filters.group)
+@handle_errors
 async def messagecount_handler(_, message: types.Message):
     """View the total message count and distance to next spawn."""
     from Grabber.core.spawn_utils import get_target_spawn_frequency
@@ -148,6 +150,7 @@ async def messagecount_handler(_, message: types.Message):
     await message.reply_text(response, parse_mode=ParseMode.HTML)
 
 @app.on_message(filters.command("cnow") & filters.group)
+@handle_errors
 async def cnow_handler(_, message: types.Message):
     """Force a character spawn (Owner/Sudo only)."""
     if not message.from_user or (message.from_user.id not in sudo_users and message.from_user.id != OWNER_ID):
@@ -161,6 +164,7 @@ async def cnow_handler(_, message: types.Message):
     await send_character(message.chat.id, selected_rarity)
 
 @app.on_message(filters.command("search"))
+@handle_errors
 async def search_waifu(_, message: types.Message):
 
     keyboard = [

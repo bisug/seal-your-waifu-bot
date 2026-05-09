@@ -2,13 +2,13 @@ import asyncio
 import random
 from datetime import datetime, timezone
 
-from pyrogram import enums, filters, types
+from pyrogram import errors, enums, filters, types
 from pyrogram.enums import ParseMode
 
 from Grabber import app, collection, user_collection
 from Grabber.core.balance import update_user_balance
 from Grabber.core.user import add_char_to_user, get_user_data, update_user
-from Grabber.core.utils import html_escape, reply_media_dynamic
+from Grabber.core.utils import handle_errors, html_escape, reply_media_dynamic
 
 start_messages = [
     "Finally the time has come",
@@ -47,6 +47,7 @@ async def get_random_waifu():
     return res[0] if res else None
 
 @app.on_message(filters.command("propose"))
+@handle_errors
 async def propose_command(_, message: types.Message):
     user_id = message.from_user.id
     user = await get_user_data(user_id)

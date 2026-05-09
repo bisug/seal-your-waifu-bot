@@ -4,6 +4,7 @@ from pyrogram import enums, errors, filters, types
 from pyrogram.enums import ParseMode
 
 from Grabber import LOGGER, OWNER_ID, app
+from Grabber.core.utils import handle_errors
 from Grabber.database import group_collection, total_pm_users
 
 # Rate limiter: max 25 concurrent sends at any time, with a short yield between
@@ -34,6 +35,7 @@ async def _safe_forward(msg, target_id: int, max_retries: int = 3):
 
 
 @app.on_message(filters.command("broadcast") & filters.user(OWNER_ID))
+@handle_errors
 async def broadcast_handler(_, message: types.Message):
     if not message.reply_to_message:
         return await message.reply_text("❌ <b>Reply to a message to broadcast.</b>", parse_mode=ParseMode.HTML)

@@ -5,7 +5,7 @@ import random
 import time
 from typing import Any, Dict, Optional
 
-from pyrogram import enums
+from pyrogram import errors, enums
 from pyrogram.enums import ParseMode
 
 from Grabber import LOGGER, app, config

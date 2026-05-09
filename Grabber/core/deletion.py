@@ -55,8 +55,17 @@ async def deletion_worker():
                 except errors.FloodWait as e:
                     LOGGER.warning(f"FloodWait {e.value}s during deletion for {chat_id}, skipping batch this cycle")
                     continue  # Skip — these will be retried next cycle
-                except (errors.Forbidden, errors.MessageDeleteForbidden):
+                except (errors.Forbidden, errors.MessageDeleteForbidden, errors.Unauthorized):
                     pass  # No delete permission — still mark as processed to avoid infinite retry
+                except errors.SlowmodeWait as e:
+                    LOGGER.warning(f"SlowmodeWait {e.value}s during deletion in {chat_id}")
+                    await asyncio.sleep(e.value)
+                    continue  # Skip marking as processed, retry next cycle
+                except errors.BadRequest as e:
+                    if "MESSAGE_ID_INVALID" in str(e) or "CHAT_ID_INVALID" in str(e):
+                        pass # Mark as processed
+                    else:
+                        LOGGER.debug(f"BadRequest in deletion batch {chat_id}: {e}")
                 except Exception as e:
                     LOGGER.debug(f"Failed to delete batch in {chat_id}: {e}")
                 processed_ids.extend([m["_id"] for m in msgs])

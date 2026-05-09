@@ -45,7 +45,7 @@ async def upload_image_to_catbox(file_path: str) -> Optional[str]:
                 if response.status_code == 200 and response.text.startswith("https://"):
                     return response.text.strip()
         return None
-    except Exception as e:
+    except httpx.HTTPError as e:
         LOGGER.error(f"Catbox Upload Error: {e}")
         return None
 
@@ -68,7 +68,7 @@ async def upload_image_to_imgbb(file_path: str) -> Optional[str]:
                 if response_data.get('success'):
                     return response_data['data']['url']
         return None
-    except Exception as e:
+    except httpx.HTTPError as e:
         LOGGER.error(f"ImgBB Upload Error: {e}")
         return None
 
