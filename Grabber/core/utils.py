@@ -1,7 +1,11 @@
+import asyncio
 import html
 import logging
 import re
 from datetime import datetime, timezone
+from functools import wraps
+
+from pyrogram import errors
 
 
 def get_now_utc() -> datetime:
@@ -102,3 +106,32 @@ async def reply_media_dynamic(message_obj, media_url, **kwargs):
     if isinstance(media_url, str) and media_url.endswith(('.mp4', '.webm', '.gif')):
         return await message_obj.reply_video(video=media_url, **kwargs)
     return await message_obj.reply_photo(photo=media_url, **kwargs)
+
+def handle_errors(func):
+    """
+    Decorator to handle common Pyrogram errors in command handlers.
+    Catches FloodWait, SlowmodeWait, and other API errors.
+    """
+    @wraps(func)
+    async def wrapper(client, message, *args, **kwargs):
+        try:
+            return await func(client, message, *args, **kwargs)
+        except errors.FloodWait as e:
+            LOGGER.warning(f"FloodWait in {func.__name__}: {e.value}s")
+            await asyncio.sleep(e.value)
+            try:
+                return await func(client, message, *args, **kwargs)
+            except Exception as e2:
+                LOGGER.error(f"Retry after FloodWait failed in {func.__name__}: {e2}")
+        except errors.SlowmodeWait as e:
+            LOGGER.warning(f"SlowmodeWait in {func.__name__}: {e.value}s")
+            # Usually we don't sleep for slowmode in a handler, just inform or ignore
+        except (errors.Forbidden, errors.Unauthorized) as e:
+            LOGGER.debug(f"Permission error in {func.__name__}: {e}")
+        except errors.MessageNotModified:
+            pass
+        except errors.BadRequest as e:
+            LOGGER.error(f"BadRequest in {func.__name__}: {e}")
+        except Exception as e:
+            LOGGER.error(f"Unhandled error in {func.__name__}: {e}", exc_info=True)
+    return wrapper

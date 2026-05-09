@@ -1,14 +1,14 @@
 import math
 import random
 
-from pyrogram import enums, filters, types
+from pyrogram import errors, enums, filters, types
 from pyrogram.enums import ParseMode
 
 from config import config
 from Grabber import LOGGER, PHOTO_URL, WEB_APP_URL, app, user_collection
 from Grabber.core.progression import get_progress_bar, get_user_progress
 from Grabber.core.user import get_active_pet, get_user_data
-from Grabber.core.utils import html_escape, reply_media_dynamic
+from Grabber.core.utils import handle_errors, html_escape, reply_media_dynamic
 from Grabber.database import collection
 
 RARITY_ICONS = {
@@ -18,6 +18,7 @@ RARITY_ICONS = {
 }
 
 @app.on_message(filters.command(["profile", "myprofile", "me", "status", "mystatus"]))
+@handle_errors
 async def profile_handler(_, message: types.Message):
     """Generate and display the user's progress and collection profile."""
     user_id = message.from_user.id

@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from pyrogram import ContinuePropagation, filters
+from pyrogram import errors, ContinuePropagation, filters
 
 from Grabber import app, game_bot
 from Grabber.database import r, user_collection

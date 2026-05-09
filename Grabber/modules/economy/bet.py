@@ -1,15 +1,17 @@
 import asyncio
 import random
 
-from pyrogram import enums, filters, types
+from pyrogram import errors, enums, filters, types
 from pyrogram.enums import ParseMode
 
 from Grabber import app, user_collection
+from Grabber.core.utils import handle_errors
 from Grabber.core.cache import invalidate_user_cache
 
 CURRENCY_SYMBOL = "⬪"
 
 @app.on_message(filters.command("bet"))
+@handle_errors
 async def bet_cmd(_, message: types.Message):
 
     user_id = message.from_user.id

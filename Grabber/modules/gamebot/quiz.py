@@ -3,7 +3,7 @@ import random
 import time
 
 import httpx
-from pyrogram import enums, filters, types
+from pyrogram import errors, enums, filters, types
 from pyrogram.enums import ParseMode
 
 from Grabber import LOGGER, app, game_bot, quiz_questions_collection

@@ -12,7 +12,7 @@ from Grabber.core.cache import is_on_cooldown as redis_cooldown
 from Grabber.core.progression import add_xp
 from Grabber.core.sessions import create_session, delete_session, get_session
 from Grabber.core.user import get_active_pet
-from Grabber.core.utils import html_escape
+from Grabber.core.utils import handle_errors, html_escape
 from Grabber.modules.progression.achievements import check_achievements
 from Grabber.modules.progression.quests import update_quest_progress
 
@@ -118,6 +118,7 @@ def simulate_battle(p1_stats, p2_stats, p1_name, p2_name):
 
 
 @app.on_message(filters.command("battle") & filters.group)
+@handle_errors
 async def battle_challenge_handler(_, message: types.Message):
     """
     Handle the /battle command to challenge another user.
@@ -267,7 +268,7 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
 
         await query.message.edit_text(result_text, parse_mode=ParseMode.HTML)
 
-    except Exception as e:
+    except errors.PyrogramError as e:
         LOGGER.error(f"Battle Error: {e}")
         try:
             await query.message.reply_text("❌ A technical error occurred during battle.", parse_mode=ParseMode.HTML)

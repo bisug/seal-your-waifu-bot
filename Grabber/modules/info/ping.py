@@ -3,10 +3,11 @@ import platform
 import time
 
 import psutil
-from pyrogram import enums, filters, types
+from pyrogram import errors, enums, filters, types
 from pyrogram.enums import ParseMode
 
 from Grabber import StartTime, app, db
+from Grabber.core.utils import handle_errors
 
 
 def get_readable_time(seconds: int) -> str:
@@ -41,6 +42,7 @@ def status_flag(percent):
         return "[High Load]"
 
 @app.on_message(filters.command("ping"))
+@handle_errors
 async def ping(_, message: types.Message) -> None:
     start_time = time.time()
     sent_msg = await message.reply_text("<b>Pinging...</b>", parse_mode=ParseMode.HTML)

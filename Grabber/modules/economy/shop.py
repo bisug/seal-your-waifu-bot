@@ -12,7 +12,7 @@ from Grabber.core.constants import RARITY_PRICES, SHOP_LIMIT, SHOP_RARITY
 from Grabber.core.keyboard import KeyboardBuilder, get_webapp_button
 from Grabber.core.sessions import create_session, get_session
 from Grabber.core.user import get_user_filter
-from Grabber.core.utils import html_escape, reply_media_dynamic
+from Grabber.core.utils import handle_errors, html_escape, reply_media_dynamic
 from Grabber.database import daily_shop_collection
 from Grabber.database.models import Character, User
 from Grabber.modules.collection.rarities import RARITY_MAP
@@ -58,6 +58,7 @@ async def get_daily_shop_characters():
 SHOP_BANNER = config.PHOTO_URL[0]
 
 @app.on_message(filters.command("cshop"))
+@handle_errors
 async def cshop_cmd(_, message: types.Message):
     chars = await get_daily_shop_characters()
     if not chars:
@@ -70,6 +71,7 @@ async def cshop_cmd(_, message: types.Message):
     await send_shop_message(message, user_id)
 
 @app.on_message(filters.command("shop"))
+@handle_errors
 async def shop_hub(_, message: types.Message):
     await send_shop_hub(message)
 
@@ -93,12 +95,12 @@ async def send_shop_hub(message_or_query):
         else:
             await reply_media_dynamic(message_or_query, SHOP_BANNER, caption=text, reply_markup=reply_markup, parse_mode=ParseMode.HTML
             )
-    except Exception as e:
+    except errors.PyrogramError as e:
         LOGGER.error(f"Error in send_shop_hub: {e}")
         if isinstance(message_or_query, types.CallbackQuery):
             try:
                 await message_or_query.message.edit_text(text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
-            except Exception as e:
+            except errors.PyrogramError as e:
                 LOGGER.debug(f"Non-critical fallback error: {e}")
         else:
             await message_or_query.reply_text(text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
@@ -190,7 +192,7 @@ async def send_shop_message(message, user_id):
             )
     except errors.MessageNotModified:
         pass
-    except Exception as e:
+    except errors.PyrogramError as e:
         LOGGER.error(f"Error in send_shop_message: {e}")
 
 @app.on_callback_query(filters.regex(r"^shop_(prev|next):(\d+)$"))
@@ -325,6 +327,7 @@ async def buy_character(_, query: types.CallbackQuery):
     await query.answer("Success!")
 
 @app.on_message(filters.command("buylevel"))
+@handle_errors
 async def buy_level_cmd(_, message: types.Message):
     user_id = message.from_user.id
     try:

@@ -1,11 +1,13 @@
-from pyrogram import enums, filters, types
+from pyrogram import errors, enums, filters, types
 from pyrogram.enums import ParseMode
 
 from Grabber import LOGGER, OWNER_ID, app, sudo_users, sudo_filter
+from Grabber.core.utils import handle_errors
 from Grabber.database import sudo_collection
 
 
 @app.on_message(filters.command("addsudo") & filters.user(OWNER_ID))
+@handle_errors
 async def addsudo_handler(_, message: types.Message):
     if len(message.command) < 2 or not message.command[1].isdigit():
         return await message.reply_text("❌ Provide a User ID.", parse_mode=ParseMode.HTML)
@@ -26,6 +28,7 @@ async def addsudo_handler(_, message: types.Message):
         await message.reply_text(f"❌ <b>Database Error:</b> Failed to add user.", parse_mode=ParseMode.HTML)
 
 @app.on_message(filters.command("rmsudo") & filters.user(OWNER_ID))
+@handle_errors
 async def rmsudo_handler(_, message: types.Message):
     if len(message.command) < 2 or not message.command[1].isdigit():
         return await message.reply_text("❌ Provide a User ID.", parse_mode=ParseMode.HTML)
@@ -45,6 +48,7 @@ async def rmsudo_handler(_, message: types.Message):
         await message.reply_text(f"❌ <b>Database Error:</b> Failed to remove user.", parse_mode=ParseMode.HTML)
 
 @app.on_message(filters.command("sudolist") & sudo_filter)
+@handle_errors
 async def sudolist_handler(_, message: types.Message):
     cursor = sudo_collection.find({})
     sudos = await cursor.to_list(length=None)

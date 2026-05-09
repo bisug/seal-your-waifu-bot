@@ -10,7 +10,7 @@ from pyrogram.enums import ParseMode
 
 from config import config
 from Grabber import GALLERY_CHANNEL_ID, LOGGER, OWNER_ID, app, sudo_users, sudo_filter
-from Grabber.core.utils import html_escape
+from Grabber.core.utils import handle_errors, html_escape
 from Grabber.core.waifu import (get_character_by_id, invalidate_character_cache,
                                 upload_media_safely)
 from Grabber.database import collection, r
@@ -30,6 +30,7 @@ def get_rarity_help():
     )
 
 @app.on_message(filters.command("update") & sudo_filter)
+@handle_errors
 async def update_waifu_handler(_, message: types.Message):
     """
     Parses /update <id> field="value" ...

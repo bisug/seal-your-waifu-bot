@@ -1,12 +1,12 @@
 import os
 
 import httpx
-from pyrogram import enums, filters, types
+from pyrogram import errors, enums, filters, types
 from pyrogram.enums import ParseMode
 
 from config import config
 from Grabber import LOGGER, app
-from Grabber.core.utils import reply_media_dynamic
+from Grabber.core.utils import handle_errors, reply_media_dynamic
 from Grabber.core.waifu import upload_media_safely
 
 IMGBB_API_KEY = config.IMGBB_API_KEY
@@ -14,6 +14,7 @@ IMGBB_API_KEY = config.IMGBB_API_KEY
 
 
 @app.on_message(filters.command("tgm"))
+@handle_errors
 async def tgm_cmd(_, message: types.Message) -> None:
     target_msg = message.reply_to_message if message.reply_to_message else message
 

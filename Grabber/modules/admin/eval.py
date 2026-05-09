@@ -5,11 +5,12 @@ import textwrap
 import traceback
 from contextlib import redirect_stdout
 
-from pyrogram import enums, filters, types
+from pyrogram import errors, enums, filters, types
 from pyrogram.enums import ParseMode
 
 from config import config
 from Grabber import LOGGER, OWNER_ID, app, sudo_users
+from Grabber.core.utils import handle_errors
 
 namespaces = {}
 AUTHORIZED_USERS = [OWNER_ID]
@@ -44,6 +45,7 @@ def cleanup_code(code):
     return code.strip("` \n")
 
 @app.on_message(filters.command(["e", "ev", "eva", "eval", "x", "ex", "exe", "exec", "py"]) & filters.user(AUTHORIZED_USERS))
+@handle_errors
 async def evaluate_or_execute(_, message: types.Message):
     content = message.text.split(None, 1)
     if len(content) < 2:
@@ -89,6 +91,7 @@ async def evaluate_or_execute(_, message: types.Message):
              await send_result(value, message)
 
 @app.on_message(filters.command("clearlocals") & filters.user(AUTHORIZED_USERS))
+@handle_errors
 async def clear_locals(_, message: types.Message):
     global namespaces
     if message.chat.id in namespaces:
