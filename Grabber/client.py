@@ -4,7 +4,6 @@ import logging
 import re
 
 from pyrogram import Client, enums, errors, filters, types
-from pyrogram.enums import ParseMode
 from pyrogram.handlers import MessageHandler
 
 from config import config
@@ -63,12 +62,25 @@ class SealClient(Client):
                 return None
             await asyncio.sleep(e.value)
             return await self.send_message_safe(chat_id, text, *args, _retries=_retries+1, **kwargs)
+        except errors.SlowmodeWait as e:
+            if _retries >= 3:
+                LOGGER.error(f"[{self.name}] SlowmodeWait limit reached for {chat_id}")
+                return None
+            LOGGER.warning(f"[{self.name}] SlowmodeWait for {chat_id}: {e.value}s")
+            await asyncio.sleep(e.value)
+            return await self.send_message_safe(chat_id, text, *args, _retries=_retries+1, **kwargs)
         except (errors.PeerIdInvalid, errors.ChannelInvalid) as e:
             if _retries == 0:
                 LOGGER.info(f"[{self.name}] Resolving peer {chat_id} after {type(e).__name__}")
                 await self.resolve_peer_safe(chat_id)
                 return await self.send_message_safe(chat_id, text, *args, _retries=1, **kwargs)
             LOGGER.error(f"[{self.name}] Peer resolution failed for {chat_id}: {e}")
+            return None
+        except (errors.Forbidden, errors.Unauthorized) as e:
+            LOGGER.debug(f"[{self.name}] Permission denied in {chat_id}: {e}")
+            return None
+        except errors.BadRequest as e:
+            LOGGER.error(f"[{self.name}] BadRequest in {chat_id}: {e}")
             return None
         except Exception as e:
             LOGGER.error(f"[{self.name}] Failed to send message to {chat_id}: {e}")
@@ -95,10 +107,21 @@ class SealClient(Client):
             if _retries >= 2: return None
             await asyncio.sleep(e.value)
             return await self.send_media_safe(chat_id, media_url, *args, _retries=_retries+1, **kwargs)
+        except errors.SlowmodeWait as e:
+            if _retries >= 2: return None
+            LOGGER.warning(f"[{self.name}] SlowmodeWait for {chat_id}: {e.value}s")
+            await asyncio.sleep(e.value)
+            return await self.send_media_safe(chat_id, media_url, *args, _retries=_retries+1, **kwargs)
         except (errors.PeerIdInvalid, errors.ChannelInvalid) as e:
             if _retries == 0:
                 await self.resolve_peer_safe(chat_id)
                 return await self.send_media_safe(chat_id, media_url, *args, _retries=1, **kwargs)
+            return None
+        except (errors.Forbidden, errors.Unauthorized) as e:
+            LOGGER.debug(f"[{self.name}] Permission denied in {chat_id}: {e}")
+            return None
+        except errors.BadRequest as e:
+            LOGGER.error(f"[{self.name}] BadRequest in {chat_id}: {e}")
             return None
         except Exception as e:
             LOGGER.error(f"[{self.name}] Failed to send media to {chat_id}: {e}")
@@ -121,10 +144,17 @@ class SealClient(Client):
             LOGGER.warning(f"[{self.name}] FloodWait detected: Sleeping for {e.value}s")
             await asyncio.sleep(e.value)
             return await self.edit_message_text_safe(chat_id, message_id, text, *args, _retries=_retries+1, **kwargs)
-        except Exception as e:
-            # Silently ignore "Message is not modified" errors which are common
+        except errors.MessageNotModified:
+            return None
+        except (errors.Forbidden, errors.Unauthorized) as e:
+            LOGGER.debug(f"[{self.name}] Permission denied in {chat_id}: {e}")
+            return None
+        except errors.BadRequest as e:
             if "MESSAGE_NOT_MODIFIED" not in str(e):
-                LOGGER.error(f"[{self.name}] Error editing message text in {chat_id}: {e}")
+                LOGGER.error(f"[{self.name}] BadRequest in {chat_id}: {e}")
+            return None
+        except Exception as e:
+            LOGGER.error(f"[{self.name}] Error editing message text in {chat_id}: {e}")
             return None
 
     async def edit_message_caption_safe(self, chat_id, message_id, caption, *args, _retries=0, **kwargs):
@@ -144,9 +174,17 @@ class SealClient(Client):
             LOGGER.warning(f"[{self.name}] FloodWait detected: Sleeping for {e.value}s")
             await asyncio.sleep(e.value)
             return await self.edit_message_caption_safe(chat_id, message_id, caption, *args, _retries=_retries+1, **kwargs)
-        except Exception as e:
+        except errors.MessageNotModified:
+            return None
+        except (errors.Forbidden, errors.Unauthorized) as e:
+            LOGGER.debug(f"[{self.name}] Permission denied in {chat_id}: {e}")
+            return None
+        except errors.BadRequest as e:
             if "MESSAGE_NOT_MODIFIED" not in str(e):
-                LOGGER.error(f"[{self.name}] Error editing message caption in {chat_id}: {e}")
+                LOGGER.error(f"[{self.name}] BadRequest in {chat_id}: {e}")
+            return None
+        except Exception as e:
+            LOGGER.error(f"[{self.name}] Error editing message caption in {chat_id}: {e}")
             return None
 
     async def edit_message_reply_markup_safe(self, chat_id, message_id, reply_markup, *args, _retries=0, **kwargs):
@@ -160,9 +198,17 @@ class SealClient(Client):
             LOGGER.warning(f"[{self.name}] FloodWait detected: Sleeping for {e.value}s")
             await asyncio.sleep(e.value)
             return await self.edit_message_reply_markup_safe(chat_id, message_id, reply_markup, *args, _retries=_retries+1, **kwargs)
-        except Exception as e:
+        except errors.MessageNotModified:
+            return None
+        except (errors.Forbidden, errors.Unauthorized) as e:
+            LOGGER.debug(f"[{self.name}] Permission denied in {chat_id}: {e}")
+            return None
+        except errors.BadRequest as e:
             if "MESSAGE_NOT_MODIFIED" not in str(e):
                 LOGGER.error(f"[{self.name}] Error editing message markup in {chat_id}: {e}")
+            return None
+        except Exception as e:
+            LOGGER.error(f"[{self.name}] Error editing message markup in {chat_id}: {e}")
             return None
 
     async def start(self, *args, **kwargs):
