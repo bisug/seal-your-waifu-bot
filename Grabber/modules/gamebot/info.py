@@ -1,15 +1,10 @@
-from pyrogram import enums, filters, types
-from pyrogram.enums import ParseMode
-
+from pyrogram import enums, errors, filters, types
 from config import config
 from Grabber import BOT_USERNAME, game_bot
-
-
 @game_bot.on_message(filters.command(["start", "help"]))
 async def gamebot_start_handler(_, message: types.Message):
     """Dedicated /start and /help handler for GameBot."""
     main_bot_mention = f"@{BOT_USERNAME}" if BOT_USERNAME else "our main bot"
-    
     text = (
         "<b>🎮 Welcome to the GameBot!</b>\n\n"
         f"I am the secondary assistant for {main_bot_mention}, dedicated to providing fun and interactive mini-games. "
@@ -21,7 +16,6 @@ async def gamebot_start_handler(_, message: types.Message):
         "🔹 <code>/bid &lt;amount&gt;</code> - Participate in live Character Auctions\n\n"
         f"<i>Check out {main_bot_mention} for the full Seal-Bot experience!</i>"
     )
-    
     buttons = [
         [
             types.InlineKeyboardButton("🛠 Support Group", url=f"https://t.me/{config.SUPPORT_CHAT}", style=enums.ButtonStyle.PRIMARY),
@@ -33,11 +27,10 @@ async def gamebot_start_handler(_, message: types.Message):
     ]
     # Filter out None buttons
     buttons = [[b for b in row if b] for row in buttons]
-    
     await game_bot.send_message_safe(
         message.chat.id,
         text,
         reply_markup=types.InlineKeyboardMarkup(buttons),
-        parse_mode=ParseMode.HTML,
+        parse_mode=enums.ParseMode.HTML,
         reply_parameters=types.ReplyParameters(message_id=message.id)
     )
