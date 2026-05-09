@@ -5,21 +5,16 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
-    # ==========================================
-    # ---          BOT IDENTITY            ---
-    # ==========================================
-    TOKEN = os.getenv("TOKEN", "7888451649:AAFsl_vtOiN7dDvE-bLx32WJ-Gof-oc1zA0")
-    SUB_TOKEN = os.getenv("SUB_TOKEN", "8785400009:AAG6gvkM-BH8Jq7NCKzVczNRUPrkm3O9-Y4")
+    # --- BOT IDENTITY ---
+    TOKEN = os.getenv("TOKEN")
+    SUB_TOKEN = os.getenv("SUB_TOKEN")
     BOT_USERNAME = None  # Fetched automatically at startup
     BOT_ID = None        # Fetched automatically at startup
     BOT_NAME = None      # Fetched automatically at startup
 
-    # ==========================================
-    # ---       TELEGRAM API ACCESS        ---
-    # ==========================================
-    API_ID = int(os.getenv("API_ID", "25635673"))
-    API_HASH = os.getenv("API_HASH", "ec69ce8b56c71541499c914fabd08286")
-    STRING_SESSION = os.getenv("STRING_SESSION", "BQEyrwMApp5yi6-jKRCfwSBL2tVRNfSgDCGYMh61lWDKQnYwkDIQc6xaKuavcM_jCv0RYUEq1ye_hwpx5Mw-jRlDLGROn8eZ3RFQniaMALDiGnwsRWD82ReJsXV-zPsFlcf7nT60bis0bALIBAbKeR8gBcnba5q9tgmWXd11sSRmvQy9zgXJ7K8PM4Zvi_9sCOSuyQhd6R_NicLWTW3dIMUbwznCrWi8-FZA21kxD3YfitVEHyR_C4LUhkYPlP8iqkQzrxbIDwVZ8Zr-3gsw38u40PT1RqqjDyhIr8wl1KX4Pt3QUqAAttyiq5e5BaT2WLc7ga4Sxb_NwJqBKlNU0vRUnYHxegAAAAHXQT_PAA")
+    # --- TELEGRAM API CREDENTIALS ---
+    API_ID = int(os.getenv("API_ID", "0"))
+    API_HASH = os.getenv("API_HASH")
 
     # ==========================================
     # ---      DATABASE INFRASTRUCTURE     ---
@@ -27,10 +22,8 @@ class Config:
     MONGO_URL = os.getenv("MONGO_URL", "mongodb+srv://botmaker9675208:botmaker9675208@cluster0.sc9mq8b.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
     REDIS_URL = os.getenv("REDIS_URL", "rediss://default:AVNS_3H0cohKfeMSPJAn2TeO@sealbot-friendclub-35f1.k.aivencloud.com:28970")
 
-    # ==========================================
-    # ---          PRIVILEGED USERS         ---
-    # ==========================================
-    OWNER_ID = int(os.getenv("OWNER_ID", "7804972365"))
+    # --- PRIVILEGED USERS ---
+    OWNER_ID = int(os.getenv("OWNER_ID", "0"))
     SUDO_USERS = [int(i.strip()) for i in os.getenv("SUDO_USERS", "7717913705, 6574393060, 6388703157, 6858372924").split(",") if i.strip().isdigit()]
 
     # ==========================================
