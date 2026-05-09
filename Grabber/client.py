@@ -123,8 +123,6 @@ class SealClient(Client):
         except errors.BadRequest as e:
             LOGGER.error(f"[{self.name}] BadRequest in {chat_id}: {e}")
             return None
-
-            return None
         except Exception as e:
             LOGGER.error(f"[{self.name}] Failed to send media to {chat_id}: {e}")
             return None
@@ -154,7 +152,6 @@ class SealClient(Client):
         except errors.BadRequest as e:
             if "MESSAGE_NOT_MODIFIED" not in str(e):
                 LOGGER.error(f"[{self.name}] BadRequest in {chat_id}: {e}")
-
             return None
         except Exception as e:
             LOGGER.error(f"[{self.name}] Error editing message text in {chat_id}: {e}")
@@ -185,7 +182,6 @@ class SealClient(Client):
         except errors.BadRequest as e:
             if "MESSAGE_NOT_MODIFIED" not in str(e):
                 LOGGER.error(f"[{self.name}] BadRequest in {chat_id}: {e}")
-
             return None
         except Exception as e:
             LOGGER.error(f"[{self.name}] Error editing message caption in {chat_id}: {e}")
@@ -210,7 +206,6 @@ class SealClient(Client):
         except errors.BadRequest as e:
             if "MESSAGE_NOT_MODIFIED" not in str(e):
                 LOGGER.error(f"[{self.name}] Error editing message markup in {chat_id}: {e}")
-
             return None
         except Exception as e:
             LOGGER.error(f"[{self.name}] Error editing message markup in {chat_id}: {e}")
