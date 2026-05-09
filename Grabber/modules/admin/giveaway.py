@@ -1,6 +1,13 @@
 import random
 import string
+<<<<<<< HEAD
 from pyrogram import enums, errors, filters, types
+=======
+
+from pyrogram import errors, enums, filters, types
+from pyrogram.enums import ParseMode
+
+>>>>>>> beta
 from config import config
 from Grabber import (LOGGER, MAIN_GROUP_ID, OWNER_ID, app, collection,
                      user_collection)

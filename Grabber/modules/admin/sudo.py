@@ -1,4 +1,10 @@
+<<<<<<< HEAD
 from pyrogram import enums, errors, filters, types
+=======
+from pyrogram import errors, enums, filters, types
+from pyrogram.enums import ParseMode
+
+>>>>>>> beta
 from Grabber import LOGGER, OWNER_ID, app, sudo_users, sudo_filter
 from Grabber.core.utils import handle_errors
 from Grabber.database import sudo_collection

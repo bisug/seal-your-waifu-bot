@@ -3,6 +3,8 @@ import random
 import re
 import time
 from pyrogram import enums, errors, filters, types
+from pyrogram.enums import ParseMode
+
 from Grabber import (LOGGER, collection, game_bot, sessions_collection,
                      user_collection)
 from Grabber.core.balance import update_user_balance
