@@ -6,6 +6,7 @@ from .routes.progression import router as progression_router
 from .routes.shop import router as shop_router
 # Import the refactored modular routes
 from .routes.users import router as users_router
+from .routes.social import router as social_router
 
 # Create Master Router
 router = APIRouter()
@@ -16,3 +17,4 @@ router.include_router(users_router, tags=["users"])
 router.include_router(harem_router, tags=["harem"])
 router.include_router(progression_router, tags=["progression"])
 router.include_router(shop_router, tags=["shop"])
+router.include_router(social_router, tags=["social"])
