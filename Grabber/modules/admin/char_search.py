@@ -1,11 +1,11 @@
 import hashlib
 
-from pyrogram import enums, filters, types
+from pyrogram import errors, enums, filters, types
 from pyrogram.enums import ParseMode
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from Grabber import LOGGER, app, collection
-from Grabber.core.utils import html_escape as escape
+from Grabber.core.utils import handle_errors, html_escape as escape
 from Grabber.database import r
 
 # --- PAGINATION HELPERS ---
@@ -67,6 +67,7 @@ async def get_search_results_page(query, search_type, page=1):
 
 
 @app.on_message(filters.command("sips"))
+@handle_errors
 async def search_character(_, message: types.Message):
     if len(message.command) < 2:
         return await message.reply_text("Please provide a name to search for.")
@@ -81,6 +82,7 @@ async def search_character(_, message: types.Message):
 
 
 @app.on_message(filters.command("sani"))
+@handle_errors
 async def search_anime(_, message: types.Message):
     if len(message.command) < 2:
         return await message.reply_text("Please provide an anime title to search for.")
@@ -123,6 +125,7 @@ async def search_callback_handler(_, query: types.CallbackQuery):
 
 
 @app.on_message(filters.command("animes"))
+@handle_errors
 async def anime_list(_, message: types.Message):
     try:
         anime_names = await collection.distinct("anime")

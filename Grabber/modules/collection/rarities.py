@@ -1,4 +1,4 @@
-from pyrogram import enums, filters, types
+from pyrogram import errors, enums, filters, types
 from pyrogram.enums import ParseMode
 
 from Grabber import app

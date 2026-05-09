@@ -1,14 +1,15 @@
-from pyrogram import enums, filters, types
+from pyrogram import errors, enums, filters, types
 from pyrogram.enums import ParseMode
 
 from Grabber import LOGGER, OWNER_ID, app, sudo_users, user_collection, sudo_filter
-from Grabber.core.utils import html_escape
+from Grabber.core.utils import handle_errors, html_escape
 from Grabber.modules.progression.achievements import check_achievements
 from Grabber.modules.progression.quests import update_quest_progress
 
 
 
 @app.on_message(filters.command("givebalance"))
+@handle_errors
 async def give_balance(_, message: types.Message):
     sender_id = message.from_user.id
 
@@ -59,6 +60,7 @@ async def give_balance(_, message: types.Message):
 
 
 @app.on_message(filters.command("takebalance"))
+@handle_errors
 async def take_balance(_, message: types.Message):
     sender_id = message.from_user.id
 

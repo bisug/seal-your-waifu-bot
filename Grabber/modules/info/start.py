@@ -8,7 +8,7 @@ from Grabber.core.keyboard import KeyboardBuilder, get_webapp_button
 from Grabber.core.progression import add_xp, get_user_progress
 from Grabber.core.user import get_user_filter, get_user_id, update_user
 from Grabber.core.cache import get_user_rank, get_total_ranked_users
-from Grabber.core.utils import html_escape, reply_media_dynamic
+from Grabber.core.utils import handle_errors, html_escape, reply_media_dynamic
 from Grabber.modules.progression.achievements import check_achievements
 from Grabber.modules.progression.pet import DEFAULT_PET
 
@@ -191,6 +191,7 @@ async def render_start_message(user_id: int, first_name: str, is_private: bool, 
 
 
 @app.on_message(filters.command("start"))
+@handle_errors
 async def start_handler(_, message: types.Message):
     """Entry point for the bot. Handles new users and referral links."""
     user_id = message.from_user.id
@@ -346,6 +347,7 @@ def random_photo():
     return random.choice(PHOTO_URL)
 
 @app.on_message(filters.command("webapp"))
+@handle_errors
 async def webapp_command(_, message):
     is_private = message.chat.type == enums.ChatType.PRIVATE
     webapp_btn = get_webapp_button(is_private)

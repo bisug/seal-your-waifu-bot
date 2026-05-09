@@ -1,8 +1,8 @@
-from pyrogram import enums, filters, types
+from pyrogram import errors, enums, filters, types
 from pyrogram.enums import ParseMode
 
 from Grabber import LOGGER, app, db
-from Grabber.core.utils import html_escape
+from Grabber.core.utils import handle_errors, html_escape
 
 group_collection = db['total_groups']
 
@@ -12,6 +12,7 @@ async def send_log(chat_id: str, message: str):
 
 
 @app.on_message(filters.new_chat_members)
+@handle_errors
 async def on_new_chat_members(_, message: types.Message):
     me = await app.get_me()
     bot_id = me.id
@@ -34,6 +35,7 @@ async def on_new_chat_members(_, message: types.Message):
 
 
 @app.on_message(filters.left_chat_member)
+@handle_errors
 async def on_left_chat_member(_, message: types.Message):
     me = await app.get_me()
     bot_id = me.id

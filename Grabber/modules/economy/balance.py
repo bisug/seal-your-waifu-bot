@@ -2,18 +2,19 @@ import asyncio
 import random
 from datetime import datetime, timezone
 
-from pyrogram import enums, filters, types
+from pyrogram import errors, enums, filters, types
 from pyrogram.enums import ButtonStyle, ParseMode
 
 from Grabber import LOGGER, MAIN_GROUP_ID, OWNER_ID, app, collection
 from Grabber.core.balance import (check_and_deduct, get_user_balance,
                                   update_user_balance)
 from Grabber.core.user import get_user_filter, get_user_id
-from Grabber.core.utils import html_escape
+from Grabber.core.utils import handle_errors, html_escape
 from Grabber.database import user_collection
 
 
 @app.on_message(filters.command(["balance", "bal"]))
+@handle_errors
 async def balance_cmd(_, message: types.Message):
     """Retrieve and display the user's Shards and Zenith balance."""
     user_id = message.from_user.id
@@ -36,6 +37,7 @@ async def balance_cmd(_, message: types.Message):
     await message.reply_text(text, parse_mode=ParseMode.HTML)
 
 @app.on_message(filters.command("pay") & filters.reply)
+@handle_errors
 async def pay_cmd(_, message: types.Message):
     """Initiate a Shard payment to another user via reply."""
     sender_id = message.from_user.id
@@ -118,6 +120,7 @@ async def pay_callback_handler(_, query: types.CallbackQuery):
 
 
 @app.on_message(filters.command("bonus"))
+@handle_errors
 async def bonus_cmd(_, message: types.Message):
     user_id = message.from_user.id
     user = await user_collection.find_one(get_user_filter(user_id), {"bonus_claimed": 1})
@@ -130,6 +133,7 @@ async def bonus_cmd(_, message: types.Message):
     await message.reply_text("You've claimed 3000 ⬪!")
 
 @app.on_message(filters.command("mtop"))
+@handle_errors
 async def mtop_cmd(_, message: types.Message):
     cursor = user_collection.find({}, {"id": 1, "first_name": 1, "balance": 1}).sort("balance", -1).limit(10)
     top_users = await cursor.to_list(length=10)

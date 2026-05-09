@@ -1,7 +1,7 @@
 import random
 from datetime import datetime, timedelta, timezone
 
-from pyrogram import enums, filters, types
+from pyrogram import errors, enums, filters, types
 from pyrogram.enums import ParseMode
 
 from Grabber import LOGGER, MAIN_GROUP_ID, app
@@ -10,7 +10,7 @@ from Grabber.core.cache import (get_daily_date, get_weekly_date,
                                 invalidate_user_cache, set_daily_date,
                                 set_weekly_date)
 from Grabber.core.user import add_char_to_user, get_user_data, update_user
-from Grabber.core.utils import html_escape, reply_media_dynamic
+from Grabber.core.utils import handle_errors, html_escape, reply_media_dynamic
 from Grabber.database import collection
 
 RARITY_WEIGHTS = {
@@ -38,6 +38,7 @@ async def get_daily_waifu():
     return res[0] if res else None
 
 @app.on_message(filters.command("daily") & filters.group)
+@handle_errors
 async def daily_command_handler(_, message: types.Message):
     if message.chat.id != MAIN_GROUP_ID:
         return await message.reply_text("This command only works in the main group.", parse_mode=ParseMode.HTML)
@@ -108,6 +109,7 @@ async def daily_command_handler(_, message: types.Message):
     await reply_media_dynamic(message, char['img_url'], caption=caption, parse_mode=ParseMode.HTML)
 
 @app.on_message(filters.command("weekly") & filters.group)
+@handle_errors
 async def weekly_command_handler(_, message: types.Message):
     if message.chat.id != MAIN_GROUP_ID:
         return await message.reply_text("This command only works in the main group.", parse_mode=ParseMode.HTML)

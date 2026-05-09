@@ -1,11 +1,12 @@
-from pyrogram import enums, filters, types
+from pyrogram import errors, enums, filters, types
 from pyrogram.enums import ParseMode
 
 from Grabber import LOGGER, OWNER_ID, app, collection, user_collection
-from Grabber.core.utils import html_escape, reply_media_dynamic
+from Grabber.core.utils import handle_errors, html_escape, reply_media_dynamic
 
 
 @app.on_message(filters.command("check"))
+@handle_errors
 async def check_character(_, message: types.Message) -> None:
     try:
         if len(message.command) < 2:
@@ -35,6 +36,7 @@ async def check_character(_, message: types.Message) -> None:
         await message.reply_text(f'Error: {str(e)}')
 
 @app.on_message(filters.command("give") & filters.user(OWNER_ID))
+@handle_errors
 async def give_cmd(_, message: types.Message) -> None:
     user_id = message.from_user.id
 
