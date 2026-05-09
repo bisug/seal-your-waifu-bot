@@ -7,22 +7,22 @@ load_dotenv()
 
 class Config:
     # --- BOT IDENTITY ---
-    TOKEN = os.getenv("TOKEN", "7888451649:AAFsl_vtOiN7dDvE-bLx32WJ-Gof-oc1zA0")
-    SUB_TOKEN = os.getenv("SUB_TOKEN", "8785400009:AAG6gvkM-BH8Jq7NCKzVczNRUPrkm3O9-Y4")
+    TOKEN = os.getenv("TOKEN")
+    SUB_TOKEN = os.getenv("SUB_TOKEN")
     BOT_USERNAME = None  # Fetched automatically at startup
     BOT_ID = None        # Fetched automatically at startup
     BOT_NAME = None      # Fetched automatically at startup
 
     # --- TELEGRAM API CREDENTIALS ---
-    API_ID = int(os.getenv("API_ID", "25635673"))
-    API_HASH = os.getenv("API_HASH", "ec69ce8b56c71541499c914fabd08286")
+    API_ID = int(os.getenv("API_ID", "0"))
+    API_HASH = os.getenv("API_HASH")
 
     # --- DATABASE INFRASTRUCTURE ---
-    MONGO_URL = os.getenv("MONGO_URL", "mongodb+srv://botmaker9675208:botmaker9675208@cluster0.sc9mq8b.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
-    REDIS_URL = os.getenv("REDIS_URL", "redis://:UvSaz52wKSnIJfapNAaVkF7apl0xKwh2@redis-13252.crce283.ap-south-1-2.ec2.cloud.redislabs.com:13252")
+    MONGO_URL = os.getenv("MONGO_URL")
+    REDIS_URL = os.getenv("REDIS_URL")
 
     # --- PRIVILEGED USERS ---
-    OWNER_ID = int(os.getenv("OWNER_ID", "7804972365"))
+    OWNER_ID = int(os.getenv("OWNER_ID", "0"))
     SUDO_USERS = [int(i.strip()) for i in os.getenv("SUDO_USERS", "7717913705, 6574393060, 6388703157, 6858372924").split(",") if i.strip().isdigit()]
 
     # --- CHANNEL & GROUP IDS ---
