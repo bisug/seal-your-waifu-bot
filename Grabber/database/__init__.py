@@ -1,7 +1,7 @@
 import logging
 
 import redis.asyncio as redis
-from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import AsyncMongoClient
 
 from config import config
 
@@ -12,7 +12,7 @@ class Database:
     """Database abstraction layer for MongoDB connections."""
     def __init__(self, uri):
         """Initialize MongoDB client and collection references."""
-        self.client = AsyncIOMotorClient(uri)
+        self.client = AsyncMongoClient(uri)
         self.db = self.client['Character_catchers']
 
         # NOTE: Legacy collection names contain intentional typos (e.g. 'user_totalssss')
