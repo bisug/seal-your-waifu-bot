@@ -66,7 +66,7 @@ export const ToastProvider = ({ children }) => {
               exit={{ y: -10, opacity: 0, scale: 0.95 }}
               className="glass-panel w-full px-4 py-3 rounded-2xl border border-white/10 shadow-2xl flex items-center space-x-3 pointer-events-auto"
             >
-              <div className={toast.type === 'success' ? 'text-brand-neon' : toast.type === 'error' ? 'text-red-500' : 'text-brand-accent'}>
+            <div className={toast.type === 'success' ? 'text-brand-accent' : toast.type === 'error' ? 'text-red-500' : 'text-brand-accent'}>
                 {toast.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
               </div>
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-200 truncate pr-2">
