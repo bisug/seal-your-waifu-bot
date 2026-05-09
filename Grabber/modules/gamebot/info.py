@@ -1,0 +1,43 @@
+from pyrogram import enums, filters, types
+from pyrogram.enums import ParseMode
+
+from config import config
+from Grabber import BOT_USERNAME, game_bot
+
+
+@game_bot.on_message(filters.command(["start", "help"]))
+async def gamebot_start_handler(_, message: types.Message):
+    """Dedicated /start and /help handler for GameBot."""
+    main_bot_mention = f"@{BOT_USERNAME}" if BOT_USERNAME else "our main bot"
+    
+    text = (
+        "<b>🎮 Welcome to the GameBot!</b>\n\n"
+        f"I am the secondary assistant for {main_bot_mention}, dedicated to providing fun and interactive mini-games. "
+        "Earn <b>Shards</b> and test your knowledge!\n\n"
+        "<b>Available Commands:</b>\n"
+        "🔹 <code>/nguess</code> - Identify a character from their image\n"
+        "🔹 <code>/quiz</code> - Test your anime knowledge for Shards\n"
+        "🔹 <code>/scramble</code> - Unscramble the shuffled character name\n"
+        "🔹 <code>/bid &lt;amount&gt;</code> - Participate in live Character Auctions\n\n"
+        f"<i>Check out {main_bot_mention} for the full Seal-Bot experience!</i>"
+    )
+    
+    buttons = [
+        [
+            types.InlineKeyboardButton("🛠 Support Group", url=f"https://t.me/{config.SUPPORT_CHAT}", style=enums.ButtonStyle.PRIMARY),
+            types.InlineKeyboardButton("📢 Updates Channel", url=f"https://t.me/{config.UPDATE_CHAT}", style=enums.ButtonStyle.PRIMARY)
+        ],
+        [
+            types.InlineKeyboardButton("🤖 Visit Main Bot", url=f"https://t.me/{BOT_USERNAME}", style=enums.ButtonStyle.SUCCESS) if BOT_USERNAME else None
+        ]
+    ]
+    # Filter out None buttons
+    buttons = [[b for b in row if b] for row in buttons]
+    
+    await game_bot.send_message_safe(
+        message.chat.id,
+        text,
+        reply_markup=types.InlineKeyboardMarkup(buttons),
+        parse_mode=ParseMode.HTML,
+        reply_parameters=types.ReplyParameters(message_id=message.id)
+    )

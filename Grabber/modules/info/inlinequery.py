@@ -1,10 +1,11 @@
 import re
 from html import escape
-from pyrogram import filters, types, enums, errors
-from pyrogram.enums import ParseMode
-from Grabber.core.utils import html_escape as html_escape_v2
-from Grabber import app, collection, user_collection, LOGGER
 
+from pyrogram import enums, errors, filters, types
+from pyrogram.enums import ParseMode
+
+from Grabber import LOGGER, app, collection, user_collection
+from Grabber.core.utils import html_escape as html_escape_v2
 
 RESULTS_PER_PAGE = 50
 
@@ -116,7 +117,7 @@ def get_neighbors(char_list, index):
 def create_gallery_keyboard(current_char_id, neighbors, offset, context):
 
     buttons = [
-        [types.InlineKeyboardButton("📊 Owners Count", callback_data=f"character_count:{current_char_id}")]
+        [types.InlineKeyboardButton("Owners Count", callback_data=f"character_count:{current_char_id}")]
     ]
     return types.InlineKeyboardMarkup(buttons)
 
@@ -132,10 +133,10 @@ def create_inline_result(character: dict, neighbors: list, offset: int, context:
     img_url = character["img_url"]
 
     caption = (
-        f"🌸 <b>{html_escape_v2(name)}</b>\n"
-        f"🎬 <b>Anime:</b> {html_escape_v2(anime)}\n"
-        f"🔮 <b>Rarity:</b> {html_escape_v2(rarity)}\n"
-        f"🆔 <b>ID:</b> <code>{char_id}</code>"
+        f"<b>{html_escape_v2(name)}</b>\n"
+        f"<b>Anime:</b> {html_escape_v2(anime)}\n"
+        f"<b>Rarity:</b> {html_escape_v2(rarity)}\n"
+        f"<b>ID:</b> <code>{char_id}</code>"
     )
 
 
@@ -146,7 +147,7 @@ def create_inline_result(character: dict, neighbors: list, offset: int, context:
         photo_url=img_url,
         thumb_url=img_url,
         title=name,
-        description=f"🎬 {anime}\n✨ {rarity} | 🆔 {char_id}",
+        description=f"Anime: {anime}\n{rarity} | ID: {char_id}",
         caption=caption,
         reply_markup=reply_markup,
         parse_mode=ParseMode.HTML
@@ -162,7 +163,7 @@ async def gallery_view_callback(_, query: types.CallbackQuery):
 
         character = await collection.find_one({"id": char_id})
         if not character:
-            return await query.answer("❌ Character data not found.", show_alert=True)
+            return await query.answer("Character data not found.", show_alert=True)
 
         name = escape(character["name"])
         anime = escape(character["anime"])
@@ -170,17 +171,17 @@ async def gallery_view_callback(_, query: types.CallbackQuery):
         img_url = character["img_url"]
 
         caption = (
-            f"🌸 <b>{html_escape_v2(character['name'])}</b>\n"
-            f"🎬 <b>Anime:</b> {html_escape_v2(character['anime'])}\n"
-            f"🔮 <b>Rarity:</b> {html_escape_v2(character['rarity'])}\n"
-            f"🆔 <b>ID:</b> <code>{char_id}</code>"
+            f"<b>{html_escape_v2(character['name'])}</b>\n"
+            f"<b>Anime:</b> {html_escape_v2(character['anime'])}\n"
+            f"<b>Rarity:</b> {html_escape_v2(character['rarity'])}\n"
+            f"<b>ID:</b> <code>{char_id}</code>"
         )
 
 
 
 
         buttons = [
-            [types.InlineKeyboardButton("📊 Owners Count", callback_data=f"character_count:{char_id}")]
+            [types.InlineKeyboardButton("Owners Count", callback_data=f"character_count:{char_id}")]
         ]
 
         await query.message.edit_media(
@@ -193,7 +194,7 @@ async def gallery_view_callback(_, query: types.CallbackQuery):
         pass
     except Exception as e:
         LOGGER.error(f"Gallery View Error: {e}")
-        await query.answer("❌ Error loading character.", show_alert=True)
+        await query.answer("Error loading character.", show_alert=True)
 
 @app.on_callback_query(filters.regex(r"^character_count:.+$"))
 async def guessed_callback(_, query: types.CallbackQuery) -> None:
@@ -209,10 +210,10 @@ async def guessed_callback(_, query: types.CallbackQuery) -> None:
         user_count = result[0]["user_count"] if result else 0
 
         if user_count == 0:
-            await query.answer("🚫 No users currently own this character.", show_alert=True)
+            await query.answer("No users currently own this character.", show_alert=True)
         else:
-            await query.answer(f"📊 This character is owned by {user_count} users!", show_alert=True)
+            await query.answer(f"This character is owned by {user_count} users!", show_alert=True)
 
     except Exception as e:
         LOGGER.error(f"Error in guessed_callback: {e}")
-        await query.answer("❌ An error occurred while fetching stats.", show_alert=True)
+        await query.answer("An error occurred while fetching stats.", show_alert=True)

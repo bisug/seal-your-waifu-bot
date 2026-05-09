@@ -1,7 +1,9 @@
-from pyrogram import filters, types, enums
+from pyrogram import enums, filters, types
 from pyrogram.enums import ParseMode
-from Grabber import app, user_collection
+
 from config import config
+from Grabber import app, user_collection
+
 
 @app.on_message(filters.command("referrals"))
 async def referrals_cmd(_, message: types.Message):
@@ -9,7 +11,7 @@ async def referrals_cmd(_, message: types.Message):
     user = await user_collection.find_one({"id": user_id})
 
     if not user:
-        await message.reply_text("❌ You need to start the bot first!")
+        await message.reply_text("You need to start the bot first!", parse_mode=ParseMode.HTML)
         return
 
 
@@ -20,13 +22,13 @@ async def referrals_cmd(_, message: types.Message):
     ref_link = f"https://t.me/{config.BOT_USERNAME}?start=ref_{user_id}"
 
     text = (
-        f"🤝 <b>Your Referral Stats</b>\n\n"
-        f"👥 <b>Invited Users:</b> <code>{referrals_count}</code>\n"
+        f"<b>Your Referral Stats</b>\n\n"
+        f"<b>Invited Users:</b> <code>{referrals_count}</code>\n"
         f"<b>Shards Earned:</b> <code>{earned_coins}</code> ⬪\n\n"
-        f"🔗 <b>Your Link:</b>\n<code>{ref_link}</code>\n\n"
+        f"<b>Your Link:</b>\n<code>{ref_link}</code>\n\n"
         f"<b>Rewards:</b>\n"
-        f"🔸 You get: <b>500 ⬪</b> + <b>50 XP</b>\n"
-        f"🔹 They get: <b>1,500 ⬪</b> + <b>Level 10 Pet!</b> 🦊"
+        f"◉ You get: <b>500 ⬪</b> + <b>50 XP</b>\n"
+        f"◎ They get: <b>1,500 ⬪</b> + <b>Level 10 Pet!</b>"
     )
 
     await message.reply_text(text, parse_mode=ParseMode.HTML)

@@ -1,5 +1,7 @@
-from pydantic import BaseModel, Field
 from typing import List, Optional
+
+from pydantic import BaseModel, Field
+
 
 class User(BaseModel):
     id: int
@@ -27,6 +29,7 @@ class User(BaseModel):
     guess_count: int = 0
 
     pass_type: str = "free" # free, premium, elite
+    version: int = 0
 
 class Character(BaseModel):
     id: str

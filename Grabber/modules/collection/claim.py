@@ -1,16 +1,21 @@
 import random
-from pyrogram import filters, types, enums, errors
-from pyrogram.enums import ParseMode
-from Grabber.core.utils import html_escape
-from Grabber import app
-from Grabber import LOGGER
-from Grabber.database import collection, user_collection
-from Grabber.core.user import get_user_data, add_char_to_user, update_user
-from Grabber.core.sessions import create_session, get_session
 
-MUST_JOIN = "TNJBotSupport"
-SECOND_JOIN = "SEAL_UPDATE"
-DAILY_SHARD_REWARD = 200
+from pyrogram import enums, errors, filters, types
+from pyrogram.enums import ParseMode
+
+from config import config
+from Grabber import LOGGER, app
+from Grabber.core.cache import sync_user_to_redis
+from Grabber.core.sessions import create_session, get_session
+from Grabber.core.user import add_char_to_user, get_user_data, update_user
+from Grabber.core.utils import (get_user_id_query, html_escape,
+                                reply_media_dynamic, send_media_dynamic)
+from Grabber.database import collection, user_collection
+
+# Fetch requirements from centralized config
+MUST_JOIN = config.SUPPORT_CHAT
+SECOND_JOIN = config.UPDATE_CHAT
+DAILY_SHARD_REWARD = 500
 
 RARITY_WEIGHTS = {
     '⚪ Common': 60,
@@ -31,10 +36,13 @@ async def check_groups_joined(user_id: int) -> bool:
         await app.get_chat_member(SECOND_JOIN, user_id)
         return True
     except errors.UserNotParticipant:
-        return False
+        return False  # Definitive: user is not a member
+    except errors.FloodWait as e:
+        LOGGER.warning(f"FloodWait during membership check for {user_id}: {e.value}s")
+        return True   # Fail-open: don't punish user for our rate limit
     except Exception as e:
-        LOGGER.error(f"FZS Check Error: {e}")
-        return False
+        LOGGER.error(f"Membership check error for {user_id}: {e}")
+        return True   # Fail-open: ambiguous error, let the user proceed
 
 @app.on_message(filters.command("claim"))
 async def claim_handler(_, message: types.Message):
@@ -42,16 +50,17 @@ async def claim_handler(_, message: types.Message):
     user = await get_user_data(user_id)
 
     if user and user.get('claimed_waifu'):
-        return await message.reply_text("🎖️ <b>You already claimed your free waifu!</b>", parse_mode=ParseMode.HTML)
+        return await message.reply_text("<b>You already claimed your free waifu!</b>", parse_mode=ParseMode.HTML)
 
     if not await check_groups_joined(user_id):
         markup = types.InlineKeyboardMarkup([
-            [types.InlineKeyboardButton("✅ Group", url=f"t.me/{MUST_JOIN}"),
-             types.InlineKeyboardButton("📢 Channel", url=f"t.me/{SECOND_JOIN}")],
-            [types.InlineKeyboardButton("🔄 Verify & Claim", callback_data=f"clm_v:{user_id}")]
+            [types.InlineKeyboardButton("Join Updates", url=f"t.me/{SECOND_JOIN}"),
+             types.InlineKeyboardButton("Support Center", url=f"t.me/{MUST_JOIN}")],
+            [types.InlineKeyboardButton("Verify & Claim", callback_data=f"clm_v:{user_id}")]
         ])
         return await message.reply_text(
-            "🔒 <b>Join our channels to unlock your free waifu!</b>",
+            "<b>Authorization Required</b>\n\n"
+            "To unlock your <b>Free Starter Waifu</b> and bonus Shards, please join our official sectors below.",
             reply_markup=markup,
             parse_mode=ParseMode.HTML
         )
@@ -73,32 +82,29 @@ async def show_preview(message_or_query, user_id):
     await create_session(f"claim_{user_id}", {"character": char})
 
     preview_text = (
-        f"🎁 <b>Your Free Character Preview!</b>\n\n"
-        f"🆔 <b>ID:</b> <code>{char['id']}</code>\n"
-        f"📛 <b>Name:</b> {html_escape(char['name'])}\n"
-        f"🎬 <b>Anime:</b> {html_escape(char['anime'])}\n"
-        f"✨ <b>Rarity:</b> {html_escape(char['rarity'])}\n\n"
-        f"💰 <b>Bonus:</b> +{DAILY_SHARD_REWARD} Shards ⬪\n\n"
+        f"<b>Your Free Character Preview!</b>\n\n"
+        f"<b>ID:</b> <code>{char['id']}</code>\n"
+        f"<b>Name:</b> {html_escape(char['name'])}\n"
+        f"<b>Anime:</b> {html_escape(char['anime'])}\n"
+        f"<b>Rarity:</b> {html_escape(char['rarity'])}\n\n"
+        f"<b>Bonus:</b> +{DAILY_SHARD_REWARD} Shards ⬪\n\n"
         f"<i>Click below to claim this character!</i>"
     )
 
     markup = types.InlineKeyboardMarkup([
-        [types.InlineKeyboardButton("✅ Claim Now!", callback_data=f"clm_confirm:{user_id}")]
+        [types.InlineKeyboardButton("Claim Now!", callback_data=f"clm_confirm:{user_id}")]
     ])
 
     try:
         if isinstance(message_or_query, types.CallbackQuery):
             await message_or_query.message.delete()
-            await app.send_photo(
-                message_or_query.message.chat.id,
-                char['img_url'],
+            await send_media_dynamic(app, message_or_query.message.chat.id, media_url=char['img_url'],
                 caption=preview_text,
                 reply_markup=markup,
                 parse_mode=ParseMode.HTML
             )
         else:
-            await message_or_query.reply_photo(
-                char['img_url'],
+            await reply_media_dynamic(message_or_query, char['img_url'],
                 caption=preview_text,
                 reply_markup=markup,
                 parse_mode=ParseMode.HTML
@@ -110,7 +116,7 @@ async def show_preview(message_or_query, user_id):
 async def claim_verify_handler(_, query: types.CallbackQuery):
     user_id = int(query.data.split(":")[1])
     if query.from_user.id != user_id:
-        return await query.answer("❌ Not for you!", show_alert=True)
+        return await query.answer("Not for you!", show_alert=True)
 
     await query.answer("Verifying...", cache_time=1)
 
@@ -118,40 +124,47 @@ async def claim_verify_handler(_, query: types.CallbackQuery):
 
         await show_preview(query, user_id)
     else:
-        await query.answer("❌ You haven't joined yet!", show_alert=True)
+        await query.answer("You haven't joined yet!", show_alert=True)
 
 @app.on_callback_query(filters.regex(r"^clm_confirm:"))
 async def claim_confirm_handler(_, query: types.CallbackQuery):
     user_id = int(query.data.split(":")[1])
     if query.from_user.id != user_id:
-        return await query.answer("❌ Not for you!", show_alert=True)
+        return await query.answer("Not for you!", show_alert=True)
 
 
     session = await get_session(f"claim_{user_id}")
     if not session or "character" not in session:
-        return await query.answer("⚠️ Session expired. Use /claim again.", show_alert=True)
+        return await query.answer("Session expired. Use /claim again.", show_alert=True)
 
     char = session["character"]
 
-
+    # Use atomic query and include both character and currency in one transaction
     await add_char_to_user(user_id, char)
-    await update_user(user_id, {
-        "$set": {"claimed_waifu": True},
-        "$inc": {"balance": DAILY_SHARD_REWARD}
-    })
+    await user_collection.update_one(
+        get_user_id_query(user_id),
+        {
+            "$set": {"claimed_waifu": True},
+            "$inc": {"balance": DAILY_SHARD_REWARD}
+        }
+    )
 
+    mention = f'<a href="tg://user?id={query.from_user.id}">{html_escape(query.from_user.first_name)}</a>'
     caption = (
-        f'🎉 <a href="tg://user?id={query.from_user.id}">{html_escape(query.from_user.first_name)}</a> claimed their free waifu!\n\n'
-        f"🆔 <b>ID:</b> <code>{char['id']}</code>\n"
-        f"📛 <b>Name:</b> {html_escape(char['name'])}\n"
-        f"🎬 <b>Anime:</b> {html_escape(char['anime'])}\n"
-        f"✨ <b>Rarity:</b> {html_escape(char['rarity'])}\n\n"
-        f"💰 <b>Bonus Received:</b> +{DAILY_SHARD_REWARD} Shards ⬪"
+        f'{mention} claimed their **Free Starter Character**!\n\n'
+        f"<b>ID:</b> <code>{char['id']}</code>\n"
+        f"<b>Name:</b> {html_escape(char['name'])}\n"
+        f"<b>Anime:</b> {html_escape(char['anime'])}\n"
+        f"<b>Rarity:</b> {html_escape(char['rarity'])}\n\n"
+        f"<b>Bonus:</b> +{DAILY_SHARD_REWARD} Shards ⬪\n\n"
+        f"<i>Start your journey by checking your /harem!</i>"
     )
 
     try:
         await query.message.edit_caption(caption=caption, parse_mode=ParseMode.HTML)
-        await query.answer("✅ Successfully claimed!", show_alert=True)
+        await query.answer("Successfully claimed!", show_alert=True)
+        # Ensure WebApp is synced immediately
+        await sync_user_to_redis(user_id)
     except Exception as e:
         LOGGER.error(f"Error in claim_confirm: {e}")
-        await query.answer("✅ Claimed!", show_alert=True)
+        await query.answer("Claimed! check your /harem.", show_alert=True)

@@ -1,9 +1,10 @@
 import asyncio
-from pyrogram import filters, types, enums, errors
+
+from pyrogram import enums, errors, filters, types
 from pyrogram.enums import ParseMode
-from Grabber import app
-from Grabber import OWNER_ID, LOGGER
-from Grabber.database import total_pm_users, group_collection
+
+from Grabber import LOGGER, OWNER_ID, app
+from Grabber.database import group_collection, total_pm_users
 
 # Rate limiter: max 25 concurrent sends at any time, with a short yield between
 # each acquire to space out the API calls and stay safely under Telegram's limits.
@@ -71,8 +72,10 @@ async def broadcast_handler(_, message: types.Message):
                         f"👤 Users: <code>{success_u}</code> ok / <code>{failed_u}</code> fail",
                         parse_mode=ParseMode.HTML
                     )
+                except errors.FloodWait as e:
+                    await asyncio.sleep(e.value)
                 except Exception:
-                    pass
+                    pass  # Never let a status edit stall the broadcast loop
 
         # Clean up unreachable users in bulk
         if blocked_users:

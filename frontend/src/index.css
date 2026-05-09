@@ -1,0 +1,202 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400..900&display=swap');
+
+@theme {
+  --color-brand-midnight: #060d0b;
+  --color-brand-deep: #0a1a15;
+  --color-brand-accent: #10b981;
+  --color-brand-neon: #34d399;
+  --color-brand-glass: rgba(10, 26, 21, 0.75);
+  --color-brand-glass-border: rgba(255, 255, 255, 0.08);
+  
+  --breakpoint-xs: 360px;
+  --shadow-neon: 0 0 15px rgba(16, 185, 129, 0.4);
+  --shadow-neon-lg: 0 0 30px rgba(16, 185, 129, 0.6);
+}
+
+:root {
+  color-scheme: dark;
+  --background: #060d0b;
+  --foreground: #f0fdf4;
+  
+  /* Premium Density Spacing System - Responsive */
+  --space-1: 0.2rem;   
+  --space-2: 0.4rem;   
+  --space-3: 0.6rem;   
+  --space-4: clamp(0.6rem, 2vw, 0.8rem);
+  --space-6: clamp(0.8rem, 3vw, 1.25rem);
+  --space-8: clamp(1rem, 4vw, 1.75rem);
+
+  /* Premium Typography Scale - Fluid */
+  --font-xs: 0.65rem;
+  --font-sm: 0.75rem;
+  --font-base: 0.875rem;
+  --font-lg: 1.1rem;
+  --font-xl: 1.25rem;
+  --font-2xl: 1.75rem;
+  
+  /* Adaptive Layout Tokens */
+  --content-px: var(--space-4);
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  height: 100svh;
+  width: 100vw;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100svh;
+  overflow: hidden;
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  user-select: none;
+  -webkit-touch-callout: none;
+  overscroll-behavior: none;
+}
+
+button, a {
+  touch-action: manipulation;
+}
+
+/* Fluid Container Padding Utility - Compacted */
+.adaptive-px {
+  padding-left: clamp(0.75rem, 3vw, 1.5rem);
+  padding-right: clamp(0.75rem, 3vw, 1.5rem);
+}
+
+/* Hide scrollbars for a cleaner app look */
+::-webkit-scrollbar {
+  display: none;
+}
+
+.glass-panel {
+  background: var(--color-brand-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--color-brand-glass-border);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.bg-mesh {
+  background-color: var(--color-brand-midnight);
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(52, 211, 153, 0.1) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(52, 211, 153, 0.05) 0px, transparent 50%);
+}
+
+.neon-shadow {
+  box-shadow: var(--shadow-neon);
+}
+
+.neon-shadow-lg {
+  box-shadow: var(--shadow-neon-lg);
+}
+
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--color-brand-midnight);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--color-brand-glass-border);
+}
+
+.active-tactile {
+  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.active-tactile:active {
+  transform: scale(0.96);
+}
+
+/* Cinematic Shimmer for Skeleton Loaders */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes aurora-swell {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.3; }
+  33% { transform: translate(10%, -10%) scale(1.2); opacity: 0.5; }
+  66% { transform: translate(-5%, 15%) scale(0.9); opacity: 0.4; }
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 0.5; }
+  50% { transform: scale(1.1); opacity: 0.2; }
+  100% { transform: scale(0.8); opacity: 0.5; }
+}
+
+.animate-aurora {
+  animation: aurora-swell 8s ease-in-out infinite;
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 4s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Horizontal Fade Masks for Filter Lists */
+.scroll-fade-mask {
+  mask-image: linear-gradient(to right, 
+    transparent, 
+    black 5%, 
+    black 95%, 
+    transparent
+  );
+  -webkit-mask-image: linear-gradient(to right, 
+    transparent, 
+    black 5%, 
+    black 95%, 
+    transparent
+  );
+}
+
+#root {
+  width: 100%;
+  height: 100svh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: var(--background);
+}
+
+/* THE DEFINITIVE SCROLL FIX:
+   min-height: 0 is REQUIRED by the CSS Flexbox spec to allow a
+   flex child's overflow-y to activate. Without it, min-height
+   defaults to 'auto' and the element expands to fit its content,
+   making overflow unreachable. */
+.app-scroller {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  overscroll-behavior-y: contain;
+  position: relative;
+}
+/* Scroll Lock Utility */
+.no-scroll {
+  overflow: hidden !important;
+  touch-action: none;
+}

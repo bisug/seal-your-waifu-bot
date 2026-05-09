@@ -1,4 +1,5 @@
 import asyncio
+
 import nest_asyncio
 
 # Patch asyncio to be re-entrant first
@@ -9,14 +10,10 @@ loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
 
 from pyrogram import idle
-from Grabber import app, nguess_bot, LOGGER, start_bots, stop_bots
 
-# CRITICAL: kurigram's Session.send() calls self.client.loop.run_in_executor()
-# which creates Futures anchored to self.client.loop. If that loop != the running
-# loop, it crashes with "Future attached to a different loop".
-# Force-patching here guarantees both clients use the exact loop that main() runs on.
-app.loop = loop
-nguess_bot.loop = loop
+import Grabber.core.sync_handler  # Register global message sync handlers
+from Grabber import LOGGER, app, game_bot
+from Grabber.runner import start_bots, stop_bots
 
 
 async def main():

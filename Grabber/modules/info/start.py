@@ -1,188 +1,145 @@
-from pyrogram import types, enums, filters, errors
+from pyrogram import enums, errors, filters, types
 from pyrogram.enums import ParseMode
-from Grabber import app, PHOTO_URL, SUPPORT_CHAT, UPDATE_CHAT, LOGGER, WEB_APP_URL, user_collection, collection, total_pm_users
-from Grabber.core.utils import html_escape
-from Grabber.core.progression import add_xp
+
+from config import config
+from Grabber import (LOGGER, PHOTO_URL, SUPPORT_CHAT, UPDATE_CHAT, WEB_APP_URL,
+                     app, collection, total_pm_users, user_collection)
+from Grabber.core.keyboard import KeyboardBuilder, get_webapp_button
+from Grabber.core.progression import add_xp, get_user_progress
+from Grabber.core.user import get_user_filter, get_user_id, update_user
+from Grabber.core.cache import get_user_rank, get_total_ranked_users
+from Grabber.core.utils import html_escape, reply_media_dynamic
 from Grabber.modules.progression.achievements import check_achievements
 from Grabber.modules.progression.pet import DEFAULT_PET
-from config import config
-from Grabber.core.keyboard import KeyboardBuilder, get_webapp_button
 
 LOGGER.info("Loading Start module...")
 
-START_TEXT = """
-<b>✨ Welcome to {bot_name}! ✨</b>
+START_TEXT_NEW = """
+<b>{bot_name}</b>
 
-<b>Hey {first_name}!</b> 👋
-I’m your ultimate companion for <b>Anime Character Collecting & PvP Battles!</b>
+<blockquote>“In the world of anime, some seek power, others seek glory. But a true <b>Collector</b> seeks them all.”</blockquote>
 
-━━━━━━━━━━━━━━━━━━━━━━━━
-<b>🔥 What can I do?</b>
-🌸 <b>Catch</b> thousands of anime characters.
-⚔️ <b>Battle</b> friends in strategic duels.
-🐣 <b>Hatch</b> eggs & raise powerful pets.
-🎫 <b>Rank Up</b> & unlock exclusive rewards.
-🏰 <b>Build</b> your Harem & dominate the leaderboard!
-━━━━━━━━━━━━━━━━━━━━━━━━
+<b>Greetings, Collector {first_name}!</b>
+I am your ultimate companion for character collecting and strategic duels.
 
-<i>Add me to your group & start your adventure!</i> 🚀
+<b>Catch</b> • <b>Duel</b> • <b>Hatch</b> • <b>Collect</b>
+
+<i>Add me to a group to begin your journey!</i>
 """
 
+START_TEXT_RETURNING = """
+<b>{bot_name} Dashboard</b>
+
+<b>Welcome back, {first_name}!</b>
+━━━━━━━━━━━━━━━━━━━━━
+<b>Rank:</b> <code>#{rank}</code> / {total_ranked}
+<b>Level:</b> <code>{level}</code>
+<b>Balance:</b> <code>{balance}</code> ⬪ | <code>{zenith}</code> ⧫
+<b>Harem:</b> <code>{harem_size}</code> Unique Characters
+━━━━━━━━━━━━━━━━━━━━━
+<i>Select an option below to continue your journey!</i>
+"""
 
 HELP_DATA = {
     "MAIN": {
-        "text": "<b>📚 Seal Bot - Help Menu</b>\n\nSelect a category below to see available commands:",
+        "text": "<b>Seal Bot - Help Menu</b>\n\nSelect a category below to see available commands:",
         "buttons": [
-            [types.InlineKeyboardButton("🎮 Core Basics", callback_data="help:core", style=enums.ButtonStyle.PRIMARY),
-             types.InlineKeyboardButton("🐾 Pet System", callback_data="help:pet", style=enums.ButtonStyle.PRIMARY)],
-            [types.InlineKeyboardButton("⚔️ Battle & Economy", callback_data="help:battle", style=enums.ButtonStyle.PRIMARY),
-             types.InlineKeyboardButton("🎫 Progression", callback_data="help:progression", style=enums.ButtonStyle.PRIMARY)],
-            [types.InlineKeyboardButton("ℹ️ Info & Stats", callback_data="help:info", style=enums.ButtonStyle.PRIMARY),
-             types.InlineKeyboardButton("🛠 Admin Tools", callback_data="help:owner", style=enums.ButtonStyle.DANGER)],
-            [types.InlineKeyboardButton("⤾ Main Menu", callback_data="st:b")]
+            [types.InlineKeyboardButton("Core Basics", callback_data="help:core", style=enums.ButtonStyle.PRIMARY),
+             types.InlineKeyboardButton("Pet System", callback_data="help:pet", style=enums.ButtonStyle.PRIMARY)],
+            [types.InlineKeyboardButton("Battle & Economy", callback_data="help:battle", style=enums.ButtonStyle.PRIMARY),
+             types.InlineKeyboardButton("Progression", callback_data="help:progression", style=enums.ButtonStyle.PRIMARY)],
+            [types.InlineKeyboardButton("Info & Stats", callback_data="help:info", style=enums.ButtonStyle.PRIMARY),
+             types.InlineKeyboardButton("Admin Tools", callback_data="help:owner", style=enums.ButtonStyle.DANGER)],
+            [types.InlineKeyboardButton("Back to Dashboard", callback_data="st:b")]
         ]
     },
     "CORE": {
         "text": """
-<b>🎮 Core Commands</b>
+<b>Core Commands</b>
 
-🔹 <code>/nguess</code> - Start an anime character name guessing game
-🔹 <code>/seal &lt;name&gt;</code> - Catch a spawned character
-🔹 <code>/harem</code> - View your character collection
-🔹 <code>/fav &lt;id&gt;</code> - Set a favorite character
-🔹 <code>/trade &lt;user&gt; &lt;amount&gt;</code> - Trade characters/items
-🔹 <code>/gift &lt;id&gt;</code> - Gift a character to a user
-🔹 <code>/quiz</code> - Test your anime knowledge &amp; have fun!
+/start - Start the bot
+/help - Show help menu
+/search - Find a waifu
+/harem - Your collection
+/fav - Set favorite character
+/trade - Trade characters
+/gift - Gift characters
+/transfer - Full collection merge
+/claim - Claim waifu codes
 """,
     },
     "PET": {
         "text": """
-<b>🐾 Pet System</b>
+<b>Pet System</b>
 
-🔹 <code>/petshop</code> - Buy powerful pets with unique stats
-🔹 <code>/mypet</code> - Manage active pet &amp; view stats
-🔹 <code>/hunt</code> - Send pet to find loot, Shards &amp; eggs
-🔹 <code>/eggs</code> - Manage and hatch your eggs
+/petshop - Buy powerful pets
+/mypet - Manage your pet
+/hunt - Send pet to hunt
+/eggs - View your eggs
+/hatch - Hatch char eggs
+/feed - Feed your pet
+/train - Train your pet
 """,
     },
     "BATTLE": {
         "text": """
-<b>⚔️ Battle &amp; Economy</b>
+<b>Battle & Economy</b>
 
-🔹 <code>/battle &lt;amount&gt;</code> - PvP duel (Turn-based strategy!)
-🔹 <code>/balance</code> - Check your Shards &amp; Zenith
-🔹 <code>/exchange</code> - Convert Shards into Zenith
-🔹 <code>/shop</code> - Universal Shop Hub (Chars, Pets, Items)
-🔹 <code>/daily</code> - Claim daily rewards (Streaks!)
-🔹 <code>/weekly</code> - Claim weekly bonus (Every 7 days)
-🔹 <code>/top</code> - Global leaderboard (Harem, Shards, Level)
+/battle - Start a PvP duel
+/balance - Check your balance
+/zenith - Shards to Zenith
+/shard - Zenith to Shards
+/shop - Open the shop
+/daily - Claim daily rewards
+/weekly - Claim weekly bonus
+/top - Global leaderboard
+/bet - Gamble Shards
+/pay - Send Shards to user
+/sell - Sell a character
 """,
     },
     "INFO": {
         "text": """
-<b>ℹ️ Info &amp; Stats</b>
+<b>Info & Stats</b>
 
-🔹 <code>/stats</code> - Global bot statistics
-🔹 <code>/rarities</code> - Character counts by rarity
-🔹 <code>/ctop</code> - Top chat members (Chat Leaderboard)
-🔹 <code>/mtop</code> - Global rich leaderboard (Shards)
-🔹 <code>/ping</code> - Real-time system status
-🔹 <code>/help</code> - Show this interactive menu
+/stats - Bot statistics
+/rarities - Character counts
+/ctop - Chat leaderboard
+/mtop - Rich leaderboard
+/ping - Check bot status
+/webapp - Open Mini-App
+/check - User status check
+/animes - Available anime list
+/sani - Search by anime
 """,
     },
     "PROGRESSION": {
         "text": """
-<b>🎫 Battle Pass &amp; Progression</b>
+<b>Battle Pass & Progress</b>
 
-🔹 <code>/pass</code> - View your Battle Pass (Free/Premium/Elite)
-🔹 <code>/quests</code> - Daily &amp; Weekly Quests (Earn XP!)
-🔹 <code>/referrals</code> - Invite friends &amp; earn rewards
-🔹 <code>/achievements</code> - View lifetime milestones &amp; titles
-🔹 <code>/level</code> - Check your level progress
+/pass - View Battle Pass
+/quests - Active quests
+/referrals - Invite friends
+/achievements - Milestones
+/level - Your level progress
+/propose - Propose to a user
+/seal - Use a seal item
 
-<i>💡 Gain XP by catching, battling, and completing quests!</i>
-<i>🎁 Unlock rewards at levels 5, 10, 25, and 50</i>
+<i>Catch characters and battle to level up!</i>
 """,
     },
     "OWNER": {
         "text": """
-<b>🛠 Admin Tools</b>
+<b>Admin Tools</b>
 
-🔹 <code>/cnow</code> - [OWNER] Spawn a character immediately
-🔹 <code>/ngon</code> - [OWNER] Enable /nguess in a sector
-🔹 <code>/ngoff</code> - [OWNER] Disable /nguess in a sector
-🔹 <code>/nglist</code> - [OWNER] View authorized sectors
-🔹 <code>/broadcast</code> - [OWNER] Send a global message
+/cnow - [OWNER] Spawn a character immediately
+/broadcast - [OWNER] Send a global message
 """,
     }
 }
 
-@app.on_message(filters.command("start"))
-async def start_handler(_, message: types.Message):
-    user_id = message.from_user.id
-    existing_user = await user_collection.find_one({"id": user_id})
-
-    await total_pm_users.update_one(
-        {"_id": user_id},
-        {"$set": {"first_name": message.from_user.first_name, "username": message.from_user.username}},
-        upsert=True
-    )
-
-    if len(message.command) > 1:
-        param = message.command[1]
-        if param.startswith("locate_"):
-            try:
-                char_id = param.split("_")[1]
-                character = await collection.find_one({'id': char_id})
-                if character:
-                    response_message = (
-                        f"<b>Character Name:</b> {html_escape(character['name'])}\n"
-                        f"<b>Anime:</b> {html_escape(character['anime'])}\n"
-                        f"<b>Rarity:</b> {html_escape(character['rarity'])}\n"
-                        f"<b>Character ID:</b> <code>{character['id']}</code>\n"
-                    )
-                    await message.reply_photo(
-                        photo=character['img_url'],
-                        caption=response_message,
-                        parse_mode=ParseMode.HTML
-                    )
-                    return
-                else:
-                    await message.reply_text("❌ Character not found.", parse_mode=ParseMode.HTML)
-                    return
-            except Exception as e:
-                LOGGER.error(f"Locate Error: {e}")
-                pass
-        elif not existing_user and param.startswith("ref_"):
-            try:
-                referrer_id = int(param.split("_")[1])
-                if referrer_id != user_id:
-                    upgraded_pet = DEFAULT_PET.copy()
-                    upgraded_pet["level"] = 10
-                    upgraded_pet["hp"] += 45
-                    upgraded_pet["atk"] += 18
-                    upgraded_pet["spd"] += 9
-                    await user_collection.update_one(
-                        {"id": user_id},
-                        {"$set": {"balance": 1500, "pets": [upgraded_pet], "current_pet": upgraded_pet["name"], "referred_by": referrer_id}},
-                        upsert=True
-                    )
-                    await user_collection.update_one({"id": referrer_id}, {"$inc": {"balance": 500, "referrals_count": 1, "referrals_earned": 500}})
-                    await add_xp(referrer_id, 50, "referral")
-                    await check_achievements(referrer_id)
-                    try:
-                        await app.send_message(
-                            referrer_id,
-                            f'🎉 <b>New Referral!</b>\n\n<a href="tg://user?id={message.from_user.id}">{html_escape(message.from_user.first_name)}</a> joined using your link.\n+500 ⬪ | +50 XP',
-                            parse_mode=ParseMode.HTML
-                        )
-                    except:
-                        pass
-                    await message.reply_text("🎁 <b>Welcome Bonus!</b>\nYou received <b>1,500 ⬪</b> and a <b>Level 10 Pet</b> for using a referral link! 🚀", parse_mode=ParseMode.HTML)
-            except ValueError:
-                pass
-
-    is_private = message.chat.type == enums.ChatType.PRIVATE
+async def render_start_message(user_id: int, first_name: str, is_private: bool, existing_user: dict = None):
+    """Helper method to dynamically build the Smart Dashboard for the start menu."""
     builder = KeyboardBuilder()
     builder.add_button("Add to Group", url=f"https://t.me/{config.BOT_USERNAME}?startgroup=true")
     
@@ -200,36 +157,157 @@ async def start_handler(_, message: types.Message):
     )
     markup = builder.build()
 
+    if not is_private:
+        return "✅ <b>I'm active and ready to drop characters!</b>", markup
+
+    if existing_user and existing_user.get("characters"):
+        progress = await get_user_progress(user_id, user_data=existing_user)
+        rank = await get_user_rank(user_id) or "N/A"
+        total_ranked = await get_total_ranked_users() or "???"
+        
+        balance = existing_user.get("balance", 0)
+        zenith = existing_user.get("zenith", 0)
+        
+        unique_chars = {c.get("id") for c in existing_user.get("characters", [])}
+        harem_size = len(unique_chars)
+        
+        text = START_TEXT_RETURNING.format(
+            bot_name=config.BOT_NAME,
+            first_name=html_escape(first_name),
+            rank=rank,
+            total_ranked=total_ranked,
+            level=progress['level'],
+            balance=f"{balance:,}",
+            zenith=f"{zenith:,}",
+            harem_size=f"{harem_size:,}"
+        )
+    else:
+        text = START_TEXT_NEW.format(
+            first_name=html_escape(first_name), 
+            bot_name=config.BOT_NAME
+        )
+        
+    return text, markup
+
+
+@app.on_message(filters.command("start"))
+async def start_handler(_, message: types.Message):
+    """Entry point for the bot. Handles new users and referral links."""
+    user_id = message.from_user.id
+    first_name_clean = message.from_user.first_name
+    
+    existing_user = await user_collection.find_one(get_user_filter(user_id))
+
+    await total_pm_users.update_one(
+        {"_id": user_id},
+        {"$set": {"first_name": first_name_clean, "username": message.from_user.username}},
+        upsert=True
+    )
+
+    if len(message.command) > 1:
+        param = message.command[1]
+        if param.startswith("locate_"):
+            try:
+                char_id = param.split("_")[1]
+                character = await collection.find_one({'id': char_id})
+                if character:
+                    response_message = (
+                        f"<b>Character Name:</b> {html_escape(character['name'])}\n"
+                        f"<b>Anime:</b> {html_escape(character['anime'])}\n"
+                        f"<b>Rarity:</b> {html_escape(character['rarity'])}\n"
+                        f"<b>Character ID:</b> <code>{character['id']}</code>\n"
+                    )
+                    await reply_media_dynamic(message, character['img_url'],
+                        caption=response_message,
+                        parse_mode=ParseMode.HTML
+                    )
+                    return
+                else:
+                    await message.reply_text("❌ Character not found.", parse_mode=ParseMode.HTML)
+                    return
+            except Exception as e:
+                LOGGER.error(f"Locate Error: {e}")
+                pass
+        elif param.startswith("claim_"):
+            try:
+                code = param.split("_")[1]
+                from Grabber.modules.admin.giveaway import process_core_claim
+                success, result = await process_core_claim(app, message.from_user, code)
+                
+                if not success:
+                    await message.reply_text(result, parse_mode=ParseMode.HTML)
+                else:
+                    waifu = result
+                    response_text = (
+                        f'🎉 Congratulations <a href="tg://user?id={message.from_user.id}">{html_escape(message.from_user.first_name)}</a>!\n'
+                        f"You claimed a <b>{html_escape(waifu['rarity'])}</b> character!\n\n"
+                        f"Name: {html_escape(waifu['name'])}\n"
+                        f"Anime: {html_escape(waifu['anime'])}\n"
+                        f"ID: <code>{waifu['id']}</code>\n"
+                    )
+                    await reply_media_dynamic(message, waifu['img_url'], caption=response_text, parse_mode=ParseMode.HTML)
+                return
+            except Exception as e:
+                LOGGER.error(f"Claim Error: {e}")
+                pass
+        elif not existing_user and param.startswith("ref_"):
+            try:
+                referrer_id = int(param.split("_")[1])
+                if referrer_id != user_id:
+                    upgraded_pet = DEFAULT_PET.copy()
+                    upgraded_pet["level"] = 10
+                    upgraded_pet["hp"] += 45
+                    upgraded_pet["atk"] += 18
+                    upgraded_pet["spd"] += 9
+                    
+                    await user_collection.update_one(
+                        {"id": get_user_id(user_id)},
+                        {"$set": {"pets": [upgraded_pet], "current_pet": upgraded_pet["name"], "referred_by": referrer_id}},
+                        upsert=True
+                    )
+                    await update_user(user_id, {"$inc": {"balance": 1500}})
+                    
+                    await update_user(referrer_id, {"$inc": {"balance": 500, "referrals_count": 1, "referrals_earned": 500}})
+                    await add_xp(referrer_id, 50, "referral")
+                    await check_achievements(referrer_id)
+                    try:
+                        await app.send_message(
+                            referrer_id,
+                            f'🎉 <b>New Referral!</b>\n\n<a href="tg://user?id={message.from_user.id}">{html_escape(first_name_clean)}</a> joined using your link.\n+500 ⬪ | +50 XP',
+                            parse_mode=ParseMode.HTML
+                        )
+                    except:
+                        pass
+                    await message.reply_text("🎁 <b>Welcome Bonus!</b>\nYou received <b>1,500 ⬪</b> and a <b>Level 10 Pet</b> for using a referral link! 🚀", parse_mode=ParseMode.HTML)
+            except ValueError:
+                pass
+
+    is_private = message.chat.type == enums.ChatType.PRIVATE
+    
+    # Refresh user state after referral DB logic just in case
+    if not existing_user:
+        existing_user = await user_collection.find_one(get_user_filter(user_id))
+        
+    text, markup = await render_start_message(user_id, first_name_clean, is_private, existing_user)
+
     if is_private:
-        first_name = html_escape(message.from_user.first_name)
-        text = START_TEXT.format(first_name=first_name, bot_name=config.BOT_NAME)
-        await message.reply_photo(
-            photo=random_photo(),
+        await reply_media_dynamic(message, random_photo(),
             caption=text,
             reply_markup=markup,
             parse_mode=ParseMode.HTML
         )
     else:
-        await message.reply_text("✅ <b>I'm active and ready to drop characters!</b>", parse_mode=ParseMode.HTML)
+        await message.reply_text(text, parse_mode=ParseMode.HTML)
 
 @app.on_callback_query(filters.regex(r"^st:(h|b)"))
 async def start_callback_handler(_, query: types.CallbackQuery):
-    await query.answer()  # Dismiss spinner instantly
+    """Handle navigation back to the start menu from help or collection pages."""
+    await query.answer()
     is_private = query.message.chat.type == enums.ChatType.PRIVATE
-    builder = KeyboardBuilder()
-    builder.add_button("Add to Group", url=f"https://t.me/{config.BOT_USERNAME}?startgroup=true")
-    webapp_btn = get_webapp_button(is_private)
-    if webapp_btn:
-         builder.add_row(webapp_btn)
-    builder.add_row(
-        types.InlineKeyboardButton("Support", url=f"https://t.me/{SUPPORT_CHAT}"),
-        types.InlineKeyboardButton("Updates", url=f"https://t.me/{UPDATE_CHAT}")
-    )
-    builder.add_button("Help Menu", callback_data="help:main", style=enums.ButtonStyle.PRIMARY)
-    markup = builder.build()
-
-    first_name = html_escape(query.from_user.first_name)
-    text = START_TEXT.format(first_name=first_name, bot_name=config.BOT_NAME)
+    user_id = query.from_user.id
+    
+    existing_user = await user_collection.find_one(get_user_filter(user_id))
+    text, markup = await render_start_message(user_id, query.from_user.first_name, is_private, existing_user)
 
     try:
         if query.message.photo:
@@ -241,7 +319,8 @@ async def start_callback_handler(_, query: types.CallbackQuery):
 
 @app.on_callback_query(filters.regex(r"^help:(.+)"))
 async def help_callback_handler(_, query: types.CallbackQuery):
-    await query.answer()  # Dismiss spinner instantly
+    """Handle navigation within the multi-category help menu."""
+    await query.answer()
     module = query.data.split(":")[1].upper()
     if module == "MAIN":
         data = HELP_DATA["MAIN"]

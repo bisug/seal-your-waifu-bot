@@ -1,20 +1,23 @@
 import math
 import random
-from Grabber.core.utils import html_escape as escape
 from collections import Counter
-from typing import List, Dict, Union, Any
+from typing import Any, Dict, List, Union
 
-from pyrogram import filters, types, enums, errors
+from pyrogram import enums, errors, filters, types
 from pyrogram.enums import ParseMode
+
 from config import config
-from Grabber import app, WEB_APP_URL
-from Grabber import LOGGER
-from Grabber.core.user import get_user_data
-from Grabber.core.keyboard import get_paginated_keyboard, KeyboardBuilder
+from Grabber import LOGGER, WEB_APP_URL, app
+from Grabber.core.cache import get_total_ranked_users, get_user_rank
+from Grabber.core.keyboard import KeyboardBuilder, get_paginated_keyboard
+from Grabber.core.progression import get_user_progress
+from Grabber.core.utils import get_user_id_query, normalize_user_id
+from Grabber.core.utils import html_escape as escape
+from Grabber.core.utils import reply_media_dynamic
 
 FORMATS = [
-    "⧉ {anime} [🎮] ⦋{page}/{total_pages}⦌\n⤷〔<b>{rarity}</b>〕 {name} (ID: <code>{id}</code>) ×{count}",
-    "⧉ {anime} [🎮] ⦋{page}/{total_pages}⦌\n⤷ ᴷᴱʸ: <code>{id}</code> - {name} [Rarity: <b>{rarity}</b>] ×{count}",
+    "<b>{rarity}</b>\n└ {name} (<code>{id}</code>) ×{count}",
+    "<code>{id}</code> - {name} [<b>{rarity}</b>] ×{count}",
 ]
 
 @app.on_message(filters.command(["harem", "collection"]))
@@ -37,24 +40,27 @@ async def harem_view_btn_handler(_, query: types.CallbackQuery):
 
 async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], user_id: int, page: int):
     try:
-        user = await get_user_data(user_id)
+        from Grabber.database import user_collection
+        uid_int = normalize_user_id(user_id)
+        user = await user_collection.find_one(get_user_id_query(uid_int))
+        
         if not user or not user.get('characters'):
-            text = "❌ <b>You don't have any characters yet!</b>\n\n<i>Go catch some waifus first!</i>"
+            text = "❌ <b>Harem is Empty</b>\n\nYour collection exists only in your dreams. Go hunt some characters!"
             if isinstance(message_obj, types.CallbackQuery):
                 return await message_obj.answer(text, show_alert=True)
             return await message_obj.reply_text(text, parse_mode=ParseMode.HTML)
 
         all_chars = user['characters']
         char_counts = Counter(c.get('id') for c in all_chars)
-        sorted_chars = sorted(all_chars, key=lambda x: (x.get('anime', ''), x.get('name', ''), x.get('id', '')))
-
-        unique_chars: List[Dict[str, Any]] = []
-        seen_ids = set()
-        for char in sorted_chars:
-            char_id = char.get('id')
-            if char_id not in seen_ids:
-                unique_chars.append(char)
-                seen_ids.add(char_id)
+        
+        # Performance: Group characters BEFORE sorting for large collection speedup
+        unique_chars_map = {}
+        for char in all_chars:
+            cid = char.get('id')
+            if cid and cid not in unique_chars_map:
+                unique_chars_map[cid] = char
+        
+        unique_chars = sorted(unique_chars_map.values(), key=lambda x: (x.get('anime', ''), x.get('name', '')))
 
         per_page = 7
         total_pages = math.ceil(len(unique_chars) / per_page)
@@ -64,46 +70,53 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
         char_format = FORMATS[current_idx % len(FORMATS)]
         first_name = user.get('first_name', 'User')
 
-        header_lines = [
-            f"🎒 <b>{escape(first_name)}'s Collection</b>",
-            "━━━━━━━━━━━━━━━━━━━━━",
-            f"📑 <b>Page:</b> <code>{page + 1}/{total_pages}</code>",
-            f"✨ <b>Characters:</b> <code>{len(all_chars)}</code> total",
-            ""
-        ]
-        harem_text = "\n".join(header_lines)
+        # Fetch Rank and Level for the Header
+        progress = await get_user_progress(uid_int, user_data=user)
+        rank = await get_user_rank(uid_int) or "N/A"
+        total_ranked = await get_total_ranked_users() or "???"
+
+        total_chars_count = user.get('char_count', len(all_chars))
+
+        harem_text = (
+            f"<b>{escape(first_name)}'s Collection</b>\n"
+            f"<b>Rank:</b> <code>#{rank}</code> / {total_ranked}\n"
+            f"<b>Level:</b> <code>{progress['level']}</code>\n"
+            f"<b>Stats:</b> <code>{len(unique_chars)}</code> Unique | <code>{total_chars_count}</code> Total\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n\n"
+        )
 
         start_idx = page * per_page
-        end_idx = start_idx + per_page
-        current_slice = unique_chars[start_idx:end_idx]
+        current_slice = unique_chars[start_idx : start_idx + per_page]
 
+        last_anime = ""
         for char in current_slice:
+            anime = char.get('anime', 'Mixed')
+            if anime != last_anime:
+                harem_text += f"<b>{escape(anime)}</b>\n"
+                last_anime = anime
+                
             char_id = char.get('id', 'N/A')
             harem_text += char_format.format(
-                anime=char.get('anime', 'Mixed'),
-                page=page + 1,
-                total_pages=total_pages,
+                anime=anime,
                 rarity=char.get('rarity', 'Common'),
                 id=char_id,
-                name=char.get('name', 'Unknown'),
+                name=escape(char.get('name', 'Unknown')),
                 count=char_counts.get(char_id, 1)
-            ) + "\n"
+            ) + "\n\n"
 
-        harem_text += "━━━━━━━━━━━━━━━━━━━━━\n"
+        harem_text += f"<i>Page {page + 1} of {total_pages}</i>"
 
         is_private = (message_obj.message if isinstance(message_obj, types.CallbackQuery) else message_obj).chat.type == enums.ChatType.PRIVATE
         
-        # Build Keyboard using centralized utility
-        markup = get_paginated_keyboard(page, total_pages, "h", user_id, is_private)
+        markup = get_paginated_keyboard(page, total_pages, "h", uid_int, is_private)
         builder = KeyboardBuilder()
         builder.keyboard = markup.inline_keyboard.copy()
-        builder.add_row(types.InlineKeyboardButton("Search Collection", switch_inline_query_current_chat=f"collection.{user_id} "))
-        builder.add_row(types.InlineKeyboardButton("Global Search", switch_inline_query_current_chat=""))
+        builder.add_row(types.InlineKeyboardButton("Search Collection", switch_inline_query_current_chat=f"collection.{uid_int} "))
         markup = builder.build()
 
         try:
             pic = random.choice(all_chars).get('img_url')
-        except (IndexError, KeyError):
+        except Exception:
             pic = None
 
         if isinstance(message_obj, types.CallbackQuery):
@@ -116,8 +129,7 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
                 await message_obj.edit_message_text(text=harem_text, reply_markup=markup, parse_mode=ParseMode.HTML)
         else:
             if pic:
-                await message_obj.reply_photo(
-                    photo=pic,
+                await reply_media_dynamic(message_obj, pic,
                     caption=harem_text,
                     reply_markup=markup,
                     parse_mode=ParseMode.HTML

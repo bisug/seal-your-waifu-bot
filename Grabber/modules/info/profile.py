@@ -1,27 +1,30 @@
 import math
-from pyrogram import filters, types, enums
-from pyrogram.enums import ParseMode
-from Grabber import app, user_collection, PHOTO_URL, LOGGER, WEB_APP_URL
-from config import config
-from Grabber.core.utils import html_escape
-from Grabber.core.user import get_user_data, get_active_pet
-from Grabber.core.progression import get_user_progress, get_progress_bar
-from Grabber.database import collection
 import random
 
+from pyrogram import enums, filters, types
+from pyrogram.enums import ParseMode
+
+from config import config
+from Grabber import LOGGER, PHOTO_URL, WEB_APP_URL, app, user_collection
+from Grabber.core.progression import get_progress_bar, get_user_progress
+from Grabber.core.user import get_active_pet, get_user_data
+from Grabber.core.utils import html_escape, reply_media_dynamic
+from Grabber.database import collection
+
 RARITY_ICONS = {
-    '⚪ Common': '⚪', '🟢 Medium': '🟢', '🟠 Rare': '🟠',
-    '🟡 Legendary': '🟡', '💠 Cosmic': '💠', '💮 Exclusive': '💮',
-    '🔮 Limited Edition': '🔮'
+    'Common': '◌', 'Medium': '○', 'Rare': '◙',
+    'Legendary': '◎', 'Cosmic': '◉', 'Exclusive': '◈',
+    'Limited Edition': '▣'
 }
 
 @app.on_message(filters.command(["profile", "myprofile", "me", "status", "mystatus"]))
 async def profile_handler(_, message: types.Message):
+    """Generate and display the user's progress and collection profile."""
     user_id = message.from_user.id
     user_data = await get_user_data(user_id)
 
     if not user_data:
-        return await message.reply_text("🚨 <b>No profile found!</b> Try collecting a character first.", parse_mode=ParseMode.HTML)
+        return await message.reply_text("<b>No profile found!</b> Try collecting a character first.", parse_mode=ParseMode.HTML)
 
     await app.send_chat_action(message.chat.id, enums.ChatAction.TYPING)
 
@@ -32,8 +35,10 @@ async def profile_handler(_, message: types.Message):
 
 
     chars = user_data.get('characters', [])
-    char_count = len(chars)
-    total_db_chars = await collection.count_documents({})
+    char_count = user_data.get('char_count')
+    if char_count is None:
+        char_count = len(chars)
+    total_db_chars = await collection.estimated_document_count()
 
 
     progress_percent = (char_count / total_db_chars * 100) if total_db_chars > 0 else 0
@@ -54,7 +59,8 @@ async def profile_handler(_, message: types.Message):
     pet_text = html_escape(f"{active_pet['name']} (Lvl {active_pet.get('level', 1)})") if active_pet else "None"
 
 
-    fav_id = user_data.get('favorites', [None])[0]
+    favs = user_data.get('favorites', [])
+    fav_id = favs[0] if favs else None
     fav_char = next((c for c in chars if str(c.get('id')) == str(fav_id)), None)
     fav_name = html_escape(fav_char['name']) if fav_char else "None"
 
@@ -66,27 +72,26 @@ async def profile_handler(_, message: types.Message):
 
 
     profile_text = (
-        f"<b>🌟 {user_name}'s Profile 🌟</b>\n"
-        f"━━━━━━━━━━━━━━━━━━━━━\n"
-        f"🆔 <b>ID:</b> <code>{user_id}</code>\n"
-        f"🎫 <b>Battle Pass:</b> {pass_type}\n\n"
-        f"⭐ <b>Level:</b> <code>{level}</code>\n"
-        f"📊 <b>XP:</b> {xp_bar} <code>{xp_current}/{xp_needed}</code>\n"
-        f"━━━━━━━━━━━━━━━━━━━━━\n"
+        f"<b>Collector Profile: {user_name}</b>\n\n"
+        f"<b>Collector ID:</b> <code>{user_id}</code>\n"
+        f"<b>Battle Pass:</b> {pass_type}\n\n"
+        f"<b>Level:</b> <code>{level}</code>\n"
+        f"<b>XP:</b> {xp_bar} <code>{xp_current}/{xp_needed}</code>\n\n"
         f"<b>Shards:</b> {user_balance:,} ⬪\n"
-        f"<b>Zenith:</b> {zenith:,} ⧫\n"
-        f"━━━━━━━━━━━━━━━━━━━━━\n"
-        f"🍱 <b>Collected:</b> {char_count}/{total_db_chars}\n"
-        f"❤️ <b>Favorite:</b> <code>{fav_name}</code>\n"
-        f"🐾 <b>Active Pet:</b> <code>{pet_text}</code>\n"
-        f"━━━━━━━━━━━━━━━━━━━━━\n"
-        f"<b>📚 Collection By Rarity</b>\n"
+        f"<b>Zenith:</b> {zenith:,} ⧫\n\n"
+        f"<b>Collected:</b> {char_count}/{total_db_chars}\n"
+        f"<b>Favorite:</b> <code>{fav_name}</code>\n"
+        f"<b>Active Pet:</b> <code>{pet_text}</code>\n\n"
+        f"<b>Collection By Rarity</b>\n"
     )
 
-    for rarity, icon in RARITY_ICONS.items():
-        count = rarity_stats.get(rarity, 0)
-        rarity_name = rarity.split()[-1]
-        profile_text += f"{icon} {rarity_name}: `{count}`\n"
+    for rarity_key, symbol in RARITY_ICONS.items():
+        count = 0
+        # Search for rarity with or without emoji prefix for compatibility
+        for db_rarity, db_count in rarity_stats.items():
+            if rarity_key in db_rarity:
+                count += db_count
+        profile_text += f"{symbol} {rarity_key}: `{count}`\n"
 
 
     from Grabber.core.keyboard import KeyboardBuilder, get_webapp_button
@@ -104,8 +109,7 @@ async def profile_handler(_, message: types.Message):
 
     try:
         pic = random.choice(PHOTO_URL)
-        await message.reply_photo(
-            photo=pic,
+        await reply_media_dynamic(message, pic,
             caption=profile_text,
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML

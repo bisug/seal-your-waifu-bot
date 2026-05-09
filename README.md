@@ -4,12 +4,14 @@
 # Seal-Bot-V2
 
 ### The Ultimate Anime Character Collection (Waifu Grabber) Bot
-#### Now with Unified Web Service & Premium WebApp UI
+#### Now with Unified Web Service & Premium React Mini App UI
 
 [![Python](https://img.shields.io/badge/Python-3.13%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
-[![Kurigram](https://img.shields.io/badge/Kurigram-v2.2-orange?logo=telegram&logoColor=white)](https://pypi.org/project/Kurigram/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-6-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-green?logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+[![Redis](https://img.shields.io/badge/Redis-Cloud-red?logo=redis&logoColor=white)](https://redis.io/)
 
 [Support Group](https://t.me/seal_Your_WH_Group) • [Updates Channel](https://t.me/SEAL_UPDATE)
 
@@ -19,9 +21,9 @@
 
 ## Overview
 
-**Seal-Bot-V2** is a high-performance Telegram bot ecosystem. It combines a robust **Pyrogram**-based character collection game with a premium **FastAPI**-powered WebApp. 
+**Seal-Bot-V2** is a modular, high-performance Telegram bot ecosystem. It combines a robust **Pyrogram (Kurigram)** character collection game with a premium **React + Vite** powered Telegram WebApp (TWA).
 
-This version introduces a **Unified Web Service** architecture—the Bot and the WebApp run in a single process, sharing memory and resources for maximum efficiency.
+This version introduces a **Unified Web Service** architecture—the Bot and the WebApp run in a single process, sharing memory and utilizing an asynchronous backend for maximum efficiency and speed.
 
 ---
 
@@ -428,3 +430,4 @@ Once registered, you can immediately start uploading characters with the new rar
 <div align="center">
   Built with love by the Seal-Bot Team
 </div>
+

@@ -1,16 +1,18 @@
-import io
 import html
+import io
 import os
 import textwrap
 import traceback
 from contextlib import redirect_stdout
-from pyrogram import filters, types, enums
+
+from pyrogram import enums, filters, types
 from pyrogram.enums import ParseMode
-from Grabber import app, LOGGER, OWNER_ID, sudo_users
+
 from config import config
+from Grabber import LOGGER, OWNER_ID, app, sudo_users
 
 namespaces = {}
-AUTHORIZED_USERS = list(set(sudo_users + [OWNER_ID]))
+AUTHORIZED_USERS = [OWNER_ID]
 
 def namespace_of(chat_id, message):
     if chat_id not in namespaces:
