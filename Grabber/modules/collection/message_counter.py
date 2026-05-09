@@ -88,8 +88,11 @@ async def message_counter_handler(_, message: types.Message):
         await send_character(chat_id, "🫧 Royal")
         return
 
-    from Grabber.core.spawn_utils import get_target_spawn_frequency
-    target_freq, active_count, multiplier = await get_target_spawn_frequency(chat_id)
+    # Check for "Golden Hour" (boosted spawn rates)
+    now = datetime.datetime.now(datetime.timezone.utc)
+    multiplier = 1.0
+    if 20 <= now.hour <= 22:
+        multiplier = 0.5 # Milestones reached twice as fast
 
     # Check for special rarity milestones
     for r_name, threshold in special_rarity_thresholds.items():
@@ -99,9 +102,21 @@ async def message_counter_handler(_, message: types.Message):
             await send_character(chat_id, r_name)
             return
 
+    # Standard spawn logic based on chat activity levels
+    active_count = await get_active_user_count(chat_id)
+
+    if active_count >= 6:
+        base_freq = 40
+    elif active_count >= 3:
+        base_freq = 60
+    else:
+        freq = await get_chat_frequency(chat_id)
+        base_freq = min(freq, 80) if freq is not None else 80
+
     # Trigger standard spawn if milestone is reached
-    if count % target_freq == 0:
-        SPAWN_LOGGER.info(f"Standard spawn triggered in {chat_id} (count={count}, freq={target_freq})")
+    base_freq_int = max(1, int(base_freq * multiplier))
+    if count % base_freq_int == 0:
+        SPAWN_LOGGER.info(f"Standard spawn triggered in {chat_id} (count={count}, freq={base_freq_int})")
 
         # Use different rarity weights if the chat is very active
         if active_count > 10:

@@ -1,4 +1,4 @@
-pymongo[srv]
+pymongo[srv]>=4.17.0
 kurigram
 tgcrypto
 python-dotenv
@@ -6,7 +6,7 @@ httpx
 psutil
 pydantic
 orjson
-redis
+redis>=7.4.0
 fastapi
 hypercorn
 python-multipart
