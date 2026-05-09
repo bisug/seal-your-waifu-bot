@@ -9,7 +9,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # Stage 2: Python Builder (for building wheels)
-FROM python:3.13-slim AS python-builder
+FROM ghcr.io/astral-sh/uv:python3.14-bookworm-slim AS python-builder
 
 WORKDIR /app
 
@@ -21,18 +21,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Upgrade pip and build wheels
-RUN pip install --upgrade pip
-COPY requirements.txt .
-RUN pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels -r requirements.txt
+# Copy project files for dependency resolution
+COPY pyproject.toml uv.lock ./
+
+# Install dependencies into a dedicated environment
+# We use --no-install-project because we only want the dependencies in this stage
+RUN uv sync --frozen --no-install-project --no-dev
 
 # Stage 3: Final Production Image
-FROM python:3.13-slim
+FROM ghcr.io/astral-sh/uv:python3.14-bookworm-slim
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PATH="/home/botuser/.local/bin:${PATH}"
+    PATH="/app/.venv/bin:${PATH}"
 
 WORKDIR /app
 
@@ -40,26 +42,22 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends curl && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Copy wheels from builder and install
-COPY --from=python-builder /app/wheels /wheels
-RUN pip install --upgrade pip && \
-    pip install --no-cache /wheels/* && \
-    rm -rf /wheels
+# Copy virtual environment from builder
+COPY --from=python-builder /app/.venv /app/.venv
 
 # Create a non-root user for security
 RUN useradd -m -u 1000 botuser && \
     chown -R botuser:botuser /app
 
 # Copy application code explicitly to keep the image slim
-# We avoid COPY . . to prevent including frontend source, local venvs, etc.
 COPY --chown=botuser:botuser Grabber/ /app/Grabber/
 COPY --chown=botuser:botuser config.py /app/
 COPY --chown=botuser:botuser .python-version /app/
 COPY --chown=botuser:botuser runtime.txt /app/
 COPY --chown=botuser:botuser heroku.yml /app/
+COPY --chown=botuser:botuser pyproject.toml uv.lock /app/
 
 # Copy compiled frontend assets from Stage 1 into the Grabber static folder
-# We explicitly target the 'dist' folder and ensure the destination is fresh
 RUN rm -rf /app/Grabber/static && mkdir -p /app/Grabber/static
 COPY --from=frontend-builder --chown=botuser:botuser /app/frontend/dist/ /app/Grabber/static/
 
@@ -73,4 +71,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD curl -f http://localhost:${PORT:-8080}/healthz || exit 1
 
 # Default runtime command
-CMD ["hypercorn", "Grabber.webapp.main:app", "--bind", "0.0.0.0:8080"]
+CMD ["uv", "run", "uvicorn", "Grabber.webapp.main:app", "--host", "0.0.0.0", "--port", "8080"]
