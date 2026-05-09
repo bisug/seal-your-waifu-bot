@@ -1,12 +1,8 @@
 import asyncio
 import logging
-<<<<<<< HEAD
 from pyrogram import enums, errors, filters, types
-=======
+from pyrogram.enums import ContinuePropagation
 
-from pyrogram import errors, ContinuePropagation, filters
-
->>>>>>> beta
 from Grabber import app, game_bot
 from Grabber.database import r, user_collection
 LOGGER = logging.getLogger(__name__)

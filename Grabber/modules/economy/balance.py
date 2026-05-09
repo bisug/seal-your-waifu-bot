@@ -1,14 +1,9 @@
 import asyncio
 import random
 from datetime import datetime, timezone
-<<<<<<< HEAD
 from pyrogram import enums, errors, filters, types
-=======
-
-from pyrogram import errors, enums, filters, types
 from pyrogram.enums import ButtonStyle, ParseMode
 
->>>>>>> beta
 from Grabber import LOGGER, MAIN_GROUP_ID, OWNER_ID, app, collection
 from Grabber.core.balance import (check_and_deduct, get_user_balance,
                                   update_user_balance)

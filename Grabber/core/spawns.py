@@ -4,14 +4,9 @@ import json
 import random
 import time
 from typing import Any, Dict, Optional
-<<<<<<< HEAD
 from pyrogram import enums, errors, filters, types
-=======
-
-from pyrogram import errors, enums
 from pyrogram.enums import ParseMode
 
->>>>>>> beta
 from Grabber import LOGGER, app, config
 from Grabber.core.utils import html_escape
 from Grabber.core.waifu import get_or_load_characters

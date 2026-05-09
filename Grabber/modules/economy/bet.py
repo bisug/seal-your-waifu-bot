@@ -1,13 +1,8 @@
 import asyncio
 import random
-<<<<<<< HEAD
 from pyrogram import enums, errors, filters, types
-=======
-
-from pyrogram import errors, enums, filters, types
 from pyrogram.enums import ParseMode
 
->>>>>>> beta
 from Grabber import app, user_collection
 from Grabber.core.utils import handle_errors
 from Grabber.core.cache import invalidate_user_cache
