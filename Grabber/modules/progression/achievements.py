@@ -1,9 +1,8 @@
-from pyrogram import errors, enums
+from pyrogram import enums, errors, filters, types
 from pyrogram.enums import ParseMode
 
 from Grabber import LOGGER, app, user_collection
 from Grabber.core.progression import add_xp
-
 ACHIEVEMENTS = {
     "novice_collector": {
         "name": "Novice Collector",
@@ -46,33 +45,25 @@ ACHIEVEMENTS = {
         "symbol": "❃"
     }
 }
-
 async def check_achievements(user_id: int):
-
     user = await user_collection.find_one({"id": user_id})
     if not user: return
-
     user_achievements = set(user.get("achievements", []))
     new_unlocks = []
-
     for ach_id, data in ACHIEVEMENTS.items():
         if ach_id in user_achievements:
             continue
-
         try:
             if data["condition"](user):
                 new_unlocks.append((ach_id, data))
         except Exception as e:
             LOGGER.error(f"Error checking achievement {ach_id}: {e}")
-
     if not new_unlocks:
         return []
-
     # Grant XP for each unlock (kept sequential — has level-up side effects)
     for ach_id, data in new_unlocks:
         await add_xp(user_id, data["reward_xp"], f"ach_{ach_id}")
         LOGGER.info(f"User {user_id} unlocked {data['name']}")
-
     # Single batch write for all new achievement IDs + titles
     new_ach_ids = [a[0] for a in new_unlocks]
     new_titles = [a[1]["title"] for a in new_unlocks]
@@ -83,5 +74,4 @@ async def check_achievements(user_id: int):
             "$addToSet": {"titles": {"$each": new_titles}}
         }
     )
-
     return new_ach_ids

@@ -4,7 +4,6 @@ import logging
 import re
 
 from pyrogram import Client, enums, errors, filters, types
-from pyrogram.enums import ParseMode
 from pyrogram.handlers import MessageHandler
 
 from config import config

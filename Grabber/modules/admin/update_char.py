@@ -3,11 +3,8 @@ import json
 import os
 import shlex
 import uuid
-
 import httpx
 from pyrogram import enums, errors, filters, types
-from pyrogram.enums import ParseMode
-
 from config import config
 from Grabber import GALLERY_CHANNEL_ID, LOGGER, OWNER_ID, app, sudo_users, sudo_filter
 from Grabber.core.utils import handle_errors, html_escape
@@ -15,9 +12,7 @@ from Grabber.core.waifu import (get_character_by_id, invalidate_character_cache,
                                 upload_media_safely)
 from Grabber.database import collection, r
 from Grabber.modules.collection.rarities import RARITY_MAP
-
 LOG_GROUP_ID = config.LOG_GROUP_ID
-
 def get_rarity_help():
     """Generates dynamic rarity map help text."""
     rarity_list = "\n".join([f"({v}={k})" for k, v in RARITY_MAP.items()])
@@ -28,7 +23,6 @@ def get_rarity_help():
         "<b>Rarity Map:</b>\n"
         f"{rarity_list}"
     )
-
 @app.on_message(filters.command("update") & sudo_filter)
 @handle_errors
 async def update_waifu_handler(_, message: types.Message):
@@ -39,34 +33,28 @@ async def update_waifu_handler(_, message: types.Message):
     cmd_text = message.text or message.caption
     if not cmd_text:
         return
-
     try:
         # 1. Parse Key-Value Pairs using shlex
         cmd_args = shlex.split(cmd_text)[1:]
     except ValueError as e:
         return await message.reply_text(f"❌ <b>Parsing Error:</b> {e}")
-
     if len(cmd_args) < 2:
         return await message.reply_text(
             "❌ <b>Usage:</b>\n<code>/update &lt;id&gt; name=\"New Name\" anime=\"New Anime\" rarity=5 url=\"new_url\"</code>",
-            parse_mode=ParseMode.HTML
+            parse_mode=enums.ParseMode.HTML
         )
-
     char_id = cmd_args[0]
     character = await get_character_by_id(char_id)
     if not character:
         return await message.reply_text("❌ Character not found.")
-
     updates = {}
     remaining_args = cmd_args[1:]
-    
     for arg in remaining_args:
         if "=" not in arg:
             continue
         key, val = arg.split("=", 1)
         key = key.lower().strip()
         val = val.strip()
-
         if key == "name":
             updates['name'] = val.title()
         elif key == "anime":
@@ -83,10 +71,8 @@ async def update_waifu_handler(_, message: types.Message):
             if not (val.startswith("http://") or val.startswith("https://")):
                  return await message.reply_text("❌ Invalid URL scheme.")
             updates['img_url'] = val
-
     if not updates:
         return await message.reply_text("❌ No valid fields to update provided.")
-
     # 2. Prepare Proposal
     proposal_id = str(uuid.uuid4())[:8]
     proposal_data = {
@@ -99,29 +85,24 @@ async def update_waifu_handler(_, message: types.Message):
             'img_url': character['img_url']
         }
     }
-
     # Store in Redis for 1 hour
     if r:
         await r.setex(f"upd:{proposal_id}", 3600, json.dumps(proposal_data))
     else:
         if not hasattr(app, '_pending_updates'): app._pending_updates = {}
         app._pending_updates[proposal_id] = proposal_data
-
     # 3. Format Proposal Message
     diff_text = f"<b>🆕 Update Proposal for ID:</b> <code>{char_id}</code>\n\n"
     for k, new_v in updates.items():
         old_v = proposal_data['old'].get(k)
         diff_text += f"🔹 <b>{k.title()}:</b>\n  <s>{html_escape(str(old_v))}</s>\n  ➡️ <code>{html_escape(str(new_v))}</code>\n\n"
-    
     diff_text += f"Proposed by <a href=\"tg://user?id={message.from_user.id}\">{html_escape(message.from_user.first_name)}</a>"
-
     buttons = [
         [
             types.InlineKeyboardButton("✅ Confirm", callback_data=f"upd_cnf:{proposal_id}"),
             types.InlineKeyboardButton("❌ Cancel", callback_data=f"upd_can:{proposal_id}")
         ]
     ]
-
     try:
         preview_url = updates.get('img_url', character['img_url'])
         await app.send_media_safe(
@@ -129,40 +110,32 @@ async def update_waifu_handler(_, message: types.Message):
             media_url=preview_url,
             caption=diff_text,
             reply_markup=types.InlineKeyboardMarkup(buttons),
-            parse_mode=ParseMode.HTML
+            parse_mode=enums.ParseMode.HTML
         )
-        await message.reply_text(f"⏳ Proposal sent to Logger group (ID: <code>{proposal_id}</code>).", parse_mode=ParseMode.HTML)
+        await message.reply_text(f"⏳ Proposal sent to Logger group (ID: <code>{proposal_id}</code>).", parse_mode=enums.ParseMode.HTML)
     except Exception as e:
         LOGGER.error(f"Proposal Failure: {e}")
         await message.reply_text(f"❌ Failed to send proposal: {e}")
-
-
 @app.on_callback_query(filters.regex(r"^upd_(cnf|can):"))
 async def update_callback_handler(_, query: types.CallbackQuery):
     action, prop_id = query.data.split(":")
-    
     if r:
         raw_data = await r.get(f"upd:{prop_id}")
         data = json.loads(raw_data) if raw_data else None
     else:
         data = getattr(app, '_pending_updates', {}).get(prop_id)
-
     if not data:
         await query.answer("⌛ Proposal expired or not found.", show_alert=True)
         return await query.message.delete()
-
     if action == "can":
         await query.answer("❌ Update cancelled.")
         if r: await r.delete(f"upd:{prop_id}")
         return await query.message.delete()
-
     # 2. Confirm Action
     await query.answer("⚙️ Applying changes...", show_alert=True)
     char_id = data['char_id']
     updates = data['updates']
-    
     status_msg = await app.send_message_safe(LOG_GROUP_ID, f"⏳ Processing Update for <code>{char_id}</code>...")
-
     try:
         # Re-host media if URL changed
         if 'img_url' in updates:
@@ -180,16 +153,13 @@ async def update_callback_handler(_, query: types.CallbackQuery):
                         raise Exception("Re-hosting failed.")
                 else:
                     raise Exception(f"Failed to fetch new image (HTTP {resp.status_code})")
-
         # Update Database
         await collection.update_one({'id': char_id}, {'$set': updates})
-        
         # Refetch full char for gallery update
         updated_char = await get_character_by_id(char_id)
         invalidate_character_cache(data['old']['rarity'])
         if 'rarity' in updates:
             invalidate_character_cache(updates['rarity'])
-
         # Update Gallery Channel Message
         msg_id = updated_char.get('message_id')
         if msg_id:
@@ -209,7 +179,7 @@ async def update_callback_handler(_, query: types.CallbackQuery):
                         media=types.InputMedia(
                             media=updates['img_url'],
                             caption=new_caption,
-                            parse_mode=ParseMode.HTML,
+                            parse_mode=enums.ParseMode.HTML,
                             type=media_type
                         )
                     )
@@ -219,16 +189,14 @@ async def update_callback_handler(_, query: types.CallbackQuery):
                         chat_id=GALLERY_CHANNEL_ID,
                         message_id=msg_id,
                         caption=new_caption,
-                        parse_mode=ParseMode.HTML
+                        parse_mode=enums.ParseMode.HTML
                     )
             except Exception as me:
                 LOGGER.warning(f"Gallery Edit Failed for {char_id}: {me}")
-
         await status_msg.edit_text(f"✅ <b>Character {char_id} Updated!</b>\n\n" + 
                                  "\n".join([f"• {k}: {v}" for k, v in updates.items()]))
         await query.message.delete()
         if r: await r.delete(f"upd:{prop_id}")
-
     except Exception as e:
         LOGGER.error(f"Update Confirmation Error: {e}")
         await status_msg.edit_text(f"❌ <b>Update Failed:</b> {html_escape(str(e))}")
