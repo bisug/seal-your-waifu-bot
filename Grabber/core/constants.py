@@ -1,8 +1,6 @@
 # Grabber/core/constants.py
-
 # Rarity Mappings
 SHOP_RARITY = "🟠 Rare"
-
 PAYOUTS = {
     "⚪ Common": 10,
     "🟢 Medium": 25,
@@ -15,7 +13,6 @@ PAYOUTS = {
     "💎 Antique": 2500,
     "🎐 Celestial": 5000
 }
-
 # Shop Settings
 SHOP_LIMIT = 50
 RARITY_PRICES = {
@@ -30,13 +27,11 @@ RARITY_PRICES = {
     "💎 Antique": 500,
     "🎐 Celestial": 200
 }
-
 # Pass Constants
 PASS_PRICES = {
     "premium": 500,
     "elite": 1200
 }
-
 # Eggs
 CORRUPTED_EGG_CHANCE = 5
 EGG_TIERS = {
@@ -44,7 +39,6 @@ EGG_TIERS = {
     "gold":   {"name": "Golden Egg", "chance": 25, "pool": ["🟠 Rare", "🟡 Legendary"], "wait_min": 30},
     "void":   {"name": "Void Egg",   "chance": 5,  "pool": ["💠 Cosmic", "💮 Exclusive"], "wait_min": 180}
 }
-
 # Leaderboard Metrics
 METRIC_ORDER = ["harem", "shards", "zenith", "level", "guesses"]
 METRICS = {
