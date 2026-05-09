@@ -119,9 +119,9 @@ export const Profile = ({ onCharClick }) => {
             <Avatar 
               src={user.avatar} 
               alt="User" 
-              className="w-16 h-16 rounded-2xl border-2 border-brand-neon neon-shadow transform transition-transform group-hover:scale-105"
+              className="w-16 h-16 rounded-2xl border-2 border-brand-accent transform transition-transform group-hover:scale-105"
             />
-            <div className="absolute -bottom-1.5 -right-1.5 bg-brand-neon text-brand-midnight text-[10px] font-black px-2 py-0.5 rounded-md shadow-lg shadow-brand-neon/40 ring-2 ring-brand-midnight">
+            <div className="absolute -bottom-1.5 -right-1.5 bg-brand-accent text-white text-[10px] font-black px-2 py-0.5 rounded-md shadow-lg ring-2 ring-brand-midnight">
               LVL {user.stats?.level || 1}
             </div>
           </div>
@@ -130,7 +130,7 @@ export const Profile = ({ onCharClick }) => {
               {user.first_name || 'Collector'}
             </h1>
             <div className="flex items-center space-x-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-brand-neon animate-pulse" />
+              <span className="h-1.5 w-1.5 rounded-full bg-brand-accent" />
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.25em] opacity-90">@{user.username || 'unknown'}</p>
             </div>
           </div>
@@ -140,7 +140,7 @@ export const Profile = ({ onCharClick }) => {
       {/* Stats Dashboard */}
       <div className="px-4 -mt-4 relative z-30 grid grid-cols-3 gap-2.5 mb-8">
         {[
-          { icon: Shield, label: 'XP', value: user.stats?.xp || 0, color: 'text-brand-neon', bg: 'bg-brand-neon/5' },
+          { icon: Shield, label: 'XP', value: user.stats?.xp || 0, color: 'text-brand-accent', bg: 'bg-brand-accent/5' },
           { icon: Activity, label: 'Zenith ⧫', value: user.stats?.zenith || 0, color: 'text-brand-accent', bg: 'bg-brand-accent/5' },
           { icon: Users, label: 'Collection', value: user.stats?.total_characters || 0, color: 'text-white', bg: 'bg-white/5' },
         ].map((stat, i) => (
@@ -190,7 +190,7 @@ export const Profile = ({ onCharClick }) => {
                 </div>
                 
                 <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                  <Activity size={10} className="text-brand-neon" /> {user.current_pet.ability}
+                  <Activity size={10} className="text-brand-accent" /> {user.current_pet.ability}
                 </p>
                 
                 <div className="flex items-center gap-2">
@@ -215,7 +215,7 @@ export const Profile = ({ onCharClick }) => {
         <div className="sticky-header px-4 py-3 -mx-4 mb-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-500">My Harem</h2>
-            <div className="flex items-center space-x-1 text-[10px] font-black text-brand-neon uppercase tracking-widest bg-brand-neon/5 px-2.5 py-1 rounded-lg border border-brand-neon/10 shadow-[0_0_10px_rgba(0,255,255,0.05)]">
+            <div className="flex items-center space-x-1 text-[10px] font-black text-brand-accent uppercase tracking-widest bg-brand-accent/5 px-2.5 py-1 rounded-lg border border-brand-accent/10">
               <Trophy size={10} />
               <span>Rank #{user.stats?.rank || '---'}</span>
             </div>
@@ -227,7 +227,7 @@ export const Profile = ({ onCharClick }) => {
                 onClick={() => { setRarity(''); setPage(1); }}
                 className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] whitespace-nowrap transition-all border ${
                   rarity === '' 
-                  ? 'bg-brand-neon text-brand-midnight border-brand-neon shadow-lg shadow-brand-neon/30 scale-105' 
+                  ? 'bg-brand-accent text-white border-brand-accent shadow-lg scale-105'
                   : 'bg-white/5 text-slate-500 border-white/5 hover:border-white/10'
                 }`}
               >
@@ -239,7 +239,7 @@ export const Profile = ({ onCharClick }) => {
                   onClick={() => { setRarity(r); setPage(1); }}
                   className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] whitespace-nowrap transition-all border ${
                     rarity === r 
-                    ? 'bg-brand-neon text-brand-midnight border-brand-neon shadow-lg shadow-brand-neon/30 scale-105' 
+                    ? 'bg-brand-accent text-white border-brand-accent shadow-lg scale-105'
                     : 'bg-white/5 text-slate-500 border-white/5 hover:border-white/10'
                   }`}
                 >
@@ -253,7 +253,7 @@ export const Profile = ({ onCharClick }) => {
               <input 
                 type="text" 
                 placeholder="Search collection..." 
-                className="w-full bg-slate-900/40 border border-white/10 rounded-xl py-3 pl-11 pr-4 text-[11px] focus:border-brand-neon/50 outline-none transition-all placeholder:text-slate-600 font-bold tracking-widest backdrop-blur-sm"
+                className="w-full bg-slate-900/40 border border-white/10 rounded-xl py-3 pl-11 pr-4 text-[11px] focus:border-brand-accent/50 outline-none transition-all placeholder:text-slate-600 font-bold tracking-widest backdrop-blur-sm"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -301,7 +301,7 @@ export const Profile = ({ onCharClick }) => {
         {/* Loading Spacing */}
         {loading && items.length > 0 && (
            <div className="flex justify-center py-8">
-              <Loader2 className="animate-spin text-brand-neon/20" size={20} />
+              <Loader2 className="animate-spin text-brand-accent/20" size={20} />
            </div>
         )}
       </section>

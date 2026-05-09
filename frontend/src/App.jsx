@@ -214,7 +214,7 @@ const AppContent = () => {
         >
           <Suspense fallback={
             <div className="flex items-center justify-center h-full bg-brand-midnight bg-mesh">
-              <Loader2 size={24} className="animate-spin text-brand-neon/20" />
+              <Loader2 size={24} className="animate-spin text-brand-accent/20" />
             </div>
           }>
             {activeTab === 'profile' && <Profile onCharClick={setSelectedChar} />}

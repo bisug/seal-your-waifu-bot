@@ -2,22 +2,22 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400..900&display=swap');
 
 @theme {
-  --color-brand-midnight: #060d0b;
-  --color-brand-deep: #0a1a15;
-  --color-brand-accent: #10b981;
-  --color-brand-neon: #34d399;
-  --color-brand-glass: rgba(10, 26, 21, 0.75);
-  --color-brand-glass-border: rgba(255, 255, 255, 0.08);
+  --color-brand-midnight: #0a0a0c;
+  --color-brand-deep: #121214;
+  --color-brand-accent: #3b82f6;
+  --color-brand-neon: #60a5fa;
+  --color-brand-glass: rgba(18, 18, 20, 0.8);
+  --color-brand-glass-border: rgba(255, 255, 255, 0.05);
   
   --breakpoint-xs: 360px;
-  --shadow-neon: 0 0 15px rgba(16, 185, 129, 0.4);
-  --shadow-neon-lg: 0 0 30px rgba(16, 185, 129, 0.6);
+  --shadow-neon: 0 4px 12px rgba(59, 130, 246, 0.15);
+  --shadow-neon-lg: 0 8px 24px rgba(59, 130, 246, 0.25);
 }
 
 :root {
   color-scheme: dark;
-  --background: #060d0b;
-  --foreground: #f0fdf4;
+  --background: #0a0a0c;
+  --foreground: #f8fafc;
   
   /* Premium Density Spacing System - Responsive */
   --space-1: 0.2rem;   
@@ -92,10 +92,8 @@ button, a {
 .bg-mesh {
   background-color: var(--color-brand-midnight);
   background-image: 
-    radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.15) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(52, 211, 153, 0.1) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%),
-    radial-gradient(at 0% 100%, rgba(52, 211, 153, 0.05) 0px, transparent 50%);
+    radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.05) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(96, 165, 250, 0.03) 0px, transparent 50%);
 }
 
 .neon-shadow {
