@@ -56,4 +56,9 @@ class Config:
     MINI_APP_SHORT_NAME = os.getenv("MINI_APP_SHORT_NAME", "app")
     API_VERSION_PREFIX = os.getenv("API_VERSION_PREFIX", "v1_7b82")
 
+    # ==========================================
+    # ---           USERBOT CONFIG         ---
+    # ==========================================
+    STRING_SESSION = os.getenv("STRING_SESSION")
+
 config = Config()
