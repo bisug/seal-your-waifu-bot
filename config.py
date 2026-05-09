@@ -1,4 +1,5 @@
 import os
+
 from dotenv import load_dotenv
 
 # Load environment variables from .env file for local development
@@ -13,25 +14,24 @@ class Config:
     BOT_NAME = None      # Fetched automatically at startup
 
     # --- TELEGRAM API CREDENTIALS ---
-    API_ID = int(os.getenv("API_ID", "20098819"))
-    API_HASH = os.getenv("API_HASH", "2545d49cea8894d513726649b1bd5a1f")
+    API_ID = int(os.getenv("API_ID", "25635673"))
+    API_HASH = os.getenv("API_HASH", "ec69ce8b56c71541499c914fabd08286")
 
     # --- DATABASE INFRASTRUCTURE ---
     MONGO_URL = os.getenv("MONGO_URL", "mongodb+srv://botmaker9675208:botmaker9675208@cluster0.sc9mq8b.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
-    REDIS_URL = os.getenv("REDIS_URL", "rediss://default:AY_bAAIncDEwNWNkODM3NjgxN2M0Y2ZhODZlMDAzYTI4MzY2M2U1M3AxMzY4Mjc@civil-monster-36827.upstash.io:6379")
+    REDIS_URL = os.getenv("REDIS_URL", "rediss://default:AVNS_3H0cohKfeMSPJAn2TeO@sealbot-friendclub-35f1.k.aivencloud.com:28970")
 
     # --- PRIVILEGED USERS ---
-    OWNER_ID = int(os.getenv("OWNER_ID", "6574393060"))
+    OWNER_ID = int(os.getenv("OWNER_ID", "7804972365"))
     SUDO_USERS = [int(i.strip()) for i in os.getenv("SUDO_USERS", "7717913705, 6574393060, 6388703157, 6858372924").split(",") if i.strip().isdigit()]
 
     # --- CHANNEL & GROUP IDS ---
-    GROUP_ID = int(os.getenv("GROUP_ID", "-1002528887253"))
-    SUPPORT_ID = int(os.getenv("SUPPORT_ID", "-1002528887253"))
-    SUPPORT_GROUP_ID = int(os.getenv("SUPPORT_GROUP_ID", "-1002429397912"))
-    CHARA_CHANNEL_ID = int(os.getenv("CHARA_CHANNEL_ID", "-1002643258398"))
-
+    MAIN_GROUP_ID = int(os.getenv("MAIN_GROUP_ID", "-1002429397912"))
+    GALLERY_CHANNEL_ID = int(os.getenv("GALLERY_CHANNEL_ID", "-1003925872981"))
+    LOG_GROUP_ID = int(os.getenv("LOG_GROUP_ID", "-1002913644675"))
+    
     # --- SOCIAL & CHATS ---
-    SUPPORT_CHAT = os.getenv("SUPPORT_CHAT", "seal_Your_WH_Group")
+    SUPPORT_CHAT = os.getenv("SUPPORT_CHAT", "TNJBotSupport")
     UPDATE_CHAT = os.getenv("UPDATE_CHAT", "SEAL_UPDATE")
     
     # --- MEDIA & ASSETS ---
@@ -41,7 +41,11 @@ class Config:
     IMGBB_API_KEY = os.getenv("IMGBB_API_KEY", "21786e21eb0369339a3c2a2d9c561190")
     
     # --- WEBAPP CONFIG ---
-    WEB_APP_URL = os.getenv("WEB_APP_URL", "https://dear-project-01-seal-6d4f0ddd98e4.herokuapp.com")
+    WEB_APP_URL = os.getenv("WEB_APP_URL", "https://dear-project-seal-64ed7a272fd6.herokuapp.com")
     MINI_APP_SHORT_NAME = os.getenv("MINI_APP_SHORT_NAME", "app") # The 'Short Name' you set in BotFather
+    API_VERSION_PREFIX = os.getenv("API_VERSION_PREFIX", "v1_7b82")
+
+    # --- USERBOT CONFIG ---
+    STRING_SESSION = os.getenv("STRING_SESSION", "BQEyrwMApp5yi6-jKRCfwSBL2tVRNfSgDCGYMh61lWDKQnYwkDIQc6xaKuavcM_jCv0RYUEq1ye_hwpx5Mw-jRlDLGROn8eZ3RFQniaMALDiGnwsRWD82ReJsXV-zPsFlcf7nT60bis0bALIBAbKeR8gBcnba5q9tgmWXd11sSRmvQy9zgXJ7K8PM4Zvi_9sCOSuyQhd6R_NicLWTW3dIMUbwznCrWi8-FZA21kxD3YfitVEHyR_C4LUhkYPlP8iqkQzrxbIDwVZ8Zr-3gsw38u40PT1RqqjDyhIr8wl1KX4Pt3QUqAAttyiq5e5BaT2WLc7ga4Sxb_NwJqBKlNU0vRUnYHxegAAAAHXQT_PAA")
 
 config = Config()
