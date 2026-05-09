@@ -273,7 +273,8 @@ async def send_character(chat_id: int, rarity: str):
             chat_id,
             media_url=character['img_url'],
             caption=caption,
-            parse_mode=ParseMode.HTML
+            parse_mode=ParseMode.HTML,
+            has_spoiler=True
         )
         if not msg:
             LOGGER.warning(f"send_character: failed to send spawn to {chat_id} (FloodWait or peer error)")
