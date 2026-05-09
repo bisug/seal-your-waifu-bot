@@ -1,0 +1,22 @@
+[project]
+name = "app"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "dnspython>=2.8.0",
+    "fastapi>=0.136.0",
+    "httptools>=0.7.0",
+    "httpx>=0.28.0",
+    "kurigram>=2.2.0",
+    "orjson>=3.11.0",
+    "psutil>=7.2.0",
+    "pydantic>=2.13.0",
+    "pymongo[srv]>=4.17.0",
+    "python-dotenv>=1.2.0",
+    "redis[hiredis]>=7.4.0",
+    "tgcrypto>=1.2.0",
+    "uvicorn[standard]>=0.46.0",
+    "uvloop>=0.22.0",
+]
