@@ -48,7 +48,6 @@ const PetCard = ({ pet, isActive, onSelect }) => {
         isActive ? 'border-brand-neon/40 ring-1 ring-brand-neon/20 shadow-lg shadow-brand-neon/5' : 'border-white/5 opacity-80 grayscale-[0.5] hover:opacity-100 hover:grayscale-0'
       }`}
     >
-      {/* Background Pet Image */}
       <div className="relative h-28 overflow-hidden">
          <img 
             src={pet.img || 'https://files.catbox.moe/2hsawz.jpg'} 
@@ -57,7 +56,6 @@ const PetCard = ({ pet, isActive, onSelect }) => {
          />
          <div className="absolute inset-0 bg-gradient-to-t from-brand-deep via-transparent to-transparent" />
          
-         {/* Active Badge */}
          {isActive && (
             <div className="absolute top-2 right-2 bg-brand-neon text-brand-midnight text-[8px] font-black uppercase px-2 py-0.5 rounded-lg tracking-tighter shadow-lg border border-white/20 z-20">
               Active
@@ -189,7 +187,7 @@ export const Hatchery = ({ onPetClick }) => {
   const { user, loading: userLoading, refreshUser } = useUser();
   const { addToast } = useToast();
   const { incubateEgg, hatchEgg, loading, hatchingResult, setHatchingResult } = useEggActions();
-  const [activeTab, setActiveTab] = useState('eggs'); // 'eggs' or 'pets'
+  const [activeTab, setActiveTab] = useState('eggs');
 
   const handleIncubate = async (eggId) => {
     await incubateEgg(eggId);
@@ -199,7 +197,6 @@ export const Hatchery = ({ onPetClick }) => {
     await hatchEgg(eggId);
   };
 
-  // Fix: Use body class for scroll lock instead of direct selector mutation
   useEffect(() => {
     if (hatchingResult) {
       document.body.classList.add('no-scroll');
@@ -207,15 +204,6 @@ export const Hatchery = ({ onPetClick }) => {
     }
   }, [hatchingResult]);
 
-  const handleSetPet = async (petName) => {
-    try {
-      await apiFetch(`/pets/set_active/${petName}`, { method: 'POST' });
-      addToast(`${petName} Synced to Core`, 'success');
-      await refreshUser();
-    } catch (err) {
-      addToast(err.message || 'Sync failed', 'error');
-    }
-  };
 
   if (userLoading) return (
     <div className="p-10 flex flex-col items-center justify-center min-h-[60vh]">
@@ -301,33 +289,34 @@ export const Hatchery = ({ onPetClick }) => {
                </button>
             </div>
             <div className="grid grid-cols-2 gap-3">
-            {user.pets && user.pets.length > 0 ? (
-              user.pets.map((pet) => (
-                <PetCard 
-                  key={pet.name} 
-                  pet={pet} 
-                  isActive={user.current_pet?.name === pet.name}
-                  onSelect={onPetClick}
-                />
-              ))
-            ) : (
-              <div className="col-span-2">
-                <div className="glass-panel p-12 rounded-[2.5rem] border border-white/5 text-center flex flex-col items-center">
-                  <Activity size={40} className="text-slate-800 mb-6" />
-                  <p className="text-slate-400 text-[11px] font-bold uppercase tracking-widest leading-relaxed max-w-[200px] mb-8">
-                    No active companions detected in your hatchery.
-                  </p>
-                  <button 
-                    onClick={() => {
-                        window.dispatchEvent(new CustomEvent('nav-market-pets'));
-                    }}
-                    className="px-8 py-4 rounded-2xl bg-brand-neon text-brand-midnight text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-brand-neon/20 active:scale-95 transition-all"
-                  >
-                    Visit Pet Shop
-                  </button>
+              {user.pets && user.pets.length > 0 ? (
+                user.pets.map((pet) => (
+                  <PetCard
+                    key={pet.name}
+                    pet={pet}
+                    isActive={user.current_pet?.name === pet.name}
+                    onSelect={onPetClick}
+                  />
+                ))
+              ) : (
+                <div className="col-span-2">
+                  <div className="glass-panel p-12 rounded-[2.5rem] border border-white/5 text-center flex flex-col items-center">
+                    <Activity size={40} className="text-slate-800 mb-6" />
+                    <p className="text-slate-400 text-[11px] font-bold uppercase tracking-widest leading-relaxed max-w-[200px] mb-8">
+                      No active companions detected in your hatchery.
+                    </p>
+                    <button
+                      onClick={() => {
+                          window.dispatchEvent(new CustomEvent('nav-market-pets'));
+                      }}
+                      className="px-8 py-4 rounded-2xl bg-brand-neon text-brand-midnight text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-brand-neon/20 active:scale-95 transition-all"
+                    >
+                      Visit Pet Shop
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </motion.section>
         )}
       </AnimatePresence>
