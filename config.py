@@ -19,7 +19,7 @@ class Config:
 
     # --- DATABASE INFRASTRUCTURE ---
     MONGO_URL = os.getenv("MONGO_URL", "mongodb+srv://botmaker9675208:botmaker9675208@cluster0.sc9mq8b.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
-    REDIS_URL = os.getenv("REDIS_URL", "redis://:UvSaz52wKSnIJfapNAaVkF7apl0xKwh2@redis-13252.crce283.ap-south-1-2.ec2.cloud.redislabs.com:13252")
+    REDIS_URL = os.getenv("REDIS_URL", "rediss://default:AVNS_3H0cohKfeMSPJAn2TeO@sealbot-friendclub-35f1.k.aivencloud.com:28970")
 
     # --- PRIVILEGED USERS ---
     OWNER_ID = int(os.getenv("OWNER_ID", "7804972365"))
