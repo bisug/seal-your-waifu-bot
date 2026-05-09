@@ -4,14 +4,9 @@ import logging
 import re
 from datetime import datetime, timezone
 from functools import wraps
-<<<<<<< HEAD
 from pyrogram import enums, errors, filters, types
-=======
+from pyrogram.enums import ParseMode
 
-from pyrogram import errors
-
-
->>>>>>> beta
 def get_now_utc() -> datetime:
     """Returns the current aware UTC datetime."""
     return datetime.now(timezone.utc)
@@ -95,10 +90,7 @@ async def reply_media_dynamic(message_obj, media_url, **kwargs):
     if isinstance(media_url, str) and media_url.endswith(('.mp4', '.webm', '.gif')):
         return await message_obj.reply_video(video=media_url, **kwargs)
     return await message_obj.reply_photo(photo=media_url, **kwargs)
-<<<<<<< HEAD
-=======
 
->>>>>>> beta
 def handle_errors(func):
     """
     Decorator to handle common Pyrogram errors in command handlers.

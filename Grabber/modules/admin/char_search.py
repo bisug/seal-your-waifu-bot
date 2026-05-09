@@ -1,11 +1,7 @@
 import hashlib
-<<<<<<< HEAD
 from pyrogram import enums, errors, filters, types
-=======
-
-from pyrogram import errors, enums, filters, types
 from pyrogram.enums import ParseMode
->>>>>>> beta
+
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from Grabber import LOGGER, app, collection
 from Grabber.core.utils import handle_errors, html_escape as escape
