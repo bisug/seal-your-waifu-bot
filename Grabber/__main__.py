@@ -9,7 +9,7 @@ nest_asyncio.apply()
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
 
-from pyrogram import idle
+from pyrogram import enums, idle
 
 import Grabber.core.sync_handler  # Register global message sync handlers
 from Grabber import LOGGER, app, game_bot
