@@ -1,14 +1,12 @@
 import os
 import platform
 import time
-
 import psutil
-from pyrogram import errors, enums, filters, types
+from pyrogram import enums, errors, filters, types
 from pyrogram.enums import ParseMode
 
 from Grabber import StartTime, app, db
 from Grabber.core.utils import handle_errors
-
 
 def get_readable_time(seconds: int) -> str:
     count = 0
@@ -32,7 +30,6 @@ def get_readable_time(seconds: int) -> str:
     time_list.reverse()
     ping_time += ":".join(time_list)
     return ping_time
-
 def status_flag(percent):
     if percent < 40:
         return "[Optimal]"
@@ -40,31 +37,23 @@ def status_flag(percent):
         return "[Normal]"
     else:
         return "[High Load]"
-
 @app.on_message(filters.command("ping"))
 @handle_errors
 async def ping(_, message: types.Message) -> None:
     start_time = time.time()
-    sent_msg = await message.reply_text("<b>Pinging...</b>", parse_mode=ParseMode.HTML)
-
-
+    sent_msg = await message.reply_text("<b>Pinging...</b>", parse_mode=enums.ParseMode.HTML)
     end_time = time.time()
     msg_ping = (end_time - start_time) * 1000
-
-
     db_start = time.time()
     await db.command("ping")
     db_end = time.time()
     db_ping = (db_end - db_start) * 1000
-
-
     uptime = get_readable_time(time.time() - StartTime)
     cpu = psutil.cpu_percent()
     ram = psutil.virtual_memory()
     proc = psutil.Process(os.getpid())
     proc_mem = proc.memory_info().rss / 1024 / 1024
     threads = proc.num_threads()
-
     caption = (
         f"<b>System Status</b>\n\n"
         f"<b>Ping:</b> <code>{msg_ping:.2f} ms</code>\n"
@@ -77,5 +66,4 @@ async def ping(_, message: types.Message) -> None:
         f"<b>OS:</b> <code>{platform.system()} {platform.release()}</code>\n"
         f"<b>Python:</b> <code>{platform.python_version()}</code>"
     )
-
-    await sent_msg.edit_text(caption, parse_mode=ParseMode.HTML)
+    await sent_msg.edit_text(caption, parse_mode=enums.ParseMode.HTML)
