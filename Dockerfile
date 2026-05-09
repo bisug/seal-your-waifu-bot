@@ -73,4 +73,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD curl -f http://localhost:${PORT:-8080}/healthz || exit 1
 
 # Default runtime command
-CMD ["hypercorn", "Grabber.webapp.main:app", "--bind", "0.0.0.0:8080"]
+CMD ["uvicorn", "Grabber.webapp.main:app", "--host", "0.0.0.0", "--port", "8080"]
