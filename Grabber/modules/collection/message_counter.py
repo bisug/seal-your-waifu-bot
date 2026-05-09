@@ -15,7 +15,6 @@ from Grabber.core.spawns import (get_active_user_count, get_chat_frequency,
 from Grabber.core.waifu import get_or_load_characters
 from Grabber.modules.collection.rarities import (ACTIVE_RARITY_WEIGHTS,
                                                  RARITY_WEIGHTS)
-from Grabber.modules.gamebot.auction import trigger_auction
 
 # Use a specific logger for spawn tracking
 SPAWN_LOGGER = logging.getLogger("Grabber.spawns")
@@ -42,6 +41,9 @@ async def message_counter_handler(_, message: types.Message):
     Tracks user activity, increments chat message counts, and determines
     when a character should be spawned based on thresholds or random chance.
     """
+    if not message.text:
+        return
+
     chat = message.chat
     if not chat or not message.from_user:
         return
@@ -58,29 +60,6 @@ async def message_counter_handler(_, message: types.Message):
     # Debug logging for every 10th message to avoid spam but show activity
     if count % 10 == 0:
         SPAWN_LOGGER.info(f"Chat {chat_id} reached {count} messages.")
-
-    state = await get_chat_state(chat_id)
-    last_spawn_time = state.get("last_spawn_time", 0)
-    current_time = time.time()
-
-    # Prevent spawns if one happened very recently (60s cooldown)
-    if current_time - last_spawn_time < 60:
-        return
-
-    # HARDENING: Prevent overlapping spawns during active auctions
-    from Grabber.database import r as _redis
-    if _redis:
-        try:
-            if await _redis.exists(f"auction:{chat_id}"):
-                return
-        except Exception:
-            from Grabber.database import sessions_collection
-            active_auction = await sessions_collection.find_one({"_id": f"auction:{chat_id}"}, projection={"_id": 1})
-            if active_auction: return
-    else:
-        from Grabber.database import sessions_collection
-        active_auction = await sessions_collection.find_one({"_id": f"auction:{chat_id}"}, projection={"_id": 1})
-        if active_auction: return
 
     # Small random chance (0.1%) for a Royal spawn regardless of message count
     if random.random() < 0.001:
@@ -128,17 +107,6 @@ async def message_counter_handler(_, message: types.Message):
         weights = list(weights_map.values())
 
         selected_rarity = random.choices(rarities, weights=weights, k=1)[0]
-
-        # REFACTORED: Automated Auction Logic (1% chance for Rare/Legendary)
-        if "Rare" in selected_rarity or "Legendary" in selected_rarity:
-            if random.random() < 0.01:
-                chars = await get_or_load_characters(selected_rarity)
-                if chars:
-                    char = random.choice(chars)
-                    SPAWN_LOGGER.info(f"Triggering AUTOMATED AUCTION for {char['name']} in {chat_id}")
-                    await trigger_auction(chat_id, char)
-                    await increment_spawn_order(chat_id)
-                    return
 
         await send_character(chat_id, selected_rarity)
         await increment_spawn_order(chat_id)

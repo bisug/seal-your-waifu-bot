@@ -33,7 +33,7 @@ STREAK_REWARDS = {
 
 async def get_daily_waifu():
     rarity = random.choices(list(RARITY_WEIGHTS.keys()), weights=RARITY_WEIGHTS.values(), k=1)[0]
-    cursor = collection.aggregate([{'$match': {'rarity': rarity}}, {'$sample': {'size': 1}}])
+    cursor = await collection.aggregate([{'$match': {'rarity': rarity}}, {'$sample': {'size': 1}}])
     res = await cursor.to_list(length=1)
     return res[0] if res else None
 
