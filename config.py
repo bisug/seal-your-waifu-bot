@@ -5,21 +5,16 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
-    # ==========================================
-    # ---          BOT IDENTITY            ---
-    # ==========================================
+    # --- BOT IDENTITY ---
     TOKEN =""
     SUB_TOKEN =""
     BOT_USERNAME = None  # Fetched automatically at startup
     BOT_ID = None        # Fetched automatically at startup
     BOT_NAME = None      # Fetched automatically at startup
 
-    # ==========================================
-    # ---       TELEGRAM API ACCESS        ---
-    # ==========================================
-    API_ID = int(os.getenv("API_ID", "25635673"))
+    # --- TELEGRAM API CREDENTIALS ---
+    API_ID = int(os.getenv("API_ID", "0"))
     API_HASH =""
-    STRING_SESSION =""
 
     # ==========================================
     # ---      DATABASE INFRASTRUCTURE     ---
@@ -27,10 +22,8 @@ class Config:
     MONGO_URL =""
     REDIS_URL =""
 
-    # ==========================================
-    # ---          PRIVILEGED USERS         ---
-    # ==========================================
-    OWNER_ID = int(os.getenv("OWNER_ID", "7804972365"))
+    # --- PRIVILEGED USERS ---
+    OWNER_ID = int(os.getenv("OWNER_ID", "0"))
     SUDO_USERS = [int(i.strip()) for i in os.getenv("SUDO_USERS", "7717913705, 6574393060, 6388703157, 6858372924").split(",") if i.strip().isdigit()]
 
     # ==========================================
