@@ -30,7 +30,7 @@ async def start_bots():
     except Exception as e:
         from Grabber import LOGGER
         LOGGER.error(f"Failed to load sudo users from DB: {e}")
-    # Fix for ASGI (Hypercorn/Uvicorn) event loop mismatch
+    # Fix for ASGI (Uvicorn/Hypercorn) event loop mismatch
     loop = asyncio.get_running_loop()
     
     # Rebind MainBot
