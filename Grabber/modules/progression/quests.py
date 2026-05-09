@@ -1,14 +1,15 @@
 import asyncio
-from datetime import datetime, timedelta, timezone
 import random
-from pyrogram import filters, types, enums
-from pyrogram.enums import ParseMode
-from Grabber.core.utils import html_escape
-from Grabber import user_collection, app, WEB_APP_URL
-from config import config
-from Grabber.core.progression import add_xp, get_progress_bar
-from Grabber.core.keyboard import get_webapp_button
+from datetime import datetime, timedelta, timezone
 
+from pyrogram import enums, filters, types
+from pyrogram.enums import ParseMode
+
+from config import config
+from Grabber import WEB_APP_URL, app, user_collection
+from Grabber.core.keyboard import get_webapp_button
+from Grabber.core.progression import add_xp, get_progress_bar
+from Grabber.core.utils import html_escape
 
 QUEST_POOL = {
     "catch_master": {
@@ -16,7 +17,7 @@ QUEST_POOL = {
         "description": "Catch 5 characters",
         "target": 5,
         "reward_xp": 50,
-        "icon": "🎯",
+        "icon": "◉",
         "symbol": "◉"
     },
     "battle_veteran": {
@@ -24,7 +25,7 @@ QUEST_POOL = {
         "description": "Win 2 battles",
         "target": 2,
         "reward_xp": 75,
-        "icon": "⚔️",
+        "icon": "⚔",
         "symbol": "⚔"
     },
     "egg_hunter": {
@@ -32,7 +33,7 @@ QUEST_POOL = {
         "description": "Find 2 eggs while hunting",
         "target": 2,
         "reward_xp": 60,
-        "icon": "🥚",
+        "icon": "◈",
         "symbol": "◈"
     },
     "generous_soul": {
@@ -40,7 +41,7 @@ QUEST_POOL = {
         "description": "Gift Shards to a player",
         "target": 1,
         "reward_xp": 40,
-        "icon": "🎁",
+        "icon": "◆",
         "symbol": "◆"
     },
     "trader": {
@@ -48,7 +49,7 @@ QUEST_POOL = {
         "description": "Complete a trade",
         "target": 1,
         "reward_xp": 50,
-        "icon": "🤝",
+        "icon": "▨",
         "symbol": "▨"
     },
     "big_spender": {
@@ -56,7 +57,7 @@ QUEST_POOL = {
         "description": "Spend 1,000 Shards / 5 Zenith",
         "target": 5,
         "reward_xp": 100,
-        "icon": "💸",
+        "icon": "⬪",
         "symbol": "⬪"
     }
 }
@@ -68,7 +69,7 @@ WEEKLY_POOL = {
         "description": "Catch 50 characters this week",
         "target": 50,
         "reward_xp": 500,
-        "icon": "🏆",
+        "icon": "❂",
         "symbol": "❂"
     },
     "weekly_battle": {
@@ -76,7 +77,7 @@ WEEKLY_POOL = {
         "description": "Win 20 battles this week",
         "target": 20,
         "reward_xp": 600,
-        "icon": "⚔️",
+        "icon": "⚔",
         "symbol": "⚔"
     },
     "weekly_spender": {
@@ -89,9 +90,36 @@ WEEKLY_POOL = {
     }
 }
 
+PASS_MISSIONS = {
+    "pass_battles": {
+        "name": "Pass Warlord",
+        "description": "Win 50 battles this week",
+        "target": 50,
+        "reward_xp": 1000,
+        "icon": "⚔",
+        "symbol": "⚔"
+    },
+    "pass_collector": {
+        "name": "Pass Master",
+        "description": "Catch 100 characters this week",
+        "target": 100,
+        "reward_xp": 1000,
+        "icon": "❂",
+        "symbol": "❂"
+    },
+    "pass_hatcher": {
+        "name": "Pass Hunter",
+        "description": "Find 10 eggs",
+        "target": 10,
+        "reward_xp": 1500,
+        "icon": "◈",
+        "symbol": "◈"
+    }
+}
+
 async def get_user_quests(user_id: int) -> dict:
 
-    user = await user_collection.find_one({"id": user_id})
+    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
     now = datetime.now(timezone.utc)
     today = now.date().isoformat()
 
@@ -101,14 +129,16 @@ async def get_user_quests(user_id: int) -> dict:
 
         daily_keys = random.sample(list(QUEST_POOL.keys()), 3)
         weekly_keys = list(WEEKLY_POOL.keys())
+        pass_keys = list(PASS_MISSIONS.keys())
 
         quests_data = {
             **{k: {"progress": 0, "claimed": False} for k in daily_keys},
-            **{k: {"progress": 0, "claimed": False} for k in weekly_keys}
+            **{k: {"progress": 0, "claimed": False} for k in weekly_keys},
+            **{k: {"progress": 0, "claimed": False} for k in pass_keys}
         }
 
         await user_collection.update_one(
-            {"id": user_id},
+            {"id": {"$in": [user_id, str(user_id)]}},
             {
                 "$set": {
                     "quests": quests_data,
@@ -128,7 +158,7 @@ async def get_user_quests(user_id: int) -> dict:
     if last_reset != today:
         daily_keys = random.sample(list(QUEST_POOL.keys()), 3)
 
-        quests_data = {k: v for k, v in quests_data.items() if k in WEEKLY_POOL}
+        quests_data = {k: v for k, v in quests_data.items() if k in WEEKLY_POOL or k in PASS_MISSIONS}
 
         quests_data.update({k: {"progress": 0, "claimed": False} for k in daily_keys})
 
@@ -138,15 +168,16 @@ async def get_user_quests(user_id: int) -> dict:
     last_week = user.get("quests_week")
     if last_week != current_week:
         weekly_keys = list(WEEKLY_POOL.keys())
+        pass_keys = list(PASS_MISSIONS.keys())
 
-        for k in weekly_keys:
+        for k in weekly_keys + pass_keys:
             quests_data[k] = {"progress": 0, "claimed": False}
 
         updates["quests_week"] = current_week
 
     if updates:
         updates["quests"] = quests_data
-        await user_collection.update_one({"id": user_id}, {"$set": updates})
+        await user_collection.update_one({"id": {"$in": [user_id, str(user_id)]}}, {"$set": updates})
 
     return quests_data
 
@@ -160,6 +191,8 @@ async def update_quest_progress(user_id: int, quest_id: str, increment: int = 1)
         target = QUEST_POOL[quest_id]["target"]
     elif quest_id in WEEKLY_POOL:
         target = WEEKLY_POOL[quest_id]["target"]
+    elif quest_id in PASS_MISSIONS:
+        target = PASS_MISSIONS[quest_id]["target"]
     else:
         return
 
@@ -194,11 +227,11 @@ async def view_quests(_, message: types.Message, edit_message=False):
             await message.reply_text("🚫 No quests available right now.", parse_mode=ParseMode.HTML)
         return
 
-    text = "📋 <b>Quest Log</b>\n\n"
+    text = "<b>Quest Log</b>\n\n"
     buttons = []
 
 
-    text += "📅 <b>Daily Quests</b>\n"
+    text += "<b>Daily Quests</b>\n"
     has_daily = False
     for qid, qdata in quests.items():
         if qid not in QUEST_POOL: continue
@@ -227,13 +260,39 @@ async def view_quests(_, message: types.Message, edit_message=False):
     text += "\n"
 
 
-    text += "🗓️ <b>Weekly Challenges</b>\n"
+    text += "<b>Weekly Challenges</b>\n"
     has_weekly = False
     for qid, qdata in quests.items():
         if qid not in WEEKLY_POOL: continue
         has_weekly = True
 
         info = WEEKLY_POOL[qid]
+        prog = qdata["progress"]
+        targ = info["target"]
+        claimed = qdata["claimed"]
+
+        bar = get_progress_bar(prog, targ, 6)
+
+        if claimed:
+            status = "✅"
+            btn_txt = f"{info['icon']} {info['name']} ✅"
+        elif prog >= targ:
+            status = "🎁"
+            btn_txt = f"{info['icon']} Claim {info['name']}"
+            buttons.append([types.InlineKeyboardButton(btn_txt, callback_data=f"quest_claim:{qid}")])
+        else:
+            status = f"<code>{prog}/{targ}</code>"
+
+        text += f"{info['icon']} <b>{info['name']}</b>: {bar} {status}\n"
+
+
+    text += "\n<b>Pass Missions</b>\n"
+    has_pass = False
+    for qid, qdata in quests.items():
+        if qid not in PASS_MISSIONS: continue
+        has_pass = True
+
+        info = PASS_MISSIONS[qid]
         prog = qdata["progress"]
         targ = info["target"]
         claimed = qdata["claimed"]
@@ -261,8 +320,8 @@ async def view_quests(_, message: types.Message, edit_message=False):
     days_until_mon = (7 - now.weekday()) % 7
     if days_until_mon == 0 and d_left.total_seconds() < 86400: days_until_mon = 7
 
-    text += f"\n⏰ <b>Daily Reset:</b> <code>{int(d_left.total_seconds()//3600)}h</code>\n"
-    text += f"🗓️ <b>Weekly Reset:</b> <code>{days_until_mon} days</code>"
+    text += f"\n<b>Daily Reset:</b> <code>{int(d_left.total_seconds()//3600)}h</code>\n"
+    text += f"<b>Weekly Reset:</b> <code>{days_until_mon} days</code>"
 
     if not buttons:
         buttons = []
@@ -287,33 +346,35 @@ async def claim_quest_callback(_, query: types.CallbackQuery):
     user_id = query.from_user.id
     quest_id = query.data.split(":")[1]
 
-    quests = await get_user_quests(user_id)
-    quest_data = quests.get(quest_id, {})
-
-
     if quest_id in QUEST_POOL:
         quest_info = QUEST_POOL[quest_id]
     elif quest_id in WEEKLY_POOL:
         quest_info = WEEKLY_POOL[quest_id]
+    elif quest_id in PASS_MISSIONS:
+        quest_info = PASS_MISSIONS[quest_id]
+        
+        user_raw = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
+        pass_type = user_raw.get("pass_type", "free") if user_raw else "free"
+        if pass_type == "free":
+            return await query.answer("This mission requires a Premium or Elite Pass!", show_alert=True)
     else:
-        return await query.answer("❌ Quest not found!", show_alert=True)
+        return await query.answer("Quest not found!", show_alert=True)
 
-    if quest_data.get("claimed", False):
-        return await query.answer("❌ Already claimed!", show_alert=True)
+    result = await user_collection.update_one(
+        {
+            "id": {"$in": [user_id, str(user_id)]},
+            f"quests.{quest_id}.claimed": {"$ne": True},
+            f"quests.{quest_id}.progress": {"$gte": quest_info["target"]}
+        },
+        {"$set": {f"quests.{quest_id}.claimed": True}}
+    )
 
-    if quest_data.get("progress", 0) < quest_info["target"]:
-        return await query.answer("❌ Quest not completed yet!", show_alert=True)
-
+    if result.modified_count == 0:
+        return await query.answer("Already claimed or quest not complete!", show_alert=True)
 
     reward_xp = quest_info["reward_xp"]
     await add_xp(user_id, reward_xp, f"quest_{quest_id}")
 
-    await user_collection.update_one(
-        {"id": user_id},
-        {"$set": {f"quests.{quest_id}.claimed": True}}
-    )
-
-    await query.answer(f"🎉 +{reward_xp} XP!", show_alert=True)
-
+    await query.answer(f"Claimed! +{reward_xp} XP!", show_alert=True)
 
     await view_quests(None, query.message, edit_message=True)

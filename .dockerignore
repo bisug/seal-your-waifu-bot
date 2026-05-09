@@ -1,9 +1,10 @@
 # Git
 .git
 .gitignore
+.gitattributes
 
 # Python
-__pycache__
+__pycache__/
 *.py[cod]
 *$py.class
 *.so
@@ -20,6 +21,7 @@ parts/
 sdist/
 var/
 wheels/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
@@ -30,14 +32,22 @@ venv/
 env/
 .venv/
 .env
+.python-version
 
-# IDEs
+# IDEs and Editors
 .idea/
 .vscode/
 *.swp
 *.swo
+.DS_Store
+
+# We exclude these specific frontend paths to keep the context slim
+# but we NO LONGER ignore the whole frontend/ folder so the builder can see the source.
 
 # Project specific
 db.sqlite3
 *.log
 local_config.py
+sample.env
+scripts/
+Grabber/scratch/

@@ -1,25 +1,51 @@
-from fastapi import FastAPI, Depends, HTTPException, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse
-from fastapi.middleware.gzip import GZipMiddleware
-from Grabber.webapp.auth import validate_init_data, create_session, r
-from Grabber.webapp.api import router as api_router
-from Grabber.webapp.ws import router as ws_router
-from Grabber import start_bots, stop_bots
-from config import config
-from contextlib import asynccontextmanager
-import os
+import asyncio
 import logging
+import os
+from contextlib import asynccontextmanager
+
+from fastapi import Depends, FastAPI
+from fastapi import HTTPException as FastAPIHTTPException
+from fastapi import Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+
+from config import config
+from Grabber import LOGGER
+from Grabber.core.cache import rebuild_leaderboard
+from Grabber.core.worker import background_maintenance
+from Grabber.database import user_collection
+from Grabber.runner import start_bots, stop_bots
+from Grabber.webapp.api import router as api_router
+from Grabber.webapp.auth import create_session, r, validate_init_data
+from Grabber.webapp.ws import router as ws_router
+
+
+async def sync_leaderboard_periodic():
+    """Sync Redis ZSETs with MongoDB periodically."""
+    await asyncio.sleep(60) # Delay on startup to allow app to settle
+    metrics = ["level", "harem", "shards", "zenith", "guesses"]
+    while True:
+        try:
+            for metric in metrics:
+                await rebuild_leaderboard(user_collection, metric=metric)
+                await asyncio.sleep(2) # Smooth out IO bursts
+        except Exception as e:
+            logging.error(f"Error in periodic leaderboard sync: {e}")
+        # Sync every hour (3600 seconds)
+        await asyncio.sleep(3600)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Start the Telegram bots
-    logging.info("Starting Telegram bots...")
+    # Startup
     await start_bots()
+    sync_task = asyncio.create_task(sync_leaderboard_periodic())
+    worker_task = asyncio.create_task(background_maintenance())
+    
     yield
-    # Shutdown: Stop the Telegram bots
-    logging.info("Stopping Telegram bots...")
+    
+    # Shutdown
     await stop_bots()
 
 app = FastAPI(
@@ -30,8 +56,11 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    if isinstance(exc, FastAPIHTTPException):
+        raise exc
     logging.error(f"Unhandled Exception: {exc}", exc_info=True)
     return JSONResponse(
         status_code=500,
@@ -50,56 +79,15 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
-    """Inject basic security headers into every API response."""
+    """Inject basic security headers."""
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
     # Note: X-Frame-Options must NOT be 'DENY' for Telegram Mini Apps to function in a frame.
     return response
 
-@api_router.post("/secure_init")
-async def auth(request: Request):
-    data = await request.json()
-    init_data = data.get("initData")
-    token_provided = data.get("token")
-    avatar_url = data.get("avatar")
-    
-    user_id = None
-    new_token = None
-
-    if init_data:
-        validated_data = validate_init_data(init_data)
-        if validated_data:
-            session_data = await create_session(validated_data)
-            if session_data:
-                new_token, user_id = session_data
-    
-    # Fallback to provided token if init_data is missing or invalid
-    if not user_id and token_provided:
-        if not r:
-            from Grabber.database import sessions_collection
-            token_doc = await sessions_collection.find_one({"_id": f"auth_token:{token_provided}"})
-            if token_doc:
-                user_id = token_doc.get("user_id")
-                new_token = token_provided
-        else:
-            user_id = await r.get(f"auth_token:{token_provided}")
-            if user_id:
-                new_token = token_provided
-                user_id = str(user_id)
-
-    if not user_id:
-        raise HTTPException(status_code=403, detail="Authentication failed. Please open the bot in PM.")
-
-    # Update Avatar in DB if provided
-    if avatar_url:
-        from Grabber.database import user_collection
-        await user_collection.update_one(
-            {"id": {"$in": [user_id, str(user_id)]}},
-            {"$set": {"avatar": avatar_url}}
-        )
-    
-    return {"token": new_token}
-
+@app.get("/healthz")
+async def health_check():
+    return {"status": "ok"}
 
 # Include routers with obfuscated prefix
 api_version_prefix = os.getenv("API_VERSION_PREFIX", "v1_7b82")
@@ -107,9 +95,16 @@ app.include_router(api_router, prefix=f"/api/{api_version_prefix}")
 app.include_router(ws_router, prefix=f"/api/{api_version_prefix}")
 
 # Mount static files for frontend
-frontend_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
+frontend_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
 if os.path.exists(frontend_path):
-    app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")
+    app.mount("/assets", StaticFiles(directory=os.path.join(frontend_path, "assets")), name="assets")
+    
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_frontend(request: Request, full_path: str):
+        if full_path.startswith("api/") or full_path.startswith("assets/"):
+            raise HTTPException(status_code=404, detail="Resource not found")
+            
+        index_file = os.path.join(frontend_path, "index.html")
+        return FileResponse(index_file)
 else:
-    # Development fallback or warning
-    pass
+    LOGGER.warning("Frontend UI missing: React build missing or inactive.")

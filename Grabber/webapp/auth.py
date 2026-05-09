@@ -1,21 +1,26 @@
-import hmac
+import asyncio
 import hashlib
+import hmac
 import json
-import uuid
+import logging
 import time
+import uuid
+from collections import OrderedDict, defaultdict
+from typing import Dict
 from urllib.parse import parse_qsl
-from fastapi import Request, HTTPException, Security, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from Grabber.database import r
+
+from fastapi import Depends, HTTPException, Request, Security
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
 from config import config
+from Grabber.database import r, sessions_collection, user_collection
 
 security = HTTPBearer()
 
+
+
 def validate_init_data(init_data: str):
-    """
-    Validates the data received from the Telegram Web App.
-    Based on: https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app
-    """
+    """Validates data received from Telegram Web App."""
     if not init_data:
         return False
         
@@ -31,16 +36,22 @@ def validate_init_data(init_data: str):
         h = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
         
         if hmac.compare_digest(h, msg_hash):
+            auth_date = int(vals.get('auth_date', 0))
+            if time.time() - auth_date > 86400: # 24 hours expiry
+                return False
             return vals
     except Exception:
         pass
     return False
 
+# Enforce a strict max cap to prevent DDoS memory leak if Redis dies
+_MAX_FALLBACK = 5000
+_fallback_rate_limits = OrderedDict()
+
 async def create_session(user_data: dict):
-    """Creates a Redis session for the user."""
+    """Creates a Redis session with MongoDB fallback."""
     user_id = user_data.get('id')
     if not user_id:
-        # Extract user_id from json string if needed
         user_json = json.loads(user_data.get('user', '{}'))
         user_id = user_json.get('id')
         
@@ -52,9 +63,7 @@ async def create_session(user_data: dict):
     token_key = f"auth_token:{token}"
     
     if not r:
-        from Grabber.database import sessions_collection
         expiry = time.time() + 3600
-        # Store in MongoDB for fallback support
         await sessions_collection.update_one(
             {"_id": session_key},
             {"$set": {"token": token, "expires_at": expiry}},
@@ -74,14 +83,17 @@ async def create_session(user_data: dict):
     return token, user_id
 
 async def get_current_user(auth: HTTPAuthorizationCredentials = Security(security)):
-    """Middleware to validate session token and handle rate limiting."""
+    """Middleware to validate session and handle rate limiting."""
     token = auth.credentials
     if not r:
-        from Grabber.database import sessions_collection
         token_doc = await sessions_collection.find_one({"_id": f"auth_token:{token}"})
         if not token_doc or token_doc.get("expires_at", 0) < time.time():
             raise HTTPException(status_code=401, detail="Invalid or expired session")
-        return int(token_doc["user_id"])
+        raw = token_doc.get("user_id", "")
+        try:
+            return int(str(raw).strip())
+        except (ValueError, TypeError):
+            raise HTTPException(status_code=401, detail="Invalid session data")
 
     user_id = await r.get(f"auth_token:{token}")
     if not user_id:
@@ -102,8 +114,28 @@ async def get_current_user(auth: HTTPAuthorizationCredentials = Security(securit
         if count > 30:
             raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in a minute.")
     except Exception as e:
-        # Log rate limit failure but allow request if it's just a Redis intermittent error
-        print(f"Rate limiting error: {e}")
-        pass
+        if isinstance(e, HTTPException):
+            raise e
+        logging.warning(f"Rate limiting skipped due to Redis error, using local fallback: {e}")
         
+        # Enforce LRU cleanup to avoid memory leak if Redis falls over
+        history = _fallback_rate_limits.get(user_id, [])
+        history = [ts for ts in history if now - ts < 60]
+        if len(history) >= 30:
+            _fallback_rate_limits[user_id] = history
+            _fallback_rate_limits.move_to_end(user_id)
+            raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in a minute.")
+        history.append(now)
+        _fallback_rate_limits[user_id] = history
+        _fallback_rate_limits.move_to_end(user_id)
+        while len(_fallback_rate_limits) > _MAX_FALLBACK:
+            _fallback_rate_limits.popitem(last=False)
+
     return int(user_id)
+
+async def get_current_user_data(user_id: int = Depends(get_current_user)):
+    """Dependency to fetch the full user document."""
+    user = await user_collection.find_one({"id": int(user_id)})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
