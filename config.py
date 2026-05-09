@@ -14,7 +14,7 @@ class Config:
     BOT_NAME = None      # Fetched automatically at startup
 
     # --- TELEGRAM API CREDENTIALS ---
-    API_ID = int(os.getenv("API_ID", "25635673"))
+    API_ID = int(os.getenv("API_ID", "20098819"))
     API_HASH =""
 
     # --- DATABASE INFRASTRUCTURE ---
