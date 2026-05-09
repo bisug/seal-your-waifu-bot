@@ -1,7 +1,14 @@
 import asyncio
 import os
 import re
+<<<<<<< HEAD
 from pyrogram import enums, errors, filters, types
+=======
+
+from pyrogram import enums, errors, filters, types
+from pyrogram.enums import ParseMode
+
+>>>>>>> beta
 from config import config
 from Grabber import (GALLERY_CHANNEL_ID, LOGGER, OWNER_ID, app, collection,
                     scraped_characters_collection, sudo_users, userbot, sudo_filter)
@@ -116,6 +123,10 @@ async def scrape_group_command_handler(client, message):
             return await app.edit_message_text_safe(status.chat.id, status.id, f"❌ Could not access chat: {e}\n{error_tip}")
         except errors.PyrogramError as e:
             return await app.edit_message_text_safe(status.chat.id, status.id, f"❌ Access Error: {e}")
+<<<<<<< HEAD
+=======
+
+>>>>>>> beta
         scraping_tasks[message.chat.id] = True
         sent_count = 0
         # Iterate backwards through history
@@ -165,6 +176,10 @@ async def scrape_group_command_handler(client, message):
                 if sent_count >= 100: # Increased batch limit
                     await app.send_message_safe(message.chat.id, f"✅ Batch of {sent_count} characters sent to review group. Run `/scrape` again for more.")
                     break
+<<<<<<< HEAD
+=======
+
+>>>>>>> beta
             except errors.PyrogramError as e:
                 LOGGER.error(f"Scrape Error: {e}")
                 continue
@@ -174,6 +189,10 @@ async def scrape_group_command_handler(client, message):
                 await app.send_message_safe(message.chat.id, "✅ Scraping complete. No new characters found.")
             elif sent_count < 100:
                 await app.send_message_safe(message.chat.id, f"✅ Scraping complete. Sent {sent_count} characters.")
+<<<<<<< HEAD
+=======
+
+>>>>>>> beta
     except errors.PyrogramError as e:
         LOGGER.error(f"Scraper Failed: {e}")
         if message.chat.id in scraping_tasks: del scraping_tasks[message.chat.id]
@@ -252,6 +271,10 @@ async def approve_scrape_callback(client, query):
         char_id = await add_character_to_db(char_data)
         await app.edit_message_text_safe(status_msg.chat.id, status_msg.id, f"✅ <b>Integrated!</b>\nName: {name}\nID: <code>{char_id}</code>")
         await query.message.delete()
+<<<<<<< HEAD
+=======
+
+>>>>>>> beta
     except errors.PyrogramError as e:
         LOGGER.error(f"Approval Error: {e}")
         await app.edit_message_text_safe(status_msg.chat.id, status_msg.id, f"❌ Error: {e}")

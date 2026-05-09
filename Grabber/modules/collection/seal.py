@@ -2,7 +2,14 @@ import asyncio
 import datetime
 import random
 import re
+<<<<<<< HEAD
 from pyrogram import enums, errors, filters, types
+=======
+
+from pyrogram import enums, errors, filters, types
+from pyrogram.enums import ParseMode
+
+>>>>>>> beta
 from Grabber import (LOGGER, OWNER_ID, app, group_user_totals_collection,
                      sudo_users, sudo_filter)
 from Grabber.core.progression import add_xp

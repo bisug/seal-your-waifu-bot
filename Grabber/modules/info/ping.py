@@ -3,8 +3,11 @@ import platform
 import time
 import psutil
 from pyrogram import enums, errors, filters, types
+from pyrogram.enums import ParseMode
+
 from Grabber import StartTime, app, db
 from Grabber.core.utils import handle_errors
+
 def get_readable_time(seconds: int) -> str:
     count = 0
     ping_time = ""

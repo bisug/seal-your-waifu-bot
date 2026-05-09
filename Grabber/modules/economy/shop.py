@@ -79,6 +79,7 @@ async def send_shop_hub(message_or_query):
         if isinstance(message_or_query, types.CallbackQuery):
             try:
                 await message_or_query.message.edit_text(text, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML)
+
             except errors.PyrogramError as e:
                 LOGGER.debug(f"Non-critical fallback error: {e}")
         else:

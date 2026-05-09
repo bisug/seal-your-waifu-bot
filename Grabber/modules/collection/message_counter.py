@@ -2,7 +2,14 @@ import datetime
 import random
 import time
 import logging
+<<<<<<< HEAD
 from pyrogram import enums, errors, filters, types
+=======
+
+from pyrogram import errors, filters, types
+from pyrogram.enums import ParseMode
+
+>>>>>>> beta
 from Grabber import app, config, LOGGER
 from Grabber.core.spawns import (get_active_user_count, get_chat_frequency,
                                  get_chat_state, get_spawn_order,

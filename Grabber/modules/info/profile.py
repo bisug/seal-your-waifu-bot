@@ -1,6 +1,8 @@
 import math
 import random
 from pyrogram import enums, errors, filters, types
+from pyrogram.enums import ParseMode
+
 from config import config
 from Grabber import LOGGER, PHOTO_URL, WEB_APP_URL, app, user_collection
 from Grabber.core.progression import get_progress_bar, get_user_progress
