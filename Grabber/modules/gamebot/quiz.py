@@ -46,7 +46,7 @@ async def quiz_cmd(_, message: types.Message):
 
         if not result:
 
-            cursor = quiz_questions_collection.aggregate([{"$sample": {"size": 1}}])
+            cursor = await quiz_questions_collection.aggregate([{"$sample": {"size": 1}}])
             questions = await cursor.to_list(length=1)
             if questions:
                 result = questions[0]
