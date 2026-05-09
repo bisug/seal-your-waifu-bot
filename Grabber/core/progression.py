@@ -1,6 +1,7 @@
-from Grabber.database import user_collection
-from Grabber import LOGGER
+import math
 
+from Grabber import LOGGER
+from Grabber.database import user_collection
 
 LEVEL_CAP = 50
 
@@ -12,21 +13,21 @@ LEVEL_REWARDS = {
     50: {"free": 10000, "premium": 30000, "elite": 50000}
 }
 
+
+
 def get_level_from_xp(xp: int) -> int:
     """
-    Calculate the current level based on total XP.
-    Levels have increasing XP requirements.
+    Calculate the current level based on total XP using the sum of arithmetic progression formula.
+    XP required for level L = 50 * L * (L + 1).
+    Inverse: L = (-1 + sqrt(1 + XP / 12.5)) / 2.
     """
-    level = 0
-    required_xp = 100
-    remaining_xp = xp
-
-    while remaining_xp >= required_xp and level < LEVEL_CAP:
-        remaining_xp -= required_xp
-        level += 1
-        required_xp = 100 * (level + 1)
-
-    return level
+    if xp <= 0:
+        return 0
+    
+    # Quadratic formula to find level L
+    level = int((-1 + math.sqrt(1 + xp / 12.5)) / 2)
+    
+    return min(level, LEVEL_CAP)
 
 def get_xp_for_next_level(current_level: int) -> int:
     """
@@ -52,7 +53,7 @@ async def add_xp(user_id: int, amount: int, source: str = "unknown"):
     Add XP to a user's profile and handle level-ups atomically.
     """
     user = await user_collection.find_one_and_update(
-        {"id": user_id},
+        {"id": {"$in": [user_id, str(user_id)]}},
         {
             "$inc": {"xp": amount},
             "$setOnInsert": {
@@ -69,6 +70,10 @@ async def add_xp(user_id: int, amount: int, source: str = "unknown"):
         return
 
     new_xp = user.get("xp", 0)
+    
+    # Sync with Redis Ranking Cache
+    from Grabber.core.cache import update_user_rank
+    await update_user_rank(user_id, new_xp)
     old_xp = new_xp - amount
     old_level = get_level_from_xp(old_xp)
     new_level = get_level_from_xp(new_xp)
@@ -81,74 +86,123 @@ async def add_xp(user_id: int, amount: int, source: str = "unknown"):
 async def check_and_grant_rewards(user_id: int, old_level: int, new_level: int, user_data: dict = None):
     """
     Iterate through newly reached levels and grant corresponding rewards
-    based on the user's Battle Pass type.
-    Accepts pre-fetched user_data to avoid a redundant DB query.
+    based on the user's Battle Pass type. Also tracks Pass Bank for free users.
     """
     if user_data is None:
-        user = await user_collection.find_one({"id": user_id})
+        user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
     else:
         user = user_data
+        
     pass_type = user.get("pass_type", "free")
     claimed_levels = set(user.get("claimed_levels", []))
+    
+    import uuid
 
-
-    STANDARD_REWARDS = {
-        "free": 100,
-        "premium": 300,
-        "elite": 500
-    }
+    from Grabber.core.pass_config import PASS_TRACKS
 
     total_coins_earned = 0
+    eggs_awarded = []
+    newly_claimed = []  # Tracks only levels claimed in this call (for $addToSet)
+    
+    bank_shards = 0
+    bank_eggs = {} # tier: count
 
+    def add_egg(tier):
+        eggs_awarded.append({
+            "id": str(uuid.uuid4()),
+            "tier": str(tier),
+            "status": "fresh"
+        })
+
+    def bank_egg(tier):
+        tier_str = str(tier)
+        bank_eggs[tier_str] = bank_eggs.get(tier_str, 0) + 1
 
     for level in range(old_level + 1, new_level + 1):
-        if level in LEVEL_REWARDS and level not in claimed_levels:
+        if level in claimed_levels:
+            continue
+            
+        # FIX: Track *newly* claimed levels separately so we can use $addToSet
+        # instead of the old $set which overwrote the whole array. Two concurrent
+        # reward grants (e.g. rapid XP from two sources) both fetching the same
+        # stale claimed_levels and writing back would silently erase each other's
+        # additions. $addToSet is atomic — MongoDB handles deduplication server-side.
+        newly_claimed.append(level)
+        claimed_levels.add(level)
+        track = PASS_TRACKS.get(level)
+        
+        if not track:
+            # Fallback scaling for level > 100
+            reward = 100 + (level * 2) if pass_type == "free" else 300 + (level * 4) if pass_type == "premium" else 500 + (level * 6)
+            total_coins_earned += reward
+            continue
 
-            reward = LEVEL_REWARDS[level].get(pass_type)
+        # Grant Free Reward (everyone gets this)
+        free_rw = track["free"]
+        if free_rw["type"] == "shards":
+            total_coins_earned += free_rw["amount"]
+        elif free_rw["type"] == "egg":
+            add_egg(free_rw["tier"])
 
-            if isinstance(reward, int):
-
-                await user_collection.update_one(
-                    {"id": user_id},
-                    {"$inc": {"balance": reward}}
-                )
-                total_coins_earned += reward
-                LOGGER.info(f"User {user_id} received {reward} coins for reaching level {level} ({pass_type})")
-
-            elif isinstance(reward, str) and reward.startswith("egg_"):
-
-                tier = reward.split("_")[1]
-                egg_data = {
-                    "id": f"reward_egg_{level}",
-                    "tier": tier,
-                    "name": f"Level {level} Reward Egg",
-                    "status": "fresh"
-                }
-                await user_collection.update_one(
-                    {"id": user_id},
-                    {"$push": {"eggs": egg_data}}
-                )
-                LOGGER.info(f"User {user_id} received {tier} egg for reaching level {level} ({pass_type})")
-
-
-            claimed_levels.add(level)
+        # Grant Premium Reward (Premium & Elite get this)
+        prem_rw = track["premium"]
+        prem_extra = track.get("premium_extra_amount", 0)
+        
+        if pass_type in ["premium", "elite"]:
+            if prem_rw["type"] == "shards":
+                total_coins_earned += prem_rw["amount"]
+            elif prem_rw["type"] == "egg":
+                add_egg(prem_rw["tier"])
+            total_coins_earned += prem_extra
         else:
+            # FREE user: Bank premium rewards!
+            if prem_rw["type"] == "shards":
+                bank_shards += prem_rw["amount"]
+            elif prem_rw["type"] == "egg":
+                bank_egg(prem_rw["tier"])
+            bank_shards += prem_extra
 
-            if level not in claimed_levels:
-                standard_reward = STANDARD_REWARDS.get(pass_type, 100)
-                await user_collection.update_one(
-                    {"id": user_id},
-                    {"$inc": {"balance": standard_reward}}
-                )
-                total_coins_earned += standard_reward
-                LOGGER.info(f"User {user_id} received {standard_reward} coins (standard) for level {level} ({pass_type})")
-                claimed_levels.add(level)
+        # Grant Elite Reward (Elite only)
+        elite_rw = track["elite"]
+        elite_extra = track.get("elite_extra_amount", 0)
+        
+        if pass_type == "elite":
+            if elite_rw["type"] == "shards":
+                total_coins_earned += elite_rw["amount"]
+            elif elite_rw["type"] == "egg":
+                add_egg(elite_rw["tier"])
+            total_coins_earned += elite_extra
+        elif pass_type in ["free", "premium"]:
+            # Bank elite rewards for non-elite users
+            if elite_rw["type"] == "shards":
+                bank_shards += elite_rw["amount"]
+            elif elite_rw["type"] == "egg":
+                bank_egg(elite_rw["tier"])
+            bank_shards += elite_extra
 
+    # Perform DB Updates
+    updates = {}
+    # Use $addToSet instead of $set so concurrent grants don't overwrite each other
+    if newly_claimed:
+        updates["$addToSet"] = {"claimed_levels": {"$each": newly_claimed}}
+    if total_coins_earned > 0:
+        updates.setdefault("$inc", {})["balance"] = total_coins_earned
+        
+    if bank_shards > 0:
+        updates.setdefault("$inc", {})["pass_bank.shards"] = bank_shards
+    for tier, count in bank_eggs.items():
+        updates.setdefault("$inc", {})[f"pass_bank.eggs_t{tier}"] = count
+        
+    if eggs_awarded:
+        updates["$push"] = {"eggs": {"$each": eggs_awarded}}
 
-    await user_collection.update_one(
-        {"id": user_id},
-        {"$set": {"claimed_levels": list(claimed_levels)}}
-    )
+    if updates.get("$inc") or updates.get("$push") or updates.get("$addToSet"):
+        await user_collection.update_one(
+            {"id": {"$in": [user_id, str(user_id)]}},
+            updates
+        )
+        if total_coins_earned > 0 or eggs_awarded:
+            LOGGER.info(f"User {user_id} pass rewards: {total_coins_earned} shards, {len(eggs_awarded)} eggs")
 
 async def get_user_progress(user_id: int, user_data: dict = None) -> dict:
     """

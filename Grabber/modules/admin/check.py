@@ -1,7 +1,9 @@
-from pyrogram import filters, types, enums
+from pyrogram import enums, filters, types
 from pyrogram.enums import ParseMode
-from Grabber.core.utils import html_escape
-from Grabber import app, collection, user_collection, OWNER_ID, LOGGER
+
+from Grabber import LOGGER, OWNER_ID, app, collection, user_collection
+from Grabber.core.utils import html_escape, reply_media_dynamic
+
 
 @app.on_message(filters.command("check"))
 async def check_character(_, message: types.Message) -> None:
@@ -21,8 +23,7 @@ async def check_character(_, message: types.Message) -> None:
                 f"<b>Character ID:</b> <code>{character['id']}</code>\n"
             )
 
-            await message.reply_photo(
-                photo=character['img_url'],
+            await reply_media_dynamic(message, character['img_url'],
                 caption=response_message,
                 parse_mode=ParseMode.HTML
             )

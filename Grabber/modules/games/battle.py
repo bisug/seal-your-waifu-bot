@@ -1,21 +1,20 @@
 import asyncio
 import random
 import time
-from pyrogram import filters, types, enums, errors
+
+from pyrogram import enums, errors, filters, types
 from pyrogram.enums import ParseMode
-from Grabber.core.utils import html_escape
-from Grabber import app
-from Grabber import LOGGER
-from Grabber.core.game import get_user_balance, update_user_balance, check_and_deduct
-from Grabber.core.sessions import create_session, get_session, delete_session
-from Grabber.core.user import get_active_pet
+
+from Grabber import LOGGER, app
+from Grabber.core.balance import (check_and_deduct, get_user_balance,
+                                  update_user_balance)
+from Grabber.core.cache import is_on_cooldown as redis_cooldown
 from Grabber.core.progression import add_xp
-from Grabber.modules.progression.quests import update_quest_progress
+from Grabber.core.sessions import create_session, delete_session, get_session
+from Grabber.core.user import get_active_pet
+from Grabber.core.utils import html_escape
 from Grabber.modules.progression.achievements import check_achievements
-
-
-battle_cooldowns = {}
-
+from Grabber.modules.progression.quests import update_quest_progress
 
 
 def calculate_stats(pet_data):
@@ -134,13 +133,11 @@ async def battle_challenge_handler(_, message: types.Message):
         return await message.reply_text("⚠️ You can't fight yourself!", parse_mode=ParseMode.HTML)
 
 
-    pair_key = tuple(sorted((attacker.id, defender.id)))
-    now = time.time()
-    if pair_key in battle_cooldowns:
-        last_battle = battle_cooldowns[pair_key]
-        if now - last_battle < 300:
-            remain = int(300 - (now - last_battle))
-            return await message.reply_text(f"⏳ <b>Cooldown!</b> Wait {remain}s before battling this user again.", parse_mode=ParseMode.HTML)
+    # Redis-based cooldown (survives restarts)
+    pair_key = f"battle_{min(attacker.id, defender.id)}_{max(attacker.id, defender.id)}"
+    on_cd, remain = await redis_cooldown(pair_key, 0, 300)
+    if on_cd:
+        return await message.reply_text(f"⏳ <b>Cooldown!</b> Wait {remain}s before battling this user again.", parse_mode=ParseMode.HTML)
 
     try:
         bet = int(message.command[1])
@@ -153,7 +150,7 @@ async def battle_challenge_handler(_, message: types.Message):
         return await message.reply_text("❌ You don't have enough Shards!", parse_mode=ParseMode.HTML)
 
     if await get_user_balance(defender.id) < bet:
-        return await message.reply_text(f"❌ {defender.first_name} doesn't have enough Shards!", parse_mode=ParseMode.HTML)
+        return await message.reply_text(f"❌ <b>{html_escape(defender.first_name)}</b> doesn't have enough Shards!", parse_mode=ParseMode.HTML)
 
 
     battle_id = f"bt_{attacker.id}_{defender.id}"
@@ -164,7 +161,7 @@ async def battle_challenge_handler(_, message: types.Message):
     ]])
 
     await message.reply_to_message.reply_text(
-        f"⚔ <a href=\"tg://user?id={attacker.id}\">{html_escape(attacker.first_name)}</a> challenged you to a battle for {bet} ⬪!",
+        f"⚔ <a href=\"tg://user?id={attacker.id}\">{html_escape(attacker.first_name)}</a> challenged you to a battle for <b>{bet:,} ⬪</b>!",
         reply_markup=markup,
         parse_mode=ParseMode.HTML
     )
@@ -208,8 +205,7 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
     await delete_session(battle_id)
 
 
-    pair_key = tuple(sorted((attacker_id, defender_id)))
-    battle_cooldowns[pair_key] = time.time()
+
 
     try:
         a_user = await app.get_users(attacker_id)
