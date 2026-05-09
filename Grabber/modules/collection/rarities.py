@@ -45,7 +45,7 @@ async def rarities_handler(_, message: types.Message):
         {"$group": {"_id": "$rarity", "count": {"$sum": 1}}}
     ]
 
-    cursor = collection.aggregate(pipeline)
+    cursor = await collection.aggregate(pipeline)
     rarity_counts = {}
     async for doc in cursor:
         rarity_counts[doc["_id"]] = doc["count"]

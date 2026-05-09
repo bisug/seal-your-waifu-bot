@@ -132,7 +132,7 @@ async def get_or_load_characters(rarity: str) -> list:
         now = time.time()
         if rarity not in characters_by_rarity or now - _cache_timestamps.get(rarity, 0) > CACHE_TTL:
             MAX_CACHED_PER_RARITY = 500
-            cursor = collection.aggregate([
+            cursor = await collection.aggregate([
                 {"$match": {"rarity": rarity}},
                 {"$sample": {"size": MAX_CACHED_PER_RARITY}},
                 {"$project": {"_id": 0}}

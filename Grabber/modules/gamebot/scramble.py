@@ -67,7 +67,7 @@ async def start_scramble_game(chat_id):
                 )
 
         # Fetch a random character
-        cursor = collection.aggregate([{"$sample": {"size": 1}}])
+        cursor = await collection.aggregate([{"$sample": {"size": 1}}])
         res = await cursor.to_list(length=1)
         if not res:
             return await game_bot.send_message_safe(chat_id, "❌ <b>Database Error:</b> No characters found.")

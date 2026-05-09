@@ -25,7 +25,7 @@ escape_html = html_escape
 async def start_nguess_game(chat_id):
     """Fetches a character and starts a new game session."""
     # Fetch a random character
-    cursor = collection.aggregate([{"$sample": {"size": 1}}])
+    cursor = await collection.aggregate([{"$sample": {"size": 1}}])
     res = await cursor.to_list(length=1)
     if not res:
         return await game_bot.send_message_safe(chat_id, text=html_escape("DATABASE ERROR: No target profiles available."), auto_delete=300)

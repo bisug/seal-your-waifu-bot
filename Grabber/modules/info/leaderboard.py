@@ -56,7 +56,7 @@ async def get_top_users(metric: str, limit: int = 10):
         {"$sort": {field: -1}},
         {"$limit": limit}
     ]
-    cursor = user_collection.aggregate(pipeline)
+    cursor = await user_collection.aggregate(pipeline)
     results = await cursor.to_list(length=limit)
 
     # 3. Trigger background rebuild if ZSET was empty
@@ -191,7 +191,7 @@ async def chat_leaderboard_handler(_, message: types.Message):
 
     await app.send_chat_action(chat_id, enums.ChatAction.TYPING)
 
-    cursor = group_user_totals_collection.aggregate([
+    cursor = await group_user_totals_collection.aggregate([
         {"$match": {"group_id": chat_id}},
         {"$sort": {"count": -1}},
         {"$limit": 10}

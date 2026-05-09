@@ -97,7 +97,7 @@ async def get_harem(
     }
     pipeline.append({"$facet": facet})
 
-    cursor = user_collection.aggregate(pipeline)
+    cursor = await user_collection.aggregate(pipeline)
     result = await cursor.to_list(length=1)
 
     total = 0
