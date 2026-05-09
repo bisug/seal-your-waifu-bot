@@ -2,14 +2,14 @@ import asyncio
 import random
 from datetime import datetime, timedelta, timezone
 
-from pyrogram import enums, filters, types
+from pyrogram import errors, enums, filters, types
 from pyrogram.enums import ParseMode
 
 from config import config
 from Grabber import WEB_APP_URL, app, user_collection
 from Grabber.core.keyboard import get_webapp_button
 from Grabber.core.progression import add_xp, get_progress_bar
-from Grabber.core.utils import html_escape
+from Grabber.core.utils import handle_errors, html_escape
 
 QUEST_POOL = {
     "catch_master": {
@@ -216,6 +216,7 @@ async def update_quest_progress(user_id: int, quest_id: str, increment: int = 1)
             )
 
 @app.on_message(filters.command("quests"))
+@handle_errors
 async def view_quests(_, message: types.Message, edit_message=False):
     user_id = message.from_user.id if hasattr(message, 'from_user') and message.from_user else message.chat.id
     quests = await get_user_quests(user_id)

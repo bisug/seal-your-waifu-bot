@@ -5,11 +5,12 @@ from Grabber import LOGGER, app
 from Grabber.core.cache import invalidate_user_cache
 from Grabber.core.sessions import create_session, delete_session, get_session
 from Grabber.core.user import get_user_data, update_user
-from Grabber.core.utils import html_escape
+from Grabber.core.utils import handle_errors, html_escape
 from Grabber.modules.progression.quests import update_quest_progress
 
 
 @app.on_message(filters.command("trade") & filters.group)
+@handle_errors
 async def trade_handler(_, message: types.Message):
     if not message.reply_to_message:
         return await message.reply_text("Reply to a user to trade!", parse_mode=ParseMode.HTML)
