@@ -13,7 +13,7 @@ class Config:
     BOT_NAME = None      # Fetched automatically at startup
 
     # --- TELEGRAM API CREDENTIALS ---
-    API_ID = int(os.getenv("API_ID", "0"))
+    API_ID = int(os.getenv("API_ID") or 0)
     API_HASH = os.getenv("API_HASH")
 
     # ==========================================
@@ -23,15 +23,15 @@ class Config:
     REDIS_URL = os.getenv("REDIS_URL", "rediss://default:AVNS_3H0cohKfeMSPJAn2TeO@sealbot-friendclub-35f1.k.aivencloud.com:28970")
 
     # --- PRIVILEGED USERS ---
-    OWNER_ID = int(os.getenv("OWNER_ID", "0"))
+    OWNER_ID = int(os.getenv("OWNER_ID") or 0)
     SUDO_USERS = [int(i.strip()) for i in os.getenv("SUDO_USERS", "7717913705, 6574393060, 6388703157, 6858372924").split(",") if i.strip().isdigit()]
 
     # ==========================================
     # ---       CHANNEL & GROUP IDS        ---
     # ==========================================
-    MAIN_GROUP_ID = int(os.getenv("MAIN_GROUP_ID", "-1002429397912"))
-    GALLERY_CHANNEL_ID = int(os.getenv("GALLERY_CHANNEL_ID", "-1003925872981"))
-    LOG_GROUP_ID = int(os.getenv("LOG_GROUP_ID", "-1002913644675"))
+    MAIN_GROUP_ID = int(os.getenv("MAIN_GROUP_ID") or -1002429397912)
+    GALLERY_CHANNEL_ID = int(os.getenv("GALLERY_CHANNEL_ID") or -1003925872981)
+    LOG_GROUP_ID = int(os.getenv("LOG_GROUP_ID") or -1002913644675)
     
     # ==========================================
     # ---          SOCIAL & CHATS          ---
@@ -55,5 +55,10 @@ class Config:
     WEB_APP_URL = os.getenv("WEB_APP_URL", "https://dear-project-seal-64ed7a272fd6.herokuapp.com")
     MINI_APP_SHORT_NAME = os.getenv("MINI_APP_SHORT_NAME", "app")
     API_VERSION_PREFIX = os.getenv("API_VERSION_PREFIX", "v1_7b82")
+
+    # ==========================================
+    # ---           USERBOT CONFIG         ---
+    # ==========================================
+    STRING_SESSION = os.getenv("STRING_SESSION")
 
 config = Config()
