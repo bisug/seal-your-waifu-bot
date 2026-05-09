@@ -1,8 +1,8 @@
-from pyrogram import enums, filters, types
+from pyrogram import errors, enums, filters, types
 from pyrogram.enums import ButtonStyle, ParseMode
 
 from Grabber import OWNER_ID, app, sudo_users, user_collection, sudo_filter
-from Grabber.core.utils import html_escape
+from Grabber.core.utils import handle_errors, html_escape
 
 async def get_target_user(message: types.Message):
 
@@ -27,6 +27,7 @@ async def get_target_user(message: types.Message):
             return None, None, None
 
 @app.on_message(filters.command("givecoin") & sudo_filter)
+@handle_errors
 async def give_coin_handler(_, message: types.Message):
 
     user_id, amount, name = await get_target_user(message)
@@ -54,6 +55,7 @@ async def give_coin_handler(_, message: types.Message):
     )
 
 @app.on_message(filters.command("takecoin") & sudo_filter)
+@handle_errors
 async def take_coin_handler(_, message: types.Message):
 
     user_id, amount, name = await get_target_user(message)

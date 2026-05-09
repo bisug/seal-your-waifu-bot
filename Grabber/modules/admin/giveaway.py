@@ -1,14 +1,14 @@
 import random
 import string
 
-from pyrogram import enums, filters, types
+from pyrogram import errors, enums, filters, types
 from pyrogram.enums import ParseMode
 
 from config import config
 from Grabber import (LOGGER, MAIN_GROUP_ID, OWNER_ID, app, collection,
                      user_collection)
 from Grabber.core.sessions import create_session, delete_session, get_session
-from Grabber.core.utils import html_escape, reply_media_dynamic
+from Grabber.core.utils import handle_errors, html_escape, reply_media_dynamic
 from Grabber.core.user import add_char_to_user
 from Grabber.core.cache import sync_user_to_redis
 
@@ -67,6 +67,7 @@ async def process_core_claim(client, user, code: str):
 
 
 @app.on_message(filters.command("waifugen") & filters.user(OWNER_ID))
+@handle_errors
 async def waifugen(_, message: types.Message):
     if len(message.command) != 3:
         return await message.reply_text("Invalid usage. Usage: <code>/waifugen &lt;waifu_id&gt; &lt;quantity&gt;</code>", parse_mode=ParseMode.HTML)
@@ -121,6 +122,7 @@ async def waifugen(_, message: types.Message):
 
 
 @app.on_message(filters.command("claimwaifu"))
+@handle_errors
 async def claimwaifu(_, message: types.Message):
     if len(message.command) < 2:
         return await message.reply_text("Usage: <code>/claimwaifu &lt;code&gt;</code>", parse_mode=ParseMode.HTML)
@@ -144,6 +146,7 @@ async def claimwaifu(_, message: types.Message):
 
 
 @app.on_message(filters.command("drop") & filters.user(OWNER_ID))
+@handle_errors
 async def drop_waifu(_, message: types.Message):
     """Summons a waifu directly into chat for users to claim via inline button."""
     if len(message.command) != 3:

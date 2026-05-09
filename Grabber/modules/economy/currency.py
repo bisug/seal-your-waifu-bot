@@ -1,13 +1,15 @@
-from pyrogram import enums, filters, types
+from pyrogram import errors, enums, filters, types
 from pyrogram.enums import ButtonStyle, ParseMode
 
 from Grabber import app
+from Grabber.core.utils import handle_errors
 from Grabber.core.user import get_user_filter, get_user_id
 from Grabber.core.cache import invalidate_user_cache
 from Grabber.database import user_collection
 
 
 @app.on_message(filters.command("zenith"))
+@handle_errors
 async def zenith_command(_, message: types.Message):
     """Convert Shards to Zenith."""
     user_id = message.from_user.id
@@ -62,6 +64,7 @@ async def zenith_command(_, message: types.Message):
 
 
 @app.on_message(filters.command("shard"))
+@handle_errors
 async def shard_command(_, message: types.Message):
     """Convert Zenith to Shards."""
     user_id = message.from_user.id

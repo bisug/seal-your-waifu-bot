@@ -8,7 +8,7 @@ from Grabber import LOGGER, app
 from Grabber.core.cache import sync_user_to_redis
 from Grabber.core.sessions import create_session, get_session
 from Grabber.core.user import add_char_to_user, get_user_data, update_user
-from Grabber.core.utils import (get_user_id_query, html_escape,
+from Grabber.core.utils import (get_user_id_query, handle_errors, html_escape,
                                 reply_media_dynamic, send_media_dynamic)
 from Grabber.database import collection, user_collection
 
@@ -45,6 +45,7 @@ async def check_groups_joined(user_id: int) -> bool:
         return True   # Fail-open: ambiguous error, let the user proceed
 
 @app.on_message(filters.command("claim"))
+@handle_errors
 async def claim_handler(_, message: types.Message):
     user_id = message.from_user.id
     user = await get_user_data(user_id)
@@ -165,6 +166,8 @@ async def claim_confirm_handler(_, query: types.CallbackQuery):
         await query.answer("Successfully claimed!", show_alert=True)
         # Ensure WebApp is synced immediately
         await sync_user_to_redis(user_id)
+    except errors.MessageNotModified:
+        await query.answer("Successfully claimed!", show_alert=True)
     except Exception as e:
         LOGGER.error(f"Error in claim_confirm: {e}")
         await query.answer("Claimed! check your /harem.", show_alert=True)

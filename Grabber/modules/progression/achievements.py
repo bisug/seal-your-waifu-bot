@@ -1,4 +1,4 @@
-from pyrogram import enums
+from pyrogram import errors, enums
 from pyrogram.enums import ParseMode
 
 from Grabber import LOGGER, app, user_collection

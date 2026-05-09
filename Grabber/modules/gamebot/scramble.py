@@ -3,7 +3,7 @@ import random
 import re
 import time
 
-from pyrogram import filters, types
+from pyrogram import errors, filters, types
 from pyrogram.enums import ParseMode
 
 from Grabber import (LOGGER, collection, game_bot, sessions_collection,

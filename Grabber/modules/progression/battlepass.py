@@ -1,8 +1,9 @@
-from pyrogram import enums, filters, types
+from pyrogram import errors, enums, filters, types
 from pyrogram.enums import ButtonStyle, ParseMode
 
 from config import config
 from Grabber import WEB_APP_URL, app, user_collection
+from Grabber.core.utils import handle_errors
 from Grabber.core.keyboard import KeyboardBuilder, get_webapp_button
 from Grabber.core.progression import (LEVEL_REWARDS, get_progress_bar,
                                       get_user_progress)
@@ -21,6 +22,7 @@ PASS_EMOJI = {
 
 
 @app.on_message(filters.command("pass"))
+@handle_errors
 async def view_pass(_, message: types.Message):
     """View the user's current Battle Pass progress and tier."""
     user_id = message.from_user.id
@@ -289,6 +291,7 @@ async def pass_back_callback(_, query: types.CallbackQuery):
 
 
 @app.on_message(filters.command("level"))
+@handle_errors
 async def level_cmd(_, message: types.Message):
     user_id = message.from_user.id
     progress = await get_user_progress(user_id)

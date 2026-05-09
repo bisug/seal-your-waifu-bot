@@ -2,13 +2,13 @@ import asyncio
 import os
 import re
 
-from pyrogram import enums, filters, types
+from pyrogram import enums, errors, filters, types
 from pyrogram.enums import ParseMode
 
 from config import config
 from Grabber import (GALLERY_CHANNEL_ID, LOGGER, OWNER_ID, app, collection,
                     scraped_characters_collection, sudo_users, userbot, sudo_filter)
-from Grabber.core.utils import send_media_dynamic
+from Grabber.core.utils import handle_errors, send_media_dynamic
 from Grabber.core.waifu import (add_character_to_db,
                                 invalidate_character_cache,
                                 upload_media_safely)
@@ -109,6 +109,7 @@ def get_review_keyboard():
     return types.InlineKeyboardMarkup(buttons)
 
 @app.on_message(filters.command("scrape") & sudo_filter)
+@handle_errors
 async def scrape_group_command_handler(client, message):
     if len(message.command) < 2:
         return await message.reply_text("❌ Usage: `/scrape <group_id_or_username>`\nNote: Bot must be a member of the group.")
@@ -141,9 +142,11 @@ async def scrape_group_command_handler(client, message):
         # Resolve chat
         try:
             chat = await client_to_use.get_chat(target_chat)
-        except Exception as e:
+        except (errors.PeerIdInvalid, errors.ChannelInvalid, errors.Forbidden) as e:
             error_tip = "Make sure Bot is added." if not is_userbot else "Make sure UserBot is a member."
             return await app.edit_message_text_safe(status.chat.id, status.id, f"❌ Could not access chat: {e}\n{error_tip}")
+        except errors.PyrogramError as e:
+            return await app.edit_message_text_safe(status.chat.id, status.id, f"❌ Access Error: {e}")
 
         scraping_tasks[message.chat.id] = True
         sent_count = 0
@@ -208,7 +211,7 @@ async def scrape_group_command_handler(client, message):
                     await app.send_message_safe(message.chat.id, f"✅ Batch of {sent_count} characters sent to review group. Run `/scrape` again for more.")
                     break
 
-            except Exception as e:
+            except errors.PyrogramError as e:
                 LOGGER.error(f"Scrape Error: {e}")
                 continue
 
@@ -219,12 +222,13 @@ async def scrape_group_command_handler(client, message):
             elif sent_count < 100:
                 await app.send_message_safe(message.chat.id, f"✅ Scraping complete. Sent {sent_count} characters.")
 
-    except Exception as e:
+    except errors.PyrogramError as e:
         LOGGER.error(f"Scraper Failed: {e}")
         if message.chat.id in scraping_tasks: del scraping_tasks[message.chat.id]
         await app.edit_message_text_safe(status.chat.id, status.id, f"❌ Scraper Failed: {e}")
 
 @app.on_message(filters.command("stop_scrape") & sudo_filter)
+@handle_errors
 async def stop_scrape_handler(client, message):
     if message.chat.id in scraping_tasks:
         del scraping_tasks[message.chat.id]
@@ -316,7 +320,7 @@ async def approve_scrape_callback(client, query):
         await app.edit_message_text_safe(status_msg.chat.id, status_msg.id, f"✅ <b>Integrated!</b>\nName: {name}\nID: <code>{char_id}</code>")
         await query.message.delete()
 
-    except Exception as e:
+    except errors.PyrogramError as e:
         LOGGER.error(f"Approval Error: {e}")
         await app.edit_message_text_safe(status_msg.chat.id, status_msg.id, f"❌ Error: {e}")
 
