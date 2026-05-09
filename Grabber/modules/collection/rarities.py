@@ -1,4 +1,10 @@
+<<<<<<< HEAD
 from pyrogram import enums, errors, filters, types
+=======
+from pyrogram import errors, enums, filters, types
+from pyrogram.enums import ParseMode
+
+>>>>>>> beta
 from Grabber import app
 from Grabber.database import collection
 RARITY_MAP = {

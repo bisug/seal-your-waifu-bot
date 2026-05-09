@@ -4,10 +4,21 @@ import os
 import textwrap
 import traceback
 from contextlib import redirect_stdout
+<<<<<<< HEAD
 from pyrogram import enums, errors, filters, types
 from config import config
 from Grabber import LOGGER, OWNER_ID, app, sudo_users
 from Grabber.core.utils import handle_errors
+=======
+
+from pyrogram import errors, enums, filters, types
+from pyrogram.enums import ParseMode
+
+from config import config
+from Grabber import LOGGER, OWNER_ID, app, sudo_users
+from Grabber.core.utils import handle_errors
+
+>>>>>>> beta
 namespaces = {}
 AUTHORIZED_USERS = [OWNER_ID]
 def namespace_of(chat_id, message):

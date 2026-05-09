@@ -193,6 +193,7 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
             f"📈 <b>+30 XP</b> for {html_escape(winner_user.first_name)}"
         )
         await query.message.edit_text(result_text, parse_mode=enums.ParseMode.HTML)
+
     except errors.PyrogramError as e:
         LOGGER.error(f"Battle Error: {e}")
         try:

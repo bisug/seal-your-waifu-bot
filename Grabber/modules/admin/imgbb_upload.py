@@ -1,6 +1,12 @@
 import os
 import httpx
+<<<<<<< HEAD
 from pyrogram import enums, errors, filters, types
+=======
+from pyrogram import errors, enums, filters, types
+from pyrogram.enums import ParseMode
+
+>>>>>>> beta
 from config import config
 from Grabber import LOGGER, app
 from Grabber.core.utils import handle_errors, reply_media_dynamic
