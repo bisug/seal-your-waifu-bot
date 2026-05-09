@@ -1,4 +1,4 @@
-from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import AsyncMongoClient
 from pyrogram import enums, filters, types
 from pyrogram.enums import ParseMode
 
@@ -20,8 +20,8 @@ async def mongo_backup(_, message: types.Message) -> None:
         status_msg = await message.reply_text(f"⏳ Starting backup of <code>{db_name}</code> from <code>{source_mongo}</code> to <code>{destination_mongo}</code>...", parse_mode=ParseMode.HTML)
 
 
-        source_client = AsyncIOMotorClient(source_mongo)
-        dest_client = AsyncIOMotorClient(destination_mongo)
+        source_client = AsyncMongoClient(source_mongo)
+        dest_client = AsyncMongoClient(destination_mongo)
 
         source_db = source_client[db_name]
         dest_db = dest_client[db_name]
