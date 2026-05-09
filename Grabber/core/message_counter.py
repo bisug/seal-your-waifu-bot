@@ -2,9 +2,10 @@ import datetime
 import random
 import time
 
-from pyrogram import types
+from pyrogram import filters, types
+from pyrogram.enums import ParseMode
 
-from Grabber import config
+from Grabber import app, config
 from Grabber.core.spawns import (get_active_user_count, get_chat_frequency,
                                  get_chat_state, get_spawn_order,
                                  increment_message_count,
@@ -30,6 +31,7 @@ special_rarity_thresholds = {
 }
 
 
+@app.on_message(filters.group & ~filters.bot, group=1)
 async def message_counter(_, message: types.Message):
     """
     Main handler for counting messages and triggering character spawns.
@@ -48,7 +50,7 @@ async def message_counter(_, message: types.Message):
     await track_user_activity(chat_id, user_id)
 
     # Increment and get the current message count for this chat
-    count = await increment_message_count(chat_id)
+    count = await increment_message_count(chat_id, user_id)
 
 
 

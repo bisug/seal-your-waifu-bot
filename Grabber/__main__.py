@@ -12,6 +12,7 @@ asyncio.set_event_loop(loop)
 from pyrogram import idle
 
 import Grabber.core.sync_handler  # Register global message sync handlers
+import Grabber.core.message_counter # Register message counter and spawns
 from Grabber import LOGGER, app, game_bot
 from Grabber.runner import start_bots, stop_bots
 
