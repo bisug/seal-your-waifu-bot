@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, Search } from 'lucide-react';
+import { ShoppingBag, Search, Dog } from 'lucide-react';
 import { Shop } from './Shop';
 import { Gallery } from './Gallery';
 import { PetShop } from './PetShop';
@@ -28,7 +28,7 @@ export const Market = ({ onCharClick, onPetClick }) => {
           {[
             { id: 'shop', icon: ShoppingBag, label: 'Market' },
             { id: 'gallery', icon: Search, label: 'Catalog' },
-            { id: 'pets', icon: ShoppingBag, label: 'Pets' },
+            { id: 'pets', icon: Dog, label: 'Pets' },
           ].map(tab => (
             <button
               key={tab.id}
