@@ -47,7 +47,8 @@ async def inline_query_handler(_, query: types.InlineQuery) -> None:
                 {"$skip": offset},
                 {"$limit": RESULTS_PER_PAGE}
             ])
-            characters = await user_collection.aggregate(pipeline).to_list(length=RESULTS_PER_PAGE)
+            cursor = await user_collection.aggregate(pipeline)
+            characters = await cursor.to_list(length=RESULTS_PER_PAGE)
             for i, char in enumerate(characters):
                 neighbors = get_neighbors(characters, i)
                 res = create_inline_result(char, neighbors, offset, search_context)
@@ -145,10 +146,11 @@ async def gallery_view_callback(_, query: types.CallbackQuery):
 async def guessed_callback(_, query: types.CallbackQuery) -> None:
     char_id = query.data.split("character_count:")[1]
     try:
-        result = await user_collection.aggregate([
+        cursor = await user_collection.aggregate([
             {"$match": {"characters.id": char_id}},
             {"$count": "user_count"}
-        ]).to_list(length=1)
+        ])
+        result = await cursor.to_list(length=1)
         user_count = result[0]["user_count"] if result else 0
         if user_count == 0:
             await query.answer("No users currently own this character.", show_alert=True)
