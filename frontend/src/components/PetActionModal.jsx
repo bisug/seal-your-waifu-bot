@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Activity, Loader2, Heart, Zap, X, Swords, Wind, Sparkles, Check, Lock } from 'lucide-react';
 import { useToast } from './UI';
 import { apiFetch } from '../api';
-import { formatNumber, cn } from '../utils';
+import { cn } from '../utils';
 
 const StatBox = ({ icon: Icon, label, value, colorClass }) => (
     <div className="bg-white/[0.03] border border-white/5 p-4 rounded-2xl flex items-center space-x-3">
@@ -23,13 +23,20 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user, onPurchaseSu
     const [setStage, setSetStage] = useState('idle');
 
     useEffect(() => {
-        if (!selectedPet) {
-            setPurchaseStage('idle');
-            setSetStage('idle');
+        let mounted = true;
+        if (!selectedPet && mounted) {
+            // Wrap in microtask to avoid cascading render warning
+            Promise.resolve().then(() => {
+                if (mounted) {
+                    setPurchaseStage('idle');
+                    setSetStage('idle');
+                }
+            });
             document.body.classList.remove('no-scroll');
-        } else {
+        } else if (mounted) {
             document.body.classList.add('no-scroll');
         }
+        return () => { mounted = false; };
     }, [selectedPet]);
 
     if (!selectedPet) return null;
@@ -85,7 +92,7 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user, onPurchaseSu
                     animate={{ scale: 1, opacity: 1, y: 0 }}
                     exit={{ scale: 0.9, opacity: 0, y: 50 }}
                     transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                    className="relative w-full max-w-md bg-brand-midnight border border-white/10 rounded-[3rem] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
+                    className="relative w-full max-w-md bg-brand-midnight border border-white/10 rounded-[3rem] overflow-hidden shadow-lg flex flex-col max-h-[90vh]"
                 >
                     <button 
                         onClick={() => setSelectedPet(null)}
@@ -95,7 +102,7 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user, onPurchaseSu
                     </button>
 
                     <div className="overflow-y-auto no-scrollbar pb-10">
-                        <div className="relative aspect-video w-full p-4 bg-gradient-to-b from-brand-neon/5 to-transparent">
+                        <div className="relative aspect-video w-full p-4 bg-gradient-to-b from-brand-accent/5 to-transparent">
                             <img 
                                 src={selectedPet.img} 
                                 className="w-full h-full object-contain drop-shadow-[0_0_30px_rgba(0,242,255,0.2)]" 
@@ -105,8 +112,8 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user, onPurchaseSu
                         </div>
 
                         <div className="px-8 -mt-6 relative z-10 text-center">
-                            <div className="inline-block px-3 py-1 rounded-full bg-brand-neon/10 border border-brand-neon/20 mb-3">
-                                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-brand-neon">Companion Hub</span>
+                            <div className="inline-block px-3 py-1 rounded-full bg-brand-accent/10 border border-brand-accent/20 mb-3">
+                                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-brand-accent">Companion Hub</span>
                             </div>
                             <h2 className="text-3xl font-black text-white uppercase tracking-tight mb-1">{selectedPet.name}</h2>
                             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-8">
@@ -122,7 +129,7 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user, onPurchaseSu
 
                             <div className="bg-white/[0.02] border border-white/5 p-5 rounded-[2rem] mb-10 text-left">
                                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                    <Activity size={12} className="text-brand-neon" />
+                                    <Activity size={12} className="text-brand-accent" />
                                     Active Ability
                                 </p>
                                 <p className="text-[12px] text-slate-300 leading-relaxed font-medium">
@@ -138,7 +145,7 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user, onPurchaseSu
                                         className={cn(
                                             "w-full py-5 rounded-[2rem] font-black uppercase text-[11px] tracking-[0.3em] transition-all flex items-center justify-center gap-3",
                                             isActive 
-                                                ? "bg-brand-neon/10 text-brand-neon border border-brand-neon/20" 
+                                                ? "bg-brand-accent/10 text-brand-accent border border-brand-accent/20"
                                                 : "bg-white text-brand-midnight shadow-xl active:scale-95"
                                         )}
                                     >
@@ -164,7 +171,7 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user, onPurchaseSu
                                                         window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
                                                         setPurchaseStage('confirm');
                                                     }}
-                                                    className="w-full py-5 rounded-[2rem] bg-brand-neon text-brand-midnight font-black uppercase text-[11px] tracking-[0.3em] shadow-xl shadow-brand-neon/20 active:scale-95 transition-all flex items-center justify-center gap-3"
+                                                    className="w-full py-5 rounded-[2rem] bg-brand-accent text-brand-midnight font-black uppercase text-[11px] tracking-[0.3em] shadow-xl shadow-brand-accent/20 active:scale-95 transition-all flex items-center justify-center gap-3"
                                                 >
                                                     BUY FOR {selectedPet.zenith_price} <Activity size={16} />
                                                 </button>
@@ -174,7 +181,7 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user, onPurchaseSu
                                                     initial={{ opacity: 0, scale: 0.95 }}
                                                     animate={{ opacity: 1, scale: 1 }}
                                                     exit={{ opacity: 0, scale: 0.95 }}
-                                                    className="p-1 glass-panel rounded-[2rem] border border-brand-neon/20 flex space-x-1"
+                                                    className="p-1 glass-panel rounded-[2rem] border border-brand-accent/20 flex space-x-1"
                                                 >
                                                     <button 
                                                         onClick={() => setPurchaseStage('idle')}
@@ -185,7 +192,7 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user, onPurchaseSu
                                                     <button 
                                                         onClick={handleBuy}
                                                         disabled={purchaseStage === 'buying'}
-                                                        className="flex-[2] py-4 bg-brand-neon text-brand-midnight rounded-[1.8rem] text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2"
+                                                        className="flex-[2] py-4 bg-brand-accent text-brand-midnight rounded-[1.8rem] text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2"
                                                     >
                                                         {purchaseStage === 'buying' ? (
                                                             <Loader2 size={16} className="animate-spin" />

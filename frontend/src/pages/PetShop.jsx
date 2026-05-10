@@ -1,53 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { apiFetch } from '../api';
-import { useApi, useToast } from '../components/UI';
+import { useApi } from '../components/UI';
 import { Heart, Activity, Check, Zap, Loader2 } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 
 import { formatNumber } from '../utils';
 
 export const PetShop = ({ onPetClick }) => {
-  const { user, refreshUser } = useUser();
-  const { addToast } = useToast();
-  const [buyingIndex, setBuyingIndex] = useState(null);
+  const { user } = useUser();
 
-  const { data, loading, execute: fetchShopData, error } = useApi('/shop/pets', {
+  const { data, loading } = useApi('/shop/pets', {
     initialData: { pets: [], owned: [], current_level: 1 }
   });
 
   const { pets = [], owned = [], current_level = 1 } = data || {};
 
-  const handleBuy = async (index, pet) => {
-    if (buyingIndex !== null) return;
-    
-    if (current_level < pet.req_level) {
-      return;
-    }
-    if ((user?.stats?.zenith || 0) < pet.zenith_price) {
-      toast.error(`Need ${pet.zenith_price} Zenith`);
-      return;
-    }
-    
-    setBuyingIndex(index);
-    try {
-      await apiFetch(`/shop/buy/pet/${index}`, { method: 'POST' });
-      window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
-      addToast(`Bought ${pet.name}!`, 'success');
-      fetchShopData(); // Refresh UI to show owned
-      refreshUser(); // Refresh user balance & current_pet
-    } catch (err) {
-      window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('error');
-      addToast(err.message || 'Purchase failed', 'error');
-    } finally {
-      setBuyingIndex(null);
-    }
-  };
-
   if (loading && pets.length === 0) {
     return (
       <div className="pb-32 pt-6 px-4 flex justify-center">
-        <Loader2 className="animate-spin text-brand-neon" />
+        <Loader2 className="animate-spin text-brand-accent" />
       </div>
     );
   }
@@ -59,9 +30,9 @@ export const PetShop = ({ onPetClick }) => {
           <h1 className="text-2xl font-black uppercase tracking-tight">Pet Shop</h1>
           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Acquire Companions</p>
         </div>
-        <div className="flex items-center space-x-2 bg-brand-neon/10 border border-brand-neon/20 px-3 py-1.5 rounded-xl shadow-[0_0_15px_rgba(0,242,255,0.1)]">
-          <Activity size={14} className="text-brand-neon" />
-          <span className="text-sm font-black text-brand-neon">{formatNumber(user?.stats?.zenith)}</span>
+        <div className="flex items-center space-x-2 bg-brand-accent/10 border border-brand-accent/20 px-3 py-1.5 rounded-xl shadow-[0_0_15px_rgba(59,130,246,0.1)]">
+          <Activity size={14} className="text-brand-accent" />
+          <span className="text-sm font-black text-brand-accent">{formatNumber(user?.stats?.zenith)}</span>
         </div>
       </header>
 
@@ -79,10 +50,10 @@ export const PetShop = ({ onPetClick }) => {
                 transition={{ delay: i * 0.1 }}
                 onClick={() => onPetClick && onPetClick({ ...pet, shopIndex: i, owned: isOwned })}
                 className={`flex gap-4 p-4 rounded-3xl border border-white/10 backdrop-blur-md glass-panel relative overflow-hidden transition-all active:scale-[0.98] cursor-pointer ${
-                  isOwned || isLocked ? 'opacity-80 grayscale-[0.3]' : 'hover:border-brand-neon/30 hover:bg-white/[0.02]'
+                  isOwned || isLocked ? 'opacity-80 grayscale-[0.3]' : 'hover:border-brand-accent/30 hover:bg-white/[0.02]'
                 }`}
               >
-                <div className="absolute top-0 right-0 w-32 h-32 bg-brand-neon/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
+                <div className="absolute top-0 right-0 w-32 h-32 bg-brand-accent/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
                 
                 <div className="w-24 h-24 shrink-0 rounded-2xl overflow-hidden border border-white/20 shadow-lg bg-black/40">
                   <img src={pet.img} alt={pet.name} className="w-full h-full object-cover" />
@@ -90,7 +61,7 @@ export const PetShop = ({ onPetClick }) => {
                 
                 <div className="flex-1 flex flex-col pt-1">
                   <h3 className="font-black text-white text-lg tracking-tight leading-none mb-1">{pet.name}</h3>
-                  <p className="text-[9px] font-bold text-brand-neon uppercase tracking-widest mb-3 flex items-center gap-1">
+                  <p className="text-[9px] font-bold text-brand-accent uppercase tracking-widest mb-3 flex items-center gap-1">
                     <Zap size={10} /> 
                     <span>{pet.ability}</span>
                   </p>
@@ -109,7 +80,7 @@ export const PetShop = ({ onPetClick }) => {
                   
                   <div className="mt-auto">
                     {isOwned ? (
-                      <div className="w-full py-2 bg-brand-neon/10 text-brand-neon rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 border border-brand-neon/20">
+                      <div className="w-full py-2 bg-brand-accent/10 text-brand-accent rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 border border-brand-accent/20">
                         <Check size={11} strokeWidth={3} /> Owned
                       </div>
                     ) : isLocked ? (

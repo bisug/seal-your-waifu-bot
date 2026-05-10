@@ -47,7 +47,7 @@ export const Nexus = () => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto no-scrollbar">
+      <div className="flex-1 overflow-y-auto no-scrollbar app-scroller">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}

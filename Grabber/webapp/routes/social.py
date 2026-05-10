@@ -13,8 +13,6 @@ router = APIRouter()
 
 @router.get("/trade/offers", response_model=List[TradeOffer])
 async def get_trade_offers(user_id: int = Depends(get_current_user)):
-    # Simple implementation: fetch pending trades from a temporary collection or user doc
-    # For now, let's assume they are stored in a session-like collection
     cursor = sessions_collection.find({"type": "trade_offer", "$or": [{"sender_id": user_id}, {"receiver_id": user_id}]})
     offers = await cursor.to_list(length=100)
     return [TradeOffer(**o) for o in offers]
@@ -72,15 +70,11 @@ async def respond_to_trade(
         await sessions_collection.delete_one({"id": trade_id})
         return {"status": "rejected"}
 
-    # Accept Logic
     sender_id = offer["sender_id"]
     s_char = offer["sender_char"]
     r_char = offer["receiver_char"]
 
-    # Atomically swap characters
-    # This is a simplified version of the logic in Grabber/modules/social/trade.py
     try:
-        # Sender gives s_char, receives r_char
         res1 = await user_collection.update_one(
             {"id": {"$in": [sender_id, str(sender_id)]}, "characters.id": s_char["id"]},
             {"$set": {"characters.$": r_char}}
@@ -88,13 +82,11 @@ async def respond_to_trade(
         if res1.modified_count == 0:
             raise ValueError("Sender character no longer available")
 
-        # Receiver gives r_char, receives s_char
         res2 = await user_collection.update_one(
             {"id": {"$in": [user_id, str(user_id)]}, "characters.id": r_char["id"]},
             {"$set": {"characters.$": s_char}}
         )
         if res2.modified_count == 0:
-            # Rollback res1
             await user_collection.update_one(
                 {"id": {"$in": [sender_id, str(sender_id)]}, "characters.id": r_char["id"]},
                 {"$set": {"characters.$": s_char}}
@@ -129,16 +121,20 @@ async def get_marriage(user: dict = Depends(get_current_user_data)):
 @router.get("/social/referrals", response_model=List[ReferralModel])
 async def get_referrals(user: dict = Depends(get_current_user_data)):
     referrals = user.get("referrals", [])
-    # Enrich referral data
-    enriched = []
-    for ref_id in referrals:
-        ref_user = await user_collection.find_one(get_user_id_query(ref_id))
-        enriched.append({
-            "referred_id": ref_id,
-            "referred_name": ref_user.get("first_name", "Unknown") if ref_user else "Unknown",
-            "rewarded": True # Simplified
-        })
-    return enriched
+    if not referrals:
+        return []
+
+    cursor = user_collection.find({"id": {"$in": [int(rid) for rid in referrals]}})
+    ref_users = await cursor.to_list(length=100)
+    ref_map = {u["id"]: u.get("first_name", "Unknown") for u in ref_users}
+
+    return [
+        {
+            "referred_id": rid,
+            "referred_name": ref_map.get(int(rid), "Unknown"),
+            "rewarded": True
+        } for rid in referrals
+    ]
 
 # --- BATTLE STATS ---
 
