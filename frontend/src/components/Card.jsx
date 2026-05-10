@@ -26,7 +26,7 @@ export const Card = memo(({ character, onClick }) => {
             onClick={handleClick}
             className={cn(
                 "relative rounded-[1.5rem] overflow-hidden aspect-[3/4] group transition-all duration-500 cursor-pointer",
-                "border bg-slate-900 shadow-2xl",
+                "border bg-slate-900 shadow-lg",
                 visuals.border,
                 visuals.glow,
                 isSpecial && "ring-1 ring-white/20"
@@ -72,7 +72,7 @@ export const Card = memo(({ character, onClick }) => {
 
             {/* Bottom Content Area */}
             <div className="absolute bottom-0 inset-x-0 p-3 pt-8 bg-gradient-to-t from-brand-midnight to-transparent">
-                <h3 className="text-[10px] font-black uppercase text-white tracking-[0.1em] leading-tight drop-shadow-md group-hover:text-brand-neon transition-colors line-clamp-2">
+                <h3 className="text-[10px] font-black uppercase text-white tracking-[0.1em] leading-tight drop-shadow-md group-hover:text-brand-accent transition-colors line-clamp-2">
                     {character.name}
                 </h3>
             </div>

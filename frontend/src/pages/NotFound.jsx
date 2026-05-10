@@ -21,7 +21,7 @@ export const NotFound = ({ onReset }) => {
     <div className="absolute inset-0 z-[500] bg-brand-midnight flex flex-col items-center justify-center p-8 text-center overflow-hidden">
       {/* Background Cinematic Shimmer */}
       <div className="absolute inset-0 opacity-20 blur-3xl scale-125 animate-shimmer pointer-events-none" 
-           style={{ background: 'radial-gradient(circle at center, var(--color-brand-neon), transparent 70%)' }} />
+           style={{ background: 'radial-gradient(circle at center, var(--color-brand-accent), transparent 70%)' }} />
       
       <motion.div 
         initial={{ scale: 0.8, opacity: 0 }}
@@ -33,12 +33,12 @@ export const NotFound = ({ onReset }) => {
           <motion.div 
             animate={{ rotate: 360 }}
             transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-            className="text-brand-neon/20 absolute -inset-10"
+            className="text-brand-accent/20 absolute -inset-10"
           >
             <Compass size={120} strokeWidth={0.5} />
           </motion.div>
-          <div className="w-24 h-24 rounded-3xl bg-brand-neon/10 border-2 border-brand-neon flex items-center justify-center neon-shadow">
-            <Map size={40} className="text-brand-neon" />
+          <div className="w-24 h-24 rounded-3xl bg-brand-accent/10 border-2 border-brand-accent flex items-center justify-center neon-shadow">
+            <Map size={40} className="text-brand-accent" />
           </div>
         </div>
 
@@ -53,7 +53,7 @@ export const NotFound = ({ onReset }) => {
 
         <button 
           onClick={handleReturn}
-          className="w-full max-w-[280px] py-5 rounded-2xl bg-white text-brand-midnight font-black uppercase tracking-[0.3em] text-[10px] shadow-2xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center space-x-3 group"
+          className="w-full max-w-[280px] py-5 rounded-2xl bg-white text-brand-midnight font-black uppercase tracking-[0.3em] text-[10px] shadow-lg hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center space-x-3 group"
         >
           <Home size={16} className="group-hover:animate-bounce" />
           <span>RETURN TO REALITY</span>
@@ -62,7 +62,7 @@ export const NotFound = ({ onReset }) => {
       
       <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center space-x-4 opacity-20 pointer-events-none">
          <span className="text-[10px] font-black uppercase tracking-[0.5em]">ERROR_404</span>
-         <div className="w-1 h-1 rounded-full bg-brand-neon" />
+         <div className="w-1 h-1 rounded-full bg-brand-accent" />
          <span className="text-[10px] font-black uppercase tracking-[0.5em]">VOID_LINK</span>
       </div>
     </div>
