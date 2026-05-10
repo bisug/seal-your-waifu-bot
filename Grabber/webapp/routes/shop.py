@@ -118,10 +118,10 @@ async def get_shop_pets(user: dict = Depends(get_current_user_data)):
 @router.post("/shop/buy/pet/{pet_index}")
 async def buy_pet_api(pet_index: int, user_id: int = Depends(get_current_user)):
     from Grabber.modules.progression.pet import perform_pet_purchase
-    result = await perform_pet_purchase(user_id, pet_index, user_collection, get_user_id_query)
+    result = await perform_pet_purchase(user_id, pet_index)
     if result is True:
         return {"status": "success"}
-    raise HTTPException(status_code=400, detail=str(result).replace("❌ ", "").replace("🔒 ", ""))
+    raise HTTPException(status_code=400, detail=str(result).replace("❌ ", "").replace("🔒 ", "").replace("<b>", "").replace("</b>", ""))
 
 @router.get("/shop/battlepass")
 async def get_battlepass_shop(user_id: int = Depends(get_current_user)):

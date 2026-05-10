@@ -28,7 +28,7 @@ async def update_user(user_id: int, update_query: dict):
     if "$inc" not in update_query:
         update_query["$inc"] = {}
     update_query["$inc"]["version"] = 1
-    await user_collection.update_one({"id": get_user_id(user_id)}, update_query, upsert=True)
+    await user_collection.update_one(get_user_filter(user_id), update_query, upsert=True)
     await invalidate_user_cache(user_id)
 from Grabber import LOGGER
 async def add_char_to_user(user_id: int, character: dict):
@@ -41,12 +41,12 @@ async def add_char_to_user(user_id: int, character: dict):
             LOGGER.error("String passed instead of dict. Operation aborted to save DB integrity.")
             return
     await user_collection.update_one(
-        {"id": get_user_id(user_id)},
+        get_user_filter(user_id),
         {"$push": {"characters": character}, "$inc": {"char_count": 1, "version": 1}},
         upsert=True
     )
     # Sync with Redis Harem Leaderboard
-    new_count = (await user_collection.find_one({"id": get_user_id(user_id)}, {"char_count": 1}))["char_count"]
+    new_count = (await user_collection.find_one(get_user_filter(user_id), {"char_count": 1}))["char_count"]
     await update_user_rank(user_id, new_count, metric="harem")
     await invalidate_user_cache(user_id)
 async def remove_char_from_user(user_id: int, char_id: str) -> bool:
@@ -63,7 +63,7 @@ async def remove_char_from_user(user_id: int, char_id: str) -> bool:
     return res.modified_count > 0
 async def get_active_pet(user_id: int) -> dict:
     """Retrieve currently active pet data."""
-    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
+    user = await user_collection.find_one(get_user_filter(user_id))
     if not user or "current_pet" not in user:
         return None
     current_pet_name = user["current_pet"]
@@ -72,7 +72,7 @@ async def get_active_pet(user_id: int) -> dict:
 async def add_pet_xp(user_id: int, pet_name: str, xp_amount: int):
     """Adds XP to pet and handles level-ups."""
     user = await user_collection.find_one_and_update(
-        {"id": {"$in": [user_id, str(user_id)]}, "pets.name": pet_name},
+        {**get_user_filter(user_id), "pets.name": pet_name},
         {"$inc": {"pets.$.xp": xp_amount}},
         return_document=True
     )
@@ -93,7 +93,7 @@ async def add_pet_xp(user_id: int, pet_name: str, xp_amount: int):
             luck_gain = (level - original_level) * 0.002
             new_luck = round(pet.get("luck", 0.1) + luck_gain, 3)
             await user_collection.update_one(
-                {"id": {"$in": [user_id, str(user_id)]}, "pets.name": pet_name},
+                {**get_user_filter(user_id), "pets.name": pet_name},
                 {
                     "$set": {
                         "pets.$.xp": xp,

@@ -143,23 +143,23 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user, onPurchaseSu
                                         onClick={handleSetPet}
                                         disabled={isActive || setStage === 'setting'}
                                         className={cn(
-                                            "w-full py-5 rounded-[2rem] font-black uppercase text-[11px] tracking-[0.3em] transition-all flex items-center justify-center gap-3",
+                                            "w-full py-4 rounded-3xl font-black uppercase text-[10px] tracking-[0.2em] transition-all flex items-center justify-center gap-2",
                                             isActive 
                                                 ? "bg-brand-accent/10 text-brand-accent border border-brand-accent/20"
                                                 : "bg-white text-brand-midnight shadow-xl active:scale-95"
                                         )}
                                     >
                                         {setStage === 'setting' ? (
-                                            <Loader2 size={16} className="animate-spin" />
+                                            <Loader2 size={14} className="animate-spin" />
                                         ) : isActive ? (
-                                            <><Check size={16} /> Currently Synced</>
+                                            <><Check size={14} /> Currently Synced</>
                                         ) : (
                                             'SYNC COMPANION'
                                         )}
                                     </button>
                                 ) : isLocked ? (
-                                    <div className="w-full py-5 rounded-[2rem] bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-[0.3em] flex items-center justify-center gap-3">
-                                        <Lock size={16} /> Requires Level {selectedPet.req_level}
+                                    <div className="w-full py-4 rounded-3xl bg-red-500/10 border border-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2">
+                                        <Lock size={14} /> Requires Level {selectedPet.req_level}
                                     </div>
                                 ) : (
                                     <div className="w-full">
@@ -171,9 +171,9 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user, onPurchaseSu
                                                         window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
                                                         setPurchaseStage('confirm');
                                                     }}
-                                                    className="w-full py-5 rounded-[2rem] bg-brand-accent text-brand-midnight font-black uppercase text-[11px] tracking-[0.3em] shadow-xl shadow-brand-accent/20 active:scale-95 transition-all flex items-center justify-center gap-3"
+                                                    className="w-full py-4 rounded-3xl bg-brand-accent text-brand-midnight font-black uppercase text-[10px] tracking-[0.2em] shadow-xl shadow-brand-accent/20 active:scale-95 transition-all flex items-center justify-center gap-2"
                                                 >
-                                                    BUY FOR {selectedPet.zenith_price} <Activity size={16} />
+                                                    BUY FOR {selectedPet.zenith_price} <Activity size={14} />
                                                 </button>
                                             ) : (
                                                 <motion.div 
@@ -181,21 +181,21 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user, onPurchaseSu
                                                     initial={{ opacity: 0, scale: 0.95 }}
                                                     animate={{ opacity: 1, scale: 1 }}
                                                     exit={{ opacity: 0, scale: 0.95 }}
-                                                    className="p-1 glass-panel rounded-[2rem] border border-brand-accent/20 flex space-x-1"
+                                                    className="p-1 glass-panel rounded-3xl border border-brand-accent/20 flex space-x-1"
                                                 >
                                                     <button 
                                                         onClick={() => setPurchaseStage('idle')}
-                                                        className="flex-1 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500"
+                                                        className="flex-1 py-3 text-[9px] font-black uppercase tracking-widest text-slate-500"
                                                     >
                                                         Cancel
                                                     </button>
                                                     <button 
                                                         onClick={handleBuy}
                                                         disabled={purchaseStage === 'buying'}
-                                                        className="flex-[2] py-4 bg-brand-accent text-brand-midnight rounded-[1.8rem] text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2"
+                                                        className="flex-[2] py-3 bg-brand-accent text-brand-midnight rounded-[1.25rem] text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2"
                                                     >
                                                         {purchaseStage === 'buying' ? (
-                                                            <Loader2 size={16} className="animate-spin" />
+                                                            <Loader2 size={14} className="animate-spin" />
                                                         ) : 'Confirm Pay'}
                                                     </button>
                                                 </motion.div>

@@ -76,19 +76,19 @@ async def respond_to_trade(
 
     try:
         res1 = await user_collection.update_one(
-            {"id": {"$in": [sender_id, str(sender_id)]}, "characters.id": s_char["id"]},
+            {**get_user_id_query(sender_id), "characters.id": s_char["id"]},
             {"$set": {"characters.$": r_char}}
         )
         if res1.modified_count == 0:
             raise ValueError("Sender character no longer available")
 
         res2 = await user_collection.update_one(
-            {"id": {"$in": [user_id, str(user_id)]}, "characters.id": r_char["id"]},
+            {**get_user_id_query(user_id), "characters.id": r_char["id"]},
             {"$set": {"characters.$": s_char}}
         )
         if res2.modified_count == 0:
             await user_collection.update_one(
-                {"id": {"$in": [sender_id, str(sender_id)]}, "characters.id": r_char["id"]},
+                {**get_user_id_query(sender_id), "characters.id": r_char["id"]},
                 {"$set": {"characters.$": s_char}}
             )
             raise ValueError("Receiver character no longer available")
@@ -124,14 +124,27 @@ async def get_referrals(user: dict = Depends(get_current_user_data)):
     if not referrals:
         return []
 
-    cursor = user_collection.find({"id": {"$in": [int(rid) for rid in referrals]}})
+    ref_query_ids = []
+    for rid in referrals:
+        uid = normalize_user_id(rid)
+        if uid:
+            ref_query_ids.extend([uid, str(uid)])
+
+    cursor = user_collection.find({"id": {"$in": ref_query_ids}})
     ref_users = await cursor.to_list(length=100)
-    ref_map = {u["id"]: u.get("first_name", "Unknown") for u in ref_users}
+
+    # Build map with both int and str keys for robustness
+    ref_map = {}
+    for u in ref_users:
+        first_name = u.get("first_name", "Unknown")
+        uid = u.get("id")
+        ref_map[uid] = first_name
+        ref_map[str(uid)] = first_name
 
     return [
         {
-            "referred_id": rid,
-            "referred_name": ref_map.get(int(rid), "Unknown"),
+            "referred_id": normalize_user_id(rid),
+            "referred_name": ref_map.get(rid) or ref_map.get(normalize_user_id(rid)) or "Unknown",
             "rewarded": True
         } for rid in referrals
     ]
