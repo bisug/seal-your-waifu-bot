@@ -44,7 +44,7 @@ export const Market = ({ onCharClick, onPetClick }) => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto no-scrollbar">
+      <div className="flex-1 overflow-y-auto no-scrollbar app-scroller">
         <AnimatePresence mode="wait">
           {activeTab === 'shop' && (
             <motion.div
@@ -53,7 +53,7 @@ export const Market = ({ onCharClick, onPetClick }) => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 10 }}
               transition={{ duration: 0.2 }}
-              className="h-full"
+              className=""
             >
               <Shop onCharClick={onCharClick} />
             </motion.div>
@@ -65,7 +65,7 @@ export const Market = ({ onCharClick, onPetClick }) => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -10 }}
               transition={{ duration: 0.2 }}
-              className="h-full"
+              className=""
             >
               <Gallery onCharClick={onCharClick} />
             </motion.div>
@@ -77,7 +77,7 @@ export const Market = ({ onCharClick, onPetClick }) => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -10 }}
               transition={{ duration: 0.2 }}
-              className="h-full overflow-y-auto"
+              className=""
             >
               <PetShop onPetClick={onPetClick} />
             </motion.div>

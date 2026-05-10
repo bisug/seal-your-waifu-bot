@@ -35,7 +35,7 @@ export const TabNavigation = ({ activeTab, onNavigate }) => {
                 initial={false}
                 animate={{
                   y: isActive ? -4 : 0,
-                  color: isActive ? '#3b82f6' : '#64748b',
+                  color: isActive ? 'var(--color-brand-accent)' : '#64748b',
                 }}
                 className={cn(
                   "p-2.5 rounded-2xl transition-all duration-300 relative",

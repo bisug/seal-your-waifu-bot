@@ -64,7 +64,7 @@ export const ToastProvider = ({ children }) => {
               initial={{ y: -20, opacity: 0, scale: 0.9 }}
               animate={{ y: 0, opacity: 1, scale: 1 }}
               exit={{ y: -10, opacity: 0, scale: 0.95 }}
-              className="glass-panel w-full px-4 py-3 rounded-2xl border border-white/10 shadow-2xl flex items-center space-x-3 pointer-events-auto"
+              className="glass-panel w-full px-4 py-3 rounded-2xl border border-white/10 shadow-lg flex items-center space-x-3 pointer-events-auto"
             >
             <div className={toast.type === 'success' ? 'text-brand-accent' : toast.type === 'error' ? 'text-red-500' : 'text-brand-accent'}>
                 {toast.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
@@ -103,10 +103,19 @@ export const useApi = (endpoint, options = {}, deps = []) => {
   const [error, setError] = useState(null);
 
   const optionsRef = useRef(options);
+  const [currentOptions, setCurrentOptions] = useState(options);
   
-  if (!shallowEqual(optionsRef.current, options)) {
-    optionsRef.current = options;
-  }
+  useEffect(() => {
+    if (!shallowEqual(currentOptions, options)) {
+      optionsRef.current = options;
+      // Use setTimeout to move the state update out of the render/effect cycle
+      // to avoid cascading renders warning.
+      setTimeout(() => {
+        setData(options.initialData || null);
+        setCurrentOptions(options);
+      }, 0);
+    }
+  }, [options, currentOptions]);
 
   const execute = useCallback(async (overrides = {}) => {
     setLoading(true);

@@ -27,7 +27,7 @@ export const Marriage = () => {
 
           <div className="relative z-10 flex flex-col items-center">
             <div className="flex items-center justify-center space-x-4 mb-6">
-               <Avatar src={null} className="w-16 h-16 rounded-full border-2 border-brand-accent" />
+               <Avatar src={window.Telegram?.WebApp?.initDataUnsafe?.user?.photo_url} className="w-16 h-16 rounded-full border-2 border-brand-accent" />
                <div className="text-pink-500 animate-pulse">
                   <Heart size={32} fill="currentColor" />
                </div>

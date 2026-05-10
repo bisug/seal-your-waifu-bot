@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUser } from '../context/UserContext';
-import { apiFetch } from '../api';
 
-import { Card, ProgressBar, Skeleton, useToast } from '../components/UI';
+import { Card, Skeleton } from '../components/UI';
 import { useEggActions } from '../hooks/useEggActions';
-import { Egg, Activity, Clock, ChevronRight, Sparkles, Shield, Flame, Wind, Loader2, Heart, Swords, ShoppingBag } from 'lucide-react';
+import { Egg, Activity, Clock, Sparkles, Shield, Flame, Wind, Loader2, Heart, Swords, ShoppingBag } from 'lucide-react';
 import { formatNumber } from '../utils';
 
 const EGG_THEMES = {
@@ -21,7 +20,7 @@ const ABILITY_ICONS = {
   Swift: Wind
 };
 
-const StatBar = ({ icon: Icon, value, max = 300, color = "bg-brand-neon" }) => (
+const StatBar = ({ icon: Icon, value, max = 300, color = "bg-brand-accent" }) => (
   <div className="flex items-center space-x-2">
     <Icon size={10} className="text-slate-500 shrink-0" />
     <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5 shadow-inner">
@@ -29,7 +28,7 @@ const StatBar = ({ icon: Icon, value, max = 300, color = "bg-brand-neon" }) => (
         initial={{ width: 0 }}
         animate={{ width: `${(value / max) * 100}%` }}
         transition={{ type: "spring", damping: 20, stiffness: 100 }}
-        className={`h-full ${color} shadow-[0_0_12px_rgba(16,185,129,0.3)] relative`}
+        className={`h-full ${color} shadow-[0_0_12px_rgba(59,130,246,0.3)] relative`}
       >
         <div className="absolute inset-0 bg-white/20 animate-shimmer" />
       </motion.div>
@@ -45,7 +44,7 @@ const PetCard = ({ pet, isActive, onSelect }) => {
     <button 
       onClick={() => onSelect({ ...pet, owned: true })}
       className={`glass-panel p-0 rounded-2xl border text-left relative transition-all active:scale-95 group overflow-hidden ${
-        isActive ? 'border-brand-neon/40 ring-1 ring-brand-neon/20 shadow-lg shadow-brand-neon/5' : 'border-white/5 opacity-80 grayscale-[0.5] hover:opacity-100 hover:grayscale-0'
+        isActive ? 'border-brand-accent/40 ring-1 ring-brand-accent/20 shadow-lg shadow-brand-accent/5' : 'border-white/5 opacity-80 grayscale-[0.5] hover:opacity-100 hover:grayscale-0'
       }`}
     >
       <div className="relative h-28 overflow-hidden">
@@ -57,7 +56,7 @@ const PetCard = ({ pet, isActive, onSelect }) => {
          <div className="absolute inset-0 bg-gradient-to-t from-brand-deep via-transparent to-transparent" />
          
          {isActive && (
-            <div className="absolute top-2 right-2 bg-brand-neon text-brand-midnight text-[8px] font-black uppercase px-2 py-0.5 rounded-lg tracking-tighter shadow-lg border border-white/20 z-20">
+            <div className="absolute top-2 right-2 bg-brand-accent text-brand-midnight text-[8px] font-black uppercase px-2 py-0.5 rounded-lg tracking-tighter shadow-lg border border-white/20 z-20">
               Active
             </div>
          )}
@@ -66,7 +65,7 @@ const PetCard = ({ pet, isActive, onSelect }) => {
       <div className="p-3 bg-brand-deep/80 backdrop-blur-md relative z-10 -mt-2">
         <div className="flex justify-between items-center mb-1">
           <h4 className="text-[11px] font-black uppercase tracking-tight text-white mb-0 truncate flex-1 pr-2">{pet.name}</h4>
-          <span className="text-[10px] font-black font-mono text-brand-neon">LV. {pet.level}</span>
+          <span className="text-[10px] font-black font-mono text-brand-accent">LV. {pet.level}</span>
         </div>
         
         <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-3 opacity-60">
@@ -81,7 +80,7 @@ const PetCard = ({ pet, isActive, onSelect }) => {
 
         <div className="pt-2 border-t border-white/5">
            <div className="flex items-center space-x-2">
-              <div className="p-1 rounded bg-white/5 border border-white/5 text-brand-neon shrink-0">
+              <div className="p-1 rounded bg-white/5 border border-white/5 text-brand-accent shrink-0">
                  <Icon size={10} />
               </div>
               <p className="text-[8px] leading-tight text-slate-500 font-medium line-clamp-1 italic">
@@ -124,9 +123,9 @@ const EggCard = ({ egg, onIncubate, onHatch, loading }) => {
   return (
     <div className={`glass-panel p-4 rounded-[2rem] border ${theme.border} flex items-center space-x-4 relative overflow-hidden transition-all group hover:bg-white/[0.02]`}>
       <div className={`w-16 h-16 rounded-[1.25rem] ${theme.bg} ${theme.color} flex items-center justify-center relative z-10 border border-white/10 shadow-inner`}>
-        <Egg size={32} className={`${isIncubating ? 'animate-bounce' : 'group-hover:scale-110 transition-transform'} drop-shadow-2xl`} />
+        <Egg size={32} className={`${isIncubating ? 'animate-bounce' : 'group-hover:scale-110 transition-transform'} drop-shadow-lg`} />
         {isIncubating && (
-           <div className="absolute inset-0 border-2 border-brand-neon/30 rounded-[1.25rem] animate-pulse" />
+           <div className="absolute inset-0 border-2 border-brand-accent/30 rounded-[1.25rem] animate-pulse" />
         )}
       </div>
       
@@ -150,15 +149,15 @@ const EggCard = ({ egg, onIncubate, onHatch, loading }) => {
           </button>
         ) : (
           <div className="flex flex-col items-end">
-             <div className="flex items-center space-x-2 mb-1 bg-brand-neon/10 px-3 py-1 rounded-full border border-brand-neon/20">
-                <Clock size={10} className="text-brand-neon animate-spin-slow" />
-                <span className="text-[12px] font-black font-mono text-brand-neon leading-none">{timeLeft}</span>
+             <div className="flex items-center space-x-2 mb-1 bg-brand-accent/10 px-3 py-1 rounded-full border border-brand-accent/20">
+                <Clock size={10} className="text-brand-accent animate-spin-slow" />
+                <span className="text-[12px] font-black font-mono text-brand-accent leading-none">{timeLeft}</span>
              </div>
              {isReady && (
                <button 
                  onClick={onHatch}
                  disabled={loading}
-                 className="mt-2 h-10 px-6 rounded-2xl bg-brand-neon text-brand-midnight text-[10px] font-black uppercase tracking-[0.2em] animate-pulse shadow-[0_0_20px_rgba(16,185,129,0.4)]"
+                 className="mt-2 h-10 px-6 rounded-2xl bg-brand-accent text-brand-midnight text-[10px] font-black uppercase tracking-[0.2em] animate-pulse shadow-[0_0_20px_rgba(59,130,246,0.4)]"
                >
                  Hatch Now
                </button>
@@ -184,8 +183,7 @@ const EmptyState = ({ icon: Icon, message }) => (
 );
 
 export const Hatchery = ({ onPetClick }) => {
-  const { user, loading: userLoading, refreshUser } = useUser();
-  const { addToast } = useToast();
+  const { user, loading: userLoading } = useUser();
   const { incubateEgg, hatchEgg, loading, hatchingResult, setHatchingResult } = useEggActions();
   const [activeTab, setActiveTab] = useState('eggs');
 
@@ -204,10 +202,9 @@ export const Hatchery = ({ onPetClick }) => {
     }
   }, [hatchingResult]);
 
-
   if (userLoading) return (
     <div className="p-10 flex flex-col items-center justify-center min-h-[60vh]">
-       <Loader2 className="animate-spin text-brand-neon/20 mb-4" size={32} />
+       <Loader2 className="animate-spin text-brand-accent/20 mb-4" size={32} />
        <p className="text-slate-600 text-[10px] font-black uppercase tracking-widest">Loading Eggs...</p>
     </div>
   );
@@ -217,14 +214,14 @@ export const Hatchery = ({ onPetClick }) => {
   return (
     <div className="pb-24 pt-6 px-4 max-w-lg mx-auto">
       <section className="mb-8 text-center relative pt-4">
-        <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-48 h-48 bg-brand-neon/5 blur-[80px] rounded-full pointer-events-none" />
+        <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-48 h-48 bg-brand-accent/5 blur-[80px] rounded-full pointer-events-none" />
         <motion.div 
             initial={{ y: -10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             className="inline-block px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-4 backdrop-blur-md"
         >
             <div className="flex items-center space-x-2">
-                <Sparkles size={14} className="text-brand-neon" />
+                <Sparkles size={14} className="text-brand-accent" />
                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Advanced Hatchery</span>
             </div>
         </motion.div>
@@ -283,7 +280,7 @@ export const Hatchery = ({ onPetClick }) => {
                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Companions List</span>
                <button 
                 onClick={() => window.dispatchEvent(new CustomEvent('nav-market-pets'))}
-                className="text-brand-neon text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 bg-brand-neon/10 px-3 py-1.5 rounded-lg border border-brand-neon/20 active:scale-95 transition-all"
+                className="text-brand-accent text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 bg-brand-accent/10 px-3 py-1.5 rounded-lg border border-brand-accent/20 active:scale-95 transition-all"
                >
                  <ShoppingBag size={10} /> Buy More
                </button>
@@ -309,7 +306,7 @@ export const Hatchery = ({ onPetClick }) => {
                       onClick={() => {
                           window.dispatchEvent(new CustomEvent('nav-market-pets'));
                       }}
-                      className="px-8 py-4 rounded-2xl bg-brand-neon text-brand-midnight text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-brand-neon/20 active:scale-95 transition-all"
+                      className="px-8 py-4 rounded-2xl bg-brand-accent text-brand-midnight text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-brand-accent/20 active:scale-95 transition-all"
                     >
                       Visit Pet Shop
                     </button>
@@ -328,7 +325,7 @@ export const Hatchery = ({ onPetClick }) => {
               initial={{ scale: 0 }}
               animate={{ rotate: [0, 90, 180, 270, 360] }}
               transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-              className="absolute w-[800px] h-[800px] bg-brand-neon/5 blur-[120px] rounded-full pointer-events-none"
+              className="absolute w-[800px] h-[800px] bg-brand-accent/5 blur-[120px] rounded-full pointer-events-none"
             />
             
             <motion.div 
@@ -344,15 +341,15 @@ export const Hatchery = ({ onPetClick }) => {
                    animate={{ opacity: 1, y: 0 }}
                    transition={{ delay: 0.5 }}
                  >
-                   <h3 className="text-brand-neon font-black uppercase tracking-[0.5em] text-[10px] mb-3">Sync Accomplished</h3>
+                   <h3 className="text-brand-accent font-black uppercase tracking-[0.5em] text-[10px] mb-3">Sync Accomplished</h3>
                    <h2 className="text-2xl font-black text-white uppercase tracking-wider">New Unit Acquired</h2>
                  </motion.div>
               </div>
 
               <div className="relative group">
-                <div className="absolute -inset-20 bg-brand-neon/15 blur-[100px] rounded-full animate-pulse" />
-                <div className="absolute -inset-1 bg-gradient-to-r from-brand-neon/0 via-brand-neon/40 to-brand-neon/0 blur-xl opacity-50 group-hover:opacity-100 transition-opacity" />
-                <Card character={hatchingResult} className="shadow-2xl shadow-brand-neon/10" />
+                <div className="absolute -inset-20 bg-brand-accent/15 blur-[100px] rounded-full animate-pulse" />
+                <div className="absolute -inset-1 bg-gradient-to-r from-brand-accent/0 via-brand-accent/40 to-brand-accent/0 blur-xl opacity-50 group-hover:opacity-100 transition-opacity" />
+                <Card character={hatchingResult} className="shadow-lg shadow-brand-accent/10" />
               </div>
 
               <motion.button 

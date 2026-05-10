@@ -79,10 +79,15 @@ export const Profile = ({ onCharClick }) => {
 
   // Infinite scroll trigger
   useEffect(() => {
-    if (page > 1) {
-      fetchHarem(false);
+    let mounted = true;
+    if (page > 1 && mounted) {
+      // Move fetch into microtask to avoid cascading render warning
+      Promise.resolve().then(() => {
+        if (mounted) fetchHarem(false);
+      });
     }
-  }, [page]);
+    return () => { mounted = false; };
+  }, [page, fetchHarem]);
 
   if (userLoading && items.length === 0) return (
     <div className="pb-24 pt-6 px-6">
