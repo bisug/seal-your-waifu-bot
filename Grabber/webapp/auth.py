@@ -135,7 +135,8 @@ async def get_current_user(auth: HTTPAuthorizationCredentials = Security(securit
 
 async def get_current_user_data(user_id: int = Depends(get_current_user)):
     """Dependency to fetch the full user document."""
-    user = await user_collection.find_one({"id": int(user_id)})
+    from Grabber.core.utils import get_user_id_query
+    user = await user_collection.find_one(get_user_id_query(user_id))
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
