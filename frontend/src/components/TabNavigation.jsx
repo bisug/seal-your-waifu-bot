@@ -35,11 +35,11 @@ export const TabNavigation = ({ activeTab, onNavigate }) => {
                 initial={false}
                 animate={{
                   y: isActive ? -4 : 0,
-                  color: isActive ? '#34d399' : '#64748b',
+                  color: isActive ? 'var(--color-brand-accent)' : '#64748b',
                 }}
                 className={cn(
                   "p-2.5 rounded-2xl transition-all duration-300 relative",
-                  isActive ? "bg-brand-neon/10 shadow-[0_0_20px_rgba(52,211,153,0.1)]" : ""
+                  isActive ? "bg-brand-accent/10" : ""
                 )}
               >
                 <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
@@ -47,7 +47,7 @@ export const TabNavigation = ({ activeTab, onNavigate }) => {
               
               <span className={cn(
                 "text-[9px] font-black uppercase tracking-[0.2em] mt-1.5 transition-all duration-300",
-                isActive ? "text-brand-neon opacity-100" : "text-slate-500 opacity-60"
+                isActive ? "text-brand-accent opacity-100" : "text-slate-500 opacity-60"
               )}>
                 {tab.label}
               </span>
@@ -56,7 +56,7 @@ export const TabNavigation = ({ activeTab, onNavigate }) => {
                 <motion.div
                   layoutId="activeTabGlow"
                   initial={false}
-                  className="absolute -bottom-3 inset-x-0 h-1 rounded-full bg-brand-neon neon-shadow shadow-brand-neon/40 z-10 mx-auto w-10"
+                  className="absolute -bottom-3 inset-x-0 h-1 rounded-full bg-brand-accent neon-shadow shadow-brand-accent/40 z-10 mx-auto w-10"
                   transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                 />
               )}

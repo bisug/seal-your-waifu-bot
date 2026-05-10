@@ -91,3 +91,30 @@ class QuestModel(BaseModel):
 class QuestsResponse(BaseModel):
     daily: List[QuestModel]
     weekly: List[QuestModel]
+
+class TradeOffer(BaseModel):
+    id: str
+    sender_id: int
+    sender_name: str
+    receiver_id: int
+    receiver_name: str
+    sender_char: CharacterModel
+    receiver_char: CharacterModel
+    status: str # 'pending', 'accepted', 'rejected'
+
+class MarriageModel(BaseModel):
+    partner_id: int
+    partner_name: str
+    partner_avatar: Optional[str] = None
+    married_at: str
+
+class ReferralModel(BaseModel):
+    referred_id: int
+    referred_name: str
+    rewarded: bool
+
+class BattleStatsModel(BaseModel):
+    total_battles: int = 0
+    wins: int = 0
+    losses: int = 0
+    win_rate: float = 0.0

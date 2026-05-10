@@ -35,7 +35,7 @@ function subscribeToRefresh(endpoint, options, retries) {
   });
 }
 
-function flushRefreshSubscribers(newToken) {
+function flushRefreshSubscribers() {
   refreshSubscribers.forEach(({ resolve, endpoint, options, retries }) => {
     resolve(apiFetch(endpoint, options, retries));
   });
@@ -85,7 +85,7 @@ export async function apiFetch(endpoint, options = {}, retries = 2) {
         const newToken = await secureInit();
         if (newToken) {
           isRefreshing = false;
-          flushRefreshSubscribers(newToken);
+          flushRefreshSubscribers();
           return apiFetch(endpoint, options, retries);
         }
         // Re-auth failed — reject all queued requests

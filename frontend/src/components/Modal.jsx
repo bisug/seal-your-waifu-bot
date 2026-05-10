@@ -24,7 +24,7 @@ export const Modal = ({ character, onClose, actions }) => {
             >
                 {/* Cinematic Ambient Glow */}
                 <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                    <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] bg-brand-neon/10 blur-[150px] rounded-full" />
+                    <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] bg-brand-accent/10 blur-[150px] rounded-full" />
                     <div className="absolute bottom-[-20%] right-[-20%] w-[80%] h-[80%] bg-brand-accent/5 blur-[150px] rounded-full" />
                 </div>
 
@@ -72,7 +72,7 @@ export const Modal = ({ character, onClose, actions }) => {
                                         {character.rarity}
                                     </p>
                                 </motion.div>
-                                <h2 className="text-[clamp(2rem,10vw,3.5rem)] font-black uppercase italic leading-[0.85] text-white tracking-tighter drop-shadow-2xl mb-4">{character.name}</h2>
+                                <h2 className="text-[clamp(2rem,10vw,3.5rem)] font-black uppercase italic leading-[0.85] text-white tracking-tighter drop-shadow-lg mb-4">{character.name}</h2>
                                 <p className="text-[clamp(0.6rem,3vw,0.8rem)] font-bold text-slate-400 uppercase tracking-[0.5em]">{character.anime}</p>
                             </div>
                         </div>
@@ -82,7 +82,7 @@ export const Modal = ({ character, onClose, actions }) => {
                             <div className="grid grid-cols-2 gap-2.5">
                                 <div className="bg-white/[0.03] border border-white/5 p-3.5 rounded-2xl">
                                     <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Status</p>
-                                    <p className={cn("text-[11px] font-black tracking-wider", character.owned ? "text-brand-neon" : "text-brand-accent")}>
+                                    <p className={cn("text-[11px] font-black tracking-wider", character.owned ? "text-brand-accent" : "text-brand-accent")}>
                                         {character.owned ? "COLLECTED" : "AVAILABLE"}
                                     </p>
                                 </div>

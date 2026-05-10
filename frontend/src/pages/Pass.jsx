@@ -1,13 +1,13 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Award, Lock, Sparkles, ChevronRight, Loader2, CheckCircle2 } from 'lucide-react';
+import { Award, Lock, Sparkles, Loader2, CheckCircle2 } from 'lucide-react';
 import { apiFetch } from '../api';
 import { useUser } from '../context/UserContext';
 import { useApi, useToast } from '../components/UI';
 
 
 export const Pass = () => {
-  const { user, refreshUser } = useUser();
+  const { refreshUser } = useUser();
   const { addToast } = useToast();
   const { data: passData, loading: passLoading, execute: fetchPassData } = useApi('/pass_data');
   const [claiming, setClaiming] = React.useState(null);
@@ -66,7 +66,7 @@ export const Pass = () => {
         </div>
         <div className="bg-brand-midnight border border-white/5 px-3 py-1.5 rounded-xl">
            <p className="text-[8px] text-slate-500 mb-0.5">MATRIX LEVEL</p>
-           <p className="text-lg font-black text-brand-neon leading-none">{userLevel}</p>
+           <p className="text-lg font-black text-brand-accent leading-none">{userLevel}</p>
         </div>
       </header>
 
@@ -91,7 +91,7 @@ export const Pass = () => {
               className="flex items-center space-x-3 group"
             >
               <div className={`relative z-10 w-12 h-12 rounded-2xl flex items-center justify-center border-2 transition-all ${
-                isReached ? 'border-brand-neon bg-brand-neon/10 text-brand-neon shadow-lg shadow-brand-neon/20' : 'border-white/10 bg-white/5 text-slate-700'
+                isReached ? 'border-brand-accent bg-brand-accent/10 text-brand-accent shadow-lg shadow-brand-accent/20' : 'border-white/10 bg-white/5 text-slate-700'
               }`}>
                 <span className="text-xs font-black">{lvl}</span>
               </div>
@@ -100,18 +100,18 @@ export const Pass = () => {
                 <div className="text-left">
                   <p className="text-[12px] tracking-tight text-white">{rewardLabel}</p>
                   <div className="flex items-center space-x-1.5 mt-0.5">
-                     <Award size={10} className={isReached ? "text-brand-neon" : "text-slate-600"} />
+                     <Award size={10} className={isReached ? "text-brand-accent" : "text-slate-600"} />
                      <span className="text-[8px] text-slate-500 font-bold uppercase">{reward.type} REWARD</span>
                   </div>
                 </div>
                 
                 {isClaimed ? (
-                  <CheckCircle2 size={18} className="text-brand-neon" />
+                  <CheckCircle2 size={18} className="text-brand-accent" />
                 ) : isReached ? (
                   <button 
                     onClick={() => handleClaim(lvl)}
                     disabled={claiming === lvl}
-                    className="bg-brand-neon text-brand-midnight text-[9px] font-black px-3 py-1.5 rounded-lg active:scale-95 transition-all"
+                    className="bg-brand-accent text-brand-midnight text-[9px] font-black px-3 py-1.5 rounded-lg active:scale-95 transition-all"
                   >
                     {claiming === lvl ? <Loader2 size={12} className="animate-spin" /> : 'CLAIM'}
                   </button>
@@ -124,7 +124,7 @@ export const Pass = () => {
         })}
       </div>
       
-      <div className="mt-12 p-6 glass-panel rounded-3xl border border-brand-neon/20 bg-brand-neon/[0.02] text-center">
+      <div className="mt-12 p-6 glass-panel rounded-3xl border border-brand-accent/20 bg-brand-accent/[0.02] text-center">
          <p className="text-[10px] text-slate-500 mb-2 uppercase tracking-widest">
            {passData.pass_type === 'elite' ? 'ELITE STATUS ACTIVE' : passData.pass_type === 'premium' ? 'PREMIUM STATUS ACTIVE' : 'UPGRADE FOR BETTER REWARDS'}
          </p>
@@ -133,7 +133,7 @@ export const Pass = () => {
            <button 
              onClick={() => handleUpgrade('premium')}
              disabled={upgrading}
-             className="w-full py-4 rounded-2xl bg-brand-neon text-brand-midnight text-[11px] font-black tracking-[0.3em] flex items-center justify-center space-x-2 active:scale-95 transition-all shadow-lg shadow-brand-neon/20"
+             className="w-full py-4 rounded-2xl bg-brand-accent text-brand-midnight text-[11px] font-black tracking-[0.3em] flex items-center justify-center space-x-2 active:scale-95 transition-all shadow-lg shadow-brand-accent/20"
            >
               {upgrading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
               <span>ACTIVATE PREMIUM (⧫ 500)</span>
@@ -148,7 +148,7 @@ export const Pass = () => {
               <span>UPGRADE TO ELITE (⧫ 1500)</span>
            </button>
          ) : (
-           <div className="w-full py-4 rounded-2xl bg-white/5 border border-white/10 text-brand-neon text-[11px] font-black tracking-[0.3em]">
+           <div className="w-full py-4 rounded-2xl bg-white/5 border border-white/10 text-brand-accent text-[11px] font-black tracking-[0.3em]">
              NEXUS OVERLORD STATUS
            </div>
          )}

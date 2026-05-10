@@ -193,7 +193,8 @@ async def get_gallery(
             "data": [{"$skip": skip}, {"$limit": limit}]
         }}
     ]
-    result = await collection.aggregate(pipeline).to_list(length=1)
+    cursor = await collection.aggregate(pipeline)
+    result = await cursor.to_list(length=1)
     total = result[0]["metadata"][0]["total"] if result and result[0].get("metadata") else 0
     items = result[0]["data"] if result else []
 
