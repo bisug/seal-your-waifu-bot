@@ -25,7 +25,7 @@ RARITY_PRICES = {
     "🔮 Limited Edition": 100,
     "🫧 Royal": 250,
     "💎 Antique": 500,
-    "🎐 Celestial": 200
+    "🎐 Celestial": 1000
 }
 # Pass Constants
 PASS_PRICES = {

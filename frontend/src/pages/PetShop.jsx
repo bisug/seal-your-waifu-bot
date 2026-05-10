@@ -47,7 +47,7 @@ export const PetShop = ({ onPetClick }) => {
         </div>
         <div className="flex items-center space-x-2 bg-brand-accent/10 border border-brand-accent/20 px-3 py-1.5 rounded-xl shadow-[0_0_15px_rgba(59,130,246,0.1)]">
           <Activity size={14} className="text-brand-accent" />
-          <span className="text-sm font-black text-brand-accent">{formatNumber(user?.stats?.zenith)}</span>
+          <span className="text-sm font-black text-brand-accent">{formatNumber(user?.stats?.zenith || 0)}</span>
         </div>
       </header>
 
@@ -77,7 +77,7 @@ export const PetShop = ({ onPetClick }) => {
                 <div className="flex-1 flex flex-col pt-1">
                   <h3 className="font-black text-white text-lg tracking-tight leading-none mb-1">{pet.name}</h3>
                   <p className="text-[9px] font-bold text-brand-accent uppercase tracking-widest mb-3 flex items-center gap-1">
-                    <Zap size={10} /> 
+                    <Activity size={10} />
                     <span>{pet.ability}</span>
                   </p>
                   

@@ -4,7 +4,7 @@ import { apiFetch } from '../api';
 import { Card, Skeleton, CardSkeleton } from '../components/UI';
 import { Search, Loader2, Users, CheckCircle2 } from 'lucide-react';
 
-export const Gallery = () => {
+export const Gallery = ({ onCharClick }) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -126,10 +126,13 @@ export const Gallery = () => {
               ref={i === items.length - 1 ? lastElementRef : null}
               className="relative"
             >
-              <Card character={char} />
+              <Card character={char} onClick={() => onCharClick(char)} />
               {char.owned && (
-                <div className="absolute top-1.5 right-1.5 bg-brand-accent text-brand-midnight rounded-full p-0.5 shadow-lg border border-brand-midnight z-10 scale-75">
-                  <CheckCircle2 size={12} strokeWidth={4} />
+                <div className="absolute inset-0 bg-brand-midnight/40 backdrop-blur-[1px] flex items-center justify-center rounded-[1.25rem] z-30 pointer-events-none">
+                  <div className="bg-brand-accent/90 text-white px-2 py-0.5 rounded-full text-[7px] font-black uppercase tracking-widest shadow-lg flex items-center gap-1 border border-white/20">
+                    <CheckCircle2 size={8} strokeWidth={4} />
+                    <span>Collected</span>
+                  </div>
                 </div>
               )}
             </div>

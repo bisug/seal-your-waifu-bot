@@ -39,7 +39,12 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
     };
 
     const handleRecycle = async () => {
-        if (!window.confirm(`Recycle ${selectedChar.name} for Zenith?`)) return;
+        const reward = {
+            "⚪ Common": 10, "🟢 Medium": 25, "🟠 Rare": 50, "🟡 Legendary": 120, "💠 Cosmic": 250,
+            "💮 Exclusive": 500, "🔮 Limited Edition": 750, "🫧 Royal": 1500, "💎 Antique": 2500, "🎐 Celestial": 5000
+        }[selectedChar.rarity] || 10;
+
+        if (!window.confirm(`Recycle ${selectedChar.name} for ${reward} Zenith?`)) return;
         setSellStage('selling');
         try {
             const res = await apiFetch('/recycle', {

@@ -13,7 +13,14 @@ router = APIRouter()
 
 @router.get("/trade/offers", response_model=List[TradeOffer])
 async def get_trade_offers(user_id: int = Depends(get_current_user)):
-    cursor = sessions_collection.find({"type": "trade_offer", "$or": [{"sender_id": user_id}, {"receiver_id": user_id}]})
+    query = {
+        "type": "trade_offer",
+        "$or": [
+            {"sender_id": {"$in": [user_id, str(user_id)]}},
+            {"receiver_id": {"$in": [user_id, str(user_id)]}}
+        ]
+    }
+    cursor = sessions_collection.find(query)
     offers = await cursor.to_list(length=100)
     return [TradeOffer(**o) for o in offers]
 
@@ -56,14 +63,14 @@ async def create_trade_offer(
 @router.post("/trade/respond/{trade_id}")
 async def respond_to_trade(
     trade_id: str,
-    action: str = Body(..., pattern="^(accept|reject)$"),
+    action: str = Body(..., embed=True, pattern="^(accept|reject)$"),
     user_id: int = Depends(get_current_user)
 ):
     offer = await sessions_collection.find_one({"id": trade_id, "type": "trade_offer"})
     if not offer:
         raise HTTPException(status_code=404, detail="Trade offer not found")
 
-    if offer["receiver_id"] != user_id:
+    if normalize_user_id(offer["receiver_id"]) != user_id:
         raise HTTPException(status_code=403, detail="Not authorized")
 
     if action == "reject":
