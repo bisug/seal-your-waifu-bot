@@ -75,7 +75,7 @@ export const Shop = ({ onCharClick }) => {
 
               {!char.owned && (
                 <button
-                  onClick={() => handleBuy(char)}
+                  onClick={() => onCharClick(char)}
                   disabled={!!buyingId}
                   className="w-full py-3.5 rounded-2xl bg-white text-brand-midnight font-black uppercase text-[10px] tracking-[0.2em] shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2"
                 >

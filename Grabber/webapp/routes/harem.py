@@ -152,7 +152,7 @@ async def recycle_characters(
     
     # OCC: Ensure user hasn't modified harem since load
     current_version = user.get("version", 0)
-    q = {"id": uid_int, "version": current_version}
+    q = {**get_user_id_query(uid_int), "version": current_version}
     
     res = await user_collection.update_one(
         q,
