@@ -55,25 +55,25 @@ export const Modal = ({ character, onClose, actions }) => {
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-brand-midnight via-brand-midnight/40 to-transparent opacity-100" />
                             
-                            <div className="absolute bottom-10 left-8 right-8">
+                            <div className="absolute bottom-8 left-8 right-8">
                                 <motion.div 
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     className={cn(
-                                        "backdrop-blur-md border px-2 py-0.5 rounded-lg w-fit mb-1.5",
+                                        "backdrop-blur-md border px-1.5 py-0.5 rounded-md w-fit mb-1",
                                         RARITY_VISUALS[character.rarity]?.border || "border-white/10",
                                         RARITY_VISUALS[character.rarity]?.bg || "bg-white/10"
                                     )}
                                 >
                                     <p className={cn(
-                                        "text-[7px] font-black uppercase tracking-[0.3em]",
+                                        "text-[6px] font-black uppercase tracking-[0.2em]",
                                         RARITY_VISUALS[character.rarity]?.text || "text-white"
                                     )}>
                                         {character.rarity}
                                     </p>
                                 </motion.div>
-                                <h2 className="text-[clamp(2rem,10vw,3.5rem)] font-black uppercase italic leading-[0.85] text-white tracking-tighter drop-shadow-lg mb-4">{character.name}</h2>
-                                <p className="text-[clamp(0.6rem,3vw,0.8rem)] font-bold text-slate-400 uppercase tracking-[0.5em]">{character.anime}</p>
+                                <h2 className="text-[clamp(1.75rem,8vw,3rem)] font-black uppercase italic leading-[0.85] text-white tracking-tighter drop-shadow-lg mb-3">{character.name}</h2>
+                                <p className="text-[clamp(0.55rem,2.5vw,0.7rem)] font-bold text-slate-400 uppercase tracking-[0.4em]">{character.anime}</p>
                             </div>
                         </div>
 

@@ -17,8 +17,23 @@ export const PetShop = ({ onPetClick }) => {
 
   if (loading && pets.length === 0) {
     return (
-      <div className="pb-32 pt-6 px-4 flex justify-center">
-        <Loader2 className="animate-spin text-brand-accent" />
+      <div className="pb-32 pt-20 px-4 flex flex-col items-center justify-center">
+        <Loader2 className="animate-spin text-brand-accent mb-4" />
+        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Syncing Pet Market...</p>
+      </div>
+    );
+  }
+
+  if (!loading && pets.length === 0) {
+    return (
+      <div className="pb-32 pt-20 px-4 flex flex-col items-center justify-center text-center">
+        <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-4 border border-white/5">
+          <Activity className="text-slate-700" size={32} />
+        </div>
+        <h3 className="text-white font-black uppercase tracking-wider mb-2">Market Closed</h3>
+        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest max-w-[200px]">
+          The pet shop is currently out of stock or undergoing maintenance.
+        </p>
       </div>
     );
   }
