@@ -6,18 +6,14 @@ import { TabNavigation } from './components/TabNavigation';
 import { IntroLoading } from './components/IntroLoading';
 import { Profile } from './pages/Profile';
 import { NotFound } from './pages/NotFound';
-import { Modal, ToastProvider, useToast } from './components/UI';
-import { apiFetch } from './api';
-import { formatNumber } from './utils';
+import { ToastProvider } from './components/UI';
 import { CharActionModal } from './components/CharActionModal';
 import { PetActionModal } from './components/PetActionModal';
 
-// Lazy load pages for extreme performance
 const Market = lazy(() => import('./pages/Market').then(m => ({ default: m.Market })));
 const Nexus = lazy(() => import('./pages/Nexus').then(m => ({ default: m.Nexus })));
 const Hatchery = lazy(() => import('./pages/Hatchery').then(m => ({ default: m.Hatchery })));
 
-// Cinematic Error Boundary for high-deployment stability
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -45,7 +41,7 @@ class ErrorBoundary extends React.Component {
           
           <button 
             onClick={() => window.location.reload()}
-            className="px-8 py-4 bg-brand-accent text-white font-black rounded-2xl uppercase tracking-widest text-[11px] neon-shadow shadow-brand-accent/50 active:scale-95 transition-transform"
+            className="px-8 py-4 bg-brand-accent text-white font-black rounded-2xl uppercase tracking-widest text-[11px] shadow-lg shadow-brand-accent/50 active:scale-95 transition-transform"
           >
             RECONNECT
           </button>
@@ -59,9 +55,7 @@ class ErrorBoundary extends React.Component {
 
 const AppContent = () => {
   const { user, loading, error } = useUser();
-  const { addToast } = useToast();
   
-  // Intelligence: Read the start_param for deep-linking (e.g., Shop/Gallery/Profile)
   const getInitialTab = () => {
     const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
     if (startParam === 'shop' || startParam === 'market' || startParam === 'gallery') return 'market';
@@ -72,27 +66,14 @@ const AppContent = () => {
   const [activeTab, setActiveTab] = useState(getInitialTab());
   const [selectedChar, setSelectedChar] = useState(null);
   const [selectedPet, setSelectedPet] = useState(null);
-  const [purchaseStage, setPurchaseStage] = useState('idle'); // 'idle', 'confirm', 'buying'
 
-  // FIX: Stable ref for the BackButton handler to prevent accumulating listeners.
-  // Telegram's BackButton.onClick is additive (like addEventListener), so we must
-  // offClick the previous handler before registering a new one each render cycle.
   const backHandlerRef = useRef(null);
 
-  // Reset stage when modal closes or changes
-  useEffect(() => {
-    if (!selectedChar) setPurchaseStage('idle');
-  }, [selectedChar]);
-
-  // Native Telegram Integration: Back Button & Haptics
   useEffect(() => {
     const tg = window.Telegram?.WebApp;
     if (!tg) return;
 
     try {
-      // FIX: Always remove the previous handler before adding a new one.
-      // BackButton.onClick is additive — not calling offClick first causes
-      // the handler to fire N times (once per render that registered it).
       if (backHandlerRef.current) {
         tg.BackButton?.offClick?.(backHandlerRef.current);
       }
@@ -110,19 +91,15 @@ const AppContent = () => {
         tg.BackButton?.hide?.();
       }
 
-      // Theme Sync: Only call if method exists (not all Telegram versions)
       tg.setHeaderColor?.('#0A0A0B');
       tg.setBackgroundColor?.('#0A0A0B');
       tg.expand?.();
-    } catch (e) {
-      // Silently ignore Telegram API errors on older clients
-      console.warn('Telegram API error (non-critical):', e.message);
+       } catch {
+      console.warn('Telegram API error (non-critical):', );
     }
 
     const handleMarketPets = () => {
       setActiveTab('market');
-      // We can also trigger a sub-tab change if needed, but 'market' usually remembers last sub-tab
-      // or we can use a timeout to let the page load then trigger it.
     };
 
     window.addEventListener('nav-market-pets', handleMarketPets);
@@ -133,7 +110,7 @@ const AppContent = () => {
           tg?.BackButton?.offClick?.(backHandlerRef.current);
         }
         window.removeEventListener('nav-market-pets', handleMarketPets);
-      } catch (e) {
+         } catch {
         // ignore
       }
     };
@@ -141,7 +118,6 @@ const AppContent = () => {
 
   const handleNavigate = useCallback((tab) => {
     const tg = window.Telegram?.WebApp;
-    // Context-Aware Haptics: Profile & Shop get more 'Weight'
     if (tab === 'profile' || tab === 'market') {
       tg?.HapticFeedback?.impactOccurred('medium');
     } else {
@@ -155,7 +131,6 @@ const AppContent = () => {
   if (error || (!loading && !user)) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center px-10 text-center min-h-svh bg-brand-midnight relative overflow-hidden bg-mesh">
-        {/* Cinematic Glitch Background for Error */}
         <div className="absolute inset-0 bg-brand-accent/5 opacity-10 animate-pulse" />
         
         <div className="relative z-10">
@@ -184,8 +159,6 @@ const AppContent = () => {
             <button 
               onClick={() => { 
                 if (window.confirm("Are you sure you want to perform a Deep Reset? This will wipe your local session data.")) {
-                  // FIX: Auth token lives in sessionStorage, not localStorage.
-                  // Clear both so the reset actually removes the stale session.
                   sessionStorage.clear();
                   localStorage.clear(); 
                   window.location.reload(); 
@@ -214,7 +187,7 @@ const AppContent = () => {
         >
           <Suspense fallback={
             <div className="flex items-center justify-center h-full bg-brand-midnight bg-mesh">
-              <Loader2 size={24} className="animate-spin text-brand-neon/20" />
+              <Loader2 size={24} className="animate-spin text-brand-accent/20" />
             </div>
           }>
             {activeTab === 'profile' && <Profile onCharClick={setSelectedChar} />}
