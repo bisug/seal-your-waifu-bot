@@ -31,6 +31,7 @@ export const Pass = () => {
   };
 
   const handleUpgrade = async (tier) => {
+    if (!window.confirm(`Upgrade to ${tier.toUpperCase()} Protocol for ${tier === 'premium' ? '500' : '1500'} Zenith?`)) return;
     setUpgrading(true);
     try {
       const res = await apiFetch(`/shop/upgrade_pass/${tier}`, { method: 'POST' });

@@ -63,24 +63,24 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                     {purchaseStage === 'idle' ? (
                         <button 
                             onClick={() => setPurchaseStage('confirm')}
-                            className="w-full py-5 rounded-[2rem] bg-brand-accent text-white font-black uppercase text-[11px] tracking-[0.3em] shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3"
+                            className="w-full py-4 rounded-3xl bg-brand-accent text-white font-black uppercase text-[10px] tracking-[0.2em] shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2"
                         >
-                            BUY FOR {selectedChar.zenith_price} <Zap size={16} />
+                            BUY FOR {selectedChar.zenith_price} <Zap size={14} />
                         </button>
                     ) : (
-                        <div className="p-1 glass-panel rounded-[2rem] border border-brand-accent/20 flex space-x-1">
+                        <div className="p-1 glass-panel rounded-3xl border border-brand-accent/20 flex space-x-1">
                             <button 
                                 onClick={() => setPurchaseStage('idle')}
-                                className="flex-1 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500"
+                                className="flex-1 py-3 text-[9px] font-black uppercase tracking-widest text-slate-500"
                             >
                                 Cancel
                             </button>
                             <button 
                                 onClick={handleBuy}
                                 disabled={purchaseStage === 'buying'}
-                                className="flex-[2] py-4 bg-brand-accent text-white rounded-[1.8rem] text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2"
+                                className="flex-[2] py-3 bg-brand-accent text-white rounded-[1.25rem] text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2"
                             >
-                                {purchaseStage === 'buying' ? <Loader2 size={16} className="animate-spin" /> : 'Confirm Pay'}
+                                {purchaseStage === 'buying' ? <Loader2 size={14} className="animate-spin" /> : 'Confirm Pay'}
                             </button>
                         </div>
                     )}
