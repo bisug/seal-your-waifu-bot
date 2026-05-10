@@ -59,16 +59,18 @@ async def get_harem(
         })
 
     RARITY_SORT_ORDER = {
-        "⚪ Common": 0,
-        "🟢 Medium": 1,
-        "🟠 Rare": 2,
-        "🟡 Legendary": 3,
-        "💠 Cosmic": 4,
+        "⚪ Common": 10,
+        "🟢 Medium": 9,
+        "🟠 Rare": 8,
+        "🟡 Legendary": 7,
+        "💠 Cosmic": 6,
         "💮 Exclusive": 5,
-        "🔮 Limited Edition": 6,
-        "🫧 Royal": 7,
-        "💎 Antique": 8,
-        "🎐 Celestial": 9,
+        "🔮 Limited Edition": 4,
+        "🫧 Royal": 3,
+        "💎 Antique": 2,
+        "🎐 Celestial": 1,
+        "🎞️ AMV": 0,
+        "🪽 Prestige": -1
     }
 
     pipeline.extend([

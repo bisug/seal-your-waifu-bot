@@ -26,13 +26,18 @@ async def get_daily_shop_characters():
         # Ensure we return in specific order if needed, but random is fine for daily
         characters = [Character(**c) for c in chars_raw]
         return characters[:5]
-    # 2. If it's a new day, pick 5 new characters
-    cursor = collection.find({"rarity": SHOP_RARITY})
-    all_eligible = await cursor.to_list(None)
-    if not all_eligible:
+    # 2. If it's a new day, pick 5 new characters using high-performance $sample
+    pipeline = [
+        {"$match": {"rarity": SHOP_RARITY}},
+        {"$sample": {"size": 5}}
+    ]
+    cursor = collection.aggregate(pipeline)
+    selected_raw = await cursor.to_list(length=5)
+
+    if not selected_raw:
         LOGGER.warning(f"No characters found for SHOP_RARITY: {SHOP_RARITY}")
         return []
-    selected_raw = random.sample(all_eligible, min(len(all_eligible), 5))
+
     selected_ids = [c["id"] for c in selected_raw]
     # 3. Save for the day (clear old first)
     await daily_shop_collection.delete_many({})
