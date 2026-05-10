@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { formatNumber } from '../utils';
 
-export const ProgressBar = ({ current, total, color = "bg-brand-neon", label }) => {
+export const ProgressBar = ({ current, total, color = "bg-brand-accent", label }) => {
   const percentage = total > 0 ? Math.min(100, Math.max(0, (current / total) * 100)) : 0;
 
   return (

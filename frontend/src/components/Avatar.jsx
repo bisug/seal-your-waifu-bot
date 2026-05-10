@@ -1,39 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { User, Activity } from 'lucide-react';
+import { User } from 'lucide-react';
 import { cn } from '../utils';
 
-export const Avatar = ({ src, alt, className, size = 'default', fallbackIcon: Fallback = User }) => {
+export const Avatar = ({ src, alt = "Avatar", className = "" }) => {
   const [error, setError] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    setError(false);
-    setLoaded(false);
+    // Wrap in microtask to avoid cascading render warning
+    Promise.resolve().then(() => {
+      setError(false);
+      setLoaded(false);
+    });
   }, [src]);
 
   return (
-    <div className={cn('relative overflow-hidden bg-slate-900 border border-white/10 flex items-center justify-center', className)}>
+    <div className={cn("relative overflow-hidden bg-white/5 flex items-center justify-center shrink-0", className)}>
       {!error && src ? (
-        <img
-          src={src}
-          alt={alt || "Avatar"}
-          onLoad={() => setLoaded(true)}
-          onError={() => setError(true)}
-          className={cn(
-            'w-full h-full object-cover transition-opacity duration-300',
-            loaded ? 'opacity-100' : 'opacity-0'
+        <>
+          <img
+            src={src}
+            alt={alt}
+            onLoad={() => setLoaded(true)}
+            onError={() => setError(true)}
+            className={cn(
+              "w-full h-full object-cover transition-opacity duration-300",
+              loaded ? "opacity-100" : "opacity-0"
+            )}
+          />
+          {!loaded && (
+            <div className="absolute inset-0 animate-pulse bg-white/10" />
           )}
-        />
-      ) : null}
-      
-      {error ? (
-        <div className="absolute inset-0 bg-brand-midnight/60 flex items-center justify-center">
-          <User size={size === 'large' ? 24 : 14} className="text-slate-600" />
-        </div>
-      ) : !loaded && (
-        <div className="absolute inset-0 bg-brand-midnight/60 flex flex-col items-center justify-center backdrop-blur-sm animate-pulse">
-          <Activity size={size === 'large' ? 24 : 14} className="text-slate-600/80 mb-0.5" />
-        </div>
+        </>
+      ) : (
+        <User className="text-white/20 w-1/2 h-1/2" />
       )}
     </div>
   );
