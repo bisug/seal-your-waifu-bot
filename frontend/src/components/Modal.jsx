@@ -82,7 +82,7 @@ export const Modal = ({ character, onClose, actions }) => {
                             <div className="grid grid-cols-2 gap-2.5">
                                 <div className="bg-white/[0.03] border border-white/5 p-3.5 rounded-2xl">
                                     <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Status</p>
-                                    <p className={cn("text-[11px] font-black tracking-wider", character.owned ? "text-brand-accent" : "text-brand-accent")}>
+                                    <p className={cn("text-[11px] font-black tracking-wider", character.owned ? "text-brand-accent" : "text-slate-400")}>
                                         {character.owned ? "COLLECTED" : "AVAILABLE"}
                                     </p>
                                 </div>
