@@ -53,12 +53,12 @@ export const Card = memo(({ character, onClick }) => {
             
             {/* Rarity Badge - Top Left */}
             <div className={cn(
-                "absolute top-2 left-2 px-1.5 py-0.5 rounded-full border backdrop-blur-md z-20 flex items-center space-x-1 shadow-lg",
+                "absolute top-1.5 left-1.5 px-1 py-0.5 rounded-full border backdrop-blur-md z-20 flex items-center space-x-1 shadow-lg",
                 visuals.pill || 'bg-slate-700/40',
                 visuals.border
             )}>
-                <div className={cn("w-1 h-1 rounded-full", isSpecial ? "animate-pulse" : "", visuals.text.replace('text-', 'bg-'))} />
-                <span className={cn("text-[7px] font-black uppercase tracking-widest", visuals.text)}>
+                <div className={cn("w-0.5 h-0.5 rounded-full", isSpecial ? "animate-pulse" : "", visuals.text.replace('text-', 'bg-'))} />
+                <span className={cn("text-[6px] font-black uppercase tracking-widest", visuals.text)}>
                     {character.rarity}
                 </span>
             </div>
