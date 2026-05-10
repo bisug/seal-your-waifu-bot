@@ -152,7 +152,7 @@ const AppContent = () => {
           <div className="space-y-4">
             <button 
               onClick={() => window.location.reload()}
-              className="w-full px-10 py-5 rounded-2xl bg-brand-accent text-brand-midnight font-black uppercase text-[10px] tracking-[0.2em] shadow-xl shadow-brand-accent/20 transition-all active:scale-95 flex items-center justify-center gap-3"
+              className="w-full px-10 py-4 rounded-2xl bg-brand-accent text-brand-midnight font-black uppercase text-[10px] tracking-[0.15em] shadow-xl shadow-brand-accent/20 transition-all active:scale-95 flex items-center justify-center gap-2"
             >
               RETRY
             </button>

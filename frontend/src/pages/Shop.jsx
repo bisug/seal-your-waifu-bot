@@ -7,31 +7,8 @@ import { formatNumber } from '../utils';
 import { apiFetch } from '../api';
 
 export const Shop = ({ onCharClick }) => {
-  const { refreshUser } = useUser();
-  const { addToast } = useToast();
-  const [buyingId, setBuyingIndex] = useState(null);
-  const [hatchingResult, setHatchingResult] = useState(null);
-
-  const { data: chars, loading, execute: fetchChars } = useApi('/shop/characters');
-  const { data: hub, execute: fetchHub } = useApi('/shop/hub');
-
-  const handleBuy = async (char) => {
-    if (buyingId) return;
-    setBuyingIndex(char.id);
-    try {
-      const res = await apiFetch(`/shop/buy/character/${char.id}`, { method: 'POST' });
-      addToast(`Acquired ${res.char_name}!`, 'success');
-      window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
-      await fetchChars();
-      await fetchHub();
-      await refreshUser();
-    } catch (err) {
-      addToast(err.message, 'error');
-      window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('error');
-    } finally {
-      setBuyingIndex(null);
-    }
-  };
+  const { data: chars, loading } = useApi('/shop/characters');
+  const { data: hub } = useApi('/shop/hub');
 
   return (
     <div className="pb-32 pt-6 px-4">
@@ -76,14 +53,9 @@ export const Shop = ({ onCharClick }) => {
               {!char.owned && (
                 <button
                   onClick={() => onCharClick(char)}
-                  disabled={!!buyingId}
                   className="w-full py-3.5 rounded-2xl bg-white text-brand-midnight font-black uppercase text-[10px] tracking-[0.2em] shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2"
                 >
-                  {buyingId === char.id ? (
-                    <Loader2 size={14} className="animate-spin" />
-                  ) : (
-                    <>BUY {char.zenith_price} <Activity size={12} /></>
-                  )}
+                   BUY {char.zenith_price} <Activity size={12} />
                 </button>
               )}
             </motion.div>
@@ -91,32 +63,6 @@ export const Shop = ({ onCharClick }) => {
         </div>
       )}
 
-      <AnimatePresence>
-        {hatchingResult && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-brand-midnight/95 backdrop-blur-3xl">
-             <div className="text-center max-w-xs w-full">
-                <div className="w-32 h-32 mx-auto bg-brand-accent/10 rounded-full flex items-center justify-center border-4 border-brand-accent/30 shadow-[0_0_30px_rgba(59,130,246,0.2)] mb-8">
-                    <PackageOpen size={48} className="text-brand-accent" />
-                </div>
-                <h2 className="text-brand-accent font-black text-xl uppercase tracking-[0.5em] animate-pulse mb-8">Unboxing...</h2>
-                <div className="aspect-[3/4] rounded-3xl overflow-hidden border-4 border-brand-accent shadow-[0_0_50px_rgba(59,130,246,0.3)] mb-8 relative">
-                   <img src={hatchingResult.img_url} className="w-full h-full object-cover" />
-                   <div className="absolute inset-0 bg-gradient-to-t from-brand-midnight to-transparent" />
-                   <div className="absolute bottom-4 inset-x-0">
-                     <p className="text-brand-accent font-black uppercase tracking-widest mb-2 italic">! SEALED !</p>
-                     <h3 className="text-white font-black uppercase text-lg">{hatchingResult.name}</h3>
-                   </div>
-                </div>
-                <button
-                  onClick={() => setHatchingResult(null)}
-                  className="w-full py-5 bg-white text-brand-midnight rounded-2xl font-black uppercase tracking-[0.3em]"
-                >
-                  Confirm
-                </button>
-             </div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };

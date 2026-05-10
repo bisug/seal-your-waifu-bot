@@ -57,15 +57,15 @@ async def buy_character_api(char_id: str, user_id: int = Depends(get_current_use
     if not char_raw:
         raise HTTPException(status_code=404, detail="Character not found")
 
-        price = RARITY_PRICES.get(char_raw.get("rarity"), 5)
-        if user_raw.get("zenith", 0) < price:
-            LOGGER.info(f"Shop Purchase Error: User {user_id} has insufficient Zenith ({user_raw.get('zenith', 0)}) for price {price}")
-            raise HTTPException(status_code=400, detail=f"Insufficient Zenith (Need {price})")
-            
-        owned_ids = [c["id"] for c in user_raw.get("characters", []) if isinstance(c, dict) and "id" in c]
-        if char_id in owned_ids:
-            LOGGER.info(f"Shop Purchase Error: User {user_id} already owns character {char_id}")
-            raise HTTPException(status_code=400, detail="You already own this character")
+    price = RARITY_PRICES.get(char_raw.get("rarity"), 5)
+    if user_raw.get("zenith", 0) < price:
+        LOGGER.info(f"Shop Purchase Error: User {user_id} has insufficient Zenith ({user_raw.get('zenith', 0)}) for price {price}")
+        raise HTTPException(status_code=400, detail=f"Insufficient Zenith (Need {price})")
+
+    owned_ids = [c["id"] for c in user_raw.get("characters", []) if isinstance(c, dict) and "id" in c]
+    if char_id in owned_ids:
+        LOGGER.info(f"Shop Purchase Error: User {user_id} already owns character {char_id}")
+        raise HTTPException(status_code=400, detail="You already own this character")
 
     stock_update = await collection.update_one(
         {"id": char_id, "sold_count": {"$lt": SHOP_LIMIT}},
