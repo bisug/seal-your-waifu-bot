@@ -40,6 +40,18 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
                 return await message_obj.answer(text, show_alert=True)
             return await message_obj.reply_text(text, parse_mode=enums.ParseMode.HTML)
         all_chars = user['characters']
+        
+        harem_mode = user.get('harem_mode', 'all')
+        if harem_mode != 'all':
+            all_chars = [c for c in all_chars if c.get('rarity') == harem_mode]
+            
+        if not all_chars:
+            mode_text = f" of rarity <b>{harem_mode}</b>" if harem_mode != 'all' else ""
+            text = f"❌ <b>Harem is Empty{mode_text}</b>\n\nYour collection exists only in your dreams. Go hunt some characters!"
+            if isinstance(message_obj, types.CallbackQuery):
+                return await message_obj.answer(text, show_alert=True)
+            return await message_obj.reply_text(text, parse_mode=enums.ParseMode.HTML)
+
         char_counts = Counter(c.get('id') for c in all_chars)
         # Performance: Group characters BEFORE sorting for large collection speedup
         unique_chars_map = {}
@@ -61,9 +73,10 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
         total_chars_count = user.get('char_count', len(all_chars))
         harem_text = (
             f"<b>{escape(first_name)}'s Collection</b>\n"
+            f"<b>Mode:</b> <code>{harem_mode}</code>\n"
             f"<b>Rank:</b> <code>#{rank}</code> / {total_ranked}\n"
             f"<b>Level:</b> <code>{progress['level']}</code>\n"
-            f"<b>Stats:</b> <code>{len(unique_chars)}</code> Unique | <code>{total_chars_count}</code> Total\n"
+            f"<b>Stats:</b> <code>{len(unique_chars)}</code> Unique | <code>{len(all_chars)}</code> Total\n"
             "━━━━━━━━━━━━━━━━━━━━━\n\n"
         )
         start_idx = page * per_page
