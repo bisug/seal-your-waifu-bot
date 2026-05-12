@@ -343,7 +343,8 @@ class SealClient(Client):
                 "webapp": "Open Mini-App",
                 "check": "Check user status",
                 "messagecount": "Your chat activity",
-                "seal": "Use a seal item"
+                "seal": "Use a seal item",
+                "hmode": "Change harem display mode"
             }
 
             target_cmds = GAMEBOT_CMDS if self.name == "GameBot" else MAINBOT_CMDS
