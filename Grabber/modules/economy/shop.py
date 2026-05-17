@@ -22,7 +22,7 @@ async def get_daily_shop_characters():
     if shop_doc:
         char_ids = shop_doc.get("character_ids", [])
         cursor = collection.find({"id": {"$in": char_ids}})
-        chars_raw = await cursor.to_list(None)
+        chars_raw = await cursor.to_list(length=None)
         # Ensure we return in specific order if needed, but random is fine for daily
         characters = [Character(**c) for c in chars_raw]
         return characters[:5]
@@ -31,7 +31,7 @@ async def get_daily_shop_characters():
         {"$match": {"rarity": SHOP_RARITY}},
         {"$sample": {"size": 5}}
     ]
-    cursor = collection.aggregate(pipeline)
+    cursor = await collection.aggregate(pipeline)
     selected_raw = await cursor.to_list(length=5)
 
     if not selected_raw:
