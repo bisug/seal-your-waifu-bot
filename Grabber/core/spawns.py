@@ -8,19 +8,12 @@ from pyrogram import enums, errors, filters, types
 from pyrogram.enums import ParseMode
 
 from Grabber import LOGGER, app, config
+from Grabber.core.cache import rget, rset
 from Grabber.core.utils import html_escape
 from Grabber.core.waifu import get_or_load_characters
 from Grabber.database import message_counts_collection
 from Grabber.database import r as _redis
 from Grabber.database import spawns_collection, user_totals_collection
-async def _rget(key: str) -> Optional[str]:
-    if not _redis: return None
-    try: return await _redis.get(key)
-    except Exception: return None
-async def _rset(key: str, val: str, ex: int = None):
-    if not _redis: return
-    try: await _redis.set(key, val, ex=ex)
-    except Exception: pass
 async def get_chat_state(chat_id: int) -> Dict[str, Any]:
     """Retrieve chat state from Redis with MongoDB fallback."""
     key = f"spawn:state:{chat_id}"
@@ -127,12 +120,12 @@ async def clear_active_spawn(chat_id: int, user_id: int) -> bool:
     return False
 async def get_message_count(chat_id: int) -> int:
     key = f"msg_count:{chat_id}"
-    val = await _rget(key)
+    val = await rget(key)
     if val is not None: return int(val)
     # Fallback/Init from Mongo
     doc = await message_counts_collection.find_one({"chat_id": str(chat_id)})
     count = doc["count"] if doc else 0
-    await _rset(key, str(count), ex=86400) # 24h TTL for memory safety
+    await rset(key, str(count), ttl=86400) # 24h TTL for memory safety
     return count
 async def increment_message_count(chat_id: int, user_id: int) -> int:
     """Increments the message count for a chat and a specific user."""
@@ -163,7 +156,7 @@ async def increment_message_count(chat_id: int, user_id: int) -> int:
     # Fallback to DB-backed manual tracking
     initial_count = await get_message_count(chat_id)
     count = initial_count + 1
-    await _rset(key, str(count), ex=86400)
+    await rset(key, str(count), ttl=86400)
     # Update both total and user-specific counts in MongoDB
     await message_counts_collection.update_one(
         {"chat_id": str(chat_id)},

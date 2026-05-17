@@ -204,10 +204,12 @@ _rebuild_lock = asyncio.Lock()
 async def rebuild_leaderboard(user_collection, metric: str = "level"):
     """
     Cold-rebuild a specific Redis ZSET from MongoDB with memory safety.
+    Uses an atomic Rename-Swap pattern to prevent empty leaderboard states.
     """
     async with _rebuild_lock:
         if not _redis: return
         key = _zset_key(metric)
+        temp_key = f"temp:{key}"
         # Metric mapping to Mongo fields
         mongo_fields = {
             "level": "xp",
@@ -219,10 +221,10 @@ async def rebuild_leaderboard(user_collection, metric: str = "level"):
         field = mongo_fields.get(metric, "xp")
         try:
             LOGGER.info(f"Starting safe {metric} ZSET rebuild from MongoDB...")
+            # Clean up any leftover temp key first
+            await _redis.delete(temp_key)
             # Get Top 1,000 users by specific field descending
             cursor = user_collection.find({field: {"$gt": 0}}, {"id": 1, field: 1}).sort(field, -1).limit(1000)
-            # Clear the old set first
-            await _redis.delete(key)
             batch = {}
             count = 0
             async for user in cursor:
@@ -232,13 +234,27 @@ async def rebuild_leaderboard(user_collection, metric: str = "level"):
                     batch[uid] = score
                     count += 1
                 if len(batch) >= 100:
-                    await _redis.zadd(key, batch)
+                    await _redis.zadd(temp_key, batch)
                     batch = {}
             if batch:
-                await _redis.zadd(key, batch)
+                await _redis.zadd(temp_key, batch)
+            
+            # If we populated entries, atomically rename temp_key to key.
+            if count > 0:
+                await _redis.rename(temp_key, key)
+            else:
+                # If no users had scores, clear the leaderboard
+                await _redis.delete(key)
+                await _redis.delete(temp_key)
+                
             LOGGER.info(f"{metric} ZSET rebuild complete. Synchronized {count} top users.")
         except Exception as e:
             LOGGER.error(f"Failed to rebuild {metric} ZSET: {e}")
+            # Failsafe cleanup of temp key
+            try:
+                await _redis.delete(temp_key)
+            except Exception:
+                pass
 async def sync_user_to_redis(user_id: int, user_doc: dict = None):
     """
     Synchronizes a user's critical metrics (Level, Harem, Balance, Zenith, Guesses) 
@@ -271,9 +287,9 @@ async def refresh_gamebot_groups_cache(gamebot_enabled_groups_collection) -> set
     if _redis and ids:
         try:
             pipe = _redis.pipeline()
-            await pipe.delete(_GAMEBOT_KEY)
-            await pipe.sadd(_GAMEBOT_KEY, *ids)
-            await pipe.expire(_GAMEBOT_KEY, TTL_GAMEBOT)
+            pipe.delete(_GAMEBOT_KEY)
+            pipe.sadd(_GAMEBOT_KEY, *ids)
+            pipe.expire(_GAMEBOT_KEY, TTL_GAMEBOT)
             await pipe.execute()
         except Exception as e:
             LOGGER.warning(f"Redis gamebot set error: {e}")
@@ -282,7 +298,7 @@ async def is_gamebot_enabled(chat_id: int, gamebot_enabled_groups_collection) ->
     """Check if a chat has gamebot enabled. Uses Redis set, falls back to MongoDB."""
     if _redis:
         try:
-            exists = await _redis.sismember(_GAMEBOT_KEY, str(chat_id))
+            exists = await _redis.sismember(_GAMEBOT_KEY, str(chat_id))  # type: ignore
             if exists:
                 return True
             # Key might be expired — check if key exists at all
@@ -298,13 +314,13 @@ async def add_gamebot_group(chat_id: int):
     """Add a group to the gamebot enabled set in Redis."""
     if _redis:
         try:
-            await _redis.sadd(_GAMEBOT_KEY, str(chat_id))
+            await _redis.sadd(_GAMEBOT_KEY, str(chat_id))  # type: ignore
         except Exception as e:
             LOGGER.warning(f"Redis gamebot add error: {e}")
 async def remove_gamebot_group(chat_id: int):
     """Remove a group from the gamebot enabled set in Redis."""
     if _redis:
         try:
-            await _redis.srem(_GAMEBOT_KEY, str(chat_id))
+            await _redis.srem(_GAMEBOT_KEY, str(chat_id))  # type: ignore
         except Exception as e:
             LOGGER.warning(f"Redis gamebot remove error: {e}")
