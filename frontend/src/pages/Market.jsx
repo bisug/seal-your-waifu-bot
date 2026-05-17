@@ -9,10 +9,11 @@ export const Market = ({ onCharClick, onPetClick }) => {
   const [activeTab, setActiveTab] = useState('shop'); // 'shop', 'gallery', 'pets'
   const [refreshKey, setRefreshKey] = useState(0);
 
+  const triggerShopRefresh = () => setRefreshKey(prev => prev + 1);
+
   useEffect(() => {
-    const handleRefresh = () => setRefreshKey(prev => prev + 1);
-    window.addEventListener('shop-data-refresh', handleRefresh);
-    return () => window.removeEventListener('shop-data-refresh', handleRefresh);
+    window.addEventListener('shop-data-refresh', triggerShopRefresh);
+    return () => window.removeEventListener('shop-data-refresh', triggerShopRefresh);
   }, []);
 
   const handleTabChange = (tabId) => {
@@ -55,7 +56,7 @@ export const Market = ({ onCharClick, onPetClick }) => {
               transition={{ duration: 0.2 }}
               className=""
             >
-              <Shop onCharClick={onCharClick} />
+              <Shop onCharClick={onCharClick} triggerRefresh={triggerShopRefresh} />
             </motion.div>
           )}
           {activeTab === 'gallery' && (

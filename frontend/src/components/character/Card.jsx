@@ -1,8 +1,8 @@
 import React, { memo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Activity } from 'lucide-react';
-import { cn } from '../utils';
-import { RARITY_VISUALS } from './Rarity';
+import { cn } from '../../utils';
+import { RARITY_VISUALS } from '../../constants/rarities';
 
 export const Card = memo(({ character, onClick }) => {
     const isSpecial = ['Legendary', 'Cosmic', 'Exclusive', 'Limited Edition', 'Royal', 'Antique', 'Celestial'].includes(character.rarity);

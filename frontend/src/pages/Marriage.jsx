@@ -1,52 +1,32 @@
 import React from 'react';
-import { useApi, Skeleton } from '../components/UI';
-import { Heart, Calendar } from 'lucide-react';
-import { Avatar } from '../components/Avatar';
+import { useApi } from '../hooks/useApi';
+import { Skeleton } from '../components/ui/Skeleton';
+import { Heart, Users } from 'lucide-react';
 
 export const Marriage = () => {
-  const { data: marriage, loading } = useApi('/social/marriage');
+    const { data: partners, loading } = useApi('/marriage/partners');
 
-  if (loading) return <Skeleton className="h-48 rounded-3xl" />;
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-500">Marriage Status</h2>
-      </div>
-
-      {!marriage ? (
-        <div className="glass-panel p-10 rounded-3xl border border-white/5 text-center flex flex-col items-center opacity-80">
-          <Heart size={40} className="text-slate-800 mb-4" />
-          <p className="text-slate-500 text-[11px] font-bold uppercase tracking-widest italic leading-relaxed">
-            You are not married yet.<br/>Propose to someone in the bot!
-          </p>
+    if (loading) return (
+        <div className="px-6 py-12 space-y-4">
+            <Skeleton className="h-40 rounded-3xl" />
+            <Skeleton className="h-40 rounded-3xl" />
         </div>
-      ) : (
-        <div className="glass-panel p-6 rounded-3xl border border-white/5 relative overflow-hidden text-center">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/10 rounded-full blur-3xl -mr-10 -mt-10" />
+    );
 
-          <div className="relative z-10 flex flex-col items-center">
-            <div className="flex items-center justify-center space-x-4 mb-6">
-               <Avatar src={window.Telegram?.WebApp?.initDataUnsafe?.user?.photo_url} className="w-16 h-16 rounded-full border-2 border-brand-accent" />
-               <div className="text-pink-500 animate-pulse">
-                  <Heart size={32} fill="currentColor" />
-               </div>
-               <Avatar src={marriage.partner_avatar} className="w-16 h-16 rounded-full border-2 border-pink-500" />
+    return (
+        <div className="px-6 py-12">
+            <div className="flex items-center space-x-3 mb-8">
+                <Heart className="text-red-500 fill-red-500" size={24} />
+                <h1 className="text-2xl font-black uppercase tracking-tighter italic">Social Status</h1>
             </div>
 
-            <h3 className="text-lg font-black text-white mb-1 uppercase tracking-tight">Married to {marriage.partner_name}</h3>
-
-            <div className="flex items-center justify-center space-x-2 text-slate-500 mb-4">
-               <Calendar size={12} />
-               <span className="text-[10px] font-bold uppercase tracking-widest">Since {new Date(marriage.married_at).toLocaleDateString()}</span>
+            <div className="glass-panel p-8 rounded-[3rem] border border-white/5 text-center flex flex-col items-center">
+                 <Users size={48} className="text-slate-800 mb-6" />
+                 <h2 className="text-lg font-black text-white uppercase tracking-widest mb-2">No Bonds Established</h2>
+                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-relaxed">
+                     You are not currently married to any collectors.
+                 </p>
             </div>
-
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 w-full">
-               <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Together forever in the harem</p>
-            </div>
-          </div>
         </div>
-      )}
-    </div>
-  );
+    );
 };
