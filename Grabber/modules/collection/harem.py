@@ -59,18 +59,26 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
             cid = char.get('id')
             if cid and cid not in unique_chars_map:
                 unique_chars_map[cid] = char
-        unique_chars = sorted(unique_chars_map.values(), key=lambda x: (x.get('anime', ''), x.get('name', '')))
+        favorites = user.get('favorites', [])
+        
+        # Sort characters: Favorites first, then by Anime, then by Name
+        unique_chars = sorted(
+            unique_chars_map.values(),
+            key=lambda x: (str(x.get('id')) not in favorites, x.get('anime', ''), x.get('name', ''))
+        )
+
         per_page = 7
         total_pages = math.ceil(len(unique_chars) / per_page)
         page = max(0, min(page, total_pages - 1))
         current_idx = user.get('current_format_index', 0)
         char_format = FORMATS[current_idx % len(FORMATS)]
         first_name = user.get('first_name', 'User')
+        
         # Fetch Rank and Level for the Header
         progress = await get_user_progress(uid_int, user_data=user)
         rank = await get_user_rank(uid_int) or "N/A"
         total_ranked = await get_total_ranked_users() or "???"
-        total_chars_count = user.get('char_count', len(all_chars))
+        
         harem_text = (
             f"<b>{escape(first_name)}'s Collection</b>\n"
             f"<b>Mode:</b> <code>{harem_mode}</code>\n"
@@ -79,20 +87,26 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
             f"<b>Stats:</b> <code>{len(unique_chars)}</code> Unique | <code>{len(all_chars)}</code> Total\n"
             "━━━━━━━━━━━━━━━━━━━━━\n\n"
         )
+        
         start_idx = page * per_page
         current_slice = unique_chars[start_idx : start_idx + per_page]
         last_anime = ""
         for char in current_slice:
             anime = char.get('anime', 'Mixed')
+            char_id = str(char.get('id', 'N/A'))
+            
             if anime != last_anime:
                 harem_text += f"<b>{escape(anime)}</b>\n"
                 last_anime = anime
-            char_id = char.get('id', 'N/A')
+                
+            is_fav = char_id in favorites
+            fav_icon = " ⭐" if is_fav else ""
+            
             harem_text += char_format.format(
                 anime=anime,
                 rarity=char.get('rarity', 'Common'),
                 id=char_id,
-                name=escape(char.get('name', 'Unknown')),
+                name=f"{escape(char.get('name', 'Unknown'))}{fav_icon}",
                 count=char_counts.get(char_id, 1)
             ) + "\n\n"
         harem_text += f"<i>Page {page + 1} of {total_pages}</i>"
