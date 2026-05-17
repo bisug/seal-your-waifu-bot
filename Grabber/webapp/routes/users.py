@@ -10,9 +10,9 @@ from fastapi.responses import RedirectResponse
 
 from config import config
 from Grabber import LOGGER
-from Grabber.core.cache import (get_total_ranked_users, get_user_rank,
-                                rebuild_leaderboard, update_user_rank)
 from Grabber.core.progression import get_level_from_xp, get_user_progress
+from Grabber.core.tasks import run_background_task
+from Grabber.core.user import get_user_rank_with_fallback
 from Grabber.core.utils import normalize_user_id
 from Grabber.database import user_collection
 from Grabber.modules.economy.hunt import EGG_TIERS, TIER_MAP
@@ -38,26 +38,9 @@ async def get_bot_info():
 async def get_me(user: dict = Depends(get_current_user_data)):
     user_id = normalize_user_id(user["id"])
 
-    from Grabber.core.cache import rget, rset
-    total_users_str = await rget("total_app_users")
-    if total_users_str:
-        total_users = int(total_users_str)
-    else:
-        total_users = await user_collection.estimated_document_count()
-        await rset("total_app_users", str(total_users), 3600)
-
-    # Compute rank via Redis ZSET for O(log N) performance
     user_xp = user.get("xp", 0)
-    rank = await get_user_rank(user_id)
-    
-    if rank is None:
-        LOGGER.info(f"Leaderboard ZSET miss for {user_id}, falling back to Mongo.")
-        rank = await user_collection.count_documents({"xp": {"$gt": user_xp}}) + 1
-        await update_user_rank(user_id, user_xp)
-        if total_users > 0 and (await get_total_ranked_users()) == 0:
-            asyncio.create_task(rebuild_leaderboard(user_collection))
+    rank, total_users, percentile = await get_user_rank_with_fallback(user_id, user_xp)
 
-    percentile = round((1 - (rank / max(total_users, 1))) * 100, 1)
     
     raw_achievements = user.get("achievements") or []
     enriched_achievements = []
@@ -186,7 +169,7 @@ async def get_me(user: dict = Depends(get_current_user_data)):
     if migration_needed:
         from Grabber.core.utils import get_user_id_query
         db_eggs = [{k: v for k, v in e.items() if k != "remaining_mins"} for e in processed_eggs]
-        asyncio.create_task(user_collection.update_one(
+        run_background_task(user_collection.update_one(
             get_user_id_query(int(user_id)),
             {"$set": {"eggs": db_eggs}}
         ))
@@ -227,25 +210,8 @@ async def get_leaderboard(
 async def get_stats(user: dict = Depends(get_current_user_data)):
     user_id = normalize_user_id(user["id"])
     user_xp = user.get("xp", 0)
-    
-    from Grabber.core.cache import rget, rset
-    total_users_str = await rget("total_app_users")
-    if total_users_str:
-        total_users = int(total_users_str)
-    else:
-        total_users = await user_collection.estimated_document_count()
-        await rset("total_app_users", str(total_users), 3600)
-    
-    rank = await get_user_rank(user_id)
-    
-    if rank is None:
-        LOGGER.info(f"Stats Leaderboard ZSET miss for {user_id}, falling back to Mongo.")
-        rank = await user_collection.count_documents({"xp": {"$gt": user_xp}}) + 1
-        await update_user_rank(user_id, user_xp)
-        if total_users > 0 and (await get_total_ranked_users()) == 0:
-            asyncio.create_task(rebuild_leaderboard(user_collection))
+    rank, total_users, percentile = await get_user_rank_with_fallback(user_id, user_xp)
 
-    percentile = (1 - (rank / max(total_users, 1))) * 100
     
     return {
         "rank": rank,

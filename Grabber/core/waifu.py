@@ -1,4 +1,5 @@
 import asyncio
+import os
 import random
 import time
 from typing import Dict, List, Optional
@@ -7,6 +8,9 @@ from config import config
 from Grabber import LOGGER
 from Grabber.database import collection, db
 IMGBB_API_KEY = config.IMGBB_API_KEY
+def _read_file_sync(file_path: str) -> bytes:
+    with open(file_path, 'rb') as f:
+        return f.read()
 async def get_next_sequence_number(sequence_name: str) -> int:
     """
     Get the next sequence number for a given sequence name from the database.
@@ -25,18 +29,18 @@ async def upload_image_to_catbox(file_path: str) -> Optional[str]:
     Upload an image file to Catbox.moe and return the URL.
     """
     try:
+        file_bytes = await asyncio.to_thread(_read_file_sync, file_path)
         async with httpx.AsyncClient() as client:
-            with open(file_path, 'rb') as f:
-                files = {'fileToUpload': f}
-                data = {'reqtype': 'fileupload', 'userhash': ''}
-                response = await client.post(
-                    "https://catbox.moe/user/api.php",
-                    data=data,
-                    files=files,
-                    timeout=60
-                )
-                if response.status_code == 200 and response.text.startswith("https://"):
-                    return response.text.strip()
+            files = {'fileToUpload': (os.path.basename(file_path), file_bytes)}
+            data = {'reqtype': 'fileupload', 'userhash': ''}
+            response = await client.post(
+                "https://catbox.moe/user/api.php",
+                data=data,
+                files=files,
+                timeout=60
+            )
+            if response.status_code == 200 and response.text.startswith("https://"):
+                return response.text.strip()
         return None
     except httpx.HTTPError as e:
         LOGGER.error(f"Catbox Upload Error: {e}")
@@ -46,19 +50,19 @@ async def upload_image_to_imgbb(file_path: str) -> Optional[str]:
     Upload an image file to ImgBB and return the URL.
     """
     try:
+        file_bytes = await asyncio.to_thread(_read_file_sync, file_path)
         async with httpx.AsyncClient() as client:
-            with open(file_path, 'rb') as f:
-                files = {'image': f}
-                data = {'key': IMGBB_API_KEY}
-                response = await client.post(
-                    "https://api.imgbb.com/1/upload",
-                    data=data,
-                    files=files,
-                    timeout=60
-                )
-                response_data = response.json()
-                if response_data.get('success'):
-                    return response_data['data']['url']
+            files = {'image': (os.path.basename(file_path), file_bytes)}
+            data = {'key': IMGBB_API_KEY}
+            response = await client.post(
+                "https://api.imgbb.com/1/upload",
+                data=data,
+                files=files,
+                timeout=60
+            )
+            response_data = response.json()
+            if response_data.get('success'):
+                return response_data['data']['url']
         return None
     except httpx.HTTPError as e:
         LOGGER.error(f"ImgBB Upload Error: {e}")
