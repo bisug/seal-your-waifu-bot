@@ -1,9 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Award, Lock, Sparkles, Loader2, CheckCircle2 } from 'lucide-react';
-import { apiFetch } from '../api';
+import { apiFetch } from '../api/client';
 import { useUser } from '../context/UserContext';
-import { useApi, useToast } from '../components/UI';
+import { useApi } from '../hooks/useApi';
+import { useToast } from '../components/ui/Toast';
 
 
 export const Pass = () => {
@@ -31,20 +32,25 @@ export const Pass = () => {
   };
 
   const handleUpgrade = async (tier) => {
-    if (!window.confirm(`Upgrade to ${tier.toUpperCase()} Protocol for ${tier === 'premium' ? '500' : '1500'} Zenith?`)) return;
-    setUpgrading(true);
-    try {
-      const res = await apiFetch(`/shop/upgrade_pass/${tier}`, { method: 'POST' });
-      if (res.status === 'success') {
-        addToast(`${tier.toUpperCase()} PROTOCOL ACTIVATED`, 'success');
-        await fetchPassData();
-        await refreshUser();
+    window.Telegram?.WebApp?.showConfirm(
+      `Upgrade to ${tier.toUpperCase()} Protocol for ${tier === 'premium' ? '500' : '1500'} Zenith?`,
+      async (confirmed) => {
+        if (!confirmed) return;
+        setUpgrading(true);
+        try {
+          const res = await apiFetch(`/shop/upgrade_pass/${tier}`, { method: 'POST' });
+          if (res.status === 'success') {
+            addToast(`${tier.toUpperCase()} PROTOCOL ACTIVATED`, 'success');
+            await fetchPassData();
+            await refreshUser();
+          }
+        } catch (err) {
+          addToast(err.message || 'Upgrade failed', 'error');
+        } finally {
+          setUpgrading(false);
+        }
       }
-    } catch (err) {
-      addToast(err.message || 'Upgrade failed', 'error');
-    } finally {
-      setUpgrading(false);
-    }
+    );
   };
 
   if (passLoading || !passData) return (
