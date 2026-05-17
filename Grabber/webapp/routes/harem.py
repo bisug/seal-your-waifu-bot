@@ -1,4 +1,5 @@
 import re
+from collections import Counter
 from typing import List, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
@@ -110,6 +111,33 @@ async def get_harem(
 
     return {"total": total, "page": page, "items": paginated}
 
+@router.post("/recycle/preview")
+async def recycle_preview(
+    char_ids: List[str] = Body(...),
+    user_id: int = Depends(get_current_user)
+):
+    user = await user_collection.find_one(get_user_id_query(user_id))
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    owned_chars = user.get("characters", [])
+    current_counts = Counter(c["id"] for c in owned_chars)
+
+    total_reward = 0
+    char_map = {c["id"]: c for c in owned_chars}
+
+    for rid in char_ids:
+        if current_counts.get(rid, 0) > 0:
+            char = char_map.get(rid)
+            if char:
+                rarity = char.get("rarity", "⚪ Common")
+                total_reward += PAYOUTS.get(rarity, 10)
+                current_counts[rid] -= 1
+        else:
+             raise HTTPException(status_code=400, detail=f"Character ID {rid} not owned or insufficient duplicates")
+
+    return {"reward": total_reward, "count": len(char_ids)}
+
 @router.post("/recycle")
 async def recycle_characters(
     char_ids: List[str] = Body(...), 
@@ -126,7 +154,6 @@ async def recycle_characters(
     stored_char_count = user.get("char_count", len(owned_chars))
     original_harem_len = len(owned_chars)
         
-    from collections import Counter
     to_recycle_counts = Counter(char_ids)
     
     total_reward = 0

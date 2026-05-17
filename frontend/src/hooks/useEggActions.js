@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
-import { apiFetch } from '../api';
+import { apiFetch } from '../api/client';
 import { useUser } from '../context/UserContext';
-import { useToast } from '../components/UI';
+import { useToast } from '../components/ui/Toast';
 
 export const useEggActions = () => {
   const { refreshUser } = useUser();

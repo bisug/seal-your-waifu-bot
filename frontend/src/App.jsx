@@ -6,9 +6,9 @@ import { TabNavigation } from './components/TabNavigation';
 import { IntroLoading } from './components/IntroLoading';
 import { Profile } from './pages/Profile';
 import { NotFound } from './pages/NotFound';
-import { ToastProvider } from './components/UI';
-import { CharActionModal } from './components/CharActionModal';
-import { PetActionModal } from './components/PetActionModal';
+import { ToastProvider } from './components/ui/Toast';
+import { CharActionModal } from './components/character/CharActionModal';
+import { PetActionModal } from './components/pet/PetActionModal';
 
 const Market = lazy(() => import('./pages/Market').then(m => ({ default: m.Market })));
 const Nexus = lazy(() => import('./pages/Nexus').then(m => ({ default: m.Nexus })));
@@ -98,18 +98,11 @@ const AppContent = () => {
       console.warn('Telegram API error (non-critical):', );
     }
 
-    const handleMarketPets = () => {
-      setActiveTab('market');
-    };
-
-    window.addEventListener('nav-market-pets', handleMarketPets);
-
     return () => {
       try {
         if (backHandlerRef.current) {
           tg?.BackButton?.offClick?.(backHandlerRef.current);
         }
-        window.removeEventListener('nav-market-pets', handleMarketPets);
          } catch {
         // ignore
       }
@@ -158,11 +151,16 @@ const AppContent = () => {
             </button>
             <button 
               onClick={() => { 
-                if (window.confirm("Are you sure you want to perform a Deep Reset? This will wipe your local session data.")) {
-                  sessionStorage.clear();
-                  localStorage.clear(); 
-                  window.location.reload(); 
-                }
+                window.Telegram?.WebApp?.showConfirm(
+                  "Are you sure you want to perform a Deep Reset? This will wipe your local session data.",
+                  (confirmed) => {
+                    if (confirmed) {
+                      sessionStorage.clear();
+                      localStorage.clear();
+                      window.location.reload();
+                    }
+                  }
+                );
               }}
               className="w-full py-4 text-slate-600 text-[8px] font-bold uppercase tracking-[0.2em] hover:text-slate-400 transition-colors"
             >
@@ -191,7 +189,13 @@ const AppContent = () => {
             </div>
           }>
             {activeTab === 'profile' && <Profile onCharClick={setSelectedChar} />}
-            {activeTab === 'market' && <Market onCharClick={setSelectedChar} onPetClick={setSelectedPet} />}
+            {activeTab === 'market' && (
+                <Market
+                    onCharClick={setSelectedChar}
+                    onPetClick={setSelectedPet}
+                    onNavigate={handleNavigate}
+                />
+            )}
             {activeTab === 'nexus' && <Nexus />}
             {activeTab === 'incubation' && <Hatchery onPetClick={setSelectedPet} />}
             {!['profile', 'market', 'nexus', 'incubation'].includes(activeTab) && (

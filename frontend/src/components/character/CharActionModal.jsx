@@ -1,20 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { Loader2, Zap, Trash2, ArrowRightLeft } from 'lucide-react';
-import { useToast, Modal } from './UI';
-import { apiFetch } from '../api';
+import { useToast } from '../ui/Toast';
+import { Modal } from './Modal';
+import { apiFetch } from '../../api/client';
+import { useUser } from '../../context/UserContext';
 
 export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user }) => {
     const { addToast } = useToast();
+    const { triggerRefresh } = useUser();
     const [purchaseStage, setPurchaseStage] = useState('idle');
     const [sellStage, setSellStage] = useState('idle');
 
     useEffect(() => {
         if (!selectedChar) {
-            Promise.resolve().then(() => {
-                setPurchaseStage('idle');
-                setSellStage('idle');
-            });
+            setPurchaseStage('idle');
+            setSellStage('idle');
         }
     }, [selectedChar]);
 
@@ -28,8 +29,8 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
             await apiFetch(`/shop/buy/character/${selectedChar.id}`, { method: 'POST' });
             addToast(`Acquired ${selectedChar.name}!`, 'success');
             window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
-            window.dispatchEvent(new CustomEvent('user-data-refresh'));
-            window.dispatchEvent(new CustomEvent('shop-data-refresh'));
+            triggerRefresh();
+            // Optional: triggerShopRefresh if passed as prop
             setSelectedChar(null);
         } catch (err) {
             addToast(err.message, 'error');
@@ -39,24 +40,38 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
     };
 
     const handleRecycle = async () => {
-        const reward = {
-            "⚪ Common": 10, "🟢 Medium": 25, "🟠 Rare": 50, "🟡 Legendary": 120, "💠 Cosmic": 250,
-            "💮 Exclusive": 500, "🔮 Limited Edition": 750, "🫧 Royal": 1500, "💎 Antique": 2500, "🎐 Celestial": 5000
-        }[selectedChar.rarity] || 10;
-
-        if (!window.confirm(`Recycle ${selectedChar.name} for ${reward} Zenith?`)) return;
-        setSellStage('selling');
+        setSellStage('previewing');
         try {
-            const res = await apiFetch('/recycle', {
+            const preview = await apiFetch('/recycle/preview', {
                 method: 'POST',
                 body: JSON.stringify([selectedChar.id])
             });
-            addToast(`Recycled! +${res.reward} Zenith`, 'success');
-            window.dispatchEvent(new CustomEvent('user-data-refresh'));
-            setSelectedChar(null);
+
+            window.Telegram?.WebApp?.showConfirm(
+                `Recycle ${selectedChar.name} for ${preview.reward} Zenith?`,
+                async (confirmed) => {
+                    if (!confirmed) {
+                        setSellStage('idle');
+                        return;
+                    }
+
+                    setSellStage('selling');
+                    try {
+                        const res = await apiFetch('/recycle', {
+                            method: 'POST',
+                            body: JSON.stringify([selectedChar.id])
+                        });
+                        addToast(`Recycled! +${res.reward} Zenith`, 'success');
+                        triggerRefresh();
+                        setSelectedChar(null);
+                    } catch (err) {
+                        addToast(err.message, 'error');
+                        setSellStage('idle');
+                    }
+                }
+            );
         } catch (err) {
             addToast(err.message, 'error');
-        } finally {
             setSellStage('idle');
         }
     };
@@ -96,10 +111,10 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                 <div className="flex gap-3">
                    <button
                     onClick={handleRecycle}
-                    disabled={sellStage === 'selling'}
+                    disabled={sellStage !== 'idle'}
                     className="flex-1 py-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all"
                    >
-                     {sellStage === 'selling' ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                     {sellStage !== 'idle' ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                      <span>Recycle</span>
                    </button>
 

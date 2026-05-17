@@ -1,93 +1,35 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUser } from '../context/UserContext';
-import { apiFetch } from '../api';
-import { ProgressBar, Card, Skeleton, CardSkeleton } from '../components/UI';
+import { apiFetch } from '../api/client';
+import { ProgressBar } from '../components/ui/ProgressBar';
+import { Card } from '../components/character/Card';
+import { Skeleton, CardSkeleton } from '../components/ui/Skeleton';
+import { EmptyState } from '../components/ui/EmptyState';
 import { Avatar } from '../components/Avatar';
 import { Shield, Activity, Users, Trophy, Search, Loader2 } from 'lucide-react';
 import { formatNumber } from '../utils';
+import { useInfiniteGrid } from '../hooks/useInfiniteGrid';
 
 export const Profile = ({ onCharClick }) => {
   const { user, loading: userLoading } = useUser();
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [search, setSearch] = useState('');
-  const [rarity, setRarity] = useState('');
-  const [availableRarities, setAvailableRarities] = useState([]);
+  const {
+    items,
+    loading,
+    page,
+    search,
+    setSearch,
+    rarity,
+    setRarity,
+    lastElementRef
+  } = useInfiniteGrid('/harem');
   
-  const observer = useRef();
-  const searchAbortController = useRef(null);
-
-  const lastElementRef = useCallback(node => {
-    if (loading) return;
-    if (observer.current) observer.current.disconnect();
-    observer.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMore && !loading) {
-        setPage(prev => prev + 1);
-      }
-    });
-    if (node) observer.current.observe(node);
-  }, [loading, hasMore]);
-
-  const fetchHarem = useCallback(async (isNew = false) => {
-    setLoading(true);
-    
-    if (isNew) {
-      if (searchAbortController.current) {
-        searchAbortController.current.abort();
-      }
-      searchAbortController.current = new AbortController();
-    }
-    
-    try {
-      const currentPage = isNew ? 1 : page;
-      const data = await apiFetch(
-        `/harem?page=${currentPage}&limit=24&search=${encodeURIComponent(search)}&rarity=${encodeURIComponent(rarity)}`,
-        { signal: searchAbortController.current?.signal }
-      );
-      
-      if (isNew) {
-        setItems(data.items);
-      } else {
-        setItems(prev => [...prev, ...data.items]);
-      }
-      
-      setHasMore(data.items.length === 24);
-    } catch (err) {
-      if (err.name === 'AbortError') return; // Ignore aborted requests
-      console.error('Harem fetch error:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [page, search, rarity]);
-
-  // Initial fetch and search/rarity debounce
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setPage(1);
-      fetchHarem(true);
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [search, rarity]);
+  const [availableRarities, setAvailableRarities] = useState([]);
 
   // Fetch available rarities once
   useEffect(() => {
     apiFetch('/rarities').then(setAvailableRarities).catch(console.error);
   }, []);
-
-  // Infinite scroll trigger
-  useEffect(() => {
-    let mounted = true;
-    if (page > 1 && mounted) {
-      // Move fetch into microtask to avoid cascading render warning
-      Promise.resolve().then(() => {
-        if (mounted) fetchHarem(false);
-      });
-    }
-    return () => { mounted = false; };
-  }, [page, fetchHarem]);
 
   if (userLoading && items.length === 0) return (
     <div className="pb-24 pt-6 px-6">
@@ -229,7 +171,7 @@ export const Profile = ({ onCharClick }) => {
           <div className="space-y-3">
             <div className="flex space-x-2 overflow-x-auto no-scrollbar py-0.5 scroll-fade-mask">
               <button 
-                onClick={() => { setRarity(''); setPage(1); }}
+                onClick={() => setRarity('')}
                 className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] whitespace-nowrap transition-all border ${
                   rarity === '' 
                   ? 'bg-brand-accent text-white border-brand-accent shadow-lg scale-105'
@@ -241,7 +183,7 @@ export const Profile = ({ onCharClick }) => {
               {availableRarities.map((r) => (
                 <button 
                   key={r}
-                  onClick={() => { setRarity(r); setPage(1); }}
+                  onClick={() => setRarity(r)}
                   className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] whitespace-nowrap transition-all border ${
                     rarity === r 
                     ? 'bg-brand-accent text-white border-brand-accent shadow-lg scale-105'
@@ -271,7 +213,7 @@ export const Profile = ({ onCharClick }) => {
              <AnimatePresence>
                {items.map((char, i) => (
                  <motion.div
-                   key={`${char.id}-${i}`}
+                   key={char.id}
                    ref={i === items.length - 1 ? lastElementRef : null}
                    initial={{ opacity: 0, scale: 0.9, y: 10 }}
                    animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -295,12 +237,11 @@ export const Profile = ({ onCharClick }) => {
              ))}
           </div>
         ) : (
-          <div className="glass-panel p-10 rounded-3xl border border-white/5 text-center flex flex-col items-center opacity-80">
-            <Users size={40} className="text-slate-800 mb-4" />
-            <p className="text-slate-500 text-[11px] font-bold uppercase tracking-widest italic leading-relaxed">
-              No characters found in your harem.<br/>Try adjusting your search.
-            </p>
-          </div>
+          <EmptyState
+            icon={Users}
+            title="No characters found in your harem."
+            message="Try adjusting your search."
+          />
         )}
 
         {/* Loading Spacing */}

@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
-import { cn } from '../utils';
-import { RARITY_VISUALS } from './Rarity';
+import { cn } from '../../utils';
+import { RARITY_VISUALS } from '../../constants/rarities';
 
 export const Modal = ({ character, onClose, actions }) => {
     useEffect(() => {
@@ -15,7 +15,6 @@ export const Modal = ({ character, onClose, actions }) => {
     if (!character) return null;
 
     return (
-        <AnimatePresence>
             <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -97,6 +96,5 @@ export const Modal = ({ character, onClose, actions }) => {
                     </div>
                 </motion.div>
             </motion.div>
-        </AnimatePresence>
     );
 };

@@ -1,81 +1,28 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { AnimatePresence } from 'framer-motion';
-import { apiFetch } from '../api';
-import { Card, Skeleton, CardSkeleton } from '../components/UI';
+import { apiFetch } from '../api/client';
+import { Card } from '../components/character/Card';
+import { Skeleton, CardSkeleton } from '../components/ui/Skeleton';
+import { EmptyState } from '../components/ui/EmptyState';
 import { Search, Loader2, Users, CheckCircle2 } from 'lucide-react';
+import { useInfiniteGrid } from '../hooks/useInfiniteGrid';
 
 export const Gallery = ({ onCharClick }) => {
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [search, setSearch] = useState('');
-  const [rarity, setRarity] = useState('');
+  const {
+    items,
+    loading,
+    page,
+    search,
+    setSearch,
+    rarity,
+    setRarity,
+    lastElementRef
+  } = useInfiniteGrid('/gallery');
+
   const [availableRarities, setAvailableRarities] = useState([]);
-
-  const observer = useRef();
-  const searchAbortController = useRef(null);
-
-  const lastElementRef = useCallback(node => {
-    if (loading) return;
-    if (observer.current) observer.current.disconnect();
-    observer.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMore && !loading) {
-        setPage(prev => prev + 1);
-      }
-    });
-    if (node) observer.current.observe(node);
-  }, [loading, hasMore]);
-
-  const fetchGallery = useCallback(async (isNew = false) => {
-    setLoading(true);
-    if (isNew) {
-      if (searchAbortController.current) searchAbortController.current.abort();
-      searchAbortController.current = new AbortController();
-    }
-
-    try {
-      const currentPage = isNew ? 1 : page;
-      const data = await apiFetch(
-        `/gallery?page=${currentPage}&limit=24&search=${encodeURIComponent(search)}&rarity=${encodeURIComponent(rarity)}`,
-        { signal: searchAbortController.current?.signal }
-      );
-      
-      if (isNew) {
-        setItems(data.items);
-      } else {
-        setItems(prev => [...prev, ...data.items]);
-      }
-      setHasMore(data.items.length === 24);
-    } catch (err) {
-      if (err.name === 'AbortError') return;
-      console.error('Gallery fetch error:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [page, search, rarity]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setPage(1);
-      fetchGallery(true);
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [search, rarity]);
 
   useEffect(() => {
     apiFetch('/rarities').then(setAvailableRarities).catch(console.error);
   }, []);
-
-  useEffect(() => {
-    let mounted = true;
-    if (page > 1 && mounted) {
-      Promise.resolve().then(() => {
-        if (mounted) fetchGallery(false);
-      });
-    }
-    return () => { mounted = false; };
-  }, [page, fetchGallery]);
 
   return (
     <div className="pb-32 pt-0 px-4 relative ">
@@ -93,7 +40,7 @@ export const Gallery = ({ onCharClick }) => {
 
         <div className="flex space-x-2 overflow-x-auto no-scrollbar scroll-fade-mask py-0.5">
           <button
-            onClick={() => { setRarity(''); setPage(1); }}
+            onClick={() => setRarity('')}
             className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest whitespace-nowrap transition-all border ${
               rarity === ''
               ? 'bg-brand-accent text-brand-midnight border-brand-accent shadow-lg shadow-brand-accent/30 scale-105'
@@ -105,7 +52,7 @@ export const Gallery = ({ onCharClick }) => {
           {availableRarities.map((r) => (
             <button 
               key={r}
-              onClick={() => { setRarity(r); setPage(1); }}
+              onClick={() => setRarity(r)}
               className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest whitespace-nowrap transition-all border ${
                 rarity === r 
                 ? 'bg-brand-accent text-brand-midnight border-brand-accent shadow-lg shadow-brand-accent/30 scale-105'
@@ -122,7 +69,7 @@ export const Gallery = ({ onCharClick }) => {
         <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
           {items.map((char, i) => (
             <div
-              key={`${char.id}-${i}`}
+              key={char.id}
               ref={i === items.length - 1 ? lastElementRef : null}
               className="relative"
             >
@@ -144,10 +91,11 @@ export const Gallery = ({ onCharClick }) => {
           {Array.from({ length: 18 }).map((_, i) => <CardSkeleton key={`skeleton-${i}`} />)}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-20 opacity-40">
-           <Users size={48} className="text-slate-700 mb-4" />
-           <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">No results matched</p>
-        </div>
+        <EmptyState
+          icon={Users}
+          title="No results matched"
+          message="Try adjusting your filters."
+        />
       )}
 
       {loading && items.length > 0 && (
