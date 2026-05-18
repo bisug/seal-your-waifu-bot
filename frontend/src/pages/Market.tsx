@@ -5,7 +5,13 @@ import { Shop } from './Shop';
 import { Gallery } from './Gallery';
 import { PetShop } from './PetShop';
 
-export const Market = ({ onCharClick, onPetClick }) => {
+interface MarketProps {
+  onCharClick: (character: any) => void;
+  onPetClick: (pet: any) => void;
+  onNavigate?: (tabId: string) => void;
+}
+
+export const Market = ({ onCharClick, onPetClick }: MarketProps) => {
   const [activeTab, setActiveTab] = useState('shop'); // 'shop', 'gallery', 'pets'
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -16,7 +22,7 @@ export const Market = ({ onCharClick, onPetClick }) => {
     return () => window.removeEventListener('shop-data-refresh', triggerShopRefresh);
   }, []);
 
-  const handleTabChange = (tabId) => {
+  const handleTabChange = (tabId: string) => {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
     setActiveTab(tabId);
   };

@@ -1,16 +1,27 @@
 import { motion } from 'framer-motion';
 import { cn } from '../utils';
-import { User, Search, Trophy, ShoppingBag, Star, LayoutGrid, Egg, Activity } from 'lucide-react';
+import { User, ShoppingBag, Egg, Activity, LucideIcon } from 'lucide-react';
 
-export const TabNavigation = ({ activeTab, onNavigate }) => {
-  const tabs = [
+interface Tab {
+  id: string;
+  icon: LucideIcon;
+  label: string;
+}
+
+interface TabNavigationProps {
+  activeTab: string;
+  onNavigate: (tabId: string) => void;
+}
+
+export const TabNavigation = ({ activeTab, onNavigate }: TabNavigationProps) => {
+  const tabs: Tab[] = [
     { id: 'profile', icon: User, label: 'Profile' },
     { id: 'incubation', icon: Egg, label: 'Hatchery' },
     { id: 'market', icon: ShoppingBag, label: 'Market' },
     { id: 'nexus', icon: Activity, label: 'Nexus' },
   ];
 
-  const handleNavigate = (tabId) => {
+  const handleNavigate = (tabId: string) => {
     if (activeTab !== tabId) {
       window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
       onNavigate(tabId);

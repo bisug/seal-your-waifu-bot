@@ -3,8 +3,14 @@ import { motion } from 'framer-motion';
 import { Activity } from 'lucide-react';
 import { cn } from '../../utils';
 import { RARITY_VISUALS } from '../../constants/rarities';
+import { Character } from '../../context/UserContext';
 
-export const Card = memo(({ character, onClick }) => {
+interface CardProps {
+    character: Character;
+    onClick?: (character: Character) => void;
+}
+
+export const Card = memo(({ character, onClick }: CardProps) => {
     const isSpecial = ['Legendary', 'Cosmic', 'Exclusive', 'Limited Edition', 'Royal', 'Antique', 'Celestial'].includes(character.rarity);
 
     const handleClick = () => {
@@ -12,7 +18,7 @@ export const Card = memo(({ character, onClick }) => {
         if (onClick) onClick(character);
     };
 
-    const visuals = RARITY_VISUALS[character.rarity] || RARITY_VISUALS['Common'];
+    const visuals = (RARITY_VISUALS as any)[character.rarity] || RARITY_VISUALS['Common'];
     const [imgError, setImgError] = React.useState(false);
 
     useEffect(() => {

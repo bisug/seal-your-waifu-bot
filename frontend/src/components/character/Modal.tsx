@@ -1,10 +1,17 @@
-import React, { useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useEffect, ReactNode } from 'react';
+import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { cn } from '../../utils';
 import { RARITY_VISUALS } from '../../constants/rarities';
+import { Character } from '../../context/UserContext';
 
-export const Modal = ({ character, onClose, actions }) => {
+interface ModalProps {
+    character: Character | null;
+    onClose: () => void;
+    actions?: ReactNode;
+}
+
+export const Modal = ({ character, onClose, actions }: ModalProps) => {
     useEffect(() => {
         if (character) {
             document.body.classList.add('no-scroll');
@@ -13,6 +20,8 @@ export const Modal = ({ character, onClose, actions }) => {
     }, [character]);
 
     if (!character) return null;
+
+    const visual = (RARITY_VISUALS as any)[character.rarity] || RARITY_VISUALS['Common'];
 
     return (
             <motion.div 
@@ -60,13 +69,13 @@ export const Modal = ({ character, onClose, actions }) => {
                                     animate={{ opacity: 1, y: 0 }}
                                     className={cn(
                                         "backdrop-blur-md border px-1.5 py-0.5 rounded-md w-fit mb-1",
-                                        RARITY_VISUALS[character.rarity]?.border || "border-white/10",
-                                        RARITY_VISUALS[character.rarity]?.bg || "bg-white/10"
+                                        visual?.border || "border-white/10",
+                                        visual?.bg || "bg-white/10"
                                     )}
                                 >
                                     <p className={cn(
                                         "text-[6px] font-black uppercase tracking-[0.2em]",
-                                        RARITY_VISUALS[character.rarity]?.text || "text-white"
+                                        visual?.text || "text-white"
                                     )}>
                                         {character.rarity}
                                     </p>
