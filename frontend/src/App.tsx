@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy, useCallback, useRef } from 'react';
+import React, { useState, useEffect, Suspense, lazy, useCallback, useRef, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import { UserProvider, useUser } from './context/UserContext';
@@ -14,17 +14,26 @@ const Market = lazy(() => import('./pages/Market').then(m => ({ default: m.Marke
 const Nexus = lazy(() => import('./pages/Nexus').then(m => ({ default: m.Nexus })));
 const Hatchery = lazy(() => import('./pages/Hatchery').then(m => ({ default: m.Hatchery })));
 
-class ErrorBoundary extends React.Component {
-  constructor(props) {
+interface ErrorBoundaryProps {
+  children: ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false, errorInfo: null };
+    this.state = { hasError: false, error: null };
   }
 
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError(error: Error) {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error, errorInfo) {
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error("Master Audit - UI Crash Detected:", error, errorInfo);
   }
 
@@ -64,10 +73,10 @@ const AppContent = () => {
   };
 
   const [activeTab, setActiveTab] = useState(getInitialTab());
-  const [selectedChar, setSelectedChar] = useState(null);
-  const [selectedPet, setSelectedPet] = useState(null);
+  const [selectedChar, setSelectedChar] = useState<any>(null);
+  const [selectedPet, setSelectedPet] = useState<any>(null);
 
-  const backHandlerRef = useRef(null);
+  const backHandlerRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     const tg = window.Telegram?.WebApp;
@@ -109,7 +118,7 @@ const AppContent = () => {
     };
   }, [selectedChar, selectedPet]);
 
-  const handleNavigate = useCallback((tab) => {
+  const handleNavigate = useCallback((tab: string) => {
     const tg = window.Telegram?.WebApp;
     if (tab === 'profile' || tab === 'market') {
       tg?.HapticFeedback?.impactOccurred('medium');

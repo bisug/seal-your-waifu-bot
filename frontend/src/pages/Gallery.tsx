@@ -1,24 +1,28 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../api/client';
 import { Card } from '../components/character/Card';
-import { Skeleton, CardSkeleton } from '../components/ui/Skeleton';
+import { CardSkeleton } from '../components/ui/Skeleton';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Search, Loader2, Users, CheckCircle2 } from 'lucide-react';
 import { useInfiniteGrid } from '../hooks/useInfiniteGrid';
+import { Character } from '../context/UserContext';
 
-export const Gallery = ({ onCharClick }) => {
+interface GalleryProps {
+  onCharClick: (character: Character) => void;
+}
+
+export const Gallery = ({ onCharClick }: GalleryProps) => {
   const {
     items,
     loading,
-    page,
     search,
     setSearch,
     rarity,
     setRarity,
     lastElementRef
-  } = useInfiniteGrid('/gallery');
+  } = useInfiniteGrid<Character>('/gallery');
 
-  const [availableRarities, setAvailableRarities] = useState([]);
+  const [availableRarities, setAvailableRarities] = useState<string[]>([]);
 
   useEffect(() => {
     apiFetch('/rarities').then(setAvailableRarities).catch(console.error);
