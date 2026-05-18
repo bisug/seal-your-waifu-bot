@@ -116,7 +116,7 @@ async def scrape_group_command_handler(client, message):
         except (errors.PeerIdInvalid, errors.ChannelInvalid, errors.Forbidden) as e:
             error_tip = "Make sure Bot is added." if not is_userbot else "Make sure UserBot is a member."
             return await app.edit_message_text_safe(status.chat.id, status.id, f"❌ Could not access chat: {e}\n{error_tip}")
-        except errors.PyrogramError as e:
+        except errors.RPCError as e:
             return await app.edit_message_text_safe(status.chat.id, status.id, f"❌ Access Error: {e}")
 
 
@@ -171,7 +171,7 @@ async def scrape_group_command_handler(client, message):
                     break
 
 
-            except errors.PyrogramError as e:
+            except errors.RPCError as e:
                 LOGGER.error(f"Scrape Error: {e}")
                 continue
         if message.chat.id in scraping_tasks:
@@ -182,7 +182,7 @@ async def scrape_group_command_handler(client, message):
                 await app.send_message_safe(message.chat.id, f"✅ Scraping complete. Sent {sent_count} characters.")
 
 
-    except errors.PyrogramError as e:
+    except errors.RPCError as e:
         LOGGER.error(f"Scraper Failed: {e}")
         if message.chat.id in scraping_tasks: del scraping_tasks[message.chat.id]
         await app.edit_message_text_safe(status.chat.id, status.id, f"❌ Scraper Failed: {e}")
@@ -262,7 +262,7 @@ async def approve_scrape_callback(client, query):
         await query.message.delete()
 
 
-    except errors.PyrogramError as e:
+    except errors.RPCError as e:
         LOGGER.error(f"Approval Error: {e}")
         await app.edit_message_text_safe(status_msg.chat.id, status_msg.id, f"❌ Error: {e}")
 @app.on_callback_query(filters.regex(r"^rsc_dec$"))
