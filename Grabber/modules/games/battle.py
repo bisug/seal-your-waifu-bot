@@ -194,7 +194,7 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
         )
         await query.message.edit_text(result_text, parse_mode=enums.ParseMode.HTML)
 
-    except errors.PyrogramError as e:
+    except errors.RPCError as e:
         LOGGER.error(f"Battle Error: {e}")
         try:
             await query.message.reply_text("❌ A technical error occurred during battle.", parse_mode=enums.ParseMode.HTML)
