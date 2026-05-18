@@ -3,8 +3,12 @@ import { useApi } from '../hooks/useApi';
 import { Skeleton } from '../components/ui/Skeleton';
 import { formatNumber } from '../utils';
 
-export const PetShop = () => {
-    const { data: pets, loading } = useApi('/shop/pets');
+interface PetShopProps {
+    onPetClick?: (pet: any) => void;
+}
+
+export const PetShop = ({ onPetClick }: PetShopProps) => {
+    const { data: pets, loading } = useApi<any[]>('/shop/pets');
 
     if (loading) return (
         <div className="grid grid-cols-2 gap-4 px-4 py-8">
@@ -19,6 +23,7 @@ export const PetShop = () => {
                 {pets?.map((pet, i) => (
                     <div
                         key={pet.name}
+                        onClick={() => onPetClick?.(pet)}
                         style={{ transitionDelay: `${Math.min(i * 0.05, 0.3)}s` }}
                         className="glass-panel p-6 rounded-[2.5rem] border border-white/5 flex gap-6 items-center animate-in fade-in slide-in-from-bottom-4 duration-500"
                     >

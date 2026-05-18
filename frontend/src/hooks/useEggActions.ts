@@ -7,9 +7,9 @@ export const useEggActions = () => {
   const { refreshUser } = useUser();
   const { addToast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [hatchingResult, setHatchingResult] = useState(null);
+  const [hatchingResult, setHatchingResult] = useState<any>(null);
 
-  const incubateEgg = useCallback(async (eggId) => {
+  const incubateEgg = useCallback(async (eggId: string | number) => {
     const tg = window.Telegram?.WebApp;
     tg?.HapticFeedback?.impactOccurred('medium');
     setLoading(true);
@@ -18,7 +18,7 @@ export const useEggActions = () => {
       addToast('Incubation Matrix Active', 'success');
       await refreshUser();
       return true;
-    } catch (err) {
+    } catch (err: any) {
       tg?.HapticFeedback?.notificationOccurred('error');
       const msg = err.message || 'Calibration failure';
       if (tg?.showAlert) tg.showAlert(msg);
@@ -27,9 +27,9 @@ export const useEggActions = () => {
     } finally {
       setLoading(false);
     }
-  }, [refreshUser]);
+  }, [refreshUser, addToast]);
 
-  const hatchEgg = useCallback(async (eggId) => {
+  const hatchEgg = useCallback(async (eggId: string | number) => {
     const tg = window.Telegram?.WebApp;
     tg?.HapticFeedback?.impactOccurred('heavy');
     setLoading(true);
@@ -48,7 +48,7 @@ export const useEggActions = () => {
         else addToast(msg, 'error');
         return null;
       }
-    } catch (err) {
+    } catch (err: any) {
       tg?.HapticFeedback?.notificationOccurred('error');
       const msg = err.message || 'Hatch protocol interrupted';
       if (tg?.showAlert) tg.showAlert(msg);
@@ -57,7 +57,7 @@ export const useEggActions = () => {
     } finally {
       setLoading(false);
     }
-  }, [refreshUser]);
+  }, [refreshUser, addToast]);
 
   return {
     incubateEgg,
