@@ -1,18 +1,23 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiFetch } from '../api/client';
 
-export const useInfiniteGrid = (endpoint, options = {}) => {
-  const [items, setItems] = useState([]);
+interface InfiniteGridOptions {
+  limit?: number;
+  params?: Record<string, any>;
+}
+
+export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGridOptions = {}) => {
+  const [items, setItems] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [search, setSearch] = useState('');
   const [rarity, setRarity] = useState('');
 
-  const observer = useRef();
-  const searchAbortController = useRef(null);
+  const observer = useRef<IntersectionObserver | null>(null);
+  const searchAbortController = useRef<AbortController | null>(null);
 
-  const lastElementRef = useCallback(node => {
+  const lastElementRef = useCallback((node: HTMLElement | null) => {
     if (loading) return;
     if (observer.current) observer.current.disconnect();
     observer.current = new IntersectionObserver(entries => {
@@ -36,8 +41,8 @@ export const useInfiniteGrid = (endpoint, options = {}) => {
     try {
       const currentPage = isNew ? 1 : page;
       const queryParams = new URLSearchParams({
-        page: currentPage,
-        limit: options.limit || 24,
+        page: currentPage.toString(),
+        limit: (options.limit || 24).toString(),
         search: search.trim(),
         rarity: rarity.trim(),
         ...options.params
@@ -55,7 +60,7 @@ export const useInfiniteGrid = (endpoint, options = {}) => {
       }
 
       setHasMore(data.items.length === (options.limit || 24));
-    } catch (err) {
+    } catch (err: any) {
       if (err.name === 'AbortError') return;
       console.error(`Fetch error for ${endpoint}:`, err);
     } finally {

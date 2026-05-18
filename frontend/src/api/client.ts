@@ -8,7 +8,7 @@ const getTg = () => window.Telegram?.WebApp;
 // is unnecessary. sessionStorage limits the exposure window significantly.
 let sessionToken = sessionStorage.getItem('auth_token');
 
-export const setSessionToken = (token) => {
+export const setSessionToken = (token: string | null) => {
   sessionToken = token;
   if (token) {
     sessionStorage.setItem('auth_token', token);
@@ -22,14 +22,22 @@ export const setSessionToken = (token) => {
  * Handles authentication headers and standard error reporting.
  */
 
+interface RefreshSubscriber {
+  resolve: (value: any) => void;
+  reject: (reason?: any) => void;
+  endpoint: string;
+  options: RequestInit;
+  retries: number;
+}
+
 // FIX: Replace boolean isRefreshing with a proper refresh queue.
 // When a 401 is received while a refresh is already in progress,
 // queue the caller's Promise so it retries after the new token is ready,
 // instead of silently failing.
 let isRefreshing = false;
-let refreshSubscribers = []; // Array of { resolve, reject, endpoint, options, retries }
+let refreshSubscribers: RefreshSubscriber[] = []; // Array of { resolve, reject, endpoint, options, retries }
 
-function subscribeToRefresh(endpoint, options, retries) {
+function subscribeToRefresh(endpoint: string, options: RequestInit, retries: number) {
   return new Promise((resolve, reject) => {
     refreshSubscribers.push({ resolve, reject, endpoint, options, retries });
   });
@@ -42,17 +50,17 @@ function flushRefreshSubscribers() {
   refreshSubscribers = [];
 }
 
-function rejectRefreshSubscribers(err) {
+function rejectRefreshSubscribers(err: Error) {
   refreshSubscribers.forEach(({ reject }) => reject(err));
   refreshSubscribers = [];
 }
 
-export async function apiFetch(endpoint, options = {}, retries = 2) {
+export async function apiFetch(endpoint: string, options: RequestInit = {}, retries = 2): Promise<any> {
   const url = `${API_BASE}${endpoint}`;
   
-  const headers = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...(options.headers || {}),
+    ...((options.headers as Record<string, string>) || {}),
   };
 
   if (sessionToken) {
@@ -94,7 +102,7 @@ export async function apiFetch(endpoint, options = {}, retries = 2) {
         rejectRefreshSubscribers(authErr);
         isRefreshing = false;
         throw authErr;
-      } catch (err) {
+      } catch (err: any) {
         isRefreshing = false;
         rejectRefreshSubscribers(err);
         console.error(`[API ERROR] ${options.method || 'GET'} ${endpoint}:`, err);
@@ -125,7 +133,7 @@ export async function apiFetch(endpoint, options = {}, retries = 2) {
 /**
  * Perform initial handshake with the backend using Telegram initData.
  */
-export async function secureInit(avatarUrl = null) {
+export async function secureInit(avatarUrl: string | null = null): Promise<string | null> {
   const tg = getTg(); // Read at call time, not module load time
   const initData = tg?.initData;
   // Check sessionStorage for an existing token to avoid redundant re-auths
