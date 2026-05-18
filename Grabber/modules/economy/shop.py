@@ -79,13 +79,13 @@ async def send_shop_hub(message_or_query):
         else:
             await reply_media_dynamic(message_or_query, SHOP_BANNER, caption=text, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML
             )
-    except errors.PyrogramError as e:
+    except errors.RPCError as e:
         LOGGER.error(f"Error in send_shop_hub: {e}")
         if isinstance(message_or_query, types.CallbackQuery):
             try:
                 await message_or_query.message.edit_text(text, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML)
 
-            except errors.PyrogramError as e:
+            except errors.RPCError as e:
                 LOGGER.debug(f"Non-critical fallback error: {e}")
         else:
             await message_or_query.reply_text(text, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML)
@@ -163,7 +163,7 @@ async def send_shop_message(message, user_id):
             )
     except errors.MessageNotModified:
         pass
-    except errors.PyrogramError as e:
+    except errors.RPCError as e:
         LOGGER.error(f"Error in send_shop_message: {e}")
 @app.on_callback_query(filters.regex(r"^shop_(prev|next):(\d+)$"))
 async def shop_navigation(_, query: types.CallbackQuery):
