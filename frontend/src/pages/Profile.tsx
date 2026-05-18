@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUser } from '../context/UserContext';
 import { apiFetch } from '../api/client';
@@ -10,8 +10,13 @@ import { Avatar } from '../components/Avatar';
 import { Shield, Activity, Users, Trophy, Search, Loader2 } from 'lucide-react';
 import { formatNumber } from '../utils';
 import { useInfiniteGrid } from '../hooks/useInfiniteGrid';
+import { Character } from '../context/UserContext';
 
-export const Profile = ({ onCharClick }) => {
+interface ProfileProps {
+  onCharClick: (character: Character) => void;
+}
+
+export const Profile = ({ onCharClick }: ProfileProps) => {
   const { user, loading: userLoading } = useUser();
   const {
     items,
@@ -22,9 +27,9 @@ export const Profile = ({ onCharClick }) => {
     rarity,
     setRarity,
     lastElementRef
-  } = useInfiniteGrid('/harem');
+  } = useInfiniteGrid<Character>('/harem');
   
-  const [availableRarities, setAvailableRarities] = useState([]);
+  const [availableRarities, setAvailableRarities] = useState<string[]>([]);
 
   // Fetch available rarities once
   useEffect(() => {
