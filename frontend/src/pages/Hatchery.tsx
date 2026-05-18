@@ -1,12 +1,18 @@
-import React from 'react';
-import { useUser } from '../context/UserContext';
-import { Card } from '../components/character/Card';
-import { Skeleton } from '../components/ui/Skeleton';
+import React, { ReactNode } from 'react';
+import { useUser, User } from '../context/UserContext';
 import { Sparkles, Timer, Zap } from 'lucide-react';
-import { formatNumber } from '../utils';
 
-export const Hatchery = ({ onPetClick }) => {
-    const { user } = useUser();
+interface HatcheryProps {
+    onPetClick?: (pet: any) => void;
+}
+
+// Extend User type locally if needed or update global types
+interface ExtendedUser extends User {
+    eggs?: Array<{ type: string }>;
+}
+
+export const Hatchery = ({ onPetClick }: HatcheryProps) => {
+    const { user } = useUser() as { user: ExtendedUser | null };
 
     return (
         <div className="px-6 py-10 space-y-12">
@@ -22,7 +28,7 @@ export const Hatchery = ({ onPetClick }) => {
                 </div>
 
                 <div className="space-y-4">
-                    {user?.eggs?.length > 0 ? user.eggs.map((egg, i) => (
+                    {user?.eggs && user.eggs.length > 0 ? user.eggs.map((egg, i) => (
                         <div key={i} className="glass-panel p-6 rounded-[2.5rem] border border-white/5 flex items-center justify-between">
                             <div className="flex items-center gap-6">
                                 <div className="w-16 h-16 bg-brand-accent/5 rounded-3xl flex items-center justify-center border border-brand-accent/10">

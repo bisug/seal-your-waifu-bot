@@ -2,7 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { User } from 'lucide-react';
 import { cn } from '../utils';
 
-export const Avatar = ({ src, alt = "Avatar", className = "" }) => {
+interface AvatarProps {
+  src?: string | null;
+  alt?: string;
+  className?: string;
+}
+
+export const Avatar = ({ src, alt = "Avatar", className = "" }: AvatarProps) => {
   const [error, setError] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
