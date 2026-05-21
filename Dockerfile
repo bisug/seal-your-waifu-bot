@@ -53,8 +53,6 @@ RUN useradd -m -u 1000 botuser && \
 COPY --chown=botuser:botuser Grabber/ /app/Grabber/
 COPY --chown=botuser:botuser config.py /app/
 COPY --chown=botuser:botuser .python-version /app/
-COPY --chown=botuser:botuser runtime.txt /app/
-COPY --chown=botuser:botuser heroku.yml /app/
 COPY --chown=botuser:botuser pyproject.toml uv.lock /app/
 
 # Copy compiled frontend assets from Stage 1 into the Grabber static folder
