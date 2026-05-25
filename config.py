@@ -18,7 +18,7 @@ class Config:
     API_HASH = os.getenv("API_HASH", "2545d49cea8894d513726649b1bd5a1f")
 
     # --- DATABASE INFRASTRUCTURE ---
-    MONGO_URL = os.getenv("MONGO_URL", "mongodb+srv://botmaker9675208:botmaker9675208@cluster0.sc9mq8b.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+    MONGO_URL = os.getenv("MONGO_URL", "mongodb+srv://sumiloo:gurasnani@cluster0.nb0umdm.mongodb.net/?retryWrites=true&w=majority")
     REDIS_URL = os.getenv("REDIS_URL", "rediss://default:AVNS_3H0cohKfeMSPJAn2TeO@sealbot-friendclub-35f1.k.aivencloud.com:28970")
 
     # --- PRIVILEGED USERS ---

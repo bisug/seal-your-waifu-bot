@@ -11,7 +11,11 @@ PAYOUTS = {
     "🔮 Limited Edition": 750,
     "🫧 Royal": 1500,
     "💎 Antique": 2500,
-    "🎐 Celestial": 5000
+    "🎐 Celestial": 5000,
+    "❄️ Winter": 500,
+    "☀️ Summer": 500,
+    "💖 Valentine": 750,
+    "🎃 Halloween": 750
 }
 # Shop Settings
 SHOP_LIMIT = 50
@@ -25,7 +29,11 @@ RARITY_PRICES = {
     "🔮 Limited Edition": 100,
     "🫧 Royal": 250,
     "💎 Antique": 500,
-    "🎐 Celestial": 1000
+    "🎐 Celestial": 1000,
+    "❄️ Winter": 50,
+    "☀️ Summer": 50,
+    "💖 Valentine": 100,
+    "🎃 Halloween": 100
 }
 # Pass Constants
 PASS_PRICES = {
