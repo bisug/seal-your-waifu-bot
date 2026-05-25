@@ -14,9 +14,28 @@ def _read_file_sync(file_path: str) -> bytes:
 async def get_next_sequence_number(sequence_name: str) -> int:
     """
     Get the next sequence number for a given sequence name from the database.
-    Used primarily for generating unique character IDs.
+    On first use, initializes the counter from the highest existing character ID
+    so that a fresh deploy never collides with pre-existing records.
     """
     sequence_collection = db.sequences
+    # Check if the sequence document already exists
+    existing = await sequence_collection.find_one({'_id': sequence_name})
+    if existing is None:
+        # Bootstrap from the current max ID to avoid collisions
+        max_id = 0
+        async for doc in collection.find({'id': {'$exists': True}}, {'id': 1, '_id': 0}):
+            try:
+                val = int(doc['id'])
+                if val > max_id:
+                    max_id = val
+            except (ValueError, TypeError):
+                pass
+        LOGGER.info(f"Initializing sequence '{sequence_name}' from max existing ID: {max_id}")
+        # Use insert with ignore-if-exists to handle concurrent startups
+        try:
+            await sequence_collection.insert_one({'_id': sequence_name, 'sequence_value': max_id})
+        except Exception:
+            pass  # Another instance already inserted it — that's fine
     sequence_document = await sequence_collection.find_one_and_update(
         {'_id': sequence_name},
         {'$inc': {'sequence_value': 1}},
@@ -86,11 +105,21 @@ async def upload_media_safely(file_path: str) -> Optional[str]:
 async def add_character_to_db(char_data: dict) -> str:
     """
     Add a new character to the database with a unique generated ID.
+    Retries up to 10 times on DuplicateKeyError to handle sequence gaps
+    or race conditions during concurrent approvals.
     """
-    char_id = str(await get_next_sequence_number('character_id')).zfill(2)
-    char_data['id'] = char_id
-    await collection.insert_one(char_data)
-    return char_id
+    from pymongo.errors import DuplicateKeyError
+    for attempt in range(10):
+        char_id = str(await get_next_sequence_number('character_id')).zfill(4)
+        char_data['id'] = char_id
+        char_data.pop('_id', None)  # Remove any stale _id from a previous failed attempt
+        try:
+            await collection.insert_one(char_data)
+            return char_id
+        except DuplicateKeyError:
+            LOGGER.warning(f"DuplicateKeyError for char_id={char_id} (attempt {attempt + 1}/10). Skipping to next ID...")
+            continue
+    raise RuntimeError("add_character_to_db: failed after 10 retries due to duplicate key — check sequence collection")
 async def get_character_by_id(char_id: str) -> Optional[dict]:
     """
     Fetch character data from the database using its ID.
