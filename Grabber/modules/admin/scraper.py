@@ -290,7 +290,7 @@ async def approve_scrape_callback(client, query):
         await query.message.delete()
 
 
-    except errors.RPCError as e:
+    except (errors.RPCError, RuntimeError) as e:
         LOGGER.error(f"Approval Error: {e}")
         await app.edit_message_text_safe(status_msg.chat.id, status_msg.id, f"❌ Error: {e}")
 @app.on_callback_query(filters.regex(r"^rsc_dec$"))

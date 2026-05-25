@@ -45,23 +45,27 @@ ACTIVE_RARITY_WEIGHTS = {
 }
 @app.on_message(filters.command("rarities"))
 async def rarities_handler(_, message: types.Message):
-    pipeline = [
-        {"$group": {"_id": "$rarity", "count": {"$sum": 1}}}
-    ]
-    cursor = collection.aggregate(pipeline)
-    rarity_counts = {}
-    total_characters = 0
-    
-    async for doc in cursor:
-        rarity_counts[doc["_id"]] = doc["count"]
-        total_characters += doc["count"]
-        
-    response = "<b>Character Counts by Rarity:</b>\n\n"
-    for i in range(1, len(RARITY_MAP) + 1):
-        rarity_name = RARITY_MAP.get(i)
-        if rarity_name:
-            count = rarity_counts.get(rarity_name, 0)
-            response += f"{rarity_name}: <code>{count}</code>\n"
-            
-    response += f"\n<b>Total Characters:</b> <code>{total_characters}</code>\n"
-    await message.reply_text(response, parse_mode=enums.ParseMode.HTML)
+    try:
+        pipeline = [
+            {"$group": {"_id": "$rarity", "count": {"$sum": 1}}}
+        ]
+        # Fixed: aggregate() must be awaited in Motor (async pymongo driver)
+        cursor = await collection.aggregate(pipeline)
+        rarity_counts = {}
+        total_characters = 0
+
+        async for doc in cursor:
+            rarity_counts[doc["_id"]] = doc["count"]
+            total_characters += doc["count"]
+
+        response = "<b>Character Counts by Rarity:</b>\n\n"
+        for i in range(1, len(RARITY_MAP) + 1):
+            rarity_name = RARITY_MAP.get(i)
+            if rarity_name:
+                count = rarity_counts.get(rarity_name, 0)
+                response += f"{rarity_name}: <code>{count}</code>\n"
+
+        response += f"\n<b>Total Characters:</b> <code>{total_characters}</code>\n"
+        await message.reply_text(response, parse_mode=enums.ParseMode.HTML)
+    except Exception as e:
+        await message.reply_text(f"❌ Failed to fetch rarities: <code>{e}</code>", parse_mode=enums.ParseMode.HTML)
