@@ -88,17 +88,31 @@ def get_review_keyboard():
 @handle_errors
 async def scrape_group_command_handler(client, message):
     if len(message.command) < 2:
-        return await message.reply_text("❌ Usage: `/scrape <group_id_or_username>`\nNote: Bot must be a member of the group.")
+        return await message.reply_text(
+            "❌ Usage: `/scrape <group_id_or_username> [limit]`\n"
+            "• `limit` — how many messages to scan (default: 5000)\n"
+            "• Example: `/scrape @mygroup 400`\n"
+            "Note: Bot/UserBot must be a member of the group."
+        )
     if message.chat.id in scraping_tasks:
         return await message.reply_text("⚠️ A scraping task is already running. Use `/stop_scrape`.")
     target_chat = message.command[1]
+    # Optional second argument: number of messages to scan
+    scan_limit = 5000
+    if len(message.command) >= 3:
+        try:
+            scan_limit = int(message.command[2])
+            if scan_limit <= 0:
+                return await message.reply_text("❌ Limit must be a positive number. Example: `/scrape @mygroup 400`")
+        except ValueError:
+            return await message.reply_text("❌ Invalid limit. Must be a number. Example: `/scrape @mygroup 400`")
     # Handle numeric IDs (including negative ones for groups/channels)
     try:
         if target_chat.startswith("-") or target_chat.isdigit():
             target_chat = int(target_chat)
     except ValueError:
         pass
-    status = await app.send_message_safe(message.chat.id, f"⏳ Scanning `{target_chat}` for characters...")
+    status = await app.send_message_safe(message.chat.id, f"⏳ Scanning `{target_chat}` for characters (limit: {scan_limit:,})...")
     try:
         # Use userbot for scraping. If missing or disconnected, report error.
         if config.STRING_SESSION:
@@ -122,70 +136,83 @@ async def scrape_group_command_handler(client, message):
 
         scraping_tasks[message.chat.id] = True
         sent_count = 0
-        # Iterate backwards through history
-        # Iterate backwards through history - Increased limit to catch more characters
-        async for msg in client_to_use.get_chat_history(chat.id, limit=5000):
-            if message.chat.id not in scraping_tasks:
-                break
-            # Process only photos or docs (media)
-            if not (msg.photo or msg.document):
-                continue
-            caption = msg.caption or msg.text
-            name, anime = smart_parse_character(caption)
-            if not name or not anime:
-                continue
-            key = (name.lower(), anime.lower())
-            if key in pending_characters:
-                continue
-            # Check if exists locally
-            exists = await collection.find_one({"name": name, "anime": anime})
-            if exists:
-                continue
-            # Check if already scraped/declined
-            already_scraped = await scraped_characters_collection.find_one({"name": name, "anime": anime})
-            if already_scraped:
-                continue
-            try:
-                # Send for Review
-                # We download first to ensure we have a valid file to re-upload to our group
-                temp_path = await client_to_use.download_media(msg)
-                review_caption = (
-                    f"<b>🆕 Scraped Character!</b>\n\n"
-                    f"👤 <b>Name:</b> {name}\n"
-                    f"🎬 <b>Anime:</b> {anime}\n\n"
-                    "Select Rarity to Approve or Decline below:"
-                )
-                await send_media_dynamic(app, chat_id=LOG_GROUP_ID, media_url=temp_path,
-                    caption=review_caption,
-                    reply_markup=get_review_keyboard(),
-                    parse_mode=enums.ParseMode.HTML
-                )
-                if os.path.exists(temp_path): os.remove(temp_path)
-                # Record as scraped to prevent re-sending
-                await scraped_characters_collection.insert_one({"name": name, "anime": anime})
-                pending_characters.add((name.lower(), anime.lower()))
-                sent_count += 1
-                await asyncio.sleep(1.5)
-                if sent_count >= 100: # Increased batch limit
-                    await app.send_message_safe(message.chat.id, f"✅ Batch of {sent_count} characters sent to review group. Run `/scrape` again for more.")
+        try:
+            # Iterate backwards through history up to the requested scan_limit
+            async for msg in client_to_use.get_chat_history(chat.id, limit=scan_limit):
+                if message.chat.id not in scraping_tasks:
                     break
-
-
-            except errors.RPCError as e:
-                LOGGER.error(f"Scrape Error: {e}")
-                continue
-        if message.chat.id in scraping_tasks:
-            del scraping_tasks[message.chat.id]
+                # Process only photos or docs (media)
+                if not (msg.photo or msg.document):
+                    continue
+                caption = msg.caption or msg.text
+                name, anime = smart_parse_character(caption)
+                if not name or not anime:
+                    continue
+                key = (name.lower(), anime.lower())
+                # pending_characters is a session-only in-memory fast-path cache.
+                # scraped_characters_collection is the authoritative dedup store across restarts.
+                if key in pending_characters:
+                    continue
+                # Check if exists locally
+                exists = await collection.find_one({"name": name, "anime": anime})
+                if exists:
+                    continue
+                # Check if already scraped/declined
+                already_scraped = await scraped_characters_collection.find_one({"name": name, "anime": anime})
+                if already_scraped:
+                    continue
+                temp_path = None
+                try:
+                    # Send for Review
+                    # We download first to ensure we have a valid file to re-upload to our group
+                    temp_path = await client_to_use.download_media(msg)
+                    review_caption = (
+                        f"<b>🆕 Scraped Character!</b>\n\n"
+                        f"👤 <b>Name:</b> {name}\n"
+                        f"🎬 <b>Anime:</b> {anime}\n\n"
+                        "Select Rarity to Approve or Decline below:"
+                    )
+                    await send_media_dynamic(app, chat_id=LOG_GROUP_ID, media_url=temp_path,
+                        caption=review_caption,
+                        reply_markup=get_review_keyboard(),
+                        parse_mode=enums.ParseMode.HTML
+                    )
+                    # Record as scraped to prevent re-sending
+                    await scraped_characters_collection.insert_one({"name": name, "anime": anime})
+                    pending_characters.add((name.lower(), anime.lower()))
+                    sent_count += 1
+                    await asyncio.sleep(1.5)
+                    if sent_count >= 100:  # Increased batch limit
+                        await app.send_message_safe(message.chat.id, f"✅ Batch of {sent_count} characters sent to review group. Run `/scrape` again for more.")
+                        break
+                except errors.FloodWait as e:
+                    # Bug #7 fix: respect FloodWait inside the scraping loop
+                    LOGGER.warning(f"FloodWait during scrape: sleeping {e.value}s")
+                    await asyncio.sleep(e.value)
+                    continue
+                except errors.RPCError as e:
+                    LOGGER.error(f"Scrape Error: {e}")
+                    continue
+                finally:
+                    # Bug #1 fix: always clean up temp file, even on exception
+                    if temp_path and os.path.exists(temp_path):
+                        os.remove(temp_path)
             if sent_count == 0:
                 await app.send_message_safe(message.chat.id, "✅ Scraping complete. No new characters found.")
             elif sent_count < 100:
                 await app.send_message_safe(message.chat.id, f"✅ Scraping complete. Sent {sent_count} characters.")
-
-
-    except errors.RPCError as e:
-        LOGGER.error(f"Scraper Failed: {e}")
-        if message.chat.id in scraping_tasks: del scraping_tasks[message.chat.id]
-        await app.edit_message_text_safe(status.chat.id, status.id, f"❌ Scraper Failed: {e}")
+        except errors.RPCError as e:
+            LOGGER.error(f"Scraper Failed: {e}")
+            if status:
+                await app.edit_message_text_safe(status.chat.id, status.id, f"❌ Scraper Failed: {e}")
+        finally:
+            # Bug #2 fix: always clean up the task entry, regardless of how we exit
+            scraping_tasks.pop(message.chat.id, None)
+    except Exception as e:
+        # Catch-all for the outer try block (covers setup errors before scraping begins)
+        LOGGER.error(f"Scrape command failed unexpectedly: {e}", exc_info=True)
+        if status:
+            await app.edit_message_text_safe(status.chat.id, status.id, f"❌ Unexpected error: {e}")
 @app.on_message(filters.command("stop_scrape") & sudo_filter)
 @handle_errors
 async def stop_scrape_handler(client, message):
@@ -231,8 +258,9 @@ async def approve_scrape_callback(client, query):
     await app.edit_message_reply_markup_safe(query.message.chat.id, query.message.id, None)
     status_msg = await app.send_message_safe(query.message.chat.id, "📥 Re-hosting to Catbox...")
     try:
-        # Download from our own review group
-        temp_path = await app.download_media(query.message.photo.file_id)
+        # Bug #3 fix: use the message object directly — supports both photos and documents.
+        # Accessing query.message.photo would crash if the scraped item was a document.
+        temp_path = await app.download_media(query.message)
         final_url = await upload_media_safely(temp_path)
         if not final_url:
             return await app.edit_message_text_safe(status_msg.chat.id, status_msg.id, "❌ Re-hosting failed.")
@@ -271,6 +299,9 @@ async def decline_scrape_callback(client, query):
         return await query.answer("❌ Admin only.")
     # Attempt to remove from pending_characters if possible
     caption = query.message.caption or ""
+    # Bug #5 fix: strip HTML tags before parsing, just like approve_scrape_callback does.
+    # Without this, the regex captures HTML like "</b>" as part of the name/anime.
+    caption = re.sub(r'<[^>]+>', '', caption)
     name_match = re.search(r"(?:Name|Character):\s*(.+)", caption, re.I)
     anime_match = re.search(r"(?:Anime|Series):\s*(.+)", caption, re.I)
     if name_match and anime_match:
