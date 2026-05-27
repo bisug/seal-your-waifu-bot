@@ -8,20 +8,28 @@ interface PetShopProps {
     onPetClick?: (pet: Pet) => void;
 }
 
-export const PetShop = ({ onPetClick }: PetShopProps) => {
-    const { data: pets, loading } = useApi<Pet[]>('/shop/pets');
+interface PetShopResponse {
+    pets: Pet[];
+    owned: string[];
+    current_level: number;
+}
 
-    if (loading) return (
-        <div className="grid grid-cols-2 gap-4 px-4 py-8">
+export const PetShop = ({ onPetClick }: PetShopProps) => {
+    const { data: shopData, loading } = useApi<PetShopResponse>('/shop/pets');
+
+    if (loading && !shopData) return (
+        <div className="grid grid-cols-1 gap-4 px-4 py-8">
             {[1,2,3,4].map(i => <Skeleton key={i} className="h-48 rounded-3xl" />)}
         </div>
     );
+
+    const pets = shopData?.pets || [];
 
     return (
         <div className="px-4 py-8">
             <h1 className="text-2xl font-black italic uppercase tracking-tighter text-white mb-8 px-2">Companion Hub</h1>
             <div className="grid grid-cols-1 gap-6">
-                {pets?.map((pet, i) => (
+                {pets.map((pet, i) => (
                     <div
                         key={pet.name}
                         onClick={() => onPetClick?.(pet)}
