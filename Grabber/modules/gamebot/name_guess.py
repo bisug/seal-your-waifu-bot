@@ -89,6 +89,20 @@ async def nguess_check_handler(_, message: types.Message):
     char = session["char"]
     name_variants = get_name_variants(char['name'])
     if guess in name_variants:
+        # Check registration before rewarding
+        from Grabber.core.user import get_cached_user
+        cached = await get_cached_user(message.from_user.id)
+        if not cached:
+            db_user = await user_collection.find_one({"id": {"$in": [message.from_user.id, str(message.from_user.id)]}})
+            if not db_user:
+                from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+                from config import config
+                markup = InlineKeyboardMarkup([[
+                    InlineKeyboardButton("🚀 Start Bot in DM", url=f"https://t.me/{config.BOT_USERNAME}?start=true")
+                ]])
+                text = f"❌ <b>Guess Ignored!</b>\n\n<a href='tg://user?id={message.from_user.id}'>{html_escape(message.from_user.first_name)}</a>, you must start the bot in private messages first to play and earn shards!"
+                return await game_bot.send_message_safe(chat_id, text=text, reply_markup=markup, auto_delete=30)
+                
         # Correct guess!
         player_count = len(session.get("players", []))
         reward = min(10 + (player_count - 1) * 5, 50)

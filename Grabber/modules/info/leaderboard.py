@@ -12,6 +12,37 @@ from Grabber.core.utils import handle_errors, html_escape
 
 
 # METRIC_ORDER and METRICS have been moved to Grabber.core.constants for centralization.
+async def _resolve_missing_names(users: list) -> list:
+    """
+    For any user in the list without a first_name, attempt to resolve it via
+    the Telegram API and persist the result back to MongoDB for future calls.
+    """
+    from Grabber.database import user_collection
+    missing = [u for u in users if not u.get("first_name") and u.get("id")]
+    if not missing:
+        return users
+    missing_ids = [int(u["id"]) for u in missing]
+    try:
+        fetched = await app.get_users(missing_ids)
+        if not isinstance(fetched, list):
+            fetched = [fetched]
+        name_map = {u.id: u.first_name for u in fetched if u.first_name}
+        # Persist resolved names back to DB in the background
+        for uid, name in name_map.items():
+            await user_collection.update_many(
+                {"id": {"$in": [uid, str(uid)]}},
+                {"$set": {"first_name": name}}
+            )
+        # Patch the results in-place
+        for u in users:
+            if not u.get("first_name"):
+                resolved = name_map.get(int(u["id"]))
+                if resolved:
+                    u["first_name"] = resolved
+    except Exception as e:
+        LOGGER.warning(f"_resolve_missing_names: Telegram API fallback failed: {e}")
+    return users
+
 async def get_top_users(metric: str, limit: int = 10):
     from Grabber.core.cache import (_zset_key, get_cached_leaderboard, r,
                                     set_cached_leaderboard)
@@ -26,18 +57,21 @@ async def get_top_users(metric: str, limit: int = 10):
             # 2. Try to get Top N from Redis ZSET
             uids = await r.zrevrange(key, 0, limit - 1, withscores=True)
             if uids:
+                # Filter out any None/corrupt entries before casting to int
+                valid_uids = [(uid, score) for uid, score in uids if uid is not None]
                 # Convert back to list of dicts. We need names and avatars, so we fetch from Mongo in ONE batch.
-                user_ids = [int(u[0]) for u in uids]
+                user_ids = [int(uid) for uid, _ in valid_uids]
                 mongo_users = await user_collection.find({"id": {"$in": user_ids}}).to_list(length=limit)
                 # Re-sort to match ZSET order and add the score
                 user_map = {int(u["id"]): u for u in mongo_users}
                 results = []
-                for uid, score in uids:
+                for uid, score in valid_uids:
                     u = user_map.get(int(uid))
                     if u:
                         u[METRICS[metric]["field"]] = int(score)
                         results.append(u)
                 if results:
+                    results = await _resolve_missing_names(results)
                     await set_cached_leaderboard(metric, results, limit)
                 return results
         except Exception as e:
@@ -51,11 +85,13 @@ async def get_top_users(metric: str, limit: int = 10):
     ]
     cursor = await user_collection.aggregate(pipeline)
     results = await cursor.to_list(length=limit)
+    results = await _resolve_missing_names(results)
     # 3. Trigger background rebuild if ZSET was empty
     if r:
         import asyncio
         from Grabber.core.cache import rebuild_leaderboard
         asyncio.create_task(rebuild_leaderboard(user_collection, metric=metric))
+
     return results
 def build_leaderboard_text(metric: str, users: list):
     info = METRICS[metric]

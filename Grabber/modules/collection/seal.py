@@ -63,7 +63,9 @@ async def seal_handler(_, message: types.Message):
                 # Some Pyrogram versions require a list, others a single emoji;
                 # using the single emoji string is standard for most.
                 await app.send_reaction(chat_id, message_id=message.id, emoji=selected)
-            except errors.PyrogramError as e:
+            except errors.MessageIdInvalid:
+                pass # Already handled or deleted
+            except errors.RPCError as e:
                 LOGGER.debug(f"Reaction task handled: {e}")
         asyncio.create_task(send_reactions())
         await add_char_to_user(user_id, character)
@@ -84,7 +86,7 @@ async def seal_handler(_, message: types.Message):
         if spawn_msg_id:
             try:
                 await app.delete_messages(chat_id, spawn_msg_id)
-            except errors.PyrogramError:
+            except errors.RPCError:
                 pass
         caption = (
             f"<b><a href=\"tg://user?id={message.from_user.id}\">{html_escape(message.from_user.first_name)}</a> caught the character!</b>\n\n"

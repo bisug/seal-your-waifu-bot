@@ -130,6 +130,10 @@ async def render_start_message(user_id: int, first_name: str, is_private: bool, 
         types.InlineKeyboardButton("Support", url=f"https://t.me/{SUPPORT_CHAT}"),
         types.InlineKeyboardButton("Updates", url=f"https://t.me/{UPDATE_CHAT}")
     )
+    if is_private and (not existing_user or not existing_user.get("free_spin_claimed")):
+        builder.add_row(
+            types.InlineKeyboardButton("🎁 Free Spin (New Player!)", callback_data="free_spin")
+        )
     builder.add_row(
         types.InlineKeyboardButton("My Collection", callback_data="harem_view:self"),
         types.InlineKeyboardButton("Help Menu", callback_data="help:main", style=enums.ButtonStyle.PRIMARY)
@@ -297,6 +301,58 @@ async def help_callback_handler(_, query: types.CallbackQuery):
             await query.message.edit_text(text, reply_markup=markup, parse_mode=enums.ParseMode.HTML)
     except errors.MessageNotModified:
         pass
+
+@app.on_callback_query(filters.regex(r"^free_spin$"))
+@handle_errors
+async def free_spin_handler(_, query: types.CallbackQuery):
+    """Handle the one-time free spin for new users."""
+    user_id = query.from_user.id
+    existing_user = await user_collection.find_one(get_user_filter(user_id))
+    
+    if existing_user and existing_user.get("free_spin_claimed"):
+        await query.answer("You have already used your free spin!", show_alert=True)
+        return
+        
+    cursor = await collection.aggregate([{"$sample": {"size": 1}}])
+    chars = await cursor.to_list(length=1)
+    
+    if not chars:
+        await query.answer("No characters available in the bot yet.", show_alert=True)
+        return
+        
+    waifu = chars[0]
+    waifu_data = waifu.copy()
+    waifu_data.pop('_id', None)
+    
+    from Grabber.core.user import add_char_to_user
+    await update_user(user_id, {"$set": {"free_spin_claimed": True}})
+    await add_char_to_user(user_id, waifu_data)
+    
+    response_text = (
+        f'🎉 Congratulations <a href="tg://user?id={user_id}">{html_escape(query.from_user.first_name)}</a>!\n'
+        f"You used your Free Spin and got a <b>{html_escape(waifu_data['rarity'])}</b> character!\n\n"
+        f"<b>Name:</b> {html_escape(waifu_data['name'])}\n"
+        f"<b>Anime:</b> {html_escape(waifu_data['anime'])}\n"
+        f"<b>ID:</b> <code>{waifu_data['id']}</code>\n"
+    )
+    
+    await query.message.reply_photo(
+        photo=waifu_data['img_url'],
+        caption=response_text,
+        parse_mode=enums.ParseMode.HTML
+    )
+    
+    # Reload start menu to remove the spin button
+    existing_user = await user_collection.find_one(get_user_filter(user_id))
+    text, markup = await render_start_message(user_id, query.from_user.first_name, True, existing_user)
+    try:
+        if query.message.photo:
+            await query.message.edit_caption(text, reply_markup=markup, parse_mode=enums.ParseMode.HTML)
+        else:
+            await query.message.edit_text(text, reply_markup=markup, parse_mode=enums.ParseMode.HTML)
+    except errors.MessageNotModified:
+        pass
+
 def random_photo():
     import random
     return random.choice(PHOTO_URL)
