@@ -20,7 +20,7 @@ const StatBox = ({ icon: Icon, label, value, colorClass }) => (
 
 export const PetActionModal = ({ selectedPet, setSelectedPet, user }) => {
     const { addToast } = useToast();
-    const { triggerRefresh } = useUser();
+    const { triggerRefresh, liteMode } = useUser();
     const [purchaseStage, setPurchaseStage] = useState('idle');
     const [syncStage, setSyncStage] = useState('idle');
 
@@ -75,14 +75,20 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }) => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setSelectedPet(null)}
-                className="absolute inset-0 bg-brand-midnight/90 backdrop-blur-2xl"
+                className={cn(
+                    "absolute inset-0 bg-brand-midnight/90",
+                    !liteMode && "backdrop-blur-2xl"
+                )}
             />
 
             <motion.div
                 initial={{ y: "100%" }}
                 animate={{ y: 0 }}
                 exit={{ y: "100%" }}
-                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                transition={liteMode 
+                    ? { duration: 0.2 }
+                    : { type: "spring", damping: 25, stiffness: 200 }
+                }
                 className="relative w-full max-w-[500px] bg-brand-midnight border-t sm:border border-white/10 rounded-t-[3rem] sm:rounded-[3.5rem] overflow-hidden flex flex-col max-h-[90vh]"
             >
                 <div className="p-8 overflow-y-auto no-scrollbar">

@@ -35,7 +35,7 @@ export const Avatar = ({ src, alt = "Avatar", className = "" }: AvatarProps) => 
             )}
           />
           {!loaded && (
-            <div className="absolute inset-0 animate-pulse bg-white/10" />
+            <div className="absolute inset-0 bg-white/5" />
           )}
         </>
       ) : (

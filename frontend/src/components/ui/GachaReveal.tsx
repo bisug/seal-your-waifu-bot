@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Character } from '../../context/UserContext';
+import { Character, useUser } from '../../context/UserContext';
 import { RARITY_VISUALS } from '../../constants/rarities';
+import { cn } from '../../utils';
 
 interface GachaRevealProps {
     character: Character | null;
@@ -9,6 +10,7 @@ interface GachaRevealProps {
 }
 
 export const GachaReveal = ({ character, onClose }: GachaRevealProps) => {
+    const { liteMode } = useUser();
     useEffect(() => {
         if (character) {
             window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
@@ -27,24 +29,29 @@ export const GachaReveal = ({ character, onClose }: GachaRevealProps) => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-brand-midnight/90 backdrop-blur-xl"
+                className={cn(
+                    "fixed inset-0 z-50 flex items-center justify-center p-6 bg-brand-midnight/95",
+                    !liteMode && "backdrop-blur-xl"
+                )}
                 onClick={onClose}
             >
-                {/* Background Rays */}
-                <motion.div 
-                    initial={{ scale: 0, rotate: -45 }}
-                    animate={{ scale: 2, rotate: 0 }}
-                    transition={{ duration: 10, ease: "linear", repeat: Infinity }}
-                    className="absolute inset-0 pointer-events-none opacity-20"
-                    style={{
-                        background: 'conic-gradient(from 0deg, transparent 0 45deg, rgba(255,255,255,0.1) 45deg 90deg, transparent 90deg 135deg, rgba(255,255,255,0.1) 135deg 180deg, transparent 180deg 225deg, rgba(255,255,255,0.1) 225deg 270deg, transparent 270deg 315deg, rgba(255,255,255,0.1) 315deg 360deg)'
-                    }}
-                />
+                {/* Background Rays — skipped on lite */}
+                {!liteMode && (
+                    <motion.div 
+                        initial={{ scale: 0, rotate: -45 }}
+                        animate={{ scale: 2, rotate: 0 }}
+                        transition={{ duration: 10, ease: "linear", repeat: Infinity }}
+                        className="absolute inset-0 pointer-events-none opacity-20"
+                        style={{
+                            background: 'conic-gradient(from 0deg, transparent 0 45deg, rgba(255,255,255,0.1) 45deg 90deg, transparent 90deg 135deg, rgba(255,255,255,0.1) 135deg 180deg, transparent 180deg 225deg, rgba(255,255,255,0.1) 225deg 270deg, transparent 270deg 315deg, rgba(255,255,255,0.1) 315deg 360deg)'
+                        }}
+                    />
+                )}
 
                 <motion.div 
                     initial={{ scale: 0.5, y: 50, opacity: 0 }}
                     animate={{ scale: 1, y: 0, opacity: 1 }}
-                    transition={{ type: "spring", damping: 15, stiffness: 100 }}
+                    transition={liteMode ? { duration: 0.2 } : { type: "spring", damping: 15, stiffness: 100 }}
                     className={`relative w-full max-w-sm aspect-[3/4] rounded-3xl overflow-hidden shadow-2xl ${visuals.glow}`}
                     onClick={(e) => e.stopPropagation()}
                 >
