@@ -43,6 +43,7 @@ export const Card = memo(({ character, onClick }: CardProps) => {
                 <img
                     src={character.img_url || 'https://files.catbox.moe/2hsawz.jpg'}
                     alt={character.name}
+                    loading="lazy"
                     decoding="async"
                     onError={() => setImgError(true)}
                     className="absolute inset-0 w-full h-full object-cover object-top transition-all duration-700 group-hover:scale-110"

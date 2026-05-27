@@ -8,28 +8,8 @@ import { formatNumber } from '../utils';
 import { apiFetch } from '../api/client';
 import { useUser } from '../context/UserContext';
 
-export const Shop = ({ onCharClick, triggerRefresh }) => {
-  const { addToast } = useToast();
-  const { triggerRefresh: triggerUserRefresh } = useUser();
+export const Shop = ({ onCharClick, triggerRefresh }: any) => {
   const { data: shopData, loading, execute: fetchShop } = useApi('/shop/characters');
-  const [buying, setBuying] = React.useState(null);
-
-  const handleBuy = async (char) => {
-    setBuying(char.id);
-    try {
-      await apiFetch(`/shop/buy/character/${char.id}`, { method: 'POST' });
-      addToast(`Acquired ${char.name}!`, 'success');
-      window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
-      triggerUserRefresh();
-      if (triggerRefresh) triggerRefresh();
-      fetchShop();
-    } catch (err) {
-      addToast(err.message, 'error');
-      window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('error');
-    } finally {
-      setBuying(null);
-    }
-  };
 
   if (loading && !shopData) return (
     <div className="grid grid-cols-3 gap-2 px-4 py-6">
