@@ -7,20 +7,21 @@ interface ProgressBarProps {
   total: number;
   color?: string;
   label?: string;
+  compact?: boolean;
 }
 
-export const ProgressBar = ({ current, total, color = "bg-brand-accent", label }: ProgressBarProps) => {
+export const ProgressBar = ({ current, total, color = "bg-brand-accent", label, compact }: ProgressBarProps) => {
   const percentage = total > 0 ? Math.min(100, Math.max(0, (current / total) * 100)) : 0;
 
   return (
-    <div className="w-full space-y-1.5">
+    <div className={`w-full ${compact ? 'space-y-1' : 'space-y-1.5'}`}>
       {label && (
         <div className="flex justify-between items-end text-[10px] font-black text-slate-400 px-0.5 uppercase tracking-widest">
           <span className="opacity-70">{label}</span>
           <span className="text-white/80 tabular-nums">{formatNumber(current)} / {formatNumber(total)}</span>
         </div>
       )}
-      <div className="h-2 w-full bg-slate-900/50 rounded-full overflow-hidden border border-white/10 p-[1px]">
+      <div className={`${compact ? 'h-1.5' : 'h-2'} w-full bg-slate-900/50 rounded-full overflow-hidden border border-white/10 p-[1px]`}>
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${percentage}%` }}
