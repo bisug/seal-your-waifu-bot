@@ -313,7 +313,7 @@ async def free_spin_handler(_, query: types.CallbackQuery):
         await query.answer("You have already used your free spin!", show_alert=True)
         return
         
-    cursor = collection.aggregate([{"$sample": {"size": 1}}])
+    cursor = await collection.aggregate([{"$sample": {"size": 1}}])
     chars = await cursor.to_list(length=1)
     
     if not chars:
