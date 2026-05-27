@@ -63,7 +63,7 @@ export const Leaderboard = () => {
                                 </div>
                             </div>
                             <div className="text-right">
-                                <p className="text-[13px] font-black text-brand-accent">{formatNumber(user.score)}</p>
+                                <p className="text-[13px] font-black text-brand-accent">{formatNumber(user.value)}</p>
                                 <p className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">{metric}</p>
                             </div>
                         </div>
