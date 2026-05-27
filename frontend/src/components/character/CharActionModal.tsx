@@ -81,6 +81,35 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
         }
     };
 
+    const handleSell = async () => {
+        setSellStage('selling');
+        try {
+            // Confirm selling for Shards (using bot's sell logic)
+            window.Telegram?.WebApp?.showConfirm(
+                `Sell ${selectedChar.name} for Shards?`,
+                async (confirmed) => {
+                    if (!confirmed) {
+                        setSellStage('idle');
+                        return;
+                    }
+
+                    try {
+                        const res = await apiFetch(`/character/sell/${selectedChar.id}`, { method: 'POST' });
+                        addToast(`Sold! +${res.reward} Shards`, 'success');
+                        triggerRefresh();
+                        setSelectedChar(null);
+                    } catch (err: any) {
+                        addToast(err.message, 'error');
+                        setSellStage('idle');
+                    }
+                }
+            );
+        } catch (err: any) {
+            addToast(err.message, 'error');
+            setSellStage('idle');
+        }
+    };
+
     const actions = (
         <div className="space-y-4 w-full">
             {activeTab === 'market' && !isOwned && (
@@ -113,23 +142,26 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
             )}
 
             {isOwned && (
-                <div className="flex gap-3">
-                   <button
-                    onClick={handleRecycle}
-                    disabled={sellStage !== 'idle'}
-                    className="flex-1 py-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-[11px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 active:scale-95 transition-all"
-                   >
-                     {sellStage !== 'idle' ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                     <span>Recycle</span>
-                   </button>
+                <div className="flex flex-col gap-2">
+                    <div className="flex gap-2">
+                        <button
+                            onClick={handleRecycle}
+                            disabled={sellStage !== 'idle'}
+                            className="flex-1 py-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-[11px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 active:scale-95 transition-all"
+                        >
+                            {sellStage === 'previewing' || sellStage === 'selling' ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                            <span>Recycle (Zenith)</span>
+                        </button>
 
-                   <button
-                    onClick={() => addToast('Trading soon...', 'info')}
-                    className="flex-1 py-4 rounded-xl bg-white/5 border border-white/10 text-white/40 text-[11px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 active:scale-95 transition-all"
-                   >
-                     <ArrowRightLeft size={14} />
-                     <span>Trade</span>
-                   </button>
+                        <button
+                            onClick={handleSell}
+                            disabled={sellStage !== 'idle'}
+                            className="flex-1 py-4 rounded-xl bg-brand-accent/10 border border-brand-accent/20 text-brand-accent text-[11px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 active:scale-95 transition-all"
+                        >
+                            {sellStage === 'selling' ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
+                            <span>Sell (Shards)</span>
+                        </button>
+                    </div>
                 </div>
             )}
         </div>
