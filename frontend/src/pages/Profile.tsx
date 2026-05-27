@@ -53,7 +53,7 @@ export const Profile = ({ onCharClick }: ProfileProps) => {
   if (!user) return null;
 
   return (
-    <div className="pb-28 pt-4">
+    <div className="pb-10 pt-4">
       {/* Professional Compact Header */}
       <section className="px-4 mb-6">
         <div className="flex items-center space-x-4 bg-white/5 p-4 rounded-2xl border border-white/5">

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, Suspense, lazy, useCallback, useRef, ReactNode } from 'react';
 import { Loader2 } from 'lucide-react';
 import { UserProvider, useUser } from './context/UserContext';
-import { TabNavigation } from './components/TabNavigation';
+import { Header } from './components/Header';
+import { NavigationDrawer } from './components/NavigationDrawer';
 import { IntroLoading } from './components/IntroLoading';
 import { Profile } from './pages/Profile';
 import { NotFound } from './pages/NotFound';
@@ -10,9 +11,18 @@ import { CharActionModal } from './components/character/CharActionModal';
 import { PetActionModal } from './components/pet/PetActionModal';
 import { GachaReveal } from './components/ui/GachaReveal';
 
-const Market = lazy(() => import('./pages/Market').then(m => ({ default: m.Market })));
-const Nexus = lazy(() => import('./pages/Nexus').then(m => ({ default: m.Nexus })));
+// Lazy load all pages
+const Shop = lazy(() => import('./pages/Shop').then(m => ({ default: m.Shop })));
+const Gallery = lazy(() => import('./pages/Gallery').then(m => ({ default: m.Gallery })));
+const PetShop = lazy(() => import('./pages/PetShop').then(m => ({ default: m.PetShop })));
 const Hatchery = lazy(() => import('./pages/Hatchery').then(m => ({ default: m.Hatchery })));
+const Quests = lazy(() => import('./pages/Quests').then(m => ({ default: m.Quests })));
+const Pass = lazy(() => import('./pages/Pass').then(m => ({ default: m.Pass })));
+const Leaderboard = lazy(() => import('./pages/Leaderboard').then(m => ({ default: m.Leaderboard })));
+const Trade = lazy(() => import('./pages/Trade').then(m => ({ default: m.Trade })));
+const Marriage = lazy(() => import('./pages/Marriage').then(m => ({ default: m.Marriage })));
+const Referrals = lazy(() => import('./pages/Referrals').then(m => ({ default: m.Referrals })));
+const BattleStats = lazy(() => import('./pages/BattleStats').then(m => ({ default: m.BattleStats })));
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -65,12 +75,17 @@ const AppContent = () => {
   
   const getInitialTab = () => {
     const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
-    if (startParam === 'shop' || startParam === 'market' || startParam === 'gallery') return 'market';
-    if (startParam === 'leaderboard' || startParam === 'pass' || startParam === 'quests') return 'nexus';
+    if (startParam === 'shop') return 'shop';
+    if (startParam === 'market') return 'shop';
+    if (startParam === 'gallery') return 'gallery';
+    if (startParam === 'leaderboard') return 'leaderboard';
+    if (startParam === 'pass') return 'pass';
+    if (startParam === 'quests') return 'quests';
     return 'profile';
   };
 
   const [activeTab, setActiveTab] = useState(getInitialTab());
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [selectedChar, setSelectedChar] = useState<any>(null);
   const [selectedPet, setSelectedPet] = useState<any>(null);
   const [revealedChar, setRevealedChar] = useState<any>(null);
@@ -86,10 +101,11 @@ const AppContent = () => {
         tg.BackButton?.offClick?.(backHandlerRef.current);
       }
 
-      if (selectedChar || selectedPet) {
+      if (selectedChar || selectedPet || isMenuOpen) {
         const handler = () => {
           setSelectedChar(null);
           setSelectedPet(null);
+          setIsMenuOpen(false);
         };
         backHandlerRef.current = handler;
         tg.BackButton?.show?.();
@@ -115,7 +131,7 @@ const AppContent = () => {
         // ignore
       }
     };
-  }, [selectedChar, selectedPet]);
+  }, [selectedChar, selectedPet, isMenuOpen]);
 
   const handleNavigate = useCallback((tab: string) => {
     const tg = window.Telegram?.WebApp;
@@ -172,6 +188,8 @@ const AppContent = () => {
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-brand-midnight">
+      <Header onMenuClick={() => setIsMenuOpen(true)} />
+
       <main className="app-scroller adaptive-px overflow-x-hidden">
         <Suspense fallback={
           <div className="flex items-center justify-center h-full bg-brand-midnight">
@@ -179,16 +197,19 @@ const AppContent = () => {
           </div>
         }>
           {activeTab === 'profile' && <Profile onCharClick={setSelectedChar} />}
-          {activeTab === 'market' && (
-              <Market
-                  onCharClick={setSelectedChar}
-                  onPetClick={setSelectedPet}
-                  onNavigate={handleNavigate}
-              />
-          )}
-          {activeTab === 'nexus' && <Nexus />}
           {activeTab === 'incubation' && <Hatchery onPetClick={setSelectedPet} />}
-          {!['profile', 'market', 'nexus', 'incubation'].includes(activeTab) && (
+          {activeTab === 'shop' && <Shop onCharClick={setSelectedChar} />}
+          {activeTab === 'gallery' && <Gallery onCharClick={setSelectedChar} />}
+          {activeTab === 'pets' && <PetShop onPetClick={setSelectedPet} />}
+          {activeTab === 'trade' && <Trade />}
+          {activeTab === 'marriage' && <Marriage />}
+          {activeTab === 'referrals' && <Referrals />}
+          {activeTab === 'quests' && <Quests />}
+          {activeTab === 'pass' && <Pass />}
+          {activeTab === 'leaderboard' && <Leaderboard />}
+          {activeTab === 'battle' && <BattleStats />}
+
+          {!['profile', 'incubation', 'shop', 'gallery', 'pets', 'trade', 'marriage', 'referrals', 'quests', 'pass', 'leaderboard', 'battle'].includes(activeTab) && (
             <NotFound onReset={() => setActiveTab('profile')} />
           )}
         </Suspense>
@@ -217,7 +238,12 @@ const AppContent = () => {
         />
       )}
 
-      <TabNavigation activeTab={activeTab} onNavigate={handleNavigate} />
+      <NavigationDrawer
+        isOpen={isMenuOpen}
+        onClose={() => setIsMenuOpen(false)}
+        activeTab={activeTab}
+        onNavigate={handleNavigate}
+      />
     </div>
   );
 };

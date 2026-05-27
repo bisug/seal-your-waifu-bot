@@ -7,13 +7,13 @@ export const BattleStats = () => {
     const { data: stats, loading } = useApi('/battle/stats');
 
     if (loading) return (
-        <div className="px-6 py-12 space-y-4">
+        <div className="px-6 pb-12 pt-4 space-y-4">
             <Skeleton className="h-64 rounded-[3rem]" />
         </div>
     );
 
     return (
-        <div className="px-6 py-12">
+        <div className="px-6 pb-12 pt-4">
             <div className="flex items-center space-x-3 mb-8">
                 <Swords className="text-brand-accent" size={24} />
                 <h1 className="text-2xl font-black uppercase tracking-tighter italic">Combat Log</h1>
