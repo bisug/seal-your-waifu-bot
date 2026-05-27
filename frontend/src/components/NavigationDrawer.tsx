@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import {
   X, User, Egg, ShoppingBag, Search, Dog,
   Zap, Trophy, Swords, Repeat, Heart, Users, Activity,
-  LucideIcon
+  LucideIcon, Award, PawPrint
 } from 'lucide-react';
 import { cn } from '../utils';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -30,7 +30,9 @@ const SECTIONS: NavSection[] = [
     title: "Personal",
     items: [
       { id: 'profile', label: 'Profile', icon: User },
-      { id: 'incubation', label: 'Hatchery', icon: Egg },
+      { id: 'mypets', label: 'My Pets', icon: PawPrint },
+      { id: 'incubation', label: 'Incubation', icon: Egg },
+      { id: 'achievements', label: 'Achievements', icon: Award },
     ]
   },
   {
@@ -44,8 +46,6 @@ const SECTIONS: NavSection[] = [
   {
     title: "Social",
     items: [
-      { id: 'trade', label: 'Trade Center', icon: Repeat },
-      { id: 'marriage', label: 'Social/Marriage', icon: Heart },
       { id: 'referrals', label: 'Referrals', icon: Users },
     ]
   },
@@ -55,7 +55,6 @@ const SECTIONS: NavSection[] = [
       { id: 'quests', label: 'Tasks/Quests', icon: Zap },
       { id: 'pass', label: 'Battle Pass', icon: Trophy },
       { id: 'leaderboard', label: 'Leaderboards', icon: Swords },
-      { id: 'battle', label: 'Battle Stats', icon: Activity },
     ]
   }
 ];
