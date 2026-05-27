@@ -4,7 +4,7 @@ import os
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
-from fastapi import HTTPException as FastAPIHTTPException
+from fastapi import HTTPException
 from fastapi import Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -14,6 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from config import config
 from Grabber import LOGGER
 from Grabber.core.cache import rebuild_leaderboard
+from Grabber.core.tasks import run_background_task
 from Grabber.core.worker import background_maintenance
 from Grabber.database import user_collection
 from Grabber.runner import start_bots, stop_bots
@@ -40,13 +41,17 @@ async def sync_leaderboard_periodic():
 async def lifespan(app: FastAPI):
     # Startup
     await start_bots()
-    sync_task = asyncio.create_task(sync_leaderboard_periodic())
-    worker_task = asyncio.create_task(background_maintenance())
-    
-    yield
-    
-    # Shutdown
-    await stop_bots()
+    sync_task = run_background_task(sync_leaderboard_periodic())
+    worker_task = run_background_task(background_maintenance())
+
+    try:
+        yield
+    finally:
+        # Gracefully cancel background tasks before stopping bots
+        sync_task.cancel()
+        worker_task.cancel()
+        await asyncio.gather(sync_task, worker_task, return_exceptions=True)
+        await stop_bots()
 
 app = FastAPI(
     title="Telegram WebApp API",
@@ -59,7 +64,7 @@ app = FastAPI(
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    if isinstance(exc, FastAPIHTTPException):
+    if isinstance(exc, HTTPException):
         raise exc
     logging.error(f"Unhandled Exception: {exc}", exc_info=True)
     return JSONResponse(

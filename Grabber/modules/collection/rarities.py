@@ -6,7 +6,8 @@ from Grabber.database import collection
 RARITY_MAP = {
     1: "⚪ Common", 2: "🟢 Medium", 3: "🟠 Rare", 4: "🟡 Legendary", 5: "💠 Cosmic",
     6: "💮 Exclusive", 7: "🔮 Limited Edition", 8: "🫧 Royal", 9: "💎 Antique", 10: "🎐 Celestial",
-    11: "🎞️ AMV", 12: "🪽 Prestige"
+    11: "🎞️ AMV", 12: "🪽 Prestige", 13: "❄️ Winter", 14: "☀️ Summer", 15: "💖 Valentine",
+    16: "🎃 Halloween"
 }
 RARITY_WEIGHTS = {
     "⚪ Common": 25,
@@ -20,7 +21,11 @@ RARITY_WEIGHTS = {
     "💎 Antique": 3,
     "🎐 Celestial": 2,
     "🎞️ AMV": 2,
-    "🪽 Prestige": 1
+    "🪽 Prestige": 1,
+    "❄️ Winter": 6,
+    "☀️ Summer": 6,
+    "💖 Valentine": 5,
+    "🎃 Halloween": 5
 }
 ACTIVE_RARITY_WEIGHTS = {
     "🟠 Rare": 20,
@@ -32,21 +37,35 @@ ACTIVE_RARITY_WEIGHTS = {
     "💎 Antique": 7,
     "🎐 Celestial": 6,
     "🎞️ AMV": 7,
-    "🪽 Prestige": 3
+    "🪽 Prestige": 3,
+    "❄️ Winter": 12,
+    "☀️ Summer": 12,
+    "💖 Valentine": 10,
+    "🎃 Halloween": 10
 }
 @app.on_message(filters.command("rarities"))
 async def rarities_handler(_, message: types.Message):
-    pipeline = [
-        {"$group": {"_id": "$rarity", "count": {"$sum": 1}}}
-    ]
-    cursor = await collection.aggregate(pipeline)
-    rarity_counts = {}
-    async for doc in cursor:
-        rarity_counts[doc["_id"]] = doc["count"]
-    response = "<b>Character Counts by Rarity:</b>\n\n"
-    for i in range(1, len(RARITY_MAP) + 1):
-        rarity_name = RARITY_MAP.get(i)
-        if rarity_name:
-            count = rarity_counts.get(rarity_name, 0)
-            response += f"{rarity_name}: <code>{count}</code>\n"
-    await message.reply_text(response, parse_mode=enums.ParseMode.HTML)
+    try:
+        pipeline = [
+            {"$group": {"_id": "$rarity", "count": {"$sum": 1}}}
+        ]
+        # Fixed: aggregate() must be awaited in Motor (async pymongo driver)
+        cursor = await collection.aggregate(pipeline)
+        rarity_counts = {}
+        total_characters = 0
+
+        async for doc in cursor:
+            rarity_counts[doc["_id"]] = doc["count"]
+            total_characters += doc["count"]
+
+        response = "<b>Character Counts by Rarity:</b>\n\n"
+        for i in range(1, len(RARITY_MAP) + 1):
+            rarity_name = RARITY_MAP.get(i)
+            if rarity_name:
+                count = rarity_counts.get(rarity_name, 0)
+                response += f"{rarity_name}: <code>{count}</code>\n"
+
+        response += f"\n<b>Total Characters:</b> <code>{total_characters}</code>\n"
+        await message.reply_text(response, parse_mode=enums.ParseMode.HTML)
+    except Exception as e:
+        await message.reply_text(f"❌ Failed to fetch rarities: <code>{e}</code>", parse_mode=enums.ParseMode.HTML)
