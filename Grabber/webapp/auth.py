@@ -25,23 +25,26 @@ def validate_init_data(init_data: str):
         return False
         
     try:
-        vals = dict(parse_qsl(init_data))
+        vals = dict(parse_qsl(init_data, keep_blank_values=True))
         msg_hash = vals.pop('hash', None)
         if not msg_hash:
             return False
             
         data_check_string = "\n".join([f"{k}={v}" for k, v in sorted(vals.items())])
         
-        secret_key = hmac.new(b"WebAppData", config.TOKEN.encode(), hashlib.sha256).digest()
-        h = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
-        
-        if hmac.compare_digest(h, msg_hash):
-            auth_date = int(vals.get('auth_date', 0))
-            if time.time() - auth_date > 86400: # 24 hours expiry
-                return False
-            return vals
-    except Exception:
-        pass
+        for token in [config.TOKEN, config.SUB_TOKEN]:
+            if not token:
+                continue
+            secret_key = hmac.new(b"WebAppData", token.encode(), hashlib.sha256).digest()
+            h = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
+            
+            if hmac.compare_digest(h, msg_hash):
+                auth_date = int(vals.get('auth_date', 0))
+                if time.time() - auth_date > 86400: # 24 hours expiry
+                    return False
+                return vals
+    except Exception as e:
+        logging.error(f"validate_init_data error: {e}")
     return False
 
 # Enforce a strict max cap to prevent DDoS memory leak if Redis dies
