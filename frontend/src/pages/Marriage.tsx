@@ -4,7 +4,7 @@ import { Skeleton } from '../components/ui/Skeleton';
 import { Heart, Users } from 'lucide-react';
 
 export const Marriage = () => {
-    const { data: partners, loading } = useApi('/marriage/partners');
+    const { data: marriageData, loading } = useApi('/social/marriage');
 
     if (loading) return (
         <div className="px-6 pb-12 pt-4 space-y-4">
@@ -21,11 +21,26 @@ export const Marriage = () => {
             </div>
 
             <div className="glass-panel p-8 rounded-[3rem] border border-white/5 text-center flex flex-col items-center">
-                 <Users size={48} className="text-slate-800 mb-6" />
-                 <h2 className="text-lg font-black text-white uppercase tracking-widest mb-2">No Bonds Established</h2>
-                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-relaxed">
-                     You are not currently married to any collectors.
-                 </p>
+                 {marriageData ? (
+                    <>
+                        <div className="w-24 h-24 rounded-3xl overflow-hidden border-2 border-brand-accent/20 mb-6">
+                            <img src={marriageData.partner_avatar || 'https://files.catbox.moe/2hsawz.jpg'} alt="" className="w-full h-full object-cover" />
+                        </div>
+                        <h2 className="text-lg font-black text-white uppercase tracking-widest mb-1">{marriageData.partner_name}</h2>
+                        <p className="text-[10px] text-brand-accent font-bold uppercase tracking-widest mb-4">Married Since {new Date(marriageData.married_at).toLocaleDateString()}</p>
+                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-relaxed">
+                            A bond forged in the matrix.
+                        </p>
+                    </>
+                 ) : (
+                    <>
+                        <Users size={48} className="text-slate-800 mb-6" />
+                        <h2 className="text-lg font-black text-white uppercase tracking-widest mb-2">No Bonds Established</h2>
+                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-relaxed">
+                            You are not currently married to any collectors.
+                        </p>
+                    </>
+                 )}
             </div>
         </div>
     );

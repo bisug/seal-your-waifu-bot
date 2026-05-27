@@ -6,7 +6,7 @@ import { apiFetch } from '../api/client';
 import { ArrowRightLeft, User, Shield } from 'lucide-react';
 
 export const Trade = () => {
-    const { data: trades, loading } = useApi('/trades');
+    const { data: trades, loading } = useApi('/trade/offers');
     const { addToast } = useToast();
 
     if (loading) return (
