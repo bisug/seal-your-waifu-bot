@@ -6,7 +6,15 @@ import { Modal } from './Modal';
 import { apiFetch } from '../../api/client';
 import { useUser } from '../../context/UserContext';
 
-export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user }) => {
+interface CharActionModalProps {
+    selectedChar: any;
+    setSelectedChar: (char: any) => void;
+    activeTab: string;
+    user: any;
+    onPurchaseSuccess?: (char: any) => void;
+}
+
+export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user, onPurchaseSuccess }: CharActionModalProps) => {
     const { addToast } = useToast();
     const { triggerRefresh } = useUser();
     const [purchaseStage, setPurchaseStage] = useState('idle');
@@ -27,12 +35,10 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
         setPurchaseStage('buying');
         try {
             await apiFetch(`/shop/buy/character/${selectedChar.id}`, { method: 'POST' });
-            addToast(`Acquired ${selectedChar.name}!`, 'success');
-            window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
             triggerRefresh();
-            // Optional: triggerShopRefresh if passed as prop
             setSelectedChar(null);
-        } catch (err) {
+            if (onPurchaseSuccess) onPurchaseSuccess(selectedChar);
+        } catch (err: any) {
             addToast(err.message, 'error');
             window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('error');
             setPurchaseStage('idle');

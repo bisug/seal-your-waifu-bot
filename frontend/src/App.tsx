@@ -9,6 +9,7 @@ import { NotFound } from './pages/NotFound';
 import { ToastProvider } from './components/ui/Toast';
 import { CharActionModal } from './components/character/CharActionModal';
 import { PetActionModal } from './components/pet/PetActionModal';
+import { GachaReveal } from './components/ui/GachaReveal';
 
 const Market = lazy(() => import('./pages/Market').then(m => ({ default: m.Market })));
 const Nexus = lazy(() => import('./pages/Nexus').then(m => ({ default: m.Nexus })));
@@ -75,6 +76,7 @@ const AppContent = () => {
   const [activeTab, setActiveTab] = useState(getInitialTab());
   const [selectedChar, setSelectedChar] = useState<any>(null);
   const [selectedPet, setSelectedPet] = useState<any>(null);
+  const [revealedChar, setRevealedChar] = useState<any>(null);
 
   const backHandlerRef = useRef<(() => void) | null>(null);
 
@@ -221,6 +223,8 @@ const AppContent = () => {
             setSelectedChar={setSelectedChar}
             activeTab={activeTab}
             user={user}
+            // Trigger TS re-evaluation
+            onPurchaseSuccess={setRevealedChar}
           />
         )}
         {selectedPet && (
@@ -228,6 +232,12 @@ const AppContent = () => {
             selectedPet={selectedPet}
             setSelectedPet={setSelectedPet}
             user={user}
+          />
+        )}
+        {revealedChar && (
+          <GachaReveal
+            character={revealedChar}
+            onClose={() => setRevealedChar(null)}
           />
         )}
       </AnimatePresence>
