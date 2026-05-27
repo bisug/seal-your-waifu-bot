@@ -15,13 +15,13 @@ export const Referrals = () => {
     };
 
     if (loading) return (
-        <div className="px-6 py-12">
+        <div className="px-6 pb-12 pt-4">
             <Skeleton className="h-64 rounded-[3rem]" />
         </div>
     );
 
     return (
-        <div className="px-6 py-12">
+        <div className="px-6 pb-12 pt-4">
             <div className="flex items-center space-x-3 mb-8">
                 <Users className="text-brand-accent" size={24} />
                 <h1 className="text-2xl font-black uppercase tracking-tighter italic">Network</h1>
