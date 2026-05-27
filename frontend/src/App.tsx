@@ -1,5 +1,4 @@
 import React, { useState, useEffect, Suspense, lazy, useCallback, useRef, ReactNode } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import { UserProvider, useUser } from './context/UserContext';
 import { TabNavigation } from './components/TabNavigation';
@@ -35,23 +34,21 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("Master Audit - UI Crash Detected:", error, errorInfo);
+    console.error("System Audit - UI Crash Detected:", error, errorInfo);
   }
 
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex-1 flex flex-col items-center justify-center p-12 text-center min-h-svh bg-brand-midnight">
-          <div className="mb-8 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl max-w-sm">
-             <h2 className="text-red-500 font-black mb-2 uppercase tracking-[0.3em]">System Error</h2>
+        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center min-h-svh bg-brand-midnight">
+          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl max-w-sm">
+             <h2 className="text-red-500 font-bold mb-2 uppercase tracking-wider text-sm">System Error</h2>
              <p className="text-[10px] text-red-400 font-mono break-all">{this.state.error?.toString() || 'Unknown Error'}</p>
           </div>
           
-          <p className="text-slate-500 text-[10px] mb-8 uppercase tracking-widest">A module failure occurred. Re-establish connection?</p>
-          
           <button 
             onClick={() => window.location.reload()}
-            className="px-8 py-4 bg-brand-accent text-white font-black rounded-2xl uppercase tracking-widest text-[11px] shadow-lg shadow-brand-accent/50 active:scale-95 transition-transform"
+            className="px-6 py-3 bg-brand-accent text-white font-bold rounded-xl uppercase tracking-wider text-[11px] active:scale-95 transition-transform"
           >
             RECONNECT
           </button>
@@ -64,7 +61,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 
 
 const AppContent = () => {
-  const { user, loading, error, liteMode } = useUser();
+  const { user, loading, error } = useUser();
   
   const getInitialTab = () => {
     const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
@@ -106,7 +103,7 @@ const AppContent = () => {
       tg.setBackgroundColor?.('#0A0A0B');
       tg.expand?.();
        } catch {
-      console.warn('Telegram API error (non-critical):', );
+      console.warn('Telegram API error (non-critical)');
     }
 
     return () => {
@@ -122,11 +119,7 @@ const AppContent = () => {
 
   const handleNavigate = useCallback((tab: string) => {
     const tg = window.Telegram?.WebApp;
-    if (tab === 'profile' || tab === 'market') {
-      tg?.HapticFeedback?.impactOccurred('medium');
-    } else {
-      tg?.HapticFeedback?.impactOccurred('light');
-    }
+    tg?.HapticFeedback?.impactOccurred('light');
     setActiveTab(tab);
   }, []);
 
@@ -134,36 +127,30 @@ const AppContent = () => {
 
   if (error || (!loading && !user)) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center px-10 text-center min-h-svh bg-brand-midnight relative overflow-hidden bg-mesh">
-        <div className="absolute inset-0 bg-brand-accent/5 opacity-10 animate-pulse" />
-        
+      <div className="flex-1 flex flex-col items-center justify-center px-10 text-center min-h-svh bg-brand-midnight relative overflow-hidden">
         <div className="relative z-10">
-          <motion.div 
-            initial={liteMode ? false : { scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="mb-8"
-          >
-            <div className="w-20 h-20 mx-auto rounded-3xl border border-brand-accent/30 flex items-center justify-center bg-brand-accent/5">
-              <span className="text-4xl">📡</span>
+          <div className="mb-6">
+            <div className="w-16 h-16 mx-auto rounded-2xl border border-brand-accent/20 flex items-center justify-center bg-brand-accent/5">
+              <span className="text-3xl">📡</span>
             </div>
-          </motion.div>
+          </div>
           
-          <h2 className="text-brand-accent font-black mb-2 uppercase tracking-[0.3em] text-xl">Connection Lost</h2>
-          <p className="text-slate-500 text-[10px] mb-10 leading-relaxed uppercase tracking-widest max-w-[200px] mx-auto">
+          <h2 className="text-brand-accent font-bold mb-2 uppercase tracking-wider text-lg">Connection Lost</h2>
+          <p className="text-slate-500 text-[10px] mb-8 leading-relaxed uppercase tracking-widest max-w-[200px] mx-auto">
             {error || "Authentication timed out. Please restart the bot."}
           </p>
           
-          <div className="space-y-4">
+          <div className="space-y-3">
             <button 
               onClick={() => window.location.reload()}
-              className="w-full px-10 py-4 rounded-2xl bg-brand-accent text-brand-midnight font-black uppercase text-[10px] tracking-[0.15em] shadow-xl shadow-brand-accent/20 transition-all active:scale-95 flex items-center justify-center gap-2"
+              className="w-full px-8 py-3.5 rounded-xl bg-brand-accent text-white font-bold uppercase text-[10px] tracking-wider transition-all active:scale-95 flex items-center justify-center gap-2"
             >
               RETRY
             </button>
             <button 
               onClick={() => { 
                 window.Telegram?.WebApp?.showConfirm(
-                  "Are you sure you want to perform a Deep Reset? This will wipe your local session data.",
+                  "Deep Reset will wipe your local session data. Continue?",
                   (confirmed) => {
                     if (confirmed) {
                       sessionStorage.clear();
@@ -173,9 +160,9 @@ const AppContent = () => {
                   }
                 );
               }}
-              className="w-full py-4 text-slate-600 text-[8px] font-bold uppercase tracking-[0.2em] hover:text-slate-400 transition-colors"
+              className="w-full py-3 text-slate-600 text-[8px] font-bold uppercase tracking-wider hover:text-slate-400 transition-colors"
             >
-              Deep Reset (Recovery Mode)
+              Deep Reset
             </button>
           </div>
         </div>
@@ -185,62 +172,50 @@ const AppContent = () => {
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-brand-midnight">
-      <AnimatePresence mode="wait">
-        <motion.main
-          key={activeTab}
-          initial={liteMode ? false : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={liteMode ? undefined : { opacity: 0 }}
-          transition={liteMode ? undefined : { duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
-          className="app-scroller adaptive-px bg-mesh overflow-x-hidden"
-        >
-          <Suspense fallback={
-            <div className="flex items-center justify-center h-full bg-brand-midnight bg-mesh">
-              <Loader2 size={24} className="animate-spin text-brand-accent/20" />
-            </div>
-          }>
-            {activeTab === 'profile' && <Profile onCharClick={setSelectedChar} />}
-            {activeTab === 'market' && (
-                <Market
-                    onCharClick={setSelectedChar}
-                    onPetClick={setSelectedPet}
-                    onNavigate={handleNavigate}
-                />
-            )}
-            {activeTab === 'nexus' && <Nexus />}
-            {activeTab === 'incubation' && <Hatchery onPetClick={setSelectedPet} />}
-            {!['profile', 'market', 'nexus', 'incubation'].includes(activeTab) && (
-              <NotFound onReset={() => setActiveTab('profile')} />
-            )}
-          </Suspense>
-        </motion.main>
-      </AnimatePresence>
+      <main className="app-scroller adaptive-px overflow-x-hidden">
+        <Suspense fallback={
+          <div className="flex items-center justify-center h-full bg-brand-midnight">
+            <Loader2 size={24} className="animate-spin text-brand-accent/20" />
+          </div>
+        }>
+          {activeTab === 'profile' && <Profile onCharClick={setSelectedChar} />}
+          {activeTab === 'market' && (
+              <Market
+                  onCharClick={setSelectedChar}
+                  onPetClick={setSelectedPet}
+                  onNavigate={handleNavigate}
+              />
+          )}
+          {activeTab === 'nexus' && <Nexus />}
+          {activeTab === 'incubation' && <Hatchery onPetClick={setSelectedPet} />}
+          {!['profile', 'market', 'nexus', 'incubation'].includes(activeTab) && (
+            <NotFound onReset={() => setActiveTab('profile')} />
+          )}
+        </Suspense>
+      </main>
 
-      <AnimatePresence>
-        {selectedChar && (
-          <CharActionModal
-            selectedChar={selectedChar}
-            setSelectedChar={setSelectedChar}
-            activeTab={activeTab}
-            user={user}
-            // Trigger TS re-evaluation
-            onPurchaseSuccess={setRevealedChar}
-          />
-        )}
-        {selectedPet && (
-          <PetActionModal
-            selectedPet={selectedPet}
-            setSelectedPet={setSelectedPet}
-            user={user}
-          />
-        )}
-        {revealedChar && (
-          <GachaReveal
-            character={revealedChar}
-            onClose={() => setRevealedChar(null)}
-          />
-        )}
-      </AnimatePresence>
+      {selectedChar && (
+        <CharActionModal
+          selectedChar={selectedChar}
+          setSelectedChar={setSelectedChar}
+          activeTab={activeTab}
+          user={user}
+          onPurchaseSuccess={setRevealedChar}
+        />
+      )}
+      {selectedPet && (
+        <PetActionModal
+          selectedPet={selectedPet}
+          setSelectedPet={setSelectedPet}
+          user={user}
+        />
+      )}
+      {revealedChar && (
+        <GachaReveal
+          character={revealedChar}
+          onClose={() => setRevealedChar(null)}
+        />
+      )}
 
       <TabNavigation activeTab={activeTab} onNavigate={handleNavigate} />
     </div>
