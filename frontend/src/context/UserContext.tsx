@@ -35,6 +35,11 @@ export interface Pet {
   rarity?: string;
   desc?: string;
   shopIndex?: number;
+  hp: number;
+  atk: number;
+  spd: number;
+  luck: number;
+  affection: number;
 }
 
 export interface User {
