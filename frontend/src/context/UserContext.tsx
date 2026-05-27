@@ -61,29 +61,15 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Lite mode auto-detection and state
-  const [liteMode, setLiteMode] = useState<boolean>(() => {
-    const saved = localStorage.getItem('sealbot-lite-mode');
-    if (saved !== null) return saved === 'true';
-    
-    // Auto-detect based on hardware if available
-    const cores = navigator.hardwareConcurrency || 4;
-    // @ts-ignore - deviceMemory is not standard across all browsers but works on Chrome Android
-    const ram = navigator.deviceMemory || 4;
-    return cores <= 4 || ram <= 4;
-  });
+  // Enforce Lite Mode permanently for all users
+  const liteMode = true;
 
   useEffect(() => {
-    if (liteMode) {
-      document.body.classList.add('lite-mode');
-    } else {
-      document.body.classList.remove('lite-mode');
-    }
-    localStorage.setItem('sealbot-lite-mode', liteMode.toString());
-  }, [liteMode]);
+    document.body.classList.add('lite-mode');
+  }, []);
 
   const toggleLiteMode = useCallback(() => {
-    setLiteMode(prev => !prev);
+    // No-op as requested: lite only
   }, []);
 
   const refreshUser = useCallback(async () => {
