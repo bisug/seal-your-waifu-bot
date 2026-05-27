@@ -2,13 +2,14 @@ import React from 'react';
 import { useApi } from '../hooks/useApi';
 import { Skeleton } from '../components/ui/Skeleton';
 import { formatNumber } from '../utils';
+import { Pet } from '../context/UserContext';
 
 interface PetShopProps {
-    onPetClick?: (pet: any) => void;
+    onPetClick?: (pet: Pet) => void;
 }
 
 export const PetShop = ({ onPetClick }: PetShopProps) => {
-    const { data: pets, loading } = useApi<any[]>('/shop/pets');
+    const { data: pets, loading } = useApi<Pet[]>('/shop/pets');
 
     if (loading) return (
         <div className="grid grid-cols-2 gap-4 px-4 py-8">

@@ -30,6 +30,11 @@ export interface Pet {
   level: number;
   xp: number;
   xp_needed: number;
+  zenith_price: number;
+  req_level: number;
+  rarity?: string;
+  desc?: string;
+  shopIndex?: number;
 }
 
 export interface User {
@@ -42,6 +47,8 @@ export interface User {
   stats: UserStats;
   characters: Character[];
   current_pet: Pet | null;
+  eggs?: Array<{ type: string }>;
+  pets?: Pet[];
 }
 
 interface UserContextType {
