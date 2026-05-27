@@ -77,7 +77,7 @@ export const Quests = () => {
     };
 
     if (loading && !quests) return (
-        <div className="px-6 py-12 space-y-4">
+        <div className="px-6 pb-12 pt-4 space-y-4">
             {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-32 bg-white/[0.03] rounded-3xl animate-pulse" />)}
         </div>
     );
