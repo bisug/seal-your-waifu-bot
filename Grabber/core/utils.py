@@ -93,11 +93,49 @@ async def reply_media_dynamic(message_obj, media_url, **kwargs):
 
 def handle_errors(func):
     """
-    Decorator to handle common Pyrogram errors in command handlers.
-    Catches FloodWait, SlowmodeWait, and other API errors.
+    Decorator to handle common Pyrogram errors in command handlers,
+    and enforce that users must start the bot in DM first.
     """
     @wraps(func)
     async def wrapper(client, message, *args, **kwargs):
+        from Grabber.core.user import get_cached_user
+        from Grabber.database import user_collection
+        from config import config
+
+        # 1. Registration Check
+        user = getattr(message, "from_user", None)
+        if user:
+            is_start = False
+            if isinstance(message, types.Message):
+                text = message.text or message.caption or ""
+                if text.startswith("/start"):
+                    is_start = True
+            elif isinstance(message, types.CallbackQuery):
+                if message.data and message.data.startswith(("st:", "help:", "free_spin")):
+                    is_start = True
+
+            if not is_start:
+                cached = await get_cached_user(user.id)
+                if not cached:
+                    db_user = await user_collection.find_one({"id": {"$in": [user.id, str(user.id)]}})
+                    if not db_user:
+                        markup = types.InlineKeyboardMarkup([[
+                            types.InlineKeyboardButton("🚀 Start Bot in DM", url=f"https://t.me/{config.BOT_USERNAME}?start=true")
+                        ]])
+                        text = f"❌ <b>Access Denied</b>\n\n<a href='tg://user?id={user.id}'>{html_escape(user.first_name)}</a>, you must start the bot in private messages first before playing!"
+                        if hasattr(message, "reply_text"):
+                            try:
+                                await message.reply_text(text, reply_markup=markup, parse_mode=enums.ParseMode.HTML)
+                            except Exception:
+                                pass
+                        elif hasattr(message, "answer"):
+                            try:
+                                await message.answer("You must start the bot in PM first!", show_alert=True)
+                            except Exception:
+                                pass
+                        return # Stop execution!
+
+        # 2. Proceed with handler inside try-except
         try:
             return await func(client, message, *args, **kwargs)
         except errors.FloodWait as e:
