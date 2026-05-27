@@ -3,9 +3,15 @@ import { useApi } from '../hooks/useApi';
 import { Card } from '../components/character/Card';
 import { CardSkeleton } from '../components/ui/Skeleton';
 import { RefreshCw } from 'lucide-react';
+import { Character } from '../context/UserContext';
 
-export const Shop = ({ onCharClick, triggerRefresh }: any) => {
-  const { data: shopData, loading, execute: fetchShop } = useApi('/shop/characters');
+interface ShopProps {
+  onCharClick: (char: Character) => void;
+  triggerRefresh?: () => void;
+}
+
+export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
+  const { data: shopData, loading, execute: fetchShop } = useApi<Character[]>('/shop/characters');
 
   const handleRefresh = () => {
     fetchShop();
@@ -13,14 +19,14 @@ export const Shop = ({ onCharClick, triggerRefresh }: any) => {
   };
 
   if (loading && !shopData) return (
-    <div className="grid grid-cols-3 gap-2 px-4 py-6">
-       {Array.from({ length: 9 }).map((_, i) => <CardSkeleton key={i} />)}
+    <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2 px-4 py-6">
+       {Array.from({ length: 12 }).map((_, i) => <CardSkeleton key={i} />)}
     </div>
   );
 
   return (
     <div className="pb-24 pt-4">
-      <header className="px-4 mb-4 flex justify-between items-center">
+      <header className="px-4 mb-6 flex justify-between items-center">
          <div>
             <h1 className="text-sm font-bold uppercase tracking-wider text-white">Daily Shop</h1>
             <p className="text-[9px] font-medium text-slate-500 uppercase tracking-widest">Resets Daily</p>
@@ -31,7 +37,7 @@ export const Shop = ({ onCharClick, triggerRefresh }: any) => {
       </header>
 
       <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2 px-4">
-        {shopData?.map((char: any) => (
+        {shopData?.map((char) => (
           <Card key={char.id} character={char} onClick={() => onCharClick(char)} />
         ))}
       </div>
