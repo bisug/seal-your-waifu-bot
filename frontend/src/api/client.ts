@@ -1,4 +1,6 @@
-const API_BASE = `/api/${import.meta.env.VITE_API_PREFIX ?? 'v1_7b82'}`;
+const API_BASE = import.meta.env.VITE_API_URL 
+  ? `${import.meta.env.VITE_API_URL}/api/${import.meta.env.VITE_API_PREFIX ?? 'v1_7b82'}`
+  : `/api/${import.meta.env.VITE_API_PREFIX ?? 'v1_7b82'}`;
 // FIX: Read Telegram SDK at CALL TIME, not at module load time.
 // On mobile, the SDK may not be injected yet when the JS module first evaluates.
 const getTg = () => window.Telegram?.WebApp;
