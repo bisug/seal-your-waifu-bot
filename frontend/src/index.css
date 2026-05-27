@@ -1,16 +1,17 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
 
 @theme {
   --color-brand-midnight: #0a0a0c;
   --color-brand-deep: #121214;
-  --color-brand-accent: #60a5fa;
-  --color-brand-glass: rgba(18, 18, 20, 0.8);
-  --color-brand-glass-border: rgba(255, 255, 255, 0.05);
+  --color-brand-accent: #ec4899; /* Vibrant Pink */
+  --color-brand-accent-secondary: #a855f7; /* Magical Purple */
+  --color-brand-glass: rgba(18, 18, 20, 0.6);
+  --color-brand-glass-border: rgba(255, 255, 255, 0.08);
   
   --breakpoint-xs: 360px;
-  --shadow-neon: 0 4px 12px rgba(59, 130, 246, 0.15);
-  --shadow-neon-lg: 0 8px 24px rgba(59, 130, 246, 0.25);
+  --shadow-neon: 0 4px 15px rgba(236, 72, 153, 0.3);
+  --shadow-neon-lg: 0 8px 30px rgba(236, 72, 153, 0.4);
 }
 
 :root {
@@ -27,12 +28,12 @@
   --space-8: clamp(1rem, 4vw, 1.75rem);
 
   /* Premium Typography Scale - Fluid */
-  --font-xs: 0.65rem;
-  --font-sm: 0.75rem;
-  --font-base: 0.875rem;
-  --font-lg: 1.1rem;
+  --font-xs: 0.75rem;
+  --font-sm: 0.875rem;
+  --font-base: 1rem;
+  --font-lg: 1.125rem;
   --font-xl: 1.25rem;
-  --font-2xl: 1.75rem;
+  --font-2xl: 1.5rem;
   
   /* Adaptive Layout Tokens */
   --content-px: var(--space-4);
@@ -59,7 +60,7 @@ body {
   overflow: hidden;
   background-color: var(--background);
   color: var(--foreground);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'Outfit', system-ui, -apple-system, sans-serif;
   user-select: none;
   -webkit-touch-callout: none;
   overscroll-behavior: none;
@@ -92,10 +93,17 @@ button, a {
 .bg-mesh {
   background-color: var(--color-brand-midnight);
   background-image: 
-    radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.08) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(96, 165, 250, 0.05) 0px, transparent 50%),
-    radial-gradient(at 50% 50%, rgba(139, 92, 246, 0.03) 0px, transparent 50%);
+    radial-gradient(at 0% 0%, rgba(236, 72, 153, 0.08) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.05) 0px, transparent 50%),
+    radial-gradient(at 50% 50%, rgba(244, 114, 182, 0.03) 0px, transparent 50%);
   animation: aurora-swell 15s ease-in-out infinite alternate;
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, var(--color-brand-accent), var(--color-brand-accent-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .neon-shadow {
@@ -194,9 +202,49 @@ button, a {
   touch-action: pan-y;
   overscroll-behavior-y: contain;
   position: relative;
+  /* Promote to own compositing layer for smooth scrolling */
+  transform: translateZ(0);
+  will-change: scroll-position;
+  /* CSS Containment: tells browser this subtree is isolated */
+  contain: layout style;
+}
+
+/* Nav bar gets its own compositor layer so it never repaints with the content */
+nav.flex-shrink-0 {
+  transform: translateZ(0);
+  will-change: transform;
 }
 /* Scroll Lock Utility */
 .no-scroll {
   overflow: hidden !important;
   touch-action: none;
+}
+
+/* Lite Mode Optimizations for Low-End Devices */
+.lite-mode * {
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+
+.lite-mode .blur-\[120px\],
+.lite-mode .blur-\[150px\],
+.lite-mode .blur-3xl,
+.lite-mode .blur-2xl,
+.lite-mode .blur-xl,
+.lite-mode .blur-\[8px\] {
+  filter: none !important;
+  opacity: 0.1 !important; 
+}
+
+.lite-mode .bg-mesh {
+  animation: none !important;
+  background-image: none !important;
+  background-color: var(--color-brand-midnight) !important;
+}
+
+.lite-mode .animate-pulse,
+.lite-mode .animate-pulse-ring,
+.lite-mode .animate-aurora,
+.lite-mode .animate-shimmer {
+  animation: none !important;
 }

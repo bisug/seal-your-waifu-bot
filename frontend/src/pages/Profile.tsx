@@ -7,7 +7,7 @@ import { Card } from '../components/character/Card';
 import { Skeleton, CardSkeleton } from '../components/ui/Skeleton';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Avatar } from '../components/Avatar';
-import { Shield, Activity, Users, Trophy, Search, Loader2 } from 'lucide-react';
+import { Shield, Activity, Users, Trophy, Search, Loader2, Gauge } from 'lucide-react';
 import { formatNumber } from '../utils';
 import { useInfiniteGrid } from '../hooks/useInfiniteGrid';
 import { Character } from '../context/UserContext';
@@ -17,7 +17,7 @@ interface ProfileProps {
 }
 
 export const Profile = ({ onCharClick }: ProfileProps) => {
-  const { user, loading: userLoading } = useUser();
+  const { user, loading: userLoading, liteMode, toggleLiteMode } = useUser();
   const {
     items,
     loading,
@@ -60,6 +60,19 @@ export const Profile = ({ onCharClick }: ProfileProps) => {
       <section className="relative min-h-[11rem] overflow-hidden flex flex-col justify-end px-4 pb-5">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-brand-midnight/60 to-brand-midnight z-10" />
         <div className="absolute inset-0 bg-mesh opacity-30 z-0 scale-150 animate-pulse" />
+        
+        {/* Performance Toggle */}
+        <div className="absolute top-4 right-4 z-30" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+           <button 
+             onClick={toggleLiteMode}
+             className="bg-brand-midnight/60 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full flex items-center space-x-1.5 active:scale-95 transition-all shadow-lg"
+           >
+             <Gauge size={12} className={liteMode ? "text-green-400" : "text-brand-accent"} />
+             <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">
+               {liteMode ? "Lite" : "Premium"}
+             </span>
+           </button>
+        </div>
         <img 
           src={user.avatar || 'https://files.catbox.moe/2hsawz.jpg'} 
           className="absolute inset-0 w-full h-full object-cover opacity-40 blur-[8px] scale-125 transition-transform duration-[10s] hover:scale-150"
@@ -74,7 +87,7 @@ export const Profile = ({ onCharClick }: ProfileProps) => {
               alt="User" 
               className="w-16 h-16 rounded-2xl border-2 border-brand-accent transform transition-transform duration-500 group-hover:scale-105 relative z-10 shadow-neon"
             />
-            <div className="absolute -bottom-1.5 -right-1.5 bg-brand-accent text-white text-[10px] font-black px-2 py-0.5 rounded-md shadow-lg ring-2 ring-brand-midnight z-20">
+            <div className="absolute -bottom-1.5 -right-1.5 bg-gradient-to-tr from-brand-accent to-brand-accent-secondary text-white text-xs font-black px-2.5 py-0.5 rounded-lg shadow-lg ring-2 ring-brand-midnight z-20 shadow-neon">
               LVL {user.stats?.level || 1}
             </div>
           </div>
@@ -83,8 +96,8 @@ export const Profile = ({ onCharClick }: ProfileProps) => {
               {user.first_name || 'Collector'}
             </h1>
             <div className="flex items-center space-x-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-brand-accent" />
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.25em] opacity-90">@{user.username || 'unknown'}</p>
+              <span className="h-2 w-2 rounded-full bg-brand-accent shadow-neon" />
+              <p className="text-xs font-bold text-slate-300 uppercase tracking-widest opacity-90">@{user.username || 'unknown'}</p>
             </div>
           </div>
         </div>
@@ -101,8 +114,8 @@ export const Profile = ({ onCharClick }: ProfileProps) => {
             <div className={`${stat.color} mb-1.5 opacity-80`}>
               <stat.icon size={16} />
             </div>
-            <span className="text-[13px] font-black tracking-tight">{formatNumber(stat.value)}</span>
-            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{stat.label}</span>
+            <span className="text-lg font-black tracking-tight">{formatNumber(stat.value)}</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{stat.label}</span>
           </div>
         ))}
       </div>
@@ -123,8 +136,8 @@ export const Profile = ({ onCharClick }: ProfileProps) => {
             <div className="absolute top-0 right-0 w-32 h-32 bg-brand-accent/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
             
             <div className="flex justify-between items-center mb-3">
-              <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-500">Active Pet</h2>
-              <span className="text-[9px] font-black text-brand-accent tracking-widest uppercase border border-brand-accent/20 bg-brand-accent/5 px-2 py-0.5 rounded-lg">
+              <h2 className="text-xs font-bold uppercase tracking-widest text-slate-400">Active Pet</h2>
+              <span className="text-[10px] font-black text-brand-accent tracking-widest uppercase border border-brand-accent/20 bg-brand-accent/10 px-2.5 py-1 rounded-lg">
                 {user.current_pet.mood}
               </span>
             </div>
@@ -136,14 +149,14 @@ export const Profile = ({ onCharClick }: ProfileProps) => {
               
               <div className="flex-1 flex flex-col justify-center">
                 <div className="flex justify-between items-start mb-1">
-                  <h3 className="font-black text-white text-base tracking-tight leading-none">{user.current_pet.name}</h3>
-                  <span className="text-[10px] font-black text-slate-300">
+                  <h3 className="font-black text-white text-lg tracking-tight leading-none">{user.current_pet.name}</h3>
+                  <span className="text-[11px] font-bold text-brand-accent-secondary bg-brand-accent-secondary/10 px-2 py-0.5 rounded-md border border-brand-accent-secondary/20">
                     LVL {user.current_pet.level}
                   </span>
                 </div>
                 
-                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                  <Activity size={10} className="text-brand-accent" /> {user.current_pet.ability}
+                <p className="text-[11px] text-slate-300 font-bold uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                  <Activity size={12} className="text-brand-accent" /> {user.current_pet.ability}
                 </p>
                 
                 <div className="flex items-center gap-2 mb-3">
@@ -153,16 +166,16 @@ export const Profile = ({ onCharClick }: ProfileProps) => {
                       style={{ width: `${Math.min(100, (user.current_pet.xp / user.current_pet.xp_needed) * 100)}%` }}
                     />
                   </div>
-                  <span className="text-[9px] font-mono text-slate-500">
+                  <span className="text-[10px] font-medium text-slate-400">
                     {user.current_pet.xp}/{user.current_pet.xp_needed}
                   </span>
                 </div>
 
-                <div className="flex gap-2">
-                   <button className="flex-1 py-1.5 bg-brand-accent/10 border border-brand-accent/20 rounded-lg text-[9px] font-black uppercase text-brand-accent hover:bg-brand-accent/20 active:scale-95 transition-all text-center">
+                <div className="flex gap-2 mt-1">
+                   <button className="flex-1 py-2 bg-brand-accent/10 border border-brand-accent/20 rounded-xl text-[10px] font-black uppercase tracking-widest text-brand-accent hover:bg-brand-accent/20 active:scale-95 transition-all text-center shadow-neon">
                       Feed
                    </button>
-                   <button className="flex-1 py-1.5 bg-white/5 border border-white/10 rounded-lg text-[9px] font-black uppercase text-white hover:bg-white/10 active:scale-95 transition-all text-center">
+                   <button className="flex-1 py-2 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest text-white hover:bg-white/10 active:scale-95 transition-all text-center">
                       Play
                    </button>
                 </div>
@@ -176,9 +189,9 @@ export const Profile = ({ onCharClick }: ProfileProps) => {
       <section className="px-4">
         <div className="sticky-header px-4 py-3 -mx-4 mb-4">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-500">My Harem</h2>
-            <div className="flex items-center space-x-1 text-[10px] font-black text-brand-accent uppercase tracking-widest bg-brand-accent/5 px-2.5 py-1 rounded-lg border border-brand-accent/10">
-              <Trophy size={10} />
+            <h2 className="text-[11px] font-bold uppercase tracking-widest text-slate-400">My Harem</h2>
+            <div className="flex items-center space-x-1 text-[11px] font-bold text-white uppercase tracking-widest bg-brand-accent-secondary/20 px-3 py-1.5 rounded-xl border border-brand-accent-secondary/30 shadow-neon">
+              <Trophy size={12} className="text-brand-accent-secondary" />
               <span>Rank #{user.stats?.rank || '---'}</span>
             </div>
           </div>
@@ -187,10 +200,10 @@ export const Profile = ({ onCharClick }: ProfileProps) => {
             <div className="flex space-x-2 overflow-x-auto no-scrollbar py-0.5 scroll-fade-mask">
               <button 
                 onClick={() => setRarity('')}
-                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] whitespace-nowrap transition-all border ${
+                className={`px-5 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-widest whitespace-nowrap transition-all border ${
                   rarity === '' 
-                  ? 'bg-brand-accent text-white border-brand-accent shadow-lg scale-105'
-                  : 'bg-white/5 text-slate-500 border-white/5 hover:border-white/10'
+                  ? 'bg-gradient-to-tr from-brand-accent to-brand-accent-secondary text-white border-brand-accent shadow-neon scale-105'
+                  : 'bg-white/5 text-slate-400 border-white/5 hover:border-white/10'
                 }`}
               >
                 All Tiers
@@ -199,10 +212,10 @@ export const Profile = ({ onCharClick }: ProfileProps) => {
                 <button 
                   key={r}
                   onClick={() => setRarity(r)}
-                  className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] whitespace-nowrap transition-all border ${
+                  className={`px-5 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-widest whitespace-nowrap transition-all border ${
                     rarity === r 
-                    ? 'bg-brand-accent text-white border-brand-accent shadow-lg scale-105'
-                    : 'bg-white/5 text-slate-500 border-white/5 hover:border-white/10'
+                    ? 'bg-gradient-to-tr from-brand-accent to-brand-accent-secondary text-white border-brand-accent shadow-neon scale-105'
+                    : 'bg-white/5 text-slate-400 border-white/5 hover:border-white/10'
                   }`}
                 >
                   {r.split(' ')[1] || r}
@@ -215,7 +228,7 @@ export const Profile = ({ onCharClick }: ProfileProps) => {
               <input 
                 type="text" 
                 placeholder="Search collection..." 
-                className="w-full bg-slate-900/40 border border-white/10 rounded-xl py-3 pl-11 pr-4 text-[11px] focus:border-brand-accent/50 outline-none transition-all placeholder:text-slate-600 font-bold tracking-widest backdrop-blur-sm"
+                className="w-full bg-slate-900/40 border border-white/10 rounded-xl py-3.5 pl-11 pr-4 text-sm focus:border-brand-accent outline-none transition-all placeholder:text-slate-500 font-medium tracking-wide backdrop-blur-sm"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />

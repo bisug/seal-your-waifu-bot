@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { cn } from '../../utils';
 import { RARITY_VISUALS } from '../../constants/rarities';
-import { Character } from '../../context/UserContext';
+import { Character, useUser } from '../../context/UserContext';
 
 interface ModalProps {
     character: Character | null;
@@ -12,6 +12,7 @@ interface ModalProps {
 }
 
 export const Modal = ({ character, onClose, actions }: ModalProps) => {
+    const { liteMode } = useUser();
     useEffect(() => {
         if (character) {
             document.body.classList.add('no-scroll');
@@ -28,13 +29,18 @@ export const Modal = ({ character, onClose, actions }: ModalProps) => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-midnight/95 backdrop-blur-2xl"
+                className={cn(
+                    "fixed inset-0 z-[100] flex items-center justify-center bg-brand-midnight/95",
+                    !liteMode && "backdrop-blur-2xl"
+                )}
             >
-                {/* Cinematic Ambient Glow */}
-                <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                    <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] bg-brand-accent/10 blur-[150px] rounded-full" />
-                    <div className="absolute bottom-[-20%] right-[-20%] w-[80%] h-[80%] bg-brand-accent/5 blur-[150px] rounded-full" />
-                </div>
+                {/* Cinematic Ambient Glow — skipped on lite */}
+                {!liteMode && (
+                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                        <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] bg-brand-accent/10 blur-[150px] rounded-full" />
+                        <div className="absolute bottom-[-20%] right-[-20%] w-[80%] h-[80%] bg-brand-accent/5 blur-[150px] rounded-full" />
+                    </div>
+                )}
 
                 <div className="absolute inset-0" onClick={onClose} />
 
@@ -42,13 +48,16 @@ export const Modal = ({ character, onClose, actions }: ModalProps) => {
                     initial={{ scale: 0.95, opacity: 0, y: 100 }}
                     animate={{ scale: 1, opacity: 1, y: 0 }}
                     exit={{ scale: 0.95, opacity: 0, y: 100 }}
-                    transition={{ type: "spring", damping: 28, stiffness: 220 }}
-                    className="relative w-[98vw] max-w-[650px] h-[96vh] bg-brand-midnight sm:border border-white/10 rounded-[3.5rem] overflow-hidden shadow-[0_0_150px_rgba(0,0,0,0.8)] flex flex-col"
+                    transition={liteMode 
+                        ? { duration: 0.15 } 
+                        : { type: "spring", damping: 28, stiffness: 220 }
+                    }
+                    className="relative w-[98vw] max-w-[650px] h-[96vh] bg-brand-midnight sm:border border-white/10 rounded-[3.5rem] overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.8)] flex flex-col"
                 >
                     {/* Floating Close Button */}
                     <button 
                         onClick={onClose} 
-                        className="absolute top-6 right-6 z-50 w-11 h-11 rounded-2xl bg-brand-midnight/60 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white/50 active:scale-95 transition-all hover:text-white"
+                        className="absolute top-6 right-6 z-50 w-11 h-11 rounded-2xl bg-brand-midnight/80 border border-white/10 flex items-center justify-center text-white/50 active:scale-95 transition-all hover:text-white"
                     >
                         <X size={24} />
                     </button>
@@ -68,7 +77,7 @@ export const Modal = ({ character, onClose, actions }: ModalProps) => {
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     className={cn(
-                                        "backdrop-blur-md border px-1.5 py-0.5 rounded-md w-fit mb-1",
+                                        "border px-1.5 py-0.5 rounded-md w-fit mb-1",
                                         visual?.border || "border-white/10",
                                         visual?.bg || "bg-white/10"
                                     )}

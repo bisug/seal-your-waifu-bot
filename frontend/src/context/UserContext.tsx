@@ -48,8 +48,10 @@ interface UserContextType {
   user: User | null;
   loading: boolean;
   error: string | null;
+  liteMode: boolean;
   refreshUser: () => Promise<void>;
   triggerRefresh: () => void;
+  toggleLiteMode: () => void;
 }
 
 export const UserContext = createContext<UserContextType | null>(null);
@@ -58,6 +60,31 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Lite mode auto-detection and state
+  const [liteMode, setLiteMode] = useState<boolean>(() => {
+    const saved = localStorage.getItem('sealbot-lite-mode');
+    if (saved !== null) return saved === 'true';
+    
+    // Auto-detect based on hardware if available
+    const cores = navigator.hardwareConcurrency || 4;
+    // @ts-ignore - deviceMemory is not standard across all browsers but works on Chrome Android
+    const ram = navigator.deviceMemory || 4;
+    return cores <= 4 || ram <= 4;
+  });
+
+  useEffect(() => {
+    if (liteMode) {
+      document.body.classList.add('lite-mode');
+    } else {
+      document.body.classList.remove('lite-mode');
+    }
+    localStorage.setItem('sealbot-lite-mode', liteMode.toString());
+  }, [liteMode]);
+
+  const toggleLiteMode = useCallback(() => {
+    setLiteMode(prev => !prev);
+  }, []);
 
   const refreshUser = useCallback(async () => {
     try {
@@ -84,7 +111,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [refreshUser, triggerRefresh]);
 
   return (
-    <UserContext.Provider value={{ user, loading, error, refreshUser, triggerRefresh }}>
+    <UserContext.Provider value={{ user, loading, error, liteMode, refreshUser, triggerRefresh, toggleLiteMode }}>
       {children}
     </UserContext.Provider>
   );
