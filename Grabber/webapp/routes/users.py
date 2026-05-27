@@ -13,7 +13,7 @@ from Grabber import LOGGER
 from Grabber.core.progression import get_level_from_xp, get_user_progress
 from Grabber.core.tasks import run_background_task
 from Grabber.core.user import get_user_rank_with_fallback
-from Grabber.core.utils import normalize_user_id
+from Grabber.core.utils import get_user_id_query, normalize_user_id
 from Grabber.database import user_collection
 from Grabber.modules.economy.hunt import EGG_TIERS, TIER_MAP
 from Grabber.modules.progression.achievements import ACHIEVEMENTS
@@ -33,6 +33,28 @@ async def get_bot_info():
         "id": getattr(config, "BOT_ID", None),
         "avatar": config.PHOTO_URL[0] if config.PHOTO_URL else "https://files.catbox.moe/2hsawz.jpg"
     }
+
+@router.get("/achievements/list")
+async def get_achievements_list(user_id: int = Depends(get_current_user)):
+    """Return all possible achievements and whether the user has them."""
+    user = await user_collection.find_one(get_user_id_query(user_id))
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user_achievements = set(user.get("achievements") or [])
+
+    all_achievements = []
+    for ach_id, data in ACHIEVEMENTS.items():
+        all_achievements.append({
+            "id": ach_id,
+            "name": data["name"],
+            "description": data["description"],
+            "icon": data.get("symbol", "✦"),
+            "reward_xp": data.get("reward_xp", 0),
+            "unlocked": ach_id in user_achievements
+        })
+
+    return all_achievements
 
 @router.get("/me", response_model=UserProfileResponse)
 async def get_me(user: dict = Depends(get_current_user_data)):

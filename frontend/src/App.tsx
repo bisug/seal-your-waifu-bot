@@ -19,10 +19,9 @@ const Hatchery = lazy(() => import('./pages/Hatchery').then(m => ({ default: m.H
 const Quests = lazy(() => import('./pages/Quests').then(m => ({ default: m.Quests })));
 const Pass = lazy(() => import('./pages/Pass').then(m => ({ default: m.Pass })));
 const Leaderboard = lazy(() => import('./pages/Leaderboard').then(m => ({ default: m.Leaderboard })));
-const Trade = lazy(() => import('./pages/Trade').then(m => ({ default: m.Trade })));
-const Marriage = lazy(() => import('./pages/Marriage').then(m => ({ default: m.Marriage })));
 const Referrals = lazy(() => import('./pages/Referrals').then(m => ({ default: m.Referrals })));
-const BattleStats = lazy(() => import('./pages/BattleStats').then(m => ({ default: m.BattleStats })));
+const Achievements = lazy(() => import('./pages/Achievements').then(m => ({ default: m.Achievements })));
+const MyPets = lazy(() => import('./pages/MyPets').then(m => ({ default: m.MyPets })));
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -201,15 +200,14 @@ const AppContent = () => {
           {activeTab === 'shop' && <Shop onCharClick={setSelectedChar} />}
           {activeTab === 'gallery' && <Gallery onCharClick={setSelectedChar} />}
           {activeTab === 'pets' && <PetShop onPetClick={setSelectedPet} />}
-          {activeTab === 'trade' && <Trade />}
-          {activeTab === 'marriage' && <Marriage />}
           {activeTab === 'referrals' && <Referrals />}
           {activeTab === 'quests' && <Quests />}
           {activeTab === 'pass' && <Pass />}
           {activeTab === 'leaderboard' && <Leaderboard />}
-          {activeTab === 'battle' && <BattleStats />}
+          {activeTab === 'achievements' && <Achievements />}
+          {activeTab === 'mypets' && <MyPets onPetClick={setSelectedPet} />}
 
-          {!['profile', 'incubation', 'shop', 'gallery', 'pets', 'trade', 'marriage', 'referrals', 'quests', 'pass', 'leaderboard', 'battle'].includes(activeTab) && (
+          {!['profile', 'incubation', 'shop', 'gallery', 'pets', 'referrals', 'quests', 'pass', 'leaderboard', 'achievements', 'mypets'].includes(activeTab) && (
             <NotFound onReset={() => setActiveTab('profile')} />
           )}
         </Suspense>
