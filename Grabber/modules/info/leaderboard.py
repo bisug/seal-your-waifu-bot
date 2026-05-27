@@ -18,7 +18,7 @@ async def _resolve_missing_names(users: list) -> list:
     the Telegram API and persist the result back to MongoDB for future calls.
     """
     from Grabber.database import user_collection
-    missing = [u for u in users if not u.get("first_name")]
+    missing = [u for u in users if not u.get("first_name") and u.get("id")]
     if not missing:
         return users
     missing_ids = [int(u["id"]) for u in missing]
