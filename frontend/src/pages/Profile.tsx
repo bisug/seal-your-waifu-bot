@@ -62,18 +62,19 @@ export const Profile = ({ onCharClick }: ProfileProps) => {
         <div className="absolute inset-0 bg-mesh opacity-30 z-0 scale-150 animate-pulse" />
         <img 
           src={user.avatar || 'https://files.catbox.moe/2hsawz.jpg'} 
-          className="absolute inset-0 w-full h-full object-cover opacity-40 blur-[4px] scale-110"
+          className="absolute inset-0 w-full h-full object-cover opacity-40 blur-[8px] scale-125 transition-transform duration-[10s] hover:scale-150"
           alt="Profile Background"
         />
         
         <div className="relative z-20 flex items-center space-x-4">
           <div className="relative group">
+            <div className="absolute inset-0 bg-brand-accent rounded-2xl blur-xl opacity-40 group-hover:opacity-60 transition-opacity duration-500 animate-pulse-ring" />
             <Avatar 
               src={user.avatar} 
               alt="User" 
-              className="w-16 h-16 rounded-2xl border-2 border-brand-accent transform transition-transform group-hover:scale-105"
+              className="w-16 h-16 rounded-2xl border-2 border-brand-accent transform transition-transform duration-500 group-hover:scale-105 relative z-10 shadow-neon"
             />
-            <div className="absolute -bottom-1.5 -right-1.5 bg-brand-accent text-white text-[10px] font-black px-2 py-0.5 rounded-md shadow-lg ring-2 ring-brand-midnight">
+            <div className="absolute -bottom-1.5 -right-1.5 bg-brand-accent text-white text-[10px] font-black px-2 py-0.5 rounded-md shadow-lg ring-2 ring-brand-midnight z-20">
               LVL {user.stats?.level || 1}
             </div>
           </div>
@@ -145,16 +146,25 @@ export const Profile = ({ onCharClick }: ProfileProps) => {
                   <Activity size={10} className="text-brand-accent" /> {user.current_pet.ability}
                 </p>
                 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mb-3">
                   <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-brand-accent transition-all duration-1000" 
+                      className="h-full bg-brand-accent transition-all duration-1000 shadow-neon" 
                       style={{ width: `${Math.min(100, (user.current_pet.xp / user.current_pet.xp_needed) * 100)}%` }}
                     />
                   </div>
                   <span className="text-[9px] font-mono text-slate-500">
                     {user.current_pet.xp}/{user.current_pet.xp_needed}
                   </span>
+                </div>
+
+                <div className="flex gap-2">
+                   <button className="flex-1 py-1.5 bg-brand-accent/10 border border-brand-accent/20 rounded-lg text-[9px] font-black uppercase text-brand-accent hover:bg-brand-accent/20 active:scale-95 transition-all text-center">
+                      Feed
+                   </button>
+                   <button className="flex-1 py-1.5 bg-white/5 border border-white/10 rounded-lg text-[9px] font-black uppercase text-white hover:bg-white/10 active:scale-95 transition-all text-center">
+                      Play
+                   </button>
                 </div>
               </div>
             </div>
@@ -226,7 +236,7 @@ export const Profile = ({ onCharClick }: ProfileProps) => {
                  >
                    <Card 
                     character={char} 
-                    onClick={() => onCharClick(char)} 
+                    onClick={onCharClick} 
                    />
                  </motion.div>
                ))}

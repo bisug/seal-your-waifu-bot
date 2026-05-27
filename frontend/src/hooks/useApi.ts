@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiFetch } from '../api/client';
 
+const apiCache = new Map<string, { data: any, timestamp: number }>();
+const CACHE_TTL = 1000 * 60 * 5; // 5 minutes
+
 // Shallow array comparison utility
 function shallowEqual(obj1: any, obj2: any) {
   if (obj1 === obj2) return true;
@@ -42,10 +45,25 @@ export const useApi = <T = any>(endpoint: string, options: UseApiOptions<T> = {}
   }, [options, currentOptions]);
 
   const execute = useCallback(async (overrides: RequestInit = {}) => {
+    const isGet = !optionsRef.current.method || optionsRef.current.method === 'GET';
+    const cacheKey = endpoint + JSON.stringify(optionsRef.current.body || {});
+
+    if (isGet && apiCache.has(cacheKey)) {
+        const cached = apiCache.get(cacheKey)!;
+        if (Date.now() - cached.timestamp < CACHE_TTL) {
+            setData(cached.data);
+            setLoading(false);
+            // We can still fetch in background to update cache, but for instant UI we return early
+        }
+    }
+
     setLoading(true);
     setError(null);
     try {
       const res = await apiFetch(endpoint, { ...optionsRef.current, ...overrides });
+      if (isGet) {
+          apiCache.set(cacheKey, { data: res, timestamp: Date.now() });
+      }
       setData(res);
       return res;
     } catch (err: any) {

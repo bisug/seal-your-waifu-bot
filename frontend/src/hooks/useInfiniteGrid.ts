@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiFetch } from '../api/client';
 
+const gridCache = new Map<string, { items: any[], page: number, hasMore: boolean, timestamp: number }>();
+const CACHE_TTL = 1000 * 60 * 5; // 5 mins
+
 interface InfiniteGridOptions {
   limit?: number;
   params?: Record<string, any>;
@@ -13,6 +16,7 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
   const [hasMore, setHasMore] = useState(true);
   const [search, setSearch] = useState('');
   const [rarity, setRarity] = useState('');
+  const [initialized, setInitialized] = useState(false);
 
   const observer = useRef<IntersectionObserver | null>(null);
   const searchAbortController = useRef<AbortController | null>(null);
@@ -38,35 +42,65 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
       searchAbortController.current = new AbortController();
     }
 
-    try {
-      const currentPage = isNew ? 1 : page;
-      const queryParams = new URLSearchParams({
-        page: currentPage.toString(),
-        limit: (options.limit || 24).toString(),
-        search: search.trim(),
-        rarity: rarity.trim(),
-        ...options.params
-      });
+    const currentPage = isNew ? 1 : page;
+    const queryParams = new URLSearchParams({
+      page: currentPage.toString(),
+      limit: (options.limit || 24).toString(),
+      search: search.trim(),
+      rarity: rarity.trim(),
+      ...options.params
+    });
 
+    const cacheKey = `${endpoint}?${search.trim()}:${rarity.trim()}`;
+
+    // On exact first mount, try to restore from cache
+    if (!initialized && isNew) {
+        if (gridCache.has(cacheKey)) {
+            const cached = gridCache.get(cacheKey)!;
+            if (Date.now() - cached.timestamp < CACHE_TTL) {
+                setItems(cached.items);
+                setPage(cached.page);
+                setHasMore(cached.hasMore);
+                setLoading(false);
+                setInitialized(true);
+                return;
+            }
+        }
+    }
+    setInitialized(true);
+
+    try {
       const data = await apiFetch(
         `${endpoint}?${queryParams.toString()}`,
         { signal: searchAbortController.current?.signal }
       );
 
+      let newItems;
       if (isNew) {
-        setItems(data.items);
+        newItems = data.items;
       } else {
-        setItems(prev => [...prev, ...data.items]);
+        newItems = [...items, ...data.items];
       }
 
-      setHasMore(data.items.length === (options.limit || 24));
+      setItems(newItems);
+      const newHasMore = data.items.length === (options.limit || 24);
+      setHasMore(newHasMore);
+
+      // Save to cache
+      gridCache.set(cacheKey, {
+          items: newItems,
+          page: currentPage,
+          hasMore: newHasMore,
+          timestamp: Date.now()
+      });
+
     } catch (err: any) {
       if (err.name === 'AbortError') return;
       console.error(`Fetch error for ${endpoint}:`, err);
     } finally {
       setLoading(false);
     }
-  }, [endpoint, page, search, rarity, options.limit, options.params]);
+  }, [endpoint, page, search, rarity, options.limit, options.params, items, initialized]);
 
   // Initial fetch and search/rarity debounce
   useEffect(() => {
