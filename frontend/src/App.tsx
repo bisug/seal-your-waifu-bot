@@ -64,7 +64,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 
 
 const AppContent = () => {
-  const { user, loading, error } = useUser();
+  const { user, loading, error, liteMode } = useUser();
   
   const getInitialTab = () => {
     const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
@@ -139,7 +139,7 @@ const AppContent = () => {
         
         <div className="relative z-10">
           <motion.div 
-            initial={{ scale: 0.9, opacity: 0 }}
+            initial={liteMode ? false : { scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             className="mb-8"
           >
@@ -188,10 +188,10 @@ const AppContent = () => {
       <AnimatePresence mode="wait">
         <motion.main
           key={activeTab}
-          initial={{ opacity: 0 }}
+          initial={liteMode ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
+          exit={liteMode ? undefined : { opacity: 0 }}
+          transition={liteMode ? undefined : { duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
           className="app-scroller adaptive-px bg-mesh overflow-x-hidden"
         >
           <Suspense fallback={

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Activity } from 'lucide-react';
 import { cn } from '../../utils';
 import { RARITY_VISUALS } from '../../constants/rarities';
-import { Character } from '../../context/UserContext';
+import { Character, useUser } from '../../context/UserContext';
 
 interface CardProps {
     character: Character;
@@ -12,6 +12,7 @@ interface CardProps {
 
 export const Card = memo(({ character, onClick }: CardProps) => {
     const isSpecial = ['Legendary', 'Cosmic', 'Exclusive', 'Limited Edition', 'Royal', 'Antique', 'Celestial'].includes(character.rarity);
+    const { liteMode } = useUser();
 
     const handleClick = () => {
         window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
@@ -27,9 +28,10 @@ export const Card = memo(({ character, onClick }: CardProps) => {
 
     return (
         <motion.div
-            whileHover={{ scale: 1.02, y: -5 }}
-            whileTap={{ scale: 0.98 }}
+            whileHover={liteMode ? undefined : { scale: 1.02, y: -5 }}
+            whileTap={liteMode ? undefined : { scale: 0.98 }}
             onClick={handleClick}
+            style={{ willChange: 'transform' }}
             className={cn(
                 "relative rounded-[1.5rem] overflow-hidden aspect-[3/4] group transition-all duration-500 cursor-pointer",
                 "border bg-slate-900 shadow-lg",
@@ -46,7 +48,10 @@ export const Card = memo(({ character, onClick }: CardProps) => {
                     loading="lazy"
                     decoding="async"
                     onError={() => setImgError(true)}
-                    className="absolute inset-0 w-full h-full object-cover object-top transition-all duration-700 group-hover:scale-110"
+                    className={cn(
+                    "absolute inset-0 w-full h-full object-cover object-top transition-all",
+                    liteMode ? "" : "duration-700 group-hover:scale-110"
+                )}
                 />
             ) : (
                 <div className="absolute inset-0 bg-slate-900/40 flex flex-col items-center justify-center space-y-1 opacity-50">

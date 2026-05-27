@@ -5,13 +5,15 @@ import { CardSkeleton } from '../components/ui/Skeleton';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Search, Loader2, Users, CheckCircle2 } from 'lucide-react';
 import { useInfiniteGrid } from '../hooks/useInfiniteGrid';
-import { Character } from '../context/UserContext';
+import { Character, useUser } from '../context/UserContext';
+import { cn } from '../utils';
 
 interface GalleryProps {
   onCharClick: (character: Character) => void;
 }
 
 export const Gallery = ({ onCharClick }: GalleryProps) => {
+  const { liteMode } = useUser();
   const {
     items,
     loading,
@@ -30,7 +32,10 @@ export const Gallery = ({ onCharClick }: GalleryProps) => {
 
   return (
     <div className="pb-32 pt-0 px-4 relative ">
-      <div className="sticky top-0 z-40 bg-brand-midnight/80 backdrop-blur-xl -mx-4 px-4 py-4 border-b border-white/5 mb-6">
+      <div className={cn(
+        "sticky top-0 z-40 -mx-4 px-4 py-4 border-b border-white/5 mb-6",
+        liteMode ? "bg-brand-midnight" : "bg-brand-midnight/80 backdrop-blur-xl"
+      )}>
         <div className="relative group mb-4">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-brand-accent transition-colors" size={14} />
           <input 
@@ -79,7 +84,10 @@ export const Gallery = ({ onCharClick }: GalleryProps) => {
             >
               <Card character={char} onClick={() => onCharClick(char)} />
               {char.owned && (
-                <div className="absolute inset-0 bg-brand-midnight/40 backdrop-blur-[1px] flex items-center justify-center rounded-[1.25rem] z-30 pointer-events-none">
+                <div className={cn(
+                  "absolute inset-0 flex items-center justify-center rounded-[1.25rem] z-30 pointer-events-none bg-brand-midnight/40",
+                  !liteMode && "backdrop-blur-[1px]"
+                )}>
                   <div className="bg-brand-accent/90 text-white px-2 py-0.5 rounded-full text-[7px] font-black uppercase tracking-widest shadow-lg flex items-center gap-1 border border-white/20">
                     <CheckCircle2 size={8} strokeWidth={4} />
                     <span>Collected</span>
