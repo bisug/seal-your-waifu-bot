@@ -1,18 +1,13 @@
-import React, { ReactNode } from 'react';
-import { useUser, User } from '../context/UserContext';
+import React from 'react';
+import { useUser, Pet } from '../context/UserContext';
 import { Sparkles, Timer, Zap } from 'lucide-react';
 
 interface HatcheryProps {
-    onPetClick?: (pet: any) => void;
-}
-
-// Extend User type locally if needed or update global types
-interface ExtendedUser extends User {
-    eggs?: Array<{ type: string }>;
+    onPetClick?: (pet: Pet) => void;
 }
 
 export const Hatchery = ({ onPetClick }: HatcheryProps) => {
-    const { user } = useUser() as { user: ExtendedUser | null };
+    const { user } = useUser();
 
     return (
         <div className="px-6 py-10 space-y-12">
