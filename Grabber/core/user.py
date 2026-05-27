@@ -1,5 +1,9 @@
-from typing import Any, Optional
-from Grabber.core.cache import (get_cached_user, invalidate_user_cache,
+import asyncio
+from typing import Any, Optional, Tuple
+from Grabber import LOGGER
+from Grabber.core.cache import (get_cached_user, get_total_ranked_users,
+                                get_user_rank, invalidate_user_cache,
+                                rebuild_leaderboard, rget, rset,
                                 set_cached_user, update_user_rank)
 from Grabber.database import user_collection
 def get_user_id(user_id: Any) -> int:
@@ -28,9 +32,36 @@ async def update_user(user_id: int, update_query: dict):
     if "$inc" not in update_query:
         update_query["$inc"] = {}
     update_query["$inc"]["version"] = 1
+    if "$setOnInsert" not in update_query:
+        update_query["$setOnInsert"] = {}
+    update_query["$setOnInsert"]["id"] = get_user_id(user_id)
     await user_collection.update_one(get_user_filter(user_id), update_query, upsert=True)
     await invalidate_user_cache(user_id)
-from Grabber import LOGGER
+async def get_user_rank_with_fallback(user_id: int, user_xp: int) -> Tuple[int, int, float]:
+    """
+    Resolve a user's rank and total user count.
+    Checks Redis ZSET first; falls back to a MongoDB count query.
+    Schedules a full leaderboard rebuild if the ZSET is empty.
+    Returns (rank, total_users, percentile).
+    """
+    total_users_str = await rget("total_app_users")
+    if total_users_str:
+        total_users = int(total_users_str)
+    else:
+        total_users = await user_collection.estimated_document_count()
+        await rset("total_app_users", str(total_users), 3600)
+
+    rank = await get_user_rank(user_id)
+    if rank is None:
+        LOGGER.info(f"Leaderboard ZSET miss for user {user_id}, falling back to Mongo count.")
+        rank = await user_collection.count_documents({"xp": {"$gt": user_xp}}) + 1
+        await update_user_rank(user_id, user_xp)
+        if total_users > 0 and (await get_total_ranked_users()) == 0:
+            asyncio.create_task(rebuild_leaderboard(user_collection))
+
+    percentile = round((1 - (rank / max(total_users, 1))) * 100, 1)
+    return rank, total_users, percentile
+
 async def add_char_to_user(user_id: int, character: dict):
     """Add a character to user collection and invalidate cache."""
     # Safety Check: Prevent string IDs from corrupting the DB
@@ -42,11 +73,16 @@ async def add_char_to_user(user_id: int, character: dict):
             return
     await user_collection.update_one(
         get_user_filter(user_id),
-        {"$push": {"characters": character}, "$inc": {"char_count": 1, "version": 1}},
+        {
+            "$push": {"characters": character}, 
+            "$inc": {"char_count": 1, "version": 1},
+            "$setOnInsert": {"id": get_user_id(user_id)}
+        },
         upsert=True
     )
     # Sync with Redis Harem Leaderboard
-    new_count = (await user_collection.find_one(get_user_filter(user_id), {"char_count": 1}))["char_count"]
+    user_doc = await user_collection.find_one(get_user_filter(user_id), {"char_count": 1})
+    new_count = user_doc["char_count"] if user_doc else 1
     await update_user_rank(user_id, new_count, metric="harem")
     await invalidate_user_cache(user_id)
 async def remove_char_from_user(user_id: int, char_id: str) -> bool:
@@ -58,7 +94,8 @@ async def remove_char_from_user(user_id: int, char_id: str) -> bool:
         {"$pull": {"characters": {"id": char_id}}, "$inc": {"char_count": -1, "version": 1}}
     )
     if res.modified_count > 0:
-        new_count = (await user_collection.find_one({"id": get_user_id(user_id)}, {"char_count": 1}))["char_count"]
+        user_doc = await user_collection.find_one({"id": get_user_id(user_id)}, {"char_count": 1})
+        new_count = user_doc["char_count"] if user_doc else 0
         await update_user_rank(user_id, new_count, metric="harem")
     return res.modified_count > 0
 async def get_active_pet(user_id: int) -> dict:
