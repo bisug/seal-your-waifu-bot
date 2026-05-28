@@ -107,7 +107,20 @@ async def bonus_cmd(_, message: types.Message):
 @app.on_message(filters.command("mtop"))
 @handle_errors
 async def mtop_cmd(_, message: types.Message):
-    cursor = user_collection.find({}, {"id": 1, "first_name": 1, "balance": 1}).sort("balance", -1).limit(10)
+    cursor = user_collection.find({}, {"id": 1, "first_name": 1, "last_name": 1, "balance": 1}).sort("balance", -1).limit(10)
     top_users = await cursor.to_list(length=10)
-    lines = [f"{i+1}. {html_escape(u.get('first_name', 'User'))} - {u.get('balance', 0)}" for i, u in enumerate(top_users)]
+
+    from Grabber.modules.info.leaderboard import _resolve_missing_names
+    top_users = await _resolve_missing_names(top_users)
+
+    lines = []
+    for i, u in enumerate(top_users):
+        uid = u.get("id")
+        first_name = u.get('first_name', 'User')
+        last_name = u.get('last_name')
+        full_name = f"{first_name} {last_name}" if last_name else first_name
+        mention = f'<a href="tg://user?id={uid}">{html_escape(full_name)}</a>'
+        balance = u.get('balance', 0)
+        lines.append(f"{i+1}. {mention} - <b>{balance:,} ⬪</b>")
+
     await message.reply_text("<b>Top 10 Rich Users</b>\n\n" + "\n".join(lines), parse_mode=enums.ParseMode.HTML)
