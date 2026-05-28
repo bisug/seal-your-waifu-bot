@@ -28,8 +28,8 @@ export const Card = memo(forwardRef<HTMLDivElement, CardProps>(({ character, onC
             ref={ref}
             onClick={handleClick}
             className={cn(
-                "relative rounded-md overflow-hidden aspect-[3/4] group cursor-pointer",
-                "bg-zinc-900 border border-white/5 hover:border-zinc-700 transition-all duration-200"
+                "relative rounded-lg overflow-hidden aspect-[3/4] group cursor-pointer select-none",
+                "bg-zinc-900 border border-white/5 active:scale-[0.98] transition-all duration-200"
             )}
         >
             {!imgError ? (
@@ -39,27 +39,27 @@ export const Card = memo(forwardRef<HTMLDivElement, CardProps>(({ character, onC
                     loading="lazy"
                     decoding="async"
                     onError={() => setImgError(true)}
-                    className="absolute inset-0 w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-300"
+                    className="absolute inset-0 w-full h-full object-cover grayscale-[0.1] group-hover:grayscale-0 transition-all duration-300"
                 />
             ) : (
                 <div className="absolute inset-0 bg-zinc-900 flex flex-col items-center justify-center">
-                    <Shield size={20} className="text-zinc-800" />
+                    <Shield size={16} className="text-zinc-800" />
                 </div>
             )}
             
-            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent opacity-60" />
             
             {/* Top Bar Indicators */}
-            <div className="absolute top-1.5 left-1.5 right-1.5 flex justify-between items-start pointer-events-none">
+            <div className="absolute top-1 left-1 right-1 flex justify-between items-start pointer-events-none">
                 <div className="px-1.5 py-0.5 rounded-sm bg-zinc-950/80 border border-white/5">
-                    <span className="text-[8px] font-semibold text-zinc-300">
+                    <span className="text-[7px] font-bold text-zinc-400 uppercase tracking-widest">
                         {rarityLabel}
                     </span>
                 </div>
 
                 {character.count > 1 && (
                     <div className="px-1.5 py-0.5 rounded-sm bg-brand-accent border border-white/5">
-                        <span className="text-[8px] font-bold text-white">
+                        <span className="text-[7px] font-bold text-white tabular-nums">
                             {character.count}
                         </span>
                     </div>
@@ -68,7 +68,7 @@ export const Card = memo(forwardRef<HTMLDivElement, CardProps>(({ character, onC
 
             {/* Bottom Content Area */}
             <div className="absolute bottom-0 inset-x-0 p-2">
-                <h3 className="text-[10px] font-semibold text-zinc-100 leading-tight line-clamp-1">
+                <h3 className="text-[9px] font-bold text-zinc-100 leading-tight line-clamp-1 uppercase tracking-wider">
                     {character.name}
                 </h3>
             </div>
