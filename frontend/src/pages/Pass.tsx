@@ -7,7 +7,6 @@ import { useApi } from '../hooks/useApi';
 import { useToast } from '../components/ui/Toast';
 import { cn } from '../utils';
 
-
 export const Pass = () => {
   const { refreshUser } = useUser();
   const { addToast } = useToast();
@@ -55,7 +54,7 @@ export const Pass = () => {
   };
 
   if (passLoading || !passData) return (
-    <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="animate-spin text-zinc-800" /></div>
+    <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="animate-spin text-neutral-600 w-8 h-8" /></div>
   );
 
   const milestones = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
@@ -63,22 +62,22 @@ export const Pass = () => {
   const claimedLevels = passData.claimed_levels || [];
 
   return (
-    <div className="pb-8 pt-6 px-4">
-      <header className="mb-10 flex justify-between items-end">
+    <div className="pb-20 pt-4 px-4 max-w-2xl mx-auto">
+      <header className="mb-8 flex justify-between items-end border-b border-white/5 pb-4">
         <div>
-           <div className="flex items-center space-x-2 text-brand-accent mb-1">
-             <Sparkles size={14} />
-             <span className="text-[10px] font-bold uppercase tracking-wider">Protocol Status</span>
+           <div className="flex items-center space-x-2 text-brand-accent mb-1.5">
+             <Sparkles size={16} />
+             <span className="text-xs font-semibold tracking-wider uppercase">Protocol Status</span>
            </div>
-           <h1 className="text-xl font-bold text-zinc-100">{passData.season_name || 'Season 1'} Pass</h1>
+           <h1 className="text-xl font-bold text-white tracking-tight">{passData.season_name || 'Season 1'} Pass</h1>
         </div>
-        <div className="bg-zinc-900 border border-white/5 px-3 py-2 rounded-lg text-right min-w-[80px]">
-           <p className="text-[10px] font-medium text-zinc-500 mb-0.5 uppercase tracking-tight">Level</p>
-           <p className="text-xl font-bold text-brand-accent tabular-nums leading-none">{userLevel}</p>
+        <div className="bg-brand-deep border border-white/5 px-4 py-2.5 rounded-xl text-center min-w-[80px] shadow-sm">
+           <p className="text-xs font-medium text-neutral-500 mb-1">Level</p>
+           <p className="text-2xl font-bold text-brand-accent tabular-nums leading-none">{userLevel}</p>
         </div>
       </header>
 
-      <div className="space-y-4 relative ml-4 border-l border-zinc-900 pl-8">
+      <div className="space-y-4 relative ml-4 border-l-2 border-brand-deep pl-8">
         {milestones.map((lvl) => {
           const isReached = userLevel >= lvl;
           const isClaimed = Array.isArray(claimedLevels) ? claimedLevels.includes(lvl) : false;
@@ -94,39 +93,41 @@ export const Pass = () => {
               initial={{ opacity: 0, x: 10 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="flex items-center space-x-3 relative"
+              className="flex items-center space-x-4 relative"
             >
               <div className={cn(
-                "absolute -left-[45px] z-10 w-8 h-8 rounded-full flex items-center justify-center border transition-all text-[10px] font-bold",
-                isReached ? 'border-brand-accent bg-zinc-950 text-brand-accent' : 'border-zinc-900 bg-zinc-950 text-zinc-600'
+                "absolute -left-[49px] z-10 w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all text-xs font-bold",
+                isReached ? 'border-brand-accent bg-brand-midnight text-brand-accent shadow-[0_0_15px_rgba(59,130,246,0.3)]' : 'border-brand-deep bg-brand-midnight text-neutral-600'
               )}>
                 {lvl}
               </div>
 
               <div className={cn(
-                "flex-1 p-4 rounded-lg border transition-all flex items-center justify-between",
-                isReached ? 'bg-zinc-900/80 border-white/5' : 'bg-zinc-900/40 border-white/5 opacity-50'
+                "flex-1 p-4 rounded-xl border transition-all flex items-center justify-between shadow-sm",
+                isReached ? 'bg-brand-deep border-white/5' : 'bg-brand-midnight border-white/5 opacity-60'
               )}>
                 <div className="text-left">
-                  <p className="text-sm font-bold text-zinc-100">{rewardLabel}</p>
-                  <div className="flex items-center space-x-1.5 mt-1">
-                     <Award size={12} className={isReached ? "text-brand-accent" : "text-zinc-600"} />
-                     <span className="text-[10px] text-zinc-500 font-medium uppercase tracking-tight">{reward.type}</span>
+                  <p className="text-sm font-bold text-white mb-1">{rewardLabel}</p>
+                  <div className="flex items-center space-x-1.5">
+                     <Award size={14} className={isReached ? "text-brand-accent" : "text-neutral-500"} />
+                     <span className="text-xs text-neutral-400 font-medium capitalize">{reward.type}</span>
                   </div>
                 </div>
                 
                 {isClaimed ? (
-                  <CheckCircle2 size={18} className="text-emerald-500" />
+                  <CheckCircle2 size={20} className="text-emerald-500" strokeWidth={2.5} />
                 ) : isReached ? (
                   <button 
                     onClick={() => handleClaim(lvl)}
                     disabled={claiming === lvl}
-                    className="bg-zinc-100 text-zinc-950 text-xs font-bold px-4 py-1.5 rounded hover:bg-white active:scale-95 transition-all"
+                    className="bg-white text-brand-midnight text-xs font-bold px-4 py-2 rounded-lg hover:bg-neutral-200 active:scale-95 transition-all shadow-sm min-w-[70px] flex justify-center"
                   >
-                    {claiming === lvl ? <Loader2 size={12} className="animate-spin" /> : 'Claim'}
+                    {claiming === lvl ? <Loader2 size={16} className="animate-spin" /> : 'Claim'}
                   </button>
                 ) : (
-                  <Lock size={16} className="text-zinc-800" />
+                  <div className="w-8 h-8 rounded-lg bg-black/20 flex items-center justify-center text-neutral-600">
+                    <Lock size={16} />
+                  </div>
                 )}
               </div>
             </motion.div>
@@ -134,8 +135,8 @@ export const Pass = () => {
         })}
       </div>
       
-      <div className="mt-12 p-6 rounded-lg border border-dashed border-zinc-800 bg-zinc-900/20 text-center">
-         <p className="text-[10px] font-bold text-zinc-600 mb-4 uppercase tracking-widest">
+      <div className="mt-12 p-6 rounded-xl border border-dashed border-white/10 bg-brand-deep text-center shadow-sm">
+         <p className="text-xs font-semibold text-neutral-500 mb-4 uppercase tracking-wider">
            {passData.pass_type === 'elite' ? 'Elite Protocol Active' : passData.pass_type === 'premium' ? 'Premium Protocol Active' : 'Protocol Upgrade Available'}
          </p>
          
@@ -143,23 +144,23 @@ export const Pass = () => {
            <button 
              onClick={() => handleUpgrade('premium')}
              disabled={upgrading}
-             className="w-full py-3.5 rounded-md bg-brand-accent text-white text-xs font-bold flex items-center justify-center space-x-2 active:scale-[0.98] transition-all shadow-sm"
+             className="w-full py-3.5 rounded-lg bg-brand-accent text-white text-sm font-bold flex items-center justify-center space-x-2 hover:bg-brand-accent-secondary active:scale-[0.98] transition-all shadow-sm"
            >
-              {upgrading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+              {upgrading ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
               <span>Activate Premium (500 Zenith)</span>
            </button>
          ) : passData.pass_type === 'premium' ? (
            <button 
              onClick={() => handleUpgrade('elite')}
              disabled={upgrading}
-             className="w-full py-3.5 rounded-md bg-zinc-100 text-zinc-950 text-xs font-bold flex items-center justify-center space-x-2 active:scale-[0.98] transition-all shadow-sm"
+             className="w-full py-3.5 rounded-lg bg-white text-brand-midnight text-sm font-bold flex items-center justify-center space-x-2 hover:bg-neutral-200 active:scale-[0.98] transition-all shadow-sm"
            >
-              {upgrading ? <Loader2 size={16} className="animate-spin" /> : <Award size={16} />}
+              {upgrading ? <Loader2 size={18} className="animate-spin" /> : <Award size={18} />}
               <span>Upgrade to Elite (1500 Zenith)</span>
            </button>
          ) : (
-           <div className="w-full py-3.5 rounded-md border border-brand-accent/20 text-brand-accent text-xs font-bold uppercase tracking-wider">
-             Elite status confirmed
+           <div className="w-full py-3.5 rounded-lg bg-brand-accent/10 border border-brand-accent/20 text-brand-accent text-sm font-bold tracking-wide">
+             Elite Status Confirmed
            </div>
          )}
       </div>
