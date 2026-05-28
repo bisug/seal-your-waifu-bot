@@ -86,18 +86,53 @@ async def add_char_to_user(user_id: int, character: dict):
     await update_user_rank(user_id, new_count, metric="harem")
     await invalidate_user_cache(user_id)
 async def remove_char_from_user(user_id: int, char_id: str) -> bool:
-    """Remove a character by ID and return success status."""
-    filt = get_user_filter(user_id)
-    filt["characters.id"] = char_id
-    res = await user_collection.update_one(
-        filt,
-        {"$pull": {"characters": {"id": char_id}}, "$inc": {"char_count": -1, "version": 1}}
-    )
-    if res.modified_count > 0:
-        user_doc = await user_collection.find_one({"id": get_user_id(user_id)}, {"char_count": 1})
-        new_count = user_doc["char_count"] if user_doc else 0
-        await update_user_rank(user_id, new_count, metric="harem")
-    return res.modified_count > 0
+    """
+    Remove EXACTLY ONE instance of a character by ID.
+    Uses versioning to prevent concurrent modification issues.
+    """
+    max_retries = 3
+    for _ in range(max_retries):
+        user = await user_collection.find_one(get_user_filter(user_id))
+        if not user or 'characters' not in user:
+            return False
+
+        chars = user['characters']
+        version = user.get('version', 0)
+
+        # Find the first index of the character
+        idx_to_remove = -1
+        for i, c in enumerate(chars):
+            if str(c.get('id')) == str(char_id):
+                idx_to_remove = i
+                break
+
+        if idx_to_remove == -1:
+            return False
+
+        # Create new character list without that ONE specific instance
+        new_chars = chars[:idx_to_remove] + chars[idx_to_remove+1:]
+
+        # Atomic update with version check
+        filt = get_user_filter(user_id)
+        filt["version"] = version
+
+        res = await user_collection.update_one(
+            filt,
+            {
+                "$set": {"characters": new_chars},
+                "$inc": {"char_count": -1, "version": 1}
+            }
+        )
+
+        if res.modified_count > 0:
+            await update_user_rank(user_id, len(new_chars), metric="harem")
+            await invalidate_user_cache(user_id)
+            return True
+
+        # If we failed, someone else updated the user. Loop and retry.
+        await asyncio.sleep(0.1)
+
+    return False
 async def get_active_pet(user_id: int) -> dict:
     """Retrieve currently active pet data."""
     user = await user_collection.find_one(get_user_filter(user_id))
