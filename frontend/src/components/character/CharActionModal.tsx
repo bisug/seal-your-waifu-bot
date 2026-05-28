@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Loader2, Zap, Trash2, ArrowRightLeft } from 'lucide-react';
+import { Loader2, Zap, Trash2 } from 'lucide-react';
 import { useToast } from '../ui/Toast';
 import { Modal } from './Modal';
 import { apiFetch } from '../../api/client';
@@ -111,30 +111,30 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
     };
 
     const actions = (
-        <div className="space-y-4 w-full">
+        <div className="w-full space-y-3">
             {activeTab === 'market' && !isOwned && (
                 <div className="w-full">
                     {purchaseStage === 'idle' ? (
                         <button 
                             onClick={() => setPurchaseStage('confirm')}
-                            className="w-full py-4 rounded-xl bg-brand-accent text-white font-bold uppercase text-[11px] tracking-wider active:scale-95 transition-all flex items-center justify-center gap-2"
+                            className="w-full py-3 rounded-lg bg-brand-accent text-white font-semibold text-sm hover:bg-brand-accent-secondary active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                         >
-                            BUY FOR {selectedChar.zenith_price} <Zap size={14} />
+                            Buy for {selectedChar.zenith_price} <Zap size={16} />
                         </button>
                     ) : (
-                        <div className="p-1 bg-white/5 rounded-xl border border-white/5 flex space-x-1">
+                        <div className="flex gap-2">
                             <button 
                                 onClick={() => setPurchaseStage('idle')}
-                                className="flex-1 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500"
+                                className="flex-1 py-3 rounded-lg bg-white/5 text-neutral-300 hover:bg-white/10 font-semibold text-sm transition-colors"
                             >
                                 Cancel
                             </button>
                             <button 
                                 onClick={handleBuy}
                                 disabled={purchaseStage === 'buying'}
-                                className="flex-[2] py-3 bg-brand-accent text-white rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-2"
+                                className="flex-[2] py-3 rounded-lg bg-brand-accent text-white font-semibold text-sm hover:bg-brand-accent-secondary disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 transition-colors"
                             >
-                                {purchaseStage === 'buying' ? <Loader2 size={14} className="animate-spin" /> : 'Confirm Pay'}
+                                {purchaseStage === 'buying' ? <Loader2 size={16} className="animate-spin" /> : 'Confirm Payment'}
                             </button>
                         </div>
                     )}
@@ -142,26 +142,24 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
             )}
 
             {isOwned && (
-                <div className="flex flex-col gap-2">
-                    <div className="flex gap-2">
-                        <button
-                            onClick={handleRecycle}
-                            disabled={sellStage !== 'idle'}
-                            className="flex-1 py-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-[11px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 active:scale-95 transition-all"
-                        >
-                            {sellStage === 'previewing' || sellStage === 'selling' ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                            <span>Recycle (Zenith)</span>
-                        </button>
+                <div className="flex gap-2">
+                    <button
+                        onClick={handleRecycle}
+                        disabled={sellStage !== 'idle'}
+                        className="flex-1 py-3 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 font-semibold text-sm active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 transition-all"
+                    >
+                        {sellStage === 'previewing' || sellStage === 'selling' ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                        <span>Recycle</span>
+                    </button>
 
-                        <button
-                            onClick={handleSell}
-                            disabled={sellStage !== 'idle'}
-                            className="flex-1 py-4 rounded-xl bg-brand-accent/10 border border-brand-accent/20 text-brand-accent text-[11px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 active:scale-95 transition-all"
-                        >
-                            {sellStage === 'selling' ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
-                            <span>Sell (Shards)</span>
-                        </button>
-                    </div>
+                    <button
+                        onClick={handleSell}
+                        disabled={sellStage !== 'idle'}
+                        className="flex-1 py-3 rounded-lg bg-brand-accent/10 text-brand-accent hover:bg-brand-accent/20 font-semibold text-sm active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 transition-all"
+                    >
+                        {sellStage === 'selling' ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />}
+                        <span>Sell</span>
+                    </button>
                 </div>
             )}
         </div>

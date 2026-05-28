@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useUser, Pet } from '../context/UserContext';
 import { Sparkles, Timer, Zap, CheckCircle2, Loader2, ArrowRight } from 'lucide-react';
 import { cn } from '../utils';
@@ -41,19 +41,19 @@ export const Hatchery = ({ onPetClick }: HatcheryProps) => {
     };
 
     return (
-        <div className="px-6 py-10 pb-20 space-y-12">
-            <header>
-                <h1 className="text-3xl font-black italic uppercase tracking-tighter text-white">Incubation</h1>
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.4em] mt-1">Accelerate the birth of new legends</p>
+        <div className="px-4 py-8 pb-20 max-w-2xl mx-auto space-y-8">
+            <header className="border-b border-white/5 pb-4">
+                <h1 className="text-xl font-bold text-white tracking-tight mb-1">Incubation</h1>
+                <p className="text-sm font-medium text-neutral-400">Accelerate the birth of new legends</p>
             </header>
 
             <section>
-                <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-500">Inventory Eggs</h2>
-                    <span className="bg-white/5 border border-white/10 px-3 py-1 rounded-full text-[9px] font-black text-white">{user?.eggs?.length || 0} Total</span>
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-sm font-semibold text-neutral-300">Inventory Eggs</h2>
+                    <span className="bg-brand-deep border border-white/10 px-2.5 py-1 rounded-md text-xs font-bold text-white shadow-sm">{user?.eggs?.length || 0} Total</span>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-3">
                     {user?.eggs && user.eggs.length > 0 ? user.eggs.map((egg: any, i) => {
                         const isIncubating = egg.status === 'incubating';
                         const isReady = egg.status === 'incubating' && egg.remaining_mins <= 0;
@@ -61,35 +61,35 @@ export const Hatchery = ({ onPetClick }: HatcheryProps) => {
 
                         return (
                             <div key={egg.id || i} className={cn(
-                                "glass-panel p-5 rounded-[2.5rem] border transition-all flex items-center justify-between",
-                                isReady ? "border-brand-accent/40 bg-brand-accent/5 shadow-lg shadow-brand-accent/5" : "border-white/5 bg-white/5"
+                                "p-4 rounded-xl border transition-all flex items-center justify-between shadow-sm",
+                                isReady ? "border-emerald-500/30 bg-emerald-500/5" : "border-white/5 bg-brand-deep"
                             )}>
                                 <div className="flex items-center gap-4">
                                     <div className={cn(
-                                        "w-14 h-14 rounded-2xl flex items-center justify-center border",
-                                        isReady ? "bg-brand-accent/10 border-brand-accent/20" : "bg-black/20 border-white/10"
+                                        "w-12 h-12 rounded-lg flex items-center justify-center border",
+                                        isReady ? "bg-emerald-500/10 border-emerald-500/20" : "bg-brand-midnight border-white/5"
                                     )}>
-                                        <Sparkles className={isReady ? "text-brand-accent animate-pulse" : "text-slate-600"} size={20} />
+                                        <Sparkles className={isReady ? "text-emerald-500 animate-pulse" : "text-neutral-500"} size={20} />
                                     </div>
                                     <div>
-                                        <p className="text-white font-black uppercase italic tracking-tighter text-base leading-none mb-1">{egg.name}</p>
+                                        <p className="text-base font-bold text-white leading-none mb-1.5">{egg.name}</p>
                                         <div className="flex items-center gap-2">
                                             {isIncubating && !isReady && (
                                                 <>
-                                                    <Timer size={10} className="text-brand-accent" />
-                                                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{egg.remaining_mins}m Left</span>
+                                                    <Timer size={14} className="text-brand-accent" />
+                                                    <span className="text-xs font-semibold text-brand-accent">{egg.remaining_mins}m Left</span>
                                                 </>
                                             )}
                                             {isReady && (
                                                 <>
-                                                    <CheckCircle2 size={10} className="text-brand-accent" />
-                                                    <span className="text-[9px] font-black text-brand-accent uppercase tracking-widest">Ready to Hatch</span>
+                                                    <CheckCircle2 size={14} className="text-emerald-500" />
+                                                    <span className="text-xs font-bold text-emerald-500">Ready to Hatch</span>
                                                 </>
                                             )}
                                             {isFresh && (
                                                 <>
-                                                    <Zap size={10} className="text-slate-600" />
-                                                    <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">Fresh Egg</span>
+                                                    <Zap size={14} className="text-neutral-500" />
+                                                    <span className="text-xs font-medium text-neutral-500">Fresh Egg</span>
                                                 </>
                                             )}
                                         </div>
@@ -100,14 +100,14 @@ export const Hatchery = ({ onPetClick }: HatcheryProps) => {
                                     <button
                                         onClick={() => handleIncubate(egg.id)}
                                         disabled={!!actionId}
-                                        className="bg-white/5 border border-white/10 text-white text-[9px] font-black px-5 py-2.5 rounded-xl uppercase tracking-widest active:scale-95 transition-all flex items-center gap-2"
+                                        className="bg-white/5 hover:bg-white/10 text-white text-xs font-bold px-4 py-2 rounded-lg active:scale-95 transition-all flex items-center gap-1.5 disabled:opacity-50"
                                     >
-                                        {actionId === egg.id ? <Loader2 size={12} className="animate-spin" /> : <>Start <ArrowRight size={12} /></>}
+                                        {actionId === egg.id ? <Loader2 size={14} className="animate-spin" /> : <>Start <ArrowRight size={14} /></>}
                                     </button>
                                 )}
 
                                 {isIncubating && !isReady && (
-                                    <div className="bg-brand-accent/5 border border-brand-accent/10 text-brand-accent text-[9px] font-black px-5 py-2.5 rounded-xl uppercase tracking-widest opacity-60">
+                                    <div className="bg-brand-accent/10 text-brand-accent text-xs font-bold px-4 py-2 rounded-lg">
                                         Incubating
                                     </div>
                                 )}
@@ -116,18 +116,18 @@ export const Hatchery = ({ onPetClick }: HatcheryProps) => {
                                     <button
                                         onClick={() => handleHatch(egg.id)}
                                         disabled={!!actionId}
-                                        className="bg-brand-accent text-brand-midnight text-[9px] font-black px-6 py-2.5 rounded-xl uppercase tracking-widest active:scale-95 transition-all shadow-lg shadow-brand-accent/20"
+                                        className="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-lg active:scale-95 transition-all shadow-sm disabled:opacity-50"
                                     >
-                                        {actionId === egg.id ? <Loader2 size={12} className="animate-spin" /> : 'Hatch'}
+                                        {actionId === egg.id ? <Loader2 size={14} className="animate-spin" /> : 'Hatch'}
                                     </button>
                                 )}
                             </div>
                         );
                     }) : (
-                        <div className="glass-panel p-10 rounded-[2.5rem] border border-white/5 text-center flex flex-col items-center">
-                            <Zap size={32} className="text-slate-800 mb-4" />
-                            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest leading-relaxed">
-                                No eggs detected in your inventory.<br/>Hunt in the matrix to find them.
+                        <div className="bg-brand-deep p-8 rounded-xl border border-white/5 text-center flex flex-col items-center shadow-sm">
+                            <Zap size={24} className="text-neutral-700 mb-3" />
+                            <p className="text-neutral-500 text-sm font-medium">
+                                No eggs detected in your inventory.
                             </p>
                         </div>
                     )}
