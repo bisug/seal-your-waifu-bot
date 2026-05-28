@@ -86,6 +86,7 @@ class QuestModel(BaseModel):
     progress: int
     target: int
     reward_xp: int
+    reward_shards: Optional[int] = 0
     claimed: bool
 
 class QuestsResponse(BaseModel):

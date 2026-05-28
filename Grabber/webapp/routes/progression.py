@@ -64,9 +64,16 @@ async def claim_quest(quest_id: str, user_id: int = Depends(get_current_user)):
         raise HTTPException(status_code=400, detail="Already claimed or processing")
         
     await add_xp(user_id, info["reward_xp"], f"quest_{quest_id}")
+    reward_shards = info.get("reward_shards", 0)
+    if reward_shards > 0:
+        await user_collection.update_one(
+            get_user_id_query(user_id),
+            {"$inc": {"balance": reward_shards}}
+        )
+
     await sync_user_to_redis(user_id)
     
-    return {"success": True, "reward_xp": info["reward_xp"]}
+    return {"success": True, "reward_xp": info["reward_xp"], "reward_shards": reward_shards}
 
 @router.post("/pets/set_active/{pet_name}")
 async def set_active_pet(pet_name: str, user: dict = Depends(get_current_user_data)):
