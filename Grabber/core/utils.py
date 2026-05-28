@@ -105,6 +105,9 @@ def handle_errors(func):
         # 1. Registration Check
         user = getattr(message, "from_user", None)
         if user:
+            # Check if Sudo
+            is_sudo = user.id in config.SUDO_USERS or user.id == config.OWNER_ID
+
             is_start = False
             if isinstance(message, types.Message):
                 text = message.text or message.caption or ""
@@ -114,7 +117,7 @@ def handle_errors(func):
                 if message.data and message.data.startswith(("st:", "help:", "free_spin")):
                     is_start = True
 
-            if not is_start:
+            if not is_start and not is_sudo:
                 cached = await get_cached_user(user.id)
                 if not cached:
                     db_user = await user_collection.find_one({"id": {"$in": [user.id, str(user.id)]}})

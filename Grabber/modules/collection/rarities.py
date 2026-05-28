@@ -9,7 +9,8 @@ RARITY_MAP = {
     1: "⚪ Common", 2: "🟢 Medium", 3: "🟠 Rare", 4: "🟡 Legendary", 5: "💠 Cosmic",
     6: "💮 Exclusive", 7: "🔮 Limited Edition", 8: "🫧 Royal", 9: "💎 Antique", 10: "🎐 Celestial",
     11: "🎞️ AMV", 12: "🪽 Prestige", 13: "❄️ Winter", 14: "☀️ Summer", 15: "💖 Valentine",
-    16: "🎃 Halloween"
+    16: "🎃 Halloween", 17: "💸 Luxury", 18: "🎏 Limited", 19: "🟣 Epic", 20: "🧬 Immortal",
+    21: "🌌 Eternal", 22: "🔮 Mystic", 23: "💎 Mythical", 24: "✨ Divine", 25: "🌠 Astral"
 }
 RARITY_WEIGHTS = {
     "⚪ Common": 25,
@@ -27,7 +28,16 @@ RARITY_WEIGHTS = {
     "❄️ Winter": 6,
     "☀️ Summer": 6,
     "💖 Valentine": 5,
-    "🎃 Halloween": 5
+    "🎃 Halloween": 5,
+    "💸 Luxury": 4,
+    "🎏 Limited": 10,
+    "🟣 Epic": 20,
+    "🧬 Immortal": 8,
+    "🌌 Eternal": 6,
+    "🔮 Mystic": 5,
+    "💎 Mythical": 3,
+    "✨ Divine": 2,
+    "🌠 Astral": 1
 }
 ACTIVE_RARITY_WEIGHTS = {
     "🟠 Rare": 20,
