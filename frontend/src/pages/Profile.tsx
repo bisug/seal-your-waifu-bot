@@ -7,7 +7,7 @@ import { Skeleton, CardSkeleton } from '../components/ui/Skeleton';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Avatar } from '../components/Avatar';
 import { Shield, Activity, Users, Trophy, Search, Loader2 } from 'lucide-react';
-import { formatNumber } from '../utils';
+import { formatNumber, cn } from '../utils';
 import { useInfiniteGrid } from '../hooks/useInfiniteGrid';
 import { Character } from '../context/UserContext';
 
@@ -36,13 +36,13 @@ export const Profile = ({ onCharClick }: ProfileProps) => {
 
   if (userLoading && items.length === 0) return (
     <div className="pb-24 pt-6 px-4">
-       <div className="h-40 mb-6">
-          <Skeleton className="w-full h-full rounded-xl" />
+       <div className="h-28 mb-6">
+          <Skeleton className="w-full h-full rounded-2xl" />
        </div>
        <div className="grid grid-cols-3 gap-3 mb-6">
-          {[1,2,3].map(i => <Skeleton key={i} className="h-16 rounded-xl" />)}
+          {[1,2,3].map(i => <Skeleton key={i} className="h-20 rounded-xl" />)}
        </div>
-       <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 gap-2">
+       <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 gap-3">
           {Array.from({ length: 9 }).map((_, i) => (
             <CardSkeleton key={`prof-skeleton-${i}`} />
           ))}
@@ -53,17 +53,17 @@ export const Profile = ({ onCharClick }: ProfileProps) => {
   if (!user) return null;
 
   return (
-    <div className="pb-20 pt-4">
+    <div className="pb-20 pt-4 max-w-4xl mx-auto">
       {/* Profile Header */}
-      <section className="px-4 mb-8">
-        <div className="flex items-center space-x-5 bg-zinc-900 border border-white/5 p-5 rounded-2xl">
+      <section className="px-4 mb-6">
+        <div className="flex items-center space-x-4 bg-brand-deep border border-white/5 p-4 rounded-2xl shadow-sm">
           <div className="relative shrink-0">
             <Avatar 
               src={user.avatar} 
               alt="User" 
               className="w-16 h-16 rounded-xl border border-white/10"
             />
-            <div className="absolute -bottom-1 -right-1 bg-brand-accent text-white text-[9px] font-bold px-1.5 py-0.5 rounded ring-4 ring-zinc-900">
+            <div className="absolute -bottom-2 -right-2 bg-brand-accent text-white text-xs font-bold px-2 py-0.5 rounded-lg border-2 border-brand-deep">
               Lvl {user.stats?.level || 1}
             </div>
           </div>
@@ -71,35 +71,35 @@ export const Profile = ({ onCharClick }: ProfileProps) => {
             <h1 className="text-lg font-bold text-white truncate tracking-tight mb-0.5">
               {user.first_name || 'Collector'}
             </h1>
-            <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">@{user.username || 'unknown'}</p>
+            <p className="text-sm text-neutral-400 font-medium">@{user.username || 'unknown'}</p>
           </div>
-          <div className="hidden xs:flex flex-col items-end">
-            <div className="flex items-center space-x-1.5 text-[10px] font-bold text-zinc-300 bg-zinc-950 px-2.5 py-1.5 rounded-lg border border-white/5 uppercase tracking-widest">
-              <Trophy size={12} className="text-amber-500" />
-              <span>Rank #{user.stats?.rank || '---'}</span>
+          <div className="hidden sm:flex flex-col items-end">
+            <div className="flex items-center space-x-2 text-sm font-semibold text-neutral-300 bg-brand-midnight px-3 py-1.5 rounded-lg border border-white/5 shadow-sm">
+              <Trophy size={16} className="text-amber-500" />
+              <span>Rank #{formatNumber(user.stats?.rank || 0)}</span>
             </div>
           </div>
         </div>
       </section>
 
       {/* Primary Stats */}
-      <div className="px-4 grid grid-cols-3 gap-3 mb-8">
+      <div className="px-4 grid grid-cols-3 gap-3 mb-6">
         {[
-          { icon: Shield, label: 'Experience', value: user.stats?.xp || 0, color: 'text-blue-500' },
+          { icon: Shield, label: 'XP', value: user.stats?.xp || 0, color: 'text-brand-accent' },
           { icon: Activity, label: 'Zenith', value: user.stats?.zenith || 0, color: 'text-emerald-500' },
           { icon: Users, label: 'Collection', value: user.stats?.total_characters || 0, color: 'text-purple-500' },
         ].map((stat, i) => (
-          <div key={i} className="bg-zinc-900/50 p-4 rounded-xl border border-white/5 flex flex-col">
-            <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-2">{stat.label}</span>
+          <div key={i} className="bg-brand-deep p-4 rounded-xl border border-white/5 flex flex-col justify-between shadow-sm">
+            <span className="text-xs font-medium text-neutral-500 mb-2">{stat.label}</span>
             <div className="flex items-center justify-between">
-              <span className="text-sm font-bold text-white tabular-nums tracking-tight">{formatNumber(stat.value)}</span>
-              <stat.icon size={14} className={stat.color} />
+              <span className="text-base font-bold text-white tabular-nums">{formatNumber(stat.value)}</span>
+              <stat.icon size={16} className={stat.color} />
             </div>
           </div>
         ))}
       </div>
 
-      <section className="px-4 mb-10">
+      <section className="px-4 mb-8">
         <ProgressBar 
           current={user.stats?.xp_current || 0} 
           total={user.stats?.xp_needed || 1000} 
@@ -109,27 +109,28 @@ export const Profile = ({ onCharClick }: ProfileProps) => {
 
       {/* Collection Filters */}
       <section className="px-4">
-        <div className="sticky top-14 z-40 bg-zinc-950/80 backdrop-blur-md py-4 border-b border-white/5 mb-6 -mx-4 px-4">
+        <div className="sticky top-14 z-40 bg-brand-midnight/90 backdrop-blur-md py-4 border-b border-white/5 mb-6 -mx-4 px-4 shadow-sm">
           <div className="space-y-4">
-            <div className="relative">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-600" size={14} />
+            <div className="relative max-w-md mx-auto sm:mx-0">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-500" size={16} />
               <input
                 type="text"
-                placeholder="SEARCH COLLECTION..."
-                className="w-full bg-zinc-900 border border-white/5 rounded-xl py-3 pl-10 pr-4 text-[10px] font-bold uppercase tracking-widest focus:border-white/20 outline-none transition-all placeholder:text-zinc-700"
+                placeholder="Search collection..."
+                className="w-full bg-brand-deep border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm font-medium focus:border-brand-accent outline-none transition-all placeholder:text-neutral-500 text-white"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
 
-            <div className="flex space-x-2 overflow-x-auto no-scrollbar py-0.5">
+            <div className="flex space-x-2 overflow-x-auto no-scrollbar pb-1">
               <button 
                 onClick={() => setRarity('')}
-                className={`px-4 py-2 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all border ${
+                className={cn(
+                  "px-4 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-all border",
                   rarity === '' 
-                  ? 'bg-white text-zinc-950 border-white'
-                  : 'bg-zinc-900 text-zinc-500 border-white/5 hover:border-white/10'
-                }`}
+                  ? "bg-white text-brand-midnight border-white shadow-sm"
+                  : "bg-brand-deep text-neutral-400 border-white/5 hover:border-white/10 hover:text-neutral-200"
+                )}
               >
                 All
               </button>
@@ -137,11 +138,12 @@ export const Profile = ({ onCharClick }: ProfileProps) => {
                 <button 
                   key={r}
                   onClick={() => setRarity(r)}
-                  className={`px-4 py-2 rounded-lg text-[9px] font-bold uppercase tracking-widest whitespace-nowrap transition-all border ${
+                  className={cn(
+                    "px-4 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-all border",
                     rarity === r 
-                    ? 'bg-white text-zinc-950 border-white'
-                    : 'bg-zinc-900 text-zinc-500 border-white/5 hover:border-white/10'
-                  }`}
+                    ? "bg-white text-brand-midnight border-white shadow-sm"
+                    : "bg-brand-deep text-neutral-400 border-white/5 hover:border-white/10 hover:text-neutral-200"
+                  )}
                 >
                   {r.replace(/[\u2700-\u27bf]|[\u2190-\u21ff]|[\u2000-\u206f]|[\u2600-\u26ff]|[\u2b00-\u2bff]|[\u00a0-\u00bf]|\u2013|\u2014/g, '').trim()}
                 </button>
@@ -151,7 +153,7 @@ export const Profile = ({ onCharClick }: ProfileProps) => {
         </div>
         
         {items.length > 0 || (loading && page > 1) ? (
-          <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
+          <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 gap-3">
                {items.map((char, i) => (
                  <Card
                   key={char.id}
@@ -165,7 +167,7 @@ export const Profile = ({ onCharClick }: ProfileProps) => {
              ))}
           </div>
         ) : loading && page === 1 ? (
-          <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
+          <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 gap-3">
              {Array.from({ length: 18 }).map((_, i) => (
                 <CardSkeleton key={`loading-new-${i}`} />
              ))}
@@ -180,7 +182,7 @@ export const Profile = ({ onCharClick }: ProfileProps) => {
 
         {loading && items.length > 0 && (
            <div className="flex justify-center py-8">
-              <Loader2 className="animate-spin text-zinc-800" size={20} />
+              <Loader2 className="animate-spin text-neutral-600" size={24} />
            </div>
         )}
       </section>

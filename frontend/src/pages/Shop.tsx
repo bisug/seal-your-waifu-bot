@@ -19,30 +19,31 @@ export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
   };
 
   if (loading && !shopData) return (
-    <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2 px-4 py-6">
+    <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 gap-3 px-4 py-6 max-w-5xl mx-auto">
        {Array.from({ length: 12 }).map((_, i) => <CardSkeleton key={i} />)}
     </div>
   );
 
   return (
-    <div className="pb-24 pt-4">
-      <header className="px-4 mb-6 flex justify-between items-end">
+    <div className="pb-20 pt-4 max-w-5xl mx-auto">
+      <header className="px-4 mb-6 flex justify-between items-end border-b border-white/5 pb-4">
          <div>
-            <div className="flex items-center gap-2 mb-0.5">
-               <ShoppingBag size={14} className="text-brand-accent" />
-               <h1 className="text-sm font-bold text-zinc-100">Daily Shop</h1>
+            <div className="flex items-center gap-2 mb-1">
+               <ShoppingBag size={18} className="text-brand-accent" />
+               <h1 className="text-lg font-bold text-white tracking-tight">Daily Shop</h1>
             </div>
-            <p className="text-xs font-medium text-zinc-500">Inventory resets every 24 hours</p>
+            <p className="text-sm font-medium text-neutral-400">Inventory resets every 24 hours</p>
          </div>
          <button
            onClick={handleRefresh}
-           className="p-2 rounded-md bg-zinc-900 border border-white/5 text-zinc-400 hover:text-zinc-100 transition-colors active:bg-zinc-800"
+           className="p-2.5 rounded-lg bg-brand-deep border border-white/5 text-neutral-400 hover:text-white hover:bg-white/5 transition-colors active:scale-95"
+           aria-label="Refresh Shop"
          >
-            <RefreshCw size={14} />
+            <RefreshCw size={16} />
          </button>
       </header>
 
-      <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2 px-4">
+      <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 gap-3 px-4">
         {shopData?.map((char) => (
           <Card key={char.id} character={char} onClick={() => onCharClick(char)} />
         ))}
