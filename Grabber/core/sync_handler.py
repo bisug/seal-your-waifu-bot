@@ -12,6 +12,7 @@ async def sync_user_data(message):
         return
     user_id = message.from_user.id
     first_name = message.from_user.first_name
+    last_name = message.from_user.last_name
     username = message.from_user.username
     # Don't overwrite with empty name
     if not first_name:
@@ -24,7 +25,11 @@ async def sync_user_data(message):
     try:
         await user_collection.update_many(
             {"id": {"$in": [user_id, str(user_id)]}},
-            {"$set": {"first_name": first_name, "username": username}}
+            {"$set": {
+                "first_name": first_name,
+                "last_name": last_name,
+                "username": username
+            }}
         )
     except Exception as e:
         LOGGER.error(f"Failed to sync user data for {user_id}: {e}")

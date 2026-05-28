@@ -65,8 +65,12 @@ export const Leaderboard = () => {
                                         <img src={user.avatar || 'https://files.catbox.moe/2hsawz.jpg'} alt="" className="w-full h-full object-cover grayscale-[0.2]" />
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="text-xs font-bold text-zinc-100 truncate max-w-[120px]">{user.first_name}</p>
-                                        <p className="text-[10px] font-medium text-zinc-500 truncate">@{user.username || 'user'}</p>
+                                        <p className="text-xs font-bold text-zinc-100 truncate max-w-[120px]">
+                                            {user.full_name || user.first_name || 'User'}
+                                        </p>
+                                        {user.username && (
+                                            <p className="text-[10px] font-medium text-zinc-500 truncate">@{user.username}</p>
+                                        )}
                                     </div>
                                 </div>
                             </div>
