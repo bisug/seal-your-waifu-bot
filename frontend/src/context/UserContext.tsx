@@ -103,10 +103,12 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   useEffect(() => {
     refreshUser();
+  }, [refreshUser]);
 
+  useEffect(() => {
     window.addEventListener('user-data-refresh', triggerRefresh);
     return () => window.removeEventListener('user-data-refresh', triggerRefresh);
-  }, [refreshUser, triggerRefresh]);
+  }, [triggerRefresh]);
 
   return (
     <UserContext.Provider value={{ user, loading, error, liteMode, refreshUser, triggerRefresh, toggleLiteMode }}>

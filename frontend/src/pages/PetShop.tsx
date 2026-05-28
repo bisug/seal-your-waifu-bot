@@ -46,8 +46,8 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
     };
 
     if (loading && !shopData) return (
-        <div className="grid grid-cols-1 gap-4 px-4 py-8">
-            {[1,2,3,4].map(i => <Skeleton key={i} className="h-48 rounded-3xl" />)}
+        <div className="grid grid-cols-1 gap-4 px-4 py-8 max-w-2xl mx-auto">
+            {[1,2,3,4].map(i => <Skeleton key={i} className="h-40 rounded-2xl" />)}
         </div>
     );
 
@@ -56,16 +56,16 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
     const currentLevel = shopData?.current_level || 0;
 
     return (
-        <div className="px-4 py-8 pb-20">
-            <header className="mb-10 px-2">
-                <h1 className="text-2xl font-black italic uppercase tracking-tighter text-white flex items-center gap-3">
-                    <ShoppingBag className="text-brand-accent" size={24} />
+        <div className="px-4 py-6 pb-20 max-w-2xl mx-auto">
+            <header className="mb-8 border-b border-white/5 pb-4">
+                <h1 className="text-xl font-bold text-white flex items-center gap-2 mb-1">
+                    <ShoppingBag className="text-brand-accent" size={20} />
                     Companion Hub
                 </h1>
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em] mt-1">Acquire elite pets for your journey</p>
+                <p className="text-sm font-medium text-neutral-400">Acquire elite pets for your journey</p>
             </header>
 
-            <div className="grid grid-cols-1 gap-6">
+            <div className="grid grid-cols-1 gap-4">
                 {pets.map((pet, i) => {
                     const isOwned = owned.includes(pet.name);
                     const isLocked = currentLevel < pet.req_level;
@@ -75,44 +75,43 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
                         <div
                             key={pet.name}
                             onClick={() => onPetClick?.(pet)}
-                            style={{ transitionDelay: `${Math.min(i * 0.05, 0.3)}s` }}
                             className={cn(
-                                "glass-panel p-5 rounded-[2.5rem] border transition-all duration-500 flex gap-6 items-center group animate-in fade-in slide-in-from-bottom-4 fill-mode-both",
-                                isOwned ? "border-brand-accent/20 bg-brand-accent/5" : "border-white/5 bg-white/5",
-                                isLocked && "opacity-60 grayscale-[0.5]"
+                                "p-4 rounded-2xl border transition-all flex gap-4 items-center group cursor-pointer shadow-sm",
+                                isOwned ? "border-emerald-500/20 bg-emerald-500/5" : "border-white/5 bg-brand-deep",
+                                isLocked && "opacity-60 grayscale-[0.3]"
                             )}
                         >
                             <div className="relative shrink-0">
                                 <div className={cn(
-                                    "w-24 h-24 rounded-[1.75rem] overflow-hidden border-2 bg-black/40 shadow-xl group-hover:scale-105 transition-transform duration-500",
-                                    isOwned ? "border-brand-accent/40" : "border-white/10"
+                                    "w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden border-2 bg-brand-midnight shadow-md group-hover:scale-105 transition-transform duration-300",
+                                    isOwned ? "border-emerald-500/30" : "border-white/10"
                                 )}>
                                     <img src={pet.img} alt={pet.name} className="w-full h-full object-cover" />
                                 </div>
                                 {isOwned && (
-                                    <div className="absolute -top-2 -right-2 bg-brand-accent text-brand-midnight p-1.5 rounded-xl shadow-lg ring-4 ring-brand-midnight">
-                                        <CheckCircle2 size={12} strokeWidth={3} />
+                                    <div className="absolute -top-1.5 -right-1.5 bg-emerald-500 text-white p-1 rounded-lg shadow-sm border border-emerald-400">
+                                        <CheckCircle2 size={14} strokeWidth={3} />
                                     </div>
                                 )}
                                 {isLocked && (
-                                    <div className="absolute inset-0 bg-black/60 rounded-[1.75rem] flex flex-col items-center justify-center text-white/40">
-                                        <Lock size={20} />
-                                        <span className="text-[8px] font-black uppercase mt-1">Lvl {pet.req_level}</span>
+                                    <div className="absolute inset-0 bg-black/60 rounded-xl flex flex-col items-center justify-center text-white/60 backdrop-blur-[2px]">
+                                        <Lock size={18} className="mb-1" />
+                                        <span className="text-[10px] font-bold uppercase tracking-wider">Lvl {pet.req_level}</span>
                                     </div>
                                 )}
                             </div>
 
-                            <div className="flex-1 min-w-0">
-                                <h2 className="text-xl font-black text-white italic tracking-tighter leading-tight mb-0.5 truncate">{pet.name}</h2>
+                            <div className="flex-1 min-w-0 py-1">
+                                <h2 className="text-lg font-bold text-white mb-1 truncate">{pet.name}</h2>
                                 <div className="flex items-center gap-1.5 mb-3">
-                                    <Sparkles size={10} className="text-brand-accent" />
-                                    <p className="text-[9px] font-black text-brand-accent uppercase tracking-widest truncate">{pet.ability}</p>
+                                    <Sparkles size={12} className="text-brand-accent shrink-0" />
+                                    <p className="text-xs font-semibold text-brand-accent truncate">{pet.ability}</p>
                                 </div>
 
                                 <div className="flex items-center justify-between gap-3">
                                     <div className="flex flex-col">
-                                        <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Price</span>
-                                        <span className="text-[13px] font-black text-white">⧫ {formatNumber(pet.zenith_price)}</span>
+                                        <span className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-0.5">Price</span>
+                                        <span className="text-sm font-bold text-white tabular-nums">⧫ {formatNumber(pet.zenith_price)}</span>
                                     </div>
 
                                     {!isOwned && !isLocked && (
@@ -123,22 +122,22 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
                                             }}
                                             disabled={!!buying || !canAfford}
                                             className={cn(
-                                                "px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg",
+                                                "px-4 py-2 rounded-lg text-xs font-bold transition-all active:scale-95 shadow-sm min-w-[80px] flex justify-center",
                                                 canAfford
-                                                    ? "bg-brand-accent text-brand-midnight hover:shadow-brand-accent/20"
-                                                    : "bg-white/5 text-slate-600 border border-white/5"
+                                                    ? "bg-white text-brand-midnight hover:bg-neutral-200"
+                                                    : "bg-brand-midnight text-neutral-600 border border-white/5"
                                             )}
                                         >
-                                            {buying === pet.name ? <Loader2 size={14} className="animate-spin mx-2" /> : 'Buy Now'}
+                                            {buying === pet.name ? <Loader2 size={14} className="animate-spin" /> : 'Buy Now'}
                                         </button>
                                     )}
 
                                     {isOwned && (
-                                        <span className="text-[9px] font-black text-brand-accent/60 uppercase tracking-[0.2em] px-4 py-2 bg-brand-accent/5 rounded-xl border border-brand-accent/10">Owned</span>
+                                        <span className="text-xs font-bold text-emerald-500 px-3 py-1.5 bg-emerald-500/10 rounded-lg border border-emerald-500/20">Owned</span>
                                     )}
 
                                     {isLocked && (
-                                        <span className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em] px-4 py-2 bg-white/5 rounded-xl border border-white/5">Locked</span>
+                                        <span className="text-xs font-bold text-neutral-500 px-3 py-1.5 bg-brand-midnight rounded-lg border border-white/5">Locked</span>
                                     )}
                                 </div>
                             </div>
