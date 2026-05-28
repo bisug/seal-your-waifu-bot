@@ -11,27 +11,27 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
   const { user } = useUser();
 
   return (
-    <header className="sticky top-0 z-50 flex items-center justify-between px-4 bg-brand-midnight border-b border-white/5 h-14 shrink-0">
-      <div className="flex items-center space-x-2.5">
-        <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-white/5 flex items-center justify-center shadow-sm">
-           <Shield size={16} className="text-brand-accent" strokeWidth={2.5} />
+    <header className="sticky top-0 z-50 flex items-center justify-between px-4 bg-zinc-950/80 backdrop-blur-md border-b border-white/5 h-14 shrink-0 select-none">
+      <div className="flex items-center space-x-3">
+        <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-white/10 flex items-center justify-center">
+           <Shield size={16} className="text-white" strokeWidth={2.5} />
         </div>
-        <span className="text-sm font-bold tracking-tight text-white">Grabber</span>
+        <span className="text-[11px] font-black uppercase tracking-[0.2em] text-white">Grabber</span>
       </div>
 
       <div className="flex items-center space-x-2">
-        <div className="flex items-center space-x-1.5 bg-zinc-900 border border-white/5 px-2.5 py-1.5 rounded-md shadow-sm">
+        <div className="flex items-center space-x-2 bg-zinc-900 border border-white/5 px-3 py-1.5 rounded-lg">
           <Activity size={12} className="text-brand-accent" />
-          <span className="text-xs font-semibold text-zinc-100 tabular-nums">
+          <span className="text-[10px] font-bold text-white tabular-nums tracking-wider">
             {formatNumber(user?.stats?.zenith || 0)}
           </span>
         </div>
 
         <button
           onClick={onMenuClick}
-          className="p-2 rounded-md hover:bg-zinc-900 border border-transparent hover:border-white/5 text-zinc-400 active:bg-zinc-900 transition-colors"
+          className="p-2 rounded-lg bg-zinc-900 border border-white/5 text-zinc-400 active:scale-95 transition-all"
         >
-          <Menu size={20} />
+          <Menu size={18} />
         </button>
       </div>
     </header>

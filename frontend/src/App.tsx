@@ -49,18 +49,30 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center min-h-svh bg-brand-midnight">
-          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl max-w-sm">
-             <h2 className="text-red-500 font-bold mb-2 uppercase tracking-wider text-sm">System Error</h2>
-             <p className="text-[10px] text-red-400 font-mono break-all">{this.state.error?.toString() || 'Unknown Error'}</p>
+        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center min-h-svh bg-zinc-950 select-none">
+          <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-white/5 flex items-center justify-center mb-8">
+             <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
           </div>
           
+          <h2 className="text-white font-bold mb-4 uppercase tracking-[0.2em] text-sm">System Crash</h2>
+          <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-widest leading-relaxed mb-10 max-w-[240px]">
+            The runtime environment encountered an unrecoverable exception.
+          </p>
+
           <button 
             onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-brand-accent text-white font-bold rounded-xl uppercase tracking-wider text-[11px] active:scale-95 transition-transform"
+            className="w-full max-w-[200px] py-4 bg-white text-zinc-950 font-bold rounded-xl uppercase tracking-widest text-[10px] active:scale-[0.98] transition-transform"
           >
-            RECONNECT
+            Re-initialize
           </button>
+
+          {this.state.error && (
+            <div className="mt-12 p-3 bg-zinc-900/50 border border-white/5 rounded-lg max-w-xs overflow-hidden">
+               <p className="text-[8px] text-zinc-600 font-mono break-all line-clamp-2 uppercase">
+                  Log: {this.state.error.toString()}
+               </p>
+            </div>
+          )}
         </div>
       );
     }
@@ -114,8 +126,8 @@ const AppContent = () => {
         tg.BackButton?.hide?.();
       }
 
-      tg.setHeaderColor?.('#0A0A0B');
-      tg.setBackgroundColor?.('#0A0A0B');
+      tg.setHeaderColor?.('#09090b');
+      tg.setBackgroundColor?.('#09090b');
       tg.expand?.();
        } catch {
       console.warn('Telegram API error (non-critical)');
@@ -142,44 +154,40 @@ const AppContent = () => {
 
   if (error || (!loading && !user)) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center px-10 text-center min-h-svh bg-brand-midnight relative overflow-hidden">
-        <div className="relative z-10">
-          <div className="mb-6">
-            <div className="w-16 h-16 mx-auto rounded-2xl border border-brand-accent/20 flex items-center justify-center bg-brand-accent/5">
-              <span className="text-3xl">📡</span>
-            </div>
-          </div>
-          
-          <h2 className="text-brand-accent font-bold mb-2 uppercase tracking-wider text-lg">Connection Lost</h2>
-          <p className="text-slate-500 text-[10px] mb-8 leading-relaxed uppercase tracking-widest max-w-[200px] mx-auto">
-            {error || "Authentication timed out. Please restart the bot."}
-          </p>
-          
-          <div className="space-y-3">
-            <button 
-              onClick={() => window.location.reload()}
-              className="w-full px-8 py-3.5 rounded-xl bg-brand-accent text-white font-bold uppercase text-[10px] tracking-wider transition-all active:scale-95 flex items-center justify-center gap-2"
-            >
-              RETRY
-            </button>
-            <button 
-              onClick={() => { 
-                window.Telegram?.WebApp?.showConfirm(
-                  "Deep Reset will wipe your local session data. Continue?",
-                  (confirmed) => {
-                    if (confirmed) {
-                      sessionStorage.clear();
-                      localStorage.clear();
-                      window.location.reload();
-                    }
+      <div className="flex-1 flex flex-col items-center justify-center px-8 text-center min-h-svh bg-zinc-950 relative overflow-hidden select-none">
+        <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-white/5 flex items-center justify-center mb-8">
+           <div className="w-2 h-2 rounded-full bg-zinc-700 animate-pulse" />
+        </div>
+
+        <h2 className="text-white font-bold mb-4 uppercase tracking-[0.2em] text-sm">Link Severed</h2>
+        <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-widest leading-relaxed mb-10 max-w-[240px]">
+          {error || "Neural handshake failed. Please re-authenticate via the main console."}
+        </p>
+
+        <div className="w-full max-w-[240px] space-y-3">
+          <button
+            onClick={() => window.location.reload()}
+            className="w-full py-4 rounded-xl bg-white text-zinc-950 font-bold uppercase text-[10px] tracking-widest transition-transform active:scale-[0.98]"
+          >
+            Retry Handshake
+          </button>
+          <button
+            onClick={() => {
+              window.Telegram?.WebApp?.showConfirm(
+                "Perform deep system reset?",
+                (confirmed) => {
+                  if (confirmed) {
+                    sessionStorage.clear();
+                    localStorage.clear();
+                    window.location.reload();
                   }
-                );
-              }}
-              className="w-full py-3 text-slate-600 text-[8px] font-bold uppercase tracking-wider hover:text-slate-400 transition-colors"
-            >
-              Deep Reset
-            </button>
-          </div>
+                }
+              );
+            }}
+            className="w-full py-3 text-zinc-700 text-[9px] font-bold uppercase tracking-[0.2em] hover:text-zinc-500 transition-colors"
+          >
+            Deep Reset
+          </button>
         </div>
       </div>
     );
