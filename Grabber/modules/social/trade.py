@@ -101,8 +101,11 @@ async def trade_callback_handler(_, query: types.CallbackQuery):
     except Exception as e:
         LOGGER.error(f"Trade DB Error: {e}")
         return await query.message.edit_text("Trade failed: One of the characters was no longer available.", parse_mode=enums.ParseMode.HTML)
+    from Grabber.modules.progression.achievements import check_achievements
     await update_quest_progress(sender_id, "trader", 1)
     await update_quest_progress(receiver_id, "trader", 1)
+    await check_achievements(sender_id)
+    await check_achievements(receiver_id)
     await query.message.edit_text(
         f"<b>Trade successful!</b>\n"
         f"<a href=\"tg://user?id={sender_id}\">Collector {sender_id}</a> ↔️ <a href=\"tg://user?id={receiver_id}\">Collector {receiver_id}</a>",

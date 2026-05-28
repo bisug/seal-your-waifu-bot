@@ -13,103 +13,151 @@ from Grabber.core.utils import handle_errors, html_escape
 QUEST_POOL = {
     "catch_master": {
         "name": "Catch Master",
-        "description": "Catch 5 characters",
-        "target": 5,
+        "description": "Catch 2 characters",
+        "target": 2,
         "reward_xp": 50,
+        "reward_shards": 500,
         "icon": "◉",
         "symbol": "◉"
     },
+    "guesser": {
+        "name": "Quick Thinker",
+        "description": "Identify 3 characters in /nguess",
+        "target": 3,
+        "reward_xp": 60,
+        "reward_shards": 600,
+        "icon": "🧩",
+        "symbol": "🧩"
+    },
     "battle_veteran": {
-        "name": "Battle Veteran",
-        "description": "Win 2 battles",
-        "target": 2,
+        "name": "Brawler",
+        "description": "Win 1 battle",
+        "target": 1,
         "reward_xp": 75,
+        "reward_shards": 750,
         "icon": "⚔",
         "symbol": "⚔"
     },
     "egg_hunter": {
-        "name": "Egg Hunter",
-        "description": "Find 2 eggs while hunting",
-        "target": 2,
-        "reward_xp": 60,
-        "icon": "◈",
-        "symbol": "◈"
+        "name": "Egg Seeker",
+        "description": "Find 1 egg while hunting",
+        "target": 1,
+        "reward_xp": 40,
+        "reward_shards": 400,
+        "icon": "🥚",
+        "symbol": "🥚"
+    },
+    "egg_hatcher": {
+        "name": "Nurturer",
+        "description": "Hatch 1 egg",
+        "target": 1,
+        "reward_xp": 50,
+        "reward_shards": 500,
+        "icon": "🐣",
+        "symbol": "🐣"
     },
     "generous_soul": {
-        "name": "Generous Soul",
+        "name": "Gift Giver",
         "description": "Gift Shards to a player",
         "target": 1,
         "reward_xp": 40,
-        "icon": "◆",
-        "symbol": "◆"
+        "reward_shards": 400,
+        "icon": "🎁",
+        "symbol": "🎁"
     },
     "trader": {
-        "name": "Trader",
+        "name": "Deal Maker",
         "description": "Complete a trade",
         "target": 1,
         "reward_xp": 50,
-        "icon": "▨",
-        "symbol": "▨"
+        "reward_shards": 500,
+        "icon": "🤝",
+        "symbol": "🤝"
     },
     "big_spender": {
         "name": "Big Spender",
-        "description": "Spend 1,000 Shards / 5 Zenith",
-        "target": 5,
+        "description": "Spend 1,000 Shards",
+        "target": 1000,
         "reward_xp": 100,
-        "icon": "⬪",
-        "symbol": "⬪"
+        "reward_shards": 1000,
+        "icon": "💰",
+        "symbol": "💰"
     }
 }
 WEEKLY_POOL = {
     "weekly_catch": {
         "name": "Master Collector",
-        "description": "Catch 50 characters this week",
-        "target": 50,
+        "description": "Catch 20 characters this week",
+        "target": 20,
         "reward_xp": 500,
+        "reward_shards": 5000,
         "icon": "❂",
         "symbol": "❂"
     },
+    "weekly_guesser": {
+        "name": "Enigma Master",
+        "description": "Identify 15 characters in /nguess",
+        "target": 15,
+        "reward_xp": 600,
+        "reward_shards": 6000,
+        "icon": "🔮",
+        "symbol": "🔮"
+    },
+    "weekly_hatcher": {
+        "name": "Pro Breeder",
+        "description": "Hatch 5 eggs this week",
+        "target": 5,
+        "reward_xp": 500,
+        "reward_shards": 5000,
+        "icon": "🕊",
+        "symbol": "🕊"
+    },
     "weekly_battle": {
         "name": "Warlord",
-        "description": "Win 20 battles this week",
-        "target": 20,
+        "description": "Win 10 battles this week",
+        "target": 10,
         "reward_xp": 600,
+        "reward_shards": 6000,
         "icon": "⚔",
         "symbol": "⚔"
     },
     "weekly_spender": {
         "name": "Tycoon",
-        "description": "Spend 50,000 Shards this week",
-        "target": 50000,
+        "description": "Spend 10,000 Shards this week",
+        "target": 10000,
         "reward_xp": 800,
-        "icon": "⬪",
-        "symbol": "⬪"
+        "reward_shards": 8000,
+        "icon": "💎",
+        "symbol": "💎"
     }
 }
 PASS_MISSIONS = {
     "pass_battles": {
         "name": "Pass Warlord",
-        "description": "Win 50 battles this week",
-        "target": 50,
+        "description": "Win 20 battles",
+        "target": 20,
         "reward_xp": 1000,
+        "reward_shards": 10000,
         "icon": "⚔",
         "symbol": "⚔"
     },
     "pass_collector": {
         "name": "Pass Master",
-        "description": "Catch 100 characters this week",
-        "target": 100,
+        "description": "Catch 50 characters",
+        "target": 50,
         "reward_xp": 1000,
+        "reward_shards": 10000,
         "icon": "❂",
         "symbol": "❂"
     },
     "pass_hatcher": {
-        "name": "Pass Hunter",
-        "description": "Find 10 eggs",
+        "name": "Pass Hatcher",
+        "description": "Hatch 10 eggs",
         "target": 10,
         "reward_xp": 1500,
-        "icon": "◈",
-        "symbol": "◈"
+        "reward_shards": 15000,
+        "icon": "🐣",
+        "symbol": "🐣"
     }
 }
 async def get_user_quests(user_id: int) -> dict:
@@ -312,6 +360,14 @@ async def claim_quest_callback(_, query: types.CallbackQuery):
     if result.modified_count == 0:
         return await query.answer("Already claimed or quest not complete!", show_alert=True)
     reward_xp = quest_info["reward_xp"]
+    reward_shards = quest_info.get("reward_shards", 0)
+
     await add_xp(user_id, reward_xp, f"quest_{quest_id}")
-    await query.answer(f"Claimed! +{reward_xp} XP!", show_alert=True)
+    if reward_shards > 0:
+        await user_collection.update_one(
+            {"id": {"$in": [user_id, str(user_id)]}},
+            {"$inc": {"balance": reward_shards}}
+        )
+
+    await query.answer(f"Claimed! +{reward_xp} XP & +{reward_shards} Shards!", show_alert=True)
     await view_quests(None, query.message, edit_message=True)

@@ -79,6 +79,7 @@ async def seal_handler(_, message: types.Message):
             add_xp(user_id, 10, "character_catch"),
             update_quest_progress(user_id, "catch_master", 1),
             update_quest_progress(user_id, "weekly_catch", 1),
+            update_quest_progress(user_id, "pass_collector", 1),
         )
         # check_achievements reads XP/character state, so it runs after the gather above
         await check_achievements(user_id)

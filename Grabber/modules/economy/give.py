@@ -38,7 +38,7 @@ async def give_balance(_, message: types.Message):
     await message.reply_text(f"You gave {amount} ⬪ to {html_escape(recipient.first_name)}!")
     LOGGER.info(f"User {sender_id} gave {amount} to {recipient_id}")
     await update_quest_progress(sender_id, "generous_soul", 1)
-    await check_achievements(recipient_id)
+    await check_achievements(sender_id)
 @app.on_message(filters.command("takebalance"))
 @handle_errors
 async def take_balance(_, message: types.Message):
