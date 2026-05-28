@@ -47,7 +47,13 @@ async def bet_cmd(_, message: types.Message):
             parse_mode=enums.ParseMode.HTML
         )
         return
-    if balance_amount < amount:
+    # Atomic balance deduction (prevents race conditions)
+    update_res = await user_collection.update_one(
+        {'id': {'$in': [user_id, str(user_id)]}, 'balance': {'$gte': amount}},
+        {'$inc': {'balance': -amount}}
+    )
+
+    if update_res.modified_count == 0:
         await message.reply_text(
             f"<b>Not Enough Shards!</b>\n"
             f"Your Balance: <b>{balance_amount:,} ⬪</b>\n\n"
@@ -55,35 +61,47 @@ async def bet_cmd(_, message: types.Message):
             parse_mode=enums.ParseMode.HTML
         )
         return
+
     user_choice_name = "Heads" if choice == "h" else "Tails"
     await message.reply_text(f"<b>Placing Bet:</b> {amount:,} ⬪\n<b>You Chose:</b> {user_choice_name}", parse_mode=enums.ParseMode.HTML)
+
     await asyncio.sleep(2)
+
     # Real coin flip
     coin_result = random.choice(["h", "t"])
     is_win = (choice == coin_result)
     coin_name = "Heads" if coin_result == "h" else "Tails"
+
     if is_win:
         win_multiplier = 2
         winnings = amount * win_multiplier
+        # Atomic balance update for winnings
+        await user_collection.update_one(
+            {'id': {'$in': [user_id, str(user_id)]}},
+            {'$inc': {'balance': winnings}}
+        )
+
+        # Get fresh balance for display
+        new_user_data = await user_collection.find_one({'id': {'$in': [user_id, str(user_id)]}}, projection={'balance': 1})
+        new_balance = new_user_data.get('balance', 0)
+
         result_text = (
             f"<b>YOU WIN!</b>\n"
             f"The coin landed on <b>{coin_name}</b>!\n"
             f"<b>You Earned:</b> {winnings:,} ⬪\n\n"
-            f"<b>New Balance:</b> {(balance_amount + winnings):,} ⬪"
+            f"<b>New Balance:</b> {new_balance:,} ⬪"
         )
-        delta = winnings
     else:
+        # Balance already deducted
+        new_user_data = await user_collection.find_one({'id': {'$in': [user_id, str(user_id)]}}, projection={'balance': 1})
+        new_balance = new_user_data.get('balance', 0)
+
         result_text = (
             f"<b>YOU LOST!</b>\n"
             f"The coin landed on <b>{coin_name}</b>.\n"
             f"<b>You Lost:</b> {amount:,} ⬪\n\n"
-            f"<b>New Balance:</b> {(balance_amount - amount):,} ⬪"
+            f"<b>New Balance:</b> {new_balance:,} ⬪"
         )
-        delta = -amount
-    # Atomic balance update using $inc (prevents race conditions)
-    await user_collection.update_one(
-        {'id': {'$in': [user_id, str(user_id)]}},
-        {'$inc': {'balance': delta}}
-    )
+
     await invalidate_user_cache(user_id)
     await message.reply_text(result_text, parse_mode=enums.ParseMode.HTML)

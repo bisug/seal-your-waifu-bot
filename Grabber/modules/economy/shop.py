@@ -302,10 +302,15 @@ async def buy_level_cmd(_, message: types.Message):
     if levels < 1 or levels > 50:
         return await message.reply_text("Invalid amount (min 1, max 50 at a time).", parse_mode=enums.ParseMode.HTML)
     cost = levels * 5000 # 5000 shards per level
-    user = await user_collection.find_one(get_user_filter(user_id))
-    if not user or user.get("balance", 0) < cost:
+
+    # Atomic balance deduction
+    res = await user_collection.update_one(
+        {**get_user_filter(user_id), "balance": {"$gte": cost}},
+        {"$inc": {"balance": -cost}}
+    )
+
+    if res.modified_count == 0:
         return await message.reply_text(f"You need <b>{cost:,}</b> ⬪ Shards to buy {levels} levels.", parse_mode=enums.ParseMode.HTML)
-    await user_collection.update_one(get_user_filter(user_id), {"$inc": {"balance": -cost}})
     from Grabber.core.progression import add_xp
     await add_xp(user_id, levels * 100, "shop_buylevel")
     await update_quest_progress(user_id, "big_spender", cost)
