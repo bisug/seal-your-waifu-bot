@@ -4,7 +4,7 @@ from Grabber import app
 from Grabber.core.utils import handle_errors
 from Grabber.database import collection
 
-# Standard Rarity Mappings matching the Database
+# Keep for backward compatibility/reference
 RARITY_MAP = {
     1: "⚪ Common", 2: "🟢 Medium", 3: "🟠 Rare", 4: "🟡 Legendary", 5: "💠 Cosmic",
     6: "💮 Exclusive", 7: "🔮 Limited Edition", 8: "🫧 Royal", 9: "💎 Antique", 10: "🎐 Celestial",
