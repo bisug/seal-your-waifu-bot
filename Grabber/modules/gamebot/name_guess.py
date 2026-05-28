@@ -133,6 +133,14 @@ async def nguess_check_handler(_, message: types.Message):
             },
             upsert=True
         )
+
+        # Track Quests and Achievements
+        from Grabber.modules.progression.quests import update_quest_progress
+        from Grabber.modules.progression.achievements import check_achievements
+        asyncio.create_task(update_quest_progress(message.from_user.id, "guesser", 1))
+        asyncio.create_task(update_quest_progress(message.from_user.id, "weekly_guesser", 1))
+        asyncio.create_task(check_achievements(message.from_user.id))
+
         # Delete session
         await sessions_collection.delete_one({"_id": f"nguess:{chat_id}"})
         display_progress = total_guesses % 100 if total_guesses % 100 != 0 else 100

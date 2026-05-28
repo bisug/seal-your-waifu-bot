@@ -263,6 +263,7 @@ async def buy_character(_, query: types.CallbackQuery):
         await query.answer("Transaction failed. Insufficient Zenith or internal error.", show_alert=True)
         return
     await update_quest_progress(user_id, "big_spender", price)
+    await update_quest_progress(user_id, "weekly_spender", price)
     await check_achievements(user_id)
     await query.message.edit_caption(
         f"<b>Purchase Successful!</b>\nYou now own <b>{char.name}</b>!\nRemaining Stock: <code>{getattr(char, 'sold_count', 0) + 1}</code>/{SHOP_LIMIT}",
@@ -286,4 +287,7 @@ async def buy_level_cmd(_, message: types.Message):
     await user_collection.update_one(get_user_filter(user_id), {"$inc": {"balance": -cost}})
     from Grabber.core.progression import add_xp
     await add_xp(user_id, levels * 100, "shop_buylevel")
+    await update_quest_progress(user_id, "big_spender", cost)
+    await update_quest_progress(user_id, "weekly_spender", cost)
+    await check_achievements(user_id)
     await message.reply_text(f"<b>Levels Purchased!</b>\n\nSpent {cost:,} ⬪ Shards for +{levels * 100} XP.", parse_mode=enums.ParseMode.HTML)

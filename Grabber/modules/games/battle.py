@@ -184,6 +184,7 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
         await add_xp(winner_id, 30, "battle_win")
         await update_quest_progress(winner_id, "battle_veteran", 1)
         await update_quest_progress(winner_id, "weekly_battle", 1)
+        await update_quest_progress(winner_id, "pass_battles", 1)
         await check_achievements(winner_id)
         result_text = (
             f"📜 <b>Battle Log</b>:\n{battle_log}\n\n"
