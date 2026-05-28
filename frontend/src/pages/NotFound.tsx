@@ -1,69 +1,45 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Compass, Home, Map } from 'lucide-react';
+import { Home, Compass } from 'lucide-react';
 
-/**
- * Cinematic 'Lost in the Void' (404) Portal.
- * A high-fidelity fallback for any unknown navigation paths or corrupted states.
- */
-export const NotFound = ({ onReset }) => {
+export const NotFound = ({ onReset }: { onReset: () => void }) => {
   useEffect(() => {
-    // Heavy Haptic Impact on entry to signal navigation break
-    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('heavy');
+    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
   }, []);
 
-  const handleReturn = () => {
-    window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
-    if (onReset) onReset();
-  };
-
   return (
-    <div className="absolute inset-0 z-[500] bg-brand-midnight flex flex-col items-center justify-center p-8 text-center overflow-hidden">
-      {/* Background Cinematic Shimmer */}
-      <div className="absolute inset-0 opacity-20 blur-3xl scale-125 animate-shimmer pointer-events-none" 
-           style={{ background: 'radial-gradient(circle at center, var(--color-brand-accent), transparent 70%)' }} />
-      
+    <div className="absolute inset-0 z-[500] bg-zinc-950 flex flex-col items-center justify-center p-8 text-center select-none">
       <motion.div 
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: "spring", damping: 12, stiffness: 100 }}
-        className="relative z-10"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        className="w-full max-w-xs flex flex-col items-center"
       >
-        <div className="mb-8 relative inline-block">
-          <motion.div 
-            animate={{ rotate: 360 }}
-            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-            className="text-brand-accent/20 absolute -inset-10"
-          >
-            <Compass size={120} strokeWidth={0.5} />
-          </motion.div>
-          <div className="w-24 h-24 rounded-3xl bg-brand-accent/10 border-2 border-brand-accent flex items-center justify-center neon-shadow">
-            <Map size={40} className="text-brand-accent" />
-          </div>
+        <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-white/5 flex items-center justify-center mb-8">
+           <Compass className="text-zinc-500" size={32} strokeWidth={1.5} />
         </div>
 
-        <h1 className="text-7xl font-black uppercase tracking-tighter italic mb-2 text-white/5 opacity-10 absolute left-1/2 -top-12 -translate-x-1/2 select-none">
-          VOID
-        </h1>
+        <h1 className="text-4xl font-bold text-white tracking-tighter mb-4">404</h1>
         
-        <h2 className="text-2xl font-black uppercase tracking-widest mb-4">SIGNAL LOST</h2>
-        <p className="text-xs font-bold text-slate-500 uppercase tracking-widest max-w-[240px] leading-relaxed mb-10">
-          You've wandered beyond the known sectors. Return to base and re-establish connection.
+        <h2 className="text-sm font-bold text-zinc-100 uppercase tracking-widest mb-2">Endpoint Not Found</h2>
+        <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-widest leading-relaxed mb-10 max-w-[200px]">
+          The requested coordinate does not exist in the current sector.
         </p>
 
         <button 
-          onClick={handleReturn}
-          className="w-full max-w-[280px] py-5 rounded-2xl bg-white text-brand-midnight font-black uppercase tracking-[0.3em] text-[10px] shadow-lg hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center space-x-3 group"
+          onClick={() => {
+            window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
+            onReset();
+          }}
+          className="w-full py-4 rounded-xl bg-white text-zinc-950 font-bold uppercase tracking-[0.2em] text-[10px] transition-transform active:scale-[0.98] flex items-center justify-center gap-3"
         >
-          <Home size={16} className="group-hover:animate-bounce" />
-          <span>RETURN TO REALITY</span>
+          <Home size={14} />
+          <span>Return to base</span>
         </button>
       </motion.div>
       
-      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center space-x-4 opacity-20 pointer-events-none">
-         <span className="text-[10px] font-black uppercase tracking-[0.5em]">ERROR_404</span>
-         <div className="w-1 h-1 rounded-full bg-brand-accent" />
-         <span className="text-[10px] font-black uppercase tracking-[0.5em]">VOID_LINK</span>
+      <div className="absolute bottom-10 opacity-10">
+         <span className="text-[8px] font-bold text-white tracking-[0.5em] uppercase">System Error / Null Pointer</span>
       </div>
     </div>
   );
