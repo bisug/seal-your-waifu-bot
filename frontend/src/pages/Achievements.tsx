@@ -17,10 +17,10 @@ export const Achievements = () => {
     const { data: achievements, loading } = useApi<Achievement[]>('/achievements/list');
 
     if (loading && !achievements) return (
-        <div className="px-6 py-8 space-y-4">
-             <div className="h-8 w-48 bg-white/5 rounded-lg mb-6 animate-pulse" />
+        <div className="px-4 py-8 space-y-3">
+             <div className="h-6 w-40 bg-zinc-900 rounded-md mb-6 animate-pulse border border-white/5" />
              {[1,2,3,4,5].map(i => (
-                <Skeleton key={i} className="h-24 rounded-2xl" />
+                <Skeleton key={i} className="h-20 rounded-lg" />
              ))}
         </div>
     );
@@ -31,58 +31,58 @@ export const Achievements = () => {
     });
 
     return (
-        <div className="px-6 py-8 pb-20">
+        <div className="px-4 py-8 pb-20">
             <header className="mb-8">
-                <h1 className="text-2xl font-black italic uppercase tracking-tighter text-white flex items-center gap-3">
-                    <Award className="text-brand-accent" size={24} />
-                    Achievement Hall
+                <h1 className="text-xl font-bold text-zinc-100 flex items-center gap-2">
+                    <Award className="text-brand-accent" size={20} />
+                    Achievements
                 </h1>
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em] mt-1">Proof of your legendary journey</p>
+                <p className="text-xs font-medium text-zinc-500 mt-1">Unlock milestones to earn experience</p>
             </header>
 
-            <div className="space-y-3">
+            <div className="space-y-2">
                 {sortedAchievements.map((ach) => (
                     <div
                         key={ach.id}
                         className={cn(
-                            "glass-panel p-4 rounded-2xl border transition-all duration-300 flex items-center gap-4",
+                            "p-4 rounded-lg border transition-all duration-300 flex items-center gap-4",
                             ach.unlocked
-                                ? "bg-brand-accent/5 border-brand-accent/20"
-                                : "bg-white/5 border-white/5 opacity-60"
+                                ? "bg-zinc-900 border-emerald-900/30"
+                                : "bg-zinc-900/50 border-white/5 opacity-60"
                         )}
                     >
                         <div className={cn(
-                            "w-12 h-12 rounded-xl flex items-center justify-center text-xl shadow-inner border",
+                            "w-12 h-12 rounded-md flex items-center justify-center text-xl border shrink-0",
                             ach.unlocked
-                                ? "bg-brand-accent/10 border-brand-accent/20 text-brand-accent"
-                                : "bg-black/20 border-white/5 text-slate-600"
+                                ? "bg-emerald-500/10 border-emerald-500/20"
+                                : "bg-zinc-950 border-white/5 grayscale"
                         )}>
                             {ach.icon}
                         </div>
 
                         <div className="flex-1 min-w-0">
                             <h3 className={cn(
-                                "text-xs font-black uppercase tracking-wider mb-0.5",
-                                ach.unlocked ? "text-white" : "text-slate-400"
+                                "text-sm font-bold mb-0.5",
+                                ach.unlocked ? "text-zinc-100" : "text-zinc-500"
                             )}>
                                 {ach.name}
                             </h3>
-                            <p className="text-[10px] text-slate-500 font-medium leading-tight line-clamp-2">
+                            <p className="text-xs text-zinc-500 font-medium leading-tight line-clamp-2">
                                 {ach.description}
                             </p>
                         </div>
 
-                        <div className="shrink-0 flex flex-col items-end gap-1">
+                        <div className="shrink-0 flex flex-col items-end gap-2">
                             {ach.unlocked ? (
-                                <CheckCircle2 size={16} className="text-brand-accent" />
+                                <CheckCircle2 size={16} className="text-emerald-500" />
                             ) : (
-                                <Lock size={14} className="text-slate-700" />
+                                <Lock size={14} className="text-zinc-700" />
                             )}
                             <span className={cn(
-                                "text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-tighter",
-                                ach.unlocked ? "bg-brand-accent/20 text-brand-accent" : "bg-white/5 text-slate-600"
+                                "text-[10px] font-bold px-1.5 py-0.5 rounded tabular-nums",
+                                ach.unlocked ? "bg-emerald-500/10 text-emerald-500" : "bg-zinc-950 text-zinc-600"
                             )}>
-                                +{ach.reward_xp} XP
+                                +{ach.reward_xp}
                             </span>
                         </div>
                     </div>
