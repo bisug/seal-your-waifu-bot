@@ -1,21 +1,24 @@
 import React from 'react';
+import { cn } from '../../utils';
 
 const isLite = () => localStorage.getItem('sealbot-lite-mode') === 'true';
 
-/**
- * Cinematic Skeleton Loaders
- */
-export const Skeleton = ({ className }) => (
-  <div className={`bg-white/[0.03] overflow-hidden relative ${className}`}>
-    {!isLite() && <div className="absolute inset-0 animate-shimmer opacity-40" />}
+export const Skeleton = ({ className }: { className?: string }) => (
+  <div className={cn(
+    "bg-white/5 overflow-hidden relative rounded-md",
+    className
+  )}>
+    {!isLite() && (
+      <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+    )}
   </div>
 );
 
 export const CardSkeleton = () => (
-  <div className="rounded-[1.5rem] bg-white/[0.03] border border-white/5 overflow-hidden aspect-[3/4]">
-    <div className="h-full p-4 flex flex-col justify-end space-y-3">
-      <Skeleton className="h-2.5 w-1/3 rounded-full" />
-      <Skeleton className="h-3.5 w-2/3 rounded-full" />
+  <div className="rounded-xl bg-brand-deep border border-white/5 overflow-hidden aspect-[3/4] relative">
+    <div className="absolute bottom-0 inset-x-0 p-3 space-y-2">
+      <Skeleton className="h-2 w-1/3" />
+      <Skeleton className="h-3 w-2/3" />
     </div>
   </div>
 );
