@@ -30,10 +30,31 @@ RARITY_PRICES = {
     "🫧 Royal": 250,
     "💎 Antique": 500,
     "🎐 Celestial": 1000,
+    "🎞️ AMV": 1500,
+    "🪽 Prestige": 2500,
     "❄️ Winter": 50,
     "☀️ Summer": 50,
     "💖 Valentine": 100,
     "🎃 Halloween": 100
+}
+
+RARITY_STOCK_LIMITS = {
+    "⚪ Common": 50,
+    "🟢 Medium": 40,
+    "🟠 Rare": 30,
+    "🟡 Legendary": 20,
+    "💠 Cosmic": 15,
+    "💮 Exclusive": 10,
+    "🔮 Limited Edition": 10,
+    "🫧 Royal": 5,
+    "💎 Antique": 5,
+    "🎐 Celestial": 2,
+    "🎞️ AMV": 2,
+    "🪽 Prestige": 1,
+    "❄️ Winter": 10,
+    "☀️ Summer": 10,
+    "💖 Valentine": 10,
+    "🎃 Halloween": 10
 }
 # Pass Constants
 PASS_PRICES = {
