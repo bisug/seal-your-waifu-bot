@@ -1,5 +1,5 @@
 import React, { memo, useEffect, forwardRef } from 'react';
-import { Activity } from 'lucide-react';
+import { Shield } from 'lucide-react';
 import { cn } from '../../utils';
 import { Character } from '../../context/UserContext';
 
@@ -10,7 +10,7 @@ interface CardProps {
 
 export const Card = memo(forwardRef<HTMLDivElement, CardProps>(({ character, onClick }, ref) => {
     const handleClick = () => {
-        window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
+        window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
         if (onClick) onClick(character);
     };
 
@@ -20,16 +20,18 @@ export const Card = memo(forwardRef<HTMLDivElement, CardProps>(({ character, onC
         setImgError(false);
     }, [character.img_url]);
 
+    // Rarity name without emojis
+    const rarityLabel = character.rarity.replace(/[\u2700-\u27bf]|[\u2190-\u21ff]|[\u2000-\u206f]|[\u2600-\u26ff]|[\u2b00-\u2bff]|[\u00a0-\u00bf]|\u2013|\u2014/g, '').trim();
+
     return (
         <div
             ref={ref}
             onClick={handleClick}
             className={cn(
-                "relative rounded-xl overflow-hidden aspect-[3/4] group cursor-pointer",
-                "bg-slate-900 border border-white/5 active:scale-95 transition-transform duration-100"
+                "relative rounded-md overflow-hidden aspect-[3/4] group cursor-pointer",
+                "bg-zinc-900 border border-white/5 hover:border-zinc-700 transition-all duration-200"
             )}
         >
-            {/* Main Character Image */}
             {!imgError ? (
                 <img
                     src={character.img_url || 'https://files.catbox.moe/2hsawz.jpg'}
@@ -37,34 +39,36 @@ export const Card = memo(forwardRef<HTMLDivElement, CardProps>(({ character, onC
                     loading="lazy"
                     decoding="async"
                     onError={() => setImgError(true)}
-                    className="absolute inset-0 w-full h-full object-cover object-top"
+                    className="absolute inset-0 w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-300"
                 />
             ) : (
-                <div className="absolute inset-0 bg-slate-900 flex flex-col items-center justify-center space-y-1">
-                    <Activity size={16} className="text-slate-700" />
+                <div className="absolute inset-0 bg-zinc-900 flex flex-col items-center justify-center">
+                    <Shield size={20} className="text-zinc-800" />
                 </div>
             )}
             
-            {/* Simple Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-transparent to-transparent" />
             
-            {/* Rarity Badge - Top Left */}
-            <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-black/60 border border-white/10 z-20">
-                <span className="text-[7px] font-bold uppercase tracking-wider text-slate-300">
-                    {character.rarity.split(' ').pop()}
-                </span>
-            </div>
+            {/* Top Bar Indicators */}
+            <div className="absolute top-1.5 left-1.5 right-1.5 flex justify-between items-start pointer-events-none">
+                <div className="px-1.5 py-0.5 rounded-sm bg-zinc-950/80 border border-white/5">
+                    <span className="text-[8px] font-semibold text-zinc-300">
+                        {rarityLabel}
+                    </span>
+                </div>
 
-            {/* Count Badge - Top Right */}
-            {character.count > 1 && (
-                <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded bg-brand-accent text-white text-[8px] font-black z-20">
-                    {character.count}
-                </div>
-            )}
+                {character.count > 1 && (
+                    <div className="px-1.5 py-0.5 rounded-sm bg-brand-accent border border-white/5">
+                        <span className="text-[8px] font-bold text-white">
+                            {character.count}
+                        </span>
+                    </div>
+                )}
+            </div>
 
             {/* Bottom Content Area */}
             <div className="absolute bottom-0 inset-x-0 p-2">
-                <h3 className="text-[9px] font-bold uppercase text-white tracking-tight leading-tight line-clamp-1">
+                <h3 className="text-[10px] font-semibold text-zinc-100 leading-tight line-clamp-1">
                     {character.name}
                 </h3>
             </div>
