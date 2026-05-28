@@ -215,10 +215,17 @@ async def get_leaderboard(
     field = METRICS[metric]["field"]
     response_data = []
     for i, u in enumerate(users, 1):
+        first_name = u.get("first_name", "User")
+        last_name = u.get("last_name")
+        full_name = f"{first_name} {last_name}" if last_name else first_name
+
         processed = {
             "rank": i,
             "id": u.get("id"),
-            "name": u.get("first_name", "User"),
+            "first_name": first_name,
+            "last_name": last_name,
+            "full_name": full_name,
+            "username": u.get("username"),
             "value": u.get(field, 0),
             "avatar": u.get("avatar") 
         }
