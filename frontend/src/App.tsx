@@ -1,5 +1,6 @@
 import React, { useState, useEffect, Suspense, lazy, useCallback, useRef, ReactNode } from 'react';
 import { Loader2 } from 'lucide-react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { UserProvider, useUser } from './context/UserContext';
 import { Header } from './components/Header';
 import { NavigationDrawer } from './components/NavigationDrawer';
@@ -254,6 +255,7 @@ function App() {
           <AppContent />
         </UserProvider>
       </ToastProvider>
+      <SpeedInsights />
     </ErrorBoundary>
   );
 }
