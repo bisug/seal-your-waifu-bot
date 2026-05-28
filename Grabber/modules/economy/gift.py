@@ -85,9 +85,16 @@ async def gift_callback(_, query: types.CallbackQuery):
         await query.answer("You no longer own this character.", show_alert=True)
         await delete_session(session_id)
         return
-    # Atomic removal using $pull (prevents overwriting concurrent changes)
-    await update_user(sender_id, {"$pull": {"characters": {"id": str(char_id)}}})
-    await update_user(receiver_id, {"$push": {"characters": character}})
+    # Atomic removal of exactly one instance
+    from Grabber.core.user import remove_char_from_user, add_char_to_user
+
+    if await remove_char_from_user(sender_id, str(char_id)):
+        await add_char_to_user(receiver_id, character)
+    else:
+        await query.answer("Failed to process gift. Please try again.", show_alert=True)
+        await delete_session(session_id)
+        return
+
     await delete_session(session_id)
     await query.message.edit_text(
         f"<b>Gift Sent!</b>\n\n"
