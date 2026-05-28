@@ -14,18 +14,18 @@ export const ProgressBar = ({ current, total, color = "bg-brand-accent", label, 
   const percentage = total > 0 ? Math.min(100, Math.max(0, (current / total) * 100)) : 0;
 
   return (
-    <div className={`w-full ${compact ? 'space-y-1' : 'space-y-1.5'}`}>
+    <div className={`w-full ${compact ? 'space-y-1.5' : 'space-y-2'}`}>
       {label && (
-        <div className="flex justify-between items-end text-[10px] font-semibold text-zinc-500 px-0.5 uppercase tracking-tight">
+        <div className="flex justify-between items-end text-[8px] font-bold text-zinc-600 px-0.5 uppercase tracking-[0.2em]">
           <span>{label}</span>
-          <span className="text-zinc-300 tabular-nums">{formatNumber(current)} / {formatNumber(total)}</span>
+          <span className="text-zinc-400 tabular-nums">{formatNumber(current)} / {formatNumber(total)}</span>
         </div>
       )}
-      <div className={`${compact ? 'h-1.5' : 'h-2'} w-full bg-zinc-950 rounded-full overflow-hidden border border-white/5`}>
+      <div className={`${compact ? 'h-1.5' : 'h-2.5'} w-full bg-zinc-900 rounded-full overflow-hidden border border-white/5`}>
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${percentage}%` }}
-          transition={{ duration: 1, ease: "easeOut" }}
+          transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
           className={`h-full ${color} rounded-full relative`}
         />
       </div>

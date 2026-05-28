@@ -108,11 +108,6 @@ button, a {
   text-shadow: none !important;
 }
 
-/* Remove shimmer and other "cheap" animations */
-.animate-shimmer {
-  display: none;
-}
-
 .scroll-fade-mask {
   mask-image: linear-gradient(to right,
     transparent,
@@ -126,4 +121,11 @@ button, a {
     black 90%,
     transparent
   );
+}
+
+/* Custom Text Effects */
+.text-gradient {
+  background: linear-gradient(to bottom right, #fff, #a1a1aa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
