@@ -4,57 +4,86 @@ SHOP_RARITY = "🟠 Rare"
 PAYOUTS = {
     "⚪ Common": 10,
     "🟢 Medium": 25,
+    "🟣 Epic": 25,
     "🟠 Rare": 50,
     "🟡 Legendary": 120,
     "💠 Cosmic": 250,
+    "🧬 Immortal": 250,
     "💮 Exclusive": 500,
+    "🌌 Eternal": 500,
     "🔮 Limited Edition": 750,
+    "🔮 Mystic": 750,
     "🫧 Royal": 1500,
     "💎 Antique": 2500,
+    "💎 Mythical": 2500,
     "🎐 Celestial": 5000,
+    "✨ Divine": 6000,
+    "🌠 Astral": 7500,
+    "🎞️ AMV": 6000,
+    "🪽 Prestige": 7500,
     "❄️ Winter": 500,
     "☀️ Summer": 500,
     "💖 Valentine": 750,
-    "🎃 Halloween": 750
+    "🎃 Halloween": 750,
+    "💸 Luxury": 500,
+    "🎏 Limited": 400
 }
 # Shop Settings
 SHOP_LIMIT = 50
 RARITY_PRICES = {
     "⚪ Common": 1,
     "🟢 Medium": 2,
+    "🟣 Epic": 2,
     "🟠 Rare": 5,
     "🟡 Legendary": 10,
     "💠 Cosmic": 25,
+    "🧬 Immortal": 25,
     "💮 Exclusive": 50,
+    "🌌 Eternal": 50,
     "🔮 Limited Edition": 100,
+    "🔮 Mystic": 100,
     "🫧 Royal": 250,
     "💎 Antique": 500,
+    "💎 Mythical": 500,
     "🎐 Celestial": 1000,
+    "✨ Divine": 1500,
+    "🌠 Astral": 2500,
     "🎞️ AMV": 1500,
     "🪽 Prestige": 2500,
     "❄️ Winter": 50,
     "☀️ Summer": 50,
     "💖 Valentine": 100,
-    "🎃 Halloween": 100
+    "🎃 Halloween": 100,
+    "💸 Luxury": 250,
+    "🎏 Limited": 200
 }
 
 RARITY_STOCK_LIMITS = {
     "⚪ Common": 50,
     "🟢 Medium": 40,
+    "🟣 Epic": 40,
     "🟠 Rare": 30,
     "🟡 Legendary": 20,
     "💠 Cosmic": 15,
+    "🧬 Immortal": 15,
     "💮 Exclusive": 10,
+    "🌌 Eternal": 10,
     "🔮 Limited Edition": 10,
+    "🔮 Mystic": 10,
     "🫧 Royal": 5,
     "💎 Antique": 5,
+    "💎 Mythical": 5,
     "🎐 Celestial": 2,
+    "✨ Divine": 2,
+    "🌠 Astral": 1,
     "🎞️ AMV": 2,
     "🪽 Prestige": 1,
     "❄️ Winter": 10,
     "☀️ Summer": 10,
     "💖 Valentine": 10,
-    "🎃 Halloween": 10
+    "🎃 Halloween": 10,
+    "💸 Luxury": 5,
+    "🎏 Limited": 20
 }
 # Pass Constants
 PASS_PRICES = {

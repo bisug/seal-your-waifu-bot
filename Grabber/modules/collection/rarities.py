@@ -1,13 +1,16 @@
-from pyrogram import enums, errors, filters, types
-from pyrogram.enums import ParseMode
+from pyrogram import enums, filters, types
 
 from Grabber import app
+from Grabber.core.utils import handle_errors
 from Grabber.database import collection
+
+# Standard Rarity Mappings matching the Database
 RARITY_MAP = {
     1: "⚪ Common", 2: "🟢 Medium", 3: "🟠 Rare", 4: "🟡 Legendary", 5: "💠 Cosmic",
     6: "💮 Exclusive", 7: "🔮 Limited Edition", 8: "🫧 Royal", 9: "💎 Antique", 10: "🎐 Celestial",
     11: "🎞️ AMV", 12: "🪽 Prestige", 13: "❄️ Winter", 14: "☀️ Summer", 15: "💖 Valentine",
-    16: "🎃 Halloween"
+    16: "🎃 Halloween", 17: "💸 Luxury", 18: "🎏 Limited", 19: "🟣 Epic", 20: "🧬 Immortal",
+    21: "🌌 Eternal", 22: "🔮 Mystic", 23: "💎 Mythical", 24: "✨ Divine", 25: "🌠 Astral"
 }
 RARITY_WEIGHTS = {
     "⚪ Common": 25,
@@ -25,7 +28,16 @@ RARITY_WEIGHTS = {
     "❄️ Winter": 6,
     "☀️ Summer": 6,
     "💖 Valentine": 5,
-    "🎃 Halloween": 5
+    "🎃 Halloween": 5,
+    "💸 Luxury": 4,
+    "🎏 Limited": 10,
+    "🟣 Epic": 20,
+    "🧬 Immortal": 8,
+    "🌌 Eternal": 6,
+    "🔮 Mystic": 5,
+    "💎 Mythical": 3,
+    "✨ Divine": 2,
+    "🌠 Astral": 1
 }
 ACTIVE_RARITY_WEIGHTS = {
     "🟠 Rare": 20,
@@ -44,28 +56,48 @@ ACTIVE_RARITY_WEIGHTS = {
     "🎃 Halloween": 10
 }
 @app.on_message(filters.command("rarities"))
+@handle_errors
 async def rarities_handler(_, message: types.Message):
-    try:
-        pipeline = [
-            {"$group": {"_id": "$rarity", "count": {"$sum": 1}}}
-        ]
-        # Fixed: aggregate() must be awaited in Motor (async pymongo driver)
-        cursor = await collection.aggregate(pipeline)
-        rarity_counts = {}
-        total_characters = 0
+    pipeline = [
+        {"$group": {"_id": "$rarity", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
 
-        async for doc in cursor:
-            rarity_counts[doc["_id"]] = doc["count"]
-            total_characters += doc["count"]
+    # Under PyMongo 4.17+ native AsyncMongoClient, aggregate() is a coroutine
+    cursor = await collection.aggregate(pipeline)
 
-        response = "<b>Character Counts by Rarity:</b>\n\n"
-        for i in range(1, len(RARITY_MAP) + 1):
-            rarity_name = RARITY_MAP.get(i)
-            if rarity_name:
-                count = rarity_counts.get(rarity_name, 0)
-                response += f"{rarity_name}: <code>{count}</code>\n"
+    rarity_counts = {}
+    total_characters = 0
 
-        response += f"\n<b>Total Characters:</b> <code>{total_characters}</code>\n"
-        await message.reply_text(response, parse_mode=enums.ParseMode.HTML)
-    except Exception as e:
-        await message.reply_text(f"❌ Failed to fetch rarities: <code>{e}</code>", parse_mode=enums.ParseMode.HTML)
+    async for doc in cursor:
+        r_id = doc["_id"] or "Unknown"
+        rarity_counts[r_id] = doc["count"]
+        total_characters += doc["count"]
+
+    if not rarity_counts:
+        return await message.reply_text("<b>No characters found in database.</b>", parse_mode=enums.ParseMode.HTML)
+
+    response = "<b>Character Counts by Rarity:</b>\n\n"
+
+    # We display based on what's in the database, but prioritized by RARITY_MAP order if possible
+    displayed_rarities = set()
+
+    # 1. Show standard rarities first
+    for i in sorted(RARITY_MAP.keys()):
+        rarity_name = RARITY_MAP[i]
+        if rarity_name in rarity_counts:
+            count = rarity_counts[rarity_name]
+            response += f"{rarity_name}: <code>{count}</code>\n"
+            displayed_rarities.add(rarity_name)
+
+    # 2. Show any remaining rarities found in DB
+    remaining = False
+    for r_name, count in rarity_counts.items():
+        if r_name not in displayed_rarities:
+            if not remaining:
+                response += "\n<b>Other Rarities:</b>\n"
+                remaining = True
+            response += f"{r_name}: <code>{count}</code>\n"
+
+    response += f"\n<b>Total Characters:</b> <code>{total_characters}</code>\n"
+    await message.reply_text(response, parse_mode=enums.ParseMode.HTML)
