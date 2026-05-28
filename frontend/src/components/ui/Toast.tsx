@@ -1,6 +1,7 @@
 import React, { useState, createContext, useContext, useCallback, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, AlertCircle } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Info } from 'lucide-react';
+import { cn } from '../../utils';
 
 interface Toast {
   id: string;
@@ -28,20 +29,27 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   return (
     <ToastContext.Provider value={{ addToast }}>
       {children}
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[300] w-full max-w-[280px] pointer-events-none flex flex-col items-center space-y-2">
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[300] w-full max-w-[320px] pointer-events-none flex flex-col items-center space-y-2">
         <AnimatePresence>
           {toasts.map(toast => (
             <motion.div
               key={toast.id}
-              initial={{ y: -20, opacity: 0, scale: 0.9 }}
+              initial={{ y: -20, opacity: 0, scale: 0.95 }}
               animate={{ y: 0, opacity: 1, scale: 1 }}
               exit={{ y: -10, opacity: 0, scale: 0.95 }}
-              className="glass-panel w-full px-4 py-3 rounded-2xl border border-white/10 shadow-lg flex items-center space-x-3 pointer-events-auto"
+              transition={{ duration: 0.2 }}
+              className="w-full px-4 py-3 bg-brand-deep rounded-xl border border-white/10 shadow-xl flex items-center space-x-3 pointer-events-auto"
             >
-            <div className={toast.type === 'success' ? 'text-brand-accent' : toast.type === 'error' ? 'text-red-500' : 'text-brand-accent'}>
-                {toast.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+              <div className={cn(
+                "shrink-0",
+                toast.type === 'success' ? 'text-emerald-500' :
+                toast.type === 'error' ? 'text-red-500' : 'text-brand-accent'
+              )}>
+                {toast.type === 'success' ? <CheckCircle2 size={18} /> :
+                 toast.type === 'error' ? <AlertCircle size={18} /> :
+                 <Info size={18} />}
               </div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-200 truncate pr-2">
+              <span className="text-sm font-medium text-white truncate pr-2">
                 {toast.message}
               </span>
             </motion.div>
