@@ -308,12 +308,19 @@ async def process_egg_hatch(user_id: int, egg: dict) -> tuple[bool, any]:
             {
                 "$pull": {"eggs": {"id": egg["id"]}},
                 "$push": {"characters": character},
-                "$inc": {"char_count": 1}
+                "$inc": {"char_count": 1, "hatch_count": 1}
             }
         )
         if result.modified_count == 0:
             return False, "This egg has already hatched!"
         await add_xp(user_id, 15, "egg_hatch")
+
+        # Track Quests and Achievements
+        asyncio.create_task(update_quest_progress(user_id, "egg_hatcher", 1))
+        asyncio.create_task(update_quest_progress(user_id, "weekly_hatcher", 1))
+        asyncio.create_task(update_quest_progress(user_id, "pass_hatcher", 1))
+        asyncio.create_task(check_achievements(user_id))
+
         await sync_user_to_redis(user_id)
         return True, character
     except Exception as e:
