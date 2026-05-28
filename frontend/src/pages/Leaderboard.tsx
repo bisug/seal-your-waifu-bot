@@ -3,10 +3,11 @@ import { useApi } from '../hooks/useApi';
 import { CardSkeleton } from '../components/ui/Skeleton';
 import { Trophy, Shield, Activity, Users, Zap, Swords } from 'lucide-react';
 import { formatNumber } from '../utils';
+import { cn } from '../utils';
 
 export const Leaderboard = () => {
     const [metric, setMetric] = React.useState('harem');
-    const { data, loading } = useApi(`/leaderboard?metric=${metric}`, {}, [metric]);
+    const { data, loading } = useApi<any[]>(`/leaderboard?metric=${metric}`, {}, [metric]);
 
     const METRICS = [
         { id: 'harem', label: 'Harem', icon: Users },
@@ -18,53 +19,60 @@ export const Leaderboard = () => {
 
     return (
         <div className="pb-32 pt-6">
-            <header className="px-6 mb-8 flex justify-between items-center">
-                <h1 className="text-3xl font-black italic uppercase tracking-tighter text-white">Rankings</h1>
-                <Trophy className="text-brand-accent" size={24} />
+            <header className="px-4 mb-6 flex justify-between items-center">
+                <h1 className="text-xl font-bold text-zinc-100">Leaderboards</h1>
+                <Trophy className="text-amber-500" size={20} />
             </header>
 
-            <div className="px-4 mb-8">
-                <div className="flex space-x-2 overflow-x-auto no-scrollbar scroll-fade-mask py-1">
+            <div className="px-4 mb-6">
+                <div className="flex space-x-2 overflow-x-auto no-scrollbar py-1">
                     {METRICS.map(m => (
                         <button
                             key={m.id}
                             onClick={() => setMetric(m.id)}
-                            className={`px-5 py-3 rounded-2xl flex items-center space-x-2 border transition-all whitespace-nowrap ${
+                            className={cn(
+                                "px-4 py-2 rounded-md flex items-center space-x-2 border transition-all whitespace-nowrap text-xs font-medium",
                                 metric === m.id
-                                ? 'bg-brand-accent text-brand-midnight border-brand-accent shadow-lg shadow-brand-accent/20 scale-105'
-                                : 'bg-white/5 border-white/5 text-slate-500'
-                            }`}
+                                ? 'bg-zinc-100 text-zinc-950 border-zinc-100 shadow-sm'
+                                : 'bg-zinc-900 border-white/5 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700'
+                            )}
                         >
-                            <m.icon size={14} />
-                            <span className="text-[10px] font-black uppercase tracking-widest">{m.label}</span>
+                            <m.icon size={14} strokeWidth={2.5} />
+                            <span>{m.label}</span>
                         </button>
                     ))}
                 </div>
             </div>
 
-            <div className="px-4 space-y-2.5">
+            <div className="px-4 space-y-2">
                 {loading ? (
-                    Array.from({ length: 8 }).map((_, i) => <div key={i} className="h-16 bg-white/[0.03] rounded-2xl animate-pulse" />)
+                    Array.from({ length: 8 }).map((_, i) => <div key={i} className="h-14 bg-zinc-900 rounded-lg animate-pulse border border-white/5" />)
                 ) : (
                     data?.map((user, i) => (
-                        <div key={user.id} className="glass-panel p-4 rounded-2xl border border-white/5 flex items-center justify-between">
-                            <div className="flex items-center space-x-4">
-                                <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black italic ${i < 3 ? 'bg-brand-accent text-brand-midnight shadow-lg' : 'bg-white/5 text-slate-600'}`}>
+                        <div key={user.id} className="bg-zinc-900/50 p-3 rounded-lg border border-white/5 flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                                <div className={cn(
+                                    "w-7 h-7 rounded-md flex items-center justify-center text-[10px] font-bold",
+                                    i === 0 ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' :
+                                    i === 1 ? 'bg-zinc-300/10 text-zinc-300 border border-zinc-300/20' :
+                                    i === 2 ? 'bg-orange-400/10 text-orange-400 border border-orange-400/20' :
+                                    'bg-zinc-950 text-zinc-600 border border-white/5'
+                                )}>
                                     {i + 1}
                                 </div>
                                 <div className="flex items-center space-x-3">
-                                    <div className="w-10 h-10 rounded-xl bg-slate-800 overflow-hidden border border-white/10">
-                                        <img src={user.avatar || 'https://files.catbox.moe/2hsawz.jpg'} alt="" className="w-full h-full object-cover" />
+                                    <div className="w-9 h-9 rounded-md bg-zinc-800 overflow-hidden border border-white/10 shrink-0">
+                                        <img src={user.avatar || 'https://files.catbox.moe/2hsawz.jpg'} alt="" className="w-full h-full object-cover grayscale-[0.2]" />
                                     </div>
-                                    <div>
-                                        <p className="text-[12px] font-black text-white leading-none mb-1">{user.first_name}</p>
-                                        <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">@{user.username || 'matrix_user'}</p>
+                                    <div className="min-w-0">
+                                        <p className="text-xs font-bold text-zinc-100 truncate max-w-[120px]">{user.first_name}</p>
+                                        <p className="text-[10px] font-medium text-zinc-500 truncate">@{user.username || 'user'}</p>
                                     </div>
                                 </div>
                             </div>
-                            <div className="text-right">
-                                <p className="text-[13px] font-black text-brand-accent">{formatNumber(user.value)}</p>
-                                <p className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">{metric}</p>
+                            <div className="text-right shrink-0">
+                                <p className="text-sm font-bold text-zinc-100 tabular-nums">{formatNumber(user.value)}</p>
+                                <p className="text-[10px] font-medium text-zinc-600 uppercase tracking-tight">{metric}</p>
                             </div>
                         </div>
                     ))
