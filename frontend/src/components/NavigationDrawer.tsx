@@ -1,8 +1,7 @@
 import React, { useEffect } from 'react';
 import {
   X, User, Egg, ShoppingBag, Search, Dog,
-  Zap, Trophy, Swords, Repeat, Heart, Users, Activity,
-  LucideIcon, Award, PawPrint
+  Zap, Trophy, Swords, Users, Award, PawPrint
 } from 'lucide-react';
 import { cn } from '../utils';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -10,7 +9,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 interface NavItem {
   id: string;
   label: string;
-  icon: LucideIcon;
+  icon: any;
 }
 
 interface NavSection {
@@ -52,15 +51,14 @@ const SECTIONS: NavSection[] = [
   {
     title: "Competitive",
     items: [
-      { id: 'quests', label: 'Tasks/Quests', icon: Zap },
-      { id: 'pass', label: 'Battle Pass', icon: Trophy },
+      { id: 'quests', label: 'Tasks', icon: Zap },
+      { id: 'pass', label: 'Pass', icon: Trophy },
       { id: 'leaderboard', label: 'Leaderboards', icon: Swords },
     ]
   }
 ];
 
 export const NavigationDrawer = ({ isOpen, onClose, activeTab, onNavigate }: NavigationDrawerProps) => {
-  // Lock body scroll when open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -81,42 +79,38 @@ export const NavigationDrawer = ({ isOpen, onClose, activeTab, onNavigate }: Nav
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 z-[60] bg-black/60"
+            className="fixed inset-0 z-[60] bg-black/40"
           />
 
-          {/* Drawer */}
           <motion.div
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed top-0 right-0 z-[70] h-full w-4/5 max-w-[320px] bg-brand-midnight border-l border-white/5 flex flex-col"
+            transition={{ type: 'tween', duration: 0.2, ease: "easeOut" }}
+            className="fixed top-0 right-0 z-[70] h-full w-[280px] bg-brand-midnight border-l border-white/5 flex flex-col shadow-2xl"
           >
-            {/* Drawer Header */}
-            <div className="p-4 border-b border-white/5 flex items-center justify-between">
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Navigation</span>
+            <div className="p-4 flex items-center justify-between">
+              <span className="text-xs font-semibold text-zinc-500">Menu</span>
               <button
                 onClick={onClose}
-                className="p-2 rounded-xl bg-white/5 border border-white/5 text-slate-400 active:scale-95 transition-all"
+                className="p-1.5 rounded-md hover:bg-zinc-900 border border-transparent hover:border-white/5 text-zinc-400 transition-colors"
               >
                 <X size={18} />
               </button>
             </div>
 
-            {/* Nav Content */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+            <div className="flex-1 overflow-y-auto px-2 py-2 space-y-6">
               {SECTIONS.map((section) => (
-                <div key={section.title} className="space-y-2">
-                  <h3 className="px-2 text-[9px] font-black uppercase tracking-[0.25em] text-brand-accent/60">
+                <div key={section.title} className="space-y-1">
+                  <h3 className="px-3 text-[10px] font-medium text-zinc-500 uppercase tracking-wider mb-2">
                     {section.title}
                   </h3>
-                  <div className="space-y-1">
+                  <div className="space-y-0.5">
                     {section.items.map((item) => {
                       const Icon = item.icon;
                       const isActive = activeTab === item.id;
@@ -126,16 +120,16 @@ export const NavigationDrawer = ({ isOpen, onClose, activeTab, onNavigate }: Nav
                           key={item.id}
                           onClick={() => handleItemClick(item.id)}
                           className={cn(
-                            "w-full flex items-center space-x-3 px-3 py-3 rounded-xl transition-all border active:scale-[0.98]",
+                            "w-full flex items-center space-x-3 px-3 py-2 rounded-md transition-all",
                             isActive
-                              ? "bg-brand-accent/10 border-brand-accent/20 text-brand-accent"
-                              : "bg-white/5 border-transparent text-slate-400 hover:border-white/5"
+                              ? "bg-zinc-900 text-brand-accent border border-white/5"
+                              : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50 border border-transparent"
                           )}
                         >
                           <Icon size={16} strokeWidth={isActive ? 2.5 : 2} />
                           <span className={cn(
-                            "text-[11px] font-bold tracking-wide uppercase",
-                            isActive ? "text-white" : "text-slate-500"
+                            "text-sm font-medium",
+                            isActive ? "text-zinc-100" : ""
                           )}>
                             {item.label}
                           </span>
@@ -147,10 +141,8 @@ export const NavigationDrawer = ({ isOpen, onClose, activeTab, onNavigate }: Nav
               ))}
             </div>
 
-            {/* Bottom Branding */}
-            <div className="p-6 border-t border-white/5 flex flex-col items-center">
-               <div className="text-[10px] font-black text-slate-700 uppercase tracking-[0.3em] mb-1">Lite Build v2.0</div>
-               <div className="text-[8px] font-bold text-slate-800 uppercase tracking-widest">© 2026 GRABBER BOT</div>
+            <div className="p-4 border-t border-white/5">
+               <div className="text-[10px] font-medium text-zinc-600">v2.1.0-stable</div>
             </div>
           </motion.div>
         </>
