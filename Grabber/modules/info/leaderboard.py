@@ -26,19 +26,25 @@ async def _resolve_missing_names(users: list) -> list:
         fetched = await app.get_users(missing_ids)
         if not isinstance(fetched, list):
             fetched = [fetched]
-        name_map = {u.id: u.first_name for u in fetched if u.first_name}
+        user_info_map = {
+            u.id: {
+                "first_name": u.first_name,
+                "last_name": u.last_name,
+                "username": u.username
+            } for u in fetched if u.first_name
+        }
         # Persist resolved names back to DB in the background
-        for uid, name in name_map.items():
+        for uid, info in user_info_map.items():
             await user_collection.update_many(
                 {"id": {"$in": [uid, str(uid)]}},
-                {"$set": {"first_name": name}}
+                {"$set": info}
             )
         # Patch the results in-place
         for u in users:
             if not u.get("first_name"):
-                resolved = name_map.get(int(u["id"]))
+                resolved = user_info_map.get(int(u["id"]))
                 if resolved:
-                    u["first_name"] = resolved
+                    u.update(resolved)
     except Exception as e:
         LOGGER.warning(f"_resolve_missing_names: Telegram API fallback failed: {e}")
     return users
@@ -79,7 +85,15 @@ async def get_top_users(metric: str, limit: int = 10):
     # 2. Fallback to MongoDB aggregation if Redis fails or ZSET is empty
     field = METRICS[metric]["field"]
     pipeline = [
-        {"$project": {"first_name": 1, "id": 1, "avatar": 1, "pass_type": 1, field: {"$ifNull": [f"${field}", 0]}}},
+        {"$project": {
+            "first_name": 1,
+            "last_name": 1,
+            "username": 1,
+            "id": 1,
+            "avatar": 1,
+            "pass_type": 1,
+            field: {"$ifNull": [f"${field}", 0]}
+        }},
         {"$sort": {field: -1}},
         {"$limit": limit}
     ]
@@ -102,12 +116,18 @@ def build_leaderboard_text(metric: str, users: list):
         text += "<i>No data available yet.</i>"
         return text
     for i, user in enumerate(users, 1):
-        name = html_escape(user.get('first_name', 'User'))
+        uid = user.get("id")
+        first_name = user.get('first_name', 'User')
+        last_name = user.get('last_name')
+        full_name = f"{first_name} {last_name}" if last_name else first_name
+        mention = f'<a href="tg://user?id={uid}">{html_escape(full_name)}</a>'
+
         pass_type = user.get("pass_type", "free")
         if pass_type == "elite":
-            name = f"{name} (Elite)"
+            mention = f"{mention} (Elite)"
         elif pass_type == "premium":
-            name = f"{name} (Premium)"
+            mention = f"{mention} (Premium)"
+
         value = user.get(info['field'], 0)
         if metric == "level":
             lvl = get_level_from_xp(value)
@@ -120,7 +140,7 @@ def build_leaderboard_text(metric: str, users: list):
             display_value = f"{value:,} Guesses"
         else:
             display_value = f"{value:,} Chars"
-        text += f"{i}. {name} ➾ <b>{display_value}</b>\n"
+        text += f"{i}. {mention} ➾ <b>{display_value}</b>\n"
     text += "\n━━━━━━━━━━━━━━━━━━━━━"
     return text
 def build_leaderboard_keyboard(current_metric: str, user_id: int, is_private: bool):
@@ -199,9 +219,15 @@ async def chat_leaderboard_handler(_, message: types.Message):
     user_ids = [m["user_id"] for m in top_members]
     user_map = {}
     # 2. Strategy: Attempt to resolve names from DB first to save Telegram API calls
-    mongo_users = await user_collection.find({"id": {"$in": user_ids}}, {"id": 1, "first_name": 1}).to_list(length=10)
+    mongo_users = await user_collection.find(
+        {"id": {"$in": user_ids}},
+        {"id": 1, "first_name": 1, "last_name": 1}
+    ).to_list(length=10)
     for u in mongo_users:
-        user_map[int(u["id"])] = u.get("first_name", "User")
+        first_name = u.get("first_name", "User")
+        last_name = u.get("last_name")
+        full_name = f"{first_name} {last_name}" if last_name else first_name
+        user_map[int(u["id"])] = full_name
     # 3. Fallback for missing names: Bulk Telegram API call
     missing_ids = [uid for uid in user_ids if uid not in user_map]
     if missing_ids:
@@ -210,14 +236,18 @@ async def chat_leaderboard_handler(_, message: types.Message):
             if not isinstance(fetched, list):
                 fetched = [fetched]
             for u in fetched:
-                user_map[u.id] = u.first_name
+                first_name = u.first_name or "User"
+                last_name = u.last_name
+                full_name = f"{first_name} {last_name}" if last_name else first_name
+                user_map[u.id] = full_name
         except Exception:
             pass
     text = f"<b>Top Members in {html_escape(message.chat.title)}</b>\n\n"
     for i, member in enumerate(top_members, 1):
         uid = member['user_id']
         name = html_escape(user_map.get(uid, f"User {uid}"))
-        text += f"{i}. {name} ➾ <b>{member['count']}</b>\n"
+        mention = f'<a href="tg://user?id={uid}">{name}</a>'
+        text += f"{i}. {mention} ➾ <b>{member['count']}</b>\n"
     # 4. Save to cache
     await rset(cache_key, text, 600)
     await message.reply_text(text, parse_mode=enums.ParseMode.HTML)
