@@ -65,11 +65,12 @@ async def rarities_handler(_, message: types.Message):
 
     # Under PyMongo 4.17+ native AsyncMongoClient, aggregate() is a coroutine
     cursor = await collection.aggregate(pipeline)
+    docs = await cursor.to_list(length=None)
 
     rarity_counts = {}
     total_characters = 0
 
-    async for doc in cursor:
+    for doc in docs:
         r_id = doc["_id"] or "Unknown"
         rarity_counts[r_id] = doc["count"]
         total_characters += doc["count"]
