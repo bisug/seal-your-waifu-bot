@@ -5,8 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from Grabber import LOGGER
 from Grabber.core.cache import sync_user_to_redis
-from Grabber.core.constants import (PASS_PRICES, RARITY_PRICES, SHOP_LIMIT,
-                                    SHOP_RARITY)
+from Grabber.core.constants import (PASS_PRICES, RARITY_PRICES, RARITY_STOCK_LIMITS,
+                                    SHOP_LIMIT)
 from Grabber.core.pass_config import MAX_PASS_LEVEL, PASS_TRACKS
 from Grabber.core.progression import get_user_progress
 from Grabber.core.utils import get_user_id_query, normalize_user_id
@@ -25,7 +25,7 @@ async def get_shop_hub(user: dict = Depends(get_current_user_data)):
         "balance": user.get("balance", 0),
         "zenith": user.get("zenith", 0),
         "pass_type": user.get("pass_type", "free"),
-        "characters_rarity": SHOP_RARITY
+        "characters_rarity": "Various"
     }
 
 @router.get("/shop/characters")
@@ -37,7 +37,7 @@ async def get_shop_characters(user: dict = Depends(get_current_user_data)):
     for c in chars:
         char_dict = c.dict()
         char_dict["owned"] = c.id in owned_ids
-        char_dict["stock_limit"] = SHOP_LIMIT
+        char_dict["stock_limit"] = RARITY_STOCK_LIMITS.get(c.rarity, SHOP_LIMIT)
         char_dict["zenith_price"] = RARITY_PRICES.get(c.rarity, 5)
         response.append(char_dict)
     return response
@@ -67,12 +67,13 @@ async def buy_character_api(char_id: str, user_id: int = Depends(get_current_use
         LOGGER.info(f"Shop Purchase Error: User {user_id} already owns character {char_id}")
         raise HTTPException(status_code=400, detail="You already own this character")
 
+    stock_limit = RARITY_STOCK_LIMITS.get(char_raw.get("rarity"), SHOP_LIMIT)
     stock_update = await collection.update_one(
-        {"id": char_id, "sold_count": {"$lt": SHOP_LIMIT}},
+        {"id": char_id, "$or": [{"sold_count": {"$lt": stock_limit}}, {"sold_count": {"$exists": False}}]},
         {"$inc": {"sold_count": 1}}
     )
     if stock_update.modified_count == 0:
-        LOGGER.info(f"Shop Purchase Error: Character {char_id} is SOLD OUT (Limit: {SHOP_LIMIT})")
+        LOGGER.info(f"Shop Purchase Error: Character {char_id} is SOLD OUT (Limit: {stock_limit})")
         raise HTTPException(status_code=400, detail="Character is SOLD OUT")
 
     q = get_user_id_query(user_id)
