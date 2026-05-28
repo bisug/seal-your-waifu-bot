@@ -5,46 +5,47 @@ import { apiFetch } from '../api/client';
 import { useUser } from '../context/UserContext';
 import { useApi } from '../hooks/useApi';
 import { useToast } from '../components/ui/Toast';
+import { cn } from '../utils';
 
 
 export const Pass = () => {
   const { refreshUser } = useUser();
   const { addToast } = useToast();
-  const { data: passData, loading: passLoading, execute: fetchPassData } = useApi('/pass_data');
-  const [claiming, setClaiming] = React.useState(null);
+  const { data: passData, loading: passLoading, execute: fetchPassData } = useApi<any>('/pass_data');
+  const [claiming, setClaiming] = React.useState<number | null>(null);
   const [upgrading, setUpgrading] = React.useState(false);
 
-  const handleClaim = async (level) => {
+  const handleClaim = async (level: number) => {
     setClaiming(level);
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
     try {
       const res = await apiFetch(`/claim_level/${level}`, { method: 'POST' });
       if (res.status === 'success') {
-        addToast(`CLAIMED: ${res.shards} SHARDS & ${res.eggs} EGGS`, 'success');
+        addToast(`Claimed: ${res.shards} Shards & ${res.eggs} Eggs`, 'success');
         await fetchPassData();
         await refreshUser();
       }
-    } catch (err) {
+    } catch (err: any) {
       addToast(err.message || 'Claim failed', 'error');
     } finally {
       setClaiming(null);
     }
   };
 
-  const handleUpgrade = async (tier) => {
+  const handleUpgrade = async (tier: string) => {
     window.Telegram?.WebApp?.showConfirm(
-      `Upgrade to ${tier.toUpperCase()} Protocol for ${tier === 'premium' ? '500' : '1500'} Zenith?`,
-      async (confirmed) => {
+      `Upgrade to ${tier.toUpperCase()} for ${tier === 'premium' ? '500' : '1500'} Zenith?`,
+      async (confirmed: boolean) => {
         if (!confirmed) return;
         setUpgrading(true);
         try {
           const res = await apiFetch(`/shop/upgrade_pass/${tier}`, { method: 'POST' });
           if (res.status === 'success') {
-            addToast(`${tier.toUpperCase()} PROTOCOL ACTIVATED`, 'success');
+            addToast(`${tier.charAt(0).toUpperCase() + tier.slice(1)} Protocol Activated`, 'success');
             await fetchPassData();
             await refreshUser();
           }
-        } catch (err) {
+        } catch (err: any) {
           addToast(err.message || 'Upgrade failed', 'error');
         } finally {
           setUpgrading(false);
@@ -54,7 +55,7 @@ export const Pass = () => {
   };
 
   if (passLoading || !passData) return (
-    <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="animate-spin text-brand-accent" /></div>
+    <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="animate-spin text-zinc-800" /></div>
   );
 
   const milestones = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
@@ -62,24 +63,22 @@ export const Pass = () => {
   const claimedLevels = passData.claimed_levels || [];
 
   return (
-    <div className="pb-8 pt-6 px-4 uppercase tracking-[0.2em] font-black">
-      <header className="mb-10 px-2 flex justify-between items-end">
+    <div className="pb-8 pt-6 px-4">
+      <header className="mb-10 flex justify-between items-end">
         <div>
            <div className="flex items-center space-x-2 text-brand-accent mb-1">
-             <Sparkles size={16} />
-             <span className="text-[10px]">Neural Protocol</span>
+             <Sparkles size={14} />
+             <span className="text-[10px] font-bold uppercase tracking-wider">Protocol Status</span>
            </div>
-           <h1 className="text-[clamp(1.25rem,5vw,1.75rem)] tracking-tight">{passData.season_name || 'Season 1'} Pass</h1>
+           <h1 className="text-xl font-bold text-zinc-100">{passData.season_name || 'Season 1'} Pass</h1>
         </div>
-        <div className="bg-brand-midnight border border-white/5 px-3 py-1.5 rounded-xl">
-           <p className="text-[8px] text-slate-500 mb-0.5">MATRIX LEVEL</p>
-           <p className="text-lg font-black text-brand-accent leading-none">{userLevel}</p>
+        <div className="bg-zinc-900 border border-white/5 px-3 py-2 rounded-lg text-right min-w-[80px]">
+           <p className="text-[10px] font-medium text-zinc-500 mb-0.5 uppercase tracking-tight">Level</p>
+           <p className="text-xl font-bold text-brand-accent tabular-nums leading-none">{userLevel}</p>
         </div>
       </header>
 
-      <div className="space-y-6 relative ml-4">
-        <div className="absolute left-6 top-4 bottom-4 w-0.5 bg-white/5" />
-        
+      <div className="space-y-4 relative ml-4 border-l border-zinc-900 pl-8">
         {milestones.map((lvl) => {
           const isReached = userLevel >= lvl;
           const isClaimed = Array.isArray(claimedLevels) ? claimedLevels.includes(lvl) : false;
@@ -92,38 +91,42 @@ export const Pass = () => {
           return (
             <motion.div
               key={lvl}
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: 10 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="flex items-center space-x-3 group"
+              className="flex items-center space-x-3 relative"
             >
-              <div className={`relative z-10 w-12 h-12 rounded-2xl flex items-center justify-center border-2 transition-all ${
-                isReached ? 'border-brand-accent bg-brand-accent/10 text-brand-accent shadow-lg shadow-brand-accent/20' : 'border-white/10 bg-white/5 text-slate-700'
-              }`}>
-                <span className="text-xs font-black">{lvl}</span>
+              <div className={cn(
+                "absolute -left-[45px] z-10 w-8 h-8 rounded-full flex items-center justify-center border transition-all text-[10px] font-bold",
+                isReached ? 'border-brand-accent bg-zinc-950 text-brand-accent' : 'border-zinc-900 bg-zinc-950 text-zinc-600'
+              )}>
+                {lvl}
               </div>
 
-              <div className={`flex-1 glass-panel p-4 rounded-2xl border transition-all flex items-center justify-between ${isReached ? 'border-white/10' : 'border-white/5 opacity-50'}`}>
+              <div className={cn(
+                "flex-1 p-4 rounded-lg border transition-all flex items-center justify-between",
+                isReached ? 'bg-zinc-900/80 border-white/5' : 'bg-zinc-900/40 border-white/5 opacity-50'
+              )}>
                 <div className="text-left">
-                  <p className="text-[12px] tracking-tight text-white">{rewardLabel}</p>
-                  <div className="flex items-center space-x-1.5 mt-0.5">
-                     <Award size={10} className={isReached ? "text-brand-accent" : "text-slate-600"} />
-                     <span className="text-[8px] text-slate-500 font-bold uppercase">{reward.type} REWARD</span>
+                  <p className="text-sm font-bold text-zinc-100">{rewardLabel}</p>
+                  <div className="flex items-center space-x-1.5 mt-1">
+                     <Award size={12} className={isReached ? "text-brand-accent" : "text-zinc-600"} />
+                     <span className="text-[10px] text-zinc-500 font-medium uppercase tracking-tight">{reward.type}</span>
                   </div>
                 </div>
                 
                 {isClaimed ? (
-                  <CheckCircle2 size={18} className="text-brand-accent" />
+                  <CheckCircle2 size={18} className="text-emerald-500" />
                 ) : isReached ? (
                   <button 
                     onClick={() => handleClaim(lvl)}
                     disabled={claiming === lvl}
-                    className="bg-brand-accent text-brand-midnight text-[9px] font-black px-3 py-1.5 rounded-lg active:scale-95 transition-all"
+                    className="bg-zinc-100 text-zinc-950 text-xs font-bold px-4 py-1.5 rounded hover:bg-white active:scale-95 transition-all"
                   >
-                    {claiming === lvl ? <Loader2 size={12} className="animate-spin" /> : 'CLAIM'}
+                    {claiming === lvl ? <Loader2 size={12} className="animate-spin" /> : 'Claim'}
                   </button>
                 ) : (
-                  <Lock size={16} className="text-slate-700" />
+                  <Lock size={16} className="text-zinc-800" />
                 )}
               </div>
             </motion.div>
@@ -131,32 +134,32 @@ export const Pass = () => {
         })}
       </div>
       
-      <div className="mt-12 p-6 glass-panel rounded-3xl border border-brand-accent/20 bg-brand-accent/[0.02] text-center">
-         <p className="text-[10px] text-slate-500 mb-2 uppercase tracking-widest">
-           {passData.pass_type === 'elite' ? 'ELITE STATUS ACTIVE' : passData.pass_type === 'premium' ? 'PREMIUM STATUS ACTIVE' : 'UPGRADE FOR BETTER REWARDS'}
+      <div className="mt-12 p-6 rounded-lg border border-dashed border-zinc-800 bg-zinc-900/20 text-center">
+         <p className="text-[10px] font-bold text-zinc-600 mb-4 uppercase tracking-widest">
+           {passData.pass_type === 'elite' ? 'Elite Protocol Active' : passData.pass_type === 'premium' ? 'Premium Protocol Active' : 'Protocol Upgrade Available'}
          </p>
          
          {passData.pass_type === 'free' ? (
            <button 
              onClick={() => handleUpgrade('premium')}
              disabled={upgrading}
-             className="w-full py-4 rounded-2xl bg-brand-accent text-brand-midnight text-[11px] font-black tracking-[0.3em] flex items-center justify-center space-x-2 active:scale-95 transition-all shadow-lg shadow-brand-accent/20"
+             className="w-full py-3.5 rounded-md bg-brand-accent text-white text-xs font-bold flex items-center justify-center space-x-2 active:scale-[0.98] transition-all shadow-sm"
            >
               {upgrading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-              <span>ACTIVATE PREMIUM (⧫ 500)</span>
+              <span>Activate Premium (500 Zenith)</span>
            </button>
          ) : passData.pass_type === 'premium' ? (
            <button 
              onClick={() => handleUpgrade('elite')}
              disabled={upgrading}
-             className="w-full py-4 rounded-2xl bg-brand-accent text-white text-[11px] font-black tracking-[0.3em] flex items-center justify-center space-x-2 active:scale-95 transition-all shadow-lg"
+             className="w-full py-3.5 rounded-md bg-zinc-100 text-zinc-950 text-xs font-bold flex items-center justify-center space-x-2 active:scale-[0.98] transition-all shadow-sm"
            >
               {upgrading ? <Loader2 size={16} className="animate-spin" /> : <Award size={16} />}
-              <span>UPGRADE TO ELITE (⧫ 1500)</span>
+              <span>Upgrade to Elite (1500 Zenith)</span>
            </button>
          ) : (
-           <div className="w-full py-4 rounded-2xl bg-white/5 border border-white/10 text-brand-accent text-[11px] font-black tracking-[0.3em]">
-             NEXUS OVERLORD STATUS
+           <div className="w-full py-3.5 rounded-md border border-brand-accent/20 text-brand-accent text-xs font-bold uppercase tracking-wider">
+             Elite status confirmed
            </div>
          )}
       </div>
