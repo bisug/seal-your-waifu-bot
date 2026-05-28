@@ -28,12 +28,15 @@ async def give_balance(_, message: types.Message):
         await message.reply_text(f"{amount} ⬪ given to {html_escape(recipient.first_name)}!")
         LOGGER.info(f"ADMIN {sender_id} gave {amount} to {recipient_id}")
         return
-    sender = await user_collection.find_one({'id': sender_id}, projection={'balance': 1})
-    sender_balance = sender.get("balance", 0) if sender else 0
-    if sender_balance < amount:
+    # Atomic balance transfer
+    res = await user_collection.update_one(
+        {'id': sender_id, 'balance': {'$gte': amount}},
+        {'$inc': {'balance': -amount}}
+    )
+    if res.modified_count == 0:
         await message.reply_text("Insufficient balance to give.")
         return
-    await user_collection.update_one({'id': sender_id}, {'$inc': {'balance': -amount}})
+
     await user_collection.update_one({'id': recipient_id}, {'$inc': {'balance': amount}}, upsert=True)
     await message.reply_text(f"You gave {amount} ⬪ to {html_escape(recipient.first_name)}!")
     LOGGER.info(f"User {sender_id} gave {amount} to {recipient_id}")
