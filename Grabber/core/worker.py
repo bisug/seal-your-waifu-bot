@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from Grabber.modules.economy.hunt import EGG_TIERS, TIER_MAP
 from Grabber import LOGGER
 from Grabber.core.cache import _redis, sync_user_to_redis
+from Grabber.core.utils import get_user_id_query
 from Grabber.database import user_collection
 async def background_maintenance():
     """
@@ -19,12 +20,14 @@ async def background_maintenance():
             await verify_top_users_consistency()
             # 3. Clean up stale Redis rate limits
             if _redis:
-                keys = []
+                deleted = 0
                 async for key in _redis.scan_iter(match="rate_limit:*", count=100):
-                    keys.append(key)
-                if keys:
-                    # Redis should expire them, but this ensures cleanup if TTL failed
-                    LOGGER.info(f"Persistence Worker: Cleaned up {len(keys)} rate limit keys.")
+                    ttl = await _redis.ttl(key)
+                    if ttl == -1:
+                        await _redis.delete(key)
+                        deleted += 1
+                if deleted:
+                    LOGGER.info(f"Persistence Worker: Cleaned up {deleted} rate limit keys without TTL.")
         except Exception as e:
             LOGGER.error(f"Persistence Worker Error: {e}")
         # Wait 6 hours
@@ -56,7 +59,7 @@ async def prune_legacy_eggs():
             else:
                 new_eggs.append(egg)
         if modified:
-            await user_collection.update_one({"id": uid}, {"$set": {"eggs": new_eggs}})
+            await user_collection.update_one(get_user_id_query(uid), {"$set": {"eggs": new_eggs}})
             count += 1
     if count > 0:
         LOGGER.info(f"Persistence Worker: Pruned legacy eggs for {count} users.")
@@ -75,7 +78,7 @@ async def verify_top_users_consistency():
         stored_count = user.get("char_count", 0)
         if actual_count != stored_count:
             uid = user["id"]
-            await user_collection.update_one({"id": uid}, {"$set": {"char_count": actual_count}})
+            await user_collection.update_one(get_user_id_query(uid), {"$set": {"char_count": actual_count}})
             await sync_user_to_redis(uid)
             fixed += 1
     if fixed > 0:

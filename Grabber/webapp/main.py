@@ -87,6 +87,19 @@ async def add_security_headers(request: Request, call_next):
     """Inject basic security headers."""
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "base-uri 'self'; "
+        "object-src 'none'; "
+        "img-src 'self' data: https:; "
+        "media-src 'self' https:; "
+        "style-src 'self' 'unsafe-inline'; "
+        "script-src 'self' https://telegram.org https://*.telegram.org; "
+        "connect-src 'self' https: wss:; "
+        "frame-ancestors https://web.telegram.org https://*.telegram.org"
+    )
     # Note: X-Frame-Options must NOT be 'DENY' for Telegram Mini Apps to function in a frame.
     return response
 

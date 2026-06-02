@@ -4,7 +4,7 @@ from config import config
 from Grabber import LOGGER, app
 from Grabber.core.cache import sync_user_to_redis
 from Grabber.core.sessions import create_session, get_session
-from Grabber.core.user import add_char_to_user, get_user_data, update_user
+from Grabber.core.user import get_user_data
 from Grabber.core.utils import (get_user_id_query, handle_errors, html_escape,
                                 reply_media_dynamic, send_media_dynamic)
 from Grabber.database import collection, user_collection
@@ -112,15 +112,20 @@ async def claim_confirm_handler(_, query: types.CallbackQuery):
     if not session or "character" not in session:
         return await query.answer("Session expired. Use /claim again.", show_alert=True)
     char = session["character"]
-    # Use atomic query and include both character and currency in one transaction
-    await add_char_to_user(user_id, char)
-    await user_collection.update_one(
-        get_user_id_query(user_id),
+    claim_filter = get_user_id_query(user_id)
+    claim_filter["claimed_waifu"] = {"$ne": True}
+    claim_result = await user_collection.update_one(
+        claim_filter,
         {
             "$set": {"claimed_waifu": True},
-            "$inc": {"balance": DAILY_SHARD_REWARD}
-        }
+            "$inc": {"balance": DAILY_SHARD_REWARD, "char_count": 1, "version": 1},
+            "$push": {"characters": char},
+            "$setOnInsert": {"id": user_id}
+        },
+        upsert=True
     )
+    if claim_result.modified_count == 0 and claim_result.upserted_id is None:
+        return await query.answer("You already claimed your free waifu!", show_alert=True)
     mention = f'<a href="tg://user?id={query.from_user.id}">{html_escape(query.from_user.first_name)}</a>'
     caption = (
         f'{mention} claimed their **Free Starter Character**!\n\n'

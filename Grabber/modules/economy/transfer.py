@@ -1,7 +1,8 @@
 from pyrogram import enums, errors, filters, types
-from Grabber import LOGGER, app, user_collection
+from Grabber import LOGGER, app, client, user_collection
+from Grabber.core.cache import invalidate_leaderboard_cache, sync_user_to_redis
 from Grabber.core.sessions import create_session, delete_session, get_session
-from Grabber.core.user import get_user_data, update_user
+from Grabber.core.user import get_user_data, get_user_filter
 from Grabber.core.utils import handle_errors, html_escape
 
 
@@ -105,27 +106,45 @@ async def transfer_callback(_, query: types.CallbackQuery):
         if session.get("step") != 2:
             await query.answer("Invalid sequence. Start over.", show_alert=True)
             return
+        await delete_session(session_id)
         # Proceed with Transfer
         receiver_id = session["receiver_id"]
-        # Re-fetch sender data to get fresh character list
-        sender_data = await get_user_data(sender_id)
-        if not sender_data or not sender_data.get("characters"):
-            await query.answer("You no longer have any characters.", show_alert=True)
-            await delete_session(session_id)
-            return
-        characters_to_move = sender_data["characters"]
-        num_chars = len(characters_to_move)
+        num_chars = 0
         try:
-            # 1. Add all characters to receiver
-            await update_user(receiver_id, {
-                "$push": {"characters": {"$each": characters_to_move}},
-                "$inc": {"char_count": num_chars}
-            })
-            # 2. Wipe sender's collection
-            await update_user(sender_id, {
-                "$set": {"characters": [], "char_count": 0}
-            })
-            await delete_session(session_id)
+            async with await client.start_session() as mongo_session:
+                async with mongo_session.start_transaction():
+                    sender_data = await user_collection.find_one(get_user_filter(sender_id), session=mongo_session)
+                    if not sender_data or not sender_data.get("characters"):
+                        raise ValueError("You no longer have any characters.")
+
+                    characters_to_move = list(sender_data["characters"])
+                    num_chars = len(characters_to_move)
+                    sender_version = sender_data.get("version", 0)
+
+                    await user_collection.update_one(
+                        get_user_filter(receiver_id),
+                        {
+                            "$push": {"characters": {"$each": characters_to_move}},
+                            "$inc": {"char_count": num_chars, "version": 1},
+                            "$setOnInsert": {"id": int(receiver_id)}
+                        },
+                        upsert=True,
+                        session=mongo_session
+                    )
+
+                    sender_filter = get_user_filter(sender_id)
+                    sender_filter["version"] = sender_version
+                    sender_update = await user_collection.update_one(
+                        sender_filter,
+                        {
+                            "$set": {"characters": [], "char_count": 0},
+                            "$inc": {"version": 1}
+                        },
+                        session=mongo_session
+                    )
+                    if sender_update.modified_count == 0:
+                        raise ValueError("Sender collection changed during transfer.")
+
             # Notify success
             receiver_user = await app.get_users(receiver_id)
             receiver_name = receiver_user.first_name if receiver_user else f"ID: {receiver_id}"
@@ -138,8 +157,12 @@ async def transfer_callback(_, query: types.CallbackQuery):
             # Log the event
             LOGGER.info(f"FULL TRANSFER: {sender_id} -> {receiver_id} ({num_chars} chars)")
             # Invalidate leaderboards as harem sizes changed
-            from Grabber.core.cache import invalidate_leaderboard_cache
+            await sync_user_to_redis(sender_id)
+            await sync_user_to_redis(receiver_id)
             await invalidate_leaderboard_cache()
+        except ValueError as e:
+            await query.answer(str(e), show_alert=True)
+            await query.message.edit_text(f"<b>Transfer failed:</b> {html_escape(str(e))}", parse_mode=enums.ParseMode.HTML)
         except Exception as e:
             LOGGER.error(f"Error during collection transfer {sender_id}->{receiver_id}: {e}")
             await query.answer("An error occurred during the transfer. Please contact an admin.", show_alert=True)

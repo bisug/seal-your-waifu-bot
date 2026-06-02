@@ -2,9 +2,11 @@ import random
 from datetime import datetime, timezone
 import httpx
 from pyrogram import enums, errors, filters, types
+from pymongo import ReturnDocument
 from config import config
 from Grabber import (LOGGER, OWNER_ID, WEB_APP_URL, app, collection,
                      sudo_users, user_collection, sudo_filter)
+from Grabber.core.cache import sync_user_to_redis
 from Grabber.core.constants import RARITY_PRICES, RARITY_STOCK_LIMITS, SHOP_LIMIT
 from Grabber.core.keyboard import KeyboardBuilder, get_webapp_button
 from Grabber.core.sessions import create_session, get_session
@@ -21,11 +23,9 @@ async def get_daily_shop_characters():
     shop_doc = await daily_shop_collection.find_one({"date": today})
     if shop_doc:
         char_ids = shop_doc.get("character_ids", [])
-        chars_raw = []
-        for cid in char_ids:
-            c = await collection.find_one({"id": cid})
-            if c:
-                chars_raw.append(c)
+        chars_raw = await collection.find({"id": {"$in": char_ids}}).to_list(length=len(char_ids))
+        char_map = {c["id"]: c for c in chars_raw}
+        chars_raw = [char_map[cid] for cid in char_ids if cid in char_map]
         return [Character(**c) for c in chars_raw]
 
     # 2. If it's a new day, pick 5 new characters from various rarities
@@ -52,13 +52,26 @@ async def get_daily_shop_characters():
         return []
 
     selected_ids = [c["id"] for c in selected_raw]
-    # 3. Save for the day (clear old first)
-    await daily_shop_collection.delete_many({})
-    await daily_shop_collection.insert_one({
-        "date": today,
-        "character_ids": selected_ids
-    })
-    return [Character(**c) for c in selected_raw]
+    # 3. Save for the day without deleting another concurrent rotation.
+    shop_doc = await daily_shop_collection.find_one_and_update(
+        {"date": today},
+        {
+            "$setOnInsert": {
+                "date": today,
+                "character_ids": selected_ids,
+                "created_at": datetime.now(timezone.utc)
+            }
+        },
+        upsert=True,
+        return_document=ReturnDocument.AFTER
+    )
+    await daily_shop_collection.delete_many({"date": {"$ne": today}})
+    final_ids = shop_doc.get("character_ids", selected_ids) if shop_doc else selected_ids
+    if final_ids == selected_ids:
+        return [Character(**c) for c in selected_raw]
+    chars_raw = await collection.find({"id": {"$in": final_ids}}).to_list(length=len(final_ids))
+    char_map = {c["id"]: c for c in chars_raw}
+    return [Character(**char_map[cid]) for cid in final_ids if cid in char_map]
 SHOP_BANNER = config.PHOTO_URL[0]
 @app.on_message(filters.command("cshop"))
 @handle_errors
@@ -272,20 +285,22 @@ async def buy_character(_, query: types.CallbackQuery):
         return
     user_filt = get_user_filter(user_id)
     user_filt["zenith"] = {"$gte": price}
+    user_filt["characters.id"] = {"$ne": char_id}
     user_update = await user_collection.update_one(
         user_filt,
         {
-            "$inc": {"zenith": -price, "char_count": 1},
+            "$inc": {"zenith": -price, "char_count": 1, "version": 1},
             "$push": {"characters": {"id": char.id, "name": char.name, "anime": char.anime, "rarity": char.rarity, "img_url": char.img_url}}
         }
     )
     if user_update.modified_count == 0:
         await collection.update_one({"id": char_id}, {"$inc": {"sold_count": -1}})
-        await query.answer("Transaction failed. Insufficient Zenith or internal error.", show_alert=True)
+        await query.answer("Transaction failed. Insufficient Zenith or character already owned.", show_alert=True)
         return
     await update_quest_progress(user_id, "big_spender", price)
     await update_quest_progress(user_id, "weekly_spender", price)
     await check_achievements(user_id)
+    await sync_user_to_redis(user_id)
     await query.message.edit_caption(
         f"<b>Purchase Successful!</b>\nYou now own <b>{char.name}</b>!\nRemaining Stock: <code>{getattr(char, 'sold_count', 0) + 1}</code>/{stock_limit}",
         parse_mode=enums.ParseMode.HTML

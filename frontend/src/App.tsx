@@ -205,7 +205,7 @@ const AppContent = () => {
           </div>
         }>
           {activeTab === 'profile' && <Profile onCharClick={setSelectedChar} />}
-          {activeTab === 'incubation' && <Hatchery onPetClick={setSelectedPet} />}
+          {activeTab === 'incubation' && <Hatchery />}
           {activeTab === 'shop' && <Shop onCharClick={setSelectedChar} />}
           {activeTab === 'gallery' && <Gallery onCharClick={setSelectedChar} />}
           {activeTab === 'pets' && <PetShop onPetClick={setSelectedPet} />}

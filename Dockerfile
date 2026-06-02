@@ -13,7 +13,7 @@ FROM ghcr.io/astral-sh/uv:python3.14-bookworm-slim AS python-builder
 
 WORKDIR /app
 
-# Install build dependencies for C-extensions (needed by tgcrypto, orjson, psutil)
+# Install build dependencies for C-extensions (needed by tgcrypto and other binary Python packages when wheels are unavailable)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libffi-dev \
@@ -68,4 +68,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD curl -f http://localhost:${PORT:-8080}/healthz || exit 1
 
 # Default runtime command
-CMD ["uv", "run", "uvicorn", "Grabber.webapp.main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["sh", "-c", "uv run uvicorn Grabber.webapp.main:app --host 0.0.0.0 --port ${PORT:-8080}"]

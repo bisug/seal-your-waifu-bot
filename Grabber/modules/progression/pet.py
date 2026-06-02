@@ -2,7 +2,7 @@ import time
 from pyrogram import enums, errors, filters, types
 from config import config
 from Grabber import LOGGER, PHOTO_URL, WEB_APP_URL, app, user_collection
-from Grabber.core.cache import is_on_cooldown as redis_cooldown
+from Grabber.core.cache import is_on_cooldown as redis_cooldown, sync_user_to_redis
 from Grabber.core.keyboard import KeyboardBuilder, get_webapp_button
 from pyrogram.handlers import CallbackQueryHandler, MessageHandler
 from Grabber.core.user import add_pet_xp, get_user_filter, get_user_id
@@ -99,7 +99,12 @@ async def perform_pet_purchase(user_id, pet_index: int):
     user = await user_collection.find_one(get_user_filter(user_id))
     if not user:
         user = {"id": get_user_id(user_id), "balance": 0, "zenith": 0, "pets": [DEFAULT_PET.copy()], "current_pet": DEFAULT_PET["name"]}
-        await user_collection.insert_one(user)
+        await user_collection.update_one(
+            get_user_filter(user_id),
+            {"$setOnInsert": user},
+            upsert=True
+        )
+        user = await user_collection.find_one(get_user_filter(user_id)) or user
     # 1. Check Ownership BEFORE deduction
     if any(p["name"] == pet["name"] for p in user.get("pets", [])):
         return f"You already own {pet['name']}."
@@ -109,16 +114,20 @@ async def perform_pet_purchase(user_id, pet_index: int):
     if user_zenith < price:
         return f"You need <b>{price} ⬪ Zenith</b> to purchase this pet! (You have: {user_zenith} ⬪)"
     # 3. Atomic Deduction and Push
+    purchase_filter = get_user_filter(user_id)
+    purchase_filter["zenith"] = {"$gte": price}
+    purchase_filter["pets.name"] = {"$ne": pet["name"]}
     update_result = await user_collection.update_one(
-        {"id": get_user_id(user_id), "zenith": {"$gte": price}},
+        purchase_filter,
         {
-            "$inc": {"zenith": -price},
+            "$inc": {"zenith": -price, "version": 1},
             "$push": {"pets": pet},
             "$set": {"current_pet": pet["name"]}
         }
     )
     if update_result.modified_count == 0:
-        return "Purchase failed. Your balance may have changed. Please try again."
+        return "Purchase failed. Your balance or pet ownership may have changed. Please try again."
+    await sync_user_to_redis(user_id)
     return True
 async def buypet_cmd(_, message: types.Message):
     if len(message.command) < 2:
