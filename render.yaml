@@ -1,0 +1,44 @@
+services:
+  - type: web
+    name: seal-bot
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    autoDeploy: true
+    healthCheckPath: /healthz
+    maxShutdownDelaySeconds: 60
+    envVars:
+      - key: TOKEN
+        sync: false
+      - key: SUB_TOKEN
+        sync: false
+      - key: API_ID
+        sync: false
+      - key: API_HASH
+        sync: false
+      - key: MONGO_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: WEB_APP_URL
+        sync: false
+      - key: OWNER_ID
+        sync: false
+      - key: SUDO_USERS
+        sync: false
+      - key: MAIN_GROUP_ID
+        sync: false
+      - key: GALLERY_CHANNEL_ID
+        sync: false
+      - key: LOG_GROUP_ID
+        sync: false
+      - key: IMGBB_API_KEY
+        sync: false
+      - key: STRING_SESSION
+        sync: false
+      - key: LOG_LEVEL
+        value: INFO
+      - key: LOG_FORMAT
+        value: json
+      - key: LOG_FILE_ENABLED
+        value: "false"
