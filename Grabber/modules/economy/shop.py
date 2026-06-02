@@ -1,7 +1,6 @@
 import random
 import inspect
 from datetime import datetime, timezone
-import httpx
 from pyrogram import enums, errors, filters, types
 from pymongo import ReturnDocument
 from config import config
@@ -74,7 +73,7 @@ async def get_daily_shop_characters():
     chars_raw = await collection.find({"id": {"$in": final_ids}}).to_list(length=len(final_ids))
     char_map = {c["id"]: c for c in chars_raw}
     return [Character(**char_map[cid]) for cid in final_ids if cid in char_map]
-SHOP_BANNER = config.PHOTO_URL[0]
+SHOP_BANNER = config.PHOTO_URL[0] if config.PHOTO_URL else None
 @app.on_message(filters.command("cshop"))
 @handle_errors
 async def cshop_cmd(_, message: types.Message):
@@ -111,13 +110,19 @@ async def send_shop_hub(message_or_query):
     reply_markup = builder.build()
     try:
         if isinstance(message_or_query, types.CallbackQuery):
-            await message_or_query.edit_message_media(
-                media=types.InputMediaPhoto(media=SHOP_BANNER, caption=text, parse_mode=enums.ParseMode.HTML),
-                reply_markup=reply_markup
-            )
+            if SHOP_BANNER:
+                await message_or_query.edit_message_media(
+                    media=types.InputMediaPhoto(media=SHOP_BANNER, caption=text, parse_mode=enums.ParseMode.HTML),
+                    reply_markup=reply_markup
+                )
+            else:
+                await message_or_query.message.edit_text(text, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML)
         else:
-            await reply_media_dynamic(message_or_query, SHOP_BANNER, caption=text, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML
-            )
+            if SHOP_BANNER:
+                await reply_media_dynamic(message_or_query, SHOP_BANNER, caption=text, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML
+                )
+            else:
+                await message_or_query.reply_text(text, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML)
     except Exception as e:
         LOGGER.error(f"Error in send_shop_hub: {e}")
         if isinstance(message_or_query, types.CallbackQuery):
@@ -130,6 +135,7 @@ async def send_shop_hub(message_or_query):
 
 
 @app.on_callback_query(filters.regex(r"^exchange_help$"))
+@handle_errors
 async def exchange_help_callback(_, query: types.CallbackQuery):
     await query.answer()
     await query.message.reply_text(
@@ -140,6 +146,7 @@ async def exchange_help_callback(_, query: types.CallbackQuery):
         parse_mode=enums.ParseMode.HTML,
     )
 @app.on_callback_query(filters.regex(r"^hub_(char|pet|pass|egg|main)$"))
+@handle_errors
 async def hub_callback_handler(_, query: types.CallbackQuery):
     await query.answer()  # Dismiss spinner instantly
     choice = query.data.split("_")[1]
@@ -159,6 +166,7 @@ async def hub_callback_handler(_, query: types.CallbackQuery):
         import Grabber.modules.progression.battlepass as pass_module
         await pass_module.view_pass_inline(query)
 @app.on_callback_query(filters.regex(r"^shop_back_(\d+)$"))
+@handle_errors
 async def shop_back_handler(_, query: types.CallbackQuery):
     owner_id = int(query.data.split("_")[2])
     if query.from_user.id != owner_id:
@@ -217,6 +225,7 @@ async def send_shop_message(message, user_id):
     except errors.RPCError as e:
         LOGGER.error(f"Error in send_shop_message: {e}")
 @app.on_callback_query(filters.regex(r"^shop_(prev|next):(\d+)$"))
+@handle_errors
 async def shop_navigation(_, query: types.CallbackQuery):
     action, user_id_str = query.data.split(":")
     user_id = int(user_id_str)
@@ -239,6 +248,7 @@ async def shop_navigation(_, query: types.CallbackQuery):
     await create_session(f"shop_{user_id}", session)
     await send_shop_message(query, user_id)
 @app.on_callback_query(filters.regex(r"^ask_buy_char_(.+)"))
+@handle_errors
 async def ask_buy_character(_, query: types.CallbackQuery):
     data = query.data.split("_")
     char_id = data[3]
@@ -269,6 +279,7 @@ async def ask_buy_character(_, query: types.CallbackQuery):
     )
     await query.message.edit_caption(text, reply_markup=builder.build(), parse_mode=enums.ParseMode.HTML)
 @app.on_callback_query(filters.regex(r"^confirm_buy_char_(.+)"))
+@handle_errors
 async def buy_character(_, query: types.CallbackQuery):
     user_id = query.from_user.id
     data = query.data.split("_")

@@ -1,9 +1,7 @@
-import inspect
-
 from pyrogram import enums, filters, types
 
 from Grabber import app
-from Grabber.core.utils import handle_errors
+from Grabber.core.utils import handle_errors, html_escape
 from Grabber.database import collection
 
 # Keep for backward compatibility/reference
@@ -60,27 +58,19 @@ ACTIVE_RARITY_WEIGHTS = {
 @app.on_message(filters.command(["rarities", "rarity", "rlist"]))
 @handle_errors
 async def rarities_handler(_, message: types.Message):
-    pipeline = [
-        {"$group": {"_id": "$rarity", "count": {"$sum": 1}}},
-        {"$sort": {"count": -1}}
-    ]
-
-    cursor_result = collection.aggregate(pipeline)
-    cursor = await cursor_result if inspect.isawaitable(cursor_result) else cursor_result
-    docs = await cursor.to_list(length=None)
-
     rarity_counts = {}
     total_characters = 0
 
-    for doc in docs:
-        r_id = doc["_id"] or "Unknown"
-        rarity_counts[r_id] = doc["count"]
-        total_characters += doc["count"]
+    cursor = collection.find({}, {"rarity": 1})
+    async for doc in cursor:
+        rarity = doc.get("rarity") or "Unknown"
+        rarity_counts[rarity] = rarity_counts.get(rarity, 0) + 1
+        total_characters += 1
 
     if not rarity_counts:
         return await message.reply_text("<b>No characters found in database.</b>", parse_mode=enums.ParseMode.HTML)
 
-    response = "<b>Character Counts by Rarity:</b>\n\n"
+    lines = ["<b>Character Counts by Rarity:</b>", ""]
 
     # We display based on what's in the database, but prioritized by RARITY_MAP order if possible
     displayed_rarities = set()
@@ -90,7 +80,7 @@ async def rarities_handler(_, message: types.Message):
         rarity_name = RARITY_MAP[i]
         if rarity_name in rarity_counts:
             count = rarity_counts[rarity_name]
-            response += f"{rarity_name}: <code>{count}</code>\n"
+            lines.append(f"{html_escape(rarity_name)}: <code>{count}</code>")
             displayed_rarities.add(rarity_name)
 
     # 2. Show any remaining rarities found in DB
@@ -98,10 +88,19 @@ async def rarities_handler(_, message: types.Message):
     for r_name, count in rarity_counts.items():
         if r_name not in displayed_rarities:
             if not remaining:
-                response += "\n<b>Other Rarities:</b>\n"
+                lines.extend(["", "<b>Other Rarities:</b>"])
                 remaining = True
-            response += f"{r_name}: <code>{count}</code>\n"
+            lines.append(f"{html_escape(str(r_name))}: <code>{count}</code>")
 
-    response += f"\n<b>Total Characters:</b> <code>{total_characters}</code>\n"
-    for start in range(0, len(response), 3500):
-        await message.reply_text(response[start:start + 3500], parse_mode=enums.ParseMode.HTML)
+    lines.extend(["", f"<b>Total Characters:</b> <code>{total_characters}</code>"])
+
+    chunk = ""
+    for line in lines:
+        next_chunk = f"{chunk}\n{line}" if chunk else line
+        if len(next_chunk) > 3500:
+            await message.reply_text(chunk, parse_mode=enums.ParseMode.HTML)
+            chunk = line
+        else:
+            chunk = next_chunk
+    if chunk:
+        await message.reply_text(chunk, parse_mode=enums.ParseMode.HTML)

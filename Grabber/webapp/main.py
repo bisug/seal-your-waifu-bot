@@ -15,6 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from config import config
+import Grabber.core.sync_handler  # Register global Telegram message sync handlers.
 from Grabber import LOGGER
 from Grabber.core.cache import rebuild_leaderboard
 from Grabber.core.logging import (

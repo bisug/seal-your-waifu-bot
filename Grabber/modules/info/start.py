@@ -278,6 +278,19 @@ async def start_handler(_, message: types.Message):
         )
     else:
         await message.reply_text(text, parse_mode=enums.ParseMode.HTML)
+
+
+@app.on_message(filters.command("help"))
+@handle_errors
+async def help_command(_, message: types.Message):
+    data = HELP_DATA["MAIN"]
+    await message.reply_text(
+        data["text"],
+        reply_markup=types.InlineKeyboardMarkup(data["buttons"]),
+        parse_mode=enums.ParseMode.HTML,
+    )
+
+
 @app.on_callback_query(filters.regex(r"^st:(h|b)"))
 async def start_callback_handler(_, query: types.CallbackQuery):
     """Handle navigation back to the start menu from help or collection pages."""
