@@ -24,12 +24,13 @@ export const MyPets = ({ onPetClick }: MyPetsProps) => {
     const { addToast } = useToast();
     const [switching, setSwitching] = useState<string | null>(null);
 
-    const handleSetActive = async (petName: string) => {
+    const handleSetActive = async (pet: Pet) => {
         if (switching) return;
-        setSwitching(petName);
+        const petRef = pet.id || pet.name;
+        setSwitching(petRef);
         try {
-            await apiFetch(`/pets/set_active/${petName}`, { method: 'POST' });
-            addToast(`${petName} is now your active pet!`, 'success');
+            await apiFetch(`/pets/set_active/${encodeURIComponent(petRef)}`, { method: 'POST' });
+            addToast(`${pet.name} is now your active pet!`, 'success');
             triggerRefresh();
         } catch (err: any) {
             addToast(getErrorMessage(err), 'error');
@@ -115,10 +116,10 @@ export const MyPets = ({ onPetClick }: MyPetsProps) => {
                 <div className="space-y-3">
                     {pets.length > 0 ? (
                         pets.map((pet) => {
-                            const isActive = currentPet?.name === pet.name;
+                            const isActive = (currentPet?.id || currentPet?.name) === (pet.id || pet.name);
                             return (
                                 <div
-                                    key={pet.name}
+                                    key={pet.id || pet.name}
                                     onClick={() => onPetClick?.(pet)}
                                     className={cn(
                                         "glass-panel p-4 rounded-2xl border transition-all flex items-center gap-4 active:scale-[0.98]",
@@ -147,12 +148,12 @@ export const MyPets = ({ onPetClick }: MyPetsProps) => {
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                handleSetActive(pet.name);
+                                                handleSetActive(pet);
                                             }}
                                             disabled={!!switching}
                                             className="px-4 py-2 bg-white/5 border border-white/10 text-xs font-bold text-white rounded-xl hover:bg-brand-accent hover:text-brand-midnight hover:border-brand-accent transition-all disabled:opacity-50"
                                         >
-                                            {switching === pet.name ? <Loader2 size={12} className="animate-spin" /> : 'Activate'}
+                                            {switching === (pet.id || pet.name) ? <Loader2 size={12} className="animate-spin" /> : 'Activate'}
                                         </button>
                                     )}
                                     {isActive && (

@@ -11,6 +11,11 @@ from Grabber.core.cache import invalidate_user_cache
 from Grabber.core.cache import is_on_cooldown as redis_cooldown
 from Grabber.core.cache import sync_user_to_redis
 from Grabber.core.constants import CORRUPTED_EGG_CHANCE, EGG_TIERS
+from Grabber.core.eggs import (
+    get_egg_tier_info,
+    get_incubation_wait_minutes,
+    normalize_egg_tier,
+)
 from Grabber.core.keyboard import get_webapp_button
 from Grabber.core.progression import add_xp
 from Grabber.core.tasks import run_background_task
@@ -18,12 +23,17 @@ from Grabber.core.user import add_pet_xp, add_user_set_on_insert, get_user_filte
 from Grabber.core.utils import get_now_utc, html_escape, reply_media_dynamic
 from Grabber.modules.collection.rarities import RARITY_MAP
 from Grabber.modules.progression.achievements import check_achievements
-from Grabber.modules.progression.pet import (DEFAULT_PET,
-                                             get_effective_affection)
+from Grabber.core.pets import (
+    DEFAULT_PET,
+    ensure_user_pet_state,
+    find_pet,
+    get_effective_affection,
+    get_pet_key,
+    normalize_pet,
+)
 from Grabber.modules.progression.quests import update_quest_progress
 # Configuration
 LOGGER = logging.getLogger(__name__)
-TIER_MAP = {"1": "common", "2": "gold", "3": "void", "4": "gold", "5": "void"}
 def load_handlers(bot):
     """Explicitly register handlers to the bot instance. Resolves multi-bot ghosting."""
     if bot.name != "MainBot":
@@ -54,9 +64,10 @@ async def hunt_cmd(bot, message: types.Message):
     try:
         # 1. Fetch User and Active Pet
         user = await asyncio.wait_for(user_collection.find_one(get_user_filter(user_id)), timeout=5.0) or {}
-        pets = user.get("pets", [DEFAULT_PET])
+        user = await ensure_user_pet_state(user_id, user)
+        pets = [normalize_pet(p) for p in user.get("pets", [DEFAULT_PET])]
         current_pet_name = user.get("current_pet", DEFAULT_PET["name"])
-        pet = next((p for p in pets if p.get("name") == current_pet_name), DEFAULT_PET)
+        pet = find_pet(pets, current_pet_name) or DEFAULT_PET
         affection = get_effective_affection(pet)
         aff_multiplier = 1.0
         if affection >= 80:
@@ -132,7 +143,7 @@ async def hunt_cmd(bot, message: types.Message):
             upsert=True
         ), timeout=5.0)
         # 6. Side Effects
-        run_background_task(add_pet_xp(user_id, pet["name"], xp_gain))
+        run_background_task(add_pet_xp(user_id, get_pet_key(pet), xp_gain))
         if eggs_to_push:
             run_background_task(update_quest_progress(user_id, "egg_hunter", len(eggs_to_push)))
         run_background_task(sync_user_to_redis(user_id))
@@ -166,8 +177,7 @@ async def _ensure_egg_document(user_id: int, eggs: list, page: int) -> dict:
         return raw_egg
 
     raw_tier = raw_egg.get("tier", "common") if isinstance(raw_egg, dict) else raw_egg
-    tier_key = TIER_MAP.get(str(raw_tier), str(raw_tier))
-    tier_info = EGG_TIERS.get(tier_key, EGG_TIERS["common"])
+    tier_key, tier_info = get_egg_tier_info(raw_tier)
     egg = {
         "id": f"egg_{uuid.uuid4().hex[:12]}",
         "tier": tier_key,
@@ -199,8 +209,7 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
     egg = await _ensure_egg_document(user_id, eggs, page)
     # Handle legacy/numeric tiers
     raw_tier = egg.get("tier", "common")
-    tier_key = TIER_MAP.get(str(raw_tier), str(raw_tier))
-    tier_info = EGG_TIERS.get(tier_key, EGG_TIERS["common"])
+    tier_key, tier_info = get_egg_tier_info(raw_tier)
     status = egg.get("status", "fresh")
     action_button = None
     status_display = ""
@@ -274,20 +283,11 @@ async def egg_incubate_callback(_, query: types.CallbackQuery):
     if egg.get("status", "fresh") != "fresh":
         return await query.answer("This egg is already incubating or hatched.", show_alert=True)
     # Calculate incubation time
-    pets = user.get("pets", [DEFAULT_PET])
-    active_pet = next((p for p in pets if p.get("name") == user.get("current_pet")), {})
+    pets = [normalize_pet(p) for p in user.get("pets", [DEFAULT_PET])]
+    active_pet = find_pet(pets, user.get("current_pet")) or {}
     raw_tier = egg.get("tier", "common") if isinstance(egg, dict) else egg
-    tier_key = TIER_MAP.get(str(raw_tier), str(raw_tier))
-    tier_info = EGG_TIERS.get(tier_key, EGG_TIERS["common"])
-    wait_min = tier_info["wait_min"]
-    if active_pet.get("ability") == "Caregiver":
-        affection = get_effective_affection(active_pet)
-        aff_multiplier = 1.0
-        if affection >= 80:
-            aff_multiplier = 1.2
-        elif affection <= 20:
-            aff_multiplier = 0.8
-        wait_min = int(wait_min * (0.5 / aff_multiplier))
+    tier_key = normalize_egg_tier(raw_tier)
+    wait_min = get_incubation_wait_minutes(tier_key, active_pet)
     ready_time = get_now_utc() + timedelta(minutes=wait_min)
     incubate_filter = get_user_filter(owner_id)
     incubate_filter["eggs"] = {"$elemMatch": {"id": egg_id, "status": "fresh"}}
@@ -344,7 +344,7 @@ async def process_egg_hatch(user_id: int, egg: dict) -> tuple[bool, any]:
             await user_collection.update_one(get_user_filter(user_id), {"$pull": {"eggs": {"id": egg["id"]}}})
             return False, "💥 <b>The egg exploded!</b>\nIt was corrupted..."
         # Pick character
-        tier_info = EGG_TIERS.get(egg["tier"], EGG_TIERS["common"])
+        tier_key, tier_info = get_egg_tier_info(egg.get("tier", "common"))
         rarity = random.choice(tier_info["pool"])
         from Grabber.core.waifu import get_or_load_characters
         chars = await get_or_load_characters(rarity)

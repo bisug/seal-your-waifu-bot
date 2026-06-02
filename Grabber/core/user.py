@@ -221,43 +221,60 @@ async def remove_char_from_user(user_id: int, char_id: str) -> bool:
     return False
 async def get_active_pet(user_id: int) -> dict:
     """Retrieve currently active pet data."""
-    user = await user_collection.find_one(get_user_filter(user_id))
+    from Grabber.core.pets import ensure_user_pet_state, find_pet, normalize_pet
+
+    user = await ensure_user_pet_state(user_id)
     if not user or "current_pet" not in user:
         return None
-    current_pet_name = user["current_pet"]
-    pets = user.get("pets", [])
-    return next((p for p in pets if p["name"] == current_pet_name), None)
-async def add_pet_xp(user_id: int, pet_name: str, xp_amount: int):
+    current_pet_ref = user["current_pet"]
+    pets = [normalize_pet(p) for p in user.get("pets", [])]
+    return find_pet(pets, current_pet_ref)
+async def add_pet_xp(user_id: int, pet_ref: str, xp_amount: int):
     """Adds XP to pet and handles level-ups."""
-    user = await user_collection.find_one_and_update(
-        {**get_user_filter(user_id), "pets.name": pet_name},
-        {"$inc": {"pets.$.xp": xp_amount}},
-        return_document=True
-    )
-    if not user:
-        return
-    pet = next((p for p in user['pets'] if p['name'] == pet_name), None)
-    if pet:
+    from Grabber.core.pets import ensure_user_pet_state, find_pet_index, get_pet_key, normalize_pet
+
+    max_retries = 3
+    for _ in range(max_retries):
+        user = await ensure_user_pet_state(user_id)
+        if not user:
+            return
+        pets = [normalize_pet(p) for p in user.get("pets", [])]
+        pet_index = find_pet_index(pets, pet_ref)
+        if pet_index == -1:
+            return
+
+        pet = pets[pet_index]
         level = pet.get("level", 1)
-        xp = pet.get("xp", 0)
+        xp = pet.get("xp", 0) + xp_amount
         xp_needed = level * 100
         original_level = level
         while xp >= xp_needed:
             xp -= xp_needed
             level += 1
             xp_needed = level * 100
+
+        luck = pet.get("luck", 0.1)
         if level > original_level:
-            # Calculate luck increase based on levels gained
-            luck_gain = (level - original_level) * 0.002
-            new_luck = round(pet.get("luck", 0.1) + luck_gain, 3)
-            await user_collection.update_one(
-                {**get_user_filter(user_id), "pets.name": pet_name},
-                {
-                    "$set": {
-                        "pets.$.xp": xp,
-                        "pets.$.level": level,
-                        "pets.$.luck": new_luck
-                    }
-                }
-            )
+            luck = round(luck + ((level - original_level) * 0.002), 3)
+
+        filt = get_user_filter(user_id)
+        if user.get("version") is None:
+            filt["version"] = {"$exists": False}
+        else:
+            filt["version"] = user.get("version")
+        result = await user_collection.update_one(
+            filt,
+            {
+                "$set": {
+                    f"pets.{pet_index}.id": get_pet_key(pet),
+                    f"pets.{pet_index}.xp": xp,
+                    f"pets.{pet_index}.level": level,
+                    f"pets.{pet_index}.luck": luck,
+                },
+                "$inc": {"version": 1},
+            },
+        )
+        if result.modified_count:
             await invalidate_user_cache(user_id)
+            return
+        await asyncio.sleep(0.05)

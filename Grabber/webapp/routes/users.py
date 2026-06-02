@@ -15,10 +15,16 @@ from Grabber.core.tasks import run_background_task
 from Grabber.core.user import get_user_rank_with_fallback
 from Grabber.core.utils import get_user_id_query, normalize_user_id
 from Grabber.database import user_collection
-from Grabber.modules.economy.hunt import EGG_TIERS, TIER_MAP
+from Grabber.core.eggs import get_egg_tier_info
 from Grabber.modules.progression.achievements import ACHIEVEMENTS
-from Grabber.modules.progression.pet import (DEFAULT_PET,
-                                             get_effective_affection)
+from Grabber.core.pets import (
+    DEFAULT_PET,
+    ensure_user_pet_state,
+    get_effective_affection,
+    get_pet_key,
+    normalize_pet,
+    pet_matches,
+)
 from Grabber.webapp.auth import get_current_user, get_current_user_data, r
 from Grabber.webapp.schemas import UserProfileResponse
 
@@ -59,6 +65,7 @@ async def get_achievements_list(user_id: int = Depends(get_current_user)):
 @router.get("/me", response_model=UserProfileResponse)
 async def get_me(user: dict = Depends(get_current_user_data)):
     user_id = normalize_user_id(user["id"])
+    user = await ensure_user_pet_state(user_id, user)
 
     user_xp = user.get("xp", 0)
     rank, total_users, percentile = await get_user_rank_with_fallback(user_id, user_xp)
@@ -115,7 +122,7 @@ async def get_me(user: dict = Depends(get_current_user_data)):
     }
 
     # Handle Pets
-    user_pets = user.get("pets", [DEFAULT_PET])
+    user_pets = [normalize_pet(p) for p in user.get("pets", [DEFAULT_PET])]
     current_pet_name = user.get("current_pet", DEFAULT_PET["name"])
     
     formatted_pets = []
@@ -129,6 +136,7 @@ async def get_me(user: dict = Depends(get_current_user_data)):
             mood = "😐 Neutral"
             
         p_data = {
+            "id": get_pet_key(p),
             "name": p["name"],
             "level": p.get("level", 1),
             "xp": p.get("xp", 0),
@@ -142,7 +150,7 @@ async def get_me(user: dict = Depends(get_current_user_data)):
             "img": p.get("img", ""),
             "affection": eff_affection,
             "mood": mood,
-            "is_active": p["name"] == current_pet_name
+            "is_active": pet_matches(p, current_pet_name)
         }
         formatted_pets.append(p_data)
         if p_data["is_active"]:
@@ -157,12 +165,12 @@ async def get_me(user: dict = Depends(get_current_user_data)):
     for idx, egg in enumerate(eggs):
         if isinstance(egg, str):
             migration_needed = True
-            tier_key = TIER_MAP.get(egg, egg)
+            tier_key, tier_info = get_egg_tier_info(egg)
             stable_id = str(uuid.uuid4())[:12]
             processed_eggs.append({
                 "id": f"mig_{stable_id}",
                 "tier": tier_key,
-                "name": f"{tier_key.capitalize()} Egg",
+                "name": tier_info["name"],
                 "status": "fresh",
                 "is_corrupted": False,
                 "hatch_time": None,
@@ -182,8 +190,8 @@ async def get_me(user: dict = Depends(get_current_user_data)):
         
         processed_eggs.append({
             "id": egg.get("id"),
-            "tier": egg.get("tier", "common"),
-            "name": egg.get("name", "Unknown Egg"),
+            "tier": get_egg_tier_info(egg.get("tier", "common"))[0],
+            "name": egg.get("name") or get_egg_tier_info(egg.get("tier", "common"))[1]["name"],
             "status": egg.get("status", "fresh"),
             "is_corrupted": egg.get("is_corrupted", False),
             "hatch_time": h_time,

@@ -1,5 +1,5 @@
 import asyncio
-from Grabber.modules.economy.hunt import EGG_TIERS, TIER_MAP
+from Grabber.core.eggs import get_egg_tier_info
 from Grabber import LOGGER
 from Grabber.core.cache import _redis, sync_user_to_redis
 from Grabber.core.utils import get_now_utc, get_user_id_query
@@ -45,13 +45,13 @@ async def prune_legacy_eggs():
         for idx, egg in enumerate(eggs):
             if isinstance(egg, str):
                 now = get_now_utc()
-                tier = TIER_MAP.get(egg, egg)
-                tier_info = EGG_TIERS.get(tier, EGG_TIERS["common"])
+                tier, tier_info = get_egg_tier_info(egg)
                 new_eggs.append({
                     "id": f"mig_{int(now.timestamp())}_{idx}",
                     "tier": tier,
                     "name": tier_info["name"],
                     "status": "fresh",
+                    "is_corrupted": False,
                     "obtained_at": user.get("created_at") or now
                 })
                 modified = True
