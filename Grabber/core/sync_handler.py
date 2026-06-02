@@ -1,9 +1,10 @@
-import asyncio
 import logging
 from pyrogram import ContinuePropagation, enums, errors, filters, types
 
 from Grabber import app, game_bot
-from Grabber.database import r, user_collection
+from Grabber.core.cache import rget, rset
+from Grabber.core.tasks import run_background_task
+from Grabber.database import user_collection
 LOGGER = logging.getLogger(__name__)
 
 async def sync_user_data(message):
@@ -18,10 +19,9 @@ async def sync_user_data(message):
     if not first_name:
         return
     cache_key = f"sync:{user_id}"
-    if r:
-        if await r.get(cache_key):
-            return
-        await r.setex(cache_key, 1800, "1")  # Sync once every 30 minutes
+    if await rget(cache_key):
+        return
+    await rset(cache_key, "1", 1800)  # Sync once every 30 minutes
     try:
         await user_collection.update_many(
             {"id": {"$in": [user_id, str(user_id)]}},
@@ -38,12 +38,12 @@ async def sync_user_data(message):
 async def app_sync_user(client, message):
     """Handler for MainBot to trigger user data sync on every user message."""
     if message.from_user:
-        asyncio.create_task(sync_user_data(message))
+        run_background_task(sync_user_data(message))
     raise ContinuePropagation
 
 @game_bot.on_message(~filters.bot, group=-20)
 async def game_bot_sync_user(client, message):
     """Handler for GameBot to trigger user data sync on every user message."""
     if message.from_user:
-        asyncio.create_task(sync_user_data(message))
+        run_background_task(sync_user_data(message))
     raise ContinuePropagation

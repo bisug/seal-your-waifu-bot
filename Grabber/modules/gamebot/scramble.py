@@ -2,15 +2,18 @@ import asyncio
 import random
 import re
 import time
+from datetime import timedelta
 from pyrogram import enums, errors, filters, types
 from pyrogram.enums import ParseMode
 
 from Grabber import (LOGGER, collection, game_bot, sessions_collection,
                      user_collection)
 from Grabber.core.balance import update_user_balance
-from Grabber.core.utils import check_member_requirement, html_escape
+from Grabber.core.tasks import run_background_task
+from Grabber.core.utils import check_member_requirement, get_now_utc, html_escape
 # Game settings
 TIMEOUT = 60  # 1 minute
+SCRAMBLE_SESSION_TTL = timedelta(seconds=TIMEOUT + 30)
 REWARD = 100
 def scramble_word(word):
     """Shuffles the characters in a word and joins them with hyphens for readability.
@@ -80,7 +83,8 @@ async def start_scramble_game(chat_id):
                 "target_word": target_word,
                 "original_name": original_name,
                 "scrambled": scrambled,
-                "start_time": start_time
+                "start_time": start_time,
+                "expires_at_dt": get_now_utc() + SCRAMBLE_SESSION_TTL,
             }},
             upsert=True
         )
@@ -93,7 +97,7 @@ async def start_scramble_game(chat_id):
         )
         await game_bot.send_message_safe(chat_id, text, parse_mode=enums.ParseMode.HTML)
         # Active timeout monitor
-        asyncio.create_task(game_timeout_manager(chat_id, start_time))
+        run_background_task(game_timeout_manager(chat_id, start_time))
     except Exception as e:
         LOGGER.error(f"Error in start_scramble_game: {e}")
         await game_bot.send_message_safe(chat_id, "❌ <b>Error:</b> Could not authorize the game transponder.")
@@ -122,7 +126,14 @@ async def scramble_guess_handler(_, message: types.Message):
         return
     chat_id = message.chat.id
     # Quick check for session without heavy DB load if possible, but we need the session data
-    session = await sessions_collection.find_one({"_id": f"scramble:{chat_id}"})
+    now = get_now_utc()
+    session = await sessions_collection.find_one({
+        "_id": f"scramble:{chat_id}",
+        "$or": [
+            {"expires_at_dt": {"$exists": False}},
+            {"expires_at_dt": {"$gt": now}},
+        ],
+    })
     if not session:
         return
     # Check timeout (secondary protection)

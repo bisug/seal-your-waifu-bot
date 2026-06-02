@@ -181,13 +181,18 @@ async def increment_spawn_order(chat_id: int):
 async def get_chat_frequency(chat_id: int) -> int:
     key = f"spawn:state:{chat_id}"
     if _redis:
-        freq = await _redis.hget(key, "_cached_frequency")
-        if freq: return int(freq)
+        try:
+            freq = await asyncio.wait_for(_redis.hget(key, "_cached_frequency"), timeout=3.0)
+            if freq: return int(freq)
+        except Exception as e:
+            LOGGER.debug(f"Redis frequency cache read failed for {chat_id}: {e}")
     doc = await user_totals_collection.find_one({"chat_id": {"$in": [chat_id, str(chat_id)]}}, projection={"message_frequency": 1})
     freq = int(doc["message_frequency"]) if doc and doc.get("message_frequency") else 100
     if _redis:
-        try: await _redis.hset(key, "_cached_frequency", str(freq))
-        except: pass
+        try:
+            await asyncio.wait_for(_redis.hset(key, "_cached_frequency", str(freq)), timeout=3.0)
+        except Exception as e:
+            LOGGER.debug(f"Redis frequency cache write failed for {chat_id}: {e}")
     return freq
 async def flush_cache_to_db():
     """Sync message counts from Redis to MongoDB periodically."""

@@ -5,7 +5,7 @@ from Grabber import LOGGER, PHOTO_URL, WEB_APP_URL, app, user_collection
 from Grabber.core.cache import is_on_cooldown as redis_cooldown, sync_user_to_redis
 from Grabber.core.keyboard import KeyboardBuilder, get_webapp_button
 from pyrogram.handlers import CallbackQueryHandler, MessageHandler
-from Grabber.core.user import add_pet_xp, get_user_filter, get_user_id
+from Grabber.core.user import add_pet_xp, add_user_set_on_insert, get_user_filter, get_user_id
 from Grabber.core.utils import html_escape, reply_media_dynamic
 DEFAULT_PET = {
     "name": "Fluffy Fox 🦊",
@@ -101,7 +101,7 @@ async def perform_pet_purchase(user_id, pet_index: int):
         user = {"id": get_user_id(user_id), "balance": 0, "zenith": 0, "pets": [DEFAULT_PET.copy()], "current_pet": DEFAULT_PET["name"]}
         await user_collection.update_one(
             get_user_filter(user_id),
-            {"$setOnInsert": user},
+            add_user_set_on_insert({"$setOnInsert": user}, user_id),
             upsert=True
         )
         user = await user_collection.find_one(get_user_filter(user_id)) or user
@@ -161,7 +161,10 @@ async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
         initial_pets = [DEFAULT_PET.copy()]
         await user_collection.update_one(
             get_user_filter(user_id),
-            {"$set": {"pets": initial_pets, "current_pet": DEFAULT_PET["name"]}, "$setOnInsert": {"id": get_user_id(user_id)}},
+            add_user_set_on_insert(
+                {"$set": {"pets": initial_pets, "current_pet": DEFAULT_PET["name"]}, "$setOnInsert": {"id": get_user_id(user_id)}},
+                user_id,
+            ),
             upsert=True
         )
         user = await user_collection.find_one(get_user_filter(user_id))
@@ -315,7 +318,10 @@ async def feed_pet_cmd(_, message: types.Message):
         initial_pets = [DEFAULT_PET.copy()]
         await user_collection.update_one(
             get_user_filter(user_id),
-            {"$set": {"pets": initial_pets, "current_pet": DEFAULT_PET["name"]}, "$setOnInsert": {"id": get_user_id(user_id)}},
+            add_user_set_on_insert(
+                {"$set": {"pets": initial_pets, "current_pet": DEFAULT_PET["name"]}, "$setOnInsert": {"id": get_user_id(user_id)}},
+                user_id,
+            ),
             upsert=True
         )
         user = await user_collection.find_one(get_user_filter(user_id))
@@ -354,7 +360,10 @@ async def train_pet_cmd(_, message: types.Message):
         initial_pets = [DEFAULT_PET.copy()]
         await user_collection.update_one(
             get_user_filter(user_id),
-            {"$set": {"pets": initial_pets, "current_pet": DEFAULT_PET["name"]}, "$setOnInsert": {"id": get_user_id(user_id)}},
+            add_user_set_on_insert(
+                {"$set": {"pets": initial_pets, "current_pet": DEFAULT_PET["name"]}, "$setOnInsert": {"id": get_user_id(user_id)}},
+                user_id,
+            ),
             upsert=True
         )
         user = await user_collection.find_one(get_user_filter(user_id))

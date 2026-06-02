@@ -35,7 +35,7 @@ async def get_shop_characters(user: dict = Depends(get_current_user_data)):
     
     response = []
     for c in chars:
-        char_dict = c.dict()
+        char_dict = c.model_dump()
         char_dict["owned"] = c.id in owned_ids
         char_dict["stock_limit"] = RARITY_STOCK_LIMITS.get(c.rarity, SHOP_LIMIT)
         char_dict["zenith_price"] = RARITY_PRICES.get(c.rarity, 5)
@@ -240,7 +240,7 @@ async def claim_pass_level(level: int, user_id: int = Depends(get_current_user))
         
     claimed = user.get("claimed_levels", [])
     if level in claimed:
-        raise HTTPException(status_code=400, detail="Level reward already claimed")
+        return {"status": "already_claimed", "shards": 0, "eggs": 0}
         
     reward_data = PASS_TRACKS.get(level)
     if not reward_data:

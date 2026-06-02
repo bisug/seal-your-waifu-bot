@@ -4,6 +4,7 @@ import json
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from Grabber.database import r
+from Grabber.webapp.auth import get_user_id_from_token
 
 router = APIRouter()
 
@@ -24,8 +25,8 @@ async def leaderboard_ws(websocket: WebSocket):
         await websocket.close(code=4001)
         return
 
-    # Validate token against Redis session store
-    user_id = await r.get(f"auth_token:{token}")
+    # Validate token through Redis first, with MongoDB auth-session fallback.
+    user_id = await get_user_id_from_token(token)
 
     if not user_id:
         await websocket.send_text(json.dumps({"error": "Unauthorized: invalid or expired token"}))

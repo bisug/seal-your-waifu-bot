@@ -11,6 +11,7 @@ from Grabber.core.progression import add_xp
 from Grabber.core.spawns import (clear_active_spawn, get_chat_state,
                                  get_message_count, send_character,
                                  get_active_user_count, get_chat_frequency)
+from Grabber.core.tasks import run_background_task
 from Grabber.core.user import add_char_to_user
 from Grabber.core.utils import handle_errors, html_escape, reply_media_dynamic
 from Grabber.modules.collection.rarities import RARITY_WEIGHTS
@@ -67,7 +68,7 @@ async def seal_handler(_, message: types.Message):
                 pass # Already handled or deleted
             except errors.RPCError as e:
                 LOGGER.debug(f"Reaction task handled: {e}")
-        asyncio.create_task(send_reactions())
+        run_background_task(send_reactions())
         await add_char_to_user(user_id, character)
         await group_user_totals_collection.update_one(
             {"group_id": chat_id, "user_id": user_id},

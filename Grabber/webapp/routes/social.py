@@ -1,24 +1,37 @@
+from datetime import timedelta
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Body
 from pymongo import ReturnDocument
 from Grabber.database import client, user_collection, sessions_collection
 from Grabber.webapp.auth import get_current_user, get_current_user_data
-from Grabber.core.utils import get_user_id_query, normalize_user_id
+from Grabber.core.utils import get_now_utc, get_user_id_query, normalize_user_id
 from Grabber.webapp.schemas import TradeOffer, MarriageModel, ReferralModel, BattleStatsModel, CharacterModel
 from Grabber.core.cache import sync_user_to_redis
 import uuid
 
 router = APIRouter()
+TRADE_OFFER_TTL = timedelta(hours=24)
 
 # --- TRADING ---
 
 @router.get("/trade/offers", response_model=List[TradeOffer])
 async def get_trade_offers(user_id: int = Depends(get_current_user)):
+    now = get_now_utc()
     query = {
         "type": "trade_offer",
-        "$or": [
-            {"sender_id": {"$in": [user_id, str(user_id)]}},
-            {"receiver_id": {"$in": [user_id, str(user_id)]}}
+        "$and": [
+            {
+                "$or": [
+                    {"sender_id": {"$in": [user_id, str(user_id)]}},
+                    {"receiver_id": {"$in": [user_id, str(user_id)]}},
+                ]
+            },
+            {
+                "$or": [
+                    {"expires_at_dt": {"$exists": False}},
+                    {"expires_at_dt": {"$gt": now}},
+                ]
+            },
         ]
     }
     cursor = sessions_collection.find(query)
@@ -47,6 +60,7 @@ async def create_trade_offer(
         raise HTTPException(status_code=400, detail="Character not found in harem")
 
     trade_id = str(uuid.uuid4())
+    now = get_now_utc()
     offer = {
         "id": trade_id,
         "type": "trade_offer",
@@ -56,7 +70,9 @@ async def create_trade_offer(
         "receiver_name": receiver.get("first_name", "Unknown"),
         "sender_char": sender_char,
         "receiver_char": receiver_char,
-        "status": "pending"
+        "status": "pending",
+        "created_at_dt": now,
+        "expires_at_dt": now + TRADE_OFFER_TTL,
     }
     await sessions_collection.insert_one(offer)
     return {"status": "success", "trade_id": trade_id}
@@ -67,7 +83,16 @@ async def respond_to_trade(
     action: str = Body(..., embed=True, pattern="^(accept|reject)$"),
     user_id: int = Depends(get_current_user)
 ):
-    offer = await sessions_collection.find_one({"id": trade_id, "type": "trade_offer"})
+    now = get_now_utc()
+    active_offer_filter = {
+        "id": trade_id,
+        "type": "trade_offer",
+        "$or": [
+            {"expires_at_dt": {"$exists": False}},
+            {"expires_at_dt": {"$gt": now}},
+        ],
+    }
+    offer = await sessions_collection.find_one(active_offer_filter)
     if not offer:
         raise HTTPException(status_code=404, detail="Trade offer not found")
 
@@ -75,13 +100,13 @@ async def respond_to_trade(
         raise HTTPException(status_code=403, detail="Not authorized")
 
     if action == "reject":
-        deleted = await sessions_collection.delete_one({"id": trade_id, "type": "trade_offer", "status": "pending"})
+        deleted = await sessions_collection.delete_one({**active_offer_filter, "status": "pending"})
         if deleted.deleted_count == 0:
             raise HTTPException(status_code=409, detail="Trade offer is already being handled")
         return {"status": "rejected"}
 
     locked_offer = await sessions_collection.find_one_and_update(
-        {"id": trade_id, "type": "trade_offer", "status": "pending"},
+        {**active_offer_filter, "status": "pending"},
         {"$set": {"status": "processing"}},
         return_document=ReturnDocument.AFTER
     )

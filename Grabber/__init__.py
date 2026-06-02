@@ -1,6 +1,5 @@
 import asyncio
 import importlib
-import logging
 import re
 import time
 
@@ -8,6 +7,11 @@ from pyrogram import Client, enums, errors, filters, types
 from pyrogram.handlers import MessageHandler
 
 from config import config
+from Grabber.core.logging import get_logger, install_exception_hooks, setup_logging
+
+setup_logging()
+install_exception_hooks()
+
 from Grabber.client import SealClient
 from Grabber.database import (client, collection, db,
                               gamebot_enabled_groups_collection,
@@ -20,14 +24,7 @@ from Grabber.database import (client, collection, db,
 
 StartTime = time.time()
 
-logging.basicConfig(
-    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
-    level=logging.INFO)
-
-logging.getLogger('httpx').setLevel(logging.WARNING)
-logging.getLogger("pyrogram").setLevel(logging.WARNING)
-
-LOGGER = logging.getLogger(__name__)
+LOGGER = get_logger(__name__)
 
 OWNER_ID = config.OWNER_ID
 sudo_users = config.SUDO_USERS

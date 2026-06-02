@@ -3,16 +3,33 @@ import json
 import os
 import shlex
 import uuid
+from collections import OrderedDict
 import httpx
 from pyrogram import enums, errors, filters, types
 from config import config
 from Grabber import GALLERY_CHANNEL_ID, LOGGER, OWNER_ID, app, sudo_users, sudo_filter
+from Grabber.core.cache import rdel, rget, rset
 from Grabber.core.utils import handle_errors, html_escape
 from Grabber.core.waifu import (get_character_by_id, invalidate_character_cache,
                                 upload_media_safely)
-from Grabber.database import collection, r
+from Grabber.database import collection
 from Grabber.modules.collection.rarities import RARITY_MAP
 LOG_GROUP_ID = config.LOG_GROUP_ID
+_MAX_PENDING_UPDATES = 1000
+_pending_updates: OrderedDict[str, dict] = OrderedDict()
+
+
+def _remember_update(proposal_id: str, proposal_data: dict):
+    _pending_updates[proposal_id] = proposal_data
+    _pending_updates.move_to_end(proposal_id)
+    while len(_pending_updates) > _MAX_PENDING_UPDATES:
+        _pending_updates.popitem(last=False)
+
+
+def _forget_update(proposal_id: str):
+    _pending_updates.pop(proposal_id, None)
+
+
 def get_rarity_help():
     """Generates dynamic rarity map help text."""
     rarity_list = "\n".join([f"({v}={k})" for k, v in RARITY_MAP.items()])
@@ -85,12 +102,9 @@ async def update_waifu_handler(_, message: types.Message):
             'img_url': character['img_url']
         }
     }
-    # Store in Redis for 1 hour
-    if r:
-        await r.setex(f"upd:{proposal_id}", 3600, json.dumps(proposal_data))
-    else:
-        if not hasattr(app, '_pending_updates'): app._pending_updates = {}
-        app._pending_updates[proposal_id] = proposal_data
+    # Store in Redis for 1 hour with bounded in-process fallback.
+    await rset(f"upd:{proposal_id}", json.dumps(proposal_data), 3600)
+    _remember_update(proposal_id, proposal_data)
     # 3. Format Proposal Message
     diff_text = f"<b>🆕 Update Proposal for ID:</b> <code>{char_id}</code>\n\n"
     for k, new_v in updates.items():
@@ -119,17 +133,15 @@ async def update_waifu_handler(_, message: types.Message):
 @app.on_callback_query(filters.regex(r"^upd_(cnf|can):"))
 async def update_callback_handler(_, query: types.CallbackQuery):
     action, prop_id = query.data.split(":")
-    if r:
-        raw_data = await r.get(f"upd:{prop_id}")
-        data = json.loads(raw_data) if raw_data else None
-    else:
-        data = getattr(app, '_pending_updates', {}).get(prop_id)
+    raw_data = await rget(f"upd:{prop_id}")
+    data = json.loads(raw_data) if raw_data else _pending_updates.get(prop_id)
     if not data:
         await query.answer("⌛ Proposal expired or not found.", show_alert=True)
         return await query.message.delete()
     if action == "can":
         await query.answer("❌ Update cancelled.")
-        if r: await r.delete(f"upd:{prop_id}")
+        await rdel(f"upd:{prop_id}")
+        _forget_update(prop_id)
         return await query.message.delete()
     # 2. Confirm Action
     await query.answer("⚙️ Applying changes...", show_alert=True)
@@ -196,7 +208,8 @@ async def update_callback_handler(_, query: types.CallbackQuery):
         await status_msg.edit_text(f"✅ <b>Character {char_id} Updated!</b>\n\n" + 
                                  "\n".join([f"• {k}: {v}" for k, v in updates.items()]))
         await query.message.delete()
-        if r: await r.delete(f"upd:{prop_id}")
+        await rdel(f"upd:{prop_id}")
+        _forget_update(prop_id)
     except Exception as e:
         LOGGER.error(f"Update Confirmation Error: {e}")
         await status_msg.edit_text(f"❌ <b>Update Failed:</b> {html_escape(str(e))}")

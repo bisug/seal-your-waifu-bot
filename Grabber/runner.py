@@ -57,6 +57,7 @@ async def start_bots():
             from Grabber import LOGGER
             LOGGER.critical("CRITICAL: API_ID and API_HASH are missing or invalid in environment variables!")
             LOGGER.critical("Please set API_ID and API_HASH to start the bot.")
+            IS_STARTED = False
             return
         raise e
     if userbot:
@@ -74,10 +75,27 @@ async def start_bots():
                 LOGGER.warning("Scraper features will be disabled until a valid STRING_SESSION is added.")
             else:
                 LOGGER.error(f"UserBot failed to start (Unexpected): {e}")
+    from Grabber.core.resources import start_resource_monitor
+    start_resource_monitor()
 
 
 async def stop_bots():
-    await app.stop()
-    await game_bot.stop()
-    if userbot:
-        await userbot.stop()
+    global IS_STARTED
+    from Grabber import LOGGER
+    from Grabber.core.resources import stop_resource_monitor
+    from Grabber.core.tasks import cancel_background_tasks
+    from Grabber.database import close_connections
+
+    await stop_resource_monitor()
+    await cancel_background_tasks()
+
+    for bot in (app, game_bot, userbot):
+        if not bot:
+            continue
+        try:
+            if getattr(bot, "is_connected", False):
+                await bot.stop()
+        except Exception as e:
+            LOGGER.warning(f"Failed to stop {getattr(bot, 'name', type(bot).__name__)} cleanly: {e}")
+    await close_connections()
+    IS_STARTED = False

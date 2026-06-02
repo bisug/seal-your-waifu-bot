@@ -1,6 +1,6 @@
 import asyncio
-import logging
 import os
+import time
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
@@ -14,12 +14,18 @@ from fastapi.staticfiles import StaticFiles
 from config import config
 from Grabber import LOGGER
 from Grabber.core.cache import rebuild_leaderboard
+from Grabber.core.logging import (
+    configure_event_loop_logging,
+    new_request_id,
+    reset_request_id,
+    set_request_id,
+)
+from Grabber.core.resources import get_resource_snapshot, pressure_reason
 from Grabber.core.tasks import run_background_task
 from Grabber.core.worker import background_maintenance
-from Grabber.database import user_collection
+from Grabber.database import r, seal_db, user_collection
 from Grabber.runner import start_bots, stop_bots
 from Grabber.webapp.api import router as api_router
-from Grabber.webapp.auth import create_session, r, validate_init_data
 from Grabber.webapp.ws import router as ws_router
 
 
@@ -33,16 +39,17 @@ async def sync_leaderboard_periodic():
                 await rebuild_leaderboard(user_collection, metric=metric)
                 await asyncio.sleep(2) # Smooth out IO bursts
         except Exception as e:
-            logging.error(f"Error in periodic leaderboard sync: {e}")
+            LOGGER.exception(f"Error in periodic leaderboard sync: {e}")
         # Sync every hour (3600 seconds)
         await asyncio.sleep(3600)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
+    configure_event_loop_logging()
     await start_bots()
-    sync_task = run_background_task(sync_leaderboard_periodic())
-    worker_task = run_background_task(background_maintenance())
+    sync_task = run_background_task(sync_leaderboard_periodic(), name="leaderboard-sync")
+    worker_task = run_background_task(background_maintenance(), name="background-maintenance")
 
     try:
         yield
@@ -66,7 +73,7 @@ app = FastAPI(
 async def global_exception_handler(request: Request, exc: Exception):
     if isinstance(exc, HTTPException):
         raise exc
-    logging.error(f"Unhandled Exception: {exc}", exc_info=True)
+    LOGGER.exception(f"Unhandled Exception: {exc}")
     return JSONResponse(
         status_code=500,
         content={"detail": "Internal server error. Please contact support if the issue persists."})
@@ -85,27 +92,90 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
     """Inject basic security headers."""
-    response = await call_next(request)
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["Referrer-Policy"] = "no-referrer"
-    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
-    response.headers["Content-Security-Policy"] = (
-        "default-src 'self'; "
-        "base-uri 'self'; "
-        "object-src 'none'; "
-        "img-src 'self' data: https:; "
-        "media-src 'self' https:; "
-        "style-src 'self' 'unsafe-inline'; "
-        "script-src 'self' https://telegram.org https://*.telegram.org; "
-        "connect-src 'self' https: wss:; "
-        "frame-ancestors https://web.telegram.org https://*.telegram.org"
-    )
-    # Note: X-Frame-Options must NOT be 'DENY' for Telegram Mini Apps to function in a frame.
-    return response
+    request_id = request.headers.get("X-Request-ID") or new_request_id()
+    context_token = set_request_id(request_id)
+    started = time.perf_counter()
+    try:
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = request_id
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["Referrer-Policy"] = "no-referrer"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "base-uri 'self'; "
+            "object-src 'none'; "
+            "img-src 'self' data: https:; "
+            "media-src 'self' https:; "
+            "style-src 'self' 'unsafe-inline'; "
+            "script-src 'self' https://telegram.org https://*.telegram.org; "
+            "connect-src 'self' https: wss:; "
+            "frame-ancestors https://web.telegram.org https://*.telegram.org"
+        )
+        duration_ms = (time.perf_counter() - started) * 1000
+        log = LOGGER.debug if request.url.path in {"/healthz", "/readyz"} else LOGGER.info
+        log(
+            "HTTP %s %s -> %s %.2fms",
+            request.method,
+            request.url.path,
+            response.status_code,
+            duration_ms,
+        )
+        # Note: X-Frame-Options must NOT be 'DENY' for Telegram Mini Apps to function in a frame.
+        return response
+    except Exception:
+        duration_ms = (time.perf_counter() - started) * 1000
+        LOGGER.exception("HTTP %s %s failed after %.2fms", request.method, request.url.path, duration_ms)
+        raise
+    finally:
+        reset_request_id(context_token)
 
 @app.get("/healthz")
 async def health_check():
     return {"status": "ok"}
+
+
+@app.get("/readyz")
+async def readiness_check():
+    checks = {"mongo": "ok", "redis": "disabled"}
+    status_code = 200
+
+    try:
+        await seal_db.ping()
+    except Exception as e:
+        checks["mongo"] = f"error: {type(e).__name__}"
+        status_code = 503
+
+    if r:
+        try:
+            await asyncio.wait_for(r.ping(), timeout=3.0)
+            checks["redis"] = "ok"
+        except Exception as e:
+            checks["redis"] = f"error: {type(e).__name__}"
+            status_code = 503
+
+    try:
+        snapshot = get_resource_snapshot()
+        reason = pressure_reason(snapshot)
+        checks["resources"] = {
+            "status": "degraded" if reason else "ok",
+            "reason": reason,
+            "rss_mb": snapshot.rss_mb,
+            "available_mb": snapshot.available_mb,
+            "tasks": snapshot.task_count,
+            "fd_count": snapshot.fd_count,
+            "soft_limit_mb": snapshot.soft_limit_mb,
+            "hard_limit_mb": snapshot.hard_limit_mb,
+        }
+        if reason == "hard_memory_limit":
+            status_code = 503
+    except Exception as e:
+        checks["resources"] = f"error: {type(e).__name__}"
+
+    return JSONResponse(
+        status_code=status_code,
+        content={"status": "ok" if status_code == 200 else "degraded", "checks": checks},
+    )
 
 # Include routers with obfuscated prefix
 api_version_prefix = os.getenv("API_VERSION_PREFIX", "v1_7b82")

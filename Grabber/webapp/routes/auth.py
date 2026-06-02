@@ -1,17 +1,20 @@
+import asyncio
 import json
 import time as _time
-from collections import defaultdict
+from collections import OrderedDict
 from urllib.parse import parse_qsl
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from Grabber import LOGGER
-from Grabber.database import sessions_collection, user_collection
-from Grabber.webapp.auth import create_session, r, validate_init_data
+from Grabber.core.user import add_user_set_on_insert, get_user_filter
+from Grabber.database import user_collection
+from Grabber.webapp.auth import create_session, get_user_id_from_token, r, validate_init_data
 
 router = APIRouter()
 
-_init_rate_limits: dict = defaultdict(list)
+_MAX_INIT_FALLBACK = 5000
+_init_rate_limits: OrderedDict[str, list[float]] = OrderedDict()
 
 async def check_init_rate_limit(request: Request):
     """IP-based rate limit for /secure_init: 10 req/60s per IP."""
@@ -26,7 +29,7 @@ async def check_init_rate_limit(request: Request):
                 pipe.zadd(rate_key, {str(now): now})
                 pipe.zcard(rate_key)
                 pipe.expire(rate_key, 60)
-                _, _, count, _ = await pipe.execute()
+                _, _, count, _ = await asyncio.wait_for(pipe.execute(), timeout=3.0)
             if count > 10:
                 raise HTTPException(status_code=429, detail="Too many requests. Try again later.")
             return
@@ -36,11 +39,16 @@ async def check_init_rate_limit(request: Request):
             pass  # Redis error: fall through to local fallback
 
     # Local fallback
-    history = [ts for ts in _init_rate_limits[client_ip] if now - ts < 60]
+    history = [ts for ts in _init_rate_limits.get(client_ip, []) if now - ts < 60]
     if len(history) >= 10:
+        _init_rate_limits[client_ip] = history
+        _init_rate_limits.move_to_end(client_ip)
         raise HTTPException(status_code=429, detail="Too many requests. Try again later.")
     history.append(now)
     _init_rate_limits[client_ip] = history
+    _init_rate_limits.move_to_end(client_ip)
+    while len(_init_rate_limits) > _MAX_INIT_FALLBACK:
+        _init_rate_limits.popitem(last=False)
 
 @router.post("/secure_init")
 async def auth(request: Request, _: None = Depends(check_init_rate_limit)):
@@ -61,16 +69,10 @@ async def auth(request: Request, _: None = Depends(check_init_rate_limit)):
     
     # Fallback to provided token if init_data is missing or invalid
     if not user_id and token_provided:
-        if not r:
-            token_doc = await sessions_collection.find_one({"_id": f"auth_token:{token_provided}"})
-            if token_doc and token_doc.get("expires_at", 0) > _time.time():
-                user_id = token_doc.get("user_id")
-                new_token = token_provided
-        else:
-            user_id = await r.get(f"auth_token:{token_provided}")
-            if user_id:
-                new_token = token_provided
-                user_id = str(user_id)
+        user_id = await get_user_id_from_token(token_provided)
+        if user_id:
+            new_token = token_provided
+            user_id = str(user_id)
 
     if not user_id:
         raise HTTPException(status_code=403, detail="Authentication failed. Please open the bot in PM.")
@@ -80,7 +82,7 @@ async def auth(request: Request, _: None = Depends(check_init_rate_limit)):
     should_sync = True
     if r:
         try:
-            if await r.get(sync_key):
+            if await asyncio.wait_for(r.get(sync_key), timeout=3.0):
                 should_sync = False
         except Exception as e:
             LOGGER.debug(f"Redis sync check failed: {e}")
@@ -103,18 +105,30 @@ async def auth(request: Request, _: None = Depends(check_init_rate_limit)):
             except Exception as e:
                 LOGGER.debug(f"InitData payload unparseable: {e}")
                 
-        if updates:
-            try:
-                user_id_int = int(user_id)
-            except ValueError:
-                user_id_int = user_id
+        try:
+            user_id_int = int(user_id)
+        except (TypeError, ValueError):
+            user_id_int = user_id
+        try:
+            user_update = {}
+            if updates:
+                user_update["$set"] = updates
+            add_user_set_on_insert(
+                user_update,
+                user_id_int,
+                first_name=updates.get("first_name"),
+                username=updates.get("username"),
+            )
             await user_collection.update_one(
-                {"id": user_id_int},
-                {"$set": updates}
+                get_user_filter(user_id_int),
+                user_update,
+                upsert=True,
             )
             if r:
-                try: await r.setex(sync_key, 3600, "1")
+                try: await asyncio.wait_for(r.setex(sync_key, 3600, "1"), timeout=3.0)
                 except Exception as e: 
                     LOGGER.debug(f"Redis string write failed: {e}")
+        except ValueError:
+            raise HTTPException(status_code=403, detail="Invalid user id in session.")
     
     return {"token": new_token}

@@ -5,7 +5,21 @@ from Grabber.core.cache import (get_cached_user, get_total_ranked_users,
                                 get_user_rank, invalidate_user_cache,
                                 rebuild_leaderboard, rget, rset,
                                 set_cached_user, update_user_rank)
+from Grabber.core.tasks import run_background_task
 from Grabber.database import user_collection
+
+
+def _top_level_updated_fields(update_query: dict) -> set[str]:
+    """Return top-level fields updated by operators other than $setOnInsert."""
+    fields: set[str] = set()
+    for operator, changes in update_query.items():
+        if operator == "$setOnInsert" or not isinstance(changes, dict):
+            continue
+        for field in changes:
+            fields.add(str(field).split(".", 1)[0])
+    return fields
+
+
 def get_user_id(user_id: Any) -> int:
     """Returns the user ID as a concrete integer."""
     try:
@@ -14,6 +28,81 @@ def get_user_id(user_id: Any) -> int:
         return int(user_id)
     except (ValueError, TypeError):
         return 0
+
+
+def build_user_set_on_insert(
+    user_id: Any,
+    *,
+    first_name: str | None = None,
+    username: str | None = None,
+) -> dict:
+    """Build canonical fields for newly-created user documents."""
+    uid = get_user_id(user_id)
+    if uid <= 0:
+        raise ValueError(f"Invalid Telegram user id: {user_id!r}")
+
+    data = {
+        "id": uid,
+        "first_name": first_name or "User",
+        "balance": 0,
+        "zenith": 0,
+        "char_count": 0,
+        "xp": 0,
+        "pass_type": "free",
+        "claimed_levels": [],
+        "season": 1,
+    }
+    if username:
+        data["username"] = username
+    return data
+
+
+def add_user_set_on_insert(
+    update_query: dict,
+    user_id: Any,
+    *,
+    first_name: str | None = None,
+    username: str | None = None,
+) -> dict:
+    """
+    Merge canonical insert fields into a MongoDB update without conflicting with
+    fields already touched by $set, $inc, $push, or other update operators.
+    """
+    defaults = build_user_set_on_insert(
+        user_id,
+        first_name=first_name,
+        username=username,
+    )
+    for field in _top_level_updated_fields(update_query):
+        defaults.pop(field, None)
+
+    existing = update_query.setdefault("$setOnInsert", {})
+    defaults.update(existing)
+    existing.clear()
+    existing.update(defaults)
+    return update_query
+
+
+async def ensure_user_document(
+    user_id: Any,
+    *,
+    first_name: str | None = None,
+    username: str | None = None,
+) -> None:
+    """Create the canonical user document if it does not exist, and refresh profile fields."""
+    updates: dict = {}
+    profile_updates = {}
+    if first_name:
+        profile_updates["first_name"] = first_name
+    if username:
+        profile_updates["username"] = username
+    if profile_updates:
+        updates["$set"] = profile_updates
+    add_user_set_on_insert(updates, user_id, first_name=first_name, username=username)
+    await user_collection.update_one(get_user_filter(user_id), updates, upsert=True)
+    await invalidate_user_cache(get_user_id(user_id))
+
+
 def get_user_filter(user_id: Any) -> dict:
     """Returns a MongoDB filter for both integer and string IDs."""
     uid = get_user_id(user_id)
@@ -32,9 +121,7 @@ async def update_user(user_id: int, update_query: dict):
     if "$inc" not in update_query:
         update_query["$inc"] = {}
     update_query["$inc"]["version"] = 1
-    if "$setOnInsert" not in update_query:
-        update_query["$setOnInsert"] = {}
-    update_query["$setOnInsert"]["id"] = get_user_id(user_id)
+    add_user_set_on_insert(update_query, user_id)
     await user_collection.update_one(get_user_filter(user_id), update_query, upsert=True)
     await invalidate_user_cache(user_id)
 async def get_user_rank_with_fallback(user_id: int, user_xp: int) -> Tuple[int, int, float]:
@@ -57,7 +144,7 @@ async def get_user_rank_with_fallback(user_id: int, user_xp: int) -> Tuple[int, 
         rank = await user_collection.count_documents({"xp": {"$gt": user_xp}}) + 1
         await update_user_rank(user_id, user_xp)
         if total_users > 0 and (await get_total_ranked_users()) == 0:
-            asyncio.create_task(rebuild_leaderboard(user_collection))
+            run_background_task(rebuild_leaderboard(user_collection))
 
     percentile = round((1 - (rank / max(total_users, 1))) * 100, 1)
     return rank, total_users, percentile
@@ -73,11 +160,10 @@ async def add_char_to_user(user_id: int, character: dict):
             return
     await user_collection.update_one(
         get_user_filter(user_id),
-        {
+        add_user_set_on_insert({
             "$push": {"characters": character}, 
             "$inc": {"char_count": 1, "version": 1},
-            "$setOnInsert": {"id": get_user_id(user_id)}
-        },
+        }, user_id),
         upsert=True
     )
     # Sync with Redis Harem Leaderboard

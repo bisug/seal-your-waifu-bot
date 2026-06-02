@@ -5,6 +5,36 @@ from dotenv import load_dotenv
 # Load environment variables from .env file for local development
 load_dotenv()
 
+
+def _env_bool(name: str, default: bool) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    normalized = value.strip().lower()
+    if not normalized:
+        return default
+    return normalized not in {"0", "false", "no", "off"}
+
+
+def _env_int(name: str, default: int) -> int:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    try:
+        return int(value)
+    except ValueError:
+        return default
+
+
+def _env_float(name: str, default: float) -> float:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    try:
+        return float(value)
+    except ValueError:
+        return default
+
 class Config:
     # --- BOT IDENTITY ---
     TOKEN =""
@@ -44,6 +74,28 @@ class Config:
     WEB_APP_URL = os.getenv("WEB_APP_URL", "https://example.com")
     MINI_APP_SHORT_NAME = os.getenv("MINI_APP_SHORT_NAME", "app") # The 'Short Name' you set in BotFather
     API_VERSION_PREFIX = os.getenv("API_VERSION_PREFIX", "v1_7b82")
+
+    # --- LOGGING ---
+    LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+    LOG_FORMAT = os.getenv("LOG_FORMAT", "text")  # text or json
+    LOG_DIR = os.getenv("LOG_DIR", "logs")
+    LOG_FILE = os.getenv("LOG_FILE", "seal-bot.log")
+    LOG_FILE_ENABLED = _env_bool("LOG_FILE_ENABLED", False)
+    LOG_MAX_BYTES = _env_int("LOG_MAX_BYTES", 10 * 1024 * 1024)
+    LOG_BACKUP_COUNT = _env_int("LOG_BACKUP_COUNT", 5)
+    LOG_UTC = _env_bool("LOG_UTC", True)
+
+    # --- RESOURCE MANAGEMENT ---
+    RESOURCE_MONITOR_ENABLED = _env_bool("RESOURCE_MONITOR_ENABLED", True)
+    RESOURCE_CHECK_INTERVAL_SECONDS = _env_float("RESOURCE_CHECK_INTERVAL_SECONDS", 60.0)
+    RESOURCE_MEMORY_SOFT_LIMIT_MB = _env_int("RESOURCE_MEMORY_SOFT_LIMIT_MB", 0)  # 0 = auto
+    RESOURCE_MEMORY_HARD_LIMIT_MB = _env_int("RESOURCE_MEMORY_HARD_LIMIT_MB", 0)  # 0 = auto
+    RESOURCE_MIN_AVAILABLE_MB = _env_int("RESOURCE_MIN_AVAILABLE_MB", 0)  # 0 = auto
+    RESOURCE_GC_COOLDOWN_SECONDS = _env_float("RESOURCE_GC_COOLDOWN_SECONDS", 120.0)
+    RESOURCE_TASK_SOFT_LIMIT = _env_int("RESOURCE_TASK_SOFT_LIMIT", 500)
+    RESOURCE_SHUTDOWN_TIMEOUT_SECONDS = _env_float("RESOURCE_SHUTDOWN_TIMEOUT_SECONDS", 10.0)
+    RESOURCE_REDIS_PURGE_BATCH_SIZE = _env_int("RESOURCE_REDIS_PURGE_BATCH_SIZE", 100)
+    REDIS_MEMORY_LIMIT_MB = _env_int("REDIS_MEMORY_LIMIT_MB", 0)  # 0 = auto from Redis maxmemory
 
     # --- USERBOT CONFIG ---
     STRING_SESSION =""
