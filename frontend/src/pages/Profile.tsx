@@ -5,6 +5,7 @@ import { ProgressBar } from '../components/ui/ProgressBar';
 import { Card } from '../components/character/Card';
 import { Skeleton, CardSkeleton } from '../components/ui/Skeleton';
 import { EmptyState } from '../components/ui/EmptyState';
+import { ErrorState } from '../components/ui/ErrorState';
 import { Avatar } from '../components/Avatar';
 import { Shield, Activity, Users, Trophy, Search, Loader2 } from 'lucide-react';
 import { formatNumber, cn } from '../utils';
@@ -25,7 +26,9 @@ export const Profile = ({ onCharClick }: ProfileProps) => {
     setSearch,
     rarity,
     setRarity,
-    lastElementRef
+    lastElementRef,
+    error,
+    refresh
   } = useInfiniteGrid<Character>('/harem');
   
   const [availableRarities, setAvailableRarities] = useState<string[]>([]);
@@ -152,7 +155,9 @@ export const Profile = ({ onCharClick }: ProfileProps) => {
           </div>
         </div>
         
-        {items.length > 0 || (loading && page > 1) ? (
+        {error && items.length === 0 ? (
+          <ErrorState message={error} onAction={refresh} />
+        ) : items.length > 0 || (loading && page > 1) ? (
           <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 gap-3">
                {items.map((char, i) => (
                  <Card

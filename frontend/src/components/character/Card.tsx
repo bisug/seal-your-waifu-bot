@@ -1,5 +1,5 @@
 import React, { memo, useEffect, forwardRef } from 'react';
-import { Shield } from 'lucide-react';
+import { Gem, Shield } from 'lucide-react';
 import { cn } from '../../utils';
 import { Character } from '../../context/UserContext';
 
@@ -22,6 +22,7 @@ export const Card = memo(forwardRef<HTMLDivElement, CardProps>(({ character, onC
 
     // Rarity name without emojis
     const rarityLabel = character.rarity.replace(/[\u2700-\u27bf]|[\u2190-\u21ff]|[\u2000-\u206f]|[\u2600-\u26ff]|[\u2b00-\u2bff]|[\u00a0-\u00bf]|\u2013|\u2014/g, '').trim();
+    const hasPrice = typeof character.zenith_price === 'number' && character.zenith_price > 0;
 
     return (
         <div
@@ -57,7 +58,13 @@ export const Card = memo(forwardRef<HTMLDivElement, CardProps>(({ character, onC
                     </span>
                 </div>
 
-                {character.count > 1 && (
+                {character.owned ? (
+                    <div className="px-2 py-1 rounded bg-emerald-500 text-white shadow-sm">
+                        <span className="text-[10px] font-bold">
+                            Owned
+                        </span>
+                    </div>
+                ) : character.count > 1 && (
                     <div className="px-2 py-1 rounded bg-brand-accent text-white shadow-sm">
                         <span className="text-[10px] font-bold tabular-nums">
                             x{character.count}
@@ -71,6 +78,12 @@ export const Card = memo(forwardRef<HTMLDivElement, CardProps>(({ character, onC
                 <h3 className="text-xs font-semibold text-white leading-tight line-clamp-1">
                     {character.name}
                 </h3>
+                {hasPrice && (
+                    <div className="mt-1 inline-flex items-center gap-1 rounded bg-black/50 px-1.5 py-0.5 text-[10px] font-bold text-white/90">
+                        <Gem size={10} className="text-brand-accent" />
+                        <span>{character.zenith_price} Zenith</span>
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -6,6 +6,7 @@ import { CheckCircle2, Loader2, Zap } from 'lucide-react';
 import { formatNumber } from '../utils';
 import { useUser } from '../context/UserContext';
 import { cn } from '../utils';
+import { ErrorState } from '../components/ui/ErrorState';
 
 const QuestItem = ({ quest, onComplete, completing }) => (
   <div key={quest.id} className={cn(
@@ -51,13 +52,18 @@ const QuestItem = ({ quest, onComplete, completing }) => (
                   onClick={() => onComplete(quest.id)}
                   disabled={quest.progress < quest.target || completing === quest.id}
                   className={cn(
-                      "w-10 h-10 rounded-lg flex items-center justify-center transition-all shrink-0",
+                      "h-10 min-w-10 rounded-lg flex items-center justify-center transition-all shrink-0",
                       quest.progress >= quest.target
-                      ? 'bg-white text-brand-midnight hover:bg-neutral-200 active:scale-95 shadow-sm'
+                      ? 'bg-white text-brand-midnight hover:bg-neutral-200 active:scale-95 shadow-sm px-3 gap-1.5'
                       : 'bg-brand-midnight text-neutral-600 border border-white/5'
                   )}
                 >
-                  {completing === quest.id ? <Loader2 size={18} className="animate-spin" /> : <Zap size={18} strokeWidth={2.5} />}
+                  {completing === quest.id ? <Loader2 size={18} className="animate-spin" /> : quest.progress >= quest.target ? (
+                    <>
+                      <Zap size={16} strokeWidth={2.5} />
+                      <span className="text-xs font-bold">Claim</span>
+                    </>
+                  ) : <Zap size={18} strokeWidth={2.5} />}
               </button>
           )}
       </div>
@@ -82,7 +88,7 @@ interface QuestsResponse {
 }
 
 export const Quests = () => {
-    const { data: questsData, loading, execute: fetchQuests } = useApi<QuestsResponse>('/quests');
+    const { data: questsData, loading, error, execute: fetchQuests } = useApi<QuestsResponse>('/quests');
     const { addToast } = useToast();
     const { triggerRefresh } = useUser();
     const [completing, setCompleting] = React.useState(null);
@@ -108,10 +114,34 @@ export const Quests = () => {
         </div>
     );
 
-    const allQuests = [
-        ...(questsData?.daily || []),
-        ...(questsData?.weekly || [])
-    ];
+    if (error && !questsData) return (
+        <div className="px-4 pb-12 pt-6 max-w-2xl mx-auto">
+            <ErrorState message={error} onAction={fetchQuests} />
+        </div>
+    );
+
+    const renderQuestSection = (title: string, quests: Quest[]) => (
+        <section className="space-y-3">
+            <div className="flex items-center justify-between">
+                <h2 className="text-sm font-bold text-neutral-300">{title}</h2>
+                <span className="text-xs font-semibold text-neutral-500">{quests.filter(q => q.claimed).length}/{quests.length} claimed</span>
+            </div>
+            {quests.length > 0 ? (
+                quests.map((quest) => (
+                    <QuestItem
+                        key={quest.id}
+                        quest={quest}
+                        onComplete={handleComplete}
+                        completing={completing}
+                    />
+                ))
+            ) : (
+                <div className="p-6 rounded-xl border border-white/5 border-dashed text-center bg-brand-deep shadow-sm">
+                    <p className="text-sm font-medium text-neutral-500">No {title.toLowerCase()} available.</p>
+                </div>
+            )}
+        </section>
+    );
 
     return (
         <div className="pb-20 pt-4 max-w-2xl mx-auto">
@@ -120,21 +150,9 @@ export const Quests = () => {
                 <p className="text-sm font-medium text-neutral-400">Complete objectives to earn currency</p>
             </header>
 
-            <div className="px-4 space-y-4">
-                {allQuests.length > 0 ? (
-                    allQuests.map((quest) => (
-                        <QuestItem
-                            key={quest.id}
-                            quest={quest}
-                            onComplete={handleComplete}
-                            completing={completing}
-                        />
-                    ))
-                ) : !loading && (
-                    <div className="p-12 rounded-xl border border-white/5 border-dashed text-center bg-brand-deep shadow-sm">
-                        <p className="text-sm font-medium text-neutral-500">No active tasks available.</p>
-                    </div>
-                )}
+            <div className="px-4 space-y-8">
+                {renderQuestSection('Daily tasks', questsData?.daily || [])}
+                {renderQuestSection('Weekly tasks', questsData?.weekly || [])}
             </div>
         </div>
     );

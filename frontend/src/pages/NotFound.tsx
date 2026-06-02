@@ -8,7 +8,7 @@ export const NotFound = ({ onReset }: { onReset: () => void }) => {
   }, []);
 
   return (
-    <div className="absolute inset-0 z-[500] bg-zinc-950 flex flex-col items-center justify-center p-8 text-center select-none">
+    <div className="min-h-[60vh] bg-zinc-950 flex flex-col items-center justify-center p-8 text-center select-none">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

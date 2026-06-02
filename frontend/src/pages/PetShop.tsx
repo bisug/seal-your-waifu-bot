@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useUser, Pet } from '../context/UserContext';
 import { Skeleton } from '../components/ui/Skeleton';
+import { ErrorState } from '../components/ui/ErrorState';
 import { formatNumber, cn } from '../utils';
 import { ShoppingBag, Lock, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 import { apiFetch, getErrorMessage } from '../api/client';
@@ -20,7 +21,7 @@ interface PetShopResponse {
 export const PetShop = ({ onPetClick }: PetShopProps) => {
     const { user, triggerRefresh } = useUser();
     const { addToast } = useToast();
-    const { data: shopData, loading } = useApi<PetShopResponse>('/shop/pets');
+    const { data: shopData, loading, error, execute: fetchPets } = useApi<PetShopResponse>('/shop/pets');
     const [buying, setBuying] = useState<string | null>(null);
 
     const handleBuy = async (petName: string, index: number) => {
@@ -48,6 +49,12 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
     if (loading && !shopData) return (
         <div className="grid grid-cols-1 gap-4 px-4 py-8 max-w-2xl mx-auto">
             {[1,2,3,4].map(i => <Skeleton key={i} className="h-40 rounded-xl" />)}
+        </div>
+    );
+
+    if (error && !shopData) return (
+        <div className="px-4 py-8 max-w-2xl mx-auto">
+            <ErrorState message={error} onAction={fetchPets} />
         </div>
     );
 
