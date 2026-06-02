@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useUser, Pet } from '../context/UserContext';
-import { apiFetch } from '../api/client';
+import { apiFetch, getErrorMessage } from '../api/client';
 import { useToast } from '../components/ui/Toast';
 import {
     PawPrint,
@@ -32,7 +32,7 @@ export const MyPets = ({ onPetClick }: MyPetsProps) => {
             addToast(`${petName} is now your active pet!`, 'success');
             triggerRefresh();
         } catch (err: any) {
-            addToast(err.message || 'Failed to switch pet', 'error');
+            addToast(getErrorMessage(err), 'error');
         } finally {
             setSwitching(null);
         }

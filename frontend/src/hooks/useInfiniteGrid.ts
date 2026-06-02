@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { apiFetch } from '../api/client';
+import { ApiError, apiFetch, getErrorMessage } from '../api/client';
 
 const gridCache = new Map<string, { items: any[], page: number, hasMore: boolean, timestamp: number }>();
 const CACHE_TTL = 1000 * 60 * 5; // 5 mins
@@ -95,8 +95,8 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
       });
 
     } catch (err: any) {
-      if (err.name === 'AbortError') return;
-      console.error(`Fetch error for ${endpoint}:`, err);
+      if (err instanceof ApiError && err.code === 'cancelled') return;
+      console.error(`Fetch error for ${endpoint}: ${getErrorMessage(err)}`, err);
     } finally {
       setLoading(false);
     }

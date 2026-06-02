@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Activity, Loader2, Heart, Zap, X, Swords, Wind, Sparkles, Check, Lock } from 'lucide-react';
 import { useToast } from '../ui/Toast';
-import { apiFetch } from '../../api/client';
+import { apiFetch, getErrorMessage } from '../../api/client';
 import { cn } from '../../utils';
 import { useUser } from '../../context/UserContext';
 
@@ -48,7 +48,7 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }) => {
             setSelectedPet(null);
         } catch (err) {
             window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('error');
-            addToast(err.message, 'error');
+            addToast(getErrorMessage(err), 'error');
             setPurchaseStage('idle');
         }
     };
@@ -62,7 +62,7 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }) => {
             triggerRefresh();
             setSelectedPet(null);
         } catch (err) {
-            addToast(err.message, 'error');
+            addToast(getErrorMessage(err), 'error');
         } finally {
             setSyncStage('idle');
         }
