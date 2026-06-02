@@ -81,7 +81,7 @@ async def cshop_cmd(_, message: types.Message):
         await message.reply_text("<b>No shop characters available.</b>", parse_mode=enums.ParseMode.HTML)
         return
     user_id = message.from_user.id
-    chars_data = [c.dict() for c in chars]
+    chars_data = [c.model_dump() for c in chars]
     await create_session(f"shop_{user_id}", {"shop": chars_data, "page": 0})
     await send_shop_message(message, user_id)
 @app.on_message(filters.command("shop"))
@@ -125,7 +125,7 @@ async def hub_callback_handler(_, query: types.CallbackQuery):
         chars = await get_daily_shop_characters()
         if not chars:
             return await query.answer("No shop characters available.", show_alert=True)
-        chars_data = [c.dict() for c in chars]
+        chars_data = [c.model_dump() for c in chars]
         await create_session(f"shop_{query.from_user.id}", {"shop": chars_data, "page": 0})
         await send_shop_message(query, query.from_user.id)
     elif choice == "pet":
@@ -327,7 +327,15 @@ async def buy_level_cmd(_, message: types.Message):
     if res.modified_count == 0:
         return await message.reply_text(f"You need <b>{cost:,}</b> ⬪ Shards to buy {levels} levels.", parse_mode=enums.ParseMode.HTML)
     from Grabber.core.progression import add_xp
-    await add_xp(user_id, levels * 100, "shop_buylevel")
+    try:
+        await add_xp(user_id, levels * 100, "shop_buylevel")
+    except Exception as e:
+        LOGGER.error(f"buy_level XP add failed for user {user_id}, rolling back: {e}")
+        await user_collection.update_one(get_user_filter(user_id), {"$inc": {"balance": cost}})
+        return await message.reply_text(
+            "Transaction failed. Your shards have been refunded.",
+            parse_mode=enums.ParseMode.HTML,
+        )
     await update_quest_progress(user_id, "big_spender", cost)
     await update_quest_progress(user_id, "weekly_spender", cost)
     await check_achievements(user_id)

@@ -5,18 +5,19 @@ import json
 import logging
 import time
 import uuid
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict
 from datetime import datetime, timedelta, timezone
-from typing import Dict
 from urllib.parse import parse_qsl
 
-from fastapi import Depends, HTTPException, Request, Security
+from fastapi import Depends, HTTPException, Security
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from config import config
 from Grabber.database import r, sessions_collection, user_collection
 
 security = HTTPBearer()
+LOGGER = logging.getLogger(__name__)
+SESSION_TTL = 3600
 
 
 
@@ -41,16 +42,55 @@ def validate_init_data(init_data: str):
             
             if hmac.compare_digest(h, msg_hash):
                 auth_date = int(vals.get('auth_date', 0))
-                if time.time() - auth_date > 86400: # 24 hours expiry
+                now = time.time()
+                if auth_date > now + 300 or now - auth_date > 86400: # 24 hours expiry, 5m clock skew
                     return False
                 return vals
-    except Exception as e:
-        logging.error(f"validate_init_data error: {e}")
+    except Exception:
+        LOGGER.exception("validate_init_data error")
     return False
 
 # Enforce a strict max cap to prevent DDoS memory leak if Redis dies
 _MAX_FALLBACK = 5000
 _fallback_rate_limits = OrderedDict()
+
+
+async def _store_session_mongo(session_key: str, token_key: str, token: str, user_id: int | str):
+    expiry = time.time() + SESSION_TTL
+    expiry_dt = datetime.now(timezone.utc) + timedelta(seconds=SESSION_TTL)
+    await sessions_collection.update_one(
+        {"_id": session_key},
+        {"$set": {"token": token, "expires_at": expiry, "expires_at_dt": expiry_dt}},
+        upsert=True
+    )
+    await sessions_collection.update_one(
+        {"_id": token_key},
+        {"$set": {"user_id": str(user_id), "expires_at": expiry, "expires_at_dt": expiry_dt}},
+        upsert=True
+    )
+
+
+async def get_user_id_from_token(token: str) -> str | None:
+    """Resolve a WebApp auth token through Redis, falling back to MongoDB."""
+    token_key = f"auth_token:{token}"
+    if r:
+        try:
+            user_id = await asyncio.wait_for(r.get(token_key), timeout=3.0)
+            if user_id:
+                return str(user_id)
+        except Exception as e:
+            LOGGER.warning(f"Redis auth token lookup failed, using Mongo fallback: {e}")
+
+    token_doc = await sessions_collection.find_one({
+        "_id": token_key,
+        "$or": [
+            {"expires_at": {"$gt": time.time()}},
+            {"expires_at_dt": {"$gt": datetime.now(timezone.utc)}},
+        ],
+    })
+    if not token_doc:
+        return None
+    return str(token_doc.get("user_id", "")).strip() or None
 
 async def create_session(user_data: dict):
     """Creates a Redis session with MongoDB fallback."""
@@ -65,83 +105,83 @@ async def create_session(user_data: dict):
     token = str(uuid.uuid4())
     session_key = f"user_session:{user_id}"
     token_key = f"auth_token:{token}"
-    
-    if not r:
-        expiry = time.time() + 3600
-        expiry_dt = datetime.now(timezone.utc) + timedelta(seconds=3600)
-        await sessions_collection.update_one(
-            {"_id": session_key},
-            {"$set": {"token": token, "expires_at": expiry, "expires_at_dt": expiry_dt}},
-            upsert=True
-        )
-        await sessions_collection.update_one(
-            {"_id": token_key},
-            {"$set": {"user_id": str(user_id), "expires_at": expiry, "expires_at_dt": expiry_dt}},
-            upsert=True
-        )
-        return token, user_id
-        
-    # Store both mappings
-    await r.setex(session_key, 3600, token)
-    await r.setex(token_key, 3600, str(user_id))
-    
+
+    redis_written = False
+    if r:
+        try:
+            async with r.pipeline(transaction=True) as pipe:
+                pipe.setex(session_key, SESSION_TTL, token)
+                pipe.setex(token_key, SESSION_TTL, str(user_id))
+                await asyncio.wait_for(pipe.execute(), timeout=3.0)
+            redis_written = True
+        except Exception as e:
+            LOGGER.warning(f"Redis auth session write failed, using Mongo fallback: {e}")
+
+    try:
+        await _store_session_mongo(session_key, token_key, token, user_id)
+    except Exception:
+        if redis_written:
+            LOGGER.exception("Mongo auth session fallback write failed; Redis session is active")
+        else:
+            raise
+
     return token, user_id
 
 async def get_current_user(auth: HTTPAuthorizationCredentials = Security(security)):
     """Middleware to validate session and handle rate limiting."""
     token = auth.credentials
-    if not r:
-        token_doc = await sessions_collection.find_one({"_id": f"auth_token:{token}"})
-        if not token_doc or token_doc.get("expires_at", 0) < time.time():
-            raise HTTPException(status_code=401, detail="Invalid or expired session")
-        raw = token_doc.get("user_id", "")
-        try:
-            return int(str(raw).strip())
-        except (ValueError, TypeError):
-            raise HTTPException(status_code=401, detail="Invalid session data")
-
-    user_id = await r.get(f"auth_token:{token}")
+    user_id = await get_user_id_from_token(token)
     if not user_id:
         raise HTTPException(status_code=401, detail="Invalid or expired session")
-        
+
     # Rate Limiting: 30 req / 60s (sliding window)
     now = time.time()
     rate_key = f"rate_limit:{user_id}"
-    
-    try:
-        async with r.pipeline(transaction=True) as pipe:
-            pipe.zremrangebyscore(rate_key, 0, now - 60)
-            pipe.zadd(rate_key, {str(now): now})
-            pipe.zcard(rate_key)
-            pipe.expire(rate_key, 60)
-            _, _, count, _ = await pipe.execute()
-            
-        if count > 30:
-            raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in a minute.")
-    except Exception as e:
-        if isinstance(e, HTTPException):
-            raise e
-        logging.warning(f"Rate limiting skipped due to Redis error, using local fallback: {e}")
-        
-        # Enforce LRU cleanup to avoid memory leak if Redis falls over
-        history = _fallback_rate_limits.get(user_id, [])
-        history = [ts for ts in history if now - ts < 60]
-        if len(history) >= 30:
-            _fallback_rate_limits[user_id] = history
-            _fallback_rate_limits.move_to_end(user_id)
-            raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in a minute.")
-        history.append(now)
+
+    if r:
+        try:
+            async with r.pipeline(transaction=True) as pipe:
+                pipe.zremrangebyscore(rate_key, 0, now - 60)
+                pipe.zadd(rate_key, {str(now): now})
+                pipe.zcard(rate_key)
+                pipe.expire(rate_key, 60)
+                _, _, count, _ = await asyncio.wait_for(pipe.execute(), timeout=3.0)
+
+            if count > 30:
+                raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in a minute.")
+            return int(user_id)
+        except HTTPException:
+            raise
+        except Exception as e:
+            LOGGER.warning(f"Redis rate limiting failed, using local fallback: {e}")
+
+    # Enforce LRU cleanup to avoid memory leak if Redis falls over or is disabled.
+    history = _fallback_rate_limits.get(user_id, [])
+    history = [ts for ts in history if now - ts < 60]
+    if len(history) >= 30:
         _fallback_rate_limits[user_id] = history
         _fallback_rate_limits.move_to_end(user_id)
-        while len(_fallback_rate_limits) > _MAX_FALLBACK:
-            _fallback_rate_limits.popitem(last=False)
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in a minute.")
+    history.append(now)
+    _fallback_rate_limits[user_id] = history
+    _fallback_rate_limits.move_to_end(user_id)
+    while len(_fallback_rate_limits) > _MAX_FALLBACK:
+        _fallback_rate_limits.popitem(last=False)
 
     return int(user_id)
 
 async def get_current_user_data(user_id: int = Depends(get_current_user)):
     """Dependency to fetch the full user document."""
     from Grabber.core.utils import get_user_id_query
+    from Grabber.core.user import add_user_set_on_insert, get_user_filter
     user = await user_collection.find_one(get_user_id_query(user_id))
+    if not user:
+        await user_collection.update_one(
+            get_user_filter(user_id),
+            add_user_set_on_insert({}, user_id),
+            upsert=True,
+        )
+        user = await user_collection.find_one(get_user_id_query(user_id))
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user

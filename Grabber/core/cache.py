@@ -5,10 +5,13 @@ Key prefixes: user, balance, cooldown, lb, session, gamebot_groups.
 import asyncio
 import json
 import time
+from datetime import timedelta
 from typing import Any, List, Optional
+from config import config
 from Grabber import LOGGER
 from Grabber.core.utils import get_now_utc
 from Grabber.database import r as _redis
+from Grabber.database import sessions_collection
 r = _redis
 # TTL settings (seconds)
 TTL_USER        = 60
@@ -17,7 +20,25 @@ TTL_SESSION     = 1800
 TTL_DAILY       = 86400
 TTL_WEEKLY      = 604800
 TTL_GAMEBOT     = 300
-MEM_LIMIT_BYTES = 25 * 1024 * 1024 
+DEFAULT_REDIS_AUTO_LIMIT_BYTES = 64 * 1024 * 1024
+VOLATILE_CACHE_PATTERNS = ("user:*", "balance:*", "lb:*", "rank:*")
+_last_memory_check = 0.0
+
+
+def _redis_memory_limit_bytes(info: dict) -> tuple[int, str]:
+    configured_mb = int(getattr(config, "REDIS_MEMORY_LIMIT_MB", 0))
+    if configured_mb > 0:
+        return configured_mb * 1024 * 1024, "configured"
+
+    try:
+        maxmemory = int(info.get("maxmemory") or 0)
+    except (TypeError, ValueError):
+        maxmemory = 0
+    if maxmemory > 0:
+        return max(1, int(maxmemory * 0.80)), "redis_maxmemory"
+
+    return DEFAULT_REDIS_AUTO_LIMIT_BYTES, "auto_default"
+
 async def rget(key: str) -> Optional[str]:
     """Get a string value from Redis. Returns None on miss or error."""
     if not _redis:
@@ -56,16 +77,63 @@ async def _scan_keys(pattern: str) -> list:
 async def check_memory_and_purge():
     """Smart memory management: Purges old keys if memory exceeds limit."""
     if not _redis: return
+    global _last_memory_check
+    now = time.monotonic()
+    if now - _last_memory_check < 60:
+        return
+    _last_memory_check = now
     try:
-        info = await _redis.info("memory")
+        info = await asyncio.wait_for(_redis.info("memory"), timeout=3.0)
         used = int(info.get("used_memory", 0))
-        if used > MEM_LIMIT_BYTES:
-            LOGGER.warning(f"Redis memory usage high ({used/1024/1024:.2f}MB). Purging old caches...")
-            # Purge short-lived user caches and leaderboard entries
-            keys = (await _scan_keys("user:*")) + (await _scan_keys("lb:*")) + (await _scan_keys("rank:*"))
-            if keys:
-                await _redis.delete(*keys[:50]) # Delete batches
+        limit, source = _redis_memory_limit_bytes(info)
+        if used > limit:
+            LOGGER.warning(
+                "Redis memory usage high (used=%.2fMB limit=%.2fMB source=%s). Purging old caches...",
+                used / 1024 / 1024,
+                limit / 1024 / 1024,
+                source,
+            )
+            deleted = await purge_volatile_redis_caches(max_keys=config.RESOURCE_REDIS_PURGE_BATCH_SIZE)
+            if deleted:
+                LOGGER.info("Redis volatile cache purge removed %s key(s).", deleted)
     except Exception as e: LOGGER.debug(f"Purge error: {e}")
+
+
+async def purge_volatile_redis_caches(
+    *,
+    max_keys: int | None = None,
+    patterns: tuple[str, ...] = VOLATILE_CACHE_PATTERNS,
+) -> int:
+    """Delete bounded batches of volatile cache keys without scanning into memory."""
+    if not _redis:
+        return 0
+    limit = max_keys if max_keys and max_keys > 0 else config.RESOURCE_REDIS_PURGE_BATCH_SIZE
+    deleted = 0
+    batch: list[str] = []
+
+    async def flush_batch() -> None:
+        nonlocal deleted, batch
+        if not batch:
+            return
+        try:
+            deleted += int(await asyncio.wait_for(_redis.delete(*batch), timeout=3.0))
+        except Exception as e:
+            LOGGER.warning(f"Redis volatile purge delete failed: {e}")
+        finally:
+            batch = []
+
+    try:
+        for pattern in patterns:
+            async for key in _redis.scan_iter(match=pattern, count=100):
+                batch.append(key)
+                if len(batch) >= 50 or deleted + len(batch) >= limit:
+                    await flush_batch()
+                if deleted >= limit:
+                    return deleted
+        await flush_batch()
+    except Exception as e:
+        LOGGER.warning(f"Redis volatile purge scan failed: {e}")
+    return deleted
 async def rdel(*keys: str):
     """Delete one or more keys from Redis. Silently ignores errors."""
     if not _redis or not keys:
@@ -157,13 +225,95 @@ async def invalidate_leaderboard_cache(metric: str = None):
 # --- SESSION MANAGEMENT (BOT) ---
 def _session_key(session_id: str) -> str:
     return f"session:{session_id}"
-async def create_session(session_id: str, data: dict, ttl: int = TTL_SESSION):
+
+
+async def _store_session_mongo(key: str, data: dict, ttl: int):
+    await sessions_collection.update_one(
+        {"_id": key},
+        {
+            "$set": {
+                "data": data,
+                "expires_at_dt": get_now_utc() + timedelta(seconds=ttl),
+            }
+        },
+        upsert=True,
+    )
+
+
+async def create_session(
+    session_id: str,
+    data: dict,
+    ttl: int = TTL_SESSION,
+    *,
+    expire_after: int | None = None,
+):
     """Create a temporary session for multi-step bot flows."""
-    await rset_json(_session_key(session_id), data, ttl)
+    if expire_after is not None:
+        ttl = expire_after
+    key = _session_key(session_id)
+    redis_written = False
+    if _redis:
+        try:
+            await asyncio.wait_for(
+                _redis.setex(key, ttl, json.dumps(data, default=str)),
+                timeout=3.0,
+            )
+            redis_written = True
+        except Exception as e:
+            LOGGER.warning(f"Redis session SET error [{key}], using Mongo fallback: {e}")
+    try:
+        await _store_session_mongo(key, data, ttl)
+    except Exception as e:
+        if redis_written:
+            LOGGER.warning(f"Mongo session fallback write failed [{key}]; Redis session is active: {e}")
+            return
+        raise
 async def get_session(session_id: str) -> Optional[dict]:
-    return await rget_json(_session_key(session_id))
+    key = _session_key(session_id)
+    if _redis:
+        data = await rget_json(key)
+        if data is not None:
+            return data
+    doc = await sessions_collection.find_one({
+        "_id": key,
+        "$or": [
+            {"expires_at_dt": {"$exists": False}},
+            {"expires_at_dt": {"$gt": get_now_utc()}},
+        ],
+    })
+    return doc.get("data") if doc else None
 async def delete_session(session_id: str):
-    await rdel(_session_key(session_id))
+    key = _session_key(session_id)
+    await rdel(key)
+    await sessions_collection.delete_one({"_id": key})
+async def consume_session(session_id: str) -> Optional[dict]:
+    """Atomically fetch and delete a bot session so callbacks cannot be replayed."""
+    key = _session_key(session_id)
+    if _redis:
+        try:
+            if hasattr(_redis, "getdel"):
+                raw = await asyncio.wait_for(_redis.getdel(key), timeout=3.0)
+            else:
+                raw = await asyncio.wait_for(_redis.execute_command("GETDEL", key), timeout=3.0)
+            if raw is None:
+                pass
+            else:
+                try:
+                    await sessions_collection.delete_one({"_id": key})
+                except Exception as e:
+                    LOGGER.warning(f"Mongo session cleanup failed after Redis consume [{key}]: {e}")
+                return json.loads(raw)
+        except Exception as e:
+            LOGGER.warning(f"Redis GETDEL error [{key}]: {e}")
+
+    doc = await sessions_collection.find_one_and_delete({
+        "_id": key,
+        "$or": [
+            {"expires_at_dt": {"$exists": False}},
+            {"expires_at_dt": {"$gt": get_now_utc()}},
+        ],
+    })
+    return doc.get("data") if doc else None
 def _zset_key(metric: str) -> str:
     # Map metrics to Redis keys
     mapping = {

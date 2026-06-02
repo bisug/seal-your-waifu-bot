@@ -1,5 +1,6 @@
 import asyncio
 import random
+import uuid
 from datetime import datetime, timezone
 from pyrogram import enums, errors, filters, types
 from pyrogram.enums import ButtonStyle, ParseMode
@@ -7,6 +8,7 @@ from pyrogram.enums import ButtonStyle, ParseMode
 from Grabber import LOGGER, MAIN_GROUP_ID, OWNER_ID, app, collection
 from Grabber.core.balance import (check_and_deduct, get_user_balance,
                                   update_user_balance)
+from Grabber.core.sessions import consume_session, create_session, delete_session, get_session
 from Grabber.core.user import get_user_filter, get_user_id
 from Grabber.core.utils import handle_errors, html_escape
 from Grabber.database import user_collection
@@ -47,10 +49,16 @@ async def pay_cmd(_, message: types.Message):
     balance = await get_user_balance(sender_id)
     if balance < amount:
         return await message.reply_text("<b>Insufficient balance!</b>", parse_mode=enums.ParseMode.HTML)
+    payment_id = f"pay_{uuid.uuid4().hex}"
+    await create_session(payment_id, {
+        "sender": sender_id,
+        "recipient": recipient_id,
+        "amount": amount,
+    }, ttl=600)
     buttons = [
         [
-            types.InlineKeyboardButton("Confirm", callback_data=f"pay_c_{recipient_id}_{amount}_{sender_id}"),
-            types.InlineKeyboardButton("Cancel", callback_data=f"pay_a_{sender_id}")
+            types.InlineKeyboardButton("Confirm", callback_data=f"pay:c:{payment_id}"),
+            types.InlineKeyboardButton("Cancel", callback_data=f"pay:a:{payment_id}")
         ]
     ]
     await message.reply_text(
@@ -61,24 +69,39 @@ async def pay_cmd(_, message: types.Message):
         reply_markup=types.InlineKeyboardMarkup(buttons),
         parse_mode=enums.ParseMode.HTML
     )
-@app.on_callback_query(filters.regex(r"^pay_"))
+@app.on_callback_query(filters.regex(r"^pay[:_]"))
 async def pay_callback_handler(_, query: types.CallbackQuery):
     """Handle the confirmation or cancellation of a payment."""
     sender_id = query.from_user.id
-    data = query.data.split("_")
+    if ":" not in query.data:
+        return await query.answer("This payment confirmation has expired. Use /pay again.", show_alert=True)
+
+    data = query.data.split(":")
     action = data[1]
+    payment_id = data[2] if len(data) > 2 else ""
+    payment_info = await get_session(payment_id)
+    if not payment_info:
+        return await query.answer("This payment expired or was already handled.", show_alert=True)
+    owner_id = int(payment_info["sender"])
+    if sender_id != owner_id:
+        return await query.answer("This is not your payment!", show_alert=True)
+
     # Handle payment cancellation
     if action == "a":
-        owner_id = int(data[2]) if len(data) > 2 else 0
-        if owner_id and sender_id != owner_id:
-            return await query.answer("This is not your payment!", show_alert=True)
+        await delete_session(payment_id)
         await query.message.edit_text("<b>Payment cancelled.</b>", parse_mode=enums.ParseMode.HTML)
         return
-    recipient_id = int(data[2])
-    amount = int(data[3])
-    owner_id = int(data[4]) if len(data) > 4 else 0
-    if owner_id and sender_id != owner_id:
+
+    if action != "c":
+        return await query.answer("Invalid payment action.", show_alert=True)
+    payment_info = await consume_session(payment_id)
+    if not payment_info:
+        return await query.answer("This payment expired or was already handled.", show_alert=True)
+    if sender_id != int(payment_info["sender"]):
         return await query.answer("This is not your payment!", show_alert=True)
+
+    recipient_id = int(payment_info["recipient"])
+    amount = int(payment_info["amount"])
     if await check_and_deduct(sender_id, amount):
         await update_user_balance(recipient_id, amount)
         try:

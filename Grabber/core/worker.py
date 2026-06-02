@@ -1,10 +1,8 @@
 import asyncio
-import logging
-from datetime import datetime, timedelta
 from Grabber.modules.economy.hunt import EGG_TIERS, TIER_MAP
 from Grabber import LOGGER
 from Grabber.core.cache import _redis, sync_user_to_redis
-from Grabber.core.utils import get_user_id_query
+from Grabber.core.utils import get_now_utc, get_user_id_query
 from Grabber.database import user_collection
 async def background_maintenance():
     """
@@ -46,14 +44,15 @@ async def prune_legacy_eggs():
         modified = False
         for idx, egg in enumerate(eggs):
             if isinstance(egg, str):
+                now = get_now_utc()
                 tier = TIER_MAP.get(egg, egg)
                 tier_info = EGG_TIERS.get(tier, EGG_TIERS["common"])
                 new_eggs.append({
-                    "id": f"mig_{int(datetime.now().timestamp())}_{idx}",
+                    "id": f"mig_{int(now.timestamp())}_{idx}",
                     "tier": tier,
                     "name": tier_info["name"],
                     "status": "fresh",
-                    "obtained_at": user.get("created_at") or datetime.now()
+                    "obtained_at": user.get("created_at") or now
                 })
                 modified = True
             else:

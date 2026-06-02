@@ -4,7 +4,7 @@ from config import config
 from Grabber import LOGGER, app
 from Grabber.core.cache import sync_user_to_redis
 from Grabber.core.sessions import create_session, get_session
-from Grabber.core.user import get_user_data
+from Grabber.core.user import add_user_set_on_insert, get_user_data
 from Grabber.core.utils import (get_user_id_query, handle_errors, html_escape,
                                 reply_media_dynamic, send_media_dynamic)
 from Grabber.database import collection, user_collection
@@ -116,12 +116,12 @@ async def claim_confirm_handler(_, query: types.CallbackQuery):
     claim_filter["claimed_waifu"] = {"$ne": True}
     claim_result = await user_collection.update_one(
         claim_filter,
-        {
+        add_user_set_on_insert({
             "$set": {"claimed_waifu": True},
             "$inc": {"balance": DAILY_SHARD_REWARD, "char_count": 1, "version": 1},
             "$push": {"characters": char},
             "$setOnInsert": {"id": user_id}
-        },
+        }, user_id, first_name=query.from_user.first_name, username=query.from_user.username),
         upsert=True
     )
     if claim_result.modified_count == 0 and claim_result.upserted_id is None:

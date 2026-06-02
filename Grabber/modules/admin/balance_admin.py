@@ -2,6 +2,7 @@ from pyrogram import enums, errors, filters, types
 from pyrogram.enums import ButtonStyle, ParseMode
 
 from Grabber import OWNER_ID, app, sudo_users, user_collection, sudo_filter
+from Grabber.core.user import add_user_set_on_insert
 from Grabber.core.utils import handle_errors, html_escape
 
 async def get_target_user(message: types.Message):
@@ -83,10 +84,18 @@ async def admin_coin_callback(_, query: types.CallbackQuery):
     target_id = int(data[3])
     amount = int(data[4])
     if action == "give":
-        await user_collection.update_one({"id": target_id}, {"$inc": {"balance": amount}}, upsert=True)
+        await user_collection.update_one(
+            {"id": target_id},
+            add_user_set_on_insert({"$inc": {"balance": amount}}, target_id),
+            upsert=True
+        )
         text = f"✅ <b>Successfully added {amount:,} ⬪!</b>"
     else:
-        await user_collection.update_one({"id": target_id}, {"$inc": {"balance": -amount}}, upsert=True)
+        await user_collection.update_one(
+            {"id": target_id},
+            add_user_set_on_insert({"$inc": {"balance": -amount}}, target_id),
+            upsert=True
+        )
         text = f"✅ <b>Successfully removed {amount:,} ⬪!</b>"
     user = await user_collection.find_one({"id": target_id}, {"balance": 1, "first_name": 1})
     bal = user.get("balance", 0)

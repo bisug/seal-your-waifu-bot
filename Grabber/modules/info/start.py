@@ -2,10 +2,12 @@ from pyrogram import enums, errors, filters, types
 from config import config
 from Grabber import (LOGGER, PHOTO_URL, SUPPORT_CHAT, UPDATE_CHAT, WEB_APP_URL,
                      app, collection, total_pm_users, user_collection)
+from Grabber.core.cache import (get_total_ranked_users, get_user_rank,
+                                invalidate_user_cache, update_user_rank)
 from Grabber.core.keyboard import KeyboardBuilder, get_webapp_button
 from Grabber.core.progression import add_xp, get_user_progress
-from Grabber.core.user import get_user_filter, get_user_id, update_user
-from Grabber.core.cache import get_user_rank, get_total_ranked_users
+from Grabber.core.user import (add_user_set_on_insert, ensure_user_document,
+                               get_user_filter, get_user_id, update_user)
 from Grabber.core.utils import handle_errors, html_escape, reply_media_dynamic
 from Grabber.modules.progression.achievements import check_achievements
 from Grabber.modules.progression.pet import DEFAULT_PET
@@ -172,6 +174,12 @@ async def start_handler(_, message: types.Message):
     user_id = message.from_user.id
     first_name_clean = message.from_user.first_name
     existing_user = await user_collection.find_one(get_user_filter(user_id))
+    is_new_user = existing_user is None
+    await ensure_user_document(
+        user_id,
+        first_name=first_name_clean,
+        username=message.from_user.username,
+    )
     await total_pm_users.update_one(
         {"_id": user_id},
         {"$set": {"first_name": first_name_clean, "username": message.from_user.username}},
@@ -222,7 +230,7 @@ async def start_handler(_, message: types.Message):
             except Exception as e:
                 LOGGER.error(f"Claim Error: {e}")
                 pass
-        elif not existing_user and param.startswith("ref_"):
+        elif is_new_user and param.startswith("ref_"):
             try:
                 referrer_id = int(param.split("_")[1])
                 if referrer_id != user_id:
@@ -233,7 +241,12 @@ async def start_handler(_, message: types.Message):
                     upgraded_pet["spd"] += 9
                     await user_collection.update_one(
                         {"id": get_user_id(user_id)},
-                        {"$set": {"pets": [upgraded_pet], "current_pet": upgraded_pet["name"], "referred_by": referrer_id}},
+                        add_user_set_on_insert(
+                            {"$set": {"pets": [upgraded_pet], "current_pet": upgraded_pet["name"], "referred_by": referrer_id}},
+                            user_id,
+                            first_name=first_name_clean,
+                            username=message.from_user.username,
+                        ),
                         upsert=True
                     )
                     await update_user(user_id, {"$inc": {"balance": 1500}})
@@ -253,7 +266,7 @@ async def start_handler(_, message: types.Message):
                 pass
     is_private = message.chat.type == enums.ChatType.PRIVATE
     # Refresh user state after referral DB logic just in case
-    if not existing_user:
+    if is_new_user:
         existing_user = await user_collection.find_one(get_user_filter(user_id))
     text, markup = await render_start_message(user_id, first_name_clean, is_private, existing_user)
     if is_private:
@@ -324,9 +337,29 @@ async def free_spin_handler(_, query: types.CallbackQuery):
     waifu_data = waifu.copy()
     waifu_data.pop('_id', None)
     
-    from Grabber.core.user import add_char_to_user
-    await update_user(user_id, {"$set": {"free_spin_claimed": True}})
-    await add_char_to_user(user_id, waifu_data)
+    claim_filter = get_user_filter(user_id)
+    claim_filter["free_spin_claimed"] = {"$ne": True}
+    claim_result = await user_collection.update_one(
+        claim_filter,
+        add_user_set_on_insert(
+            {
+                "$set": {"free_spin_claimed": True},
+                "$push": {"characters": waifu_data},
+                "$inc": {"char_count": 1, "version": 1},
+            },
+            user_id,
+            first_name=query.from_user.first_name,
+            username=query.from_user.username,
+        ),
+        upsert=True,
+    )
+    if claim_result.modified_count == 0 and claim_result.upserted_id is None:
+        await query.answer("You have already used your free spin!", show_alert=True)
+        return
+
+    user_after_claim = await user_collection.find_one(get_user_filter(user_id), {"char_count": 1})
+    await update_user_rank(user_id, user_after_claim.get("char_count", 1) if user_after_claim else 1, metric="harem")
+    await invalidate_user_cache(user_id)
     
     response_text = (
         f'🎉 Congratulations <a href="tg://user?id={user_id}">{html_escape(query.from_user.first_name)}</a>!\n'

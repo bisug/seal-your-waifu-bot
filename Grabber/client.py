@@ -7,6 +7,7 @@ from pyrogram import Client, enums, errors, filters, types
 from pyrogram.handlers import MessageHandler
 
 from config import config
+from Grabber.core.tasks import run_background_task
 
 LOGGER = logging.getLogger(__name__)
 
@@ -267,10 +268,8 @@ class SealClient(Client):
                     LOGGER.info(f"Loaded (Explicit): {module_name}")
                 else:
                     LOGGER.info(f"Loaded (Decorator): {module_name}")
-            except Exception as e:
-                LOGGER.error(f"Failed to load {module_name}: {e}")
-                import traceback
-                LOGGER.error(traceback.format_exc())
+            except Exception:
+                LOGGER.exception("Failed to load %s", module_name)
         LOGGER.info(f"Loaded {len(ALL_MODULES)} modules.")
 
         # Sync bot commands with Telegram
@@ -278,14 +277,23 @@ class SealClient(Client):
             await self._set_commands_internal()
 
         if self.name == "MainBot":
+            from Grabber.database import r as redis_client
             from Grabber.database import seal_db
+            await seal_db.ping()
+            LOGGER.info("MongoDB connectivity verified.")
+            if redis_client:
+                try:
+                    await redis_client.ping()
+                    LOGGER.info("Redis connectivity verified.")
+                except Exception as e:
+                    LOGGER.warning(f"Redis ping failed; Redis-backed features will use fallbacks where available: {e}")
             await seal_db.ensure_indexes()
 
             from Grabber.core.deletion import deletion_worker
-            asyncio.create_task(deletion_worker())
+            run_background_task(deletion_worker(), name="deletion-worker")
 
             from Grabber.core.spawns import flush_cache_to_db
-            asyncio.create_task(flush_cache_to_db())
+            run_background_task(flush_cache_to_db(), name="spawn-cache-flush")
 
             # Configure Mini-App menu button
             try:
@@ -302,7 +310,10 @@ class SealClient(Client):
             # Send creative startup report to group
             try:
                 from Grabber.core.startup import send_startup_report
-                asyncio.create_task(send_startup_report(self, config.LOG_GROUP_ID, len(ALL_MODULES)))
+                run_background_task(
+                    send_startup_report(self, config.LOG_GROUP_ID, len(ALL_MODULES)),
+                    name="startup-report",
+                )
             except Exception as e:
                 LOGGER.warning(f"Failed to initiate startup report: {e}")
 

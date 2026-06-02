@@ -83,6 +83,30 @@ Ensure Python 3.14+ is installed.
 `uv sync`
 `uv run python -m Grabber`
 
+## Logging
+
+Logging is configured centrally at package startup. By default the service writes redacted text logs to stdout, which is the safest mode for Linux containers and PaaS deployments. Rotating file logs can be enabled explicitly with `LOG_FILE_ENABLED=true`.
+
+Useful environment variables:
+- `LOG_LEVEL`: `DEBUG`, `INFO`, `WARNING`, `ERROR`, or `CRITICAL`.
+- `LOG_FORMAT`: `text` or `json`.
+- `LOG_FILE_ENABLED`: set to `true` to also write rotating file logs.
+- `LOG_DIR`, `LOG_FILE`, `LOG_MAX_BYTES`, `LOG_BACKUP_COUNT`: rotating file log controls.
+- `LOG_UTC`: set to `true` for UTC timestamps.
+
+Sensitive values such as bot tokens, MongoDB/Redis credentials, API keys, and session strings are redacted before log output. Web API responses include `X-Request-ID`, and request logs include the same ID for correlation.
+
+## Resource Management
+
+The service starts a lightweight resource monitor with the bot lifecycle and manages limits automatically by default. It detects Linux cgroup memory limits when available, falls back to process/host memory limits, tracks process RSS memory, available system memory, open descriptor count where supported, and active background-task count. Under memory pressure it runs garbage collection and purges bounded batches of volatile Redis cache keys (`user:*`, `balance:*`, leaderboard/rank caches) without deleting active spawn state or durable counters.
+
+Useful environment variables:
+- `RESOURCE_MONITOR_ENABLED`: enable or disable the monitor.
+- `RESOURCE_MEMORY_SOFT_LIMIT_MB` / `RESOURCE_MEMORY_HARD_LIMIT_MB`: optional process RSS threshold overrides. `0` lets the bot auto-detect.
+- `RESOURCE_MIN_AVAILABLE_MB`: optional low-memory override. `0` lets the bot derive a safe value automatically.
+- `RESOURCE_TASK_SOFT_LIMIT`: warn when tracked background tasks grow unexpectedly.
+- `RESOURCE_REDIS_PURGE_BATCH_SIZE` and `REDIS_MEMORY_LIMIT_MB`: optional Redis cleanup controls. `REDIS_MEMORY_LIMIT_MB=0` lets the bot use Redis `maxmemory` when available, otherwise a conservative internal cache budget.
+
 ## Deployment
 
 The service can be containerized and deployed natively using Docker. The multi-stage `Dockerfile` is optimized to build dependencies (wheels) in an isolated stage and execute as a non-root user (`botuser`) in the final image.

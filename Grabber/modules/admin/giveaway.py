@@ -36,7 +36,7 @@ async def process_core_claim(client, user, code: str):
     else:
         details['quantity'] = new_quantity
         details['claimed_by'] = claimed_by
-        await create_session(f"gen_{code}", details, expire_after=86400 * 7)
+        await create_session(f"gen_{code}", details, ttl=86400 * 7)
     # 4. Log Action
     log_text = (
         f'🎁 <b>Reward Claimed</b>\n'
@@ -71,7 +71,7 @@ async def waifugen(_, message: types.Message):
         'waifu': waifu, 
         'quantity': quantity,
         'claimed_by': []
-    }, expire_after=86400 * 7)
+    }, ttl=86400 * 7)
     bot_username = config.BOT_USERNAME or (await app.get_me()).username
     deep_link = f"https://t.me/{bot_username}?start=claim_{code}"
     response_text = (
@@ -132,7 +132,7 @@ async def drop_waifu(_, message: types.Message):
         'quantity': quantity,
         'initial_quantity': quantity,
         'claimed_by': []
-    }, expire_after=86400 * 7)
+    }, ttl=86400 * 7)
     markup = types.InlineKeyboardMarkup([
         [types.InlineKeyboardButton(f"🎁 Claim Reward (0/{quantity})", callback_data=f"drop_{code}")]
     ])

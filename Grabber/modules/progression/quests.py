@@ -8,6 +8,7 @@ from config import config
 from Grabber import WEB_APP_URL, app, user_collection
 from Grabber.core.keyboard import get_webapp_button
 from Grabber.core.progression import add_xp, get_progress_bar
+from Grabber.core.user import add_user_set_on_insert, get_user_filter
 from Grabber.core.utils import get_user_id_query, handle_errors, html_escape
 
 QUEST_POOL = {
@@ -161,7 +162,7 @@ PASS_MISSIONS = {
     }
 }
 async def get_user_quests(user_id: int) -> dict:
-    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
+    user = await user_collection.find_one(get_user_filter(user_id))
     now = datetime.now(timezone.utc)
     today = now.date().isoformat()
     current_week = f"{now.isocalendar()[0]}-W{now.isocalendar()[1]}"
@@ -175,14 +176,14 @@ async def get_user_quests(user_id: int) -> dict:
             **{k: {"progress": 0, "claimed": False} for k in pass_keys}
         }
         await user_collection.update_one(
-            {"id": {"$in": [user_id, str(user_id)]}},
-            {
+            get_user_filter(user_id),
+            add_user_set_on_insert({
                 "$set": {
                     "quests": quests_data,
                     "quests_reset_date": today,
                     "quests_week": current_week
                 }
-            },
+            }, user_id),
             upsert=True
         )
         return quests_data

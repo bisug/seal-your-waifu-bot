@@ -1,12 +1,24 @@
 import hashlib
+from collections import OrderedDict
 from pyrogram import enums, errors, filters, types
 from pyrogram.enums import ParseMode
 
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from Grabber import LOGGER, app, collection
+from Grabber.core.cache import rget, rset
 from Grabber.core.utils import handle_errors, html_escape as escape
-from Grabber.database import r
 # --- PAGINATION HELPERS ---
+_MAX_SEARCH_FALLBACK = 1000
+_search_fallback: OrderedDict[str, str] = OrderedDict()
+
+
+def _remember_search(query_id: str, query: str):
+    _search_fallback[query_id] = query
+    _search_fallback.move_to_end(query_id)
+    while len(_search_fallback) > _MAX_SEARCH_FALLBACK:
+        _search_fallback.popitem(last=False)
+
+
 async def get_search_results_page(query, search_type, page=1):
     """
     Common helper to fetch a page of search results and generate the message + buttons.
@@ -38,8 +50,8 @@ async def get_search_results_page(query, search_type, page=1):
     # If query is too long, store in Redis
     if len(query) > 30:
         query_id = hashlib.md5(query.encode()).hexdigest()[:10]
-        if r:
-            await r.setex(f"search:{query_id}", 3600, query)
+        await rset(f"search:{query_id}", query, 3600)
+        _remember_search(query_id, query)
     else:
         query_id = query
     nav_row = []
@@ -78,8 +90,8 @@ async def search_callback_handler(_, query: types.CallbackQuery):
     query_id = data[3]
     search_type = "name" if type_idx == "1" else "anime"
     # Retrieve query from Redis if it looks like a hash
-    if len(query_id) == 10 and r:
-        search_query = await r.get(f"search:{query_id}")
+    if len(query_id) == 10:
+        search_query = await rget(f"search:{query_id}") or _search_fallback.get(query_id)
         if not search_query:
             return await query.answer("⌛ Search session expired! Please search again.", show_alert=True)
     else:

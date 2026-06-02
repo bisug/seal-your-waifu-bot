@@ -3,6 +3,7 @@ from pyrogram.enums import ParseMode
 
 from Grabber import LOGGER, OWNER_ID, app, client, sudo_users, user_collection, sudo_filter
 from Grabber.core.cache import invalidate_user_cache
+from Grabber.core.user import add_user_set_on_insert
 from Grabber.core.utils import get_user_id_query, handle_errors, html_escape
 from Grabber.modules.progression.achievements import check_achievements
 from Grabber.modules.progression.quests import update_quest_progress
@@ -27,7 +28,12 @@ async def give_balance(_, message: types.Message):
     if sender_id in sudo_users or sender_id == OWNER_ID:
         await user_collection.update_one(
             get_user_id_query(recipient_id),
-            {'$inc': {'balance': amount}, '$setOnInsert': {'id': recipient_id}},
+            add_user_set_on_insert(
+                {'$inc': {'balance': amount}, '$setOnInsert': {'id': recipient_id}},
+                recipient_id,
+                first_name=recipient.first_name,
+                username=recipient.username,
+            ),
             upsert=True
         )
         await invalidate_user_cache(recipient_id)
@@ -48,7 +54,12 @@ async def give_balance(_, message: types.Message):
                     raise ValueError("Insufficient balance to give.")
                 await user_collection.update_one(
                     get_user_id_query(recipient_id),
-                    {'$inc': {'balance': amount, 'version': 1}, '$setOnInsert': {'id': recipient_id}},
+                    add_user_set_on_insert(
+                        {'$inc': {'balance': amount, 'version': 1}, '$setOnInsert': {'id': recipient_id}},
+                        recipient_id,
+                        first_name=recipient.first_name,
+                        username=recipient.username,
+                    ),
                     upsert=True,
                     session=mongo_session
                 )
