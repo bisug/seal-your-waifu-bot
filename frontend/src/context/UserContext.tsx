@@ -20,6 +20,10 @@ export interface Character {
   zenith_price: number;
   owned: boolean;
   count: number;
+  stock_limit?: number;
+  sold_count?: number;
+  stock_remaining?: number;
+  sold_out?: boolean;
 }
 
 export interface Pet {

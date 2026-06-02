@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useUser } from '../context/UserContext';
 import { apiFetch } from '../api/client';
 import { ProgressBar } from '../components/ui/ProgressBar';
@@ -14,10 +14,12 @@ import { Character } from '../context/UserContext';
 
 interface ProfileProps {
   onCharClick: (character: Character) => void;
+  focusCollection?: boolean;
 }
 
-export const Profile = ({ onCharClick }: ProfileProps) => {
+export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) => {
   const { user, loading: userLoading } = useUser();
+  const collectionRef = useRef<HTMLElement | null>(null);
   const {
     items,
     loading,
@@ -36,6 +38,16 @@ export const Profile = ({ onCharClick }: ProfileProps) => {
   useEffect(() => {
     apiFetch('/rarities').then(setAvailableRarities).catch(console.error);
   }, []);
+
+  useEffect(() => {
+    if (!focusCollection || userLoading) return;
+
+    const timeoutId = window.setTimeout(() => {
+      collectionRef.current?.scrollIntoView({ block: 'start' });
+    }, 80);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [focusCollection, userLoading]);
 
   if (userLoading && items.length === 0) return (
     <div className="pb-24 pt-6 px-4">
@@ -111,8 +123,8 @@ export const Profile = ({ onCharClick }: ProfileProps) => {
       </section>
 
       {/* Collection Filters */}
-      <section className="px-4">
-        <div className="sticky top-14 z-40 bg-brand-midnight/90 backdrop-blur-md py-4 border-b border-white/5 mb-6 -mx-4 px-4 shadow-sm">
+      <section ref={collectionRef} className="px-4">
+        <div className="sticky top-0 z-40 bg-brand-midnight/90 backdrop-blur-md py-4 border-b border-white/5 mb-6 -mx-4 px-4 shadow-sm">
           <div className="space-y-4">
             <div className="relative max-w-md mx-auto sm:mx-0">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-500" size={16} />

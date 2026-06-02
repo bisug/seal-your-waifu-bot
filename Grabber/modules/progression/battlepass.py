@@ -51,7 +51,7 @@ async def view_pass(_, message: types.Message):
     elif pass_type == "premium":
         buttons.append([types.InlineKeyboardButton("Upgrade to Elite", callback_data=f"buyask_elite:{user_id}", style=enums.ButtonStyle.SUCCESS)])
     buttons.append([types.InlineKeyboardButton("View Rewards", callback_data=f"pass_rewards:{user_id}", style=enums.ButtonStyle.PRIMARY)])
-    webapp_btn = get_webapp_button(message.chat.type == enums.ChatType.PRIVATE)
+    webapp_btn = get_webapp_button(message.chat.type == enums.ChatType.PRIVATE, path="#pass")
     if webapp_btn:
         buttons.append([webapp_btn])
     markup = types.InlineKeyboardMarkup(buttons)
@@ -82,7 +82,7 @@ async def view_pass_inline(query: types.CallbackQuery):
     elif pass_type == "premium":
         buttons.append([types.InlineKeyboardButton("Upgrade to Elite", callback_data=f"buyask_elite:{user_id}", style=enums.ButtonStyle.SUCCESS)])
     buttons.append([types.InlineKeyboardButton("View Rewards", callback_data=f"pass_rewards:{user_id}", style=enums.ButtonStyle.PRIMARY)])
-    webapp_btn = get_webapp_button(query.message.chat.type == enums.ChatType.PRIVATE)
+    webapp_btn = get_webapp_button(query.message.chat.type == enums.ChatType.PRIVATE, path="#pass")
     if webapp_btn:
         buttons.append([webapp_btn])
     buttons.append([types.InlineKeyboardButton("Back to Hub", callback_data="hub_main")])

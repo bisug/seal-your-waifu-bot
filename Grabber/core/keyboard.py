@@ -56,7 +56,7 @@ def get_webapp_button(is_private: bool = True, path: str = None) -> types.Inline
             url=url,
             style=enums.ButtonStyle.SUCCESS
         )
-def get_paginated_keyboard(page: int, total_pages: int, callback_prefix: str, user_id: int, is_private: bool = True) -> types.InlineKeyboardMarkup:
+def get_paginated_keyboard(page: int, total_pages: int, callback_prefix: str, user_id: int, is_private: bool = True, webapp_path: str = None) -> types.InlineKeyboardMarkup:
     """Builds a standard paginated keyboard with navigation and optional group WebApp link."""
     builder = KeyboardBuilder()
     # Navigation Row
@@ -69,7 +69,7 @@ def get_paginated_keyboard(page: int, total_pages: int, callback_prefix: str, us
     if nav_row:
         builder.add_row(*nav_row)
     # WebApp Button (Only added if not None)
-    webapp_btn = get_webapp_button(is_private)
+    webapp_btn = get_webapp_button(is_private, path=webapp_path)
     if webapp_btn:
         builder.add_row(webapp_btn)
     return builder.build()

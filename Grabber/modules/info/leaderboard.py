@@ -155,7 +155,7 @@ def build_leaderboard_keyboard(current_metric: str, user_id: int, is_private: bo
         ]
     ]
     from Grabber.core.keyboard import get_webapp_button
-    webapp_btn = get_webapp_button(is_private)
+    webapp_btn = get_webapp_button(is_private, path="#leaderboard")
     if webapp_btn:
         buttons.append([webapp_btn])
     buttons.append([
