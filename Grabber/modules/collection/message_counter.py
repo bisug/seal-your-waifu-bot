@@ -12,22 +12,33 @@ from Grabber.core.spawns import (get_active_user_count, get_chat_frequency,
                                  increment_spawn_order, send_character,
                                  track_user_activity)
 from Grabber.core.waifu import get_or_load_characters
-from Grabber.modules.collection.rarities import (ACTIVE_RARITY_WEIGHTS,
-                                                 RARITY_WEIGHTS)
+from Grabber.modules.collection.rarities import (
+    ACTIVE_SPAWN_RARITY_WEIGHTS,
+    SPAWN_RARITY_WEIGHTS,
+)
 # Use a specific logger for spawn tracking
 SPAWN_LOGGER = logging.getLogger("Grabber.spawns")
+RANDOM_ROYAL_SPAWN_CHANCE = 0.0002
 special_rarity_thresholds = {
-    "🎞️ AMV": 2500,
-    "🎐 Celestial": 2250,
-    "💎 Antique": 2000,
-    "🫧 Royal": 1750,
-    "🔮 Limited Edition": 1500,
-    "💮 Exclusive": 1250,
-    "💠 Cosmic": 1000,
-    "🟡 Legendary": 700,
-    "🟠 Rare": 450,
-    "🟢 Medium": 250,
-    "⚪ Common": 100
+    "🌠 Astral": 10000,
+    "🪽 Prestige": 9000,
+    "✨ Divine": 8500,
+    "🎞️ AMV": 8000,
+    "🎐 Celestial": 7500,
+    "💎 Mythical": 7000,
+    "💎 Antique": 6500,
+    "🫧 Royal": 6000,
+    "🔮 Mystic": 5500,
+    "🔮 Limited Edition": 5000,
+    "🌌 Eternal": 4500,
+    "💮 Exclusive": 4000,
+    "🧬 Immortal": 3500,
+    "💠 Cosmic": 3200,
+    "🟡 Legendary": 2000,
+    "🟠 Rare": 1200,
+    "🟣 Epic": 700,
+    "🟢 Medium": 350,
+    "⚪ Common": 150,
 }
 @app.on_message(filters.group & ~filters.bot, group=1)
 async def message_counter_handler(_, message: types.Message):
@@ -50,8 +61,8 @@ async def message_counter_handler(_, message: types.Message):
     # Debug logging for every 10th message to avoid spam but show activity
     if count % 10 == 0:
         SPAWN_LOGGER.info(f"Chat {chat_id} reached {count} messages.")
-    # Small random chance (0.1%) for a Royal spawn regardless of message count
-    if random.random() < 0.001:
+    # Small random chance (0.02%) for a Royal spawn regardless of message count
+    if random.random() < RANDOM_ROYAL_SPAWN_CHANCE:
         SPAWN_LOGGER.info(f"Triggering RANDOM Royal spawn in {chat_id}")
         await send_character(chat_id, "🫧 Royal")
         return
@@ -82,9 +93,9 @@ async def message_counter_handler(_, message: types.Message):
         SPAWN_LOGGER.info(f"Standard spawn triggered in {chat_id} (count={count}, freq={base_freq_int})")
         # Use different rarity weights if the chat is very active
         if active_count > 10:
-            weights_map = ACTIVE_RARITY_WEIGHTS
+            weights_map = ACTIVE_SPAWN_RARITY_WEIGHTS
         else:
-            weights_map = RARITY_WEIGHTS
+            weights_map = SPAWN_RARITY_WEIGHTS
         rarities = list(weights_map.keys())
         weights = list(weights_map.values())
         selected_rarity = random.choices(rarities, weights=weights, k=1)[0]

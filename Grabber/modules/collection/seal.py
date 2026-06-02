@@ -14,7 +14,7 @@ from Grabber.core.spawns import (clear_active_spawn, get_chat_state,
 from Grabber.core.tasks import run_background_task
 from Grabber.core.user import add_char_to_user
 from Grabber.core.utils import handle_errors, html_escape, reply_media_dynamic
-from Grabber.modules.collection.rarities import RARITY_WEIGHTS
+from Grabber.modules.collection.rarities import SPAWN_RARITY_WEIGHTS
 from Grabber.modules.progression.achievements import check_achievements
 from Grabber.modules.progression.quests import update_quest_progress
 @app.on_message(filters.command("seal") & filters.group)
@@ -123,7 +123,7 @@ async def cnow_handler(_, message: types.Message):
     """Force a character spawn (Owner/Sudo only)."""
     if not message.from_user or (message.from_user.id not in sudo_users and message.from_user.id != OWNER_ID):
         return # Ignore non-owners
-    weights_map = RARITY_WEIGHTS
+    weights_map = SPAWN_RARITY_WEIGHTS
     rarities = list(weights_map.keys())
     weights = list(weights_map.values())
     selected_rarity = random.choices(rarities, weights=weights, k=1)[0]
