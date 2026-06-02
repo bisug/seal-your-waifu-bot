@@ -109,6 +109,7 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
       fetchData(true);
     }, 400);
     return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, rarity]);
 
   // Infinite scroll trigger

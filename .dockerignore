@@ -33,6 +33,8 @@ env/
 .venv/
 .env
 .python-version
+*.session
+*.session-journal
 
 # IDEs and Editors
 .idea/

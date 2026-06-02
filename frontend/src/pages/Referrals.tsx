@@ -4,7 +4,7 @@ import { Skeleton } from '../components/ui/Skeleton';
 import { Users, Copy } from 'lucide-react';
 
 export const Referrals = () => {
-    const { data: refData, loading } = useApi('/social/referrals');
+    const { loading } = useApi('/social/referrals');
     const user_id = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
     const bot_username = import.meta.env.VITE_BOT_USERNAME || 'Seal_Your_WaifuBot';
     const referralLink = `https://t.me/${bot_username}?start=ref_${user_id}`;

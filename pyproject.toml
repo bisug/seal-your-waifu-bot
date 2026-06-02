@@ -23,7 +23,7 @@ dependencies = [
 
     # Telegram
     "kurigram>=2.2.23",
-    "tgcrypto>=1.2.5",
+    "tgcrypto>=1.2.5; platform_system == 'Linux'",
 
     # Serialization / Validation
     "orjson>=3.11.0",

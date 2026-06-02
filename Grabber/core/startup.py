@@ -36,7 +36,7 @@ async def send_startup_report(client: Client, chat_id: int, module_count: int) -
             f"<code>Bot</code>        → {me.first_name} (@{me.username})  <code>({me.id})</code>\n"
             f"<code>Owner</code>      → <code>{config.OWNER_ID}</code>\n"
             f"<code>Python</code>     → {py_ver}\n"
-            f"<code>Pyrogram</code>   → {pg_ver}\n"
+            f"<code>Kurigram</code>   → {pg_ver}\n"
             f"<code>OS</code>         → {os_platform} ({os_arch})\n"
             f"<code>Modules</code>    → {module_count} loaded\n"
             f"<code>Characters</code> → {total_chars}\n"

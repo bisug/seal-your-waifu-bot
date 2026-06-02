@@ -42,6 +42,16 @@ export interface Pet {
   affection: number;
 }
 
+export interface Egg {
+  id?: string | null;
+  tier: string;
+  name: string;
+  status: string;
+  is_corrupted: boolean;
+  hatch_time?: string | null;
+  remaining_mins?: number | null;
+}
+
 export interface User {
   id: number;
   first_name: string;
@@ -52,7 +62,7 @@ export interface User {
   stats: UserStats;
   characters: Character[];
   current_pet: Pet | null;
-  eggs?: Array<{ type: string }>;
+  eggs?: Egg[];
   pets?: Pet[];
 }
 

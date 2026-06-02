@@ -57,6 +57,8 @@ class Database:
             (self.users,             lambda c: c.create_index([("id", 1), ("characters.rarity", 1), ("characters.name", 1)])),
             (self.users,             lambda c: c.create_index([("id", 1), ("characters.anime", 1)])),
             (self.scraped_characters, lambda c: c.create_index([("name", 1), ("anime", 1)], unique=True)),
+            (self.sessions,          lambda c: c.create_index("expires_at_dt", expireAfterSeconds=0)),
+            (self.daily_shop,        lambda c: c.create_index("date", unique=True)),
         ]
         failed = 0
         for collection, idx_fn in indexes:

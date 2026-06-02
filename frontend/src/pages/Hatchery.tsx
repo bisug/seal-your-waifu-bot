@@ -1,15 +1,11 @@
 import React, { useState } from 'react';
-import { useUser, Pet } from '../context/UserContext';
+import { useUser } from '../context/UserContext';
 import { Sparkles, Timer, Zap, CheckCircle2, Loader2, ArrowRight } from 'lucide-react';
 import { cn } from '../utils';
 import { apiFetch } from '../api/client';
 import { useToast } from '../components/ui/Toast';
 
-interface HatcheryProps {
-    onPetClick?: (pet: Pet) => void;
-}
-
-export const Hatchery = ({ onPetClick }: HatcheryProps) => {
+export const Hatchery = () => {
     const { user, triggerRefresh } = useUser();
     const { addToast } = useToast();
     const [actionId, setActionId] = useState<string | null>(null);

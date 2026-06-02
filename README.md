@@ -4,8 +4,8 @@ A high-performance, modular Telegram bot ecosystem combining interactive chat fu
 
 [![Python](https://img.shields.io/badge/Python-3.14%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev/)
-[![Vite](https://img.shields.io/badge/Vite-6-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.136%2B-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-green?logo=mongodb&logoColor=white)](https://www.mongodb.com/)
 [![Redis](https://img.shields.io/badge/Redis-Cloud-red?logo=redis&logoColor=white)](https://redis.io/)
 
@@ -35,7 +35,7 @@ Seal-Bot-V2/
 ## Features
 
 - **Unified Process:** Fast, shared-memory execution using ASGI (Uvicorn).
-- **Premium Frontend:** React 19 and Tailwind CSS v4, optimized with Vite 6.
+- **Premium Frontend:** React 19 and Tailwind CSS v4, optimized with Vite 8.
 - **Robust Caching:** Redis implementation for session state and high-frequency read operations, falling back safely to MongoDB.
 - **Secure Sessions:** HMAC-SHA256 validation of Telegram `initData` ensures secure access to the REST API.
 - **Scalable Database:** Document-oriented models designed for MongoDB Atlas.
@@ -45,15 +45,15 @@ Seal-Bot-V2/
 ### Backend
 - **Python >= 3.14**
 - **FastAPI** for high-performance REST APIs.
-- **Motor (PyMongo)** for asynchronous MongoDB operations.
+- **PyMongo AsyncMongoClient** for asynchronous MongoDB operations.
 - **Redis (Upstash/Native)** for fast caching.
 - **Kurigram / Pyrogram** for Telegram Bot operations.
 
 ### Frontend
 - **Node >= 22**
-- **React 19 & Vite 6**
+- **React 19 & Vite 8**
 - **Tailwind CSS v4**
-- **TypeScript (`tsgo` via `@typescript/native-preview`)**
+- **Stable TypeScript (`tsc`) with TypeScript ESLint**
 
 ## Setup & Local Development
 
@@ -80,8 +80,8 @@ Ensure you have Node.js 22 installed (using `nvm` or equivalent).
 
 Ensure Python 3.14+ is installed.
 
-`pip install -e .`
-`python3 -m Grabber`
+`uv sync`
+`uv run python -m Grabber`
 
 ## Deployment
 
