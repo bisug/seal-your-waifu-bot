@@ -41,6 +41,12 @@ function bankSummary(bank: Record<string, number> = {}) {
   return { shards, eggs, hasValue: shards > 0 || eggs > 0 };
 }
 
+function percentBonus(multiplier: number | undefined, invert = false) {
+  const value = Number(multiplier || 1);
+  if (invert) return `${Math.round((1 - value) * 100)}% faster`;
+  return `+${Math.round((value - 1) * 100)}%`;
+}
+
 export const Pass = () => {
   const { refreshUser } = useUser();
   const { addToast } = useToast();
@@ -133,6 +139,7 @@ export const Pass = () => {
   const bank = bankSummary(passData.pass_bank);
   const nextTier = currentTier === 'free' ? 'premium' : currentTier === 'premium' ? 'elite' : null;
   const progressPercent = Math.min(100, Math.round((userLevel / Math.max(maxLevel, 1)) * 100));
+  const nextBenefits = nextTier ? passData.benefits?.[nextTier] : null;
 
   return (
     <div className="pb-20 pt-4 px-4 max-w-2xl mx-auto space-y-6">
@@ -196,6 +203,26 @@ export const Pass = () => {
             </div>
             <span className="text-sm font-bold text-brand-accent whitespace-nowrap">{passData.upgrade_prices?.[nextTier]} Stars</span>
           </div>
+          {nextBenefits && (
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              <div className="rounded-lg bg-brand-midnight border border-white/5 px-3 py-2">
+                <p className="text-[10px] font-semibold text-neutral-500">Hunt</p>
+                <p className="text-xs font-bold text-white">{percentBonus(nextBenefits.hunt_multiplier)} Shards</p>
+              </div>
+              <div className="rounded-lg bg-brand-midnight border border-white/5 px-3 py-2">
+                <p className="text-[10px] font-semibold text-neutral-500">Eggs</p>
+                <p className="text-xs font-bold text-white">{percentBonus(nextBenefits.egg_drop_multiplier)} Drops</p>
+              </div>
+              <div className="rounded-lg bg-brand-midnight border border-white/5 px-3 py-2">
+                <p className="text-[10px] font-semibold text-neutral-500">Incubation</p>
+                <p className="text-xs font-bold text-white">{percentBonus(nextBenefits.incubation_multiplier, true)}</p>
+              </div>
+              <div className="rounded-lg bg-brand-midnight border border-white/5 px-3 py-2">
+                <p className="text-[10px] font-semibold text-neutral-500">Slots</p>
+                <p className="text-xs font-bold text-white">{nextBenefits.incubation_slots} Incubators</p>
+              </div>
+            </div>
+          )}
           <button
             onClick={() => handleUpgrade(nextTier)}
             disabled={upgrading !== null}

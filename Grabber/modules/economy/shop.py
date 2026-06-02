@@ -1,4 +1,5 @@
 import random
+import inspect
 from datetime import datetime, timezone
 import httpx
 from pyrogram import enums, errors, filters, types
@@ -42,7 +43,8 @@ async def get_daily_shop_characters():
             {"$match": {"rarity": r, "id": {"$nin": [c["id"] for c in selected_raw]}}},
             {"$sample": {"size": 1}}
         ]
-        cursor = await collection.aggregate(pipeline)
+        cursor_result = collection.aggregate(pipeline)
+        cursor = await cursor_result if inspect.isawaitable(cursor_result) else cursor_result
         res = await cursor.to_list(length=1)
         if res:
             selected_raw.append(res[0])
@@ -89,12 +91,23 @@ async def cshop_cmd(_, message: types.Message):
 async def shop_hub(_, message: types.Message):
     await send_shop_hub(message)
 async def send_shop_hub(message_or_query):
-    text = "<b>Tap below to open the Seal Shop!</b>"
+    text = (
+        "<b>Seal Shop</b>\n\n"
+        "Open the Mini App shop, browse today's character rotation, manage pets, or view the Battle Pass."
+    )
     is_private = (message_or_query.message if isinstance(message_or_query, types.CallbackQuery) else message_or_query).chat.type == enums.ChatType.PRIVATE
     builder = KeyboardBuilder()
     webapp_btn = get_webapp_button(is_private, path="#shop")
     if webapp_btn:
         builder.add_row(webapp_btn)
+    builder.add_row(
+        types.InlineKeyboardButton("Character Rotation", callback_data="hub_char"),
+        types.InlineKeyboardButton("Battle Pass", callback_data="hub_pass"),
+    )
+    builder.add_row(
+        types.InlineKeyboardButton("Pet Shop", callback_data="hub_pet"),
+        types.InlineKeyboardButton("Currency Exchange", callback_data="exchange_help"),
+    )
     reply_markup = builder.build()
     try:
         if isinstance(message_or_query, types.CallbackQuery):
@@ -105,16 +118,27 @@ async def send_shop_hub(message_or_query):
         else:
             await reply_media_dynamic(message_or_query, SHOP_BANNER, caption=text, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML
             )
-    except errors.RPCError as e:
+    except Exception as e:
         LOGGER.error(f"Error in send_shop_hub: {e}")
         if isinstance(message_or_query, types.CallbackQuery):
             try:
                 await message_or_query.message.edit_text(text, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML)
-
             except errors.RPCError as e:
                 LOGGER.debug(f"Non-critical fallback error: {e}")
         else:
             await message_or_query.reply_text(text, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML)
+
+
+@app.on_callback_query(filters.regex(r"^exchange_help$"))
+async def exchange_help_callback(_, query: types.CallbackQuery):
+    await query.answer()
+    await query.message.reply_text(
+        "<b>Currency Exchange</b>\n\n"
+        "<b>Rate:</b> 10,000 Shards = 1 Zenith\n\n"
+        "<code>/exchange 10000</code> - Shards to Zenith\n"
+        "<code>/shard 1</code> - Zenith to Shards",
+        parse_mode=enums.ParseMode.HTML,
+    )
 @app.on_callback_query(filters.regex(r"^hub_(char|pet|pass|egg|main)$"))
 async def hub_callback_handler(_, query: types.CallbackQuery):
     await query.answer()  # Dismiss spinner instantly

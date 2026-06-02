@@ -9,6 +9,9 @@ export interface UserStats {
   zenith: number;
   total_characters: number;
   rank: number;
+  pass_type?: string;
+  incubation_slots?: number;
+  active_incubations?: number;
 }
 
 export interface Character {
@@ -55,6 +58,9 @@ export interface Egg {
   is_corrupted: boolean;
   hatch_time?: string | null;
   remaining_mins?: number | null;
+  base_wait_min?: number | null;
+  wait_min?: number | null;
+  incubation_pass_type?: string | null;
 }
 
 export interface User {

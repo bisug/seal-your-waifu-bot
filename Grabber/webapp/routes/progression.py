@@ -3,8 +3,12 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 
 from Grabber.core.cache import invalidate_user_cache, sync_user_to_redis
-from Grabber.core.eggs import get_incubation_wait_minutes
-from Grabber.core.pass_config import apply_pass_incubation_bonus, get_active_pass_type
+from Grabber.core.eggs import get_incubating_count, get_incubation_wait_minutes
+from Grabber.core.pass_config import (
+    apply_pass_incubation_bonus,
+    get_active_pass_type,
+    get_pass_incubation_slots,
+)
 from Grabber.core.utils import (get_now_utc, get_user_id_query,
                                 normalize_user_id)
 from Grabber.database import user_collection
@@ -128,14 +132,16 @@ async def incubate_egg(egg_id: str, user: dict = Depends(get_current_user_data))
         
     if egg.get("status") != "fresh":
         raise HTTPException(status_code=400, detail="Egg already incubating or hatched")
+    active_incubations = get_incubating_count(eggs)
+    slots = get_pass_incubation_slots(fresh_user)
+    if active_incubations >= slots:
+        raise HTTPException(status_code=400, detail=f"All incubators are busy ({active_incubations}/{slots})")
         
     fresh_user = await ensure_user_pet_state(uid_int, fresh_user)
     pets = [normalize_pet(p) for p in fresh_user.get("pets", [DEFAULT_PET])]
     active_pet = find_pet(pets, fresh_user.get("current_pet"))
-    wait_min = apply_pass_incubation_bonus(
-        get_incubation_wait_minutes(egg.get("tier", "common"), active_pet),
-        fresh_user,
-    )
+    base_wait_min = get_incubation_wait_minutes(egg.get("tier", "common"), active_pet)
+    wait_min = apply_pass_incubation_bonus(base_wait_min, fresh_user)
         
     ready_time = get_now_utc() + timedelta(minutes=wait_min)
     
@@ -147,14 +153,25 @@ async def incubate_egg(egg_id: str, user: dict = Depends(get_current_user_data))
         {
             "$set": {
                 "eggs.$.status": "incubating",
-                "eggs.$.hatch_time": ready_time
+                "eggs.$.hatch_time": ready_time,
+                "eggs.$.incubation_started_at": get_now_utc(),
+                "eggs.$.incubation_base_minutes": base_wait_min,
+                "eggs.$.incubation_minutes": wait_min,
+                "eggs.$.incubation_pass_type": get_active_pass_type(fresh_user)
             }
         }
     )
     if res.modified_count == 0:
         raise HTTPException(status_code=400, detail="Egg status changed concurrently. Please refresh.")
         
-    return {"status": "success", "ready_at": ready_time.isoformat(), "wait_min": wait_min}
+    return {
+        "status": "success",
+        "ready_at": ready_time.isoformat(),
+        "wait_min": wait_min,
+        "base_wait_min": base_wait_min,
+        "incubation_slots": slots,
+        "active_incubations": active_incubations + 1,
+    }
 
 @router.post("/eggs/hatch/{egg_id}")
 async def hatch_egg(egg_id: str, user: dict = Depends(get_current_user_data)):
