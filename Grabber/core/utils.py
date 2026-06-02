@@ -91,6 +91,16 @@ async def reply_media_dynamic(message_obj, media_url, **kwargs):
         return await message_obj.reply_video(video=media_url, **kwargs)
     return await message_obj.reply_photo(photo=media_url, **kwargs)
 
+async def notify_handler_error(update, text: str = "This command failed. Please try again."):
+    """Best-effort user-visible notice for command/callback failures."""
+    try:
+        if isinstance(update, types.CallbackQuery):
+            await update.answer(text, show_alert=True)
+        elif hasattr(update, "reply_text"):
+            await update.reply_text(f"<b>{html_escape(text)}</b>", parse_mode=enums.ParseMode.HTML)
+    except Exception as e:
+        LOGGER.debug(f"Could not send handler error notice: {e}")
+
 def handle_errors(func):
     """
     Decorator to handle common Pyrogram errors in command handlers,
@@ -147,16 +157,19 @@ def handle_errors(func):
             try:
                 return await func(client, message, *args, **kwargs)
             except Exception as e2:
-                LOGGER.error(f"Retry after FloodWait failed in {func.__name__}: {e2}")
+                LOGGER.error(f"Retry after FloodWait failed in {func.__name__}: {e2}", exc_info=True)
+                await notify_handler_error(message)
         except errors.SlowmodeWait as e:
             LOGGER.warning(f"SlowmodeWait in {func.__name__}: {e.value}s")
-            # Usually we don't sleep for slowmode in a handler, just inform or ignore
+            await notify_handler_error(message, f"Slowmode is active. Try again in {e.value}s.")
         except (errors.Forbidden, errors.Unauthorized) as e:
             LOGGER.debug(f"Permission error in {func.__name__}: {e}")
         except errors.MessageNotModified:
             pass
         except errors.BadRequest as e:
-            LOGGER.error(f"BadRequest in {func.__name__}: {e}")
+            LOGGER.error(f"BadRequest in {func.__name__}: {e}", exc_info=True)
+            await notify_handler_error(message)
         except Exception as e:
             LOGGER.error(f"Unhandled error in {func.__name__}: {e}", exc_info=True)
+            await notify_handler_error(message)
     return wrapper
