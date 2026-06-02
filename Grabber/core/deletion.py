@@ -1,6 +1,7 @@
 import asyncio
 import time
 from pyrogram import enums, errors, filters, types
+from pyrogram.errors import FloodWait
 from Grabber import LOGGER, app, game_bot
 from Grabber.database import deletion_queue_collection
 async def schedule_deletion(chat_id: int, message_id: int, delay: int = 300, bot_name: str = "MainBot"):
@@ -45,7 +46,7 @@ async def deletion_worker():
                     # Single batch API call per chat (Telegram supports up to 100 at once)
                     await client.delete_messages(chat_id, msg_ids)
                     await asyncio.sleep(0.05)  # 50ms gap between chats to pace API usage
-                except errors.FloodWait as e:
+                except FloodWait as e:
                     LOGGER.warning(f"FloodWait {e.value}s during deletion for {chat_id}, skipping batch this cycle")
                     continue  # Skip — these will be retried next cycle
                 except (errors.Forbidden, errors.MessageDeleteForbidden, errors.Unauthorized):
