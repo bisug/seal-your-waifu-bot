@@ -1,3 +1,5 @@
+import inspect
+
 from pyrogram import enums, filters, types
 
 from Grabber import app
@@ -55,7 +57,7 @@ ACTIVE_RARITY_WEIGHTS = {
     "💖 Valentine": 10,
     "🎃 Halloween": 10
 }
-@app.on_message(filters.command("rarities"))
+@app.on_message(filters.command(["rarities", "rarity", "rlist"]))
 @handle_errors
 async def rarities_handler(_, message: types.Message):
     pipeline = [
@@ -63,8 +65,8 @@ async def rarities_handler(_, message: types.Message):
         {"$sort": {"count": -1}}
     ]
 
-    # Under PyMongo 4.17+ native AsyncMongoClient, aggregate() is a coroutine
-    cursor = await collection.aggregate(pipeline)
+    cursor_result = collection.aggregate(pipeline)
+    cursor = await cursor_result if inspect.isawaitable(cursor_result) else cursor_result
     docs = await cursor.to_list(length=None)
 
     rarity_counts = {}
@@ -101,4 +103,5 @@ async def rarities_handler(_, message: types.Message):
             response += f"{r_name}: <code>{count}</code>\n"
 
     response += f"\n<b>Total Characters:</b> <code>{total_characters}</code>\n"
-    await message.reply_text(response, parse_mode=enums.ParseMode.HTML)
+    for start in range(0, len(response), 3500):
+        await message.reply_text(response[start:start + 3500], parse_mode=enums.ParseMode.HTML)

@@ -65,9 +65,16 @@ export const Hatchery = () => {
     const incubatingEggs = eggs.filter(egg => egg.isIncubating && !egg.isReady);
     const freshEggs = eggs.filter(egg => egg.isFresh);
     const otherEggs = eggs.filter(egg => !egg.isReady && !egg.isIncubating && !egg.isFresh);
+    const incubationSlots = Number(user?.stats?.incubation_slots || 1);
+    const activeIncubations = incubatingEggs.length + readyEggs.length;
+    const passType = user?.stats?.pass_type || 'free';
 
     const renderEgg = (egg: any) => {
         const hasEggId = Boolean(egg.id);
+        const waitMin = Number(egg.wait_min || egg.incubation_minutes || 0);
+        const baseWaitMin = Number(egg.base_wait_min || egg.incubation_base_minutes || waitMin);
+        const isBoosted = waitMin > 0 && baseWaitMin > waitMin;
+        const tierLabel = String(egg.tier || 'common');
 
         return (
             <div key={egg.id || egg.index} className={cn(
@@ -83,7 +90,10 @@ export const Hatchery = () => {
                     </div>
                     <div className="min-w-0">
                         <p className="text-base font-bold text-white leading-none mb-1.5 truncate">{egg.name}</p>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-[10px] font-bold uppercase tracking-wide text-neutral-500 bg-brand-midnight border border-white/5 rounded px-1.5 py-0.5">
+                                {tierLabel}
+                            </span>
                             {egg.isIncubating && !egg.isReady && (
                                 <>
                                     <Timer size={14} className="text-brand-accent" />
@@ -99,8 +109,15 @@ export const Hatchery = () => {
                             {egg.isFresh && (
                                 <>
                                     <Zap size={14} className="text-neutral-500" />
-                                    <span className="text-xs font-medium text-neutral-500">Fresh egg</span>
+                                    <span className="text-xs font-medium text-neutral-500">
+                                        {waitMin > 0 ? `${waitMin}m incubation` : 'Fresh egg'}
+                                    </span>
                                 </>
+                            )}
+                            {isBoosted && (
+                                <span className="text-xs font-semibold text-emerald-400">
+                                    {baseWaitMin}m base
+                                </span>
                             )}
                             {!hasEggId && (
                                 <span className="text-xs font-semibold text-red-500">Unavailable</span>
@@ -153,6 +170,21 @@ export const Hatchery = () => {
                 <h1 className="text-xl font-bold text-white tracking-tight mb-1">Incubation</h1>
                 <p className="text-sm font-medium text-neutral-400">Incubate eggs and hatch new characters.</p>
             </header>
+
+            <section className="grid grid-cols-3 gap-2">
+                <div className="rounded-lg border border-white/5 bg-brand-deep px-3 py-2.5">
+                    <p className="text-[10px] font-semibold text-neutral-500">Slots</p>
+                    <p className="mt-1 text-sm font-bold text-white tabular-nums">{activeIncubations}/{incubationSlots}</p>
+                </div>
+                <div className="rounded-lg border border-white/5 bg-brand-deep px-3 py-2.5">
+                    <p className="text-[10px] font-semibold text-neutral-500">Ready</p>
+                    <p className="mt-1 text-sm font-bold text-emerald-400 tabular-nums">{readyEggs.length}</p>
+                </div>
+                <div className="rounded-lg border border-white/5 bg-brand-deep px-3 py-2.5">
+                    <p className="text-[10px] font-semibold text-neutral-500">Pass</p>
+                    <p className="mt-1 text-sm font-bold text-brand-accent capitalize truncate">{passType}</p>
+                </div>
+            </section>
 
             <div className="flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-neutral-300">Your eggs</h2>

@@ -348,6 +348,8 @@ class SealClient(Client):
                 "pay": "Pay a user",
                 "sell": "Sell characters",
                 "exchange": "Convert Shards",
+                "zenith": "Shards to Zenith",
+                "shard": "Zenith to Shards",
                 "trade": "Trade characters",
                 "gift": "Gift a character",
                 "transfer": "Transfer full harem",

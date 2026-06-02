@@ -15,7 +15,8 @@ from Grabber.core.tasks import run_background_task
 from Grabber.core.user import get_user_rank_with_fallback
 from Grabber.core.utils import get_user_id_query, normalize_user_id
 from Grabber.database import user_collection
-from Grabber.core.eggs import get_egg_tier_info
+from Grabber.core.eggs import get_egg_tier_info, get_incubating_count, get_incubation_wait_minutes
+from Grabber.core.pass_config import apply_pass_incubation_bonus, get_active_pass_type, get_pass_incubation_slots
 from Grabber.modules.progression.achievements import ACHIEVEMENTS
 from Grabber.core.pets import (
     DEFAULT_PET,
@@ -93,6 +94,11 @@ async def get_me(user: dict = Depends(get_current_user_data)):
     if total_characters is None:
         total_characters = len(user.get("characters") or [])
     
+    eggs = user.get("eggs", [])
+    pass_type = get_active_pass_type(user)
+    incubation_slots = get_pass_incubation_slots(user)
+    active_incubations = get_incubating_count(eggs)
+
     resp_data = {
         "id": int(user_id),
         "first_name": (user.get("first_name") or "User"),
@@ -109,7 +115,10 @@ async def get_me(user: dict = Depends(get_current_user_data)):
             "badges": user.get("badges") or [],
             "total_characters": total_characters,
             "rank": rank,
-            "percentile": percentile
+            "percentile": percentile,
+            "pass_type": pass_type,
+            "incubation_slots": incubation_slots,
+            "active_incubations": active_incubations
         },
         "achievements": enriched_achievements,
         "titles": {
@@ -157,15 +166,20 @@ async def get_me(user: dict = Depends(get_current_user_data)):
             resp_data["current_pet"] = p_data
 
     resp_data["pets"] = formatted_pets
+    active_pet_for_eggs = next(
+        (pet for pet in user_pets if pet_matches(pet, current_pet_name)),
+        user_pets[0] if user_pets else DEFAULT_PET,
+    )
 
     # Handle Eggs
-    eggs = user.get("eggs", [])
     processed_eggs = []
     migration_needed = False
     for idx, egg in enumerate(eggs):
         if isinstance(egg, str):
             migration_needed = True
             tier_key, tier_info = get_egg_tier_info(egg)
+            base_wait_min = get_incubation_wait_minutes(tier_key, active_pet_for_eggs)
+            wait_min = apply_pass_incubation_bonus(base_wait_min, user)
             stable_id = str(uuid.uuid4())[:12]
             processed_eggs.append({
                 "id": f"mig_{stable_id}",
@@ -174,10 +188,15 @@ async def get_me(user: dict = Depends(get_current_user_data)):
                 "status": "fresh",
                 "is_corrupted": False,
                 "hatch_time": None,
-                "remaining_mins": 0
+                "remaining_mins": 0,
+                "base_wait_min": base_wait_min,
+                "wait_min": wait_min
             })
             continue
 
+        tier_key, tier_info = get_egg_tier_info(egg.get("tier", "common"))
+        base_wait_min = get_incubation_wait_minutes(tier_key, active_pet_for_eggs)
+        wait_min = apply_pass_incubation_bonus(base_wait_min, user)
         h_time = egg.get("hatch_time")
         rem_mins = 0
         if h_time and isinstance(h_time, datetime):
@@ -190,18 +209,22 @@ async def get_me(user: dict = Depends(get_current_user_data)):
         
         processed_eggs.append({
             "id": egg.get("id"),
-            "tier": get_egg_tier_info(egg.get("tier", "common"))[0],
-            "name": egg.get("name") or get_egg_tier_info(egg.get("tier", "common"))[1]["name"],
+            "tier": tier_key,
+            "name": egg.get("name") or tier_info["name"],
             "status": egg.get("status", "fresh"),
             "is_corrupted": egg.get("is_corrupted", False),
             "hatch_time": h_time,
-            "remaining_mins": rem_mins
+            "remaining_mins": rem_mins,
+            "base_wait_min": int(egg.get("incubation_base_minutes") or base_wait_min),
+            "wait_min": int(egg.get("incubation_minutes") or wait_min),
+            "incubation_pass_type": egg.get("incubation_pass_type") or pass_type
         })
     resp_data["eggs"] = processed_eggs
     
     if migration_needed:
         from Grabber.core.utils import get_user_id_query
-        db_eggs = [{k: v for k, v in e.items() if k != "remaining_mins"} for e in processed_eggs]
+        derived_fields = {"remaining_mins", "wait_min", "base_wait_min"}
+        db_eggs = [{k: v for k, v in e.items() if k not in derived_fields} for e in processed_eggs]
         run_background_task(user_collection.update_one(
             get_user_id_query(int(user_id)),
             {"$set": {"eggs": db_eggs}}

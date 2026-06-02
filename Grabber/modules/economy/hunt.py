@@ -12,12 +12,19 @@ from Grabber.core.cache import is_on_cooldown as redis_cooldown
 from Grabber.core.cache import sync_user_to_redis
 from Grabber.core.constants import CORRUPTED_EGG_CHANCE, EGG_TIERS
 from Grabber.core.eggs import (
+    get_incubating_count,
     get_egg_tier_info,
     get_incubation_wait_minutes,
     normalize_egg_tier,
+    roll_egg_tier,
 )
 from Grabber.core.keyboard import get_webapp_button
-from Grabber.core.pass_config import apply_pass_incubation_bonus, get_active_pass_type, PASS_BENEFITS
+from Grabber.core.pass_config import (
+    PASS_BENEFITS,
+    apply_pass_incubation_bonus,
+    get_active_pass_type,
+    get_pass_incubation_slots,
+)
 from Grabber.core.progression import add_xp
 from Grabber.core.tasks import run_background_task
 from Grabber.core.user import add_pet_xp, add_user_set_on_insert, get_user_filter, get_user_id
@@ -51,12 +58,7 @@ def load_handlers(bot):
     LOGGER.info(f"Registered Hunt & Egg handlers for {bot.name}")
 def get_egg_roll(luck_multiplier):
     """Determine the tier of the egg found based on luck."""
-    roll = random.uniform(0, 100)
-    void_c = EGG_TIERS["void"]["chance"] * (1 + luck_multiplier)
-    gold_c = EGG_TIERS["gold"]["chance"] * (1 + luck_multiplier)
-    if roll <= void_c: return "void"
-    if roll <= (void_c + gold_c): return "gold"
-    return "common"
+    return roll_egg_tier(luck_multiplier)
 async def hunt_cmd(bot, message: types.Message):
     """Refactored Hunt Command: High durability, atomic updates."""
     user_id = message.from_user.id if message.from_user else None
@@ -93,13 +95,14 @@ async def hunt_cmd(bot, message: types.Message):
         shards = random.randint(100, 300)
         bonus_text = ""
         pass_type = get_active_pass_type(user)
-        hunt_multiplier = PASS_BENEFITS[pass_type]["hunt_multiplier"]
+        pass_benefits = PASS_BENEFITS[pass_type]
+        hunt_multiplier = pass_benefits["hunt_multiplier"]
         if pass_type == "elite":
             shards = int(shards * hunt_multiplier)
-            bonus_text += "\n<b>+50% Elite Bonus!</b>"
+            bonus_text += "\n<b>+75% Elite Shards!</b>"
         elif pass_type == "premium":
             shards = int(shards * hunt_multiplier)
-            bonus_text += "\n<b>+20% Premium Bonus!</b>"
+            bonus_text += "\n<b>+35% Premium Shards!</b>"
         scavenger_chance = 0.2 * aff_multiplier
         if ability == "Scavenger" and random.random() < scavenger_chance:
             shards *= 2
@@ -111,30 +114,39 @@ async def hunt_cmd(bot, message: types.Message):
             xp_gain = int(xp_gain * luck_modifier)
         # 4. Loot Determination
         eggs_to_push = []
-        base_drop_chance = 15 * (1 + luck)
+        base_drop_chance = min(80, 15 * (1 + luck) * pass_benefits["egg_drop_multiplier"])
         hoarder_chance = 0.05 * aff_multiplier
-        extra_drop = (ability == "Hoarder" and random.random() < hoarder_chance)
+        pass_bonus_drop = random.random() < pass_benefits.get("bonus_egg_chance", 0)
+        hoarder_drop = ability == "Hoarder" and random.random() < hoarder_chance
+        extra_drop = hoarder_drop or pass_bonus_drop
         if random.uniform(0, 100) <= base_drop_chance or extra_drop:
-            tier_key = get_egg_roll(luck)
+            tier_key = roll_egg_tier(luck, pass_benefits["egg_quality_bonus"])
             tier_data = EGG_TIERS.get(tier_key, EGG_TIERS["common"])
+            corruption_chance = CORRUPTED_EGG_CHANCE * (1 - pass_benefits.get("corruption_resistance", 0))
             egg_data = {
                 "id": f"egg_{int(time.time() * 1000)}_{random.randint(100, 999)}",
                 "tier": tier_key,
                 "name": tier_data["name"],
                 "obtained_at": get_now_utc(),
                 "status": "fresh",
-                "is_corrupted": random.uniform(0, 100) <= CORRUPTED_EGG_CHANCE
+                "is_corrupted": random.uniform(0, 100) <= corruption_chance
             }
             eggs_to_push.append(egg_data)
             if extra_drop:
+                bonus_tier = roll_egg_tier(luck * 0.5, pass_benefits["egg_quality_bonus"] * 0.5)
+                bonus_tier_data = EGG_TIERS.get(bonus_tier, EGG_TIERS["common"])
                 extra_egg = egg_data.copy()
                 extra_egg.update({
                     "id": f"egg_bonus_{int(time.time() * 1000)}",
-                    "tier": "common",
-                    "name": "🥚 Bonus Common Egg"
+                    "tier": bonus_tier,
+                    "name": bonus_tier_data["name"],
+                    "is_corrupted": random.uniform(0, 100) <= corruption_chance
                 })
                 eggs_to_push.append(extra_egg)
-                bonus_text += "\n<b>Bonus Egg Found!</b> (Hoarder)"
+                bonus_source = "Hoarder" if hoarder_drop else pass_type.capitalize()
+                bonus_text += f"\n<b>Bonus Egg Found!</b> ({bonus_source})"
+            if pass_type != "free":
+                bonus_text += f"\n<b>{pass_type.capitalize()} Egg Luck:</b> improved drop and tier roll"
         # 5. Atomic Update
         update_op = {"$inc": {"balance": shards}}
         if eggs_to_push:
@@ -216,7 +228,17 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
     action_button = None
     status_display = ""
     if status == "fresh":
-        status_display = f"<b>Status:</b> Not incubated\n<b>Required:</b> {tier_info['wait_min']} minutes"
+        pets = [normalize_pet(p) for p in user.get("pets", [DEFAULT_PET])]
+        active_pet = find_pet(pets, user.get("current_pet"))
+        base_wait_min = get_incubation_wait_minutes(tier_key, active_pet)
+        wait_min = apply_pass_incubation_bonus(base_wait_min, user)
+        active_incubations = get_incubating_count(eggs)
+        slots = get_pass_incubation_slots(user)
+        status_display = (
+            f"<b>Status:</b> Not incubated\n"
+            f"<b>Required:</b> {wait_min} minutes\n"
+            f"<b>Incubators:</b> {active_incubations}/{slots}"
+        )
         action_button = types.InlineKeyboardButton("Start Incubation", callback_data=f"egg_incubate:{egg['id']}:{user_id}:{page}")
     elif status == "incubating":
         hatch_time = egg.get("hatch_time")
@@ -284,12 +306,17 @@ async def egg_incubate_callback(_, query: types.CallbackQuery):
         return await query.answer("Egg not found!")
     if egg.get("status", "fresh") != "fresh":
         return await query.answer("This egg is already incubating or hatched.", show_alert=True)
+    active_incubations = get_incubating_count(eggs)
+    slots = get_pass_incubation_slots(user)
+    if active_incubations >= slots:
+        return await query.answer(f"All incubators are busy ({active_incubations}/{slots}).", show_alert=True)
     # Calculate incubation time
     pets = [normalize_pet(p) for p in user.get("pets", [DEFAULT_PET])]
     active_pet = find_pet(pets, user.get("current_pet")) or {}
     raw_tier = egg.get("tier", "common") if isinstance(egg, dict) else egg
     tier_key = normalize_egg_tier(raw_tier)
-    wait_min = apply_pass_incubation_bonus(get_incubation_wait_minutes(tier_key, active_pet), user)
+    base_wait_min = get_incubation_wait_minutes(tier_key, active_pet)
+    wait_min = apply_pass_incubation_bonus(base_wait_min, user)
     ready_time = get_now_utc() + timedelta(minutes=wait_min)
     incubate_filter = get_user_filter(owner_id)
     incubate_filter["eggs"] = {"$elemMatch": {"id": egg_id, "status": "fresh"}}
@@ -297,7 +324,11 @@ async def egg_incubate_callback(_, query: types.CallbackQuery):
         incubate_filter,
         {"$set": {
             "eggs.$.status": "incubating",
-            "eggs.$.hatch_time": ready_time
+            "eggs.$.hatch_time": ready_time,
+            "eggs.$.incubation_started_at": get_now_utc(),
+            "eggs.$.incubation_base_minutes": base_wait_min,
+            "eggs.$.incubation_minutes": wait_min,
+            "eggs.$.incubation_pass_type": get_active_pass_type(user)
         }}
     )
     if result.modified_count == 0:
@@ -341,8 +372,12 @@ async def egg_hatch_callback(_, query: types.CallbackQuery):
 async def process_egg_hatch(user_id: int, egg: dict) -> tuple[bool, any]:
     """Compatibility function for both bot callbacks and webapp requests."""
     try:
+        user = await user_collection.find_one(get_user_filter(user_id)) or {}
+        pass_type = get_active_pass_type(user)
+        pass_benefits = PASS_BENEFITS[pass_type]
         # Handle corruption explosion
-        if egg.get("is_corrupted", False) and random.random() < 0.3:
+        corruption_explosion_chance = 0.3 * (1 - pass_benefits.get("corruption_resistance", 0))
+        if egg.get("is_corrupted", False) and random.random() < corruption_explosion_chance:
             await user_collection.update_one(get_user_filter(user_id), {"$pull": {"eggs": {"id": egg["id"]}}})
             return False, "💥 <b>The egg exploded!</b>\nIt was corrupted..."
         # Pick character
@@ -369,7 +404,8 @@ async def process_egg_hatch(user_id: int, egg: dict) -> tuple[bool, any]:
         )
         if result.modified_count == 0:
             return False, "This egg has already hatched!"
-        await add_xp(user_id, 15, "egg_hatch")
+        hatch_xp = 15 + (int(tier_info.get("rank", 0)) * 5)
+        await add_xp(user_id, hatch_xp, "egg_hatch")
 
         # Track Quests and Achievements
         run_background_task(update_quest_progress(user_id, "egg_hatcher", 1))

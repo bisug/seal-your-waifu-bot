@@ -14,8 +14,8 @@ PASS_TIERS = ("free", "premium", "elite")
 PASS_TIER_RANK = {tier: rank for rank, tier in enumerate(PASS_TIERS)}
 
 PASS_STAR_PRICES = {
-    "premium": 49,
-    "elite": 149,
+    "premium": 24,
+    "elite": 49,
 }
 
 PASS_TIER_META = {
@@ -25,11 +25,11 @@ PASS_TIER_META = {
     },
     "premium": {
         "name": "Premium",
-        "summary": "Bank unlock, premium missions, boosted economy",
+        "summary": "Bank unlock, premium missions, better eggs, faster incubation",
     },
     "elite": {
         "name": "Elite",
-        "summary": "All premium rewards, elite track, strongest boosts",
+        "summary": "All tracks, strongest economy, best egg luck, 3 incubators",
     },
 }
 
@@ -40,22 +40,37 @@ PASS_BENEFITS = {
         "hunt_multiplier": 1.0,
         "xp_multiplier": 1.0,
         "incubation_multiplier": 1.0,
+        "egg_drop_multiplier": 1.0,
+        "egg_quality_bonus": 0.0,
+        "bonus_egg_chance": 0.0,
+        "corruption_resistance": 0.0,
+        "incubation_slots": 1,
         "mission_track": False,
     },
     "premium": {
-        "daily_multiplier": 1.2,
-        "weekly_multiplier": 1.2,
-        "hunt_multiplier": 1.2,
-        "xp_multiplier": 1.15,
-        "incubation_multiplier": 0.85,
+        "daily_multiplier": 1.35,
+        "weekly_multiplier": 1.35,
+        "hunt_multiplier": 1.35,
+        "xp_multiplier": 1.25,
+        "incubation_multiplier": 0.65,
+        "egg_drop_multiplier": 1.35,
+        "egg_quality_bonus": 0.12,
+        "bonus_egg_chance": 0.05,
+        "corruption_resistance": 0.25,
+        "incubation_slots": 2,
         "mission_track": True,
     },
     "elite": {
-        "daily_multiplier": 1.5,
-        "weekly_multiplier": 1.5,
-        "hunt_multiplier": 1.5,
-        "xp_multiplier": 1.35,
-        "incubation_multiplier": 0.70,
+        "daily_multiplier": 1.75,
+        "weekly_multiplier": 1.75,
+        "hunt_multiplier": 1.75,
+        "xp_multiplier": 1.50,
+        "incubation_multiplier": 0.45,
+        "egg_drop_multiplier": 1.75,
+        "egg_quality_bonus": 0.28,
+        "bonus_egg_chance": 0.12,
+        "corruption_resistance": 0.50,
+        "incubation_slots": 3,
         "mission_track": True,
     },
 }
@@ -137,6 +152,11 @@ def apply_pass_incubation_bonus(minutes: int, user: dict | None) -> int:
     tier = get_active_pass_type(user)
     multiplier = PASS_BENEFITS[tier]["incubation_multiplier"]
     return max(1, int(minutes * multiplier))
+
+
+def get_pass_incubation_slots(user: dict | None) -> int:
+    tier = get_active_pass_type(user)
+    return int(PASS_BENEFITS[tier].get("incubation_slots", 1))
 
 
 def _shards(amount: int) -> dict:
