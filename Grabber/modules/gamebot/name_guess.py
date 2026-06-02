@@ -1,16 +1,15 @@
 from datetime import timedelta
-import random
 import re
 from pymongo import ReturnDocument
-from pyrogram import enums, errors, filters, types
-from Grabber import (LOGGER, OWNER_ID, app, collection, game_bot,
-                     gamebot_enabled_groups_collection, sessions_collection,
-                     user_collection)
-from Grabber.core.balance import update_user_balance
-from Grabber.core.deletion import schedule_deletion
+from pyrogram import filters, types
+from Grabber import collection, game_bot, sessions_collection
 from Grabber.core.tasks import run_background_task
-from Grabber.core.user import add_user_set_on_insert
-from Grabber.core.utils import check_member_requirement, get_now_utc, html_escape
+from Grabber.core.utils import get_now_utc, html_escape
+from Grabber.modules.gamebot.common import (
+    award_gamebot_shards,
+    ensure_gamebot_ready,
+    ensure_registered_user,
+)
 # Local cache is no longer used for character data to ensure persistence
 # Active sessions are stored in sessions_collection with ID: "nguess:{chat_id}"
 # Alias for backward compatibility within this file if needed, but better to use it directly
@@ -33,11 +32,17 @@ async def start_nguess_game(chat_id):
     # Create/Update session in DB
     await sessions_collection.update_one(
         {"_id": f"nguess:{chat_id}"},
-        {"$set": {
-            "char": char,
-            "players": [],
-            "expires_at_dt": get_now_utc() + NGUESS_TTL,
-        }},
+        {
+            "$set": {
+                "char": char,
+                "players": [],
+                "expires_at_dt": get_now_utc() + NGUESS_TTL,
+            },
+            "$unset": {
+                "winner_id": "",
+                "answered_at_dt": "",
+            },
+        },
         upsert=True
     )
     anime_name = char['anime']
@@ -63,41 +68,32 @@ def get_name_variants(name: str):
 @game_bot.on_message(filters.command("nguess"))
 async def nguess_start_handler(_, message: types.Message):
     chat_id = message.chat.id
-    meets_req, reason, count = await check_member_requirement(game_bot, message.chat)
-    if not meets_req:
-        if reason == "group_only":
-            text = "❌ <b>Group Required:</b> This game can only be played in group chats."
-        elif reason == "member_count":
-            text = (
-                f"⚠️ <b>Security Level Low:</b> This sector must contain at least <b>50 personnel</b> (members) to authorize GameBot operations.\n\n"
-                f"Current count: <code>{count}</code>"
-            )
-        else: # main_bot_missing
-            from Grabber import BOT_NAME, BOT_USERNAME
-            text = (
-                f"🚫 <b>Main Bot Missing:</b> GameBot operations require the presence of <b>{BOT_NAME}</b> (@{BOT_USERNAME}) in this sector.\n\n"
-                f"<i>Please add the Main Bot to authorize games!</i>"
-            )
-        return await game_bot.send_message_safe(chat_id, text, auto_delete=300)
+    if not await ensure_gamebot_ready(message):
+        return
     # If a game is active, we just proceed to start a new one (per user request: "send next instead")
     await start_nguess_game(chat_id)
 @game_bot.on_message(filters.text & filters.group & ~filters.command(["nguess", "top", "ctop"]), group=10)
 async def nguess_check_handler(_, message: types.Message):
-    if not message.from_user:
+    if not message.from_user or not message.text or message.text.startswith("/"):
         return
     chat_id = message.chat.id
     now = get_now_utc()
-    # Update player list atomically
-    session = await sessions_collection.find_one_and_update(
+    session = await sessions_collection.find_one(
         {
             "_id": f"nguess:{chat_id}",
             "$or": [
                 {"expires_at_dt": {"$exists": False}},
                 {"expires_at_dt": {"$gt": now}},
             ],
-        },
-        {"$addToSet": {"players": message.from_user.id}},
-        return_document=ReturnDocument.AFTER
+            "$and": [
+                {
+                    "$or": [
+                        {"winner_id": {"$exists": False}},
+                        {"winner_id": None},
+                    ]
+                }
+            ],
+        }
     )
     if not session:
         return
@@ -106,21 +102,45 @@ async def nguess_check_handler(_, message: types.Message):
     name_variants = get_name_variants(char['name'])
     if guess in name_variants:
         # Check registration before rewarding
-        from Grabber.core.user import get_cached_user
-        cached = await get_cached_user(message.from_user.id)
-        if not cached:
-            db_user = await user_collection.find_one({"id": {"$in": [message.from_user.id, str(message.from_user.id)]}})
-            if not db_user:
-                from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-                from config import config
-                markup = InlineKeyboardMarkup([[
-                    InlineKeyboardButton("🚀 Start Bot in DM", url=f"https://t.me/{config.BOT_USERNAME}?start=true")
-                ]])
-                text = f"❌ <b>Guess Ignored!</b>\n\n<a href='tg://user?id={message.from_user.id}'>{html_escape(message.from_user.first_name)}</a>, you must start the bot in private messages first to play and earn shards!"
-                return await game_bot.send_message_safe(chat_id, text=text, reply_markup=markup, auto_delete=30)
-                
+        if not await ensure_registered_user(message.from_user, chat_id):
+            return
+
+        claim_filter = {
+            "_id": f"nguess:{chat_id}",
+            "$or": [
+                {"expires_at_dt": {"$exists": False}},
+                {"expires_at_dt": {"$gt": now}},
+            ],
+            "$and": [
+                {
+                    "$or": [
+                        {"winner_id": {"$exists": False}},
+                        {"winner_id": None},
+                    ]
+                }
+            ],
+        }
+        if char.get("id") is not None:
+            claim_filter["char.id"] = char.get("id")
+        else:
+            claim_filter["char.name"] = char.get("name")
+
+        claimed = await sessions_collection.find_one_and_update(
+            claim_filter,
+            {
+                "$set": {
+                    "winner_id": message.from_user.id,
+                    "answered_at_dt": now,
+                },
+                "$addToSet": {"players": message.from_user.id},
+            },
+            return_document=ReturnDocument.AFTER,
+        )
+        if not claimed:
+            return
+
         # Correct guess!
-        player_count = len(session.get("players", []))
+        player_count = len(claimed.get("players", []))
         reward = min(
             NAME_GUESS_BASE_REWARD + (player_count - 1) * NAME_GUESS_PLAYER_BONUS,
             NAME_GUESS_MAX_REWARD,
@@ -138,19 +158,15 @@ async def nguess_check_handler(_, message: types.Message):
         if total_guesses % 100 == 0:
             bonus = NAME_GUESS_ELITE_MILESTONE_BONUS
             milestone_text = f"\n\n<b>ELITE MILESTONE ACHIEVED</b>\nYou are the 100th guesser! Granted {bonus:,} bonus Shards."
-            await sessions_collection.update_one({"id": "nguess_global_stats"}, {"$set": {"total_guesses": 0}})
         elif total_guesses % 100 == 50:
             bonus = NAME_GUESS_MID_MILESTONE_BONUS
             milestone_text = f"\n\n<b>MILESTONE REACHED</b>\nYou are the 50th guesser! Granted {bonus:,} bonus Shards."
         total_reward = reward + bonus
-        # Update user
-        await user_collection.update_one(
-            {"id": message.from_user.id},
-            add_user_set_on_insert({
-                "$inc": {"balance": total_reward, "guess_count": 1},
-                "$setOnInsert": {"first_name": message.from_user.first_name}
-            }, message.from_user.id, first_name=message.from_user.first_name, username=message.from_user.username),
-            upsert=True
+        await award_gamebot_shards(
+            message.from_user,
+            total_reward,
+            extra_inc={"guess_count": 1},
+            game_key="name_guess",
         )
 
         # Track Quests and Achievements
@@ -161,7 +177,7 @@ async def nguess_check_handler(_, message: types.Message):
         run_background_task(check_achievements(message.from_user.id))
 
         # Delete session
-        await sessions_collection.delete_one({"_id": f"nguess:{chat_id}"})
+        await sessions_collection.delete_one({"_id": f"nguess:{chat_id}", "winner_id": message.from_user.id})
         display_progress = total_guesses % 100 if total_guesses % 100 != 0 else 100
         mention = f'<a href="tg://user?id={message.from_user.id}">{html_escape(message.from_user.first_name)}</a>'
         target_name = html_escape(char['name'])
@@ -174,5 +190,7 @@ async def nguess_check_handler(_, message: types.Message):
         # Recursive start
         await start_nguess_game(chat_id)
     else:
-        # Silently ignore wrong guesses
-        pass
+        await sessions_collection.update_one(
+            {"_id": f"nguess:{chat_id}"},
+            {"$addToSet": {"players": message.from_user.id}},
+        )

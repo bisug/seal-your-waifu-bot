@@ -4,6 +4,7 @@ import logging
 import re
 
 from pyrogram import Client, enums, errors, filters, types
+from pyrogram.errors import FloodWait
 from pyrogram.handlers import MessageHandler
 
 from config import config
@@ -81,7 +82,7 @@ class SealClient(Client):
                 from Grabber.core.deletion import schedule_deletion
                 await schedule_deletion(chat_id, msg.id, auto_delete, bot_name=self.name)
             return msg
-        except errors.FloodWait as e:
+        except FloodWait as e:
             if _retries >= 3:
                 LOGGER.error(f"[{self.name}] FloodWait limit reached for {chat_id}")
                 return None
@@ -128,7 +129,7 @@ class SealClient(Client):
                 from Grabber.core.deletion import schedule_deletion
                 await schedule_deletion(chat_id, msg.id, auto_delete, bot_name=self.name)
             return msg
-        except errors.FloodWait as e:
+        except FloodWait as e:
             if _retries >= 2: return None
             await asyncio.sleep(e.value)
             return await self.send_media_safe(chat_id, media_url, *args, _retries=_retries+1, **kwargs)
@@ -162,7 +163,7 @@ class SealClient(Client):
 
         try:
             return await self.edit_message_text(chat_id, message_id, text, *args, **kwargs)
-        except errors.FloodWait as e:
+        except FloodWait as e:
             if _retries >= 3:
                 LOGGER.error(f"[{self.name}] FloodWait retry limit reached for {chat_id}")
                 return None
@@ -192,7 +193,7 @@ class SealClient(Client):
 
         try:
             return await self.edit_message_caption(chat_id, message_id, caption, *args, **kwargs)
-        except errors.FloodWait as e:
+        except FloodWait as e:
             if _retries >= 3:
                 LOGGER.error(f"[{self.name}] FloodWait retry limit reached for {chat_id}")
                 return None
@@ -216,7 +217,7 @@ class SealClient(Client):
         """Edits message reply markup while handling FloodWait."""
         try:
             return await self.edit_message_reply_markup(chat_id, message_id, reply_markup, *args, **kwargs)
-        except errors.FloodWait as e:
+        except FloodWait as e:
             if _retries >= 3:
                 LOGGER.error(f"[{self.name}] FloodWait retry limit reached for {chat_id}")
                 return None
@@ -329,6 +330,7 @@ class SealClient(Client):
                 "quiz": "Anime trivia quiz",
                 "scramble": "Unscramble name",
                 "top": "Global game stats",
+                "stats": "GameBot totals",
                 "help": "How to play"
             }
             

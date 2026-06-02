@@ -3,6 +3,7 @@ import os
 import re
 from pyrogram import enums, errors, filters, types
 from pyrogram.enums import ParseMode
+from pyrogram.errors import FloodWait
 
 from config import config
 from Grabber import (GALLERY_CHANNEL_ID, LOGGER, OWNER_ID, app, collection,
@@ -185,7 +186,7 @@ async def scrape_group_command_handler(client, message):
                     if sent_count >= 100:  # Increased batch limit
                         await app.send_message_safe(message.chat.id, f"✅ Batch of {sent_count} characters sent to review group. Run `/scrape` again for more.")
                         break
-                except errors.FloodWait as e:
+                except FloodWait as e:
                     # Bug #7 fix: respect FloodWait inside the scraping loop
                     LOGGER.warning(f"FloodWait during scrape: sleeping {e.value}s")
                     await asyncio.sleep(e.value)

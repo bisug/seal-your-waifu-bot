@@ -1,5 +1,4 @@
-from pyrogram import enums, errors, filters, types
-from pyrogram.enums import ParseMode
+from pyrogram import enums, filters, types
 
 from config import config
 from Grabber import BOT_USERNAME, game_bot
@@ -15,7 +14,7 @@ async def gamebot_start_handler(_, message: types.Message):
         "🔹 <code>/nguess</code> - Identify a character from their image\n"
         "🔹 <code>/quiz</code> - Test your anime knowledge for Shards\n"
         "🔹 <code>/scramble</code> - Unscramble the shuffled character name\n"
-        "🔹 <code>/bid &lt;amount&gt;</code> - Participate in live Character Auctions\n\n"
+        "🔹 <code>/top</code> - View GameBot rankings and totals\n\n"
         f"<i>Check out {main_bot_mention} for the full Seal-Bot experience!</i>"
     )
     buttons = [

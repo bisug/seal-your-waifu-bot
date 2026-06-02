@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from functools import wraps
 from pyrogram import enums, errors, filters, types
 from pyrogram.enums import ParseMode
+from pyrogram.errors import FloodWait
 
 def get_now_utc() -> datetime:
     """Returns the current aware UTC datetime."""
@@ -151,7 +152,7 @@ def handle_errors(func):
         # 2. Proceed with handler inside try-except
         try:
             return await func(client, message, *args, **kwargs)
-        except errors.FloodWait as e:
+        except FloodWait as e:
             LOGGER.warning(f"FloodWait in {func.__name__}: {e.value}s")
             await asyncio.sleep(e.value)
             try:

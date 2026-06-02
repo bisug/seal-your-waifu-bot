@@ -3,7 +3,8 @@ import os
 import shlex
 import urllib.parse
 import httpx
-from pyrogram import enums, errors, filters, types
+from pyrogram import enums, filters, types
+from pyrogram.errors import FloodWait
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from Grabber import GALLERY_CHANNEL_ID, LOGGER, OWNER_ID, app, sudo_users, sudo_filter
 from Grabber.core.utils import handle_errors, html_escape, send_media_dynamic
@@ -126,7 +127,7 @@ async def upload_waifu_handler(_, message: types.Message):
             f"Host: {'Catbox' if 'catbox' in final_url else 'ImgBB'}", 
             parse_mode=enums.ParseMode.HTML
         )
-    except errors.FloodWait as e:
+    except FloodWait as e:
         LOGGER.warning(f"[Upload] FloodWait {e.value}s — retrying gallery send once...")
         await asyncio.sleep(e.value + 2)
         try:
