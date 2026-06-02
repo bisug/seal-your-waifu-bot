@@ -15,6 +15,7 @@ interface PetShopProps {
 interface PetShopResponse {
     pets: Pet[];
     owned: string[];
+    owned_ids?: string[];
     current_level: number;
 }
 
@@ -60,7 +61,9 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
 
     const pets = shopData?.pets || [];
     const owned = shopData?.owned || [];
+    const ownedIds = shopData?.owned_ids || [];
     const currentLevel = shopData?.current_level || 0;
+    const zenithBalance = user?.stats?.zenith ?? user?.zenith ?? 0;
 
     return (
         <div className="px-4 py-6 pb-20 max-w-2xl mx-auto">
@@ -74,13 +77,13 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
 
             <div className="grid grid-cols-1 gap-4">
                 {pets.map((pet, i) => {
-                    const isOwned = owned.includes(pet.name);
+                    const isOwned = ownedIds.includes(pet.id) || owned.includes(pet.name);
                     const isLocked = !isOwned && currentLevel < pet.req_level;
-                    const canAfford = (user?.zenith || 0) >= pet.zenith_price;
+                    const canAfford = zenithBalance >= pet.zenith_price;
 
                     return (
                         <div
-                            key={pet.name}
+                            key={pet.id || pet.name}
                             onClick={() => onPetClick?.({ ...pet, shopIndex: i })}
                             className={cn(
                                 "p-4 rounded-xl border transition-all flex gap-4 items-center group cursor-pointer shadow-sm",

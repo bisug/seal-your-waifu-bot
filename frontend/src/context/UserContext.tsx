@@ -27,6 +27,7 @@ export interface Character {
 }
 
 export interface Pet {
+  id: string;
   name: string;
   ability: string;
   mood: string;

@@ -17,6 +17,7 @@ class StatsModel(BaseModel):
     percentile: float = 0.0
 
 class PetModel(BaseModel):
+    id: str
     name: str
     level: int
     xp: int
@@ -28,6 +29,8 @@ class PetModel(BaseModel):
     ability: str
     desc: str
     img: str
+    affection: int = 50
+    mood: str = "Neutral"
     is_active: bool
 
 class EggModel(BaseModel):
