@@ -10,9 +10,10 @@ const loadingSteps = [
 ];
 
 const cardFaces = [
-  { label: 'C', tone: 'from-zinc-700/70 to-zinc-900' },
-  { label: 'R', tone: 'from-sky-500/60 to-zinc-900' },
-  { label: 'E', tone: 'from-violet-500/60 to-zinc-900' },
+  { letter: 'S', tone: 'from-sky-500/65 to-zinc-900', x: -78, rotate: -13 },
+  { letter: 'E', tone: 'from-cyan-500/60 to-zinc-900', x: -26, rotate: -4 },
+  { letter: 'A', tone: 'from-violet-500/60 to-zinc-900', x: 26, rotate: 4 },
+  { letter: 'L', tone: 'from-fuchsia-500/60 to-zinc-900', x: 78, rotate: 13 },
 ];
 
 export const IntroLoading = () => {
@@ -55,14 +56,14 @@ export const IntroLoading = () => {
 
           {cardFaces.map((card, index) => (
             <motion.div
-              key={card.label}
-              className={`absolute h-36 w-24 rounded-xl border border-white/10 bg-gradient-to-br ${card.tone} shadow-2xl overflow-hidden`}
+              key={card.letter}
+              className={`absolute h-36 w-20 rounded-xl border border-white/10 bg-gradient-to-br ${card.tone} shadow-2xl overflow-hidden`}
               initial={{ opacity: 0, y: 24, rotate: 0 }}
               animate={{
                 opacity: 1,
-                y: [0, -8, 0],
-                rotate: [-12 + index * 12, -8 + index * 10, -12 + index * 12],
-                x: (index - 1) * 44,
+                y: [0, index % 2 === 0 ? -8 : -5, 0],
+                rotate: [card.rotate, card.rotate * 0.65, card.rotate],
+                x: card.x,
               }}
               transition={{
                 opacity: { delay: 0.12 * index, duration: 0.35 },
@@ -72,12 +73,13 @@ export const IntroLoading = () => {
             >
               <div className="absolute inset-x-3 top-3 h-1.5 rounded-full bg-white/15" />
               <div className="absolute inset-x-3 bottom-3 flex items-center justify-between">
-                <span className="text-xs font-black text-white/70">{card.label}</span>
+                <span className="text-[10px] font-black text-white/70">SEAL</span>
                 <Sparkles size={14} className="text-white/50" />
               </div>
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="h-14 w-14 rounded-xl border border-white/10 bg-black/20 flex items-center justify-center">
-                  <Gem size={26} className="text-white" />
+                <div className="h-16 w-14 rounded-xl border border-white/10 bg-black/20 flex flex-col items-center justify-center gap-1">
+                  <Gem size={18} className="text-white/70" />
+                  <span className="text-3xl font-black tracking-tight text-white">{card.letter}</span>
                 </div>
               </div>
             </motion.div>
