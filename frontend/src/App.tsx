@@ -44,7 +44,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("System Audit - UI Crash Detected:", error, errorInfo);
+    console.error("UI error:", error, errorInfo);
   }
 
   render() {
@@ -55,22 +55,22 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
           </div>
           
-          <h2 className="text-white font-bold mb-4 uppercase tracking-[0.2em] text-sm">System Crash</h2>
-          <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-widest leading-relaxed mb-10 max-w-[240px]">
-            The runtime environment encountered an unrecoverable exception.
+          <h2 className="text-white font-bold mb-4 tracking-tight text-base">Something went wrong</h2>
+          <p className="text-sm text-zinc-500 font-medium leading-relaxed mb-10 max-w-[260px]">
+            This screen crashed. Reload the app and try again.
           </p>
 
           <button 
             onClick={() => window.location.reload()}
             className="w-full max-w-[200px] py-4 bg-white text-zinc-950 font-bold rounded-xl uppercase tracking-widest text-[10px] active:scale-[0.98] transition-transform"
           >
-            Re-initialize
+            Reload
           </button>
 
           {this.state.error && (
             <div className="mt-12 p-3 bg-zinc-900/50 border border-white/5 rounded-lg max-w-xs overflow-hidden">
                <p className="text-[8px] text-zinc-600 font-mono break-all line-clamp-2 uppercase">
-                  Log: {this.state.error.toString()}
+                  Error: {this.state.error.toString()}
                </p>
             </div>
           )}
@@ -160,9 +160,9 @@ const AppContent = () => {
            <div className="w-2 h-2 rounded-full bg-zinc-700 animate-pulse" />
         </div>
 
-        <h2 className="text-white font-bold mb-4 uppercase tracking-[0.2em] text-sm">Link Severed</h2>
-        <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-widest leading-relaxed mb-10 max-w-[240px]">
-          {error || "Neural handshake failed. Please re-authenticate via the main console."}
+        <h2 className="text-white font-bold mb-4 tracking-tight text-base">Could not connect</h2>
+        <p className="text-sm text-zinc-500 font-medium leading-relaxed mb-10 max-w-[280px]">
+          {error || "We could not authenticate your Telegram session. Open the app from the bot and try again."}
         </p>
 
         <div className="w-full max-w-[240px] space-y-3">
@@ -170,12 +170,12 @@ const AppContent = () => {
             onClick={() => window.location.reload()}
             className="w-full py-4 rounded-xl bg-white text-zinc-950 font-bold uppercase text-[10px] tracking-widest transition-transform active:scale-[0.98]"
           >
-            Retry Handshake
+            Try again
           </button>
           <button
             onClick={() => {
               window.Telegram?.WebApp?.showConfirm(
-                "Perform deep system reset?",
+                "Clear saved session data and reload?",
                 (confirmed) => {
                   if (confirmed) {
                     sessionStorage.clear();
@@ -187,7 +187,7 @@ const AppContent = () => {
             }}
             className="w-full py-3 text-zinc-700 text-[9px] font-bold uppercase tracking-[0.2em] hover:text-zinc-500 transition-colors"
           >
-            Deep Reset
+            Clear saved session
           </button>
         </div>
       </div>

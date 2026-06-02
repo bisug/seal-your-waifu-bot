@@ -20,6 +20,7 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
 
   const observer = useRef<IntersectionObserver | null>(null);
   const searchAbortController = useRef<AbortController | null>(null);
+  const requestSeq = useRef(0);
 
   const lastElementRef = useCallback((node: HTMLElement | null) => {
     if (loading) return;
@@ -33,6 +34,7 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
   }, [loading, hasMore]);
 
   const fetchData = useCallback(async (isNew = false) => {
+    const requestId = ++requestSeq.current;
     setLoading(true);
 
     if (isNew) {
@@ -51,13 +53,14 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
       ...options.params
     });
 
-    const cacheKey = `${endpoint}?${search.trim()}:${rarity.trim()}`;
+    const cacheKey = `${endpoint}?${search.trim()}:${rarity.trim()}:${options.limit || 24}:${JSON.stringify(options.params || {})}`;
 
     // On exact first mount, try to restore from cache
     if (!initialized && isNew) {
         if (gridCache.has(cacheKey)) {
             const cached = gridCache.get(cacheKey)!;
             if (Date.now() - cached.timestamp < CACHE_TTL) {
+                if (requestId !== requestSeq.current) return;
                 setItems(cached.items);
                 setPage(cached.page);
                 setHasMore(cached.hasMore);
@@ -74,6 +77,8 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
         `${endpoint}?${queryParams.toString()}`,
         { signal: searchAbortController.current?.signal }
       );
+
+      if (requestId !== requestSeq.current) return;
 
       let newItems;
       if (isNew) {
@@ -96,9 +101,12 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
 
     } catch (err: any) {
       if (err instanceof ApiError && err.code === 'cancelled') return;
+      if (requestId !== requestSeq.current) return;
       console.error(`Fetch error for ${endpoint}: ${getErrorMessage(err)}`, err);
     } finally {
-      setLoading(false);
+      if (requestId === requestSeq.current) {
+        setLoading(false);
+      }
     }
   }, [endpoint, page, search, rarity, options.limit, options.params, items, initialized]);
 

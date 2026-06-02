@@ -16,7 +16,7 @@ export const ProgressBar = ({ current, total, color = "bg-brand-accent", label, 
   return (
     <div className={`w-full ${compact ? 'space-y-1.5' : 'space-y-2'}`}>
       {label && (
-        <div className="flex justify-between items-end text-[8px] font-bold text-zinc-600 px-0.5 uppercase tracking-[0.2em]">
+        <div className="flex justify-between items-end text-xs font-semibold text-zinc-600 px-0.5">
           <span>{label}</span>
           <span className="text-zinc-400 tabular-nums">{formatNumber(current)} / {formatNumber(total)}</span>
         </div>

@@ -60,7 +60,7 @@ export const Modal = ({ character, onClose, actions }: ModalProps) => {
                             <div className="bg-brand-deep p-3 rounded-xl border border-white/5 flex flex-col">
                                 <span className="text-xs font-semibold text-neutral-500 mb-1">Status</span>
                                 <span className={cn("text-sm font-bold", character.owned ? "text-emerald-500" : "text-neutral-400")}>
-                                    {character.owned ? "Owned" : "Locked"}
+                                    {character.owned ? "Owned" : "Not owned"}
                                 </span>
                             </div>
                             <div className="bg-brand-deep p-3 rounded-xl border border-white/5 flex flex-col">
