@@ -12,7 +12,61 @@ RARITY_MAP = {
     16: "🎃 Halloween", 17: "💸 Luxury", 18: "🎏 Limited", 19: "🟣 Epic", 20: "🧬 Immortal",
     21: "🌌 Eternal", 22: "🔮 Mystic", 23: "💎 Mythical", 24: "✨ Divine", 25: "🌠 Astral"
 }
-RARITY_WEIGHTS = {
+SPAWN_RARITY_WEIGHTS = {
+    "⚪ Common": 360,
+    "🟢 Medium": 240,
+    "🟣 Epic": 120,
+    "🟠 Rare": 110,
+    "🟡 Legendary": 50,
+    "💠 Cosmic": 25,
+    "🧬 Immortal": 25,
+    "🎏 Limited": 18,
+    "❄️ Winter": 12,
+    "☀️ Summer": 12,
+    "💸 Luxury": 8,
+    "💖 Valentine": 5,
+    "🎃 Halloween": 5,
+    "💮 Exclusive": 4,
+    "🌌 Eternal": 3,
+    "🔮 Limited Edition": 2,
+    "🔮 Mystic": 2,
+    "🫧 Royal": 1,
+    "💎 Antique": 1,
+    "💎 Mythical": 1,
+    "🎐 Celestial": 1,
+    "✨ Divine": 1,
+    "🎞️ AMV": 1,
+    "🪽 Prestige": 1,
+    "🌠 Astral": 1,
+}
+ACTIVE_SPAWN_RARITY_WEIGHTS = {
+    "⚪ Common": 280,
+    "🟢 Medium": 220,
+    "🟣 Epic": 140,
+    "🟠 Rare": 130,
+    "🟡 Legendary": 70,
+    "💠 Cosmic": 35,
+    "🧬 Immortal": 35,
+    "🎏 Limited": 25,
+    "❄️ Winter": 15,
+    "☀️ Summer": 15,
+    "💸 Luxury": 12,
+    "💖 Valentine": 8,
+    "🎃 Halloween": 8,
+    "💮 Exclusive": 6,
+    "🌌 Eternal": 4,
+    "🔮 Limited Edition": 3,
+    "🔮 Mystic": 3,
+    "🫧 Royal": 2,
+    "💎 Antique": 2,
+    "💎 Mythical": 2,
+    "🎐 Celestial": 1,
+    "✨ Divine": 1,
+    "🎞️ AMV": 1,
+    "🪽 Prestige": 1,
+    "🌠 Astral": 1,
+}
+SHOP_RARITY_WEIGHTS = {
     "⚪ Common": 25,
     "🟢 Medium": 20,
     "🟠 Rare": 15,
@@ -37,24 +91,10 @@ RARITY_WEIGHTS = {
     "🔮 Mystic": 5,
     "💎 Mythical": 3,
     "✨ Divine": 2,
-    "🌠 Astral": 1
+    "🌠 Astral": 1,
 }
-ACTIVE_RARITY_WEIGHTS = {
-    "🟠 Rare": 20,
-    "🟡 Legendary": 15,
-    "💠 Cosmic": 15,
-    "💮 Exclusive": 12,
-    "🔮 Limited Edition": 10,
-    "🫧 Royal": 8,
-    "💎 Antique": 7,
-    "🎐 Celestial": 6,
-    "🎞️ AMV": 7,
-    "🪽 Prestige": 3,
-    "❄️ Winter": 12,
-    "☀️ Summer": 12,
-    "💖 Valentine": 10,
-    "🎃 Halloween": 10
-}
+RARITY_WEIGHTS = SPAWN_RARITY_WEIGHTS
+ACTIVE_RARITY_WEIGHTS = ACTIVE_SPAWN_RARITY_WEIGHTS
 @app.on_message(filters.command(["rarities", "rarity", "rlist"]))
 @handle_errors
 async def rarities_handler(_, message: types.Message):
