@@ -13,13 +13,87 @@ from Grabber.core.utils import handle_errors, html_escape
 
 
 # METRIC_ORDER and METRICS have been moved to Grabber.core.constants for centralization.
+def _user_id_variants(user_id) -> list:
+    variants = []
+    if user_id is None:
+        return variants
+
+    variants.append(user_id)
+    try:
+        uid_int = int(user_id)
+        variants.extend([uid_int, str(uid_int)])
+    except (TypeError, ValueError):
+        variants.append(str(user_id))
+
+    deduped = []
+    for value in variants:
+        if value not in deduped:
+            deduped.append(value)
+    return deduped
+
+
+def _needs_name_resolution(user: dict) -> bool:
+    first_name = str(user.get("first_name") or "").strip()
+    return not first_name or first_name.lower() == "user"
+
+
+async def _hydrate_leaderboard_profiles(users: list, metric: str) -> list:
+    """Merge leaderboard rows with Mongo profile fields while preserving rank order."""
+    if not users:
+        return users
+
+    from Grabber.database import user_collection
+
+    lookup_values = []
+    for user in users:
+        lookup_values.extend(_user_id_variants(user.get("id")))
+
+    if not lookup_values:
+        return users
+
+    projection = {
+        "id": 1,
+        "first_name": 1,
+        "last_name": 1,
+        "username": 1,
+        "avatar": 1,
+        "pass_type": 1,
+        METRICS[metric]["field"]: 1,
+    }
+    mongo_users = await user_collection.find({"id": {"$in": lookup_values}}, projection).to_list(length=len(lookup_values))
+
+    profile_map = {}
+    for profile in mongo_users:
+        for variant in _user_id_variants(profile.get("id")):
+            profile_map[str(variant)] = profile
+
+    hydrated = []
+    for user in users:
+        profile = None
+        for variant in _user_id_variants(user.get("id")):
+            profile = profile_map.get(str(variant))
+            if profile:
+                break
+
+        if profile:
+            merged = {**user}
+            for key in ("first_name", "last_name", "username", "avatar", "pass_type"):
+                if profile.get(key):
+                    merged[key] = profile[key]
+            hydrated.append(merged)
+        else:
+            hydrated.append(user)
+
+    return hydrated
+
+
 async def _resolve_missing_names(users: list) -> list:
     """
     For any user in the list without a first_name, attempt to resolve it via
     the Telegram API and persist the result back to MongoDB for future calls.
     """
     from Grabber.database import user_collection
-    missing = [u for u in users if not u.get("first_name") and u.get("id")]
+    missing = [u for u in users if _needs_name_resolution(u) and u.get("id")]
     if not missing:
         return users
     missing_ids = [int(u["id"]) for u in missing]
@@ -42,7 +116,7 @@ async def _resolve_missing_names(users: list) -> list:
             )
         # Patch the results in-place
         for u in users:
-            if not u.get("first_name"):
+            if _needs_name_resolution(u):
                 resolved = user_info_map.get(int(u["id"]))
                 if resolved:
                     u.update(resolved)
@@ -57,6 +131,9 @@ async def get_top_users(metric: str, limit: int = 10):
     # 1. Try to get fully populated list from string cache
     cached = await get_cached_leaderboard(metric, limit)
     if cached:
+        cached = await _hydrate_leaderboard_profiles(cached, metric)
+        cached = await _resolve_missing_names(cached)
+        await set_cached_leaderboard(metric, cached, limit)
         return cached
     key = _zset_key(metric)
     if r:
@@ -67,17 +144,27 @@ async def get_top_users(metric: str, limit: int = 10):
                 # Filter out any None/corrupt entries before casting to int
                 valid_uids = [(uid, score) for uid, score in uids if uid is not None]
                 # Convert back to list of dicts. We need names and avatars, so we fetch from Mongo in ONE batch.
-                user_ids = [int(uid) for uid, _ in valid_uids]
-                mongo_users = await user_collection.find({"id": {"$in": user_ids}}).to_list(length=limit)
+                user_ids = []
+                for uid, _ in valid_uids:
+                    user_ids.extend(_user_id_variants(uid))
+                mongo_users = await user_collection.find({"id": {"$in": user_ids}}).to_list(length=len(user_ids))
                 # Re-sort to match ZSET order and add the score
-                user_map = {int(u["id"]): u for u in mongo_users}
+                user_map = {}
+                for user in mongo_users:
+                    for variant in _user_id_variants(user.get("id")):
+                        user_map[str(variant)] = user
                 results = []
                 for uid, score in valid_uids:
-                    u = user_map.get(int(uid))
+                    u = None
+                    for variant in _user_id_variants(uid):
+                        u = user_map.get(str(variant))
+                        if u:
+                            break
                     if u:
-                        u[METRICS[metric]["field"]] = int(score)
-                        results.append(u)
+                        row = {**u, METRICS[metric]["field"]: int(score)}
+                        results.append(row)
                 if results:
+                    results = await _hydrate_leaderboard_profiles(results, metric)
                     results = await _resolve_missing_names(results)
                     await set_cached_leaderboard(metric, results, limit)
                 return results
