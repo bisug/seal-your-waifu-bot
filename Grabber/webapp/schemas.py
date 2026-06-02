@@ -15,6 +15,9 @@ class StatsModel(BaseModel):
     total_characters: int = 0
     rank: int = 0
     percentile: float = 0.0
+    pass_type: str = "free"
+    incubation_slots: int = 1
+    active_incubations: int = 0
 
 class PetModel(BaseModel):
     id: str
@@ -44,6 +47,9 @@ class EggModel(BaseModel):
     is_corrupted: bool
     hatch_time: Optional[str] = None
     remaining_mins: Optional[int] = None
+    base_wait_min: Optional[int] = None
+    wait_min: Optional[int] = None
+    incubation_pass_type: Optional[str] = None
 
 class AchievementModel(BaseModel):
     id: str

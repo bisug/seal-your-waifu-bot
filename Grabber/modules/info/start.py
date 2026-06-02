@@ -75,6 +75,7 @@ HELP_DATA = {
 <b>Battle & Economy</b>
 /battle - Start a PvP duel
 /balance - Check your balance
+/exchange - Currency exchange
 /zenith - Shards to Zenith
 /shard - Zenith to Shards
 /shop - Open the shop
