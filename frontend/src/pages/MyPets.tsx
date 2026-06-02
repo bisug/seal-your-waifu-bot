@@ -46,20 +46,20 @@ export const MyPets = ({ onPetClick }: MyPetsProps) => {
     return (
         <div className="px-4 py-8 pb-20">
             <header className="mb-8 px-2">
-                <h1 className="text-2xl font-black italic uppercase tracking-tighter text-white flex items-center gap-3">
+                <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-3">
                     <PawPrint className="text-brand-accent" size={24} />
                     My Companions
                 </h1>
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em] mt-1">Manage your battle-hardened pets</p>
+                <p className="text-sm font-medium text-slate-500 mt-1">Manage your pets and choose which one is active.</p>
             </header>
 
             {/* Active Pet Hero Card */}
             {currentPet && (
                 <section className="mb-10">
-                    <h2 className="px-2 text-[10px] font-black uppercase tracking-widest text-brand-accent/60 mb-4 flex items-center gap-2">
+                    <h2 className="px-2 text-sm font-bold text-brand-accent/70 mb-4 flex items-center gap-2">
                         <Zap size={10} /> Active Partner
                     </h2>
-                    <div className="glass-panel p-6 rounded-[2.5rem] border border-brand-accent/20 bg-brand-accent/5 relative overflow-hidden">
+                    <div className="glass-panel p-6 rounded-xl border border-brand-accent/20 bg-brand-accent/5 relative overflow-hidden">
                         <div className="relative z-10 flex gap-6 items-center">
                             <div className="w-28 h-28 rounded-3xl overflow-hidden border-2 border-brand-accent/30 bg-black/40 shadow-2xl">
                                 <img src={currentPet.img} alt={currentPet.name} className="w-full h-full object-cover" />
@@ -68,7 +68,7 @@ export const MyPets = ({ onPetClick }: MyPetsProps) => {
                                 <h3 className="text-2xl font-black text-white italic tracking-tighter leading-none mb-1">{currentPet.name}</h3>
                                 <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-brand-accent/20 border border-brand-accent/20 mb-3">
                                     <Star size={10} className="text-brand-accent fill-brand-accent" />
-                                    <span className="text-[9px] font-black text-brand-accent uppercase tracking-widest">Level {currentPet.level}</span>
+                                    <span className="text-xs font-bold text-brand-accent">Level {currentPet.level}</span>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-3 mb-4">
@@ -108,8 +108,8 @@ export const MyPets = ({ onPetClick }: MyPetsProps) => {
             {/* Pets List */}
             <section>
                 <div className="flex items-center justify-between px-2 mb-4">
-                    <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-500">Your Collection</h2>
-                    <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">{pets.length} Owned</span>
+                    <h2 className="text-sm font-bold text-slate-500">Your collection</h2>
+                    <span className="text-xs font-bold text-slate-600">{pets.length} owned</span>
                 </div>
 
                 <div className="space-y-3">
@@ -150,7 +150,7 @@ export const MyPets = ({ onPetClick }: MyPetsProps) => {
                                                 handleSetActive(pet.name);
                                             }}
                                             disabled={!!switching}
-                                            className="px-4 py-2 bg-white/5 border border-white/10 text-[9px] font-black text-white uppercase tracking-widest rounded-xl hover:bg-brand-accent hover:text-brand-midnight hover:border-brand-accent transition-all disabled:opacity-50"
+                                            className="px-4 py-2 bg-white/5 border border-white/10 text-xs font-bold text-white rounded-xl hover:bg-brand-accent hover:text-brand-midnight hover:border-brand-accent transition-all disabled:opacity-50"
                                         >
                                             {switching === pet.name ? <Loader2 size={12} className="animate-spin" /> : 'Activate'}
                                         </button>
@@ -164,11 +164,11 @@ export const MyPets = ({ onPetClick }: MyPetsProps) => {
                             );
                         })
                     ) : (
-                        <div className="glass-panel p-12 rounded-[2.5rem] border border-white/5 text-center flex flex-col items-center">
+                        <div className="glass-panel p-12 rounded-xl border border-white/5 text-center flex flex-col items-center">
                             <PawPrint size={40} className="text-slate-800 mb-4" />
-                            <h3 className="text-sm font-black text-white uppercase tracking-widest mb-2">Lonely Journey</h3>
-                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-relaxed">
-                                You don't have any pets yet.<br/>Visit the Pet Store to find a partner.
+                            <h3 className="text-sm font-bold text-white mb-2">No pets yet</h3>
+                            <p className="text-sm text-slate-500 font-medium leading-relaxed">
+                                Visit the Pet Store to buy your first companion.
                             </p>
                         </div>
                     )}

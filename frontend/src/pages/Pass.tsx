@@ -7,6 +7,14 @@ import { useApi } from '../hooks/useApi';
 import { useToast } from '../components/ui/Toast';
 import { cn } from '../utils';
 
+const EGG_TIER_LABELS: Record<number, string> = {
+  1: 'Gold',
+  2: 'Void',
+  3: 'Rare',
+  4: 'Legendary',
+  5: 'Celestial',
+};
+
 export const Pass = () => {
   const { refreshUser } = useUser();
   const { addToast } = useToast();
@@ -43,7 +51,7 @@ export const Pass = () => {
         try {
           const res = await apiFetch(`/shop/upgrade_pass/${tier}`, { method: 'POST' });
           if (res.status === 'success') {
-            addToast(`${tier.charAt(0).toUpperCase() + tier.slice(1)} Protocol Activated`, 'success');
+            addToast(`${tier.charAt(0).toUpperCase() + tier.slice(1)} pass activated`, 'success');
             await fetchPassData();
             await refreshUser();
           }
@@ -70,7 +78,7 @@ export const Pass = () => {
         <div>
            <div className="flex items-center space-x-2 text-brand-accent mb-1.5">
              <Sparkles size={16} />
-             <span className="text-xs font-semibold tracking-wider uppercase">Protocol Status</span>
+             <span className="text-xs font-semibold tracking-wider uppercase">Pass Status</span>
            </div>
            <h1 className="text-xl font-bold text-white tracking-tight">{passData.season_name || 'Season 1'} Pass</h1>
         </div>
@@ -88,7 +96,9 @@ export const Pass = () => {
           if (!track) return null;
           const reward = track[passData.pass_type] ?? track['free'];
           if (!reward) return null;
-          const rewardLabel = reward.type === 'shards' ? `${reward.amount} Shards` : `${reward.tier === 2 ? 'Rare' : 'Common'} Egg`;
+          const rewardLabel = reward.type === 'shards'
+            ? `${reward.amount} Shards`
+            : `${EGG_TIER_LABELS[Number(reward.tier)] ?? `Tier ${reward.tier}`} Egg`;
 
           return (
             <motion.div
@@ -140,7 +150,7 @@ export const Pass = () => {
       
       <div className="mt-12 p-6 rounded-xl border border-dashed border-white/10 bg-brand-deep text-center shadow-sm">
          <p className="text-xs font-semibold text-neutral-500 mb-4 uppercase tracking-wider">
-           {passData.pass_type === 'elite' ? 'Elite Protocol Active' : passData.pass_type === 'premium' ? 'Premium Protocol Active' : 'Protocol Upgrade Available'}
+           {passData.pass_type === 'elite' ? 'Elite pass active' : passData.pass_type === 'premium' ? 'Premium pass active' : 'Upgrade available'}
          </p>
          
          {passData.pass_type === 'free' ? (
@@ -163,7 +173,7 @@ export const Pass = () => {
            </button>
          ) : (
            <div className="w-full py-3.5 rounded-lg bg-brand-accent/10 border border-brand-accent/20 text-brand-accent text-sm font-bold tracking-wide">
-             Elite Status Confirmed
+             Elite pass active
            </div>
          )}
       </div>
