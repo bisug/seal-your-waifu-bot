@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Award, Lock, Sparkles, Loader2, CheckCircle2 } from 'lucide-react';
-import { apiFetch } from '../api/client';
+import { apiFetch, getErrorMessage } from '../api/client';
 import { useUser } from '../context/UserContext';
 import { useApi } from '../hooks/useApi';
 import { useToast } from '../components/ui/Toast';
@@ -28,7 +28,7 @@ export const Pass = () => {
         await refreshUser();
       }
     } catch (err: any) {
-      addToast(err.message || 'Claim failed', 'error');
+      addToast(getErrorMessage(err), 'error');
     } finally {
       setClaiming(null);
     }
@@ -48,7 +48,7 @@ export const Pass = () => {
             await refreshUser();
           }
         } catch (err: any) {
-          addToast(err.message || 'Upgrade failed', 'error');
+          addToast(getErrorMessage(err), 'error');
         } finally {
           setUpgrading(false);
         }

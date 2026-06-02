@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useUser } from '../context/UserContext';
 import { Sparkles, Timer, Zap, CheckCircle2, Loader2, ArrowRight } from 'lucide-react';
 import { cn } from '../utils';
-import { apiFetch } from '../api/client';
+import { apiFetch, getErrorMessage } from '../api/client';
 import { useToast } from '../components/ui/Toast';
 
 export const Hatchery = () => {
@@ -17,7 +17,7 @@ export const Hatchery = () => {
             addToast(`Hatched! You found ${result.character.name}!`, 'success');
             triggerRefresh();
         } catch (err: any) {
-            addToast(err.message || 'Hatching failed', 'error');
+            addToast(getErrorMessage(err), 'error');
         } finally {
             setActionId(null);
         }
@@ -30,7 +30,7 @@ export const Hatchery = () => {
             addToast('Incubation started!', 'success');
             triggerRefresh();
         } catch (err: any) {
-            addToast(err.message || 'Incubation failed', 'error');
+            addToast(getErrorMessage(err), 'error');
         } finally {
             setActionId(null);
         }

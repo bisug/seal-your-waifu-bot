@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
-import { apiFetch } from '../api/client';
+import { apiFetch, getErrorMessage } from '../api/client';
 
 export interface UserStats {
   level: number;
@@ -101,7 +101,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setError(null);
     } catch (err: any) {
       console.error('Failed to fetch user:', err);
-      setError(err.message);
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }

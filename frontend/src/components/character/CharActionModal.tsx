@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Loader2, Zap, Trash2 } from 'lucide-react';
 import { useToast } from '../ui/Toast';
 import { Modal } from './Modal';
-import { apiFetch } from '../../api/client';
+import { apiFetch, getErrorMessage } from '../../api/client';
 import { useUser } from '../../context/UserContext';
 
 interface CharActionModalProps {
@@ -38,7 +38,7 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
             setSelectedChar(null);
             if (onPurchaseSuccess) onPurchaseSuccess(selectedChar);
         } catch (err: any) {
-            addToast(err.message, 'error');
+            addToast(getErrorMessage(err), 'error');
             window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('error');
             setPurchaseStage('idle');
         }
@@ -70,13 +70,13 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                         triggerRefresh();
                         setSelectedChar(null);
                     } catch (err: any) {
-                        addToast(err.message, 'error');
+                        addToast(getErrorMessage(err), 'error');
                         setSellStage('idle');
                     }
                 }
             );
         } catch (err: any) {
-            addToast(err.message, 'error');
+            addToast(getErrorMessage(err), 'error');
             setSellStage('idle');
         }
     };
@@ -99,13 +99,13 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                         triggerRefresh();
                         setSelectedChar(null);
                     } catch (err: any) {
-                        addToast(err.message, 'error');
+                        addToast(getErrorMessage(err), 'error');
                         setSellStage('idle');
                     }
                 }
             );
         } catch (err: any) {
-            addToast(err.message, 'error');
+            addToast(getErrorMessage(err), 'error');
             setSellStage('idle');
         }
     };
