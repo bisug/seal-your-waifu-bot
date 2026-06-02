@@ -23,13 +23,13 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setToasts(prev => [...prev, { id, message, type }]);
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
-    }, 3000);
+    }, type === 'error' ? 6000 : 4000);
   }, []);
 
   return (
     <ToastContext.Provider value={{ addToast }}>
       {children}
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[300] w-full max-w-[320px] pointer-events-none flex flex-col items-center space-y-2">
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[300] w-full max-w-[360px] px-3 pointer-events-none flex flex-col items-center space-y-2">
         <AnimatePresence>
           {toasts.map(toast => (
             <motion.div
@@ -49,7 +49,7 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                  toast.type === 'error' ? <AlertCircle size={18} /> :
                  <Info size={18} />}
               </div>
-              <span className="text-sm font-medium text-white truncate pr-2">
+              <span className="text-sm font-medium text-white pr-2 leading-snug break-words">
                 {toast.message}
               </span>
             </motion.div>

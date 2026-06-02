@@ -14,7 +14,7 @@ export const Hatchery = () => {
         setActionId(eggId);
         try {
             const result = await apiFetch(`/eggs/hatch/${eggId}`, { method: 'POST' });
-            addToast(`Hatched! You found ${result.character.name}!`, 'success');
+            addToast(result?.character?.name ? `Hatched! You found ${result.character.name}.` : 'Egg hatched successfully.', 'success');
             triggerRefresh();
         } catch (err: any) {
             addToast(getErrorMessage(err), 'error');
@@ -40,7 +40,7 @@ export const Hatchery = () => {
         <div className="px-4 py-8 pb-20 max-w-2xl mx-auto space-y-8">
             <header className="border-b border-white/5 pb-4">
                 <h1 className="text-xl font-bold text-white tracking-tight mb-1">Incubation</h1>
-                <p className="text-sm font-medium text-neutral-400">Accelerate the birth of new legends</p>
+                <p className="text-sm font-medium text-neutral-400">Incubate eggs and hatch new characters.</p>
             </header>
 
             <section>
@@ -54,6 +54,7 @@ export const Hatchery = () => {
                         const isIncubating = egg.status === 'incubating';
                         const isReady = egg.status === 'incubating' && egg.remaining_mins <= 0;
                         const isFresh = egg.status === 'fresh';
+                        const hasEggId = Boolean(egg.id);
 
                         return (
                             <div key={egg.id || i} className={cn(
@@ -95,7 +96,7 @@ export const Hatchery = () => {
                                 {isFresh && (
                                     <button
                                         onClick={() => handleIncubate(egg.id)}
-                                        disabled={!!actionId}
+                                        disabled={!!actionId || !hasEggId}
                                         className="bg-white/5 hover:bg-white/10 text-white text-xs font-bold px-4 py-2 rounded-lg active:scale-95 transition-all flex items-center gap-1.5 disabled:opacity-50"
                                     >
                                         {actionId === egg.id ? <Loader2 size={14} className="animate-spin" /> : <>Start <ArrowRight size={14} /></>}
@@ -111,7 +112,7 @@ export const Hatchery = () => {
                                 {isReady && (
                                     <button
                                         onClick={() => handleHatch(egg.id)}
-                                        disabled={!!actionId}
+                                        disabled={!!actionId || !hasEggId}
                                         className="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-lg active:scale-95 transition-all shadow-sm disabled:opacity-50"
                                     >
                                         {actionId === egg.id ? <Loader2 size={14} className="animate-spin" /> : 'Hatch'}
@@ -123,7 +124,7 @@ export const Hatchery = () => {
                         <div className="bg-brand-deep p-8 rounded-xl border border-white/5 text-center flex flex-col items-center shadow-sm">
                             <Zap size={24} className="text-neutral-700 mb-3" />
                             <p className="text-neutral-500 text-sm font-medium">
-                                No eggs detected in your inventory.
+                                You do not have any eggs yet.
                             </p>
                         </div>
                     )}

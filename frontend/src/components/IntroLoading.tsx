@@ -1,5 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useEffect, useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
+import { Gem, Sparkles } from 'lucide-react';
+
+const loadingSteps = [
+  'Preparing your collection',
+  'Checking daily shop',
+  'Loading pets and eggs',
+  'Almost ready',
+];
+
+const cardFaces = [
+  { label: 'C', tone: 'from-zinc-700/70 to-zinc-900' },
+  { label: 'R', tone: 'from-sky-500/60 to-zinc-900' },
+  { label: 'E', tone: 'from-violet-500/60 to-zinc-900' },
+];
 
 export const IntroLoading = () => {
   const [progress, setProgress] = useState(0);
@@ -8,86 +22,95 @@ export const IntroLoading = () => {
     const timer = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) return 100;
-        const remaining = 100 - prev;
-        const increment = Math.max(0.5, Math.random() * (remaining / 10));
-        return Math.min(100, prev + increment);
+        const next = prev + Math.max(1.2, (100 - prev) / 14);
+        return Math.min(100, next);
       });
-    }, 150);
+    }, 180);
 
     return () => clearInterval(timer);
   }, []);
 
-  return (
-    <div className="fixed inset-0 bg-[#09090b] flex flex-col items-center justify-center p-6 z-[999] select-none">
-      <div className="w-full max-w-[280px] flex flex-col items-center">
-        {/* Logo/Icon Container */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="relative mb-12"
-        >
-          <div className="w-20 h-20 rounded-2xl bg-zinc-900 border border-white/10 flex items-center justify-center relative overflow-hidden">
-             <div className="absolute inset-0 bg-gradient-to-br from-brand-accent/10 to-transparent opacity-50" />
-             <div className="text-brand-accent relative">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                </svg>
-             </div>
-          </div>
-        </motion.div>
+  const currentStep = useMemo(() => {
+    const index = Math.min(
+      loadingSteps.length - 1,
+      Math.floor((progress / 100) * loadingSteps.length)
+    );
+    return loadingSteps[index];
+  }, [progress]);
 
-        {/* Brand Text */}
-        <div className="text-center mb-16">
-          <motion.h1
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.8 }}
-            className="text-xl font-bold text-white tracking-[0.2em] uppercase mb-2"
+  return (
+    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-brand-midnight px-6 select-none">
+      <div className="w-full max-w-sm">
+        <div className="relative h-64 mb-10 flex items-center justify-center">
+          <motion.div
+            className="absolute h-40 w-40 rounded-full border border-white/5"
+            animate={{ rotate: 360 }}
+            transition={{ repeat: Infinity, duration: 18, ease: 'linear' }}
+          />
+          <motion.div
+            className="absolute h-56 w-56 rounded-full border border-brand-accent/10"
+            animate={{ rotate: -360 }}
+            transition={{ repeat: Infinity, duration: 26, ease: 'linear' }}
+          />
+
+          {cardFaces.map((card, index) => (
+            <motion.div
+              key={card.label}
+              className={`absolute h-36 w-24 rounded-xl border border-white/10 bg-gradient-to-br ${card.tone} shadow-2xl overflow-hidden`}
+              initial={{ opacity: 0, y: 24, rotate: 0 }}
+              animate={{
+                opacity: 1,
+                y: [0, -8, 0],
+                rotate: [-12 + index * 12, -8 + index * 10, -12 + index * 12],
+                x: (index - 1) * 44,
+              }}
+              transition={{
+                opacity: { delay: 0.12 * index, duration: 0.35 },
+                y: { repeat: Infinity, duration: 2.4, delay: index * 0.18, ease: 'easeInOut' },
+                rotate: { repeat: Infinity, duration: 2.4, delay: index * 0.18, ease: 'easeInOut' },
+              }}
+            >
+              <div className="absolute inset-x-3 top-3 h-1.5 rounded-full bg-white/15" />
+              <div className="absolute inset-x-3 bottom-3 flex items-center justify-between">
+                <span className="text-xs font-black text-white/70">{card.label}</span>
+                <Sparkles size={14} className="text-white/50" />
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="h-14 w-14 rounded-xl border border-white/10 bg-black/20 flex items-center justify-center">
+                  <Gem size={26} className="text-white" />
+                </div>
+              </div>
+            </motion.div>
+          ))}
+
+          <motion.div
+            className="absolute bottom-2 rounded-full border border-brand-accent/20 bg-brand-accent/10 px-3 py-1 text-xs font-semibold text-brand-accent"
+            animate={{ opacity: [0.55, 1, 0.55] }}
+            transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
           >
-            Seal<span className="text-brand-accent">Bot</span>
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.4 }}
-            transition={{ delay: 0.4, duration: 1 }}
-            className="text-[10px] font-medium text-white tracking-[0.3em] uppercase"
-          >
-            Digital Collectibles
-          </motion.p>
+            Seal Bot
+          </motion.div>
         </div>
 
-        {/* Loading Progress */}
-        <div className="w-full space-y-4">
-          <div className="h-[2px] w-full bg-zinc-800 rounded-full overflow-hidden">
+        <div className="text-center mb-7">
+          <h1 className="text-2xl font-bold tracking-tight text-white mb-2">Opening your collection</h1>
+          <p className="text-sm font-medium text-neutral-500">{currentStep}</p>
+        </div>
+
+        <div className="space-y-3">
+          <div className="h-2 w-full rounded-full bg-brand-deep border border-white/5 overflow-hidden">
             <motion.div
-              className="h-full bg-brand-accent"
-              initial={{ width: 0 }}
+              className="h-full rounded-full bg-brand-accent"
               animate={{ width: `${progress}%` }}
-              transition={{ ease: "linear" }}
+              transition={{ ease: 'easeOut', duration: 0.25 }}
             />
           </div>
-          <div className="flex justify-between items-center px-1">
-             <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">
-                {progress < 100 ? 'Establishing Link' : 'Ready'}
-             </span>
-             <span className="text-[9px] font-bold text-brand-accent tabular-nums tracking-widest">
-                {Math.floor(progress)}%
-             </span>
+          <div className="flex items-center justify-between text-xs font-semibold">
+            <span className="text-neutral-500">Loading</span>
+            <span className="text-brand-accent tabular-nums">{Math.floor(progress)}%</span>
           </div>
         </div>
       </div>
-
-      {/* Footer Branding */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 0.2 }}
-        transition={{ delay: 1, duration: 1 }}
-        className="absolute bottom-10 flex flex-col items-center gap-2"
-      >
-        <div className="w-1 h-1 rounded-full bg-white/50" />
-        <span className="text-[8px] font-bold text-white tracking-[0.4em] uppercase">Production v2.5</span>
-      </motion.div>
     </div>
   );
 };

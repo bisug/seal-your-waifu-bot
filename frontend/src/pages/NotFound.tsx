@@ -21,9 +21,9 @@ export const NotFound = ({ onReset }: { onReset: () => void }) => {
 
         <h1 className="text-4xl font-bold text-white tracking-tighter mb-4">404</h1>
         
-        <h2 className="text-sm font-bold text-zinc-100 uppercase tracking-widest mb-2">Endpoint Not Found</h2>
-        <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-widest leading-relaxed mb-10 max-w-[200px]">
-          The requested coordinate does not exist in the current sector.
+        <h2 className="text-base font-bold text-zinc-100 mb-2">Page not found</h2>
+        <p className="text-sm font-medium text-zinc-500 leading-relaxed mb-10 max-w-[240px]">
+          This section is not available. Return to your profile and keep going.
         </p>
 
         <button 
@@ -31,16 +31,12 @@ export const NotFound = ({ onReset }: { onReset: () => void }) => {
             window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
             onReset();
           }}
-          className="w-full py-4 rounded-xl bg-white text-zinc-950 font-bold uppercase tracking-[0.2em] text-[10px] transition-transform active:scale-[0.98] flex items-center justify-center gap-3"
+          className="w-full py-4 rounded-xl bg-white text-zinc-950 font-bold text-sm transition-transform active:scale-[0.98] flex items-center justify-center gap-3"
         >
           <Home size={14} />
-          <span>Return to base</span>
+          <span>Back to profile</span>
         </button>
       </motion.div>
-      
-      <div className="absolute bottom-10 opacity-10">
-         <span className="text-[8px] font-bold text-white tracking-[0.5em] uppercase">System Error / Null Pointer</span>
-      </div>
     </div>
   );
 };

@@ -27,13 +27,13 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
         if (buying) return;
 
         window.Telegram?.WebApp?.showConfirm(
-            `Unlock ${petName}? This will instantly set it as your active pet.`,
+            `Buy ${petName}? It will become your active pet.`,
             async (confirmed) => {
                 if (confirmed) {
                     setBuying(petName);
                     try {
                         await apiFetch(`/shop/buy/pet/${index}`, { method: 'POST' });
-                        addToast(`Successfully acquired ${petName}!`, 'success');
+                        addToast(`Successfully bought ${petName}.`, 'success');
                         triggerRefresh();
                     } catch (err: any) {
                         addToast(getErrorMessage(err), 'error');
@@ -47,7 +47,7 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
 
     if (loading && !shopData) return (
         <div className="grid grid-cols-1 gap-4 px-4 py-8 max-w-2xl mx-auto">
-            {[1,2,3,4].map(i => <Skeleton key={i} className="h-40 rounded-2xl" />)}
+            {[1,2,3,4].map(i => <Skeleton key={i} className="h-40 rounded-xl" />)}
         </div>
     );
 
@@ -60,9 +60,9 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
             <header className="mb-8 border-b border-white/5 pb-4">
                 <h1 className="text-xl font-bold text-white flex items-center gap-2 mb-1">
                     <ShoppingBag className="text-brand-accent" size={20} />
-                    Companion Hub
+                    Pet Store
                 </h1>
-                <p className="text-sm font-medium text-neutral-400">Acquire elite pets for your journey</p>
+                <p className="text-sm font-medium text-neutral-400">Buy pets and choose one to stay active.</p>
             </header>
 
             <div className="grid grid-cols-1 gap-4">
@@ -74,9 +74,9 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
                     return (
                         <div
                             key={pet.name}
-                            onClick={() => onPetClick?.(pet)}
+                            onClick={() => onPetClick?.({ ...pet, shopIndex: i })}
                             className={cn(
-                                "p-4 rounded-2xl border transition-all flex gap-4 items-center group cursor-pointer shadow-sm",
+                                "p-4 rounded-xl border transition-all flex gap-4 items-center group cursor-pointer shadow-sm",
                                 isOwned ? "border-emerald-500/20 bg-emerald-500/5" : "border-white/5 bg-brand-deep",
                                 isLocked && "opacity-60 grayscale-[0.3]"
                             )}
@@ -111,7 +111,7 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
                                 <div className="flex items-center justify-between gap-3">
                                     <div className="flex flex-col">
                                         <span className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-0.5">Price</span>
-                                        <span className="text-sm font-bold text-white tabular-nums">⧫ {formatNumber(pet.zenith_price)}</span>
+                                        <span className="text-sm font-bold text-white tabular-nums">{formatNumber(pet.zenith_price)} Zenith</span>
                                     </div>
 
                                     {!isOwned && !isLocked && (
@@ -128,7 +128,7 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
                                                     : "bg-brand-midnight text-neutral-600 border border-white/5"
                                             )}
                                         >
-                                            {buying === pet.name ? <Loader2 size={14} className="animate-spin" /> : 'Buy Now'}
+                                            {buying === pet.name ? <Loader2 size={14} className="animate-spin" /> : canAfford ? 'Buy' : 'Need more'}
                                         </button>
                                     )}
 
