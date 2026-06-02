@@ -2,12 +2,13 @@ from pyrogram import enums, filters, types
 
 from Grabber import app
 from Grabber.core.cache import invalidate_user_cache, sync_user_to_redis
+from Grabber.core.constants import SHARDS_PER_ZENITH
 from Grabber.core.keyboard import get_webapp_button
 from Grabber.core.user import get_user_filter
 from Grabber.core.utils import handle_errors
 from Grabber.database import user_collection
 
-EXCHANGE_RATE = 10_000
+EXCHANGE_RATE = SHARDS_PER_ZENITH
 
 
 def _parse_amount(raw: str) -> int | None:
@@ -109,8 +110,8 @@ async def exchange_command(_, message: types.Message):
         f"<b>Your Zenith:</b> <code>{int(user.get('zenith', 0) or 0):,}</code>\n\n"
         f"<b>Rate:</b> {EXCHANGE_RATE:,} Shards = 1 Zenith\n\n"
         "<b>Commands:</b>\n"
-        "<code>/exchange 10000</code> - Shards to Zenith\n"
-        "<code>/zenith 10000</code> - Shards to Zenith\n"
+        f"<code>/exchange {EXCHANGE_RATE}</code> - Shards to Zenith\n"
+        f"<code>/zenith {EXCHANGE_RATE}</code> - Shards to Zenith\n"
         "<code>/shard 1</code> - Zenith to Shards",
         parse_mode=enums.ParseMode.HTML,
         reply_markup=types.InlineKeyboardMarkup(buttons) if buttons else None,
@@ -125,9 +126,9 @@ async def zenith_command(_, message: types.Message):
         return await message.reply_text(
             "<b>Shards → Zenith Exchange</b>\n\n"
             "<b>Usage:</b> <code>/zenith &lt;amount&gt;</code>\n"
-            "<b>Example:</b> <code>/zenith 50000</code>\n\n"
-            "<b>Rate:</b> 10,000 ⬪ = 1 ⧫\n"
-            "<b>Minimum:</b> 10,000 Shards",
+            f"<b>Example:</b> <code>/zenith {EXCHANGE_RATE * 5}</code>\n\n"
+            f"<b>Rate:</b> {EXCHANGE_RATE:,} ⬪ = 1 ⧫\n"
+            f"<b>Minimum:</b> {EXCHANGE_RATE:,} Shards",
             parse_mode=enums.ParseMode.HTML
         )
     shards_amount = _parse_amount(message.command[1])
@@ -145,7 +146,7 @@ async def shard_command(_, message: types.Message):
             "<b>Zenith → Shards Exchange</b>\n\n"
             "<b>Usage:</b> <code>/shard &lt;amount&gt;</code>\n"
             "<b>Example:</b> <code>/shard 5</code>\n\n"
-            "<b>Rate:</b> 1 ⧫ = 10,000 ⬪\n"
+            f"<b>Rate:</b> 1 ⧫ = {EXCHANGE_RATE:,} ⬪\n"
             "<b>Minimum:</b> 1 Zenith",
             parse_mode=enums.ParseMode.HTML
         )

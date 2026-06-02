@@ -16,6 +16,11 @@ from Grabber.core.utils import check_member_requirement, get_now_utc, html_escap
 # Alias for backward compatibility within this file if needed, but better to use it directly
 escape_html = html_escape
 NGUESS_TTL = timedelta(minutes=5)
+NAME_GUESS_BASE_REWARD = 125
+NAME_GUESS_PLAYER_BONUS = 25
+NAME_GUESS_MAX_REWARD = 300
+NAME_GUESS_MID_MILESTONE_BONUS = 1_500
+NAME_GUESS_ELITE_MILESTONE_BONUS = 3_000
 # Send message safe is now handled by game_bot.send_message_safe and game_bot.send_media_safe
 async def start_nguess_game(chat_id):
     """Fetches a character and starts a new game session."""
@@ -116,7 +121,10 @@ async def nguess_check_handler(_, message: types.Message):
                 
         # Correct guess!
         player_count = len(session.get("players", []))
-        reward = min(10 + (player_count - 1) * 5, 50)
+        reward = min(
+            NAME_GUESS_BASE_REWARD + (player_count - 1) * NAME_GUESS_PLAYER_BONUS,
+            NAME_GUESS_MAX_REWARD,
+        )
         # Increment global counter
         stats = await sessions_collection.find_one_and_update(
             {"id": "nguess_global_stats"},
@@ -128,12 +136,12 @@ async def nguess_check_handler(_, message: types.Message):
         bonus = 0
         milestone_text = ""
         if total_guesses % 100 == 0:
-            bonus = 1000
-            milestone_text = f"\n\n<b>ELITE MILESTONE ACHIEVED</b>\nYou are the 100th guesser! Granted 1,000 bonus Shards."
+            bonus = NAME_GUESS_ELITE_MILESTONE_BONUS
+            milestone_text = f"\n\n<b>ELITE MILESTONE ACHIEVED</b>\nYou are the 100th guesser! Granted {bonus:,} bonus Shards."
             await sessions_collection.update_one({"id": "nguess_global_stats"}, {"$set": {"total_guesses": 0}})
         elif total_guesses % 100 == 50:
-            bonus = 500
-            milestone_text = f"\n\n<b>MILESTONE REACHED</b>\nYou are the 50th guesser! Granted 500 bonus Shards."
+            bonus = NAME_GUESS_MID_MILESTONE_BONUS
+            milestone_text = f"\n\n<b>MILESTONE REACHED</b>\nYou are the 50th guesser! Granted {bonus:,} bonus Shards."
         total_reward = reward + bonus
         # Update user
         await user_collection.update_one(

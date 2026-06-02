@@ -6,7 +6,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from Grabber import LOGGER
 from Grabber.core.cache import sync_user_to_redis
-from Grabber.core.constants import RARITY_PRICES, RARITY_STOCK_LIMITS, SHOP_LIMIT
+from Grabber.core.constants import (
+    LEVEL_BUY_SHARD_COST,
+    RARITY_PRICES,
+    RARITY_STOCK_LIMITS,
+    SHARDS_PER_ZENITH,
+    SHOP_LIMIT,
+)
 from Grabber.core.eggs import get_egg_tier_info, normalize_egg_tier
 from Grabber.core.pass_config import (
     CURRENT_PASS_SEASON,
@@ -33,7 +39,7 @@ from Grabber.core.pets import PET_SHOP, ensure_user_pet_state, get_pet_key, norm
 from Grabber.webapp.auth import get_current_user, get_current_user_data
 
 router = APIRouter()
-EXCHANGE_RATE_SHARDS_PER_ZENITH = 10_000
+EXCHANGE_RATE_SHARDS_PER_ZENITH = SHARDS_PER_ZENITH
 
 
 def _daily_shop_timing():
@@ -412,7 +418,7 @@ async def claim_pass_level(level: int, user_id: int = Depends(get_current_user))
 
 @router.post("/buy_level")
 async def api_buy_level(levels: int = Query(1, ge=1, le=50), user_id: int = Depends(get_current_user)):
-    cost = levels * 5000
+    cost = levels * LEVEL_BUY_SHARD_COST
     user = await user_collection.find_one(get_user_id_query(user_id))
     
     if not user or user.get("balance", 0) < cost:
