@@ -93,7 +93,7 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }) => {
             >
                 <div className="p-8 overflow-y-auto no-scrollbar">
                     <div className="flex justify-between items-start mb-8">
-                        <div className="w-24 h-24 rounded-[2rem] overflow-hidden border-2 border-brand-accent/20 bg-black/40 shadow-2xl">
+                        <div className="w-24 h-24 rounded-xl overflow-hidden border-2 border-brand-accent/20 bg-black/40 shadow-2xl">
                             <img src={selectedPet.img} alt={selectedPet.name} className="w-full h-full object-cover" />
                         </div>
                         <button
@@ -105,9 +105,9 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }) => {
                     </div>
 
                     <div className="mb-8">
-                        <div className="flex items-center gap-3 mb-2">
-                            <h2 className="text-3xl font-black text-white italic tracking-tighter uppercase">{selectedPet.name}</h2>
-                            <span className="px-2 py-0.5 rounded-lg bg-brand-accent/10 border border-brand-accent/20 text-brand-accent text-[8px] font-black uppercase tracking-widest">
+                        <div className="flex items-center gap-3 mb-2 min-w-0">
+                            <h2 className="text-3xl font-black text-white italic tracking-tighter uppercase truncate min-w-0">{selectedPet.name}</h2>
+                            <span className="px-2 py-0.5 rounded-lg bg-brand-accent/10 border border-brand-accent/20 text-brand-accent text-[8px] font-black uppercase tracking-widest shrink-0">
                                 {selectedPet.rarity || 'Pet'}
                             </span>
                         </div>

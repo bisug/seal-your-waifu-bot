@@ -1,5 +1,6 @@
 import asyncio
 import uuid
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
@@ -18,14 +19,25 @@ from Grabber.webapp.auth import get_current_user, get_current_user_data
 router = APIRouter()
 
 
+def _daily_shop_timing():
+    now = datetime.now(timezone.utc)
+    reset_at = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    return {
+        "rotation_date": now.strftime("%Y-%m-%d"),
+        "reset_at": reset_at.isoformat().replace("+00:00", "Z"),
+    }
+
 
 @router.get("/shop/hub")
 async def get_shop_hub(user: dict = Depends(get_current_user_data)):
+    timing = _daily_shop_timing()
     return {
         "balance": user.get("balance", 0),
         "zenith": user.get("zenith", 0),
         "pass_type": user.get("pass_type", "free"),
-        "characters_rarity": "Various"
+        "characters_rarity": "Various",
+        "rotation_date": timing["rotation_date"],
+        "reset_at": timing["reset_at"],
     }
 
 @router.get("/shop/characters")
@@ -37,7 +49,13 @@ async def get_shop_characters(user: dict = Depends(get_current_user_data)):
     for c in chars:
         char_dict = c.model_dump()
         char_dict["owned"] = c.id in owned_ids
-        char_dict["stock_limit"] = RARITY_STOCK_LIMITS.get(c.rarity, SHOP_LIMIT)
+        stock_limit = RARITY_STOCK_LIMITS.get(c.rarity, SHOP_LIMIT)
+        sold_count = max(0, int(char_dict.get("sold_count") or 0))
+        stock_remaining = max(0, stock_limit - sold_count)
+        char_dict["stock_limit"] = stock_limit
+        char_dict["sold_count"] = sold_count
+        char_dict["stock_remaining"] = stock_remaining
+        char_dict["sold_out"] = stock_remaining <= 0
         char_dict["zenith_price"] = RARITY_PRICES.get(c.rarity, 5)
         response.append(char_dict)
     return response

@@ -25,6 +25,123 @@ const Achievements = lazy(() => import('./pages/Achievements').then(m => ({ defa
 const MyPets = lazy(() => import('./pages/MyPets').then(m => ({ default: m.MyPets })));
 
 const VALID_TABS = ['profile', 'incubation', 'shop', 'gallery', 'pets', 'referrals', 'quests', 'pass', 'leaderboard', 'achievements', 'mypets'];
+const TAB_ALIASES: Record<string, string> = {
+  profile: 'profile',
+  home: 'profile',
+  me: 'profile',
+  harem: 'profile',
+  collection: 'profile',
+  inventory: 'profile',
+  eggs: 'incubation',
+  egg: 'incubation',
+  hatch: 'incubation',
+  hatching: 'incubation',
+  incubation: 'incubation',
+  incubator: 'incubation',
+  shop: 'shop',
+  market: 'shop',
+  cshop: 'shop',
+  store: 'shop',
+  daily_shop: 'shop',
+  dailyshop: 'shop',
+  gallery: 'gallery',
+  catalog: 'gallery',
+  characters: 'gallery',
+  pets: 'pets',
+  petshop: 'pets',
+  pet_store: 'pets',
+  companionshop: 'pets',
+  mypets: 'mypets',
+  mypet: 'mypets',
+  pet: 'mypets',
+  companions: 'mypets',
+  referrals: 'referrals',
+  referral: 'referrals',
+  invite: 'referrals',
+  quests: 'quests',
+  quest: 'quests',
+  tasks: 'quests',
+  task: 'quests',
+  missions: 'quests',
+  pass: 'pass',
+  battlepass: 'pass',
+  battle_pass: 'pass',
+  bp: 'pass',
+  leaderboard: 'leaderboard',
+  leaderboards: 'leaderboard',
+  top: 'leaderboard',
+  ranks: 'leaderboard',
+  achievements: 'achievements',
+  achievement: 'achievements',
+  badges: 'achievements',
+};
+
+interface RouteTarget {
+  tab: string;
+  alias: string;
+}
+
+const normalizeRouteToken = (value?: string | null) => {
+  if (!value) return null;
+
+  let token = value.trim();
+  try {
+    token = decodeURIComponent(token);
+  } catch {
+    // Keep the raw token if Telegram/browser encoding is malformed.
+  }
+
+  token = token
+    .toLowerCase()
+    .replace(/^https?:\/\/[^/]+/i, '')
+    .replace(/^#/, '')
+    .replace(/^[?/]+/, '')
+    .split(/[?&#=]/)[0]
+    .replace(/^\/+|\/+$/g, '');
+
+  const lastSegment = token.split('/').filter(Boolean).pop() || token;
+  const normalized = lastSegment.replace(/[-\s]+/g, '_').replace(/[^a-z0-9_]/g, '');
+
+  return normalized || null;
+};
+
+const resolveRouteToken = (value?: string | null): RouteTarget | null => {
+  const alias = normalizeRouteToken(value);
+  if (!alias) return null;
+
+  const tab = TAB_ALIASES[alias] || (VALID_TABS.includes(alias) ? alias : null);
+  return tab ? { tab, alias } : null;
+};
+
+const getHashCandidates = () => {
+  const hash = window.location.hash.replace(/^#/, '');
+  if (!hash) return [];
+
+  const params = new URLSearchParams(hash.startsWith('?') ? hash.slice(1) : hash);
+  return [
+    hash.split(/[?&]/)[0],
+    params.get('tgWebAppStartParam'),
+    params.get('startapp'),
+    params.get('start_param'),
+    params.get('tab'),
+    params.get('section'),
+    params.get('route'),
+  ];
+};
+
+const getSearchCandidates = () => {
+  const params = new URLSearchParams(window.location.search);
+  return [
+    params.get('tgWebAppStartParam'),
+    params.get('startapp'),
+    params.get('start_param'),
+    params.get('tab'),
+    params.get('section'),
+    params.get('route'),
+  ];
+};
+
+const getPathCandidates = () => window.location.pathname.split('/').filter(Boolean).reverse();
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -87,21 +204,25 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 const AppContent = () => {
   const { user, loading, error } = useUser();
   
-  const getInitialTab = useCallback(() => {
-    const hashTab = window.location.hash.replace(/^#/, '');
-    if (VALID_TABS.includes(hashTab)) return hashTab;
-
+  const getInitialRoute = useCallback((): RouteTarget => {
     const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
-    if (startParam === 'shop') return 'shop';
-    if (startParam === 'market') return 'shop';
-    if (startParam === 'gallery') return 'gallery';
-    if (startParam === 'leaderboard') return 'leaderboard';
-    if (startParam === 'pass') return 'pass';
-    if (startParam === 'quests') return 'quests';
-    return 'profile';
+    const candidates = [
+      ...getHashCandidates(),
+      ...getSearchCandidates(),
+      startParam,
+      ...getPathCandidates(),
+    ];
+
+    for (const candidate of candidates) {
+      const route = resolveRouteToken(candidate);
+      if (route) return route;
+    }
+
+    return { tab: 'profile', alias: 'profile' };
   }, []);
 
-  const [activeTab, setActiveTab] = useState(getInitialTab());
+  const [activeRoute, setActiveRoute] = useState(getInitialRoute());
+  const activeTab = activeRoute.tab;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [selectedChar, setSelectedChar] = useState<any>(null);
   const [selectedPet, setSelectedPet] = useState<any>(null);
@@ -111,11 +232,11 @@ const AppContent = () => {
 
   useEffect(() => {
     const handleHashChange = () => {
-      setActiveTab(getInitialTab());
+      setActiveRoute(getInitialRoute());
     };
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, [getInitialTab]);
+  }, [getInitialRoute]);
 
   useEffect(() => {
     const tg = window.Telegram?.WebApp;
@@ -161,7 +282,7 @@ const AppContent = () => {
   const handleNavigate = useCallback((tab: string) => {
     const tg = window.Telegram?.WebApp;
     tg?.HapticFeedback?.impactOccurred('light');
-    setActiveTab(tab);
+    setActiveRoute({ tab, alias: tab });
     if (VALID_TABS.includes(tab) && window.location.hash !== `#${tab}`) {
       window.history.replaceState(null, '', `#${tab}`);
     }
@@ -220,7 +341,12 @@ const AppContent = () => {
             <Loader2 size={24} className="animate-spin text-brand-accent/20" />
           </div>
         }>
-          {activeTab === 'profile' && <Profile onCharClick={setSelectedChar} />}
+          {activeTab === 'profile' && (
+            <Profile
+              onCharClick={setSelectedChar}
+              focusCollection={activeRoute.alias === 'harem' || activeRoute.alias === 'collection'}
+            />
+          )}
           {activeTab === 'incubation' && <Hatchery />}
           {activeTab === 'shop' && <Shop onCharClick={setSelectedChar} />}
           {activeTab === 'gallery' && <Gallery onCharClick={setSelectedChar} />}

@@ -111,7 +111,7 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
             ) + "\n\n"
         harem_text += f"<i>Page {page + 1} of {total_pages}</i>"
         is_private = (message_obj.message if isinstance(message_obj, types.CallbackQuery) else message_obj).chat.type == enums.ChatType.PRIVATE
-        markup = get_paginated_keyboard(page, total_pages, "h", uid_int, is_private)
+        markup = get_paginated_keyboard(page, total_pages, "h", uid_int, is_private, webapp_path="#harem")
         builder = KeyboardBuilder()
         builder.keyboard = markup.inline_keyboard.copy()
         builder.add_row(types.InlineKeyboardButton("Search Collection", switch_inline_query_current_chat=f"collection.{uid_int} "))

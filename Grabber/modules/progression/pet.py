@@ -58,7 +58,7 @@ async def send_petshop_page(message_or_query_obj, page: int, user_id: int):
         is_private = message_or_query_obj.message.chat.type == enums.ChatType.PRIVATE
     else:
         is_private = message_or_query_obj.chat.type == enums.ChatType.PRIVATE
-    webapp_btn = get_webapp_button(is_private)
+    webapp_btn = get_webapp_button(is_private, path="#pets")
     if webapp_btn:
         keyboard.append([webapp_btn])
     keyboard.append([types.InlineKeyboardButton("Back to Hub", callback_data="hub_main")])
@@ -78,7 +78,7 @@ async def send_petshop_page(message_or_query_obj, page: int, user_id: int):
         LOGGER.error(f"Error in send_petshop_page: {e}")
 async def petshop_cmd(_, message: types.Message):
     is_private = message.chat.type == enums.ChatType.PRIVATE
-    webapp_btn = get_webapp_button(is_private, path="#shop")
+    webapp_btn = get_webapp_button(is_private, path="#pets")
     builder = KeyboardBuilder()
     if webapp_btn:
         builder.add_row(webapp_btn)
@@ -215,7 +215,7 @@ async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
         is_private = message_or_query_obj.message.chat.type == enums.ChatType.PRIVATE
     else:
         is_private = message_or_query_obj.chat.type == enums.ChatType.PRIVATE
-    webapp_btn = get_webapp_button(is_private)
+    webapp_btn = get_webapp_button(is_private, path="#mypets")
     if webapp_btn:
         buttons.append([webapp_btn])
     buttons.append([types.InlineKeyboardButton("Back to Hub", callback_data="hub_main")])
@@ -236,7 +236,7 @@ async def send_mypet_page(message_or_query_obj, page: int, user_id: int):
         LOGGER.error(f"Error in send_mypet_page: {e}")
 async def mypet_cmd(_, message: types.Message):
     is_private = message.chat.type == enums.ChatType.PRIVATE
-    webapp_btn = get_webapp_button(is_private)
+    webapp_btn = get_webapp_button(is_private, path="#mypets")
     builder = KeyboardBuilder()
     if webapp_btn:
         builder.add_row(webapp_btn)

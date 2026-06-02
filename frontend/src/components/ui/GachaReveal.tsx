@@ -17,7 +17,7 @@ export const GachaReveal = ({ character, onClose }: GachaRevealProps) => {
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-brand-midnight/95"
+            className="fixed inset-0 z-[130] flex items-center justify-center p-6 bg-brand-midnight/95"
             onClick={onClose}
         >
             <div
@@ -33,16 +33,16 @@ export const GachaReveal = ({ character, onClose }: GachaRevealProps) => {
                 <div className="absolute inset-0 bg-gradient-to-t from-brand-midnight via-transparent to-transparent" />
 
                 <div className="absolute bottom-0 inset-x-0 p-6 flex flex-col items-center text-center">
-                    <span className="text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded bg-brand-accent text-white mb-2">
+                    <span className="text-xs font-bold px-3 py-1 rounded bg-brand-accent text-white mb-2">
                         {character.rarity}
                     </span>
-                    <h2 className="text-xl font-bold text-white uppercase tracking-tight mb-6">
+                    <h2 className="text-xl font-bold text-white tracking-tight mb-6">
                         {character.name}
                     </h2>
                     
                     <button
                         onClick={onClose}
-                        className="w-full py-4 bg-white text-brand-midnight font-bold uppercase tracking-widest text-[11px] rounded-xl active:scale-95 transition-transform"
+                        className="w-full py-4 bg-white text-brand-midnight font-bold text-sm rounded-xl active:scale-95 transition-transform"
                     >
                         Continue
                     </button>
