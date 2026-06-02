@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from Grabber.core.cache import invalidate_user_cache, sync_user_to_redis
 from Grabber.core.eggs import get_incubation_wait_minutes
+from Grabber.core.pass_config import apply_pass_incubation_bonus, get_active_pass_type
 from Grabber.core.utils import (get_now_utc, get_user_id_query,
                                 normalize_user_id)
 from Grabber.database import user_collection
@@ -14,7 +15,7 @@ from Grabber.core.pets import (
     get_pet_key,
     normalize_pet,
 )
-from Grabber.modules.progression.quests import (QUEST_POOL, WEEKLY_POOL,
+from Grabber.modules.progression.quests import (PASS_MISSIONS, QUEST_POOL, WEEKLY_POOL,
                                                 add_xp, get_user_quests)
 from Grabber.webapp.auth import get_current_user, get_current_user_data
 from Grabber.webapp.schemas import QuestsResponse
@@ -27,7 +28,9 @@ router = APIRouter()
 async def get_quests(user_id: int = Depends(get_current_user)):
     quests_data = await get_user_quests(user_id)
     
-    response = {"daily": [], "weekly": []}
+    user = await user_collection.find_one(get_user_id_query(user_id)) or {}
+    pass_type = get_active_pass_type(user)
+    response = {"daily": [], "weekly": [], "pass": [], "pass_type": pass_type}
     
     for qid, qdata in quests_data.items():
         if qid in QUEST_POOL:
@@ -40,6 +43,12 @@ async def get_quests(user_id: int = Depends(get_current_user)):
             info["id"] = qid
             info.update(qdata)
             response["weekly"].append(info)
+        elif qid in PASS_MISSIONS:
+            info = PASS_MISSIONS[qid].copy()
+            info["id"] = qid
+            info["locked"] = pass_type == "free"
+            info.update(qdata)
+            response["pass"].append(info)
             
     return response
 
@@ -53,7 +62,13 @@ async def claim_quest(quest_id: str, user_id: int = Depends(get_current_user)):
     if qdata.get("claimed"):
         raise HTTPException(status_code=400, detail="Already claimed")
         
-    info = QUEST_POOL.get(quest_id) or WEEKLY_POOL.get(quest_id)
+    info = QUEST_POOL.get(quest_id) or WEEKLY_POOL.get(quest_id) or PASS_MISSIONS.get(quest_id)
+    if quest_id in PASS_MISSIONS:
+        user = await user_collection.find_one(get_user_id_query(user_id)) or {}
+        if get_active_pass_type(user) == "free":
+            raise HTTPException(status_code=400, detail="This mission requires Premium or Elite Pass")
+    if not info:
+        raise HTTPException(status_code=404, detail="Quest not found")
     if qdata.get("progress", 0) < info["target"]:
         raise HTTPException(status_code=400, detail="Quest not completed")
         
@@ -117,7 +132,10 @@ async def incubate_egg(egg_id: str, user: dict = Depends(get_current_user_data))
     fresh_user = await ensure_user_pet_state(uid_int, fresh_user)
     pets = [normalize_pet(p) for p in fresh_user.get("pets", [DEFAULT_PET])]
     active_pet = find_pet(pets, fresh_user.get("current_pet"))
-    wait_min = get_incubation_wait_minutes(egg.get("tier", "common"), active_pet)
+    wait_min = apply_pass_incubation_bonus(
+        get_incubation_wait_minutes(egg.get("tier", "common"), active_pet),
+        fresh_user,
+    )
         
     ready_time = get_now_utc() + timedelta(minutes=wait_min)
     

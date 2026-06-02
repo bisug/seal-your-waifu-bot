@@ -91,10 +91,13 @@ class QuestModel(BaseModel):
     reward_xp: int
     reward_shards: Optional[int] = 0
     claimed: bool
+    locked: bool = False
 
 class QuestsResponse(BaseModel):
     daily: List[QuestModel]
     weekly: List[QuestModel]
+    pass_type: str = "free"
+    pass_: List[QuestModel] = Field(default_factory=list, alias="pass")
 
 class TradeOffer(BaseModel):
     id: str

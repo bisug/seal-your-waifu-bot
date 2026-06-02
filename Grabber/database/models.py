@@ -25,6 +25,10 @@ class User(BaseModel):
     xp: int = 0
     level: int = 0
     claimed_levels: List[int] = Field(default_factory=list)
+    pass_claims: dict = Field(default_factory=dict)
+    pass_bank_by_season: dict = Field(default_factory=dict)
+    pass_entitlements: dict = Field(default_factory=dict)
+    pass_payment_locks: dict = Field(default_factory=dict)
     # Name Guessing Game
     guess_count: int = 0
 

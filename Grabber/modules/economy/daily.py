@@ -8,6 +8,7 @@ from Grabber.core.cache import (get_daily_date, get_weekly_date,
                                 invalidate_leaderboard_cache,
                                 invalidate_user_cache, set_daily_date,
                                 set_weekly_date, sync_user_to_redis)
+from Grabber.core.pass_config import PASS_BENEFITS, get_active_pass_type
 from Grabber.core.user import add_user_set_on_insert, get_user_data
 from Grabber.core.utils import get_user_id_query, handle_errors, html_escape, reply_media_dynamic
 from Grabber.database import collection, user_collection
@@ -60,8 +61,8 @@ async def daily_command_handler(_, message: types.Message):
     reward_streak = min(streak, 7)
     reward_coins = STREAK_REWARDS.get(reward_streak, 100)
     # Add Pass bonus
-    pass_type = user.get("pass_type", "free")
-    multiplier = 1.5 if pass_type == "elite" else 1.2 if pass_type == "premium" else 1.0
+    pass_type = get_active_pass_type(user)
+    multiplier = PASS_BENEFITS[pass_type]["daily_multiplier"]
     base_coins = reward_coins
     reward_coins = int(base_coins * multiplier)
     bonus_coins = reward_coins - base_coins
@@ -119,11 +120,11 @@ async def weekly_command_handler(_, message: types.Message):
     # Weekly Rewards: 2000 Coins + 1 Rare Character (guaranteed?)
     # or just random better loot.
     # Let's give 2000 coins + 500 XP
-    pass_type = user.get("pass_type", "free")
-    multiplier = 1.5 if pass_type == "elite" else 1.2 if pass_type == "premium" else 1.0
+    pass_type = get_active_pass_type(user)
+    multiplier = PASS_BENEFITS[pass_type]["weekly_multiplier"]
     base_coins = 2000
     reward_coins = int(base_coins * multiplier)
-    xp_reward = int(500 * multiplier)
+    xp_reward = int(500 * PASS_BENEFITS[pass_type]["xp_multiplier"])
     bonus_coins = reward_coins - base_coins
     pass_bonus_text = f"\n(+{bonus_coins} Pass Bonus)" if multiplier > 1.0 else ""
     weekly_filter = get_user_id_query(user_id)

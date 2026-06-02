@@ -17,6 +17,7 @@ from Grabber.core.eggs import (
     normalize_egg_tier,
 )
 from Grabber.core.keyboard import get_webapp_button
+from Grabber.core.pass_config import apply_pass_incubation_bonus, get_active_pass_type, PASS_BENEFITS
 from Grabber.core.progression import add_xp
 from Grabber.core.tasks import run_background_task
 from Grabber.core.user import add_pet_xp, add_user_set_on_insert, get_user_filter, get_user_id
@@ -91,12 +92,13 @@ async def hunt_cmd(bot, message: types.Message):
         # Calculate Shards
         shards = random.randint(100, 300)
         bonus_text = ""
-        pass_type = user.get("pass_type", "free")
+        pass_type = get_active_pass_type(user)
+        hunt_multiplier = PASS_BENEFITS[pass_type]["hunt_multiplier"]
         if pass_type == "elite":
-            shards = int(shards * 1.5)
+            shards = int(shards * hunt_multiplier)
             bonus_text += "\n<b>+50% Elite Bonus!</b>"
         elif pass_type == "premium":
-            shards = int(shards * 1.2)
+            shards = int(shards * hunt_multiplier)
             bonus_text += "\n<b>+20% Premium Bonus!</b>"
         scavenger_chance = 0.2 * aff_multiplier
         if ability == "Scavenger" and random.random() < scavenger_chance:
@@ -287,7 +289,7 @@ async def egg_incubate_callback(_, query: types.CallbackQuery):
     active_pet = find_pet(pets, user.get("current_pet")) or {}
     raw_tier = egg.get("tier", "common") if isinstance(egg, dict) else egg
     tier_key = normalize_egg_tier(raw_tier)
-    wait_min = get_incubation_wait_minutes(tier_key, active_pet)
+    wait_min = apply_pass_incubation_bonus(get_incubation_wait_minutes(tier_key, active_pet), user)
     ready_time = get_now_utc() + timedelta(minutes=wait_min)
     incubate_filter = get_user_filter(owner_id)
     incubate_filter["eggs"] = {"$elemMatch": {"id": egg_id, "status": "fresh"}}
@@ -345,11 +347,14 @@ async def process_egg_hatch(user_id: int, egg: dict) -> tuple[bool, any]:
             return False, "💥 <b>The egg exploded!</b>\nIt was corrupted..."
         # Pick character
         tier_key, tier_info = get_egg_tier_info(egg.get("tier", "common"))
-        rarity = random.choice(tier_info["pool"])
         from Grabber.core.waifu import get_or_load_characters
-        chars = await get_or_load_characters(rarity)
+        chars = []
+        for rarity in random.sample(tier_info["pool"], k=len(tier_info["pool"])):
+            chars = await get_or_load_characters(rarity)
+            if chars:
+                break
         if not chars:
-            return False, "Egg was empty! (Database Error)"
+            return False, "Egg was empty! No matching characters are available right now."
         character = random.choice(chars)
         # Atomic: Pull Egg, Push Char
         hatch_filter = get_user_filter(user_id)
