@@ -322,7 +322,7 @@ async def view_quests(_, message: types.Message, edit_message=False):
         buttons = []
     from Grabber.core.keyboard import get_webapp_button
     is_private = message.chat.type == enums.ChatType.PRIVATE
-    webapp_btn = get_webapp_button(is_private)
+    webapp_btn = get_webapp_button(is_private, path="#quests")
     if webapp_btn:
         buttons.append([webapp_btn])
     markup = types.InlineKeyboardMarkup(buttons)

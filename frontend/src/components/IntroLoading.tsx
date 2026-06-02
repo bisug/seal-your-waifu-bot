@@ -100,8 +100,7 @@ export const IntroLoading = () => {
                 }}
               >
                 <div className="absolute inset-x-3 top-3 h-1.5 rounded-full bg-white/15" />
-                <div className="absolute inset-x-3 bottom-3 flex items-center justify-between">
-                  <span className="text-[10px] font-black text-white/70">{complete ? 'DONE' : 'SEAL'}</span>
+                <div className="absolute inset-x-3 bottom-3 flex items-center justify-end">
                   <Sparkles size={14} className={complete ? 'text-brand-accent' : 'text-white/40'} />
                 </div>
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -128,7 +127,7 @@ export const IntroLoading = () => {
           <p className="text-sm font-medium text-neutral-500">{currentStep}</p>
         </div>
 
-        <div className="flex items-center justify-center gap-2">
+        <div className="flex items-center justify-center gap-2" aria-label={`${completedCards} of 4 intro cards loaded`}>
           {cardFaces.map((card, index) => {
             const active = index < completedCards;
             return (
@@ -141,7 +140,6 @@ export const IntroLoading = () => {
               />
             );
           })}
-          <span className="ml-2 text-xs font-semibold text-neutral-500">{completedCards}/4 cards ready</span>
         </div>
       </div>
     </div>

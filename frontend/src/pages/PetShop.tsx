@@ -75,7 +75,7 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
             <div className="grid grid-cols-1 gap-4">
                 {pets.map((pet, i) => {
                     const isOwned = owned.includes(pet.name);
-                    const isLocked = currentLevel < pet.req_level;
+                    const isLocked = !isOwned && currentLevel < pet.req_level;
                     const canAfford = (user?.zenith || 0) >= pet.zenith_price;
 
                     return (
@@ -116,7 +116,7 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
                                 </div>
 
                                 <div className="flex items-center justify-between gap-3">
-                                    <div className="flex flex-col">
+                                    <div className="flex flex-col min-w-0">
                                         <span className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-0.5">Price</span>
                                         <span className="text-sm font-bold text-white tabular-nums">{formatNumber(pet.zenith_price)} Zenith</span>
                                     </div>

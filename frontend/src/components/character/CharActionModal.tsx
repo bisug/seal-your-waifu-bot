@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Loader2, Zap, Trash2 } from 'lucide-react';
+import { Gem, Loader2, Lock, Trash2, Zap } from 'lucide-react';
 import { useToast } from '../ui/Toast';
 import { Modal } from './Modal';
 import { apiFetch, getErrorMessage } from '../../api/client';
 import { useUser } from '../../context/UserContext';
+import { formatNumber } from '../../utils';
 
 interface CharActionModalProps {
     selectedChar: any;
@@ -29,12 +30,22 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
     if (!selectedChar) return null;
 
     const isOwned = (user?.characters || []).some(c => String(c.id) === String(selectedChar.id));
+    const zenithBalance = Number(user?.stats?.zenith ?? user?.zenith ?? 0);
+    const price = Number(selectedChar.zenith_price || 0);
+    const stockRemaining = typeof selectedChar.stock_remaining === 'number'
+        ? selectedChar.stock_remaining
+        : typeof selectedChar.stock_limit === 'number' && typeof selectedChar.sold_count === 'number'
+            ? Math.max(0, selectedChar.stock_limit - selectedChar.sold_count)
+            : null;
+    const isSoldOut = Boolean(selectedChar.sold_out) || (stockRemaining !== null && stockRemaining <= 0);
+    const canAfford = zenithBalance >= price;
 
     const handleBuy = async () => {
         setPurchaseStage('buying');
         try {
             await apiFetch(`/shop/buy/character/${selectedChar.id}`, { method: 'POST' });
             triggerRefresh();
+            window.dispatchEvent(new Event('shop-refresh'));
             setSelectedChar(null);
             if (onPurchaseSuccess) onPurchaseSuccess(selectedChar);
         } catch (err: any) {
@@ -114,12 +125,23 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
         <div className="w-full space-y-3">
             {activeTab === 'shop' && !isOwned && (
                 <div className="w-full">
-                    {purchaseStage === 'idle' ? (
-                        <button 
+                    {isSoldOut ? (
+                        <div className="w-full rounded-lg border border-red-500/15 bg-red-500/10 px-3 py-3 text-sm font-semibold text-red-300 flex items-center justify-center gap-2">
+                            <Lock size={16} />
+                            <span>Sold out for this rotation</span>
+                        </div>
+                    ) : !canAfford ? (
+                        <div className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-sm font-semibold text-neutral-300 flex items-center justify-center gap-2">
+                            <Gem size={16} className="text-brand-accent" />
+                            <span>{formatNumber(price - zenithBalance)} more Zenith needed</span>
+                        </div>
+                    ) : purchaseStage === 'idle' ? (
+                        <button
                             onClick={() => setPurchaseStage('confirm')}
                             className="w-full py-3 rounded-lg bg-brand-accent text-white font-semibold text-sm hover:bg-brand-accent-secondary active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                         >
-                            Buy for {selectedChar.zenith_price} <Zap size={16} />
+                            <span>Buy for {formatNumber(price)}</span>
+                            <Gem size={16} />
                         </button>
                     ) : (
                         <div className="flex gap-2">
@@ -134,7 +156,7 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                                 disabled={purchaseStage === 'buying'}
                                 className="flex-[2] py-3 rounded-lg bg-brand-accent text-white font-semibold text-sm hover:bg-brand-accent-secondary disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 transition-colors"
                             >
-                                {purchaseStage === 'buying' ? <Loader2 size={16} className="animate-spin" /> : 'Confirm Payment'}
+                                {purchaseStage === 'buying' ? <Loader2 size={16} className="animate-spin" /> : 'Confirm purchase'}
                             </button>
                         </div>
                     )}

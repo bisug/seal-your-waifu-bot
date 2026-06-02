@@ -1,7 +1,7 @@
 import React from 'react';
 import { useApi } from '../hooks/useApi';
 import { Skeleton } from '../components/ui/Skeleton';
-import { Award, Lock, CheckCircle2 } from 'lucide-react';
+import { Award, Lock, CheckCircle2, Trophy } from 'lucide-react';
 import { cn } from '../utils';
 import { ErrorState } from '../components/ui/ErrorState';
 
@@ -64,7 +64,7 @@ export const Achievements = () => {
                                 ? "bg-emerald-500/10 border-emerald-500/20"
                                 : "bg-zinc-950 border-white/5 grayscale"
                         )}>
-                            {ach.icon}
+                            <Trophy size={20} className={ach.unlocked ? 'text-emerald-500' : 'text-zinc-700'} />
                         </div>
 
                         <div className="flex-1 min-w-0">

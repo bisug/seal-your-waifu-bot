@@ -75,7 +75,7 @@ async def profile_handler(_, message: types.Message):
     is_private = message.chat.type == enums.ChatType.PRIVATE
     builder = KeyboardBuilder()
     builder.add_button("View Harem", callback_data=f"harem_view:{user_id}", style=enums.ButtonStyle.PRIMARY)
-    webapp_btn = get_webapp_button(is_private)
+    webapp_btn = get_webapp_button(is_private, path="#profile")
     if webapp_btn:
         builder.add_row(webapp_btn)
     reply_markup = builder.build()

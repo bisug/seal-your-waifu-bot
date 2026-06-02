@@ -237,7 +237,11 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
         ])
     if action_button:
         buttons.append([action_button])
-    webapp_btn = get_webapp_button(isinstance(message_or_query, types.CallbackQuery) and message_or_query.message.chat.type == enums.ChatType.PRIVATE)
+    if isinstance(message_or_query, types.CallbackQuery):
+        is_private = message_or_query.message.chat.type == enums.ChatType.PRIVATE
+    else:
+        is_private = message_or_query.chat.type == enums.ChatType.PRIVATE
+    webapp_btn = get_webapp_button(is_private, path="#incubation")
     if webapp_btn:
         buttons.append([webapp_btn])
     buttons.append([types.InlineKeyboardButton("Back to Hub", callback_data="hub_main")])

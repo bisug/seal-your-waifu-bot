@@ -1,6 +1,6 @@
 import React, { memo, useEffect, forwardRef } from 'react';
-import { Gem, Shield } from 'lucide-react';
-import { cn } from '../../utils';
+import { CheckCircle2, Gem, Shield } from 'lucide-react';
+import { cn, formatNumber } from '../../utils';
 import { Character } from '../../context/UserContext';
 
 interface CardProps {
@@ -20,9 +20,17 @@ export const Card = memo(forwardRef<HTMLDivElement, CardProps>(({ character, onC
         setImgError(false);
     }, [character.img_url]);
 
-    // Rarity name without emojis
     const rarityLabel = character.rarity.replace(/[\u2700-\u27bf]|[\u2190-\u21ff]|[\u2000-\u206f]|[\u2600-\u26ff]|[\u2b00-\u2bff]|[\u00a0-\u00bf]|\u2013|\u2014/g, '').trim();
     const hasPrice = typeof character.zenith_price === 'number' && character.zenith_price > 0;
+    const stockLimit = typeof character.stock_limit === 'number' ? character.stock_limit : null;
+    const stockRemaining = typeof character.stock_remaining === 'number'
+        ? character.stock_remaining
+        : stockLimit !== null && typeof character.sold_count === 'number'
+            ? Math.max(0, stockLimit - character.sold_count)
+            : null;
+    const hasStock = stockLimit !== null && stockRemaining !== null;
+    const soldOut = character.sold_out || (hasStock && stockRemaining <= 0);
+    const copyCount = Number(character.count || 0);
 
     return (
         <div
@@ -48,42 +56,49 @@ export const Card = memo(forwardRef<HTMLDivElement, CardProps>(({ character, onC
                 </div>
             )}
             
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80" />
-            
-            {/* Top Bar Indicators */}
-            <div className="absolute top-2 left-2 right-2 flex justify-between items-start pointer-events-none">
-                <div className="px-2 py-1 rounded bg-black/60 backdrop-blur-sm border border-white/10">
-                    <span className="text-[10px] font-semibold text-neutral-300">
-                        {rarityLabel}
-                    </span>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent opacity-85" />
+
+            <div className="absolute bottom-0 inset-x-0 p-2.5">
+                <div className="rounded-lg border border-white/10 bg-black/55 px-2.5 py-2 backdrop-blur-sm">
+                    <h3 className="text-xs font-semibold text-white leading-tight line-clamp-1">
+                        {character.name}
+                    </h3>
+
+                    <div className="mt-1.5 flex items-center justify-between gap-2">
+                        <div className="min-w-0 flex items-center gap-1.5">
+                            <span className="max-w-[76px] truncate rounded bg-white/10 px-1.5 py-0.5 text-[9px] font-semibold text-neutral-300">
+                                {rarityLabel || 'Unknown'}
+                            </span>
+
+                            {character.owned ? (
+                                <span className="inline-flex items-center gap-1 rounded bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-bold text-emerald-300">
+                                    <CheckCircle2 size={9} />
+                                    <span>Owned</span>
+                                </span>
+                            ) : copyCount > 1 && (
+                                <span className="rounded bg-brand-accent/20 px-1.5 py-0.5 text-[9px] font-bold tabular-nums text-brand-accent">
+                                    x{copyCount}
+                                </span>
+                            )}
+                        </div>
+
+                        {hasPrice && (
+                            <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-bold tabular-nums text-white/90">
+                                <Gem size={10} className="text-brand-accent" />
+                                {formatNumber(character.zenith_price)}
+                            </span>
+                        )}
+                    </div>
+
+                    {hasStock && !character.owned && (
+                        <div className={cn(
+                            "mt-1 text-[9px] font-semibold tabular-nums",
+                            soldOut ? "text-red-300" : "text-neutral-400"
+                        )}>
+                            {soldOut ? "Sold out" : `${stockRemaining}/${stockLimit} left`}
+                        </div>
+                    )}
                 </div>
-
-                {character.owned ? (
-                    <div className="px-2 py-1 rounded bg-emerald-500 text-white shadow-sm">
-                        <span className="text-[10px] font-bold">
-                            Owned
-                        </span>
-                    </div>
-                ) : character.count > 1 && (
-                    <div className="px-2 py-1 rounded bg-brand-accent text-white shadow-sm">
-                        <span className="text-[10px] font-bold tabular-nums">
-                            x{character.count}
-                        </span>
-                    </div>
-                )}
-            </div>
-
-            {/* Bottom Content Area */}
-            <div className="absolute bottom-0 inset-x-0 p-3">
-                <h3 className="text-xs font-semibold text-white leading-tight line-clamp-1">
-                    {character.name}
-                </h3>
-                {hasPrice && (
-                    <div className="mt-1 inline-flex items-center gap-1 rounded bg-black/50 px-1.5 py-0.5 text-[10px] font-bold text-white/90">
-                        <Gem size={10} className="text-brand-accent" />
-                        <span>{character.zenith_price} Zenith</span>
-                    </div>
-                )}
             </div>
         </div>
     );

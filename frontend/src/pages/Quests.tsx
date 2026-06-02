@@ -2,7 +2,7 @@ import React from 'react';
 import { useApi } from '../hooks/useApi';
 import { useToast } from '../components/ui/Toast';
 import { apiFetch, getErrorMessage } from '../api/client';
-import { CheckCircle2, Loader2, Zap } from 'lucide-react';
+import { CheckCircle2, Loader2, Target, Zap } from 'lucide-react';
 import { formatNumber } from '../utils';
 import { useUser } from '../context/UserContext';
 import { cn } from '../utils';
@@ -18,7 +18,9 @@ const QuestItem = ({ quest, onComplete, completing }) => (
       <div className="flex justify-between items-start mb-4">
           <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-xl">{quest.icon}</span>
+                <span className="w-8 h-8 rounded-lg bg-brand-midnight border border-white/5 flex items-center justify-center text-brand-accent shrink-0">
+                  <Target size={16} />
+                </span>
                 <h3 className="text-base font-bold text-white tracking-tight">{quest.name}</h3>
               </div>
               <p className="text-sm text-neutral-400 font-medium">{quest.description}</p>
@@ -38,7 +40,7 @@ const QuestItem = ({ quest, onComplete, completing }) => (
               <div className="h-2 bg-brand-midnight rounded-full overflow-hidden border border-white/5">
                   <div
                       className={`h-full transition-all duration-500 ${quest.claimed ? 'bg-emerald-500' : 'bg-brand-accent'}`}
-                      style={{ width: `${Math.min(100, (quest.progress / quest.target) * 100)}%` }}
+                      style={{ width: `${Math.min(100, (quest.progress / Math.max(quest.target, 1)) * 100)}%` }}
                   />
               </div>
           </div>
