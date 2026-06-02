@@ -2,7 +2,7 @@ from pyrogram import enums, errors, filters, types
 from Grabber import LOGGER, app, client, user_collection
 from Grabber.core.cache import invalidate_leaderboard_cache, sync_user_to_redis
 from Grabber.core.sessions import create_session, delete_session, get_session
-from Grabber.core.user import get_user_data, get_user_filter
+from Grabber.core.user import add_user_set_on_insert, get_user_data, get_user_filter
 from Grabber.core.utils import handle_errors, html_escape
 
 
@@ -123,11 +123,11 @@ async def transfer_callback(_, query: types.CallbackQuery):
 
                     await user_collection.update_one(
                         get_user_filter(receiver_id),
-                        {
+                        add_user_set_on_insert({
                             "$push": {"characters": {"$each": characters_to_move}},
                             "$inc": {"char_count": num_chars, "version": 1},
                             "$setOnInsert": {"id": int(receiver_id)}
-                        },
+                        }, receiver_id),
                         upsert=True,
                         session=mongo_session
                     )

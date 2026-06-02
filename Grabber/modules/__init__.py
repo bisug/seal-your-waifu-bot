@@ -7,7 +7,7 @@ if sys.version_info[0] < 3 or sys.version_info[1] < 13:
     LOGGER.error(
         "You MUST have a python version of at least 3.13! Multiple features depend on this. Bot quitting."
     )
-    quit(1)
+    sys.exit(1)
 LOAD = []
 NO_LOAD = []
 def __list_all_modules():
@@ -28,7 +28,7 @@ def __list_all_modules():
                 for mod in to_load
             ):
                 LOGGER.error("Invalid loadorder names, Quitting...")
-                quit(1)
+                sys.exit(1)
             all_modules = sorted(set(all_modules) - set(to_load))
             to_load = list(all_modules) + to_load
         else:

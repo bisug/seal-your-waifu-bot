@@ -19,8 +19,11 @@ export const Pass = () => {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
     try {
       const res = await apiFetch(`/claim_level/${level}`, { method: 'POST' });
-      if (res.status === 'success') {
-        addToast(`Claimed: ${res.shards} Shards & ${res.eggs} Eggs`, 'success');
+      if (res.status === 'success' || res.status === 'already_claimed') {
+        addToast(
+          res.status === 'already_claimed' ? 'Reward already claimed' : `Claimed: ${res.shards} Shards & ${res.eggs} Eggs`,
+          'success'
+        );
         await fetchPassData();
         await refreshUser();
       }

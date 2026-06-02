@@ -8,6 +8,7 @@ from Grabber import (LOGGER, WEB_APP_URL, app, group_user_totals_collection,
 from Grabber.core.constants import METRIC_ORDER, METRICS
 from Grabber.core.keyboard import get_webapp_button
 from Grabber.core.progression import get_level_from_xp
+from Grabber.core.tasks import run_background_task
 from Grabber.core.utils import handle_errors, html_escape
 
 
@@ -102,9 +103,8 @@ async def get_top_users(metric: str, limit: int = 10):
     results = await _resolve_missing_names(results)
     # 3. Trigger background rebuild if ZSET was empty
     if r:
-        import asyncio
         from Grabber.core.cache import rebuild_leaderboard
-        asyncio.create_task(rebuild_leaderboard(user_collection, metric=metric))
+        run_background_task(rebuild_leaderboard(user_collection, metric=metric))
 
     return results
 def build_leaderboard_text(metric: str, users: list):

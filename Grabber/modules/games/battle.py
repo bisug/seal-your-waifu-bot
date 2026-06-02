@@ -7,7 +7,7 @@ from Grabber.core.balance import (check_and_deduct, get_user_balance,
                                   update_user_balance)
 from Grabber.core.cache import is_on_cooldown as redis_cooldown
 from Grabber.core.progression import add_xp
-from Grabber.core.sessions import create_session, delete_session, get_session
+from Grabber.core.sessions import consume_session, create_session, get_session
 from Grabber.core.user import get_active_pet
 from Grabber.core.utils import handle_errors, html_escape
 from Grabber.modules.progression.achievements import check_achievements
@@ -135,10 +135,14 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
         return await query.answer("❌ This battle expired or was already handled.", show_alert=True)
     if query.from_user.id != battle_info["defender"]:
         return await query.answer("❌ You are not the challenged person!", show_alert=True)
+    battle_info = await consume_session(battle_id)
+    if not battle_info:
+        return await query.answer("❌ This battle expired or was already handled.", show_alert=True)
+    if query.from_user.id != battle_info["defender"]:
+        return await query.answer("❌ You are not the challenged person!", show_alert=True)
     bet = battle_info["bet"]
     attacker_id, defender_id = battle_info["attacker"], battle_info["defender"]
     if not await check_and_deduct(attacker_id, bet):
-        await delete_session(battle_id)
         try:
             await query.message.edit_text("❌ Attacker no longer has enough balance.", parse_mode=enums.ParseMode.HTML)
         except errors.MessageNotModified:
@@ -146,13 +150,11 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
         return
     if not await check_and_deduct(defender_id, bet):
         await update_user_balance(attacker_id, bet)
-        await delete_session(battle_id)
         try:
             await query.message.edit_text("❌ You no longer have enough balance.", parse_mode=enums.ParseMode.HTML)
         except errors.MessageNotModified:
             pass
         return
-    await delete_session(battle_id)
     try:
         a_user = await app.get_users(attacker_id)
         d_user = await app.get_users(defender_id)

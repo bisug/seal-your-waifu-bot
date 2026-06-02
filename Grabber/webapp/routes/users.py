@@ -3,7 +3,7 @@ import hashlib
 import json
 import re
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import RedirectResponse
@@ -173,8 +173,11 @@ async def get_me(user: dict = Depends(get_current_user_data)):
         h_time = egg.get("hatch_time")
         rem_mins = 0
         if h_time and isinstance(h_time, datetime):
-            if datetime.now() < h_time:
-                rem_mins = int((h_time - datetime.now()).total_seconds() / 60)
+            if h_time.tzinfo is None:
+                h_time = h_time.replace(tzinfo=timezone.utc)
+            now = datetime.now(timezone.utc)
+            if now < h_time:
+                rem_mins = int((h_time - now).total_seconds() / 60)
             h_time = h_time.isoformat()
         
         processed_eggs.append({

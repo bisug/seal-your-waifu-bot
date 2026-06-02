@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import platform
 import sys
@@ -20,7 +21,12 @@ async def send_startup_report(client: Client, chat_id: int, module_count: int) -
         os_platform = platform.system()
         os_arch = platform.machine()
         # Redis status
-        redis_status = "✅ CONNECTED" if _redis and await _redis.ping() else "❌ DISCONNECTED"
+        redis_status = "❌ DISCONNECTED"
+        if _redis:
+            try:
+                redis_status = "✅ CONNECTED" if await asyncio.wait_for(_redis.ping(), timeout=3.0) else "❌ DISCONNECTED"
+            except Exception as redis_err:
+                LOGGER.warning(f"Redis health check failed: {redis_err}")
         # MongoDB status & character count
         mongo_status = "❌ DISCONNECTED"
         total_chars = "UNKNOWN"

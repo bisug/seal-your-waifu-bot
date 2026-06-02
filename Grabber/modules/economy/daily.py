@@ -8,7 +8,7 @@ from Grabber.core.cache import (get_daily_date, get_weekly_date,
                                 invalidate_leaderboard_cache,
                                 invalidate_user_cache, set_daily_date,
                                 set_weekly_date, sync_user_to_redis)
-from Grabber.core.user import get_user_data
+from Grabber.core.user import add_user_set_on_insert, get_user_data
 from Grabber.core.utils import get_user_id_query, handle_errors, html_escape, reply_media_dynamic
 from Grabber.database import collection, user_collection
 RARITY_WEIGHTS = {
@@ -74,12 +74,12 @@ async def daily_command_handler(_, message: types.Message):
     claim_filter["last_daily_date"] = {"$ne": now_date}
     claim_result = await user_collection.update_one(
         claim_filter,
-        {
+        add_user_set_on_insert({
             "$set": {"last_daily_date": now_date, "daily_streak": streak},
             "$inc": {"balance": reward_coins, "char_count": 1, "version": 1},
             "$push": {"characters": char},
             "$setOnInsert": {"id": user_id}
-        },
+        }, user_id, first_name=message.from_user.first_name, username=message.from_user.username),
         upsert=True
     )
     if claim_result.modified_count == 0 and claim_result.upserted_id is None:
@@ -133,11 +133,11 @@ async def weekly_command_handler(_, message: types.Message):
     ]
     weekly_result = await user_collection.update_one(
         weekly_filter,
-        {
+        add_user_set_on_insert({
             "$set": {"last_weekly_date": now_str},
             "$inc": {"balance": reward_coins, "version": 1},
             "$setOnInsert": {"id": user_id}
-        },
+        }, user_id, first_name=message.from_user.first_name, username=message.from_user.username),
         upsert=True
     )
     if weekly_result.modified_count == 0 and weekly_result.upserted_id is None:

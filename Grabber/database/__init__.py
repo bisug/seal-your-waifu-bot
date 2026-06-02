@@ -1,4 +1,5 @@
 import logging
+import inspect
 
 import redis.asyncio as redis
 from pymongo import AsyncMongoClient
@@ -12,7 +13,15 @@ class Database:
     """Database abstraction layer for MongoDB connections."""
     def __init__(self, uri):
         """Initialize MongoDB client and collection references."""
-        self.client = AsyncMongoClient(uri)
+        self.client = AsyncMongoClient(
+            uri,
+            appname="seal-bot",
+            connectTimeoutMS=5000,
+            serverSelectionTimeoutMS=5000,
+            socketTimeoutMS=20000,
+            maxPoolSize=100,
+            minPoolSize=0,
+        )
         self.db = self.client['Character_catchers']
 
         # NOTE: Legacy collection names contain intentional typos (e.g. 'user_totalssss')
@@ -53,11 +62,18 @@ class Database:
             (self.users,             lambda c: c.create_index([("id", 1), ("characters.id", 1)])),
             (self.anime_characters,  lambda c: c.create_index([("rarity", 1), ("name", 1)])),
             (self.users,             lambda c: c.create_index("char_count", sparse=True)),
+            (self.users,             lambda c: c.create_index("xp", sparse=True)),
+            (self.users,             lambda c: c.create_index("balance", sparse=True)),
+            (self.users,             lambda c: c.create_index("zenith", sparse=True)),
+            (self.users,             lambda c: c.create_index("guess_count", sparse=True)),
             # Search Performance Indexes (Multi-key for harem filtering)
             (self.users,             lambda c: c.create_index([("id", 1), ("characters.rarity", 1), ("characters.name", 1)])),
             (self.users,             lambda c: c.create_index([("id", 1), ("characters.anime", 1)])),
             (self.scraped_characters, lambda c: c.create_index([("name", 1), ("anime", 1)], unique=True)),
             (self.sessions,          lambda c: c.create_index("expires_at_dt", expireAfterSeconds=0)),
+            (self.sessions,          lambda c: c.create_index([("id", 1), ("type", 1), ("status", 1)])),
+            (self.sessions,          lambda c: c.create_index([("type", 1), ("sender_id", 1), ("receiver_id", 1), ("status", 1)])),
+            (self.sessions,          lambda c: c.create_index("token", sparse=True)),
             (self.daily_shop,        lambda c: c.create_index("date", unique=True)),
         ]
         failed = 0
@@ -72,11 +88,21 @@ class Database:
         else:
             LOGGER.info("Database indexes ensured successfully.")
 
+    async def ping(self):
+        """Validate MongoDB connectivity without forcing this check at import time."""
+        await self.client.admin.command("ping")
+
+    async def close(self):
+        """Close MongoDB client resources during graceful shutdown."""
+        result = self.client.close()
+        if inspect.isawaitable(result):
+            await result
+
 # Initialize Database
 try:
     seal_db = Database(config.MONGO_URL)
 except Exception as e:
-    print(f"Failed to connect to MongoDB: {e}")
+    LOGGER.exception("Failed to initialize MongoDB client")
     raise e
 
 # Initialize Redis
@@ -84,9 +110,16 @@ try:
     if not config.REDIS_URL:
         r = None
     else:
-        r = redis.from_url(config.REDIS_URL, decode_responses=True)
+        r = redis.from_url(
+            config.REDIS_URL,
+            decode_responses=True,
+            socket_connect_timeout=5,
+            socket_timeout=5,
+            health_check_interval=30,
+            retry_on_timeout=True,
+        )
 except Exception as e:
-    print(f"Failed to initialize Redis: {e}")
+    LOGGER.exception("Failed to initialize Redis client")
     r = None
 
 # Export variables for backward compatibility
@@ -108,3 +141,16 @@ gamebot_enabled_groups_collection = seal_db.gamebot_enabled_groups
 deletion_queue_collection = seal_db.deletion_queue
 daily_shop_collection = seal_db.daily_shop
 scraped_characters_collection = seal_db.scraped_characters
+
+
+async def close_connections():
+    """Close infrastructure clients during process shutdown."""
+    if r:
+        try:
+            await r.aclose()
+        except Exception as e:
+            LOGGER.warning(f"Redis close failed: {e}")
+    try:
+        await seal_db.close()
+    except Exception as e:
+        LOGGER.warning(f"MongoDB close failed: {e}")

@@ -1,5 +1,6 @@
 import math
 from Grabber import LOGGER
+from Grabber.core.user import add_user_set_on_insert, get_user_filter
 from Grabber.database import user_collection
 LEVEL_CAP = 50
 LEVEL_REWARDS = {
@@ -40,15 +41,15 @@ async def add_xp(user_id: int, amount: int, source: str = "unknown"):
     Add XP to a user's profile and handle level-ups atomically.
     """
     user = await user_collection.find_one_and_update(
-        {"id": {"$in": [user_id, str(user_id)]}},
-        {
+        get_user_filter(user_id),
+        add_user_set_on_insert({
             "$inc": {"xp": amount},
             "$setOnInsert": {
                 "pass_type": "free",
                 "claimed_levels": [],
                 "season": 1
             }
-        },
+        }, user_id),
         upsert=True,
         return_document=True
     )
@@ -70,7 +71,7 @@ async def check_and_grant_rewards(user_id: int, old_level: int, new_level: int, 
     based on the user's Battle Pass type. Also tracks Pass Bank for free users.
     """
     if user_data is None:
-        user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
+        user = await user_collection.find_one(get_user_filter(user_id))
     else:
         user = user_data
     pass_type = user.get("pass_type", "free")
@@ -160,7 +161,7 @@ async def check_and_grant_rewards(user_id: int, old_level: int, new_level: int, 
         updates["$push"] = {"eggs": {"$each": eggs_awarded}}
     if updates.get("$inc") or updates.get("$push") or updates.get("$addToSet"):
         await user_collection.update_one(
-            {"id": {"$in": [user_id, str(user_id)]}},
+            get_user_filter(user_id),
             updates
         )
         if total_coins_earned > 0 or eggs_awarded:
@@ -171,7 +172,7 @@ async def get_user_progress(user_id: int, user_data: dict = None) -> dict:
     Supports lazy loading by passing existing user_data to avoid DB lookup.
     """
     if user_data is None:
-        user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
+        user = await user_collection.find_one(get_user_filter(user_id))
     else:
         user = user_data
     if not user:

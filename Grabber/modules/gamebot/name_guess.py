@@ -1,4 +1,4 @@
-import asyncio
+from datetime import timedelta
 import random
 import re
 from pymongo import ReturnDocument
@@ -8,11 +8,14 @@ from Grabber import (LOGGER, OWNER_ID, app, collection, game_bot,
                      user_collection)
 from Grabber.core.balance import update_user_balance
 from Grabber.core.deletion import schedule_deletion
-from Grabber.core.utils import check_member_requirement, html_escape
+from Grabber.core.tasks import run_background_task
+from Grabber.core.user import add_user_set_on_insert
+from Grabber.core.utils import check_member_requirement, get_now_utc, html_escape
 # Local cache is no longer used for character data to ensure persistence
 # Active sessions are stored in sessions_collection with ID: "nguess:{chat_id}"
 # Alias for backward compatibility within this file if needed, but better to use it directly
 escape_html = html_escape
+NGUESS_TTL = timedelta(minutes=5)
 # Send message safe is now handled by game_bot.send_message_safe and game_bot.send_media_safe
 async def start_nguess_game(chat_id):
     """Fetches a character and starts a new game session."""
@@ -27,7 +30,8 @@ async def start_nguess_game(chat_id):
         {"_id": f"nguess:{chat_id}"},
         {"$set": {
             "char": char,
-            "players": []
+            "players": [],
+            "expires_at_dt": get_now_utc() + NGUESS_TTL,
         }},
         upsert=True
     )
@@ -77,9 +81,16 @@ async def nguess_check_handler(_, message: types.Message):
     if not message.from_user:
         return
     chat_id = message.chat.id
+    now = get_now_utc()
     # Update player list atomically
     session = await sessions_collection.find_one_and_update(
-        {"_id": f"nguess:{chat_id}"},
+        {
+            "_id": f"nguess:{chat_id}",
+            "$or": [
+                {"expires_at_dt": {"$exists": False}},
+                {"expires_at_dt": {"$gt": now}},
+            ],
+        },
         {"$addToSet": {"players": message.from_user.id}},
         return_document=ReturnDocument.AFTER
     )
@@ -127,19 +138,19 @@ async def nguess_check_handler(_, message: types.Message):
         # Update user
         await user_collection.update_one(
             {"id": message.from_user.id},
-            {
+            add_user_set_on_insert({
                 "$inc": {"balance": total_reward, "guess_count": 1},
                 "$setOnInsert": {"first_name": message.from_user.first_name}
-            },
+            }, message.from_user.id, first_name=message.from_user.first_name, username=message.from_user.username),
             upsert=True
         )
 
         # Track Quests and Achievements
         from Grabber.modules.progression.quests import update_quest_progress
         from Grabber.modules.progression.achievements import check_achievements
-        asyncio.create_task(update_quest_progress(message.from_user.id, "guesser", 1))
-        asyncio.create_task(update_quest_progress(message.from_user.id, "weekly_guesser", 1))
-        asyncio.create_task(check_achievements(message.from_user.id))
+        run_background_task(update_quest_progress(message.from_user.id, "guesser", 1))
+        run_background_task(update_quest_progress(message.from_user.id, "weekly_guesser", 1))
+        run_background_task(check_achievements(message.from_user.id))
 
         # Delete session
         await sessions_collection.delete_one({"_id": f"nguess:{chat_id}"})

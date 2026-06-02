@@ -2,7 +2,7 @@ import asyncio
 import logging
 import random
 import time
-import traceback
+import uuid
 from datetime import datetime, timedelta, timezone
 from pyrogram import enums, errors, filters, types
 from pyrogram.handlers import CallbackQueryHandler, MessageHandler
@@ -13,7 +13,8 @@ from Grabber.core.cache import sync_user_to_redis
 from Grabber.core.constants import CORRUPTED_EGG_CHANCE, EGG_TIERS
 from Grabber.core.keyboard import get_webapp_button
 from Grabber.core.progression import add_xp
-from Grabber.core.user import add_pet_xp, get_user_filter, get_user_id
+from Grabber.core.tasks import run_background_task
+from Grabber.core.user import add_pet_xp, add_user_set_on_insert, get_user_filter, get_user_id
 from Grabber.core.utils import get_now_utc, html_escape, reply_media_dynamic
 from Grabber.modules.collection.rarities import RARITY_MAP
 from Grabber.modules.progression.achievements import check_achievements
@@ -33,8 +34,8 @@ def load_handlers(bot):
     bot.add_handler(MessageHandler(eggs_cmd, filters.command(["eggs", "hatch"])), group=0)
     # Callbacks
     bot.add_handler(CallbackQueryHandler(egg_page_callback, filters.regex(r"^egg_page:(\d+):(\d+)$")), group=0)
-    bot.add_handler(CallbackQueryHandler(egg_incubate_callback, filters.regex(r"^egg_incubate:(\d+):(\d+)$")), group=0)
-    bot.add_handler(CallbackQueryHandler(egg_hatch_callback, filters.regex(r"^egg_hatch:(\d+):(\d+)$")), group=0)
+    bot.add_handler(CallbackQueryHandler(egg_incubate_callback, filters.regex(r"^egg_incubate:([^:]+):(\d+):(\d+)$")), group=0)
+    bot.add_handler(CallbackQueryHandler(egg_hatch_callback, filters.regex(r"^egg_hatch:([^:]+):(\d+):(\d+)$")), group=0)
     bot.add_handler(CallbackQueryHandler(egg_noop_callback, filters.regex(r"^egg_noop$")), group=0)
     LOGGER.info(f"Registered Hunt & Egg handlers for {bot.name}")
 def get_egg_roll(luck_multiplier):
@@ -125,13 +126,17 @@ async def hunt_cmd(bot, message: types.Message):
         update_op = {"$inc": {"balance": shards}}
         if eggs_to_push:
             update_op["$push"] = {"eggs": {"$each": eggs_to_push}}
-        await asyncio.wait_for(user_collection.update_one(get_user_filter(user_id), update_op, upsert=True), timeout=5.0)
+        await asyncio.wait_for(user_collection.update_one(
+            get_user_filter(user_id),
+            add_user_set_on_insert(update_op, user_id),
+            upsert=True
+        ), timeout=5.0)
         # 6. Side Effects
-        asyncio.create_task(add_pet_xp(user_id, pet["name"], xp_gain))
+        run_background_task(add_pet_xp(user_id, pet["name"], xp_gain))
         if eggs_to_push:
-            asyncio.create_task(update_quest_progress(user_id, "egg_hunter", len(eggs_to_push)))
-        asyncio.create_task(sync_user_to_redis(user_id))
-        asyncio.create_task(check_achievements(user_id))
+            run_background_task(update_quest_progress(user_id, "egg_hunter", len(eggs_to_push)))
+        run_background_task(sync_user_to_redis(user_id))
+        run_background_task(check_achievements(user_id))
         # 7. Final Response
         found_egg_desc = f"<b>{html_escape(eggs_to_push[0]['name'])}</b> discovered!" if eggs_to_push else ""
         from Grabber.core.utils import format_currency
@@ -145,13 +150,42 @@ async def hunt_cmd(bot, message: types.Message):
         )
         await msg.edit_text(final_text, parse_mode=enums.ParseMode.HTML)
     except Exception as e:
-        LOGGER.error(f"HUNT_CRASH: {e}\n{traceback.format_exc()}")
+        LOGGER.exception("HUNT_CRASH")
         await message.reply_text(f"<b>Hunt Error:</b> <code>{e}</code>", parse_mode=enums.ParseMode.HTML)
 async def eggs_cmd(bot, message: types.Message):
     """View egg inventory."""
     user_id = message.from_user.id if message.from_user else None
     if not user_id: return
     await show_egg_page(message, 0, user_id)
+
+
+async def _ensure_egg_document(user_id: int, eggs: list, page: int) -> dict:
+    """Normalize legacy egg entries so callbacks can target a stable egg id."""
+    raw_egg = eggs[page]
+    if isinstance(raw_egg, dict) and raw_egg.get("id"):
+        return raw_egg
+
+    raw_tier = raw_egg.get("tier", "common") if isinstance(raw_egg, dict) else raw_egg
+    tier_key = TIER_MAP.get(str(raw_tier), str(raw_tier))
+    tier_info = EGG_TIERS.get(tier_key, EGG_TIERS["common"])
+    egg = {
+        "id": f"egg_{uuid.uuid4().hex[:12]}",
+        "tier": tier_key,
+        "name": tier_info["name"],
+        "status": raw_egg.get("status", "fresh") if isinstance(raw_egg, dict) else "fresh",
+        "is_corrupted": raw_egg.get("is_corrupted", False) if isinstance(raw_egg, dict) else False,
+    }
+    hatch_time = raw_egg.get("hatch_time") if isinstance(raw_egg, dict) else None
+    if hatch_time:
+        egg["hatch_time"] = hatch_time
+
+    await user_collection.update_one(
+        get_user_filter(user_id),
+        {"$set": {f"eggs.{page}": egg}}
+    )
+    return egg
+
+
 async def show_egg_page(message_or_query, page: int, user_id: int):
     """Render egg inventory page."""
     user = await user_collection.find_one(get_user_filter(user_id)) or {}
@@ -162,17 +196,17 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
             return await message_or_query.message.edit_text(text, parse_mode=enums.ParseMode.HTML)
         return await message_or_query.reply_text(text, parse_mode=enums.ParseMode.HTML)
     page = page % len(eggs)
-    egg = eggs[page]
+    egg = await _ensure_egg_document(user_id, eggs, page)
     # Handle legacy/numeric tiers
-    raw_tier = egg.get("tier", "common") if isinstance(egg, dict) else egg
+    raw_tier = egg.get("tier", "common")
     tier_key = TIER_MAP.get(str(raw_tier), str(raw_tier))
     tier_info = EGG_TIERS.get(tier_key, EGG_TIERS["common"])
-    status = egg.get("status", "fresh") if isinstance(egg, dict) else "fresh"
+    status = egg.get("status", "fresh")
     action_button = None
     status_display = ""
     if status == "fresh":
         status_display = f"<b>Status:</b> Not incubated\n<b>Required:</b> {tier_info['wait_min']} minutes"
-        action_button = types.InlineKeyboardButton("Start Incubation", callback_data=f"egg_incubate:{page}:{user_id}")
+        action_button = types.InlineKeyboardButton("Start Incubation", callback_data=f"egg_incubate:{egg['id']}:{user_id}:{page}")
     elif status == "incubating":
         hatch_time = egg.get("hatch_time")
         if hatch_time:
@@ -187,10 +221,10 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
                 action_button = types.InlineKeyboardButton("Incubating...", callback_data="egg_noop")
             else:
                 status_display = "<b>Status:</b> Ready to hatch!"
-                action_button = types.InlineKeyboardButton("Hatch Egg", callback_data=f"egg_hatch:{page}:{user_id}")
+                action_button = types.InlineKeyboardButton("Hatch Egg", callback_data=f"egg_hatch:{egg['id']}:{user_id}:{page}")
     text = (
         f"<b>Collector Stash</b>\n\n"
-        f"<b>{html_escape(egg.get('name', tier_info['name']) if isinstance(egg, dict) else tier_info['name'])}</b>\n"
+        f"<b>{html_escape(egg.get('name', tier_info['name']))}</b>\n"
         f"{status_display}\n\n"
         f"<i>Egg {page + 1} of {len(eggs)}</i>"
     )
@@ -224,13 +258,17 @@ async def egg_page_callback(_, query: types.CallbackQuery):
     await show_egg_page(query, page, owner_id)
 async def egg_incubate_callback(_, query: types.CallbackQuery):
     data = query.data.split(":")
-    page, owner_id = int(data[1]), int(data[2])
+    egg_id, owner_id = data[1], int(data[2])
+    page = int(data[3])
     if query.from_user.id != owner_id:
         return await query.answer("Not your egg!", show_alert=True)
     user = await user_collection.find_one(get_user_filter(owner_id)) or {}
     eggs = user.get("eggs", [])
-    if page >= len(eggs): return await query.answer("Egg not found!")
-    egg = eggs[page]
+    egg = next((e for e in eggs if isinstance(e, dict) and e.get("id") == egg_id), None)
+    if not egg:
+        return await query.answer("Egg not found!")
+    if egg.get("status", "fresh") != "fresh":
+        return await query.answer("This egg is already incubating or hatched.", show_alert=True)
     # Calculate incubation time
     pets = user.get("pets", [DEFAULT_PET])
     active_pet = next((p for p in pets if p.get("name") == user.get("current_pet")), {})
@@ -247,30 +285,38 @@ async def egg_incubate_callback(_, query: types.CallbackQuery):
             aff_multiplier = 0.8
         wait_min = int(wait_min * (0.5 / aff_multiplier))
     ready_time = get_now_utc() + timedelta(minutes=wait_min)
-    # Update (Position-based for arrays)
-    await user_collection.update_one(
-        get_user_filter(owner_id),
+    incubate_filter = get_user_filter(owner_id)
+    incubate_filter["eggs"] = {"$elemMatch": {"id": egg_id, "status": "fresh"}}
+    result = await user_collection.update_one(
+        incubate_filter,
         {"$set": {
-            f"eggs.{page}.status": "incubating",
-            f"eggs.{page}.hatch_time": ready_time
+            "eggs.$.status": "incubating",
+            "eggs.$.hatch_time": ready_time
         }}
     )
+    if result.modified_count == 0:
+        return await query.answer("This egg was already handled.", show_alert=True)
     await query.answer(f"Incubation started! Ready in {wait_min}m.", show_alert=True)
     await show_egg_page(query, page, owner_id)
 async def egg_hatch_callback(_, query: types.CallbackQuery):
     data = query.data.split(":")
-    page, owner_id = int(data[1]), int(data[2])
+    egg_id, owner_id = data[1], int(data[2])
+    page = int(data[3])
     if query.from_user.id != owner_id:
         return await query.answer("Not your egg!", show_alert=True)
     user = await user_collection.find_one(get_user_filter(owner_id)) or {}
     eggs = user.get("eggs", [])
-    if page >= len(eggs): return await query.answer("Egg not found!")
-    egg = eggs[page]
+    egg = next((e for e in eggs if isinstance(e, dict) and e.get("id") == egg_id), None)
+    if not egg:
+        return await query.answer("Egg not found!")
     if egg.get("status") != "incubating":
         return await query.answer("Not ready to hatch!")
     hatch_time = egg.get("hatch_time")
-    if hatch_time and get_now_utc() < hatch_time.replace(tzinfo=timezone.utc):
-        return await query.answer("Still incubating!")
+    if hatch_time:
+        if hatch_time.tzinfo is None:
+            hatch_time = hatch_time.replace(tzinfo=timezone.utc)
+        if get_now_utc() < hatch_time:
+            return await query.answer("Still incubating!")
     # Restore process_egg_hatch compatibility
     success, result = await process_egg_hatch(owner_id, egg)
     if not success:
@@ -302,9 +348,10 @@ async def process_egg_hatch(user_id: int, egg: dict) -> tuple[bool, any]:
             return False, "Egg was empty! (Database Error)"
         character = random.choice(chars)
         # Atomic: Pull Egg, Push Char
-        uid = get_user_id(user_id)
+        hatch_filter = get_user_filter(user_id)
+        hatch_filter["eggs.id"] = egg["id"]
         result = await user_collection.update_one(
-            {"id": uid, "eggs.id": egg["id"]},
+            hatch_filter,
             {
                 "$pull": {"eggs": {"id": egg["id"]}},
                 "$push": {"characters": character},
@@ -316,10 +363,10 @@ async def process_egg_hatch(user_id: int, egg: dict) -> tuple[bool, any]:
         await add_xp(user_id, 15, "egg_hatch")
 
         # Track Quests and Achievements
-        asyncio.create_task(update_quest_progress(user_id, "egg_hatcher", 1))
-        asyncio.create_task(update_quest_progress(user_id, "weekly_hatcher", 1))
-        asyncio.create_task(update_quest_progress(user_id, "pass_hatcher", 1))
-        asyncio.create_task(check_achievements(user_id))
+        run_background_task(update_quest_progress(user_id, "egg_hatcher", 1))
+        run_background_task(update_quest_progress(user_id, "weekly_hatcher", 1))
+        run_background_task(update_quest_progress(user_id, "pass_hatcher", 1))
+        run_background_task(check_achievements(user_id))
 
         await sync_user_to_redis(user_id)
         return True, character

@@ -1,6 +1,7 @@
 from pyrogram import filters, types, enums
 from Grabber import app
 from Grabber.database import user_collection
+from Grabber.core.user import add_user_set_on_insert
 from Grabber.core.utils import get_user_id_query, normalize_user_id, handle_errors
 from Grabber.modules.collection.rarities import RARITY_MAP
 
@@ -57,7 +58,7 @@ async def set_hmode_callback(_, query: types.CallbackQuery):
     
     await user_collection.update_one(
         get_user_id_query(normalize_user_id(owner_id)),
-        {"$set": {"harem_mode": mode}},
+        add_user_set_on_insert({"$set": {"harem_mode": mode}}, owner_id),
         upsert=True
     )
     
