@@ -20,7 +20,7 @@ from Grabber.core.user import get_user_filter
 from Grabber.core.utils import handle_errors, html_escape, reply_media_dynamic
 from Grabber.database import daily_shop_collection
 from Grabber.database.models import Character, User
-from Grabber.modules.collection.rarities import RARITY_MAP, RARITY_WEIGHTS
+from Grabber.modules.collection.rarities import RARITY_MAP, SHOP_RARITY_WEIGHTS
 from Grabber.modules.progression.achievements import check_achievements
 from Grabber.modules.progression.quests import update_quest_progress
 async def get_daily_shop_characters():
@@ -35,8 +35,8 @@ async def get_daily_shop_characters():
         return [Character(**c) for c in chars_raw]
 
     # 2. If it's a new day, pick 5 new characters from various rarities
-    rarities = list(RARITY_WEIGHTS.keys())
-    weights = list(RARITY_WEIGHTS.values())
+    rarities = list(SHOP_RARITY_WEIGHTS.keys())
+    weights = list(SHOP_RARITY_WEIGHTS.values())
 
     selected_raw = []
     attempts = 0
