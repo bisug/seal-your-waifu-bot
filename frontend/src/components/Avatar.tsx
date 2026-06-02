@@ -6,9 +6,10 @@ interface AvatarProps {
   src?: string | null;
   alt?: string;
   className?: string;
+  fallbackText?: string;
 }
 
-export const Avatar = ({ src, alt = "Avatar", className = "" }: AvatarProps) => {
+export const Avatar = ({ src, alt = "Avatar", className = "", fallbackText }: AvatarProps) => {
   const [error, setError] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
@@ -39,7 +40,11 @@ export const Avatar = ({ src, alt = "Avatar", className = "" }: AvatarProps) => 
           )}
         </>
       ) : (
-        <User className="text-white/20 w-1/2 h-1/2" />
+        fallbackText ? (
+          <span className="text-xs font-bold uppercase text-white/55">{fallbackText}</span>
+        ) : (
+          <User className="text-white/20 w-1/2 h-1/2" />
+        )
       )}
     </div>
   );
