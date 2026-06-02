@@ -14,7 +14,7 @@ from Grabber.core.utils import check_member_requirement, get_now_utc, html_escap
 # Game settings
 TIMEOUT = 60  # 1 minute
 SCRAMBLE_SESSION_TTL = timedelta(seconds=TIMEOUT + 30)
-REWARD = 100
+REWARD = 250
 def scramble_word(word):
     """Shuffles the characters in a word and joins them with hyphens for readability.
     Ensures the scrambled word is not the same as the original.

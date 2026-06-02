@@ -7,7 +7,13 @@ from config import config
 from Grabber import (LOGGER, OWNER_ID, WEB_APP_URL, app, collection,
                      sudo_users, user_collection, sudo_filter)
 from Grabber.core.cache import sync_user_to_redis
-from Grabber.core.constants import RARITY_PRICES, RARITY_STOCK_LIMITS, SHOP_LIMIT
+from Grabber.core.constants import (
+    LEVEL_BUY_SHARD_COST,
+    RARITY_PRICES,
+    RARITY_STOCK_LIMITS,
+    SHARDS_PER_ZENITH,
+    SHOP_LIMIT,
+)
 from Grabber.core.keyboard import KeyboardBuilder, get_webapp_button
 from Grabber.core.sessions import create_session, get_session
 from Grabber.core.user import get_user_filter
@@ -140,8 +146,8 @@ async def exchange_help_callback(_, query: types.CallbackQuery):
     await query.answer()
     await query.message.reply_text(
         "<b>Currency Exchange</b>\n\n"
-        "<b>Rate:</b> 10,000 Shards = 1 Zenith\n\n"
-        "<code>/exchange 10000</code> - Shards to Zenith\n"
+        f"<b>Rate:</b> {SHARDS_PER_ZENITH:,} Shards = 1 Zenith\n\n"
+        f"<code>/exchange {SHARDS_PER_ZENITH}</code> - Shards to Zenith\n"
         "<code>/shard 1</code> - Zenith to Shards",
         parse_mode=enums.ParseMode.HTML,
     )
@@ -351,7 +357,7 @@ async def buy_level_cmd(_, message: types.Message):
         return await message.reply_text("Usage: <code>/buylevel [amount]</code>\n\nExample: <code>/buylevel 5</code> to buy 5 levels.", parse_mode=enums.ParseMode.HTML)
     if levels < 1 or levels > 50:
         return await message.reply_text("Invalid amount (min 1, max 50 at a time).", parse_mode=enums.ParseMode.HTML)
-    cost = levels * 5000 # 5000 shards per level
+    cost = levels * LEVEL_BUY_SHARD_COST
 
     # Atomic balance deduction
     res = await user_collection.update_one(

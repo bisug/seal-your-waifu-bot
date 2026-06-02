@@ -29,6 +29,8 @@ PAYOUTS = {
     "🎏 Limited": 400
 }
 # Shop Settings
+SHARDS_PER_ZENITH = 10_000
+LEVEL_BUY_SHARD_COST = SHARDS_PER_ZENITH
 SHOP_LIMIT = 50
 RARITY_PRICES = {
     "⚪ Common": 1,

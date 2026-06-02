@@ -9,6 +9,7 @@ from Grabber import LOGGER, app, game_bot, quiz_questions_collection
 from Grabber.core.balance import get_user_balance, update_user_balance
 from Grabber.core.utils import check_member_requirement, html_escape
 QUIZ_API_URL = "https://opentdb.com/api.php?amount=1&category=31"
+QUIZ_REWARD = 250
 @game_bot.on_message(filters.command("quiz"))
 async def quiz_cmd(_, message: types.Message):
     meets_req, reason, count = await check_member_requirement(game_bot, message.chat)
@@ -98,11 +99,11 @@ async def quiz_callback_handler(_, query: types.CallbackQuery):
         await game_bot.edit_message_text_safe(query.message.chat.id, query.message.id, "⏱ <b>Time's up!</b> The quiz has expired.", parse_mode=enums.ParseMode.HTML)
         return await query.answer("Too late!")
     if pressed_idx == correct_idx:
-        await update_user_balance(user_id, 100)
+        await update_user_balance(user_id, QUIZ_REWARD)
         new_balance = await get_user_balance(user_id)
         result_text = (
             f"✅ <b>Correct!</b>\n\n"
-            f"💰 <b>Reward:</b> 100 Shards\n"
+            f"💰 <b>Reward:</b> {QUIZ_REWARD} Shards\n"
             f"💳 <b>New Balance:</b> {new_balance:,} Shards\n\n"
             "Well done! 🎉"
         )
