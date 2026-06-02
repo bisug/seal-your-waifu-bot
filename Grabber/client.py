@@ -355,6 +355,8 @@ class SealClient(Client):
                 "referrals": "Invite friends",
                 "battle": "Start a PvP duel",
                 "pass": "Battle Pass progress",
+                "paysupport": "Payment support",
+                "terms": "Purchase terms",
                 "quests": "Active quests",
                 "level": "Check your level",
                 "achievements": "View milestones",

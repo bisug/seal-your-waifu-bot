@@ -1,8 +1,18 @@
 import math
 from Grabber import LOGGER
+from Grabber.core.pass_config import (
+    CURRENT_PASS_SEASON,
+    MAX_PASS_LEVEL,
+    PASS_TRACKS,
+    get_active_pass_type,
+    get_pass_bank_field,
+    get_pass_claimed_levels,
+    get_pass_claims_field,
+    get_pass_rank,
+)
 from Grabber.core.user import add_user_set_on_insert, get_user_filter
 from Grabber.database import user_collection
-LEVEL_CAP = 50
+LEVEL_CAP = MAX_PASS_LEVEL
 LEVEL_REWARDS = {
     5: {"free": 1000, "premium": 3000, "elite": 5000},
     10: {"free": "egg_common", "premium": "egg_gold", "elite": "egg_void"},
@@ -47,7 +57,7 @@ async def add_xp(user_id: int, amount: int, source: str = "unknown"):
             "$setOnInsert": {
                 "pass_type": "free",
                 "claimed_levels": [],
-                "season": 1
+                "season": CURRENT_PASS_SEASON
             }
         }, user_id),
         upsert=True,
@@ -74,10 +84,9 @@ async def check_and_grant_rewards(user_id: int, old_level: int, new_level: int, 
         user = await user_collection.find_one(get_user_filter(user_id))
     else:
         user = user_data
-    pass_type = user.get("pass_type", "free")
-    claimed_levels = set(user.get("claimed_levels", []))
+    pass_type = get_active_pass_type(user)
+    claimed_levels = set(get_pass_claimed_levels(user))
     import uuid
-    from Grabber.core.pass_config import PASS_TRACKS
     total_coins_earned = 0
     eggs_awarded = []
     newly_claimed = []  # Tracks only levels claimed in this call (for $addToSet)
@@ -108,55 +117,51 @@ async def check_and_grant_rewards(user_id: int, old_level: int, new_level: int, 
             reward = 100 + (level * 2) if pass_type == "free" else 300 + (level * 4) if pass_type == "premium" else 500 + (level * 6)
             total_coins_earned += reward
             continue
-        # Grant Free Reward (everyone gets this)
-        free_rw = track["free"]
-        if free_rw["type"] == "shards":
-            total_coins_earned += free_rw["amount"]
-        elif free_rw["type"] == "egg":
-            add_egg(free_rw["tier"])
-        # Grant Premium Reward (Premium & Elite get this)
-        prem_rw = track["premium"]
-        prem_extra = track.get("premium_extra_amount", 0)
-        if pass_type in ["premium", "elite"]:
-            if prem_rw["type"] == "shards":
-                total_coins_earned += prem_rw["amount"]
-            elif prem_rw["type"] == "egg":
-                add_egg(prem_rw["tier"])
-            total_coins_earned += prem_extra
+        def apply_reward(reward: dict, extra_amount: int = 0, *, bank: bool = False):
+            nonlocal total_coins_earned, bank_shards
+            if reward["type"] == "shards":
+                if bank:
+                    bank_shards += reward["amount"]
+                else:
+                    total_coins_earned += reward["amount"]
+            elif reward["type"] == "egg":
+                if bank:
+                    bank_egg(reward["tier"])
+                else:
+                    add_egg(reward["tier"])
+            if extra_amount:
+                if bank:
+                    bank_shards += extra_amount
+                else:
+                    total_coins_earned += extra_amount
+
+        apply_reward(track["free"])
+
+        premium_extra = track.get("premium_extra_amount", 0)
+        if get_pass_rank(pass_type) >= get_pass_rank("premium"):
+            apply_reward(track["premium"], premium_extra)
         else:
-            # FREE user: Bank premium rewards!
-            if prem_rw["type"] == "shards":
-                bank_shards += prem_rw["amount"]
-            elif prem_rw["type"] == "egg":
-                bank_egg(prem_rw["tier"])
-            bank_shards += prem_extra
-        # Grant Elite Reward (Elite only)
-        elite_rw = track["elite"]
+            apply_reward(track["premium"], premium_extra, bank=True)
+
         elite_extra = track.get("elite_extra_amount", 0)
         if pass_type == "elite":
-            if elite_rw["type"] == "shards":
-                total_coins_earned += elite_rw["amount"]
-            elif elite_rw["type"] == "egg":
-                add_egg(elite_rw["tier"])
-            total_coins_earned += elite_extra
-        elif pass_type in ["free", "premium"]:
-            # Bank elite rewards for non-elite users
-            if elite_rw["type"] == "shards":
-                bank_shards += elite_rw["amount"]
-            elif elite_rw["type"] == "egg":
-                bank_egg(elite_rw["tier"])
-            bank_shards += elite_extra
+            apply_reward(track["elite"], elite_extra)
+        else:
+            apply_reward(track["elite"], elite_extra, bank=True)
     # Perform DB Updates
     updates = {}
     # Use $addToSet instead of $set so concurrent grants don't overwrite each other
     if newly_claimed:
-        updates["$addToSet"] = {"claimed_levels": {"$each": newly_claimed}}
+        updates["$addToSet"] = {
+            get_pass_claims_field(): {"$each": newly_claimed},
+            "claimed_levels": {"$each": newly_claimed},
+        }
     if total_coins_earned > 0:
         updates.setdefault("$inc", {})["balance"] = total_coins_earned
     if bank_shards > 0:
-        updates.setdefault("$inc", {})["pass_bank.shards"] = bank_shards
+        updates.setdefault("$inc", {})[f"{get_pass_bank_field()}.shards"] = bank_shards
     for tier, count in bank_eggs.items():
-        updates.setdefault("$inc", {})[f"pass_bank.eggs_t{tier}"] = count
+        updates.setdefault("$inc", {})[f"{get_pass_bank_field()}.eggs_t{tier}"] = count
     if eggs_awarded:
         updates["$push"] = {"eggs": {"$each": eggs_awarded}}
     if updates.get("$inc") or updates.get("$push") or updates.get("$addToSet"):
@@ -182,7 +187,7 @@ async def get_user_progress(user_id: int, user_data: dict = None) -> dict:
             "xp_current": 0,
             "xp_needed": 100,
             "pass_type": "free",
-            "season": 1,
+            "season": CURRENT_PASS_SEASON,
             "claimed_levels": []
         }
     total_xp = user.get("xp", 0)
@@ -190,13 +195,13 @@ async def get_user_progress(user_id: int, user_data: dict = None) -> dict:
     xp_needed = get_xp_for_next_level(level)
     # Optimized formula for sum of arithmetic progression: 100 * (1 + 2 + ... + n) = 50 * n * (n + 1)
     xp_for_previous_levels = 50 * level * (level + 1)
-    xp_current = total_xp - xp_for_previous_levels
+    xp_current = 0 if xp_needed == 0 else total_xp - xp_for_previous_levels
     return {
         "level": level,
         "xp": total_xp,
         "xp_current": xp_current,
         "xp_needed": xp_needed,
-        "pass_type": user.get("pass_type", "free"),
-        "season": user.get("season", 1),
-        "claimed_levels": user.get("claimed_levels", [])
+        "pass_type": get_active_pass_type(user),
+        "season": user.get("season", CURRENT_PASS_SEASON),
+        "claimed_levels": get_pass_claimed_levels(user)
     }

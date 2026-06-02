@@ -11,6 +11,9 @@ import { ErrorState } from '../components/ui/ErrorState';
 const QuestItem = ({ quest, onComplete, completing }) => (
   <div key={quest.id} className={cn(
     "p-4 rounded-xl border transition-all shadow-sm",
+    quest.locked
+      ? 'border-white/5 bg-brand-deep opacity-60'
+      :
     quest.claimed
       ? 'border-emerald-500/20 bg-emerald-500/5'
       : 'border-white/5 bg-brand-deep'
@@ -52,15 +55,15 @@ const QuestItem = ({ quest, onComplete, completing }) => (
           ) : (
               <button
                   onClick={() => onComplete(quest.id)}
-                  disabled={quest.progress < quest.target || completing === quest.id}
+                  disabled={quest.locked || quest.progress < quest.target || completing === quest.id}
                   className={cn(
                       "h-10 min-w-10 rounded-lg flex items-center justify-center transition-all shrink-0",
-                      quest.progress >= quest.target
+                      !quest.locked && quest.progress >= quest.target
                       ? 'bg-white text-brand-midnight hover:bg-neutral-200 active:scale-95 shadow-sm px-3 gap-1.5'
                       : 'bg-brand-midnight text-neutral-600 border border-white/5'
                   )}
                 >
-                  {completing === quest.id ? <Loader2 size={18} className="animate-spin" /> : quest.progress >= quest.target ? (
+                  {completing === quest.id ? <Loader2 size={18} className="animate-spin" /> : !quest.locked && quest.progress >= quest.target ? (
                     <>
                       <Zap size={16} strokeWidth={2.5} />
                       <span className="text-xs font-bold">Claim</span>
@@ -82,11 +85,14 @@ interface Quest {
     progress: number;
     target: number;
     claimed: boolean;
+    locked?: boolean;
 }
 
 interface QuestsResponse {
     daily: Quest[];
     weekly: Quest[];
+    pass: Quest[];
+    pass_type: string;
 }
 
 export const Quests = () => {
@@ -155,6 +161,7 @@ export const Quests = () => {
             <div className="px-4 space-y-8">
                 {renderQuestSection('Daily tasks', questsData?.daily || [])}
                 {renderQuestSection('Weekly tasks', questsData?.weekly || [])}
+                {renderQuestSection('Pass missions', questsData?.pass || [])}
             </div>
         </div>
     );
