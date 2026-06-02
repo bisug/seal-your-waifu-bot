@@ -143,9 +143,7 @@ async def sell_character_api(
     char_id: str,
     user_id: int = Depends(get_current_user)
 ):
-    from Grabber.modules.economy.sell import SELL_PRICES
-    from Grabber.core.balance import update_user_balance
-    from Grabber.core.user import remove_char_from_user
+    from Grabber.modules.economy.sell import sell_character_from_user
 
     user = await user_collection.find_one(get_user_id_query(user_id))
     if not user:
@@ -155,23 +153,11 @@ async def sell_character_api(
     if not char:
         raise HTTPException(status_code=404, detail="Character not found in harem")
 
-    rarity = char.get("rarity", "⚪ Common")
-    # Handle the bot's rarity naming (the map in sell.py doesn't have emojis)
-    # We strip emojis or match against the keys
-    clean_rarity = rarity
-    for k in SELL_PRICES.keys():
-        if k in rarity:
-            clean_rarity = k
-            break
-
-    price = SELL_PRICES.get(clean_rarity, 50)
-
-    if await remove_char_from_user(user_id, char_id):
-        await update_user_balance(user_id, price)
-        await sync_user_to_redis(user_id)
-        return {"status": "success", "reward": price, "currency": "Shards"}
-    else:
+    sale = await sell_character_from_user(user_id, char_id)
+    if not sale:
         raise HTTPException(status_code=400, detail="Failed to sell character")
+    _, price, _ = sale
+    return {"status": "success", "reward": price, "currency": "Shards"}
 
 @router.post("/recycle")
 async def recycle_characters(

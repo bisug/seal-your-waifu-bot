@@ -115,6 +115,9 @@ celerybeat.pid
 
 # Environments
 .env
+.npm-cache/
+*.session
+*.session-journal
 .venv
 env/
 venv/

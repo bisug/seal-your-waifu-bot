@@ -8,7 +8,7 @@ from config import config
 from Grabber import WEB_APP_URL, app, user_collection
 from Grabber.core.keyboard import get_webapp_button
 from Grabber.core.progression import add_xp, get_progress_bar
-from Grabber.core.utils import handle_errors, html_escape
+from Grabber.core.utils import get_user_id_query, handle_errors, html_escape
 
 QUEST_POOL = {
     "catch_master": {
@@ -220,12 +220,11 @@ async def update_quest_progress(user_id: int, quest_id: str, increment: int = 1)
     else:
         return
     # Try direct update — only touches the document if the quest key exists and isn't claimed
+    quest_filter = get_user_id_query(user_id)
+    quest_filter[f"quests.{quest_id}.claimed"] = False
+    quest_filter[f"quests.{quest_id}.progress"] = {"$lt": target}
     result = await user_collection.update_one(
-        {
-            "id": user_id,
-            f"quests.{quest_id}.claimed": False,
-            f"quests.{quest_id}.progress": {"$lt": target}
-        },
+        quest_filter,
         {"$inc": {f"quests.{quest_id}.progress": increment}}
     )
     if result.matched_count == 0:
@@ -233,7 +232,7 @@ async def update_quest_progress(user_id: int, quest_id: str, increment: int = 1)
         quests = await get_user_quests(user_id)
         if quest_id in quests and quests[quest_id]["progress"] < target:
             await user_collection.update_one(
-                {"id": user_id},
+                get_user_id_query(user_id),
                 {"$set": {f"quests.{quest_id}.progress": min(quests[quest_id]["progress"] + increment, target)}}
             )
 @app.on_message(filters.command("quests"))

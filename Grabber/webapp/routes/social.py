@@ -1,6 +1,7 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Body
-from Grabber.database import user_collection, sessions_collection
+from pymongo import ReturnDocument
+from Grabber.database import client, user_collection, sessions_collection
 from Grabber.webapp.auth import get_current_user, get_current_user_data
 from Grabber.core.utils import get_user_id_query, normalize_user_id
 from Grabber.webapp.schemas import TradeOffer, MarriageModel, ReferralModel, BattleStatsModel, CharacterModel
@@ -74,37 +75,51 @@ async def respond_to_trade(
         raise HTTPException(status_code=403, detail="Not authorized")
 
     if action == "reject":
-        await sessions_collection.delete_one({"id": trade_id})
+        deleted = await sessions_collection.delete_one({"id": trade_id, "type": "trade_offer", "status": "pending"})
+        if deleted.deleted_count == 0:
+            raise HTTPException(status_code=409, detail="Trade offer is already being handled")
         return {"status": "rejected"}
 
-    sender_id = offer["sender_id"]
-    s_char = offer["sender_char"]
-    r_char = offer["receiver_char"]
+    locked_offer = await sessions_collection.find_one_and_update(
+        {"id": trade_id, "type": "trade_offer", "status": "pending"},
+        {"$set": {"status": "processing"}},
+        return_document=ReturnDocument.AFTER
+    )
+    if not locked_offer:
+        raise HTTPException(status_code=409, detail="Trade offer is already being handled")
+
+    sender_id = locked_offer["sender_id"]
+    s_char = locked_offer["sender_char"]
+    r_char = locked_offer["receiver_char"]
 
     try:
-        res1 = await user_collection.update_one(
-            {**get_user_id_query(sender_id), "characters.id": s_char["id"]},
-            {"$set": {"characters.$": r_char}}
-        )
-        if res1.modified_count == 0:
-            raise ValueError("Sender character no longer available")
+        async with await client.start_session() as mongo_session:
+            async with mongo_session.start_transaction():
+                res1 = await user_collection.update_one(
+                    {**get_user_id_query(sender_id), "characters.id": s_char["id"]},
+                    {"$set": {"characters.$": r_char}, "$inc": {"version": 1}},
+                    session=mongo_session
+                )
+                if res1.modified_count == 0:
+                    raise ValueError("Sender character no longer available")
 
-        res2 = await user_collection.update_one(
-            {**get_user_id_query(user_id), "characters.id": r_char["id"]},
-            {"$set": {"characters.$": s_char}}
-        )
-        if res2.modified_count == 0:
-            await user_collection.update_one(
-                {**get_user_id_query(sender_id), "characters.id": r_char["id"]},
-                {"$set": {"characters.$": s_char}}
-            )
-            raise ValueError("Receiver character no longer available")
+                res2 = await user_collection.update_one(
+                    {**get_user_id_query(user_id), "characters.id": r_char["id"]},
+                    {"$set": {"characters.$": s_char}, "$inc": {"version": 1}},
+                    session=mongo_session
+                )
+                if res2.modified_count == 0:
+                    raise ValueError("Receiver character no longer available")
 
         await sessions_collection.delete_one({"id": trade_id})
         await sync_user_to_redis(sender_id)
         await sync_user_to_redis(user_id)
         return {"status": "accepted"}
     except Exception as e:
+        await sessions_collection.update_one(
+            {"id": trade_id, "type": "trade_offer"},
+            {"$set": {"status": "failed", "error": str(e)}}
+        )
         raise HTTPException(status_code=400, detail=str(e))
 
 # --- MARRIAGE ---

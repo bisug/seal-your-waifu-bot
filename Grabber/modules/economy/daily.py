@@ -7,10 +7,10 @@ from Grabber import LOGGER, MAIN_GROUP_ID, app
 from Grabber.core.cache import (get_daily_date, get_weekly_date,
                                 invalidate_leaderboard_cache,
                                 invalidate_user_cache, set_daily_date,
-                                set_weekly_date)
-from Grabber.core.user import add_char_to_user, get_user_data, update_user
-from Grabber.core.utils import handle_errors, html_escape, reply_media_dynamic
-from Grabber.database import collection
+                                set_weekly_date, sync_user_to_redis)
+from Grabber.core.user import get_user_data
+from Grabber.core.utils import get_user_id_query, handle_errors, html_escape, reply_media_dynamic
+from Grabber.database import collection, user_collection
 RARITY_WEIGHTS = {
     '⚪ Common': 60,
     '🟢 Medium': 30,
@@ -39,6 +39,7 @@ async def daily_command_handler(_, message: types.Message):
         return await message.reply_text("This command only works in the main group.", parse_mode=enums.ParseMode.HTML)
     user_id = message.from_user.id
     user = await get_user_data(user_id)
+    user = user or {}
     now_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     # Check Redis first, fall back to DB
     last_claim_date = await get_daily_date(user_id)
@@ -69,16 +70,25 @@ async def daily_command_handler(_, message: types.Message):
     char = await get_daily_waifu()
     if not char:
         return await message.reply_text("No characters available currently.", parse_mode=enums.ParseMode.HTML)
-    # Update User
-    await add_char_to_user(user_id, char)
-    await update_user(user_id, {
-        "$set": {"last_daily_date": now_date, "daily_streak": streak},
-        "$inc": {"balance": reward_coins}
-    })
+    claim_filter = get_user_id_query(user_id)
+    claim_filter["last_daily_date"] = {"$ne": now_date}
+    claim_result = await user_collection.update_one(
+        claim_filter,
+        {
+            "$set": {"last_daily_date": now_date, "daily_streak": streak},
+            "$inc": {"balance": reward_coins, "char_count": 1, "version": 1},
+            "$push": {"characters": char},
+            "$setOnInsert": {"id": user_id}
+        },
+        upsert=True
+    )
+    if claim_result.modified_count == 0 and claim_result.upserted_id is None:
+        return await message.reply_text("You've already claimed your daily reward today!", parse_mode=enums.ParseMode.HTML)
     # Update Redis caches
     await set_daily_date(user_id, now_date)
     await invalidate_user_cache(user_id)
     await invalidate_leaderboard_cache()
+    await sync_user_to_redis(user_id)
     caption = (
         f'<a href="tg://user?id={message.from_user.id}">{html_escape(message.from_user.first_name)}</a> claimed their daily reward!\n\n'
         f"<b>Character:</b> {html_escape(char['name'])}\n"
@@ -95,6 +105,7 @@ async def weekly_command_handler(_, message: types.Message):
         return await message.reply_text("This command only works in the main group.", parse_mode=enums.ParseMode.HTML)
     user_id = message.from_user.id
     user = await get_user_data(user_id)
+    user = user or {}
     now = datetime.now(timezone.utc)
     now_str = now.strftime("%Y-%m-%d")
     # Check Redis first
@@ -115,13 +126,26 @@ async def weekly_command_handler(_, message: types.Message):
     xp_reward = int(500 * multiplier)
     bonus_coins = reward_coins - base_coins
     pass_bonus_text = f"\n(+{bonus_coins} Pass Bonus)" if multiplier > 1.0 else ""
-    await update_user(user_id, {
-        "$set": {"last_weekly_date": now_str},
-        "$inc": {"balance": reward_coins}
-    })
+    weekly_filter = get_user_id_query(user_id)
+    weekly_filter["$or"] = [
+        {"last_weekly_date": {"$exists": False}},
+        {"last_weekly_date": {"$lte": (now - timedelta(days=7)).strftime("%Y-%m-%d")}}
+    ]
+    weekly_result = await user_collection.update_one(
+        weekly_filter,
+        {
+            "$set": {"last_weekly_date": now_str},
+            "$inc": {"balance": reward_coins, "version": 1},
+            "$setOnInsert": {"id": user_id}
+        },
+        upsert=True
+    )
+    if weekly_result.modified_count == 0 and weekly_result.upserted_id is None:
+        return await message.reply_text("You have already claimed this weekly reward.", parse_mode=enums.ParseMode.HTML)
     await set_weekly_date(user_id, now_str)
     await invalidate_user_cache(user_id)
     await invalidate_leaderboard_cache()
+    await sync_user_to_redis(user_id)
     # Also give XP
     from Grabber.core.progression import add_xp
     await add_xp(user_id, xp_reward, "weekly_claim")

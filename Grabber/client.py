@@ -28,6 +28,30 @@ class SealClient(Client):
             device_model="Seal-Server",
             system_version="Linux",
             workdir="Grabber")
+        self._kurigram_error_handler_registered = False
+        self._register_kurigram_error_handler()
+
+    def _register_kurigram_error_handler(self):
+        """Register Kurigram's global handler-error hook when available."""
+        if self._kurigram_error_handler_registered or not hasattr(self, "on_error"):
+            return
+
+        @self.on_error(group=-1)
+        async def _log_kurigram_handler_error(client, exception, handler, *raw_args):
+            callback = getattr(handler, "callback", None)
+            handler_name = getattr(callback, "__qualname__", type(handler).__name__)
+            update_type = type(raw_args[0]).__name__ if raw_args else "unknown"
+            exc_info = (type(exception), exception, exception.__traceback__)
+
+            LOGGER.error(
+                "[%s] Unhandled Kurigram handler error in %s for %s",
+                getattr(client, "name", self.name),
+                handler_name,
+                update_type,
+                exc_info=exc_info,
+            )
+
+        self._kurigram_error_handler_registered = True
 
     async def resolve_peer_safe(self, chat_id):
         """Attempts to resolve a peer ID in the bot's cache to avoid PeerIdInvalid errors."""

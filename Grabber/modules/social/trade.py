@@ -1,9 +1,9 @@
 from pyrogram import enums, errors, filters, types
-from Grabber import LOGGER, app
+from Grabber import LOGGER, app, client
 from Grabber.core.cache import invalidate_user_cache
 from Grabber.core.sessions import create_session, delete_session, get_session
-from Grabber.core.user import get_user_data, update_user
-from Grabber.core.utils import handle_errors, html_escape
+from Grabber.core.user import get_user_data
+from Grabber.core.utils import get_user_id_query, handle_errors, html_escape
 from Grabber.modules.progression.quests import update_quest_progress
 @app.on_message(filters.command("trade") & filters.group)
 @handle_errors
@@ -77,25 +77,22 @@ async def trade_callback_handler(_, query: types.CallbackQuery):
     # 2. Swap exactly one instance using positional $set to avoid mass-deletion bug
     from Grabber.database import user_collection
     try:
-        # Update Sender: Replace their giving char with the taking char
-        sender_result = await user_collection.update_one(
-            {"id": {"$in": [sender_id, str(sender_id)]}, "characters.id": s_char['id']},
-            {"$set": {"characters.$": r_char}}
-        )
-        if sender_result.modified_count == 0:
-            raise ValueError(f"Sender {sender_id} no longer owns char {s_char['id']}")
-        # Update Receiver: Replace their giving char with the taking char
-        receiver_result = await user_collection.update_one(
-            {"id": {"$in": [receiver_id, str(receiver_id)]}, "characters.id": r_char['id']},
-            {"$set": {"characters.$": s_char}}
-        )
-        if receiver_result.modified_count == 0:
-            # Rollback Sender: Swap it back (using the ID of the char we just gave them)
-            await user_collection.update_one(
-                {"id": {"$in": [sender_id, str(sender_id)]}, "characters.id": r_char['id']},
-                {"$set": {"characters.$": s_char}}
-            )
-            raise ValueError(f"Receiver {receiver_id} no longer owns char {r_char['id']}, rolled back.")
+        async with await client.start_session() as mongo_session:
+            async with mongo_session.start_transaction():
+                sender_result = await user_collection.update_one(
+                    {**get_user_id_query(sender_id), "characters.id": s_char['id']},
+                    {"$set": {"characters.$": r_char}, "$inc": {"version": 1}},
+                    session=mongo_session
+                )
+                if sender_result.modified_count == 0:
+                    raise ValueError(f"Sender {sender_id} no longer owns char {s_char['id']}")
+                receiver_result = await user_collection.update_one(
+                    {**get_user_id_query(receiver_id), "characters.id": r_char['id']},
+                    {"$set": {"characters.$": s_char}, "$inc": {"version": 1}},
+                    session=mongo_session
+                )
+                if receiver_result.modified_count == 0:
+                    raise ValueError(f"Receiver {receiver_id} no longer owns char {r_char['id']}")
         await invalidate_user_cache(sender_id)
         await invalidate_user_cache(receiver_id)
     except Exception as e:

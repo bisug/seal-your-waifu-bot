@@ -9,7 +9,7 @@ class User(BaseModel):
     username: Optional[str] = None
     balance: int = 0
     zenith: int = 0
-    characters: List[dict] = []
+    characters: List[dict] = Field(default_factory=list)
 
     # Daily Streak
     daily_streak: int = 0
@@ -24,7 +24,7 @@ class User(BaseModel):
     # Progression
     xp: int = 0
     level: int = 0
-    claimed_levels: List[int] = []
+    claimed_levels: List[int] = Field(default_factory=list)
     # Name Guessing Game
     guess_count: int = 0
 

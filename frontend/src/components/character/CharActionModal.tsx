@@ -28,7 +28,7 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
 
     if (!selectedChar) return null;
 
-    const isOwned = (user?.characters || []).some(c => c.id === selectedChar.id);
+    const isOwned = (user?.characters || []).some(c => String(c.id) === String(selectedChar.id));
 
     const handleBuy = async () => {
         setPurchaseStage('buying');
@@ -112,7 +112,7 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
 
     const actions = (
         <div className="w-full space-y-3">
-            {activeTab === 'market' && !isOwned && (
+            {activeTab === 'shop' && !isOwned && (
                 <div className="w-full">
                     {purchaseStage === 'idle' ? (
                         <button 

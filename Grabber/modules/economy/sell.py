@@ -1,10 +1,13 @@
+import asyncio
+
 from pyrogram import enums, errors, filters, types
 from pyrogram.enums import ButtonStyle, ParseMode
 
 from Grabber import app
-from Grabber.core.balance import update_user_balance
-from Grabber.core.user import get_user_data, remove_char_from_user
-from Grabber.core.utils import handle_errors, html_escape
+from Grabber.core.cache import sync_user_to_redis
+from Grabber.core.user import get_user_data
+from Grabber.core.utils import get_user_id_query, handle_errors, html_escape
+from Grabber.database import user_collection
 
 SELL_PRICES = {
     "Common": 50,
@@ -16,6 +19,52 @@ SELL_PRICES = {
     "Limited Edition": 5000,
     "Royal": 10000
 }
+
+def normalize_sell_rarity(rarity: str) -> str:
+    rarity_text = str(rarity or "Common")
+    for key in SELL_PRICES:
+        if rarity_text == key or key in rarity_text:
+            return key
+    return "Common"
+
+def get_sell_price(rarity: str) -> int:
+    return SELL_PRICES.get(normalize_sell_rarity(rarity), SELL_PRICES["Common"])
+
+async def sell_character_from_user(user_id: int, char_id: str):
+    for _ in range(3):
+        user = await user_collection.find_one(get_user_id_query(user_id))
+        if not user or not user.get("characters"):
+            return None
+
+        chars = user["characters"]
+        idx_to_remove = next((i for i, c in enumerate(chars) if str(c.get("id")) == str(char_id)), -1)
+        if idx_to_remove == -1:
+            return None
+
+        char = chars[idx_to_remove]
+        price = get_sell_price(char.get("rarity", "Common"))
+        new_chars = chars[:idx_to_remove] + chars[idx_to_remove + 1:]
+        current_version = user.get("version", 0)
+        current_count = user.get("char_count", len(chars))
+        new_count = max(0, current_count - 1)
+        new_balance = user.get("balance", 0) + price
+
+        update_filter = get_user_id_query(user_id)
+        update_filter["version"] = current_version
+        result = await user_collection.update_one(
+            update_filter,
+            {
+                "$set": {"characters": new_chars, "char_count": new_count},
+                "$inc": {"balance": price, "version": 1}
+            }
+        )
+        if result.modified_count > 0:
+            await sync_user_to_redis(user_id)
+            return char, price, new_balance
+
+        await asyncio.sleep(0.1)
+    return None
+
 @app.on_message(filters.command("sell"))
 @handle_errors
 async def sell_handler(_, message: types.Message):
@@ -35,7 +84,7 @@ async def sell_handler(_, message: types.Message):
     if not char:
         return await message.reply_text("<b>You don't own this character.</b>", parse_mode=enums.ParseMode.HTML)
     rarity = char.get('rarity', 'Common')
-    price = SELL_PRICES.get(rarity, 50)
+    price = get_sell_price(rarity)
     buttons = [
         [
             types.InlineKeyboardButton("Confirm", callback_data=f"sell_c_{char_id}:{user_id}"),
@@ -82,14 +131,15 @@ async def sell_callback_handler(_, query: types.CallbackQuery):
     if not char:
         return await query.answer("You don't own this character anymore.", show_alert=True)
     rarity = char.get('rarity', '⚪ Common')
-    price = SELL_PRICES.get(rarity, 50)
+    price = get_sell_price(rarity)
     current_shards = user.get('balance', 0)
     new_shards = current_shards + price
-    if await remove_char_from_user(user_id, char_id):
-        await update_user_balance(user_id, price)
+    sale = await sell_character_from_user(user_id, char_id)
+    if sale:
+        sold_char, price, new_shards = sale
         await query.message.edit_text(
             f"<b>Successfully Sold!</b>\n\n"
-            f"<b>Character:</b> {html_escape(char['name'])}\n"
+            f"<b>Character:</b> {html_escape(sold_char['name'])}\n"
             f"<b>Price:</b> <code>{price:,}</code> ⬪\n\n"
             f"<b>Your New Balance:</b> <code>{new_shards:,}</code> ⬪",
             parse_mode=enums.ParseMode.HTML

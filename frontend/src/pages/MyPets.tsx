@@ -12,7 +12,7 @@ import {
     ChevronRight,
     Loader2
 } from 'lucide-react';
-import { cn, formatNumber } from '../utils';
+import { cn } from '../utils';
 import { ProgressBar } from '../components/ui/ProgressBar';
 
 interface MyPetsProps {

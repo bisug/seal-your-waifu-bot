@@ -6,6 +6,7 @@ import logging
 import time
 import uuid
 from collections import OrderedDict, defaultdict
+from datetime import datetime, timedelta, timezone
 from typing import Dict
 from urllib.parse import parse_qsl
 
@@ -67,14 +68,15 @@ async def create_session(user_data: dict):
     
     if not r:
         expiry = time.time() + 3600
+        expiry_dt = datetime.now(timezone.utc) + timedelta(seconds=3600)
         await sessions_collection.update_one(
             {"_id": session_key},
-            {"$set": {"token": token, "expires_at": expiry}},
+            {"$set": {"token": token, "expires_at": expiry, "expires_at_dt": expiry_dt}},
             upsert=True
         )
         await sessions_collection.update_one(
             {"_id": token_key},
-            {"$set": {"user_id": str(user_id), "expires_at": expiry}},
+            {"$set": {"user_id": str(user_id), "expires_at": expiry, "expires_at_dt": expiry_dt}},
             upsert=True
         )
         return token, user_id

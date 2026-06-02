@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { Character } from '../../context/UserContext';
-import { cn } from '../../utils';
 
 interface GachaRevealProps {
     character: Character | null;
