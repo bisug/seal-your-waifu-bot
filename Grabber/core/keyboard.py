@@ -2,18 +2,34 @@ from pyrogram import enums, errors, filters, types
 
 from config import config
 from Grabber import BOT_USERNAME, WEB_APP_URL
+def make_button(
+    text: str,
+    callback_data: str = None,
+    url: str = None,
+    web_app: types.WebAppInfo = None,
+    switch_inline_query_current_chat: str = None,
+    style: enums.ButtonStyle = enums.ButtonStyle.DEFAULT,
+) -> types.InlineKeyboardButton:
+    return types.InlineKeyboardButton(
+        text=text,
+        callback_data=callback_data,
+        url=url,
+        web_app=web_app,
+        switch_inline_query_current_chat=switch_inline_query_current_chat,
+        style=style,
+    )
 class KeyboardBuilder:
     def __init__(self):
         self.keyboard = []
-    def add_button(self, text: str, callback_data: str = None, url: str = None, web_app: types.WebAppInfo = None, switch_inline_query_current_chat: str = None, style: enums.ButtonStyle = None):
+    def add_button(self, text: str, callback_data: str = None, url: str = None, web_app: types.WebAppInfo = None, switch_inline_query_current_chat: str = None, style: enums.ButtonStyle = enums.ButtonStyle.DEFAULT):
         """Adds a single button to a new row."""
-        self.keyboard.append([types.InlineKeyboardButton(
+        self.keyboard.append([make_button(
             text=text,
             callback_data=callback_data,
             url=url,
             web_app=web_app,
             switch_inline_query_current_chat=switch_inline_query_current_chat,
-            style=style
+            style=style,
         )])
         return self
     def add_row(self, *buttons: types.InlineKeyboardButton):
@@ -27,10 +43,10 @@ def get_webapp_button(is_private: bool = True, path: str = None) -> types.Inline
     url = f"{WEB_APP_URL}{path}" if path else WEB_APP_URL
     if is_private:
         # Using web_app integrated button for the smoothest experience in DMs
-        return types.InlineKeyboardButton(
+        return make_button(
             "Open Mini App", 
-            web_app=types.WebAppInfo(url=url), 
-            style=enums.ButtonStyle.SUCCESS
+            web_app=types.WebAppInfo(url=url),
+            style=enums.ButtonStyle.SUCCESS,
         )
     else:
         # To "hide" the URL and get a professional Mini App feel in groups,
@@ -45,16 +61,16 @@ def get_webapp_button(is_private: bool = True, path: str = None) -> types.Inline
             if path:
                 # Telegram startapp parameters don't allow '#' so we pass it cleanly
                 app_link += f"?startapp={path.replace('#', '')}"
-            return types.InlineKeyboardButton(
+            return make_button(
                 "Open Mini App", 
                 url=app_link,
-                style=enums.ButtonStyle.SUCCESS
+                style=enums.ButtonStyle.SUCCESS,
             )
         # Absolute fallback if username is missing
-        return types.InlineKeyboardButton(
+        return make_button(
             "Open Mini App", 
             url=url,
-            style=enums.ButtonStyle.SUCCESS
+            style=enums.ButtonStyle.SUCCESS,
         )
 def get_paginated_keyboard(page: int, total_pages: int, callback_prefix: str, user_id: int, is_private: bool = True, webapp_path: str = None) -> types.InlineKeyboardMarkup:
     """Builds a standard paginated keyboard with navigation and optional group WebApp link."""

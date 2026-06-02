@@ -3,6 +3,8 @@ from pyrogram.enums import ParseMode
 
 from Grabber import LOGGER, app, user_collection
 from Grabber.core.progression import add_xp
+from Grabber.core.user import get_user_filter
+from Grabber.core.utils import handle_errors, html_escape
 ACHIEVEMENTS = {
     "collector_10": {
         "name": "Novice Collector",
@@ -130,3 +132,40 @@ async def check_achievements(user_id: int):
 
     await user_collection.update_one({"id": user_id}, update_op)
     return new_ach_ids
+
+
+@app.on_message(filters.command("achievements"))
+@handle_errors
+async def achievements_command(_, message: types.Message):
+    user_id = message.from_user.id
+    new_unlocks = await check_achievements(user_id) or []
+    user = await user_collection.find_one(get_user_filter(user_id))
+    if not user:
+        return await message.reply_text(
+            "No profile found yet. Use /start first.",
+            parse_mode=enums.ParseMode.HTML,
+        )
+
+    unlocked = set(user.get("achievements", []))
+    lines = ["<b>Achievements</b>"]
+    if new_unlocks:
+        lines.append(f"<i>Newly unlocked:</i> <code>{len(new_unlocks)}</code>")
+    lines.append("")
+
+    for ach_id, data in ACHIEVEMENTS.items():
+        status = "Unlocked" if ach_id in unlocked else "Locked"
+        reward_bits = []
+        if data.get("reward_xp"):
+            reward_bits.append(f"{data['reward_xp']:,} XP")
+        if data.get("reward_shards"):
+            reward_bits.append(f"{data['reward_shards']:,} Shards")
+        reward_text = ", ".join(reward_bits) if reward_bits else "Title"
+        lines.append(
+            f"<b>{html_escape(data['symbol'])} {html_escape(data['name'])}</b> - {status}\n"
+            f"<i>{html_escape(data['description'])}</i>\n"
+            f"Reward: <code>{html_escape(reward_text)}</code>"
+        )
+
+    text = "\n\n".join(lines)
+    for start in range(0, len(text), 3500):
+        await message.reply_text(text[start:start + 3500], parse_mode=enums.ParseMode.HTML)
