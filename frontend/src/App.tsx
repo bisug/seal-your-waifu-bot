@@ -24,6 +24,8 @@ const Referrals = lazy(() => import('./pages/Referrals').then(m => ({ default: m
 const Achievements = lazy(() => import('./pages/Achievements').then(m => ({ default: m.Achievements })));
 const MyPets = lazy(() => import('./pages/MyPets').then(m => ({ default: m.MyPets })));
 
+const VALID_TABS = ['profile', 'incubation', 'shop', 'gallery', 'pets', 'referrals', 'quests', 'pass', 'leaderboard', 'achievements', 'mypets'];
+
 interface ErrorBoundaryProps {
   children: ReactNode;
 }
@@ -85,7 +87,10 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 const AppContent = () => {
   const { user, loading, error } = useUser();
   
-  const getInitialTab = () => {
+  const getInitialTab = useCallback(() => {
+    const hashTab = window.location.hash.replace(/^#/, '');
+    if (VALID_TABS.includes(hashTab)) return hashTab;
+
     const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
     if (startParam === 'shop') return 'shop';
     if (startParam === 'market') return 'shop';
@@ -94,7 +99,7 @@ const AppContent = () => {
     if (startParam === 'pass') return 'pass';
     if (startParam === 'quests') return 'quests';
     return 'profile';
-  };
+  }, []);
 
   const [activeTab, setActiveTab] = useState(getInitialTab());
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -103,6 +108,14 @@ const AppContent = () => {
   const [revealedChar, setRevealedChar] = useState<any>(null);
 
   const backHandlerRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      setActiveTab(getInitialTab());
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [getInitialTab]);
 
   useEffect(() => {
     const tg = window.Telegram?.WebApp;
@@ -149,6 +162,9 @@ const AppContent = () => {
     const tg = window.Telegram?.WebApp;
     tg?.HapticFeedback?.impactOccurred('light');
     setActiveTab(tab);
+    if (VALID_TABS.includes(tab) && window.location.hash !== `#${tab}`) {
+      window.history.replaceState(null, '', `#${tab}`);
+    }
   }, []);
 
   if (loading) return <IntroLoading />;
@@ -216,8 +232,8 @@ const AppContent = () => {
           {activeTab === 'achievements' && <Achievements />}
           {activeTab === 'mypets' && <MyPets onPetClick={setSelectedPet} />}
 
-          {!['profile', 'incubation', 'shop', 'gallery', 'pets', 'referrals', 'quests', 'pass', 'leaderboard', 'achievements', 'mypets'].includes(activeTab) && (
-            <NotFound onReset={() => setActiveTab('profile')} />
+          {!VALID_TABS.includes(activeTab) && (
+            <NotFound onReset={() => handleNavigate('profile')} />
           )}
         </Suspense>
       </main>

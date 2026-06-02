@@ -6,6 +6,7 @@ import { useUser } from '../context/UserContext';
 import { useApi } from '../hooks/useApi';
 import { useToast } from '../components/ui/Toast';
 import { cn } from '../utils';
+import { ErrorState } from '../components/ui/ErrorState';
 
 const EGG_TIER_LABELS: Record<number, string> = {
   1: 'Gold',
@@ -18,9 +19,12 @@ const EGG_TIER_LABELS: Record<number, string> = {
 export const Pass = () => {
   const { refreshUser } = useUser();
   const { addToast } = useToast();
-  const { data: passData, loading: passLoading, execute: fetchPassData } = useApi<any>('/pass_data');
+  const { data: passData, loading: passLoading, error, execute: fetchPassData } = useApi<any>('/pass_data');
+  const { data: passShopData } = useApi<any>('/shop/battlepass');
   const [claiming, setClaiming] = React.useState<number | null>(null);
   const [upgrading, setUpgrading] = React.useState(false);
+  const passPrices = passShopData?.prices || {};
+  const getTierPrice = (tier: string) => passPrices[tier] ?? (tier === 'premium' ? 500 : 1500);
 
   const handleClaim = async (level: number) => {
     setClaiming(level);
@@ -44,7 +48,7 @@ export const Pass = () => {
 
   const handleUpgrade = async (tier: string) => {
     window.Telegram?.WebApp?.showConfirm(
-      `Upgrade to ${tier.toUpperCase()} for ${tier === 'premium' ? '500' : '1500'} Zenith?`,
+      `Upgrade to ${tier.toUpperCase()} for ${getTierPrice(tier)} Zenith?`,
       async (confirmed: boolean) => {
         if (!confirmed) return;
         setUpgrading(true);
@@ -63,6 +67,12 @@ export const Pass = () => {
       }
     );
   };
+
+  if (error && !passData) return (
+    <div className="px-4 py-8 max-w-2xl mx-auto">
+      <ErrorState message={error} onAction={fetchPassData} />
+    </div>
+  );
 
   if (passLoading || !passData) return (
     <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="animate-spin text-neutral-600 w-8 h-8" /></div>
@@ -160,7 +170,7 @@ export const Pass = () => {
              className="w-full py-3.5 rounded-lg bg-brand-accent text-white text-sm font-bold flex items-center justify-center space-x-2 hover:bg-brand-accent-secondary active:scale-[0.98] transition-all shadow-sm"
            >
               {upgrading ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
-              <span>Activate Premium (500 Zenith)</span>
+              <span>Activate Premium ({getTierPrice('premium')} Zenith)</span>
            </button>
          ) : passData.pass_type === 'premium' ? (
            <button 
@@ -169,7 +179,7 @@ export const Pass = () => {
              className="w-full py-3.5 rounded-lg bg-white text-brand-midnight text-sm font-bold flex items-center justify-center space-x-2 hover:bg-neutral-200 active:scale-[0.98] transition-all shadow-sm"
            >
               {upgrading ? <Loader2 size={18} className="animate-spin" /> : <Award size={18} />}
-              <span>Upgrade to Elite (1500 Zenith)</span>
+              <span>Upgrade to Elite ({getTierPrice('elite')} Zenith)</span>
            </button>
          ) : (
            <div className="w-full py-3.5 rounded-lg bg-brand-accent/10 border border-brand-accent/20 text-brand-accent text-sm font-bold tracking-wide">

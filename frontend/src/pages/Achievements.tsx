@@ -3,6 +3,7 @@ import { useApi } from '../hooks/useApi';
 import { Skeleton } from '../components/ui/Skeleton';
 import { Award, Lock, CheckCircle2 } from 'lucide-react';
 import { cn } from '../utils';
+import { ErrorState } from '../components/ui/ErrorState';
 
 interface Achievement {
     id: string;
@@ -14,7 +15,7 @@ interface Achievement {
 }
 
 export const Achievements = () => {
-    const { data: achievements, loading } = useApi<Achievement[]>('/achievements/list');
+    const { data: achievements, loading, error, execute: fetchAchievements } = useApi<Achievement[]>('/achievements/list');
 
     if (loading && !achievements) return (
         <div className="px-4 py-8 space-y-3">
@@ -22,6 +23,12 @@ export const Achievements = () => {
              {[1,2,3,4,5].map(i => (
                 <Skeleton key={i} className="h-20 rounded-lg" />
              ))}
+        </div>
+    );
+
+    if (error && !achievements) return (
+        <div className="px-4 py-8">
+            <ErrorState message={error} onAction={fetchAchievements} />
         </div>
     );
 
@@ -82,7 +89,7 @@ export const Achievements = () => {
                                 "text-[10px] font-bold px-1.5 py-0.5 rounded tabular-nums",
                                 ach.unlocked ? "bg-emerald-500/10 text-emerald-500" : "bg-zinc-950 text-zinc-600"
                             )}>
-                                +{ach.reward_xp}
+                                +{ach.reward_xp} XP
                             </span>
                         </div>
                     </div>
