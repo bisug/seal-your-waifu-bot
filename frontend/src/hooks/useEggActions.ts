@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { apiFetch } from '../api/client';
+import { apiFetch, getErrorMessage } from '../api/client';
 import { useUser } from '../context/UserContext';
 import { useToast } from '../components/ui/Toast';
 
@@ -20,7 +20,7 @@ export const useEggActions = () => {
       return true;
     } catch (err: any) {
       tg?.HapticFeedback?.notificationOccurred('error');
-      const msg = err.message || 'Calibration failure';
+      const msg = getErrorMessage(err);
       if (tg?.showAlert) tg.showAlert(msg);
       else addToast(msg, 'error');
       return false;
@@ -50,7 +50,7 @@ export const useEggActions = () => {
       }
     } catch (err: any) {
       tg?.HapticFeedback?.notificationOccurred('error');
-      const msg = err.message || 'Hatch protocol interrupted';
+      const msg = getErrorMessage(err);
       if (tg?.showAlert) tg.showAlert(msg);
       else addToast(msg, 'error');
       return null;

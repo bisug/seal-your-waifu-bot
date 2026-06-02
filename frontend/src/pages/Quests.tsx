@@ -1,7 +1,7 @@
 import React from 'react';
 import { useApi } from '../hooks/useApi';
 import { useToast } from '../components/ui/Toast';
-import { apiFetch } from '../api/client';
+import { apiFetch, getErrorMessage } from '../api/client';
 import { CheckCircle2, Loader2, Zap } from 'lucide-react';
 import { formatNumber } from '../utils';
 import { useUser } from '../context/UserContext';
@@ -96,7 +96,7 @@ export const Quests = () => {
             triggerRefresh();
             fetchQuests();
         } catch (err: any) {
-            addToast(err.message, 'error');
+            addToast(getErrorMessage(err), 'error');
         } finally {
             setCompleting(null);
         }

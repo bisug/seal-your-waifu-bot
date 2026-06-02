@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { apiFetch } from '../api/client';
+import { apiFetch, getErrorMessage } from '../api/client';
 
 const apiCache = new Map<string, { data: any, timestamp: number }>();
 const CACHE_TTL = 1000 * 60 * 5; // 5 minutes
@@ -67,7 +67,7 @@ export const useApi = <T = any>(endpoint: string, options: UseApiOptions<T> = {}
       setData(res);
       return res;
     } catch (err: any) {
-      setError(err.message);
+      setError(getErrorMessage(err));
       throw err;
     } finally {
       setLoading(false);

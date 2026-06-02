@@ -4,7 +4,7 @@ import { useUser, Pet } from '../context/UserContext';
 import { Skeleton } from '../components/ui/Skeleton';
 import { formatNumber, cn } from '../utils';
 import { ShoppingBag, Lock, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
-import { apiFetch } from '../api/client';
+import { apiFetch, getErrorMessage } from '../api/client';
 import { useToast } from '../components/ui/Toast';
 
 interface PetShopProps {
@@ -36,7 +36,7 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
                         addToast(`Successfully acquired ${petName}!`, 'success');
                         triggerRefresh();
                     } catch (err: any) {
-                        addToast(err.message || 'Purchase failed', 'error');
+                        addToast(getErrorMessage(err), 'error');
                     } finally {
                         setBuying(null);
                     }

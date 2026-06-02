@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 import time
 from contextlib import asynccontextmanager
@@ -6,10 +7,12 @@ from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI
 from fastapi import HTTPException
 from fastapi import Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from config import config
 from Grabber import LOGGER
@@ -26,6 +29,7 @@ from Grabber.core.worker import background_maintenance
 from Grabber.database import r, seal_db, user_collection
 from Grabber.runner import start_bots, stop_bots
 from Grabber.webapp.api import router as api_router
+from Grabber.webapp.errors import error_response
 from Grabber.webapp.ws import router as ws_router
 
 
@@ -69,14 +73,49 @@ app = FastAPI(
 )
 
 
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    return error_response(
+        request,
+        status_code=exc.status_code,
+        detail=exc.detail,
+        headers=exc.headers,
+        fallback_message="Request failed",
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return error_response(
+        request,
+        status_code=422,
+        detail=exc.errors(),
+        code="validation_error",
+        fallback_message="Validation failed",
+    )
+
+
+@app.exception_handler(json.JSONDecodeError)
+async def json_decode_exception_handler(request: Request, exc: json.JSONDecodeError):
+    return error_response(
+        request,
+        status_code=400,
+        detail="Malformed JSON body",
+        code="malformed_json",
+        fallback_message="Malformed JSON body",
+    )
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    if isinstance(exc, HTTPException):
-        raise exc
-    LOGGER.exception(f"Unhandled Exception: {exc}")
-    return JSONResponse(
+    LOGGER.error("Unhandled API exception", exc_info=(type(exc), exc, exc.__traceback__))
+    return error_response(
+        request,
         status_code=500,
-        content={"detail": "Internal server error. Please contact support if the issue persists."})
+        detail="Internal server error. Please contact support if the issue persists.",
+        code="internal_error",
+        fallback_message="Internal server error",
+    )
 
 # CORS Configuration
 app.add_middleware(
@@ -93,6 +132,7 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 async def add_security_headers(request: Request, call_next):
     """Inject basic security headers."""
     request_id = request.headers.get("X-Request-ID") or new_request_id()
+    request.state.request_id = request_id
     context_token = set_request_id(request_id)
     started = time.perf_counter()
     try:

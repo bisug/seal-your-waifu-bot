@@ -1,13 +1,11 @@
-const API_BASE = import.meta.env.VITE_API_URL 
+const API_BASE = import.meta.env.VITE_API_URL
   ? `${import.meta.env.VITE_API_URL}/api/${import.meta.env.VITE_API_PREFIX ?? 'v1_7b82'}`
   : `/api/${import.meta.env.VITE_API_PREFIX ?? 'v1_7b82'}`;
-// FIX: Read Telegram SDK at CALL TIME, not at module load time.
-// On mobile, the SDK may not be injected yet when the JS module first evaluates.
+
+const REQUEST_TIMEOUT_MS = 12000;
+
 const getTg = () => window.Telegram?.WebApp;
 
-// FIX: Use sessionStorage instead of localStorage.
-// Telegram re-provides initData on every app open, so persistence across sessions
-// is unnecessary. sessionStorage limits the exposure window significantly.
 let sessionToken = sessionStorage.getItem('auth_token');
 
 export const setSessionToken = (token: string | null) => {
@@ -19,10 +17,43 @@ export const setSessionToken = (token: string | null) => {
   }
 };
 
-/**
- * Universal fetch wrapper for the Seal-bot FastAPI backend.
- * Handles authentication headers and standard error reporting.
- */
+interface ApiErrorInit {
+  message: string;
+  status?: number;
+  code?: string;
+  requestId?: string;
+  details?: unknown;
+  retryable?: boolean;
+  cause?: unknown;
+}
+
+export class ApiError extends Error {
+  status?: number;
+  code: string;
+  requestId?: string;
+  details?: unknown;
+  retryable: boolean;
+
+  constructor(init: ApiErrorInit) {
+    super(init.message);
+    this.name = 'ApiError';
+    this.status = init.status;
+    this.code = init.code ?? 'request_failed';
+    this.requestId = init.requestId;
+    this.details = init.details;
+    this.retryable = init.retryable ?? false;
+    if (init.cause !== undefined) {
+      (this as Error & { cause?: unknown }).cause = init.cause;
+    }
+  }
+}
+
+export const getErrorMessage = (error: unknown) => {
+  if (error instanceof ApiError) return error.message;
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === 'string' && error.trim()) return error;
+  return 'Something went wrong. Please try again.';
+};
 
 interface RefreshSubscriber {
   resolve: (value: any) => void;
@@ -32,12 +63,8 @@ interface RefreshSubscriber {
   retries: number;
 }
 
-// FIX: Replace boolean isRefreshing with a proper refresh queue.
-// When a 401 is received while a refresh is already in progress,
-// queue the caller's Promise so it retries after the new token is ready,
-// instead of silently failing.
 let isRefreshing = false;
-let refreshSubscribers: RefreshSubscriber[] = []; // Array of { resolve, reject, endpoint, options, retries }
+let refreshSubscribers: RefreshSubscriber[] = [];
 
 function subscribeToRefresh(endpoint: string, options: RequestInit, retries: number) {
   return new Promise((resolve, reject) => {
@@ -57,36 +84,196 @@ function rejectRefreshSubscribers(err: Error) {
   refreshSubscribers = [];
 }
 
-export async function apiFetch(endpoint: string, options: RequestInit = {}, retries = 2): Promise<any> {
-  const url = `${API_BASE}${endpoint}`;
-  
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...((options.headers as Record<string, string>) || {}),
-  };
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
 
-  if (sessionToken) {
-    headers['Authorization'] = `Bearer ${sessionToken}`;
+function readString(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value : undefined;
+}
+
+function mergeHeaders(headers?: HeadersInit) {
+  const merged: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (!headers) return merged;
+
+  new Headers(headers).forEach((value, key) => {
+    if (key.toLowerCase() === 'content-type') {
+      delete merged['Content-Type'];
+    }
+    merged[key] = value;
+  });
+  return merged;
+}
+
+function requestIdFrom(response: Response) {
+  return response.headers.get('X-Request-ID') ?? undefined;
+}
+
+function isRetriableStatus(status: number) {
+  return status === 408 || status >= 500;
+}
+
+function isIdempotentRequest(options: RequestInit) {
+  const method = (options.method ?? 'GET').toUpperCase();
+  return method === 'GET' || method === 'HEAD' || method === 'OPTIONS';
+}
+
+function createRequestSignal(externalSignal?: AbortSignal | null) {
+  const controller = new AbortController();
+  let timedOut = false;
+  const timeoutId = window.setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, REQUEST_TIMEOUT_MS);
+
+  const abortFromExternal = () => controller.abort();
+  if (externalSignal) {
+    if (externalSignal.aborted) {
+      abortFromExternal();
+    } else {
+      externalSignal.addEventListener('abort', abortFromExternal, { once: true });
+    }
   }
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 12000);
+  return {
+    signal: controller.signal,
+    didTimeout: () => timedOut,
+    cleanup: () => {
+      window.clearTimeout(timeoutId);
+      externalSignal?.removeEventListener('abort', abortFromExternal);
+    },
+  };
+}
 
-  if (options.signal) {
-    options.signal.addEventListener('abort', () => {
-      controller.abort();
+async function parseResponseBody(response: Response): Promise<unknown> {
+  if (response.status === 204) return null;
+
+  const text = await response.text();
+  if (!text) return null;
+
+  const contentType = response.headers.get('content-type') ?? '';
+  if (!contentType.includes('application/json')) return text;
+
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    throw new ApiError({
+      message: 'Invalid JSON response from server.',
+      status: response.status,
+      code: 'invalid_json',
+      requestId: requestIdFrom(response),
+      retryable: isRetriableStatus(response.status),
+      cause: error,
+    });
+  }
+}
+
+function buildApiError(response: Response, payload: unknown) {
+  const status = response.status;
+  let message = response.statusText || `API error: ${status}`;
+  let code = status === 401 ? 'unauthorized' : 'request_failed';
+  let requestId = requestIdFrom(response);
+  let details: unknown;
+
+  if (isRecord(payload)) {
+    const error = payload.error;
+    const detail = payload.detail;
+
+    if (isRecord(error)) {
+      message = readString(error.message) ?? message;
+      code = readString(error.code) ?? code;
+      requestId = readString(error.request_id) ?? requestId;
+      details = error.details;
+    }
+
+    message = readString(detail) ?? readString(payload.message) ?? message;
+    if (details === undefined && detail !== message) {
+      details = detail;
+    }
+  } else {
+    message = readString(payload) ?? message;
+  }
+
+  return new ApiError({
+    message,
+    status,
+    code,
+    requestId,
+    details,
+    retryable: isRetriableStatus(status),
+  });
+}
+
+function normalizeFetchError(
+  error: unknown,
+  endpoint: string,
+  options: RequestInit,
+  timedOut: boolean,
+) {
+  if (error instanceof ApiError) return error;
+
+  if (error instanceof DOMException && error.name === 'AbortError') {
+    return new ApiError({
+      message: timedOut ? 'Request timed out. Please try again.' : 'Request cancelled.',
+      code: timedOut ? 'timeout' : 'cancelled',
+      retryable: timedOut && isIdempotentRequest(options),
+      cause: error,
     });
   }
 
+  if (error instanceof TypeError) {
+    return new ApiError({
+      message: 'Network connection failed. Check your connection and try again.',
+      code: 'network_error',
+      retryable: isIdempotentRequest(options),
+      cause: error,
+    });
+  }
+
+  if (error instanceof Error) {
+    return new ApiError({
+      message: error.message || `Request failed for ${endpoint}.`,
+      code: 'request_failed',
+      cause: error,
+    });
+  }
+
+  return new ApiError({
+    message: `Request failed for ${endpoint}.`,
+    code: 'request_failed',
+    details: error,
+  });
+}
+
+function shouldRetry(error: ApiError, options: RequestInit, retries: number) {
+  return retries > 0 && error.retryable && isIdempotentRequest(options);
+}
+
+function retryDelayMs(retriesLeft: number) {
+  return 250 * (3 - Math.min(retriesLeft, 2));
+}
+
+function wait(ms: number) {
+  return new Promise(resolve => window.setTimeout(resolve, ms));
+}
+
+export async function apiFetch(endpoint: string, options: RequestInit = {}, retries = 2): Promise<any> {
+  const url = `${API_BASE}${endpoint}`;
+  const method = options.method || 'GET';
+  const headers = mergeHeaders(options.headers);
+
+  if (sessionToken) {
+    headers.Authorization = `Bearer ${sessionToken}`;
+  }
+
+  const requestSignal = createRequestSignal(options.signal);
+
   try {
-    const response = await fetch(url, { ...options, headers, signal: controller.signal });
-    clearTimeout(timeoutId);
-    
-    // Automatic Handshake Recovery: If 401, re-init session once.
-    // All concurrent requests that also 401 are queued and retried after recovery.
+    const response = await fetch(url, { ...options, headers, signal: requestSignal.signal });
+    const payload = await parseResponseBody(response);
+
     if (response.status === 401) {
       if (isRefreshing) {
-        // Another request is already refreshing — queue this one
         return subscribeToRefresh(endpoint, options, retries);
       }
 
@@ -98,47 +285,48 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}, retr
           flushRefreshSubscribers();
           return apiFetch(endpoint, options, retries);
         }
-        // Re-auth failed — reject all queued requests
+
         setSessionToken(null);
-        const authErr = new Error('Session expired. Please reopen the app.');
-        rejectRefreshSubscribers(authErr);
+        const authError = new ApiError({
+          message: 'Session expired. Please reopen the app.',
+          status: 401,
+          code: 'session_expired',
+          requestId: requestIdFrom(response),
+        });
+        rejectRefreshSubscribers(authError);
+        throw authError;
+      } catch (error) {
+        const authError = normalizeFetchError(error, endpoint, options, false);
+        rejectRefreshSubscribers(authError);
+        throw authError;
+      } finally {
         isRefreshing = false;
-        throw authErr;
-      } catch (err: any) {
-        isRefreshing = false;
-        rejectRefreshSubscribers(err);
-        console.error(`[API ERROR] ${options.method || 'GET'} ${endpoint}:`, err);
-        throw err;
       }
     }
 
     if (!response.ok) {
-      const contentType = response.headers.get("content-type");
-      const errorData = contentType && contentType.includes("application/json") 
-        ? await response.json().catch(() => ({})) 
-        : { detail: await response.text() };
-      throw new Error(errorData.detail || `API error: ${response.status}`);
+      throw buildApiError(response, payload);
     }
 
-    return await response.json();
+    return payload;
   } catch (error) {
-    if (timeoutId) clearTimeout(timeoutId);
-    if (retries > 0 && (!options.method || options.method === 'GET')) {
+    const normalized = normalizeFetchError(error, endpoint, options, requestSignal.didTimeout());
+    if (shouldRetry(normalized, options, retries)) {
       console.warn(`Retrying [${endpoint}]... (${retries} left)`);
+      await wait(retryDelayMs(retries));
       return apiFetch(endpoint, options, retries - 1);
     }
-    console.error(`Fetch error [${endpoint}]:`, error);
-    throw error;
+
+    console.error(`[API ERROR] ${method} ${endpoint}:`, normalized);
+    throw normalized;
+  } finally {
+    requestSignal.cleanup();
   }
 }
 
-/**
- * Perform initial handshake with the backend using Telegram initData.
- */
 export async function secureInit(avatarUrl: string | null = null): Promise<string | null> {
-  const tg = getTg(); // Read at call time, not module load time
+  const tg = getTg();
   const initData = tg?.initData;
-  // Check sessionStorage for an existing token to avoid redundant re-auths
   const storedToken = sessionStorage.getItem('auth_token');
 
   const payload = {
@@ -147,30 +335,32 @@ export async function secureInit(avatarUrl: string | null = null): Promise<strin
     avatar: avatarUrl,
   };
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 12000);
+  const requestSignal = createRequestSignal();
 
   try {
     const response = await fetch(`${API_BASE}/secure_init`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
-      signal: controller.signal
+      signal: requestSignal.signal,
     });
-    
-    clearTimeout(timeoutId);
 
-    if (!response.ok) throw new Error('Init failed');
+    const data = await parseResponseBody(response);
+    if (!response.ok) {
+      throw buildApiError(response, data);
+    }
 
-    const data = await response.json();
-    if (data.token) {
+    if (isRecord(data) && typeof data.token === 'string') {
       setSessionToken(data.token);
       return data.token;
     }
+
     return null;
   } catch (error) {
-    if (timeoutId) clearTimeout(timeoutId);
-    console.error('Secure Init Error:', error);
+    const normalized = normalizeFetchError(error, '/secure_init', { method: 'POST' }, requestSignal.didTimeout());
+    console.error('Secure Init Error:', normalized);
     return null;
+  } finally {
+    requestSignal.cleanup();
   }
 }
