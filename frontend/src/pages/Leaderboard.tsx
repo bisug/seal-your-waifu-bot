@@ -4,18 +4,20 @@ import { CardSkeleton } from '../components/ui/Skeleton';
 import { Trophy, Shield, Activity, Users, Zap, Swords } from 'lucide-react';
 import { formatNumber } from '../utils';
 import { cn } from '../utils';
+import { ErrorState } from '../components/ui/ErrorState';
 
 export const Leaderboard = () => {
     const [metric, setMetric] = React.useState('harem');
-    const { data, loading } = useApi<any[]>(`/leaderboard?metric=${metric}`, {}, [metric]);
+    const { data, loading, error, execute: fetchLeaderboard } = useApi<any[]>(`/leaderboard?metric=${metric}`, {}, [metric]);
 
     const METRICS = [
-        { id: 'harem', label: 'Harem', icon: Users },
+        { id: 'harem', label: 'Collection', icon: Users },
         { id: 'shards', label: 'Shards', icon: Zap },
         { id: 'zenith', label: 'Zenith', icon: Activity },
         { id: 'level', label: 'Level', icon: Shield },
-        { id: 'guesses', label: 'Combat', icon: Swords },
+        { id: 'guesses', label: 'Guesses', icon: Swords },
     ];
+    const activeMetric = METRICS.find(m => m.id === metric);
 
     return (
         <div className="pb-20 pt-4 max-w-2xl mx-auto">
@@ -45,9 +47,11 @@ export const Leaderboard = () => {
             </div>
 
             <div className="px-4 space-y-2">
-                {loading ? (
+                {error && !data ? (
+                    <ErrorState message={error} onAction={fetchLeaderboard} />
+                ) : loading ? (
                     Array.from({ length: 8 }).map((_, i) => <div key={i} className="h-16 bg-brand-deep rounded-xl animate-pulse border border-white/5" />)
-                ) : (
+                ) : data && data.length > 0 ? (
                     data?.map((user, i) => (
                         <div key={user.id} className="bg-brand-deep p-3 rounded-xl border border-white/5 flex items-center justify-between shadow-sm">
                             <div className="flex items-center space-x-3">
@@ -76,10 +80,14 @@ export const Leaderboard = () => {
                             </div>
                             <div className="text-right shrink-0 pl-2">
                                 <p className="text-base font-bold text-white tabular-nums">{formatNumber(user.value)}</p>
-                                <p className="text-xs font-medium text-neutral-500 capitalize">{metric}</p>
+                                <p className="text-xs font-medium text-neutral-500">{activeMetric?.label || metric}</p>
                             </div>
                         </div>
                     ))
+                ) : (
+                    <div className="p-10 rounded-xl border border-white/5 border-dashed text-center bg-brand-deep">
+                        <p className="text-sm font-medium text-neutral-500">No leaderboard data yet.</p>
+                    </div>
                 )}
             </div>
         </div>

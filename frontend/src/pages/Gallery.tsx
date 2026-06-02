@@ -3,7 +3,8 @@ import { apiFetch } from '../api/client';
 import { Card } from '../components/character/Card';
 import { CardSkeleton } from '../components/ui/Skeleton';
 import { EmptyState } from '../components/ui/EmptyState';
-import { Search, Loader2, Users, CheckCircle2 } from 'lucide-react';
+import { ErrorState } from '../components/ui/ErrorState';
+import { Search, Loader2, Users } from 'lucide-react';
 import { useInfiniteGrid } from '../hooks/useInfiniteGrid';
 import { Character } from '../context/UserContext';
 import { cn } from '../utils';
@@ -20,7 +21,9 @@ export const Gallery = ({ onCharClick }: GalleryProps) => {
     setSearch,
     rarity,
     setRarity,
-    lastElementRef
+    lastElementRef,
+    error,
+    refresh
   } = useInfiniteGrid<Character>('/gallery');
 
   const [availableRarities, setAvailableRarities] = useState<string[]>([]);
@@ -72,7 +75,9 @@ export const Gallery = ({ onCharClick }: GalleryProps) => {
         </div>
       </div>
 
-      {items.length > 0 ? (
+      {error && items.length === 0 ? (
+        <ErrorState message={error} onAction={refresh} />
+      ) : items.length > 0 ? (
         <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 gap-3">
           {items.map((char, i) => (
             <div
@@ -81,14 +86,6 @@ export const Gallery = ({ onCharClick }: GalleryProps) => {
               className="relative group"
             >
               <Card character={char} onClick={() => onCharClick(char)} />
-              {char.owned && (
-                <div className="absolute inset-0 flex items-center justify-center rounded-xl z-30 pointer-events-none bg-black/50 transition-opacity">
-                  <div className="bg-emerald-500 text-white px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider shadow-sm flex items-center gap-1.5 backdrop-blur-sm">
-                    <CheckCircle2 size={12} strokeWidth={3} />
-                    <span>Owned</span>
-                  </div>
-                </div>
-              )}
             </div>
           ))}
           {loading && Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={`load-${i}`} />)}

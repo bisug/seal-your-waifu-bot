@@ -2,6 +2,7 @@ import React from 'react';
 import { useApi } from '../hooks/useApi';
 import { Card } from '../components/character/Card';
 import { CardSkeleton } from '../components/ui/Skeleton';
+import { ErrorState } from '../components/ui/ErrorState';
 import { RefreshCw, ShoppingBag } from 'lucide-react';
 import { Character } from '../context/UserContext';
 
@@ -11,7 +12,7 @@ interface ShopProps {
 }
 
 export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
-  const { data: shopData, loading, execute: fetchShop } = useApi<Character[]>('/shop/characters');
+  const { data: shopData, loading, error, execute: fetchShop } = useApi<Character[]>('/shop/characters');
 
   const handleRefresh = () => {
     fetchShop();
@@ -21,6 +22,12 @@ export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
   if (loading && !shopData) return (
     <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 gap-3 px-4 py-6 max-w-5xl mx-auto">
        {Array.from({ length: 12 }).map((_, i) => <CardSkeleton key={i} />)}
+    </div>
+  );
+
+  if (error && !shopData) return (
+    <div className="px-4 py-8 max-w-2xl mx-auto">
+      <ErrorState message={error} onAction={fetchShop} />
     </div>
   );
 
@@ -39,7 +46,7 @@ export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
            className="p-2.5 rounded-lg bg-brand-deep border border-white/5 text-neutral-400 hover:text-white hover:bg-white/5 transition-colors active:scale-95"
            aria-label="Refresh Shop"
          >
-            <RefreshCw size={16} />
+            <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
          </button>
       </header>
 

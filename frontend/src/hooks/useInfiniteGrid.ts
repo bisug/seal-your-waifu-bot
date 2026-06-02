@@ -14,6 +14,7 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [rarity, setRarity] = useState('');
   const [initialized, setInitialized] = useState(false);
@@ -36,6 +37,7 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
   const fetchData = useCallback(async (isNew = false) => {
     const requestId = ++requestSeq.current;
     setLoading(true);
+    setError(null);
 
     if (isNew) {
       if (searchAbortController.current) {
@@ -64,6 +66,7 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
                 setItems(cached.items);
                 setPage(cached.page);
                 setHasMore(cached.hasMore);
+                setError(null);
                 setLoading(false);
                 setInitialized(true);
                 return;
@@ -88,6 +91,7 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
       }
 
       setItems(newItems);
+      setError(null);
       const newHasMore = data.items.length === (options.limit || 24);
       setHasMore(newHasMore);
 
@@ -102,7 +106,9 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
     } catch (err: any) {
       if (err instanceof ApiError && err.code === 'cancelled') return;
       if (requestId !== requestSeq.current) return;
-      console.error(`Fetch error for ${endpoint}: ${getErrorMessage(err)}`, err);
+      const message = getErrorMessage(err);
+      setError(message);
+      console.error(`Fetch error for ${endpoint}: ${message}`, err);
     } finally {
       if (requestId === requestSeq.current) {
         setLoading(false);
@@ -140,6 +146,7 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
     items,
     loading,
     hasMore,
+    error,
     page,
     setPage,
     search,
