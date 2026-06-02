@@ -1,20 +1,26 @@
 import asyncio
 import random
-import re
 import time
+import unicodedata
 from datetime import timedelta
-from pyrogram import enums, errors, filters, types
-from pyrogram.enums import ParseMode
+from pyrogram import enums, filters, types
 
-from Grabber import (LOGGER, collection, game_bot, sessions_collection,
-                     user_collection)
-from Grabber.core.balance import update_user_balance
+from Grabber import LOGGER, collection, game_bot, sessions_collection
 from Grabber.core.tasks import run_background_task
-from Grabber.core.utils import check_member_requirement, get_now_utc, html_escape
+from Grabber.core.utils import get_now_utc, html_escape
+from Grabber.modules.gamebot.common import (
+    award_gamebot_shards,
+    ensure_gamebot_ready,
+    ensure_registered_user,
+)
 # Game settings
 TIMEOUT = 60  # 1 minute
 SCRAMBLE_SESSION_TTL = timedelta(seconds=TIMEOUT + 30)
 REWARD = 250
+def normalize_answer(text: str) -> str:
+    normalized = unicodedata.normalize("NFKC", str(text or "")).casefold()
+    cleaned = "".join(ch if ch.isalnum() or ch.isspace() else " " for ch in normalized)
+    return " ".join(cleaned.split())
 def scramble_word(word):
     """Shuffles the characters in a word and joins them with hyphens for readability.
     Ensures the scrambled word is not the same as the original.
@@ -65,8 +71,8 @@ async def start_scramble_game(chat_id):
             return await game_bot.send_message_safe(chat_id, "❌ <b>Database Error:</b> No characters found.")
         char = res[0]
         original_name = char['name']
-        # Clean name: remove special chars
-        clean_name = re.sub(r'[^a-zA-Z0-9\s]', '', original_name).strip()
+        # Clean name while preserving non-ASCII letters and numbers.
+        clean_name = normalize_answer(original_name)
         name_parts = clean_name.split()
         # Selection logic: pick a word with length >= 4 if possible
         candidates = [p for p in name_parts if len(p) >= 4]
@@ -103,22 +109,8 @@ async def start_scramble_game(chat_id):
         await game_bot.send_message_safe(chat_id, "❌ <b>Error:</b> Could not authorize the game transponder.")
 @game_bot.on_message(filters.command("scramble"))
 async def scramble_cmd_handler(_, message: types.Message):
-    meets_req, reason, count = await check_member_requirement(game_bot, message.chat)
-    if not meets_req:
-        if reason == "group_only":
-            text = "❌ <b>Group Required:</b> This game can only be played in group chats."
-        elif reason == "member_count":
-            text = (
-                f"⚠️ <b>Security Level Low:</b> This sector must contain at least <b>50 personnel</b> (members) to authorize GameBot operations.\n\n"
-                f"Current count: <code>{count}</code>"
-            )
-        else: # main_bot_missing
-            from Grabber import BOT_NAME, BOT_USERNAME
-            text = (
-                f"🚫 <b>Main Bot Missing:</b> GameBot operations require the presence of <b>{BOT_NAME}</b> (@{BOT_USERNAME}) in this sector.\n\n"
-                f"<i>Please add the Main Bot to authorize games!</i>"
-            )
-        return await game_bot.send_message_safe(message.chat.id, text, auto_delete=300)
+    if not await ensure_gamebot_ready(message):
+        return
     await start_scramble_game(message.chat.id)
 @game_bot.on_message(filters.text & filters.group, group=11)
 async def scramble_guess_handler(_, message: types.Message):
@@ -140,15 +132,22 @@ async def scramble_guess_handler(_, message: types.Message):
     if time.time() - session["start_time"] > TIMEOUT + 5: # 5s buffer for the worker
         # Let the worker handle it or clean up if it missed
         return
-    guess = message.text.lower().strip()
-    target = session["target_word"].lower()
+    guess = normalize_answer(message.text)
+    target = normalize_answer(session["target_word"])
     if guess == target:
+        if not await ensure_registered_user(message.from_user, chat_id):
+            return
         # Correct! Attempt to delete session first to prevent double-wins
         res = await sessions_collection.delete_one({"_id": f"scramble:{chat_id}", "start_time": session["start_time"]})
         if res.deleted_count == 0:
             return # Someone else got it or timed out
         user_id = message.from_user.id
-        await update_user_balance(user_id, REWARD)
+        await award_gamebot_shards(
+            message.from_user,
+            REWARD,
+            extra_inc={"scramble_count": 1},
+            game_key="scramble",
+        )
         mention = f'<a href="tg://user?id={user_id}">{html_escape(message.from_user.first_name)}</a>'
         await game_bot.send_message_safe(
             chat_id,

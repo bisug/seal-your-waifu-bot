@@ -1,5 +1,6 @@
 import asyncio
 from pyrogram import enums, errors, filters, types
+from pyrogram.errors import FloodWait
 from Grabber import LOGGER, OWNER_ID, app
 from Grabber.core.utils import handle_errors
 from Grabber.database import group_collection, total_pm_users
@@ -15,7 +16,7 @@ async def _safe_forward(msg, target_id: int, max_retries: int = 3):
             try:
                 await msg.forward(target_id)
                 return True
-            except errors.FloodWait as e:
+            except FloodWait as e:
                 wait = e.value + 2 * (2 ** attempt)
                 LOGGER.warning(f"FloodWait {e.value}s — sleeping {wait}s (attempt {attempt+1})")
                 await asyncio.sleep(wait)
@@ -61,7 +62,7 @@ async def broadcast_handler(_, message: types.Message):
                         f"👤 Users: <code>{success_u}</code> ok / <code>{failed_u}</code> fail",
                         parse_mode=enums.ParseMode.HTML
                     )
-                except errors.FloodWait as e:
+                except FloodWait as e:
                     await asyncio.sleep(e.value)
                 except Exception:
                     pass  # Never let a status edit stall the broadcast loop

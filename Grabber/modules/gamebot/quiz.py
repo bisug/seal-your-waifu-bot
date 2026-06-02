@@ -1,33 +1,21 @@
 import html
 import random
-import time
+import uuid
+from datetime import timedelta, timezone
 import httpx
-from pyrogram import enums, errors, filters, types
-from pyrogram.enums import ParseMode
+from pymongo import ReturnDocument
+from pyrogram import enums, filters, types
 
-from Grabber import LOGGER, app, game_bot, quiz_questions_collection
-from Grabber.core.balance import get_user_balance, update_user_balance
-from Grabber.core.utils import check_member_requirement, html_escape
+from Grabber import LOGGER, game_bot, quiz_questions_collection, sessions_collection
+from Grabber.core.utils import get_now_utc, html_escape
+from Grabber.modules.gamebot.common import award_gamebot_shards, ensure_gamebot_ready
 QUIZ_API_URL = "https://opentdb.com/api.php?amount=1&category=31"
 QUIZ_REWARD = 250
+QUIZ_TTL = timedelta(seconds=30)
 @game_bot.on_message(filters.command("quiz"))
 async def quiz_cmd(_, message: types.Message):
-    meets_req, reason, count = await check_member_requirement(game_bot, message.chat)
-    if not meets_req:
-        if reason == "group_only":
-            text = "❌ <b>Group Required:</b> This game can only be played in group chats."
-        elif reason == "member_count":
-            text = (
-                f"⚠️ <b>Security Level Low:</b> This sector must contain at least <b>50 personnel</b> (members) to authorize GameBot operations.\n\n"
-                f"Current count: <code>{count}</code>"
-            )
-        else: # main_bot_missing
-            from Grabber import BOT_NAME, BOT_USERNAME
-            text = (
-                f"🚫 <b>Main Bot Missing:</b> GameBot operations require the presence of <b>{BOT_NAME}</b> (@{BOT_USERNAME}) in this sector.\n\n"
-                f"<i>Please add the Main Bot to authorize games!</i>"
-            )
-        return await game_bot.send_message_safe(message.chat.id, text, auto_delete=300)
+    if not await ensure_gamebot_ready(message):
+        return
     user_id = message.from_user.id
     try:
         result = None
@@ -58,14 +46,27 @@ async def quiz_cmd(_, message: types.Message):
         all_answers = incorrect_answers + [correct_answer]
         random.shuffle(all_answers)
         correct_index = all_answers.index(correct_answer)
-        timestamp = int(time.time())
+        nonce = uuid.uuid4().hex[:12]
+        session_id = f"quiz:{nonce}"
+        await sessions_collection.update_one(
+            {"_id": session_id},
+            {
+                "$set": {
+                    "owner_id": user_id,
+                    "chat_id": message.chat.id,
+                    "correct_index": correct_index,
+                    "answers": all_answers,
+                    "question": question,
+                    "claimed": False,
+                    "expires_at_dt": get_now_utc() + QUIZ_TTL,
+                }
+            },
+            upsert=True,
+        )
         buttons = []
         row = []
         for i, ans in enumerate(all_answers):
-            callback_data = f"quiz:{correct_index}:{user_id}:{timestamp}"
-            if i == correct_index:
-                pass
-            btn_data = f"qz:{i}:{correct_index}:{user_id}:{timestamp}"
+            btn_data = f"qz:{nonce}:{i}"
             row.append(types.InlineKeyboardButton(ans, callback_data=btn_data))
             if len(row) == 2:
                 buttons.append(row)
@@ -77,30 +78,66 @@ async def quiz_cmd(_, message: types.Message):
             f"<b>Question:</b> {question}\n\n"
             f"⏱ <i>You have 30 seconds to answer!</i>"
         )
-        await game_bot.send_message_safe(
+        sent = await game_bot.send_message_safe(
             message.chat.id,
             text,
             reply_markup=types.InlineKeyboardMarkup(buttons),
             parse_mode=enums.ParseMode.HTML
         )
+        if not sent:
+            await sessions_collection.delete_one({"_id": session_id})
     except Exception as e:
         LOGGER.error(f"Quiz Error: {e}")
         await game_bot.send_message_safe(message.chat.id, "❌ <b>An error occurred while starting the quiz.</b>", parse_mode=enums.ParseMode.HTML)
 @game_bot.on_callback_query(filters.regex(r"^qz:"))
 async def quiz_callback_handler(_, query: types.CallbackQuery):
     data = query.data.split(":")
-    pressed_idx = int(data[1])
-    correct_idx = int(data[2])
-    user_id = int(data[3])
-    timestamp = int(data[4])
+    if len(data) != 3:
+        return await query.answer("This quiz has expired.", show_alert=True)
+    nonce = data[1]
+    pressed_idx = int(data[2])
+    session_id = f"quiz:{nonce}"
+    session = await sessions_collection.find_one({"_id": session_id})
+    if not session:
+        return await query.answer("This quiz has expired or was already answered.", show_alert=True)
+    user_id = int(session.get("owner_id", 0))
     if query.from_user.id != user_id:
         return await query.answer("❌ This quiz is not for you!", show_alert=True)
-    if time.time() - timestamp > 30:
+    now = get_now_utc()
+    expires_at = session.get("expires_at_dt")
+    if expires_at and expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if expires_at and expires_at <= now:
         await game_bot.edit_message_text_safe(query.message.chat.id, query.message.id, "⏱ <b>Time's up!</b> The quiz has expired.", parse_mode=enums.ParseMode.HTML)
+        await sessions_collection.delete_one({"_id": session_id})
         return await query.answer("Too late!")
+    claimed = await sessions_collection.find_one_and_update(
+        {
+            "_id": session_id,
+            "owner_id": user_id,
+            "claimed": {"$ne": True},
+            "expires_at_dt": {"$gt": now},
+        },
+        {
+            "$set": {
+                "claimed": True,
+                "pressed_idx": pressed_idx,
+                "answered_at_dt": now,
+            }
+        },
+        return_document=ReturnDocument.AFTER,
+    )
+    if not claimed:
+        return await query.answer("This quiz was already answered.", show_alert=True)
+    correct_idx = int(claimed["correct_index"])
     if pressed_idx == correct_idx:
-        await update_user_balance(user_id, QUIZ_REWARD)
-        new_balance = await get_user_balance(user_id)
+        updated_user = await award_gamebot_shards(
+            query.from_user,
+            QUIZ_REWARD,
+            extra_inc={"quiz_count": 1},
+            game_key="quiz",
+        )
+        new_balance = int(updated_user.get("balance", 0) or 0)
         result_text = (
             f"✅ <b>Correct!</b>\n\n"
             f"💰 <b>Reward:</b> {QUIZ_REWARD} Shards\n"
@@ -108,13 +145,10 @@ async def quiz_callback_handler(_, query: types.CallbackQuery):
             "Well done! 🎉"
         )
     else:
-        correct_answer_text = "Unknown"
-        for row in query.message.reply_markup.inline_keyboard:
-            for btn in row:
-                if btn.callback_data.split(":")[1] == str(correct_idx):
-                    correct_answer_text = btn.text
-                    break
+        answers = claimed.get("answers", [])
+        correct_answer_text = answers[correct_idx] if 0 <= correct_idx < len(answers) else "Unknown"
         result_text = f"❌ <b>Wrong!</b>\n\nThe correct answer was: <b>{html_escape(correct_answer_text)}</b>"
+    await sessions_collection.delete_one({"_id": session_id})
     await game_bot.edit_message_text_safe(
         query.message.chat.id,
         query.message.id,

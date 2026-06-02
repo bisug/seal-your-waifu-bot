@@ -1,5 +1,6 @@
 import random
 from pyrogram import enums, errors, filters, types
+from pyrogram.errors import FloodWait
 from config import config
 from Grabber import LOGGER, app
 from Grabber.core.cache import sync_user_to_redis
@@ -30,7 +31,7 @@ async def check_groups_joined(user_id: int) -> bool:
         return True
     except errors.UserNotParticipant:
         return False  # Definitive: user is not a member
-    except errors.FloodWait as e:
+    except FloodWait as e:
         LOGGER.warning(f"FloodWait during membership check for {user_id}: {e.value}s")
         return True   # Fail-open: don't punish user for our rate limit
     except Exception as e:
