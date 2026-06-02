@@ -10,7 +10,7 @@ from Grabber.core.user import (add_user_set_on_insert, ensure_user_document,
                                get_user_filter, get_user_id, update_user)
 from Grabber.core.utils import handle_errors, html_escape, reply_media_dynamic
 from Grabber.modules.progression.achievements import check_achievements
-from Grabber.modules.progression.pet import DEFAULT_PET
+from Grabber.core.pets import copy_default_pet, get_pet_key
 LOGGER.info("Loading Start module...")
 START_TEXT_NEW = """
 <b>{bot_name}</b>
@@ -234,7 +234,7 @@ async def start_handler(_, message: types.Message):
             try:
                 referrer_id = int(param.split("_")[1])
                 if referrer_id != user_id:
-                    upgraded_pet = DEFAULT_PET.copy()
+                    upgraded_pet = copy_default_pet()
                     upgraded_pet["level"] = 10
                     upgraded_pet["hp"] += 45
                     upgraded_pet["atk"] += 18
@@ -242,7 +242,7 @@ async def start_handler(_, message: types.Message):
                     await user_collection.update_one(
                         {"id": get_user_id(user_id)},
                         add_user_set_on_insert(
-                            {"$set": {"pets": [upgraded_pet], "current_pet": upgraded_pet["name"], "referred_by": referrer_id}},
+                            {"$set": {"pets": [upgraded_pet], "current_pet": get_pet_key(upgraded_pet), "referred_by": referrer_id}},
                             user_id,
                             first_name=first_name_clean,
                             username=message.from_user.username,

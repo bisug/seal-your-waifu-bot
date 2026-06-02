@@ -13,7 +13,7 @@ from Grabber.core.progression import get_user_progress
 from Grabber.core.utils import get_user_id_query, normalize_user_id
 from Grabber.database import collection, user_collection
 from Grabber.modules.economy.shop import get_daily_shop_characters
-from Grabber.modules.progression.pet import PET_SHOP
+from Grabber.core.pets import PET_SHOP, ensure_user_pet_state, get_pet_key, normalize_pet
 from Grabber.webapp.auth import get_current_user, get_current_user_data
 
 router = APIRouter()
@@ -125,12 +125,16 @@ async def buy_character_api(char_id: str, user_id: int = Depends(get_current_use
 
 @router.get("/shop/pets")
 async def get_shop_pets(user: dict = Depends(get_current_user_data)):
-    owned_pet_names = [p["name"] for p in user.get("pets", [])]
     uid_int = normalize_user_id(user["id"])
+    user = await ensure_user_pet_state(uid_int, user)
+    owned_pets = [normalize_pet(p) for p in user.get("pets", [])]
+    owned_pet_names = [p["name"] for p in owned_pets]
+    owned_pet_ids = [get_pet_key(p) for p in owned_pets]
     
     return {
         "pets": PET_SHOP,
         "owned": owned_pet_names,
+        "owned_ids": owned_pet_ids,
         "current_level": (await get_user_progress(uid_int))["level"]
     }
 

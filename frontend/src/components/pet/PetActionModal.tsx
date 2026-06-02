@@ -34,9 +34,12 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }) => {
     if (!selectedPet) return null;
 
     const ownedPets = user?.pets || [];
-    const isOwned = ownedPets.some(p => p.name === selectedPet.name);
-    const isActive = user?.current_pet?.name === selectedPet.name;
+    const selectedRef = selectedPet.id || selectedPet.name;
+    const isOwned = ownedPets.some(p => (p.id || p.name) === selectedRef || p.name === selectedPet.name);
+    const isActive = (user?.current_pet?.id || user?.current_pet?.name) === selectedRef;
     const isLocked = (user?.stats?.level || 0) < (selectedPet.req_level || 0);
+    const zenithBalance = user?.stats?.zenith ?? user?.zenith ?? 0;
+    const canAfford = zenithBalance >= (selectedPet.zenith_price || 0);
 
     const handleBuy = async () => {
         setPurchaseStage('buying');
@@ -56,7 +59,7 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }) => {
     const handleSync = async () => {
         setSyncStage('syncing');
         try {
-            await apiFetch(`/pets/set_active/${selectedPet.name}`, { method: 'POST' });
+            await apiFetch(`/pets/set_active/${encodeURIComponent(selectedRef)}`, { method: 'POST' });
             window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
             addToast(`${selectedPet.name} is now active`, 'success');
             triggerRefresh();
@@ -159,9 +162,10 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }) => {
                                         window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
                                         setPurchaseStage('confirm');
                                     }}
+                                    disabled={!canAfford}
                                     className="w-full py-5 rounded-xl bg-brand-accent text-brand-midnight font-bold text-sm shadow-xl shadow-brand-accent/20 active:scale-95 transition-all flex items-center justify-center gap-3"
                                 >
-                                    Buy for {selectedPet.zenith_price} Zenith <Zap size={16} />
+                                    {canAfford ? `Buy for ${selectedPet.zenith_price} Zenith` : `${Math.max(0, (selectedPet.zenith_price || 0) - zenithBalance)} more Zenith needed`} <Zap size={16} />
                                 </button>
                             ) : (
                                 <div className="p-1 glass-panel rounded-xl border border-brand-accent/20 flex space-x-1">
