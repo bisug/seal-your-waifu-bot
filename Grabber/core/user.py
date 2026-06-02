@@ -5,6 +5,7 @@ from Grabber.core.cache import (get_cached_user, get_total_ranked_users,
                                 get_user_rank, invalidate_user_cache,
                                 rebuild_leaderboard, rget, rset,
                                 set_cached_user, update_user_rank)
+from Grabber.core.pass_config import CURRENT_PASS_SEASON
 from Grabber.core.tasks import run_background_task
 from Grabber.database import user_collection
 
@@ -50,7 +51,7 @@ def build_user_set_on_insert(
         "xp": 0,
         "pass_type": "free",
         "claimed_levels": [],
-        "season": 1,
+        "season": CURRENT_PASS_SEASON,
     }
     if username:
         data["username"] = username

@@ -7,6 +7,7 @@ from pyrogram.enums import ParseMode
 from config import config
 from Grabber import WEB_APP_URL, app, user_collection
 from Grabber.core.keyboard import get_webapp_button
+from Grabber.core.pass_config import get_active_pass_type
 from Grabber.core.progression import add_xp, get_progress_bar
 from Grabber.core.user import add_user_set_on_insert, get_user_filter
 from Grabber.core.utils import get_user_id_query, handle_errors, html_escape
@@ -344,7 +345,7 @@ async def claim_quest_callback(_, query: types.CallbackQuery):
     elif quest_id in PASS_MISSIONS:
         quest_info = PASS_MISSIONS[quest_id]
         user_raw = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
-        pass_type = user_raw.get("pass_type", "free") if user_raw else "free"
+        pass_type = get_active_pass_type(user_raw)
         if pass_type == "free":
             return await query.answer("This mission requires a Premium or Elite Pass!", show_alert=True)
     else:

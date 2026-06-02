@@ -3,11 +3,11 @@ from Grabber.core.pets import get_caregiver_incubation_minutes
 
 
 TIER_MAP = {
-    "1": "common",
-    "2": "gold",
-    "3": "void",
-    "4": "gold",
-    "5": "void",
+    "1": "gold",
+    "2": "void",
+    "3": "rare",
+    "4": "legendary",
+    "5": "celestial",
 }
 
 

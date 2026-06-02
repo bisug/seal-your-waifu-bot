@@ -6,9 +6,25 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from Grabber import LOGGER
 from Grabber.core.cache import sync_user_to_redis
-from Grabber.core.constants import (PASS_PRICES, RARITY_PRICES, RARITY_STOCK_LIMITS,
-                                    SHOP_LIMIT)
-from Grabber.core.pass_config import MAX_PASS_LEVEL, PASS_TRACKS
+from Grabber.core.constants import RARITY_PRICES, RARITY_STOCK_LIMITS, SHOP_LIMIT
+from Grabber.core.eggs import get_egg_tier_info, normalize_egg_tier
+from Grabber.core.pass_config import (
+    CURRENT_PASS_SEASON,
+    MAX_PASS_LEVEL,
+    PASS_BENEFITS,
+    PASS_MILESTONES,
+    PASS_SEASON_NAME,
+    PASS_STAR_PRICES,
+    PASS_TIER_META,
+    PASS_TRACKS,
+    calculate_pass_upgrade_price,
+    get_active_pass_type,
+    get_pass_bank,
+    get_pass_bank_field,
+    get_pass_claims_field,
+    get_pass_rank,
+)
+from Grabber.core.pass_payments import PassPaymentError, create_pass_invoice
 from Grabber.core.progression import get_user_progress
 from Grabber.core.utils import get_user_id_query, normalize_user_id
 from Grabber.database import collection, user_collection
@@ -17,6 +33,7 @@ from Grabber.core.pets import PET_SHOP, ensure_user_pet_state, get_pet_key, norm
 from Grabber.webapp.auth import get_current_user, get_current_user_data
 
 router = APIRouter()
+EXCHANGE_RATE_SHARDS_PER_ZENITH = 10_000
 
 
 def _daily_shop_timing():
@@ -34,10 +51,67 @@ async def get_shop_hub(user: dict = Depends(get_current_user_data)):
     return {
         "balance": user.get("balance", 0),
         "zenith": user.get("zenith", 0),
-        "pass_type": user.get("pass_type", "free"),
+        "pass_type": get_active_pass_type(user),
         "characters_rarity": "Various",
         "rotation_date": timing["rotation_date"],
         "reset_at": timing["reset_at"],
+        "exchange_rate": EXCHANGE_RATE_SHARDS_PER_ZENITH,
+    }
+
+
+@router.get("/shop/exchange")
+async def get_exchange_data(user: dict = Depends(get_current_user_data)):
+    return {
+        "balance": int(user.get("balance", 0) or 0),
+        "zenith": int(user.get("zenith", 0) or 0),
+        "rate": EXCHANGE_RATE_SHARDS_PER_ZENITH,
+        "minimum_shards": EXCHANGE_RATE_SHARDS_PER_ZENITH,
+        "minimum_zenith": 1,
+    }
+
+
+@router.post("/shop/exchange/{direction}")
+async def exchange_currency_api(
+    direction: str,
+    amount: int = Query(..., ge=1),
+    user_id: int = Depends(get_current_user),
+):
+    user = await user_collection.find_one(get_user_id_query(user_id))
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if direction == "shards_to_zenith":
+        if amount < EXCHANGE_RATE_SHARDS_PER_ZENITH:
+            raise HTTPException(status_code=400, detail=f"Minimum exchange is {EXCHANGE_RATE_SHARDS_PER_ZENITH:,} Shards")
+        if amount % EXCHANGE_RATE_SHARDS_PER_ZENITH != 0:
+            raise HTTPException(status_code=400, detail=f"Shards must be divisible by {EXCHANGE_RATE_SHARDS_PER_ZENITH:,}")
+        zenith_amount = amount // EXCHANGE_RATE_SHARDS_PER_ZENITH
+        q = get_user_id_query(user_id)
+        q["balance"] = {"$gte": amount}
+        update = {"$inc": {"balance": -amount, "zenith": zenith_amount, "version": 1}}
+        message = f"Converted {amount:,} Shards to {zenith_amount:,} Zenith"
+    elif direction == "zenith_to_shards":
+        zenith_amount = amount
+        shards_amount = amount * EXCHANGE_RATE_SHARDS_PER_ZENITH
+        q = get_user_id_query(user_id)
+        q["zenith"] = {"$gte": zenith_amount}
+        update = {"$inc": {"balance": shards_amount, "zenith": -zenith_amount, "version": 1}}
+        message = f"Converted {zenith_amount:,} Zenith to {shards_amount:,} Shards"
+    else:
+        raise HTTPException(status_code=400, detail="Invalid exchange direction")
+
+    result = await user_collection.update_one(q, update)
+    if result.modified_count == 0:
+        raise HTTPException(status_code=400, detail="Insufficient balance for this exchange")
+
+    await sync_user_to_redis(user_id)
+    updated = await user_collection.find_one(get_user_id_query(user_id)) or {}
+    return {
+        "status": "success",
+        "message": message,
+        "balance": int(updated.get("balance", 0) or 0),
+        "zenith": int(updated.get("zenith", 0) or 0),
+        "rate": EXCHANGE_RATE_SHARDS_PER_ZENITH,
     }
 
 @router.get("/shop/characters")
@@ -149,54 +223,64 @@ async def buy_pet_api(pet_index: int, user_id: int = Depends(get_current_user)):
 @router.get("/shop/battlepass")
 async def get_battlepass_shop(user_id: int = Depends(get_current_user)):
     progress = await get_user_progress(user_id)
+    current_tier = progress["pass_type"]
     return {
-        "prices": PASS_PRICES,
-        "current_tier": progress["pass_type"],
-        "level": progress["level"]
+        "prices": PASS_STAR_PRICES,
+        "currency": "XTR",
+        "current_tier": current_tier,
+        "level": progress["level"],
+        "upgrade_prices": {
+            tier: calculate_pass_upgrade_price(current_tier, tier)
+            for tier in ("premium", "elite")
+        },
+        "benefits": PASS_BENEFITS,
+        "tiers": PASS_TIER_META,
     }
 
 @router.post("/shop/upgrade_pass/{tier}")
 async def upgrade_pass_api(tier: str, user_id: int = Depends(get_current_user)):
-    if tier not in PASS_PRICES: raise HTTPException(status_code=400, detail="Invalid tier")
-    
-    user = await user_collection.find_one(get_user_id_query(user_id))
-    if not user: raise HTTPException(status_code=404, detail="User not found")
-    
-    current_tier = user.get("pass_type", "free")
-    tiers_order = ["free", "premium", "elite"]
-    if tiers_order.index(current_tier) >= tiers_order.index(tier):
-        raise HTTPException(status_code=400, detail="You already have this tier or higher")
-        
-    price = PASS_PRICES[tier]
-    if user.get("zenith", 0) < price:
-        raise HTTPException(status_code=400, detail=f"Insufficient Zenith (Need {price})")
-        
-    q = get_user_id_query(user_id)
-    q["zenith"] = {"$gte": price}
-    q["pass_type"] = current_tier # OCC strict matching
-    update_result = await user_collection.update_one(
-        q,
-        {"$set": {"pass_type": tier}, "$inc": {"zenith": -price}}
-    )
-    if update_result.modified_count == 0:
-        raise HTTPException(status_code=400, detail="Transaction failed or tier already upgraded.")
-        
-    await sync_user_to_redis(user_id)
-    return {"status": "success", "new_tier": tier}
+    raise HTTPException(status_code=410, detail="Battle Pass upgrades now use Telegram Stars.")
+
+
+@router.post("/shop/pass_invoice/{tier}")
+async def create_pass_invoice_api(tier: str, user_id: int = Depends(get_current_user)):
+    try:
+        return await create_pass_invoice(user_id, tier)
+    except PassPaymentError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
 @router.get("/pass_data")
 async def get_pass_data(user: dict = Depends(get_current_user_data)):
     uid_int = normalize_user_id(user["id"])
     
     progress = await get_user_progress(uid_int, user_data=user)
+    pass_type = get_active_pass_type(user)
+    pass_bank = get_pass_bank(user)
     
     return {
         "level": progress["level"],
-        "pass_type": user.get("pass_type", "free"),
-        "pass_bank": user.get("pass_bank", {"shards": 0}),
-        "claimed_levels": user.get("claimed_levels", []),
+        "xp": progress["xp"],
+        "xp_current": progress["xp_current"],
+        "xp_needed": progress["xp_needed"],
+        "season_id": CURRENT_PASS_SEASON,
+        "season_name": PASS_SEASON_NAME,
+        "pass_type": pass_type,
+        "pass_bank": pass_bank,
+        "pass_bank_total": int(pass_bank.get("shards", 0)) + sum(
+            int(v) for k, v in pass_bank.items() if str(k).startswith("eggs_t")
+        ),
+        "claimed_levels": progress["claimed_levels"],
         "tracks": PASS_TRACKS,
-        "max_level": MAX_PASS_LEVEL
+        "milestones": PASS_MILESTONES,
+        "max_level": MAX_PASS_LEVEL,
+        "prices": PASS_STAR_PRICES,
+        "currency": "XTR",
+        "upgrade_prices": {
+            tier: calculate_pass_upgrade_price(pass_type, tier)
+            for tier in ("premium", "elite")
+        },
+        "benefits": PASS_BENEFITS,
+        "tiers": PASS_TIER_META,
     }
 
 @router.post("/claim_bank")
@@ -205,12 +289,12 @@ async def claim_pass_bank(user_id: int = Depends(get_current_user)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
         
-    pass_type = user.get("pass_type", "free")
+    pass_type = get_active_pass_type(user)
     if pass_type == "free":
         raise HTTPException(status_code=400, detail="Must upgrade pass to claim bank.")
         
-    pass_bank = user.get("pass_bank", {})
-    if not pass_bank:
+    pass_bank = get_pass_bank(user)
+    if not pass_bank or not any(int(v or 0) > 0 for v in pass_bank.values()):
         return {"message": "Bank is empty."}
         
     shards = pass_bank.get("shards", 0)
@@ -218,16 +302,14 @@ async def claim_pass_bank(user_id: int = Depends(get_current_user)):
     eggs_to_add = []
     for k, v in pass_bank.items():
         if k.startswith("eggs_t") and v > 0:
-            tier = k.split("_t")[1]
-            if tier == "1": tier_name = "gold"
-            elif tier == "2": tier_name = "void"
-            else: tier_name = "common"
+            tier_name = normalize_egg_tier(k.split("_t")[1])
+            _, tier_info = get_egg_tier_info(tier_name)
             
             for _ in range(v):
                 eggs_to_add.append({
                     "id": f"bk_{uuid.uuid4().hex[:8]}",
                     "tier": tier_name,
-                    "name": f"{tier_name.capitalize()} Egg",
+                    "name": tier_info["name"],
                     "status": "fresh"
                 })
                 
@@ -237,15 +319,20 @@ async def claim_pass_bank(user_id: int = Depends(get_current_user)):
     if eggs_to_add:
         updates["$push"] = {"eggs": {"$each": eggs_to_add}}
         
-    updates["$unset"] = {"pass_bank": ""}
+    bank_field = get_pass_bank_field()
+    updates["$unset"] = {bank_field: "", "pass_bank": ""}
     
     q = get_user_id_query(user_id)
-    q["pass_bank"] = pass_bank # OCC exact bank matching
+    if isinstance((user.get("pass_bank_by_season") or {}).get(CURRENT_PASS_SEASON), dict):
+        q[bank_field] = pass_bank # OCC exact bank matching
+    else:
+        q["pass_bank"] = pass_bank # Legacy OCC exact bank matching
     res = await user_collection.update_one(q, updates)
     
     if res.modified_count == 0:
         raise HTTPException(status_code=400, detail="Bank already claimed or modified.")
     
+    await sync_user_to_redis(user_id)
     return {"message": f"Claimed {shards} Shards and {len(eggs_to_add)} Eggs!", "shards": shards, "eggs": len(eggs_to_add)}
 
 @router.post("/claim_level/{level}")
@@ -260,7 +347,7 @@ async def claim_pass_level(level: int, user_id: int = Depends(get_current_user))
     if progress["level"] < level:
         raise HTTPException(status_code=400, detail=f"Level {level} not reached yet")
         
-    claimed = user.get("claimed_levels", [])
+    claimed = progress["claimed_levels"]
     if level in claimed:
         return {"status": "already_claimed", "shards": 0, "eggs": 0}
         
@@ -268,11 +355,16 @@ async def claim_pass_level(level: int, user_id: int = Depends(get_current_user))
     if not reward_data:
         raise HTTPException(status_code=404, detail="No rewards found for this level")
         
-    pass_type = user.get("pass_type", "free")
+    pass_type = get_active_pass_type(user)
     # Rewards are cumulative (you get free + your tier)
     to_award = [reward_data["free"]]
-    if pass_type != "free":
-        to_award.append(reward_data[pass_type])
+    extra_shards = 0
+    if get_pass_rank(pass_type) >= get_pass_rank("premium"):
+        to_award.append(reward_data["premium"])
+        extra_shards += reward_data.get("premium_extra_amount", 0)
+    if pass_type == "elite":
+        to_award.append(reward_data["elite"])
+        extra_shards += reward_data.get("elite_extra_amount", 0)
         
     shards = 0
     eggs = []
@@ -282,31 +374,40 @@ async def claim_pass_level(level: int, user_id: int = Depends(get_current_user))
             shards += r["amount"]
         elif r["type"] == "egg":
             tier_id = r.get("tier", 1)
-            tier_names = {1: "gold", 2: "void", 3: "rare", 4: "legendary", 5: "celestial"}
-            tier_name = tier_names.get(tier_id, "gold")
+            tier_name = normalize_egg_tier(tier_id)
+            _, tier_info = get_egg_tier_info(tier_name)
             eggs.append({
                 "id": f"bp_{level}_{uuid.uuid4().hex[:6]}",
                 "tier": tier_name,
-                "name": f"{tier_name.capitalize()} Egg",
+                "name": tier_info["name"],
                 "status": "fresh"
             })
+    shards += extra_shards
     
     # Build the $push doc up front to avoid fragile spread-merge patterns.
-    push_ops: dict = {"claimed_levels": level}
+    push_ops: dict = {}
     if eggs:
         push_ops["eggs"] = {"$each": eggs}
 
-    updates: dict = {"$push": push_ops}
+    updates: dict = {
+        "$addToSet": {
+            get_pass_claims_field(): level,
+            "claimed_levels": level,
+        }
+    }
+    if push_ops:
+        updates["$push"] = push_ops
     if shards > 0:
         updates["$inc"] = {"balance": shards}
 
     q = get_user_id_query(user_id)
-    q["claimed_levels"] = {"$ne": level} # Atomic verification: must not already contain level
+    q[get_pass_claims_field()] = {"$ne": level} # Atomic verification: must not already contain level
     
     res = await user_collection.update_one(q, updates)
     if res.modified_count == 0:
         raise HTTPException(status_code=400, detail="Reward already claimed or modified.")
         
+    await sync_user_to_redis(user_id)
     return {"status": "success", "shards": shards, "eggs": len(eggs)}
 
 @router.post("/buy_level")

@@ -40,6 +40,7 @@ class Database:
         self.deletion_queue = self.db['deletion_queue']
         self.daily_shop = self.db['daily_shop_inventory']
         self.scraped_characters = self.db['scraped_characters']
+        self.star_orders = self.db['star_orders']
 
     async def ensure_indexes(self):
         """Create performance indexes for all collections."""
@@ -75,6 +76,11 @@ class Database:
             (self.sessions,          lambda c: c.create_index([("type", 1), ("sender_id", 1), ("receiver_id", 1), ("status", 1)])),
             (self.sessions,          lambda c: c.create_index("token", sparse=True)),
             (self.daily_shop,        lambda c: c.create_index("date", unique=True)),
+            (self.star_orders,       lambda c: c.create_index("order_id", unique=True)),
+            (self.star_orders,       lambda c: c.create_index("payload", unique=True)),
+            (self.star_orders,       lambda c: c.create_index("telegram_payment_charge_id", unique=True, sparse=True)),
+            (self.star_orders,       lambda c: c.create_index([("user_id", 1), ("status", 1), ("created_at", -1)])),
+            (self.star_orders,       lambda c: c.create_index("expires_at_dt", expireAfterSeconds=0)),
         ]
         failed = 0
         for collection, idx_fn in indexes:
@@ -141,6 +147,7 @@ gamebot_enabled_groups_collection = seal_db.gamebot_enabled_groups
 deletion_queue_collection = seal_db.deletion_queue
 daily_shop_collection = seal_db.daily_shop
 scraped_characters_collection = seal_db.scraped_characters
+star_orders_collection = seal_db.star_orders
 
 
 async def close_connections():

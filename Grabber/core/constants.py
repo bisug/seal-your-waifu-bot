@@ -85,17 +85,20 @@ RARITY_STOCK_LIMITS = {
     "💸 Luxury": 5,
     "🎏 Limited": 20
 }
-# Pass Constants
+# Legacy import compatibility. Battle Pass purchases use Telegram Stars (XTR).
 PASS_PRICES = {
-    "premium": 500,
-    "elite": 1200
+    "premium": 49,
+    "elite": 149
 }
 # Eggs
 CORRUPTED_EGG_CHANCE = 5
 EGG_TIERS = {
     "common": {"name": "Common Egg", "chance": 70, "pool": ["⚪ Common", "🟢 Medium"], "wait_min": 5},
     "gold":   {"name": "Golden Egg", "chance": 25, "pool": ["🟠 Rare", "🟡 Legendary"], "wait_min": 30},
-    "void":   {"name": "Void Egg",   "chance": 5,  "pool": ["💠 Cosmic", "💮 Exclusive"], "wait_min": 180}
+    "void":   {"name": "Void Egg",   "chance": 5,  "pool": ["💠 Cosmic", "💮 Exclusive"], "wait_min": 180},
+    "rare":   {"name": "Rare Egg", "chance": 0, "pool": ["🟠 Rare", "🟡 Legendary", "💠 Cosmic"], "wait_min": 240},
+    "legendary": {"name": "Legendary Egg", "chance": 0, "pool": ["💮 Exclusive", "🌌 Eternal", "🫧 Royal", "💎 Mythical"], "wait_min": 360},
+    "celestial": {"name": "Celestial Egg", "chance": 0, "pool": ["🎐 Celestial", "✨ Divine", "🌠 Astral", "🪽 Prestige"], "wait_min": 720}
 }
 # Leaderboard Metrics
 METRIC_ORDER = ["harem", "shards", "zenith", "level", "guesses"]
