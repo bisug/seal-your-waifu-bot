@@ -88,6 +88,11 @@ async def stop_bots():
 
     await stop_resource_monitor()
     await cancel_background_tasks()
+    try:
+        from Grabber.core.spawns import flush_message_counts_to_db
+        await flush_message_counts_to_db()
+    except Exception as e:
+        LOGGER.warning(f"Failed to flush message counts before shutdown: {e}")
 
     for bot in (app, game_bot, userbot):
         if not bot:

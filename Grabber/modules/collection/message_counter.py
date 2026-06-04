@@ -47,7 +47,7 @@ async def message_counter_handler(_, message: types.Message):
     Tracks user activity, increments chat message counts, and determines
     when a character should be spawned based on thresholds or random chance.
     """
-    if not message.text:
+    if getattr(message, "service", None):
         return
     chat = message.chat
     if not chat or not message.from_user:
