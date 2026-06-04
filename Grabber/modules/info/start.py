@@ -55,7 +55,7 @@ HELP_DATA = {
 /trade - Trade characters
 /gift - Gift characters
 /transfer - Full collection merge
-/claim - Claim waifu codes
+/reedem <code> - Redeem waifugen codes
 """,
     },
     "PET": {
