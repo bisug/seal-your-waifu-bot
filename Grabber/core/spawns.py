@@ -6,6 +6,7 @@ import time
 from typing import Any, Dict, Optional
 from pyrogram import enums, errors, filters, types
 from pyrogram.enums import ParseMode
+from pymongo import ReturnDocument
 
 from Grabber import LOGGER, app, config
 from Grabber.core.cache import rget, rset
@@ -14,6 +15,67 @@ from Grabber.core.waifu import get_or_load_characters
 from Grabber.database import message_counts_collection
 from Grabber.database import r as _redis
 from Grabber.database import spawns_collection, user_totals_collection
+
+MESSAGE_COUNT_TTL_SECONDS = 86400
+
+
+def _message_count_from_doc(doc: Optional[Dict[str, Any]]) -> int:
+    if not doc:
+        return 0
+    try:
+        stored_count = int(doc.get("count") or 0)
+    except (TypeError, ValueError):
+        stored_count = 0
+    users = doc.get("users") or {}
+    user_total = 0
+    if isinstance(users, dict):
+        for value in users.values():
+            try:
+                user_total += int(value)
+            except (TypeError, ValueError):
+                continue
+    return max(stored_count, user_total)
+
+
+async def _load_message_count_from_mongo(chat_id: int) -> int:
+    chat_id_str = str(chat_id)
+    doc = await message_counts_collection.find_one({"chat_id": chat_id_str})
+    count = _message_count_from_doc(doc)
+    if doc and doc.get("count") != count:
+        await message_counts_collection.update_one(
+            {"chat_id": chat_id_str},
+            {"$max": {"count": count}},
+        )
+    return count
+
+
+async def _persist_message_increment(chat_id: int, user_id: int, count: int) -> None:
+    await message_counts_collection.update_one(
+        {"chat_id": str(chat_id)},
+        {
+            "$max": {"count": int(count)},
+            "$inc": {f"users.{user_id}": 1},
+        },
+        upsert=True,
+    )
+
+
+async def _increment_message_count_mongo(chat_id: int, user_id: int) -> int:
+    await _load_message_count_from_mongo(chat_id)
+    updated = await message_counts_collection.find_one_and_update(
+        {"chat_id": str(chat_id)},
+        {
+            "$inc": {"count": 1, f"users.{user_id}": 1},
+            "$setOnInsert": {"chat_id": str(chat_id)},
+        },
+        upsert=True,
+        return_document=ReturnDocument.AFTER,
+    )
+    count = _message_count_from_doc(updated)
+    await rset(f"msg_count:{chat_id}", str(count), ttl=MESSAGE_COUNT_TTL_SECONDS)
+    return count
+
+
 async def get_chat_state(chat_id: int) -> Dict[str, Any]:
     """Retrieve chat state from Redis with MongoDB fallback."""
     key = f"spawn:state:{chat_id}"
@@ -123,47 +185,36 @@ async def get_message_count(chat_id: int) -> int:
     val = await rget(key)
     if val is not None: return int(val)
     # Fallback/Init from Mongo
-    doc = await message_counts_collection.find_one({"chat_id": str(chat_id)})
-    count = doc["count"] if doc else 0
-    await rset(key, str(count), ttl=86400) # 24h TTL for memory safety
+    count = await _load_message_count_from_mongo(chat_id)
+    await rset(key, str(count), ttl=MESSAGE_COUNT_TTL_SECONDS) # 24h TTL for memory safety
     return count
 async def increment_message_count(chat_id: int, user_id: int) -> int:
     """Increments the message count for a chat and a specific user."""
     key = f"msg_count:{chat_id}"
-    count = 0
     if _redis:
         try:
-            # Check if key exists; if not, we must load from DB to avoid starting from 1
-            exists = await _redis.exists(key)
-            if not exists:
-                initial_count = await get_message_count(chat_id)
-                count = initial_count + 1
-                await _redis.setex(key, 86400, str(count))
-                LOGGER.info(f"Initialized Redis counter for {chat_id} at {count}")
-            else:
-                count = await _redis.incr(key)
-                await _redis.expire(key, 86400)
-            # Atomic update of user-specific message count in MongoDB
-            await message_counts_collection.update_one(
-                {"chat_id": str(chat_id)},
-                {"$inc": {f"users.{user_id}": 1}},
-                upsert=True
-            )
-            return count
+            if not await _redis.exists(key):
+                initial_count = await _load_message_count_from_mongo(chat_id)
+                seeded = await _redis.set(
+                    key,
+                    str(initial_count),
+                    ex=MESSAGE_COUNT_TTL_SECONDS,
+                    nx=True,
+                )
+                if seeded:
+                    LOGGER.info(f"Initialized Redis counter for {chat_id} at {initial_count}")
+            count = int(await _redis.incr(key))
+            await _redis.expire(key, MESSAGE_COUNT_TTL_SECONDS)
         except Exception as e:
             LOGGER.error(f"Redis increment failed for {chat_id}: {e}")
-            # Fall through to fallback
-    # Fallback to DB-backed manual tracking
-    initial_count = await get_message_count(chat_id)
-    count = initial_count + 1
-    await rset(key, str(count), ttl=86400)
-    # Update both total and user-specific counts in MongoDB
-    await message_counts_collection.update_one(
-        {"chat_id": str(chat_id)},
-        {"$set": {"count": count}, "$inc": {f"users.{user_id}": 1}},
-        upsert=True
-    )
-    return count
+        else:
+            try:
+                await _persist_message_increment(chat_id, user_id, count)
+            except Exception as e:
+                LOGGER.error(f"MongoDB message count persist failed for {chat_id}: {e}")
+            return count
+    # Fallback to atomic DB-backed tracking.
+    return await _increment_message_count_mongo(chat_id, user_id)
 async def get_spawn_order(chat_id: int) -> int:
     state = await get_chat_state(chat_id)
     return int(state.get("spawn_order", 0))
@@ -194,24 +245,32 @@ async def get_chat_frequency(chat_id: int) -> int:
         except Exception as e:
             LOGGER.debug(f"Redis frequency cache write failed for {chat_id}: {e}")
     return freq
+async def flush_message_counts_to_db() -> int:
+    """Sync cached Redis message totals to MongoDB once."""
+    if not _redis: return 0
+    from Grabber.core.cache import _scan_keys
+    synced = 0
+    keys = await _scan_keys("msg_count:*")
+    for key in keys:
+        chat_id_str = key.split(":")[-1]
+        count = await _redis.get(key)
+        if count:
+            await message_counts_collection.update_one(
+                {"chat_id": chat_id_str},
+                {"$max": {"count": int(count)}},
+                upsert=True
+            )
+            synced += 1
+    return synced
+
+
 async def flush_cache_to_db():
     """Sync message counts from Redis to MongoDB periodically."""
     if not _redis: return
     while True:
         await asyncio.sleep(60)
         try:
-            # Sync message counts
-            from Grabber.core.cache import _scan_keys
-            keys = await _scan_keys("msg_count:*")
-            for key in keys:
-                chat_id_str = key.split(":")[-1]
-                count = await _redis.get(key)
-                if count:
-                    await message_counts_collection.update_one(
-                        {"chat_id": chat_id_str},
-                        {"$set": {"count": int(count)}},
-                        upsert=True
-                    )
+            await flush_message_counts_to_db()
         except Exception as e:
             LOGGER.error(f"Error flushing count cache to DB: {e}")
 async def send_character(chat_id: int, rarity: str):
