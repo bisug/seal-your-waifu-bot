@@ -77,6 +77,7 @@ async def waifugen(_, message: types.Message):
     response_text = (
         f"✅ <b>Giveaway Generated!</b>\n\n"
         f"<b>Code:</b> <code>{code}</code>\n"
+        f"<b>Redeem:</b> <code>/reedem {code}</code>\n"
         f"<b>Quantity:</b> {quantity}\n"
         f"<b>Character:</b> {html_escape(waifu['name'])} ({html_escape(waifu['rarity'])})\n\n"
         f"🔗 <b>Claim Link:</b>\n{deep_link}\n\n"
@@ -94,12 +95,12 @@ async def waifugen(_, message: types.Message):
         await app.send_message(chat_id=MAIN_GROUP_ID, text=log_text, parse_mode=enums.ParseMode.HTML)
     except Exception as e:
         LOGGER.error(f"Log sending failed: {e}")
-@app.on_message(filters.command("claimwaifu"))
+@app.on_message(filters.command(["reedem", "redeem", "claimwaifu"]))
 @handle_errors
-async def claimwaifu(_, message: types.Message):
+async def redeem_waifu(_, message: types.Message):
     if len(message.command) < 2:
-        return await message.reply_text("Usage: <code>/claimwaifu &lt;code&gt;</code>", parse_mode=enums.ParseMode.HTML)
-    code = message.command[1]
+        return await message.reply_text("Usage: <code>/reedem &lt;code&gt;</code>", parse_mode=enums.ParseMode.HTML)
+    code = message.command[1].strip().lower()
     success, result = await process_core_claim(app, message.from_user, code)
     if not success:
         return await message.reply_text(result, parse_mode=enums.ParseMode.HTML)

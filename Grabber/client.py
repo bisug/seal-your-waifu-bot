@@ -376,7 +376,7 @@ class SealClient(Client):
                 "rarities": "Character counts",
                 "animes": "List available anime",
                 "sani": "Search by anime",
-                "claim": "Claim waifu code",
+                "reedem": "Redeem waifugen code",
                 "ping": "Check bot status",
                 "stats": "Bot statistics",
                 "ctop": "Chat leaderboard",
