@@ -40,17 +40,19 @@ special_rarity_thresholds = {
     "🟢 Medium": 350,
     "⚪ Common": 150,
 }
-@app.on_message(filters.group & ~filters.bot, group=1)
+@app.on_message(filters.group & filters.text & ~filters.bot, group=1)
 async def message_counter_handler(_, message: types.Message):
     """
     Main handler for counting messages and triggering character spawns.
     Tracks user activity, increments chat message counts, and determines
     when a character should be spawned based on thresholds or random chance.
     """
-    if getattr(message, "service", None):
-        return
     chat = message.chat
     if not chat or not message.from_user:
+        return
+    if getattr(message.from_user, "is_bot", False):
+        return
+    if not message.text:
         return
     chat_id = chat.id
     user_id = message.from_user.id
