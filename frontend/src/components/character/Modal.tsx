@@ -1,5 +1,5 @@
 import React, { useEffect, ReactNode } from 'react';
-import { Gem, Package, ShieldCheck, Tag, X } from 'lucide-react';
+import { Gem, Hash, Package, ShieldCheck, Tag, X } from 'lucide-react';
 import { cn, formatNumber } from '../../utils';
 import { Character } from '../../context/UserContext';
 
@@ -29,6 +29,7 @@ export const Modal = ({ character, onClose, actions }: ModalProps) => {
     const hasStock = stockLimit !== null && stockRemaining !== null;
     const soldOut = character.sold_out || (hasStock && stockRemaining <= 0);
     const hasPrice = typeof character.zenith_price === 'number' && character.zenith_price > 0;
+    const characterId = String(character.id || '');
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-3">
@@ -59,6 +60,12 @@ export const Modal = ({ character, onClose, actions }: ModalProps) => {
                                 <Tag size={11} />
                                 <span className="truncate">{rarityLabel || 'Unknown rarity'}</span>
                             </span>
+                            {characterId && (
+                                <span className="inline-flex min-w-0 max-w-[45%] items-center gap-1 rounded-lg bg-white/5 px-2 py-1 text-[10px] font-bold text-neutral-300">
+                                    <Hash size={11} className="shrink-0 text-neutral-500" />
+                                    <span className="truncate tabular-nums">{characterId}</span>
+                                </span>
+                            )}
                         </div>
                         <h2 className="text-xl font-bold text-white leading-tight line-clamp-2">{character.name}</h2>
                         <p className="mt-1 text-sm font-medium text-neutral-400 line-clamp-1">{character.anime}</p>

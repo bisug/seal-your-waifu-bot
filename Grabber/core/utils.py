@@ -116,8 +116,9 @@ def handle_errors(func):
         # 1. Registration Check
         user = getattr(message, "from_user", None)
         if user:
-            # Check if Sudo
-            is_sudo = user.id in config.SUDO_USERS or user.id == config.OWNER_ID
+            from Grabber.core.roles import is_staff
+
+            is_sudo = is_staff(user.id)
 
             is_start = False
             if isinstance(message, types.Message):

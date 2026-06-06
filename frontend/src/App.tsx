@@ -371,9 +371,9 @@ const AppContent = () => {
           {activeTab === 'leaderboard' && <Leaderboard />}
           {activeTab === 'achievements' && <Achievements />}
           {activeTab === 'mypets' && <MyPets onPetClick={setSelectedPet} />}
-          {activeTab === 'upload' && user?.is_sudo && <Upload />}
+          {activeTab === 'upload' && (user?.can_upload ?? user?.is_sudo) && <Upload />}
 
-          {(!VALID_TABS.includes(activeTab) || (activeTab === 'upload' && !user?.is_sudo)) && (
+          {(!VALID_TABS.includes(activeTab) || (activeTab === 'upload' && !(user?.can_upload ?? user?.is_sudo))) && (
             <NotFound onReset={() => handleNavigate('profile')} />
           )}
         </Suspense>

@@ -1,5 +1,5 @@
 import React, { memo, useEffect, forwardRef } from 'react';
-import { CheckCircle2, Gem, Shield } from 'lucide-react';
+import { CheckCircle2, Gem, Hash, Shield } from 'lucide-react';
 import { cn, formatNumber } from '../../utils';
 import { Character } from '../../context/UserContext';
 
@@ -33,6 +33,7 @@ export const Card = memo(forwardRef<HTMLDivElement, CardProps>(({ character, onC
     const copyCount = Number(character.count || 0);
     const statusLabel = soldOut ? 'Sold out' : character.owned ? 'Owned' : copyCount > 1 ? `x${copyCount}` : null;
     const showPrice = hasPrice && !character.owned && !soldOut;
+    const characterId = String(character.id || '');
 
     return (
         <div
@@ -64,6 +65,13 @@ export const Card = memo(forwardRef<HTMLDivElement, CardProps>(({ character, onC
             <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 via-black/35 to-transparent" />
             {soldOut && (
                 <div className="absolute inset-0 bg-black/15" />
+            )}
+
+            {characterId && (
+                <div className="absolute left-2 top-2 flex max-w-[calc(100%-1rem)] items-center gap-0.5 rounded bg-black/45 px-1.5 py-0.5 text-[9px] font-bold text-white/90 backdrop-blur-sm">
+                    <Hash size={9} className="shrink-0 text-brand-accent" />
+                    <span className="truncate tabular-nums">{characterId}</span>
+                </div>
             )}
 
             <div className="absolute bottom-0 inset-x-0 p-2">

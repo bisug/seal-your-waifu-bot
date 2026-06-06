@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Gem, Loader2, Lock, Trash2, Zap } from 'lucide-react';
+import { Gem, Image as ImageIcon, Loader2, Lock, Pencil, Save, Trash2, X, Zap } from 'lucide-react';
 import { useToast } from '../ui/Toast';
 import { Modal } from './Modal';
 import { apiFetch, getErrorMessage } from '../../api/client';
@@ -14,18 +14,58 @@ interface CharActionModalProps {
     onPurchaseSuccess?: (char: any) => void;
 }
 
+interface RarityOption {
+    value: number;
+    label: string;
+}
+
+interface CharacterEditForm {
+    name: string;
+    anime: string;
+    rarity: string;
+    img_url: string;
+}
+
+const buildEditForm = (character: any): CharacterEditForm => ({
+    name: character?.name || '',
+    anime: character?.anime || '',
+    rarity: character?.rarity || '',
+    img_url: character?.img_url || '',
+});
+
 export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user, onPurchaseSuccess }: CharActionModalProps) => {
     const { addToast } = useToast();
     const { triggerRefresh } = useUser();
     const [purchaseStage, setPurchaseStage] = useState('idle');
     const [sellStage, setSellStage] = useState('idle');
+    const [editMode, setEditMode] = useState(false);
+    const [editStage, setEditStage] = useState<'idle' | 'saving'>('idle');
+    const [editForm, setEditForm] = useState<CharacterEditForm>(() => buildEditForm(selectedChar));
+    const [rarityOptions, setRarityOptions] = useState<RarityOption[]>([]);
+    const canEdit = Boolean(user?.can_edit_character ?? user?.is_sudo);
 
     useEffect(() => {
-        if (!selectedChar) {
-            setPurchaseStage('idle');
-            setSellStage('idle');
-        }
-    }, [selectedChar]);
+        setPurchaseStage('idle');
+        setSellStage('idle');
+        setEditStage('idle');
+        setEditMode(false);
+        setEditForm(buildEditForm(selectedChar));
+    }, [selectedChar?.id]);
+
+    useEffect(() => {
+        if (!canEdit || rarityOptions.length > 0) return;
+
+        let cancelled = false;
+        apiFetch('/admin/upload/options')
+            .then((data) => {
+                if (!cancelled) setRarityOptions(data?.character_rarities || []);
+            })
+            .catch((err) => console.warn('Could not load rarity options:', err));
+
+        return () => {
+            cancelled = true;
+        };
+    }, [canEdit, rarityOptions.length]);
 
     if (!selectedChar) return null;
 
@@ -39,6 +79,52 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
             : null;
     const isSoldOut = Boolean(selectedChar.sold_out) || (stockRemaining !== null && stockRemaining <= 0);
     const canAfford = zenithBalance >= price;
+
+    const updateEditField = (field: keyof CharacterEditForm, value: string) => {
+        setEditForm(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleEditSave = async () => {
+        if (editStage !== 'idle') return;
+
+        const payload = {
+            name: editForm.name.trim(),
+            anime: editForm.anime.trim(),
+            rarity: editForm.rarity.trim(),
+            img_url: editForm.img_url.trim(),
+        };
+
+        if (!payload.name || !payload.anime || !payload.rarity || !payload.img_url) {
+            addToast('Fill in all character fields.', 'error');
+            return;
+        }
+
+        setEditStage('saving');
+        try {
+            const result = await apiFetch(`/admin/character/${selectedChar.id}`, {
+                method: 'PATCH',
+                body: JSON.stringify(payload),
+            });
+            const updatedChar = {
+                ...selectedChar,
+                ...(result?.character || payload),
+                id: selectedChar.id,
+            };
+
+            setSelectedChar(updatedChar);
+            setEditForm(buildEditForm(updatedChar));
+            setEditMode(false);
+            addToast(result?.message || 'Character updated.', result?.status === 'unchanged' ? 'info' : 'success');
+            triggerRefresh();
+            window.dispatchEvent(new Event('gallery-refresh'));
+            window.dispatchEvent(new Event('harem-refresh'));
+            window.dispatchEvent(new Event('shop-refresh'));
+        } catch (err: any) {
+            addToast(getErrorMessage(err), 'error');
+        } finally {
+            setEditStage('idle');
+        }
+    };
 
     const handleBuy = async () => {
         setPurchaseStage('buying');
@@ -123,7 +209,116 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
 
     const actions = (
         <div className="w-full space-y-3">
-            {activeTab === 'shop' && !isOwned && (
+            {canEdit && (
+                <div className="w-full">
+                    {editMode ? (
+                        <form
+                            onSubmit={(event) => {
+                                event.preventDefault();
+                                handleEditSave();
+                            }}
+                            className="space-y-3 rounded-lg border border-white/10 bg-white/[0.03] p-3"
+                        >
+                            <div className="grid grid-cols-1 gap-3">
+                                <label>
+                                    <span className="text-[10px] font-bold uppercase text-neutral-500">Name</span>
+                                    <input
+                                        value={editForm.name}
+                                        onChange={event => updateEditField('name', event.target.value)}
+                                        disabled={editStage === 'saving'}
+                                        className="mt-1.5 h-10 w-full rounded-lg border border-white/10 bg-brand-deep px-3 text-sm font-medium text-white outline-none focus:border-brand-accent disabled:opacity-60"
+                                    />
+                                </label>
+                                <label>
+                                    <span className="text-[10px] font-bold uppercase text-neutral-500">Anime</span>
+                                    <input
+                                        value={editForm.anime}
+                                        onChange={event => updateEditField('anime', event.target.value)}
+                                        disabled={editStage === 'saving'}
+                                        className="mt-1.5 h-10 w-full rounded-lg border border-white/10 bg-brand-deep px-3 text-sm font-medium text-white outline-none focus:border-brand-accent disabled:opacity-60"
+                                    />
+                                </label>
+                                <label>
+                                    <span className="text-[10px] font-bold uppercase text-neutral-500">Rarity</span>
+                                    {rarityOptions.length > 0 ? (
+                                        <select
+                                            value={editForm.rarity}
+                                            onChange={event => updateEditField('rarity', event.target.value)}
+                                            disabled={editStage === 'saving'}
+                                            className="mt-1.5 h-10 w-full rounded-lg border border-white/10 bg-brand-deep px-3 text-sm font-medium text-white outline-none focus:border-brand-accent disabled:opacity-60"
+                                        >
+                                            {!rarityOptions.some(option => option.label === editForm.rarity) && editForm.rarity && (
+                                                <option value={editForm.rarity}>{editForm.rarity}</option>
+                                            )}
+                                            {rarityOptions.map(option => (
+                                                <option key={option.value} value={option.label}>
+                                                    {option.value}. {option.label}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    ) : (
+                                        <input
+                                            value={editForm.rarity}
+                                            onChange={event => updateEditField('rarity', event.target.value)}
+                                            disabled={editStage === 'saving'}
+                                            className="mt-1.5 h-10 w-full rounded-lg border border-white/10 bg-brand-deep px-3 text-sm font-medium text-white outline-none focus:border-brand-accent disabled:opacity-60"
+                                        />
+                                    )}
+                                </label>
+                                <label>
+                                    <span className="text-[10px] font-bold uppercase text-neutral-500">Image URL</span>
+                                    <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-white/10 bg-brand-deep px-3 focus-within:border-brand-accent">
+                                        <ImageIcon size={15} className="shrink-0 text-neutral-500" />
+                                        <input
+                                            value={editForm.img_url}
+                                            onChange={event => updateEditField('img_url', event.target.value)}
+                                            disabled={editStage === 'saving'}
+                                            className="h-10 min-w-0 flex-1 bg-transparent text-sm font-medium text-white outline-none disabled:opacity-60"
+                                        />
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div className="flex gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setEditForm(buildEditForm(selectedChar));
+                                        setEditMode(false);
+                                    }}
+                                    disabled={editStage === 'saving'}
+                                    className="flex-1 rounded-lg bg-white/5 py-3 text-sm font-semibold text-neutral-300 transition-colors hover:bg-white/10 disabled:opacity-60"
+                                >
+                                    <span className="flex items-center justify-center gap-2">
+                                        <X size={16} />
+                                        Cancel
+                                    </span>
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={editStage === 'saving'}
+                                    className="flex-[1.5] rounded-lg bg-brand-accent py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-accent-secondary disabled:pointer-events-none disabled:opacity-60"
+                                >
+                                    <span className="flex items-center justify-center gap-2">
+                                        {editStage === 'saving' ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                                        Save
+                                    </span>
+                                </button>
+                            </div>
+                        </form>
+                    ) : (
+                        <button
+                            onClick={() => setEditMode(true)}
+                            className="w-full rounded-lg border border-brand-accent/20 bg-brand-accent/10 py-3 text-sm font-semibold text-brand-accent transition-all hover:bg-brand-accent/20 active:scale-[0.98] flex items-center justify-center gap-2"
+                        >
+                            <Pencil size={16} />
+                            <span>Edit info</span>
+                        </button>
+                    )}
+                </div>
+            )}
+
+            {!editMode && activeTab === 'shop' && !isOwned && (
                 <div className="w-full">
                     {isSoldOut ? (
                         <div className="w-full rounded-lg border border-red-500/15 bg-red-500/10 px-3 py-3 text-sm font-semibold text-red-300 flex items-center justify-center gap-2">
@@ -163,7 +358,7 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                 </div>
             )}
 
-            {isOwned && (
+            {!editMode && isOwned && (
                 <div className="flex gap-2">
                     <button
                         onClick={handleRecycle}

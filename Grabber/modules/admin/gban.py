@@ -1,6 +1,6 @@
 from pyrogram import ContinuePropagation, StopPropagation, enums, errors, filters, types
 
-from Grabber import LOGGER, OWNER_ID, app, game_bot, sudo_filter, sudo_users
+from Grabber import LOGGER, app, game_bot, sudo_filter
 from Grabber.core.global_bans import (
     add_group_gban,
     add_user_gban,
@@ -9,6 +9,7 @@ from Grabber.core.global_bans import (
     remove_group_gban,
     remove_user_gban,
 )
+from Grabber.core.roles import moderator
 from Grabber.core.utils import get_now_utc, handle_errors, html_escape
 from Grabber.database import (
     global_group_bans_collection,
@@ -25,7 +26,7 @@ _notified_banned_chats: set[tuple[str, int]] = set()
 
 
 def _is_privileged(user_id: int | None) -> bool:
-    return bool(user_id) and (user_id == OWNER_ID or user_id in sudo_users)
+    return moderator(user_id)
 
 
 def _reason_from_command(message: types.Message, start_index: int) -> str:

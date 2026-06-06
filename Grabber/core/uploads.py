@@ -1,7 +1,9 @@
 import asyncio
 import base64
 import binascii
+import ipaddress
 import os
+import socket
 import tempfile
 import urllib.parse
 from datetime import datetime, timezone
@@ -23,6 +25,8 @@ from Grabber.modules.collection.rarities import RARITY_MAP
 
 MAX_UPLOAD_SIZE = 10 * 1024 * 1024
 ALLOWED_MEDIA_SCHEMES = {"http", "https"}
+ALLOWED_MEDIA_PORTS = {80, 443}
+MAX_MEDIA_REDIRECTS = 3
 CONTENT_TYPE_EXTENSIONS = {
     "image/jpeg": ".jpg",
     "image/jpg": ".jpg",
@@ -33,6 +37,7 @@ CONTENT_TYPE_EXTENSIONS = {
     "video/webm": ".webm",
 }
 ALLOWED_EXTENSIONS = set(CONTENT_TYPE_EXTENSIONS.values())
+BLOCKED_HOSTNAMES = {"localhost"}
 
 
 class UploadError(ValueError):
@@ -78,35 +83,111 @@ def _temp_file_path(prefix: str, ext: str) -> str:
     return path
 
 
-async def download_media_url(media_url: str, *, temp_prefix: str = "upload") -> str:
-    parsed = urllib.parse.urlparse(str(media_url or "").strip())
+def _is_blocked_ip(address: str) -> bool | None:
+    try:
+        ip = ipaddress.ip_address(address)
+    except ValueError:
+        return None
+    return any(
+        (
+            ip.is_private,
+            ip.is_loopback,
+            ip.is_link_local,
+            ip.is_multicast,
+            ip.is_reserved,
+            ip.is_unspecified,
+        )
+    )
+
+
+async def _validate_public_media_url(media_url: str) -> str:
+    url = str(media_url or "").strip()
+    parsed = urllib.parse.urlparse(url)
     if parsed.scheme not in ALLOWED_MEDIA_SCHEMES:
         raise UploadError("Invalid media URL scheme. Only HTTP/HTTPS URLs are allowed.")
+    if not parsed.hostname:
+        raise UploadError("Media URL must include a valid hostname.")
+    if parsed.username or parsed.password:
+        raise UploadError("Media URL must not include credentials.")
+    try:
+        port = parsed.port
+    except ValueError as exc:
+        raise UploadError("Media URL uses an invalid port.") from exc
+    if port and port not in ALLOWED_MEDIA_PORTS:
+        raise UploadError("Media URL uses an unsupported port.")
 
-    ext = _safe_extension(os.path.splitext(parsed.path)[1])
+    hostname = parsed.hostname.strip("[]").lower()
+    if hostname in BLOCKED_HOSTNAMES or hostname.endswith(".localhost"):
+        raise UploadError("Media URL hostname is not allowed.")
+    if _is_blocked_ip(hostname) is True:
+        raise UploadError("Media URL address is not allowed.")
+
+    try:
+        infos = await asyncio.to_thread(socket.getaddrinfo, hostname, port or None, type=socket.SOCK_STREAM)
+    except socket.gaierror as exc:
+        raise UploadError("Media URL hostname could not be resolved.") from exc
+
+    addresses = {info[4][0] for info in infos if info and info[4]}
+    if not addresses or any(_is_blocked_ip(address) is not False for address in addresses):
+        raise UploadError("Media URL address is not allowed.")
+    return url
+
+
+def _validate_content_type(content_type: str | None) -> str | None:
+    normalized = (content_type or "").split(";")[0].strip().lower()
+    if normalized and normalized not in CONTENT_TYPE_EXTENSIONS:
+        raise UploadError("Media URL must point to a supported image or video file.")
+    return normalized or None
+
+
+async def download_media_url(media_url: str, *, temp_prefix: str = "upload") -> str:
+    current_url = await _validate_public_media_url(media_url)
     temp_path: Optional[str] = None
     downloaded_size = 0
 
     try:
-        async with httpx.AsyncClient(follow_redirects=True) as client:
-            async with client.stream("GET", media_url, timeout=20.0) as response:
-                if response.status_code != 200:
-                    raise UploadError(f"Failed to fetch media (HTTP {response.status_code}).")
+        async with httpx.AsyncClient(follow_redirects=False) as client:
+            for _ in range(MAX_MEDIA_REDIRECTS + 1):
+                current_url = await _validate_public_media_url(current_url)
+                async with client.stream("GET", current_url, timeout=20.0) as response:
+                    if 300 <= response.status_code < 400:
+                        location = response.headers.get("Location")
+                        if not location:
+                            raise UploadError("Media URL redirect is missing a location.")
+                        current_url = urllib.parse.urljoin(str(response.url), location)
+                        continue
 
-                content_type = response.headers.get("Content-Type")
-                ext = _safe_extension(ext, content_type)
-                content_length = response.headers.get("Content-Length")
-                if content_length and int(content_length) > MAX_UPLOAD_SIZE:
-                    raise UploadError("File is too large. Max upload size is 10MB.")
+                    parsed = urllib.parse.urlparse(current_url)
+                    raw_ext = os.path.splitext(parsed.path)[1].lower()
+                    content_type = response.headers.get("Content-Type")
+                    normalized_type = _validate_content_type(content_type)
+                    if not normalized_type and raw_ext not in ALLOWED_EXTENSIONS:
+                        raise UploadError("Media URL must include a supported extension or content type.")
+                    ext = _safe_extension(raw_ext, normalized_type)
+                    content_length = response.headers.get("Content-Length")
+                    if content_length:
+                        try:
+                            if int(content_length) > MAX_UPLOAD_SIZE:
+                                raise UploadError("File is too large. Max upload size is 10MB.")
+                        except ValueError:
+                            raise UploadError("Media URL returned an invalid content length.") from None
 
-                temp_path = _temp_file_path(temp_prefix, ext)
-                with open(temp_path, "wb") as file_obj:
-                    async for chunk in response.aiter_bytes():
-                        downloaded_size += len(chunk)
-                        if downloaded_size > MAX_UPLOAD_SIZE:
-                            raise UploadError("File reached the 10MB limit and was stopped.")
-                        file_obj.write(chunk)
-        return temp_path
+                    if response.status_code != 200:
+                        raise UploadError(f"Failed to fetch media (HTTP {response.status_code}).")
+
+                    temp_path = _temp_file_path(temp_prefix, ext)
+                    with open(temp_path, "wb") as file_obj:
+                        async for chunk in response.aiter_bytes():
+                            downloaded_size += len(chunk)
+                            if downloaded_size > MAX_UPLOAD_SIZE:
+                                raise UploadError("File reached the 10MB limit and was stopped.")
+                            file_obj.write(chunk)
+                    if downloaded_size == 0:
+                        remove_temp_file(temp_path)
+                        temp_path = None
+                        raise UploadError("Media file is empty.")
+                    return temp_path
+            raise UploadError("Media URL redirected too many times.")
     except Exception:
         if temp_path and os.path.exists(temp_path):
             remove_temp_file(temp_path)
@@ -128,6 +209,7 @@ async def materialize_base64_media(
         if not sep or ";base64" not in header:
             raise UploadError("Media data must be a base64 data URL.")
         content_type = header[5:].split(";")[0]
+        _validate_content_type(content_type)
 
     try:
         media_bytes = base64.b64decode(payload, validate=True)

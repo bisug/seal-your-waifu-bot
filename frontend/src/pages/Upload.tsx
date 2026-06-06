@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { apiFetch, getErrorMessage } from '../api/client';
 import { useToast } from '../components/ui/Toast';
+import { useUser } from '../context/UserContext';
 import { cn } from '../utils';
 
 type UploadMode = 'character' | 'pet';
@@ -18,6 +19,15 @@ type MediaSource = 'file' | 'url';
 
 interface UploadOptions {
   max_size_mb: number;
+  role?: {
+    role_label?: string | null;
+    role_tag?: string | null;
+    role_symbol?: string | null;
+    upload_reward?: {
+      balance?: number;
+      zenith?: number;
+    } | null;
+  };
   character_rarities: Array<{ value: number; label: string }>;
   pet_defaults: {
     rarity: string;
@@ -64,6 +74,7 @@ const isVideoSrc = (src: string) => /\.(mp4|webm)(\?|#|$)/i.test(src);
 
 export const Upload = () => {
   const { addToast } = useToast();
+  const { user, refreshUser } = useUser();
   const [mode, setMode] = useState<UploadMode>('character');
   const [source, setSource] = useState<MediaSource>('file');
   const [options, setOptions] = useState<UploadOptions | null>(null);
@@ -100,6 +111,13 @@ export const Upload = () => {
     if (source === 'file') return mediaData || '';
     return mediaUrl.trim();
   }, [mediaData, mediaUrl, source]);
+
+  const uploadReward = user?.upload_reward
+    ? [
+        user.upload_reward.balance ? `${numberFrom(String(user.upload_reward.balance), 0).toLocaleString()} Shards` : '',
+        user.upload_reward.zenith ? `${numberFrom(String(user.upload_reward.zenith), 0).toLocaleString()} Zenith` : '',
+      ].filter(Boolean).join(' + ')
+    : '';
 
   const clearMedia = () => {
     setMediaData(null);
@@ -180,6 +198,7 @@ export const Upload = () => {
       const message = result?.message || 'Upload complete.';
       setLastResult(message);
       addToast(message, 'success');
+      refreshUser().catch(() => undefined);
       clearMedia();
       if (mode === 'character') {
         setCharacter(initialCharacter);
@@ -201,6 +220,19 @@ export const Upload = () => {
           <h1 className="text-xl font-bold text-white">Upload</h1>
         </div>
         <p className="text-sm font-medium text-neutral-400">Add catalog characters and pet store entries.</p>
+        {user?.role_tag && (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-brand-accent/20 bg-brand-accent/10 px-2 py-1 text-[10px] font-bold text-brand-accent">
+              <span className="text-sm leading-none">{user.role_symbol}</span>
+              <span>{user.role_label || user.role_tag}</span>
+            </span>
+            {uploadReward && (
+              <span className="rounded-lg border border-white/5 bg-brand-deep px-2 py-1 text-[10px] font-semibold text-neutral-300">
+                Reward per upload: {uploadReward}
+              </span>
+            )}
+          </div>
+        )}
       </header>
 
       <div className="grid grid-cols-2 gap-2 mb-5 rounded-lg bg-brand-deep border border-white/5 p-1">

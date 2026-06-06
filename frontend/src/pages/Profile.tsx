@@ -40,6 +40,11 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
   }, []);
 
   useEffect(() => {
+    window.addEventListener('harem-refresh', refresh);
+    return () => window.removeEventListener('harem-refresh', refresh);
+  }, [refresh]);
+
+  useEffect(() => {
     if (!focusCollection || userLoading) return;
 
     const timeoutId = window.setTimeout(() => {
@@ -67,6 +72,13 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
 
   if (!user) return null;
 
+  const uploadReward = user.upload_reward
+    ? [
+        user.upload_reward.balance ? `${formatNumber(user.upload_reward.balance)} Shards` : '',
+        user.upload_reward.zenith ? `${formatNumber(user.upload_reward.zenith)} Zenith` : '',
+      ].filter(Boolean).join(' + ')
+    : '';
+
   return (
     <div className="pb-20 pt-4 max-w-4xl mx-auto">
       {/* Profile Header */}
@@ -87,6 +99,19 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
               {user.first_name || 'Collector'}
             </h1>
             <p className="text-sm text-neutral-400 font-medium">@{user.username || 'unknown'}</p>
+            {user.role_tag && (
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-lg border border-brand-accent/20 bg-brand-accent/10 px-2 py-1 text-[10px] font-bold text-brand-accent">
+                  <span className="text-sm leading-none">{user.role_symbol}</span>
+                  <span>{user.role_label || user.role_tag}</span>
+                </span>
+                {user.can_upload && uploadReward && (
+                  <span className="rounded-lg border border-white/5 bg-brand-midnight px-2 py-1 text-[10px] font-semibold text-neutral-300">
+                    Upload reward: {uploadReward}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
           <div className="hidden sm:flex flex-col items-end">
             <div className="flex items-center space-x-2 text-sm font-semibold text-neutral-300 bg-brand-midnight px-3 py-1.5 rounded-lg border border-white/5 shadow-sm">
