@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Activity, Loader2, Heart, Zap, X, Swords, Wind, Sparkles, Check, Lock } from 'lucide-react';
+import { Activity, Loader2, Heart, Zap, X, Swords, Wind, Sparkles, Check, Lock, PawPrint } from 'lucide-react';
 import { useToast } from '../ui/Toast';
 import { apiFetch, getErrorMessage } from '../../api/client';
 import { cn } from '../../utils';
@@ -23,6 +23,8 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }) => {
     const { triggerRefresh, liteMode } = useUser();
     const [purchaseStage, setPurchaseStage] = useState('idle');
     const [syncStage, setSyncStage] = useState('idle');
+    const petImage = selectedPet?.img || selectedPet?.img_url || selectedPet?.image || selectedPet?.photo_url || '';
+    const [imageFailed, setImageFailed] = useState(false);
 
     useEffect(() => {
         if (!selectedPet) {
@@ -30,6 +32,10 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }) => {
             setSyncStage('idle');
         }
     }, [selectedPet]);
+
+    useEffect(() => {
+        setImageFailed(false);
+    }, [petImage]);
 
     if (!selectedPet) return null;
 
@@ -97,7 +103,19 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }) => {
                 <div className="p-8 overflow-y-auto no-scrollbar">
                     <div className="flex justify-between items-start mb-8">
                         <div className="w-24 h-24 rounded-xl overflow-hidden border-2 border-brand-accent/20 bg-black/40 shadow-2xl">
-                            <img src={selectedPet.img} alt={selectedPet.name} className="w-full h-full object-cover" />
+                            {petImage && !imageFailed ? (
+                                <img
+                                    src={petImage}
+                                    alt={selectedPet.name}
+                                    className="w-full h-full object-cover"
+                                    referrerPolicy="no-referrer"
+                                    onError={() => setImageFailed(true)}
+                                />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center text-slate-700 bg-brand-midnight">
+                                    <PawPrint size={26} />
+                                </div>
+                            )}
                         </div>
                         <button
                             onClick={() => setSelectedPet(null)}

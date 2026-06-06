@@ -120,6 +120,19 @@ def pet_id_from_name(name: str | None) -> str | None:
     return PET_ID_ALIASES.get(name) or _slugify_pet_name(name)
 
 
+def get_pet_template(ref: Any) -> dict | None:
+    if ref is None:
+        return None
+    ref_str = str(ref)
+    ref_id = pet_id_from_name(ref_str)
+    for pet in [DEFAULT_PET, *PET_SHOP]:
+        if ref_str in {str(pet.get("id") or ""), str(pet.get("name") or "")}:
+            return pet
+        if ref_id and ref_id == str(pet.get("id") or ""):
+            return pet
+    return None
+
+
 def normalize_pet(pet: dict | None) -> dict:
     if not isinstance(pet, dict):
         return copy_default_pet()
@@ -127,6 +140,7 @@ def normalize_pet(pet: dict | None) -> dict:
     name = str(normalized.get("name") or DEFAULT_PET["name"])
     normalized["name"] = name
     normalized["id"] = str(normalized.get("id") or pet_id_from_name(name))
+    template = get_pet_template(normalized["id"]) or get_pet_template(name) or DEFAULT_PET
     normalized.setdefault("luck", DEFAULT_PET["luck"])
     normalized.setdefault("hp", DEFAULT_PET["hp"])
     normalized.setdefault("atk", DEFAULT_PET["atk"])
@@ -136,6 +150,9 @@ def normalize_pet(pet: dict | None) -> dict:
     normalized.setdefault("ability", "None")
     normalized.setdefault("desc", "")
     normalized.setdefault("img", DEFAULT_PET["img"])
+    for key in ("ability", "desc", "img"):
+        if not str(normalized.get(key) or "").strip():
+            normalized[key] = template.get(key) or DEFAULT_PET.get(key)
     normalized.setdefault("affection", 50)
     normalized.setdefault("last_interacted", 0)
     return normalized
