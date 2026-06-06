@@ -89,7 +89,7 @@ Infrastructure:
 
 - Python 3.14+
 - `uv` for Python dependency management
-- Node.js 22+ and npm
+- Bun 1.3+ for frontend dependency management and builds
 - MongoDB connection string
 - Redis connection string recommended for production
 - Telegram bot token, Telegram API ID, and Telegram API hash
@@ -173,14 +173,14 @@ Install frontend dependencies:
 
 ```bash
 cd frontend
-npm ci
+bun install
 ```
 
 Run the Mini App frontend during active UI development:
 
 ```bash
 cd frontend
-npm run dev
+bun run dev
 ```
 
 Run the unified backend service:
@@ -199,7 +199,7 @@ Build the frontend:
 
 ```bash
 cd frontend
-npm run build
+bun run build
 ```
 
 The Docker build copies `frontend/dist` into `Grabber/static` automatically. For local static serving through FastAPI, rebuild the frontend and copy the generated `dist` contents into `Grabber/static`.
@@ -210,9 +210,9 @@ Frontend checks:
 
 ```bash
 cd frontend
-npm run type-check
-npm run lint
-npm run build
+bun run type-check
+bun run lint
+bun run build
 ```
 
 Backend syntax check:
@@ -347,7 +347,7 @@ Use Vercel for the React Mini App only.
 Project settings:
 
 - Root directory: `frontend`
-- Build command: `npm run build`
+- Build command: `bun run build`
 - Output directory: `dist`
 - Environment variables:
   - `VITE_API_URL=https://your-backend.example.com`
@@ -362,7 +362,7 @@ Use Netlify for the React Mini App only.
 Project settings:
 
 - Base directory: `frontend`
-- Build command: `npm run build`
+- Build command: `bun run build`
 - Publish directory: `dist`
 - Environment variables:
   - `VITE_API_URL=https://your-backend.example.com`
@@ -378,7 +378,7 @@ Project settings:
 
 - Root directory: `frontend`
 - Framework preset: React / Vite
-- Build command: `npm run build`
+- Build command: `bun run build`
 - Build output directory: `dist`
 - Environment variables:
   - `VITE_API_URL=https://your-backend.example.com`
