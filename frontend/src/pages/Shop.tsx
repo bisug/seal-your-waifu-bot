@@ -4,9 +4,7 @@ import { Card } from '../components/character/Card';
 import { CardSkeleton } from '../components/ui/Skeleton';
 import { ErrorState } from '../components/ui/ErrorState';
 import { EmptyState } from '../components/ui/EmptyState';
-import { apiFetch, getErrorMessage } from '../api/client';
-import { useToast } from '../components/ui/Toast';
-import { AlertCircle, ArrowLeftRight, CheckCircle2, Clock, Coins, Gem, Loader2, Package, RefreshCw, ShoppingBag, Sparkles } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, Coins, Gem, Package, RefreshCw, ShoppingBag, Sparkles } from 'lucide-react';
 import { Character, useUser } from '../context/UserContext';
 import { cn, formatNumber } from '../utils';
 
@@ -22,7 +20,6 @@ interface ShopHub {
   characters_rarity: string;
   rotation_date: string;
   reset_at: string;
-  exchange_rate?: number;
 }
 
 const getStockRemaining = (character: Character) => {
@@ -82,13 +79,9 @@ const Metric = ({
 
 export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
   const { user, refreshUser } = useUser();
-  const { addToast } = useToast();
   const { data: shopData, loading, error, execute: fetchShop } = useApi<Character[]>('/shop/characters');
   const { data: hubData, loading: hubLoading, error: hubError, execute: fetchHub } = useApi<ShopHub>('/shop/hub');
   const [now, setNow] = useState(() => Date.now());
-  const [exchangeMode, setExchangeMode] = useState<'shards_to_zenith' | 'zenith_to_shards'>('shards_to_zenith');
-  const [exchangeAmount, setExchangeAmount] = useState('10000');
-  const [exchanging, setExchanging] = useState(false);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 60_000);
@@ -108,14 +101,6 @@ export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
 
   const zenithBalance = Number(hubData?.zenith ?? user?.stats?.zenith ?? user?.zenith ?? 0);
   const shardBalance = Number(hubData?.balance ?? user?.balance ?? 0);
-  const exchangeRate = Number(hubData?.exchange_rate ?? 10000);
-  const exchangeAmountNumber = Math.max(0, Math.floor(Number(exchangeAmount) || 0));
-  const exchangeOutput = exchangeMode === 'shards_to_zenith'
-    ? Math.floor(exchangeAmountNumber / exchangeRate)
-    : exchangeAmountNumber * exchangeRate;
-  const canExchange = exchangeMode === 'shards_to_zenith'
-    ? exchangeAmountNumber >= exchangeRate && exchangeAmountNumber % exchangeRate === 0 && shardBalance >= exchangeAmountNumber
-    : exchangeAmountNumber >= 1 && zenithBalance >= exchangeAmountNumber;
 
   const inventory = useMemo(() => {
     const ownedIds = new Set((user?.characters || []).map((char) => String(char.id)));
@@ -160,28 +145,6 @@ export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
     await Promise.allSettled([fetchShop(), fetchHub(), refreshUser()]);
     if (triggerRefresh) triggerRefresh();
-  };
-
-  const handleExchange = async () => {
-    if (!canExchange || exchanging) return;
-
-    setExchanging(true);
-    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
-    try {
-      const result = await apiFetch(`/shop/exchange/${exchangeMode}?amount=${exchangeAmountNumber}`, { method: 'POST' });
-      addToast(result.message || 'Exchange complete', 'success');
-      await Promise.allSettled([fetchShop(), fetchHub(), refreshUser()]);
-      if (triggerRefresh) triggerRefresh();
-    } catch (err: any) {
-      addToast(getErrorMessage(err), 'error');
-    } finally {
-      setExchanging(false);
-    }
-  };
-
-  const setPreset = (amount: number) => {
-    setExchangeAmount(String(amount));
-    window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
   };
 
   if (loading && !shopData) return (
@@ -246,96 +209,6 @@ export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
           </div>
         )}
       </header>
-
-      <section className="px-4 mb-6">
-        <div className="rounded-lg border border-white/5 bg-brand-deep p-4">
-          <div className="flex items-start justify-between gap-3 mb-4">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <ArrowLeftRight size={16} className="text-brand-accent" />
-                <h2 className="text-sm font-bold text-white">Currency exchange</h2>
-              </div>
-              <p className="mt-1 text-xs font-medium text-neutral-500">
-                {formatNumber(exchangeRate)} Shards = 1 Zenith
-              </p>
-            </div>
-            <div className="text-right shrink-0">
-              <p className="text-[10px] font-semibold text-neutral-500">Result</p>
-              <p className="text-sm font-bold text-brand-accent tabular-nums">
-                {formatNumber(exchangeOutput)} {exchangeMode === 'shards_to_zenith' ? 'Zenith' : 'Shards'}
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 mb-3">
-            <button
-              onClick={() => {
-                setExchangeMode('shards_to_zenith');
-                setExchangeAmount(String(exchangeRate));
-              }}
-              className={cn(
-                'h-10 rounded-lg border text-xs font-bold transition-all',
-                exchangeMode === 'shards_to_zenith'
-                  ? 'bg-white text-brand-midnight border-white'
-                  : 'bg-brand-midnight text-neutral-400 border-white/5'
-              )}
-            >
-              Shards to Zenith
-            </button>
-            <button
-              onClick={() => {
-                setExchangeMode('zenith_to_shards');
-                setExchangeAmount('1');
-              }}
-              className={cn(
-                'h-10 rounded-lg border text-xs font-bold transition-all',
-                exchangeMode === 'zenith_to_shards'
-                  ? 'bg-white text-brand-midnight border-white'
-                  : 'bg-brand-midnight text-neutral-400 border-white/5'
-              )}
-            >
-              Zenith to Shards
-            </button>
-          </div>
-
-          <div className="flex gap-2">
-            <input
-              type="number"
-              min={exchangeMode === 'shards_to_zenith' ? exchangeRate : 1}
-              step={exchangeMode === 'shards_to_zenith' ? exchangeRate : 1}
-              value={exchangeAmount}
-              onChange={(event) => setExchangeAmount(event.target.value)}
-              className="h-11 min-w-0 flex-1 rounded-lg border border-white/5 bg-brand-midnight px-3 text-sm font-bold text-white outline-none focus:border-brand-accent/50"
-              inputMode="numeric"
-            />
-            <button
-              onClick={handleExchange}
-              disabled={!canExchange || exchanging}
-              className={cn(
-                'h-11 px-4 rounded-lg text-xs font-bold min-w-[92px] flex items-center justify-center gap-2 transition-all active:scale-95',
-                canExchange
-                  ? 'bg-brand-accent text-white'
-                  : 'bg-brand-midnight text-neutral-600 border border-white/5'
-              )}
-            >
-              {exchanging ? <Loader2 size={16} className="animate-spin" /> : <ArrowLeftRight size={15} />}
-              <span>Exchange</span>
-            </button>
-          </div>
-
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            {(exchangeMode === 'shards_to_zenith' ? [exchangeRate, exchangeRate * 5, exchangeRate * 10] : [1, 5, 10]).map((amount) => (
-              <button
-                key={amount}
-                onClick={() => setPreset(amount)}
-                className="h-8 rounded-lg bg-brand-midnight border border-white/5 text-[11px] font-semibold text-neutral-400"
-              >
-                {formatNumber(amount)}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
 
       <section className="px-4">
         <div className="mb-3 flex items-end justify-between gap-3">

@@ -100,7 +100,7 @@ async def exchange_command(_, message: types.Message):
             return await _send_shards_to_zenith_confirmation(message, amount)
 
     buttons = []
-    webapp_btn = get_webapp_button(message.chat.type == enums.ChatType.PRIVATE, path="#shop")
+    webapp_btn = get_webapp_button(message.chat.type == enums.ChatType.PRIVATE, path="#exchange")
     if webapp_btn:
         buttons.append([webapp_btn])
 
