@@ -23,8 +23,9 @@ const Leaderboard = lazy(() => import('./pages/Leaderboard').then(m => ({ defaul
 const Referrals = lazy(() => import('./pages/Referrals').then(m => ({ default: m.Referrals })));
 const Achievements = lazy(() => import('./pages/Achievements').then(m => ({ default: m.Achievements })));
 const MyPets = lazy(() => import('./pages/MyPets').then(m => ({ default: m.MyPets })));
+const Exchange = lazy(() => import('./pages/Exchange').then(m => ({ default: m.Exchange })));
 
-const VALID_TABS = ['profile', 'incubation', 'shop', 'gallery', 'pets', 'referrals', 'quests', 'pass', 'leaderboard', 'achievements', 'mypets'];
+const VALID_TABS = ['profile', 'incubation', 'shop', 'exchange', 'gallery', 'pets', 'referrals', 'quests', 'pass', 'leaderboard', 'achievements', 'mypets'];
 const TAB_ALIASES: Record<string, string> = {
   profile: 'profile',
   home: 'profile',
@@ -44,6 +45,14 @@ const TAB_ALIASES: Record<string, string> = {
   store: 'shop',
   daily_shop: 'shop',
   dailyshop: 'shop',
+  exchange: 'exchange',
+  currency: 'exchange',
+  currencies: 'exchange',
+  conversion: 'exchange',
+  convert: 'exchange',
+  zenith: 'exchange',
+  shard: 'exchange',
+  shards: 'exchange',
   gallery: 'gallery',
   catalog: 'gallery',
   characters: 'gallery',
@@ -349,6 +358,7 @@ const AppContent = () => {
           )}
           {activeTab === 'incubation' && <Hatchery />}
           {activeTab === 'shop' && <Shop onCharClick={setSelectedChar} />}
+          {activeTab === 'exchange' && <Exchange />}
           {activeTab === 'gallery' && <Gallery onCharClick={setSelectedChar} />}
           {activeTab === 'pets' && <PetShop onPetClick={setSelectedPet} />}
           {activeTab === 'referrals' && <Referrals />}

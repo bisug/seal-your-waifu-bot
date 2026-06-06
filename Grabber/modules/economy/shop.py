@@ -144,12 +144,17 @@ async def send_shop_hub(message_or_query):
 @handle_errors
 async def exchange_help_callback(_, query: types.CallbackQuery):
     await query.answer()
+    buttons = []
+    webapp_btn = get_webapp_button(query.message.chat.type == enums.ChatType.PRIVATE, path="#exchange")
+    if webapp_btn:
+        buttons.append([webapp_btn])
     await query.message.reply_text(
         "<b>Currency Exchange</b>\n\n"
         f"<b>Rate:</b> {SHARDS_PER_ZENITH:,} Shards = 1 Zenith\n\n"
         f"<code>/exchange {SHARDS_PER_ZENITH}</code> - Shards to Zenith\n"
         "<code>/shard 1</code> - Zenith to Shards",
         parse_mode=enums.ParseMode.HTML,
+        reply_markup=types.InlineKeyboardMarkup(buttons) if buttons else None,
     )
 @app.on_callback_query(filters.regex(r"^hub_(char|pet|pass|egg|main)$"))
 @handle_errors

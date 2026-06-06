@@ -5,11 +5,11 @@ React 19 + Vite 8 Telegram Mini App frontend for Seal-Bot.
 ## Commands
 
 ```sh
-npm install
-npm run dev
-npm run lint
-npm run type-check
-npm run build
+bun install
+bun run dev
+bun run lint
+bun run type-check
+bun run build
 ```
 
 ## Frontend-only hosting
@@ -21,7 +21,7 @@ VITE_API_URL=https://your-backend.example.com
 VITE_API_PREFIX=v1_7b82
 ```
 
-Use `npm run build` as the build command and `dist` as the output directory. The backend must run separately on Heroku, Render, Railway, a VPS, or another host that supports a persistent Python process.
+Use `bun run build` as the build command and `dist` as the output directory. The backend must run separately on Heroku, Render, Railway, a VPS, or another host that supports a persistent Python process.
 
 ## Tooling
 

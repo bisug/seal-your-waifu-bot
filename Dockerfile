@@ -1,12 +1,12 @@
 # Stage 1: Frontend Builder
-FROM node:22-alpine AS frontend-builder
+FROM oven/bun:1-alpine AS frontend-builder
 WORKDIR /app/frontend
 # Install dependencies first for better caching
-COPY frontend/package*.json ./
-RUN npm ci
+COPY frontend/package.json frontend/bun.lock ./
+RUN bun install --frozen-lockfile
 # Copy source and build
 COPY frontend/ ./
-RUN npm run build
+RUN bun run build
 
 # Stage 2: Python Builder (for building wheels)
 FROM ghcr.io/astral-sh/uv:python3.14-bookworm-slim AS python-builder

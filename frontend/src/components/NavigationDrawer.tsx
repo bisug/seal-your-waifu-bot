@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import {
-  X, User, Egg, ShoppingBag, Search, Dog,
+  X, User, Egg, ShoppingBag, Search, Dog, ArrowLeftRight,
   Zap, Trophy, Swords, Users, Award, PawPrint
 } from 'lucide-react';
 import { cn } from '../utils';
@@ -38,6 +38,7 @@ const SECTIONS: NavSection[] = [
     title: "Marketplace",
     items: [
       { id: 'shop', label: 'Daily Shop', icon: ShoppingBag },
+      { id: 'exchange', label: 'Exchange', icon: ArrowLeftRight },
       { id: 'gallery', label: 'Catalog', icon: Search },
       { id: 'pets', label: 'Pet Store', icon: Dog },
     ]
