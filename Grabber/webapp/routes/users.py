@@ -18,6 +18,7 @@ from Grabber.database import user_collection
 from Grabber.core.eggs import get_egg_tier_info, get_incubating_count, get_incubation_wait_minutes
 from Grabber.core.pass_config import apply_pass_incubation_bonus, get_active_pass_type, get_pass_incubation_slots
 from Grabber.modules.progression.achievements import ACHIEVEMENTS
+from Grabber.core.roles import get_role_payload
 from Grabber.core.pets import (
     DEFAULT_PET,
     ensure_user_pet_state,
@@ -98,6 +99,7 @@ async def get_me(user: dict = Depends(get_current_user_data)):
     pass_type = get_active_pass_type(user)
     incubation_slots = get_pass_incubation_slots(user)
     active_incubations = get_incubating_count(eggs)
+    role_payload = get_role_payload(user_id)
 
     resp_data = {
         "id": int(user_id),
@@ -105,6 +107,7 @@ async def get_me(user: dict = Depends(get_current_user_data)):
         "username": user.get("username"),
         "avatar": user.get("avatar"),
         "is_sudo": is_sudo_user_id(user_id),
+        **role_payload,
         "stats": {
             "level": progress["level"],
             "xp": progress["xp"],

@@ -31,6 +31,7 @@ LOGGER = get_logger(__name__)
 
 OWNER_ID = config.OWNER_ID
 sudo_users = config.SUDO_USERS
+sudo_roles = {int(user_id): "moderator" for user_id in sudo_users}
 MAIN_GROUP_ID = config.MAIN_GROUP_ID
 TOKEN =""
 PHOTO_URL = config.PHOTO_URL
@@ -56,6 +57,19 @@ nguess_bot = game_bot
 def _sudo_check(flt, client, message):
     if not message.from_user:
         return False
-    return message.from_user.id in sudo_users or message.from_user.id == OWNER_ID
+    from Grabber.core.roles import moderator
+
+    return moderator(message.from_user.id)
 
 sudo_filter = filters.create(_sudo_check)
+
+
+def _uploader_check(flt, client, message):
+    if not message.from_user:
+        return False
+    from Grabber.core.roles import can_upload
+
+    return can_upload(message.from_user.id)
+
+
+uploader_filter = filters.create(_uploader_check)

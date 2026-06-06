@@ -74,6 +74,17 @@ export interface User {
   username: string;
   avatar: string;
   is_sudo?: boolean;
+  role?: string | null;
+  role_label?: string | null;
+  role_tag?: string | null;
+  role_symbol?: string | null;
+  is_staff?: boolean;
+  can_upload?: boolean;
+  can_edit_character?: boolean;
+  upload_reward?: {
+    balance?: number;
+    zenith?: number;
+  } | null;
   balance: number;
   zenith: number;
   stats: UserStats;

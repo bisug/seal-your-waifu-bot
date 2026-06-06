@@ -62,11 +62,11 @@ const SECTIONS: NavSection[] = [
 
 export const NavigationDrawer = ({ isOpen, onClose, activeTab, onNavigate }: NavigationDrawerProps) => {
   const { user } = useUser();
-  const sections = user?.is_sudo
+  const sections = (user?.can_upload ?? user?.is_sudo)
     ? [
         ...SECTIONS,
         {
-          title: "Admin",
+          title: "Staff",
           items: [{ id: 'upload', label: 'Upload', icon: UploadCloud }],
         },
       ]
@@ -156,6 +156,12 @@ export const NavigationDrawer = ({ isOpen, onClose, activeTab, onNavigate }: Nav
             </div>
 
             <div className="p-4 border-t border-white/5">
+               {user?.role_tag && (
+                 <div className="mb-3 flex items-center justify-center gap-2 rounded-lg border border-brand-accent/20 bg-brand-accent/10 px-3 py-2 text-xs font-bold text-brand-accent">
+                   <span className="text-sm leading-none">{user.role_symbol}</span>
+                   <span>{user.role_label || user.role_tag}</span>
+                 </div>
+               )}
                <div className="text-xs font-medium text-neutral-500 text-center">v2.1.0-stable</div>
             </div>
           </motion.div>

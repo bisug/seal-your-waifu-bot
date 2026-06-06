@@ -67,6 +67,14 @@ class UserProfileResponse(BaseModel):
     username: Optional[str] = None
     avatar: Optional[str] = None
     is_sudo: bool = False
+    role: Optional[str] = None
+    role_label: Optional[str] = None
+    role_tag: Optional[str] = None
+    role_symbol: Optional[str] = None
+    is_staff: bool = False
+    can_upload: bool = False
+    can_edit_character: bool = False
+    upload_reward: Optional[dict[str, int]] = None
     stats: StatsModel
     achievements: List[AchievementModel] = Field(default_factory=list)
     titles: TitlesModel

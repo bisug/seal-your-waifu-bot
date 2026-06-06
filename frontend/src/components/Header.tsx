@@ -16,7 +16,15 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
         <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-brand-deep">
            <Shield size={16} className="text-white" strokeWidth={2} />
         </div>
-        <span className="text-sm font-semibold tracking-tight text-white">Seal</span>
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="text-sm font-semibold tracking-tight text-white">Seal</span>
+          {user?.role_tag && (
+            <span className="inline-flex items-center gap-1 rounded bg-brand-accent/10 px-1.5 py-0.5 text-[10px] font-bold text-brand-accent">
+              <span className="leading-none">{user.role_symbol}</span>
+              <span>{user.role_tag}</span>
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="flex items-center space-x-3">
