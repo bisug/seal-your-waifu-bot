@@ -8,6 +8,7 @@ from Grabber.core.roles import (
     MODERATOR_ROLE,
     ROLE_ORDER,
     ROLE_META,
+    format_role_benefits,
     format_upload_reward,
     normalize_role,
 )
@@ -77,6 +78,9 @@ def _role_line(role: str) -> str:
     ]
     if reward:
         bits.append(f"<b>Upload reward:</b> <code>{html_escape(reward)}</code>")
+    benefits = format_role_benefits(meta.get("perks"))
+    if benefits:
+        bits.append(f"<b>Benefits:</b> <code>{html_escape(', '.join(benefits))}</code>")
     return "\n".join(bits)
 
 
@@ -154,20 +158,33 @@ def _viewer_allowed(query: types.CallbackQuery, viewer_id: int) -> bool:
     return bool(query.from_user and query.from_user.id == viewer_id)
 
 
+def _resolve_addsudo_target(message: types.Message) -> tuple[int | None, str | None]:
+    if len(message.command) >= 2 and message.command[1].isdigit():
+        return int(message.command[1]), message.command[2] if len(message.command) >= 3 else None
+
+    replied_user = message.reply_to_message.from_user if message.reply_to_message else None
+    if replied_user:
+        return replied_user.id, message.command[1] if len(message.command) >= 2 else None
+
+    return None, None
+
+
 @app.on_message(filters.command(["addsudo", "setsudo", "setrole"]) & filters.user(OWNER_ID))
 @handle_errors
 async def addsudo_handler(_, message: types.Message):
-    if len(message.command) < 2 or not message.command[1].isdigit():
+    target_id, role_arg = _resolve_addsudo_target(message)
+    if not target_id:
         return await message.reply_text(
-            f"❌ Usage: <code>/addsudo &lt;user_id&gt; [moderator|uploader]</code>\n{_role_help()}",
+            f"❌ Usage: <code>/addsudo &lt;user_id&gt; [moderator|uploader]</code>\n"
+            f"Or reply with <code>/addsudo [moderator|uploader]</code>.\n"
+            f"{_role_help()}",
             parse_mode=enums.ParseMode.HTML,
         )
     try:
-        target_id = int(message.command[1])
         if target_id == OWNER_ID:
             return await message.reply_text("Owner role is configured with OWNER_ID.", parse_mode=enums.ParseMode.HTML)
 
-        if len(message.command) < 3:
+        if not role_arg:
             keyboard = types.InlineKeyboardMarkup([
                 [
                     types.InlineKeyboardButton("Moderator", callback_data=f"sudo_role:{message.from_user.id}:0:{target_id}:moderator"),
@@ -181,7 +198,7 @@ async def addsudo_handler(_, message: types.Message):
                 parse_mode=enums.ParseMode.HTML,
             )
 
-        role = normalize_role(message.command[2])
+        role = normalize_role(role_arg)
         if role not in MANAGED_ROLES:
             return await message.reply_text(f"❌ Invalid role. {_role_help()}", parse_mode=enums.ParseMode.HTML)
 

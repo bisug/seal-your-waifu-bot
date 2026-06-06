@@ -78,6 +78,7 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
         user.upload_reward.zenith ? `${formatNumber(user.upload_reward.zenith)} Zenith` : '',
       ].filter(Boolean).join(' + ')
     : '';
+  const roleBenefits = user.role_benefits || [];
 
   return (
     <div className="pb-20 pt-4 max-w-4xl mx-auto">
@@ -110,6 +111,14 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
                     Upload reward: {uploadReward}
                   </span>
                 )}
+                {roleBenefits.slice(0, 3).map((benefit) => (
+                  <span
+                    key={benefit}
+                    className="rounded-lg border border-white/5 bg-brand-midnight px-2 py-1 text-[10px] font-semibold text-neutral-300"
+                  >
+                    {benefit}
+                  </span>
+                ))}
               </div>
             )}
           </div>

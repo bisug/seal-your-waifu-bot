@@ -27,6 +27,7 @@ interface UploadOptions {
       balance?: number;
       zenith?: number;
     } | null;
+    role_benefits?: string[];
   };
   character_rarities: Array<{ value: number; label: string }>;
   pet_defaults: {
@@ -118,6 +119,7 @@ export const Upload = () => {
         user.upload_reward.zenith ? `${numberFrom(String(user.upload_reward.zenith), 0).toLocaleString()} Zenith` : '',
       ].filter(Boolean).join(' + ')
     : '';
+  const roleBenefits = user?.role_benefits || options?.role?.role_benefits || [];
 
   const clearMedia = () => {
     setMediaData(null);
@@ -231,6 +233,14 @@ export const Upload = () => {
                 Reward per upload: {uploadReward}
               </span>
             )}
+            {roleBenefits.slice(0, 3).map((benefit) => (
+              <span
+                key={benefit}
+                className="rounded-lg border border-white/5 bg-brand-deep px-2 py-1 text-[10px] font-semibold text-neutral-300"
+              >
+                {benefit}
+              </span>
+            ))}
           </div>
         )}
       </header>

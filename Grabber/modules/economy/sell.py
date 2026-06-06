@@ -5,6 +5,7 @@ from pyrogram.enums import ButtonStyle, ParseMode
 
 from Grabber import app
 from Grabber.core.cache import sync_user_to_redis
+from Grabber.core.roles import apply_role_bonus
 from Grabber.core.user import get_user_data
 from Grabber.core.utils import get_user_id_query, handle_errors, html_escape
 from Grabber.database import user_collection
@@ -27,8 +28,19 @@ def normalize_sell_rarity(rarity: str) -> str:
             return key
     return "Common"
 
-def get_sell_price(rarity: str) -> int:
-    return SELL_PRICES.get(normalize_sell_rarity(rarity), SELL_PRICES["Common"])
+def get_sell_price(rarity: str, user_id: int | None = None) -> int:
+    base_price = SELL_PRICES.get(normalize_sell_rarity(rarity), SELL_PRICES["Common"])
+    if user_id is None:
+        return base_price
+    price, _ = apply_role_bonus(user_id, base_price, "sell_bonus_percent")
+    return price
+
+
+def get_sell_price_details(rarity: str, user_id: int | None = None) -> tuple[int, int]:
+    base_price = SELL_PRICES.get(normalize_sell_rarity(rarity), SELL_PRICES["Common"])
+    if user_id is None:
+        return base_price, 0
+    return apply_role_bonus(user_id, base_price, "sell_bonus_percent")
 
 async def sell_character_from_user(user_id: int, char_id: str):
     for _ in range(3):
@@ -42,7 +54,7 @@ async def sell_character_from_user(user_id: int, char_id: str):
             return None
 
         char = chars[idx_to_remove]
-        price = get_sell_price(char.get("rarity", "Common"))
+        price = get_sell_price(char.get("rarity", "Common"), user_id)
         new_chars = chars[:idx_to_remove] + chars[idx_to_remove + 1:]
         current_version = user.get("version", 0)
         current_count = user.get("char_count", len(chars))
@@ -84,7 +96,7 @@ async def sell_handler(_, message: types.Message):
     if not char:
         return await message.reply_text("<b>You don't own this character.</b>", parse_mode=enums.ParseMode.HTML)
     rarity = char.get('rarity', 'Common')
-    price = get_sell_price(rarity)
+    price, staff_bonus = get_sell_price_details(rarity, user_id)
     buttons = [
         [
             types.InlineKeyboardButton("Confirm", callback_data=f"sell_c_{char_id}:{user_id}"),
@@ -97,7 +109,8 @@ async def sell_handler(_, message: types.Message):
         f"<b>Sell Confirmation</b>\n\n"
         f"<b>Character:</b> {html_escape(char['name'])}\n"
         f"<b>Rarity:</b> {html_escape(rarity)}\n"
-        f"<b>Value:</b> <code>{price:,}</code> ⬪\n\n"
+        f"<b>Value:</b> <code>{price:,}</code> ⬪"
+        f"{f' (+{staff_bonus:,} staff)' if staff_bonus else ''}\n\n"
         f"<b>Current Balance:</b> <code>{current_shards:,}</code> ⬪\n"
         f"<b>New Balance:</b> <code>{new_shards:,}</code> ⬪\n\n"
         f"<i>Are you sure you want to sell this character?</i>"
@@ -131,7 +144,7 @@ async def sell_callback_handler(_, query: types.CallbackQuery):
     if not char:
         return await query.answer("You don't own this character anymore.", show_alert=True)
     rarity = char.get('rarity', '⚪ Common')
-    price = get_sell_price(rarity)
+    price = get_sell_price(rarity, user_id)
     current_shards = user.get('balance', 0)
     new_shards = current_shards + price
     sale = await sell_character_from_user(user_id, char_id)
