@@ -132,7 +132,7 @@ async def get_me(user: dict = Depends(get_current_user_data)):
 
     # Handle Pets
     user_pets = [normalize_pet(p) for p in user.get("pets", [DEFAULT_PET])]
-    current_pet_name = user.get("current_pet", DEFAULT_PET["name"])
+    current_pet_name = user.get("current_pet", DEFAULT_PET["petid"])
     
     formatted_pets = []
     for p in user_pets:
@@ -146,6 +146,7 @@ async def get_me(user: dict = Depends(get_current_user_data)):
             
         p_data = {
             "id": get_pet_key(p),
+            "petid": get_pet_key(p),
             "name": p["name"],
             "level": p.get("level", 1),
             "xp": p.get("xp", 0),

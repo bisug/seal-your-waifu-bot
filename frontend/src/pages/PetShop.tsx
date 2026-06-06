@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useUser, Pet } from '../context/UserContext';
 import { Skeleton } from '../components/ui/Skeleton';
@@ -19,23 +19,56 @@ interface PetShopResponse {
     current_level: number;
 }
 
+const getPetRef = (pet: Pet) => String(pet.petid || pet.id || pet.name || '');
+
+const getPetImageSrc = (pet: Pet) => {
+    const src = String(pet.img || pet.img_url || pet.image || pet.photo_url || '').trim();
+    return /^https?:\/\//i.test(src) || src.startsWith('/') ? src : '';
+};
+
+const PetShopImage = ({ pet, className }: { pet: Pet; className?: string }) => {
+    const src = getPetImageSrc(pet);
+    const [imageFailed, setImageFailed] = useState(false);
+
+    useEffect(() => {
+        setImageFailed(false);
+    }, [src]);
+
+    return src && !imageFailed ? (
+        <img
+            key={src}
+            src={src}
+            alt={pet.name}
+            className={className}
+            loading="lazy"
+            referrerPolicy="no-referrer"
+            onError={() => setImageFailed(true)}
+        />
+    ) : (
+        <div className={cn(className, 'flex items-center justify-center text-neutral-700')}>
+            <ShoppingBag size={22} />
+        </div>
+    );
+};
+
 export const PetShop = ({ onPetClick }: PetShopProps) => {
     const { user, triggerRefresh } = useUser();
     const { addToast } = useToast();
     const { data: shopData, loading, error, execute: fetchPets } = useApi<PetShopResponse>('/shop/pets');
     const [buying, setBuying] = useState<string | null>(null);
 
-    const handleBuy = async (petName: string, index: number) => {
+    const handleBuy = async (pet: Pet) => {
         if (buying) return;
+        const petRef = getPetRef(pet);
 
         window.Telegram?.WebApp?.showConfirm(
-            `Buy ${petName}? It will become your active pet.`,
+            `Buy ${pet.name}? It will become your active pet.`,
             async (confirmed) => {
                 if (confirmed) {
-                    setBuying(petName);
+                    setBuying(petRef);
                     try {
-                        await apiFetch(`/shop/buy/pet/${index}`, { method: 'POST' });
-                        addToast(`Successfully bought ${petName}.`, 'success');
+                        await apiFetch(`/shop/buy/pet/${encodeURIComponent(petRef)}`, { method: 'POST' });
+                        addToast(`Successfully bought ${pet.name}.`, 'success');
                         triggerRefresh();
                     } catch (err: any) {
                         addToast(getErrorMessage(err), 'error');
@@ -77,9 +110,12 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
 
             <div className="grid grid-cols-1 gap-4">
                 {pets.map((pet, i) => {
-                    const isOwned = ownedIds.includes(pet.id) || owned.includes(pet.name);
-                    const isLocked = !isOwned && currentLevel < pet.req_level;
-                    const canAfford = zenithBalance >= pet.zenith_price;
+                    const petRef = getPetRef(pet);
+                    const reqLevel = pet.req_level || 0;
+                    const price = pet.zenith_price || 0;
+                    const isOwned = ownedIds.includes(petRef) || ownedIds.includes(pet.id) || owned.includes(pet.name);
+                    const isLocked = !isOwned && currentLevel < reqLevel;
+                    const canAfford = zenithBalance >= price;
 
                     return (
                         <div
@@ -96,7 +132,7 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
                                     "w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden border-2 bg-brand-midnight shadow-md group-hover:scale-105 transition-transform duration-300",
                                     isOwned ? "border-emerald-500/30" : "border-white/10"
                                 )}>
-                                    <img src={pet.img} alt={pet.name} className="w-full h-full object-cover" />
+                                    <PetShopImage pet={pet} className="w-full h-full object-cover" />
                                 </div>
                                 {isOwned && (
                                     <div className="absolute -top-1.5 -right-1.5 bg-emerald-500 text-white p-1 rounded-lg shadow-sm border border-emerald-400">
@@ -106,7 +142,7 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
                                 {isLocked && (
                                     <div className="absolute inset-0 bg-black/60 rounded-xl flex flex-col items-center justify-center text-white/60 backdrop-blur-[2px]">
                                         <Lock size={18} className="mb-1" />
-                                        <span className="text-[10px] font-bold uppercase tracking-wider">Lvl {pet.req_level}</span>
+                                        <span className="text-[10px] font-bold uppercase tracking-wider">Lvl {reqLevel}</span>
                                     </div>
                                 )}
                             </div>
@@ -121,14 +157,14 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
                                 <div className="flex items-center justify-between gap-3">
                                     <div className="flex flex-col min-w-0">
                                         <span className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-0.5">Price</span>
-                                        <span className="text-sm font-bold text-white tabular-nums">{formatNumber(pet.zenith_price)} Zenith</span>
+                                        <span className="text-sm font-bold text-white tabular-nums">{formatNumber(price)} Zenith</span>
                                     </div>
 
                                     {!isOwned && !isLocked && (
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                handleBuy(pet.name, i);
+                                                handleBuy(pet);
                                             }}
                                             disabled={!!buying || !canAfford}
                                             className={cn(
@@ -138,7 +174,7 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
                                                     : "bg-brand-midnight text-neutral-600 border border-white/5"
                                             )}
                                         >
-                                            {buying === pet.name ? <Loader2 size={14} className="animate-spin" /> : canAfford ? 'Buy' : 'Need more'}
+                                            {buying === petRef ? <Loader2 size={14} className="animate-spin" /> : canAfford ? 'Buy' : 'Need more'}
                                         </button>
                                     )}
 

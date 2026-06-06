@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Activity,
   CheckCircle2,
   Heart,
   Loader2,
@@ -23,12 +22,17 @@ interface MyPetsProps {
   onPetClick?: (pet: Pet) => void;
 }
 
-const getPetKey = (pet?: Pet | null) => String(pet?.id || pet?.name || '');
+const getPetKey = (pet?: Pet | null) => String(pet?.petid || pet?.id || pet?.name || '');
+
+const getPetImageSrc = (pet?: Pet | null) => {
+  const src = String(pet?.img || pet?.img_url || pet?.image || pet?.photo_url || '').trim();
+  return /^https?:\/\//i.test(src) || src.startsWith('/') ? src : '';
+};
 
 const samePet = (a?: Pet | null, b?: Pet | null) => {
   if (!a || !b) return false;
-  const aKeys = new Set([a.id, a.name].filter(Boolean).map(String));
-  return [b.id, b.name].filter(Boolean).some((key) => aKeys.has(String(key)));
+  const aKeys = new Set([a.petid, a.id, a.name].filter(Boolean).map(String));
+  return [b.petid, b.id, b.name].filter(Boolean).some((key) => aKeys.has(String(key)));
 };
 
 const getPetPower = (pet: Pet) => (
@@ -37,17 +41,6 @@ const getPetPower = (pet: Pet) => (
   + Number(pet.spd || 0) * 3
   + Math.round(Number(pet.luck || 0) * 100)
 );
-
-const getPetImageUrl = (pet: Pet) => {
-  const candidates = [
-    pet.img,
-    pet.img_url,
-    pet.image,
-    pet.photo_url,
-  ];
-
-  return candidates.find((value) => typeof value === 'string' && value.trim())?.trim() || '';
-};
 
 const PetImage = ({
   pet,
@@ -58,24 +51,24 @@ const PetImage = ({
   iconSize: number;
   className?: string;
 }) => {
-  const src = getPetImageUrl(pet);
-  const [failedSrc, setFailedSrc] = useState<string | null>(null);
-  const canRenderImage = src && failedSrc !== src;
+  const src = getPetImageSrc(pet);
+  const [imageFailed, setImageFailed] = useState(false);
 
   useEffect(() => {
-    setFailedSrc(null);
+    setImageFailed(false);
   }, [src]);
 
   return (
     <div className={cn('overflow-hidden rounded-lg bg-brand-midnight', className)}>
-      {canRenderImage ? (
+      {src && !imageFailed ? (
         <img
+          key={src}
           src={src}
           alt={pet.name}
           className="h-full w-full object-cover"
           loading="lazy"
           referrerPolicy="no-referrer"
-          onError={() => setFailedSrc(src)}
+          onError={() => setImageFailed(true)}
         />
       ) : (
         <div className="flex h-full w-full items-center justify-center bg-brand-midnight text-neutral-700">
@@ -163,10 +156,16 @@ const ActivePetCard = ({ pet, onOpen }: { pet: Pet; onOpen?: (pet: Pet) => void 
         </p>
 
         <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-white/5 pt-4 sm:grid-cols-4">
-          <InlineStat icon={Activity} label="Level" value={pet.level || 1} tone="success" />
-          <InlineStat icon={Heart} label="Affection" value={`${pet.affection ?? 0}%`} tone="danger" />
+          <InlineStat icon={Shield} label="HP" value={pet.hp ?? 0} tone="success" />
           <InlineStat icon={Swords} label="ATK" value={pet.atk ?? 0} tone="accent" />
           <InlineStat icon={Wind} label="SPD" value={pet.spd ?? 0} />
+          <InlineStat icon={Sparkles} label="Luck" value={`${Math.round(Number(pet.luck || 0) * 100)}%`} tone="accent" />
+        </div>
+
+        <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-semibold text-neutral-500">
+          <span>Lv. {pet.level || 1}</span>
+          <span>{pet.affection ?? 0}% affection</span>
+          <span>{pet.mood || 'Neutral'}</span>
         </div>
 
         <div className="mt-4">
@@ -217,10 +216,11 @@ const PetCard = ({
       </div>
     </button>
 
-    <div className="mt-3 grid grid-cols-3 gap-3 border-t border-white/5 pt-3">
+    <div className="mt-3 grid grid-cols-4 gap-3 border-t border-white/5 pt-3">
       <InlineStat icon={Shield} label="HP" value={pet.hp ?? 0} />
       <InlineStat icon={Swords} label="ATK" value={pet.atk ?? 0} tone="accent" />
       <InlineStat icon={Wind} label="SPD" value={pet.spd ?? 0} />
+      <InlineStat icon={Sparkles} label="Luck" value={`${Math.round(Number(pet.luck || 0) * 100)}%`} tone="accent" />
     </div>
 
     <button

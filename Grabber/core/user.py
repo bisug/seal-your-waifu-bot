@@ -248,15 +248,10 @@ async def add_pet_xp(user_id: int, pet_ref: str, xp_amount: int):
         level = pet.get("level", 1)
         xp = pet.get("xp", 0) + xp_amount
         xp_needed = level * 100
-        original_level = level
         while xp >= xp_needed:
             xp -= xp_needed
             level += 1
             xp_needed = level * 100
-
-        luck = pet.get("luck", 0.1)
-        if level > original_level:
-            luck = round(luck + ((level - original_level) * 0.002), 3)
 
         filt = get_user_filter(user_id)
         if user.get("version") is None:
@@ -267,10 +262,9 @@ async def add_pet_xp(user_id: int, pet_ref: str, xp_amount: int):
             filt,
             {
                 "$set": {
-                    f"pets.{pet_index}.id": get_pet_key(pet),
+                    f"pets.{pet_index}.petid": get_pet_key(pet),
                     f"pets.{pet_index}.xp": xp,
                     f"pets.{pet_index}.level": level,
-                    f"pets.{pet_index}.luck": luck,
                 },
                 "$inc": {"version": 1},
             },
