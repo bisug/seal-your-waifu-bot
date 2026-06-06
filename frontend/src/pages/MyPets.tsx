@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Activity,
   CheckCircle2,
@@ -37,6 +37,54 @@ const getPetPower = (pet: Pet) => (
   + Number(pet.spd || 0) * 3
   + Math.round(Number(pet.luck || 0) * 100)
 );
+
+const getPetImageUrl = (pet: Pet) => {
+  const candidates = [
+    pet.img,
+    pet.img_url,
+    pet.image,
+    pet.photo_url,
+  ];
+
+  return candidates.find((value) => typeof value === 'string' && value.trim())?.trim() || '';
+};
+
+const PetImage = ({
+  pet,
+  iconSize,
+  className,
+}: {
+  pet: Pet;
+  iconSize: number;
+  className?: string;
+}) => {
+  const src = getPetImageUrl(pet);
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const canRenderImage = src && failedSrc !== src;
+
+  useEffect(() => {
+    setFailedSrc(null);
+  }, [src]);
+
+  return (
+    <div className={cn('overflow-hidden rounded-lg bg-brand-midnight', className)}>
+      {canRenderImage ? (
+        <img
+          src={src}
+          alt={pet.name}
+          className="h-full w-full object-cover"
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          onError={() => setFailedSrc(src)}
+        />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center bg-brand-midnight text-neutral-700">
+          <PawPrint size={iconSize} />
+        </div>
+      )}
+    </div>
+  );
+};
 
 const StatPill = ({
   icon: Icon,
@@ -101,15 +149,7 @@ const ActivePetCard = ({ pet, onOpen }: { pet: Pet; onOpen?: (pet: Pet) => void 
     className="w-full rounded-lg border border-brand-accent/20 bg-brand-accent/10 p-4 text-left transition-colors active:scale-[0.99]"
   >
     <div className="grid grid-cols-[84px_minmax(0,1fr)] gap-4 sm:grid-cols-[112px_minmax(0,1fr)]">
-      <div className="aspect-square overflow-hidden rounded-lg border border-brand-accent/25 bg-brand-midnight">
-        {pet.img ? (
-          <img src={pet.img} alt={pet.name} className="h-full w-full object-cover" />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-neutral-700">
-            <PawPrint size={24} />
-          </div>
-        )}
-      </div>
+      <PetImage pet={pet} iconSize={24} className="aspect-square border border-brand-accent/25" />
 
       <div className="min-w-0 self-center">
         <div className="mb-2 flex min-w-0 items-center gap-2">
@@ -161,15 +201,7 @@ const PetCard = ({
       onClick={() => onOpen?.(pet)}
       className="grid w-full grid-cols-[64px_minmax(0,1fr)] gap-3 text-left"
     >
-      <div className="aspect-square overflow-hidden rounded-lg border border-white/10 bg-brand-midnight">
-        {pet.img ? (
-          <img src={pet.img} alt={pet.name} className="h-full w-full object-cover" />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-neutral-700">
-            <PawPrint size={20} />
-          </div>
-        )}
-      </div>
+      <PetImage pet={pet} iconSize={20} className="aspect-square border border-white/10" />
 
       <div className="min-w-0 py-0.5">
         <div className="mb-1 flex min-w-0 items-center gap-2">

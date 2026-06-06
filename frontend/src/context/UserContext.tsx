@@ -35,6 +35,9 @@ export interface Pet {
   ability: string;
   mood: string;
   img: string;
+  img_url?: string;
+  image?: string;
+  photo_url?: string;
   level: number;
   xp: number;
   xp_needed: number;
