@@ -41,6 +41,8 @@ class Database:
         self.daily_shop = self.db['daily_shop_inventory']
         self.scraped_characters = self.db['scraped_characters']
         self.star_orders = self.db['star_orders']
+        self.global_user_bans = self.db['global_user_bans']
+        self.global_group_bans = self.db['global_group_bans']
 
     async def ensure_indexes(self):
         """Create performance indexes for all collections."""
@@ -81,6 +83,10 @@ class Database:
             (self.star_orders,       lambda c: c.create_index("telegram_payment_charge_id", unique=True, sparse=True)),
             (self.star_orders,       lambda c: c.create_index([("user_id", 1), ("status", 1), ("created_at", -1)])),
             (self.star_orders,       lambda c: c.create_index("expires_at_dt", expireAfterSeconds=0)),
+            (self.global_user_bans,  lambda c: c.create_index("user_id", unique=True)),
+            (self.global_group_bans, lambda c: c.create_index("chat_id", unique=True)),
+            (self.global_user_bans,  lambda c: c.create_index("expires_at_dt", expireAfterSeconds=0)),
+            (self.global_group_bans, lambda c: c.create_index("expires_at_dt", expireAfterSeconds=0)),
         ]
         failed = 0
         for collection, idx_fn in indexes:
@@ -148,6 +154,8 @@ deletion_queue_collection = seal_db.deletion_queue
 daily_shop_collection = seal_db.daily_shop
 scraped_characters_collection = seal_db.scraped_characters
 star_orders_collection = seal_db.star_orders
+global_user_bans_collection = seal_db.global_user_bans
+global_group_bans_collection = seal_db.global_group_bans
 
 
 async def close_connections():
