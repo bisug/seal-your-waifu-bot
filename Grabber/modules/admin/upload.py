@@ -4,7 +4,8 @@ import shlex
 from pyrogram import enums, filters, types
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-from Grabber import GALLERY_CHANNEL_ID, LOGGER, app, sudo_filter
+from Grabber import GALLERY_CHANNEL_ID, LOGGER, app, sudo_filter, uploader_filter
+from Grabber.core.roles import format_upload_reward, grant_upload_reward
 from Grabber.core.uploads import (
     UploadError,
     download_media_url,
@@ -98,7 +99,7 @@ def _split_media_args(args: list[str], is_reply: bool, required_count: int) -> t
     return media_url, values
 
 
-@app.on_message(filters.command("upload") & sudo_filter)
+@app.on_message(filters.command("upload") & uploader_filter)
 @handle_errors
 async def upload_waifu_handler(_, message: types.Message):
     try:
@@ -137,11 +138,15 @@ async def upload_waifu_handler(_, message: types.Message):
             added_by_name=message.from_user.first_name,
         )
         final_url = character["img_url"]
+        reward = await grant_upload_reward(message.from_user.id, source="bot_character")
+        reward_text = format_upload_reward(reward)
+        reward_line = f"\nReward: <code>{html_escape(reward_text)}</code>" if reward_text else ""
         await status.edit_text(
             f"✅ <b>Waifu Uploaded!</b>\n"
             f"ID: <code>{character['id']}</code>\n"
             f"Name: {html_escape(character['name'])}\n"
-            f"Host: {'Catbox' if 'catbox' in final_url else 'ImgBB'}",
+            f"Host: {'Catbox' if 'catbox' in final_url else 'ImgBB'}"
+            f"{reward_line}",
             parse_mode=enums.ParseMode.HTML,
         )
     except UploadError as e:
@@ -153,7 +158,7 @@ async def upload_waifu_handler(_, message: types.Message):
         remove_temp_file(temp_path)
 
 
-@app.on_message(filters.command("uploadpet") & sudo_filter)
+@app.on_message(filters.command("uploadpet") & uploader_filter)
 @handle_errors
 async def upload_pet_handler(_, message: types.Message):
     try:
@@ -209,12 +214,16 @@ async def upload_pet_handler(_, message: types.Message):
             enabled=enabled,
             uploaded_by=message.from_user.id,
         )
+        reward = await grant_upload_reward(message.from_user.id, source="bot_pet")
+        reward_text = format_upload_reward(reward)
+        reward_line = f"\nReward: <code>{html_escape(reward_text)}</code>" if reward_text else ""
         await status.edit_text(
             f"✅ <b>Pet Uploaded!</b>\n"
             f"ID: <code>{html_escape(pet['petid'])}</code>\n"
             f"Name: {html_escape(pet['name'])}\n"
             f"Price: <code>{pet['zenith_price']}</code> Zenith\n"
-            f"Enabled: <code>{str(pet['enabled'])}</code>",
+            f"Enabled: <code>{str(pet['enabled'])}</code>"
+            f"{reward_line}",
             parse_mode=enums.ParseMode.HTML,
         )
     except UploadError as e:

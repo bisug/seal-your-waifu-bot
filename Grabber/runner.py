@@ -12,7 +12,8 @@ async def start_bots():
 
     try:
         from Grabber.database import sudo_collection
-        from Grabber import sudo_users, LOGGER
+        from Grabber import sudo_roles, sudo_users, LOGGER
+        from Grabber.core.roles import MODERATOR_ROLE, normalize_role
         
         # Load Sudo Users from Database
         cursor = sudo_collection.find({})
@@ -20,10 +21,17 @@ async def start_bots():
         
         loaded_count = 0
         for s in db_sudos:
-            user_id = s.get('user_id')
-            if user_id and user_id not in sudo_users:
+            try:
+                user_id = int(s.get('user_id'))
+            except (TypeError, ValueError):
+                continue
+            role = normalize_role(s.get("role")) or MODERATOR_ROLE
+            sudo_roles[user_id] = role
+            if role == MODERATOR_ROLE and user_id not in sudo_users:
                 sudo_users.append(user_id)
                 loaded_count += 1
+            elif role != MODERATOR_ROLE and user_id in sudo_users:
+                sudo_users.remove(user_id)
                 
         if loaded_count > 0:
             LOGGER.info(f"Loaded {loaded_count} sudo users from database.")
