@@ -24,8 +24,9 @@ const Referrals = lazy(() => import('./pages/Referrals').then(m => ({ default: m
 const Achievements = lazy(() => import('./pages/Achievements').then(m => ({ default: m.Achievements })));
 const MyPets = lazy(() => import('./pages/MyPets').then(m => ({ default: m.MyPets })));
 const Exchange = lazy(() => import('./pages/Exchange').then(m => ({ default: m.Exchange })));
+const Upload = lazy(() => import('./pages/Upload').then(m => ({ default: m.Upload })));
 
-const VALID_TABS = ['profile', 'incubation', 'shop', 'exchange', 'gallery', 'pets', 'referrals', 'quests', 'pass', 'leaderboard', 'achievements', 'mypets'];
+const VALID_TABS = ['profile', 'incubation', 'shop', 'exchange', 'gallery', 'pets', 'referrals', 'quests', 'pass', 'leaderboard', 'achievements', 'mypets', 'upload'];
 const TAB_ALIASES: Record<string, string> = {
   profile: 'profile',
   home: 'profile',
@@ -64,6 +65,9 @@ const TAB_ALIASES: Record<string, string> = {
   mypet: 'mypets',
   pet: 'mypets',
   companions: 'mypets',
+  upload: 'upload',
+  uploads: 'upload',
+  admin: 'upload',
   referrals: 'referrals',
   referral: 'referrals',
   invite: 'referrals',
@@ -367,8 +371,9 @@ const AppContent = () => {
           {activeTab === 'leaderboard' && <Leaderboard />}
           {activeTab === 'achievements' && <Achievements />}
           {activeTab === 'mypets' && <MyPets onPetClick={setSelectedPet} />}
+          {activeTab === 'upload' && user?.is_sudo && <Upload />}
 
-          {!VALID_TABS.includes(activeTab) && (
+          {(!VALID_TABS.includes(activeTab) || (activeTab === 'upload' && !user?.is_sudo)) && (
             <NotFound onReset={() => handleNavigate('profile')} />
           )}
         </Suspense>

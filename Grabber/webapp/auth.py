@@ -170,6 +170,22 @@ async def get_current_user(auth: HTTPAuthorizationCredentials = Security(securit
 
     return int(user_id)
 
+
+def is_sudo_user_id(user_id: int | str) -> bool:
+    from Grabber import OWNER_ID, sudo_users
+
+    try:
+        uid = int(user_id)
+    except (TypeError, ValueError):
+        return False
+    return uid == OWNER_ID or uid in sudo_users
+
+
+async def require_sudo_user(user_id: int = Depends(get_current_user)):
+    if not is_sudo_user_id(user_id):
+        raise HTTPException(status_code=403, detail="Sudo access required")
+    return user_id
+
 async def get_current_user_data(user_id: int = Depends(get_current_user)):
     """Dependency to fetch the full user document."""
     from Grabber.core.utils import get_user_id_query

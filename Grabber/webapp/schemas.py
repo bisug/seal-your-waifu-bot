@@ -66,6 +66,7 @@ class UserProfileResponse(BaseModel):
     first_name: str = "User"
     username: Optional[str] = None
     avatar: Optional[str] = None
+    is_sudo: bool = False
     stats: StatsModel
     achievements: List[AchievementModel] = Field(default_factory=list)
     titles: TitlesModel

@@ -1,10 +1,11 @@
 import React, { useEffect } from 'react';
 import {
   X, User, Egg, ShoppingBag, Search, Dog, ArrowLeftRight,
-  Zap, Trophy, Swords, Users, Award, PawPrint
+  Zap, Trophy, Swords, Users, Award, PawPrint, UploadCloud
 } from 'lucide-react';
 import { cn } from '../utils';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useUser } from '../context/UserContext';
 
 interface NavItem {
   id: string;
@@ -60,6 +61,17 @@ const SECTIONS: NavSection[] = [
 ];
 
 export const NavigationDrawer = ({ isOpen, onClose, activeTab, onNavigate }: NavigationDrawerProps) => {
+  const { user } = useUser();
+  const sections = user?.is_sudo
+    ? [
+        ...SECTIONS,
+        {
+          title: "Admin",
+          items: [{ id: 'upload', label: 'Upload', icon: UploadCloud }],
+        },
+      ]
+    : SECTIONS;
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -107,7 +119,7 @@ export const NavigationDrawer = ({ isOpen, onClose, activeTab, onNavigate }: Nav
             </div>
 
             <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
-              {SECTIONS.map((section) => (
+              {sections.map((section) => (
                 <div key={section.title} className="space-y-2">
                   <h3 className="px-2 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
                     {section.title}
