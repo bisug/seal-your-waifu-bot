@@ -1,4 +1,6 @@
+import asyncio
 import re
+import time
 from collections import Counter
 from typing import List, Optional
 
@@ -13,13 +15,22 @@ from Grabber.webapp.auth import get_current_user, get_current_user_data
 from Grabber.webapp.schemas import PaginatedResponse
 
 router = APIRouter()
+RARITY_CACHE_TTL = 300
+_rarity_cache: dict[str, object] = {"expires_at": 0.0, "items": []}
 
 
 @router.get("/rarities")
 async def get_rarities(user_id: int = Depends(get_current_user)):
+    now = time.monotonic()
+    if now < float(_rarity_cache["expires_at"]) and _rarity_cache["items"]:
+        return _rarity_cache["items"]
+
     rarities = await collection.distinct("rarity")
     rarities = [r for r in rarities if r]
-    return sorted(rarities)
+    sorted_rarities = sorted(rarities)
+    _rarity_cache["items"] = sorted_rarities
+    _rarity_cache["expires_at"] = now + RARITY_CACHE_TTL
+    return sorted_rarities
 
 @router.get("/character/{char_id}")
 async def get_character(char_id: str, user_id: int = Depends(get_current_user)):
@@ -223,7 +234,9 @@ async def get_gallery(
     limit: int = Query(24, ge=1, le=50),
     search: Optional[str] = None,
     rarity: Optional[str] = None,
-    user: dict = Depends(get_current_user_data)
+    sort: str = Query("numeric", pattern="^(numeric|alphabet)$"),
+    order: str = Query("asc", pattern="^(asc|desc)$"),
+    user_id: int = Depends(get_current_user)
 ):
     match_query = {}
     if search:
@@ -235,21 +248,57 @@ async def get_gallery(
     if rarity:
         match_query["rarity"] = rarity.strip()
 
-    skip = (page - 1) * limit
-    pipeline = [
-        {"$match": match_query},
-        {"$facet": {
-            "metadata": [{"$count": "total"}],
-            "data": [{"$skip": skip}, {"$limit": limit}]
-        }}
-    ]
-    cursor = await collection.aggregate(pipeline)
-    result = await cursor.to_list(length=1)
-    total = result[0]["metadata"][0]["total"] if result and result[0].get("metadata") else 0
-    items = result[0]["data"] if result else []
+    sort_direction = 1 if order == "asc" else -1
+    if sort == "alphabet":
+        sort_spec = {"_sort_name": sort_direction, "name": sort_direction, "id": 1}
+    else:
+        sort_spec = {"_id_is_numeric": -1, "_numeric_id": sort_direction, "id": sort_direction}
 
-    # Optimization: Use user doc from get_current_user_data to avoid redundant DB call
-    owned_ids = set(c.get("id") for c in (user.get("characters") or []))
+    skip = (page - 1) * limit
+    projection = {"id": 1, "name": 1, "anime": 1, "rarity": 1, "img_url": 1}
+    aggregate_projection = {"_id": 1, **projection}
+
+    async def fetch_items() -> list[dict]:
+        if sort == "alphabet":
+            cursor = collection.find(match_query, projection).sort([
+                ("name", sort_direction),
+                ("id", 1),
+            ]).skip(skip).limit(limit)
+            return await cursor.to_list(length=limit)
+
+        pipeline = [
+            {"$match": match_query},
+            {"$addFields": {
+                "_id_is_numeric": {
+                    "$regexMatch": {
+                        "input": {"$toString": "$id"},
+                        "regex": "^[0-9]+$"
+                    }
+                },
+                "_numeric_id": {
+                    "$convert": {
+                        "input": "$id",
+                        "to": "int",
+                        "onError": None,
+                        "onNull": None
+                    }
+                },
+            }},
+            {"$sort": sort_spec},
+            {"$skip": skip},
+            {"$limit": limit},
+            {"$project": aggregate_projection},
+        ]
+        cursor = await collection.aggregate(pipeline)
+        return await cursor.to_list(length=limit)
+
+    total, owner_doc, items = await asyncio.gather(
+        collection.count_documents(match_query),
+        user_collection.find_one(get_user_id_query(user_id), {"characters.id": 1, "_id": 0}),
+        fetch_items(),
+    )
+
+    owned_ids = set(c.get("id") for c in ((owner_doc or {}).get("characters") or []))
 
     for item in items:
         item["_id"] = str(item["_id"])
