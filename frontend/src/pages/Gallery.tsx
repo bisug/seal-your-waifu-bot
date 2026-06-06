@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { apiFetch } from '../api/client';
 import { Card } from '../components/character/Card';
 import { CardSkeleton } from '../components/ui/Skeleton';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ErrorState } from '../components/ui/ErrorState';
-import { Search, Loader2, Users } from 'lucide-react';
+import { ArrowDown10, ArrowDownZA, ArrowUp01, ArrowUpAZ, ChevronDown, Search, Loader2, Users, type LucideIcon } from 'lucide-react';
 import { useInfiniteGrid } from '../hooks/useInfiniteGrid';
 import { Character } from '../context/UserContext';
 import { cn } from '../utils';
@@ -13,7 +13,29 @@ interface GalleryProps {
   onCharClick: (character: Character) => void;
 }
 
+type CatalogSort = 'numeric' | 'alphabet';
+type CatalogOrder = 'asc' | 'desc';
+
+const SORT_OPTIONS: Array<{
+  sort: CatalogSort;
+  order: CatalogOrder;
+  label: string;
+  Icon: LucideIcon;
+}> = [
+  { sort: 'numeric', order: 'asc', label: 'ID Asc', Icon: ArrowUp01 },
+  { sort: 'numeric', order: 'desc', label: 'ID Desc', Icon: ArrowDown10 },
+  { sort: 'alphabet', order: 'asc', label: 'A-Z', Icon: ArrowUpAZ },
+  { sort: 'alphabet', order: 'desc', label: 'Z-A', Icon: ArrowDownZA },
+];
+
+const cleanRarityLabel = (rarity: string) => (
+  rarity.replace(/[\u2700-\u27bf]|[\u2190-\u21ff]|[\u2000-\u206f]|[\u2600-\u26ff]|[\u2b00-\u2bff]|[\u00a0-\u00bf]|\u2013|\u2014/g, '').trim()
+);
+
 export const Gallery = ({ onCharClick }: GalleryProps) => {
+  const [sort, setSort] = useState<CatalogSort>('numeric');
+  const [order, setOrder] = useState<CatalogOrder>('asc');
+  const gridParams = useMemo(() => ({ sort, order }), [sort, order]);
   const {
     items,
     loading,
@@ -24,9 +46,13 @@ export const Gallery = ({ onCharClick }: GalleryProps) => {
     lastElementRef,
     error,
     refresh
-  } = useInfiniteGrid<Character>('/gallery');
+  } = useInfiniteGrid<Character>('/gallery', { params: gridParams, limit: 42 });
 
   const [availableRarities, setAvailableRarities] = useState<string[]>([]);
+  const rarityOptions = useMemo(
+    () => availableRarities.map((value) => ({ value, label: cleanRarityLabel(value) || value })),
+    [availableRarities],
+  );
 
   useEffect(() => {
     apiFetch('/rarities').then(setAvailableRarities).catch(console.error);
@@ -51,32 +77,48 @@ export const Gallery = ({ onCharClick }: GalleryProps) => {
           />
         </div>
 
-        <div className="flex space-x-2 overflow-x-auto no-scrollbar pb-1">
-          <button
-            onClick={() => setRarity('')}
-            className={cn(
-              "px-4 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-all border",
-              rarity === ''
-              ? "bg-white text-brand-midnight border-white shadow-sm"
-              : "bg-brand-deep text-neutral-400 border-white/5 hover:border-white/10 hover:text-neutral-200"
-            )}
+        <div className="flex flex-wrap gap-2 mb-3">
+          {SORT_OPTIONS.map(({ sort: optionSort, order: optionOrder, label, Icon }) => {
+            const active = sort === optionSort && order === optionOrder;
+            return (
+              <button
+                key={`${optionSort}-${optionOrder}`}
+                type="button"
+                title={`Sort ${label}`}
+                onClick={() => {
+                  setSort(optionSort);
+                  setOrder(optionOrder);
+                }}
+                className={cn(
+                  "inline-flex h-9 items-center gap-2 px-3 rounded-lg text-xs font-bold whitespace-nowrap transition-all border",
+                  active
+                    ? "bg-brand-accent text-brand-midnight border-brand-accent shadow-sm"
+                    : "bg-brand-deep text-neutral-400 border-white/5 hover:border-white/10 hover:text-neutral-200"
+                )}
+              >
+                <Icon size={14} />
+                <span>{label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="relative max-w-xs">
+          <select
+            aria-label="Filter by rarity"
+            value={rarity}
+            onChange={(event) => setRarity(event.target.value)}
+            className="h-10 w-full appearance-none rounded-lg border border-white/10 bg-brand-deep px-3 pr-9 text-sm font-semibold text-white outline-none transition-colors focus:border-brand-accent"
           >
-            All Rarities
-          </button>
-          {availableRarities.map((r) => (
-            <button 
-              key={r}
-              onClick={() => setRarity(r)}
-              className={cn(
-                "px-4 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-all border",
-                rarity === r 
-                ? "bg-white text-brand-midnight border-white shadow-sm"
-                : "bg-brand-deep text-neutral-400 border-white/5 hover:border-white/10 hover:text-neutral-200"
-              )}
-            >
-              {r.replace(/[\u2700-\u27bf]|[\u2190-\u21ff]|[\u2000-\u206f]|[\u2600-\u26ff]|[\u2b00-\u2bff]|[\u00a0-\u00bf]|\u2013|\u2014/g, '').trim()}
-            </button>
-          ))}
+            <option value="">All Rarities</option>
+            {rarityOptions.map(({ value, label }) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+          <ChevronDown
+            size={16}
+            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500"
+          />
         </div>
       </div>
 
@@ -88,7 +130,7 @@ export const Gallery = ({ onCharClick }: GalleryProps) => {
             <div
               key={char.id}
               ref={i === items.length - 1 ? lastElementRef : null}
-              className="relative group"
+              className="relative group [content-visibility:auto] [contain-intrinsic-size:180px]"
             >
               <Card character={char} onClick={() => onCharClick(char)} />
             </div>

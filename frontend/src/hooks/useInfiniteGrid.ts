@@ -3,6 +3,20 @@ import { ApiError, apiFetch, getErrorMessage } from '../api/client';
 
 const gridCache = new Map<string, { items: any[], page: number, hasMore: boolean, timestamp: number }>();
 const CACHE_TTL = 1000 * 60 * 5; // 5 mins
+const MAX_CACHE_ENTRIES = 24;
+
+const writeGridCache = (
+  key: string,
+  value: { items: any[], page: number, hasMore: boolean, timestamp: number },
+) => {
+  if (gridCache.has(key)) gridCache.delete(key);
+  gridCache.set(key, value);
+  while (gridCache.size > MAX_CACHE_ENTRIES) {
+    const oldest = gridCache.keys().next().value;
+    if (!oldest) break;
+    gridCache.delete(oldest);
+  }
+};
 
 interface InfiniteGridOptions {
   limit?: number;
@@ -22,6 +36,7 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
   const observer = useRef<IntersectionObserver | null>(null);
   const searchAbortController = useRef<AbortController | null>(null);
   const requestSeq = useRef(0);
+  const paramsKey = JSON.stringify(options.params || {});
 
   const lastElementRef = useCallback((node: HTMLElement | null) => {
     if (loading) return;
@@ -34,7 +49,7 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
     if (node) observer.current.observe(node);
   }, [loading, hasMore]);
 
-  const fetchData = useCallback(async (isNew = false) => {
+  const fetchData = useCallback(async (isNew = false, force = false) => {
     const requestId = ++requestSeq.current;
     setLoading(true);
     setError(null);
@@ -47,18 +62,18 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
     }
 
     const currentPage = isNew ? 1 : page;
+    const optionParams = JSON.parse(paramsKey) as Record<string, any>;
     const queryParams = new URLSearchParams({
       page: currentPage.toString(),
       limit: (options.limit || 24).toString(),
       search: search.trim(),
       rarity: rarity.trim(),
-      ...options.params
+      ...optionParams
     });
 
-    const cacheKey = `${endpoint}?${search.trim()}:${rarity.trim()}:${options.limit || 24}:${JSON.stringify(options.params || {})}`;
+    const cacheKey = `${endpoint}?${search.trim()}:${rarity.trim()}:${options.limit || 24}:${paramsKey}`;
 
-    // On exact first mount, try to restore from cache
-    if (!initialized && isNew) {
+    if (isNew && !force) {
         if (gridCache.has(cacheKey)) {
             const cached = gridCache.get(cacheKey)!;
             if (Date.now() - cached.timestamp < CACHE_TTL) {
@@ -92,11 +107,14 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
 
       setItems(newItems);
       setError(null);
-      const newHasMore = data.items.length === (options.limit || 24);
+      const total = typeof data.total === 'number' ? data.total : null;
+      const newHasMore = total === null
+        ? data.items.length === (options.limit || 24)
+        : currentPage * (options.limit || 24) < total;
       setHasMore(newHasMore);
 
       // Save to cache
-      gridCache.set(cacheKey, {
+      writeGridCache(cacheKey, {
           items: newItems,
           page: currentPage,
           hasMore: newHasMore,
@@ -114,7 +132,7 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
         setLoading(false);
       }
     }
-  }, [endpoint, page, search, rarity, options.limit, options.params, items, initialized]);
+  }, [endpoint, page, search, rarity, options.limit, paramsKey, items, initialized]);
 
   // Initial fetch and search/rarity debounce
   useEffect(() => {
@@ -124,7 +142,7 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
     }, 400);
     return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, rarity]);
+  }, [search, rarity, paramsKey]);
 
   // Infinite scroll trigger
   useEffect(() => {
@@ -139,7 +157,7 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
 
   const refresh = useCallback(() => {
       setPage(1);
-      fetchData(true);
+      fetchData(true, true);
   }, [fetchData]);
 
   return {
