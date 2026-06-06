@@ -242,9 +242,6 @@ async def start_handler(_, message: types.Message):
                 if referrer_id != user_id:
                     upgraded_pet = copy_default_pet()
                     upgraded_pet["level"] = 10
-                    upgraded_pet["hp"] += 45
-                    upgraded_pet["atk"] += 18
-                    upgraded_pet["spd"] += 9
                     await user_collection.update_one(
                         {"id": get_user_id(user_id)},
                         add_user_set_on_insert(

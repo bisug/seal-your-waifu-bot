@@ -21,6 +21,7 @@ class StatsModel(BaseModel):
 
 class PetModel(BaseModel):
     id: str
+    petid: Optional[str] = None
     name: str
     level: int
     xp: int

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Activity, Loader2, Heart, Zap, X, Swords, Wind, Sparkles, Check, Lock, PawPrint } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Loader2, Heart, Zap, X, Swords, Wind, Sparkles, Check, Lock, PawPrint } from 'lucide-react';
 import { useToast } from '../ui/Toast';
 import { apiFetch, getErrorMessage } from '../../api/client';
 import { cn } from '../../utils';
@@ -18,13 +18,18 @@ const StatBox = ({ icon: Icon, label, value, colorClass }) => (
     </div>
 );
 
+const getPetImageSrc = (pet) => {
+    const src = String(pet?.img || pet?.img_url || pet?.image || pet?.photo_url || '').trim();
+    return /^https?:\/\//i.test(src) || src.startsWith('/') ? src : '';
+};
+
 export const PetActionModal = ({ selectedPet, setSelectedPet, user }) => {
     const { addToast } = useToast();
     const { triggerRefresh, liteMode } = useUser();
     const [purchaseStage, setPurchaseStage] = useState('idle');
     const [syncStage, setSyncStage] = useState('idle');
-    const petImage = selectedPet?.img || selectedPet?.img_url || selectedPet?.image || selectedPet?.photo_url || '';
     const [imageFailed, setImageFailed] = useState(false);
+    const petImage = selectedPet ? getPetImageSrc(selectedPet) : '';
 
     useEffect(() => {
         if (!selectedPet) {
@@ -35,14 +40,15 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }) => {
 
     useEffect(() => {
         setImageFailed(false);
-    }, [petImage]);
+    }, [petImage, selectedPet]);
 
     if (!selectedPet) return null;
 
     const ownedPets = user?.pets || [];
-    const selectedRef = selectedPet.id || selectedPet.name;
-    const isOwned = ownedPets.some(p => (p.id || p.name) === selectedRef || p.name === selectedPet.name);
-    const isActive = (user?.current_pet?.id || user?.current_pet?.name) === selectedRef;
+    const selectedRef = String(selectedPet.petid || selectedPet.id || selectedPet.name || '');
+    const isOwned = ownedPets.some(p => [p.petid, p.id, p.name].filter(Boolean).includes(selectedRef) || p.name === selectedPet.name);
+    const activeRef = user?.current_pet?.petid || user?.current_pet?.id || user?.current_pet?.name;
+    const isActive = activeRef === selectedRef;
     const isLocked = (user?.stats?.level || 0) < (selectedPet.req_level || 0);
     const zenithBalance = user?.stats?.zenith ?? user?.zenith ?? 0;
     const canAfford = zenithBalance >= (selectedPet.zenith_price || 0);
@@ -50,7 +56,7 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }) => {
     const handleBuy = async () => {
         setPurchaseStage('buying');
         try {
-            await apiFetch(`/shop/buy/pet/${selectedPet.shopIndex}`, { method: 'POST' });
+            await apiFetch(`/shop/buy/pet/${encodeURIComponent(selectedRef)}`, { method: 'POST' });
             window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
             addToast(`Acquired ${selectedPet.name}!`, 'success');
             triggerRefresh();
@@ -105,6 +111,7 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }) => {
                         <div className="w-24 h-24 rounded-xl overflow-hidden border-2 border-brand-accent/20 bg-black/40 shadow-2xl">
                             {petImage && !imageFailed ? (
                                 <img
+                                    key={petImage}
                                     src={petImage}
                                     alt={selectedPet.name}
                                     className="w-full h-full object-cover"
@@ -136,10 +143,10 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }) => {
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 mb-10">
-                        <StatBox icon={Swords} label="Ability" value={selectedPet.ability || 'None'} colorClass="text-brand-accent" />
-                        <StatBox icon={Heart} label="Affection" value={`${selectedPet.affection ?? 0}%`} colorClass="text-red-500" />
-                        <StatBox icon={Wind} label="Speed" value={selectedPet.spd ?? 0} colorClass="text-blue-400" />
-                        <StatBox icon={Activity} label="Level" value={selectedPet.level || 1} colorClass="text-emerald-400" />
+                        <StatBox icon={Heart} label="HP" value={selectedPet.hp ?? 0} colorClass="text-red-500" />
+                        <StatBox icon={Swords} label="ATK" value={selectedPet.atk ?? 0} colorClass="text-brand-accent" />
+                        <StatBox icon={Wind} label="SPD" value={selectedPet.spd ?? 0} colorClass="text-blue-400" />
+                        <StatBox icon={Sparkles} label="Luck" value={`${Math.round(Number(selectedPet.luck || 0) * 100)}%`} colorClass="text-amber-400" />
                     </div>
 
                     <div className="space-y-4">

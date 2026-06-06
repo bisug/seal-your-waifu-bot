@@ -8,18 +8,28 @@ from Grabber.core.user import add_pet_xp, get_user_filter
 from Grabber.core.utils import html_escape, reply_media_dynamic
 from Grabber.core.pets import (
     DEFAULT_PET,
-    PET_SHOP,
     ensure_user_pet_state,
     find_pet_index,
     get_effective_affection,
     get_pet_key,
+    get_shop_pet,
+    list_shop_pets,
     normalize_pet,
     pet_for_storage,
     pet_matches,
 )
 async def send_petshop_page(message_or_query_obj, page: int, user_id: int):
     from Grabber.core.progression import get_user_progress
-    pet = PET_SHOP[page]
+    shop_pets = await list_shop_pets()
+    if not shop_pets:
+        text = "The pet shop is empty right now."
+        if isinstance(message_or_query_obj, types.CallbackQuery):
+            await message_or_query_obj.message.edit_text(text, parse_mode=enums.ParseMode.HTML)
+        else:
+            await message_or_query_obj.reply_text(text, parse_mode=enums.ParseMode.HTML)
+        return
+    page = page % len(shop_pets)
+    pet = shop_pets[page]
     user_progress = await get_user_progress(user_id)
     user_level = user_progress["level"]
     req_level = pet.get("req_level", 0)
@@ -74,14 +84,12 @@ async def petshop_cmd(_, message: types.Message):
     markup = builder.build()
     text = "<b>Open the Mini App to visit the Pet Shop!</b>"
     await message.reply_text(text, reply_markup=markup, parse_mode=enums.ParseMode.HTML)
-async def perform_pet_purchase(user_id, pet_index: int):
+async def perform_pet_purchase(user_id, pet_ref):
     from Grabber.core.progression import get_user_progress
-    try:
-        if pet_index < 0:
-            raise IndexError
-        pet = normalize_pet(PET_SHOP[pet_index])
-    except IndexError:
+    pet = await get_shop_pet(pet_ref)
+    if not pet:
         return "Invalid pet selection."
+    pet = normalize_pet(pet)
     user_progress = await get_user_progress(user_id)
     user_level = user_progress["level"]
     req_level = pet.get("req_level", 0)
@@ -101,6 +109,7 @@ async def perform_pet_purchase(user_id, pet_index: int):
     pet_doc = pet_for_storage(pet)
     purchase_filter = get_user_filter(user_id)
     purchase_filter["zenith"] = {"$gte": price}
+    purchase_filter["pets.petid"] = {"$ne": pet_id}
     purchase_filter["pets.id"] = {"$ne": pet_id}
     purchase_filter["pets.name"] = {"$ne": pet["name"]}
     update_result = await user_collection.update_one(
@@ -117,16 +126,15 @@ async def perform_pet_purchase(user_id, pet_index: int):
     return True
 async def buypet_cmd(_, message: types.Message):
     if len(message.command) < 2:
-        return await message.reply_text("Usage: <code>/buypet &lt;pet_id&gt;</code>", parse_mode=enums.ParseMode.HTML)
-    try:
-        pet_id = int(message.command[1])
-    except ValueError:
-        return await message.reply_text("Invalid pet ID.", parse_mode=enums.ParseMode.HTML)
-    result = await perform_pet_purchase(message.from_user.id, pet_id)
+        return await message.reply_text("Usage: <code>/buypet &lt;petid&gt;</code>", parse_mode=enums.ParseMode.HTML)
+    pet_ref = message.command[1]
+    result = await perform_pet_purchase(message.from_user.id, pet_ref)
     if result is True:
-        pet = PET_SHOP[pet_id]
+        pet = await get_shop_pet(pet_ref)
+        if not pet:
+            return await message.reply_text("Pet purchased successfully.", parse_mode=enums.ParseMode.HTML)
         await reply_media_dynamic(message, pet["img"],
-            caption=f"You bought <b>{html_escape(pet['name'])}</b> with {int(pet['luck']*100)}% luck!",
+            caption=f"You bought <b>{html_escape(pet['name'])}</b>.",
             parse_mode=enums.ParseMode.HTML
         )
     else:
@@ -218,14 +226,18 @@ async def shop_mypet_navigation_callback(_, query: types.CallbackQuery):
         return await query.answer("This is not your menu!", show_alert=True)
     await query.answer()  # Dismiss spinner instantly
     if action_type == "shop":
+        shop_pets = await list_shop_pets()
+        if not shop_pets:
+            return await query.answer("The pet shop is empty right now.", show_alert=True)
         if action == "next":
-            page = (page + 1) % len(PET_SHOP)
+            page = (page + 1) % len(shop_pets)
         elif action == "prev":
-            page = (page - 1) % len(PET_SHOP)
+            page = (page - 1) % len(shop_pets)
         elif action == "view":
             pass  # Keep exactly the same page
         elif action == "buy":
-            pet = PET_SHOP[page]
+            page = page % len(shop_pets)
+            pet = shop_pets[page]
             text = f"<b>Confirm Purchase</b>\n\nBuy <b>{html_escape(pet['name'])}</b> for <b>{pet['zenith_price']} ⬪</b>?"
             keyboard = [[
                 types.InlineKeyboardButton("Confirm", callback_data=f"petconfirm_{page}_{owner_id}", style=enums.ButtonStyle.SUCCESS),
@@ -251,7 +263,9 @@ async def pet_confirm_callback(_, query: types.CallbackQuery):
         return await query.answer("This is not your menu!", show_alert=True)
     result = await perform_pet_purchase(owner_id, page)
     if result is True:
-        await query.answer(f"Success! You bought {PET_SHOP[page]['name']}.", show_alert=True)
+        pet = await get_shop_pet(page)
+        pet_name = pet["name"] if pet else "that pet"
+        await query.answer(f"Success! You bought {pet_name}.", show_alert=True)
         await send_mypet_page(query, 0, owner_id)
     else:
         await query.answer(str(result), show_alert=True)

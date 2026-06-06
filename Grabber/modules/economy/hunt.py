@@ -69,7 +69,7 @@ async def hunt_cmd(bot, message: types.Message):
         user = await asyncio.wait_for(user_collection.find_one(get_user_filter(user_id)), timeout=5.0) or {}
         user = await ensure_user_pet_state(user_id, user)
         pets = [normalize_pet(p) for p in user.get("pets", [DEFAULT_PET])]
-        current_pet_name = user.get("current_pet", DEFAULT_PET["name"])
+        current_pet_name = user.get("current_pet", DEFAULT_PET["petid"])
         pet = find_pet(pets, current_pet_name) or DEFAULT_PET
         affection = get_effective_affection(pet)
         aff_multiplier = 1.0

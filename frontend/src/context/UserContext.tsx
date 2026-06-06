@@ -31,26 +31,27 @@ export interface Character {
 
 export interface Pet {
   id: string;
+  petid?: string;
   name: string;
-  ability: string;
-  mood: string;
-  img: string;
+  ability?: string;
+  mood?: string;
+  img?: string;
   img_url?: string;
   image?: string;
   photo_url?: string;
-  level: number;
-  xp: number;
-  xp_needed: number;
-  zenith_price: number;
-  req_level: number;
+  level?: number;
+  xp?: number;
+  xp_needed?: number;
+  zenith_price?: number;
+  req_level?: number;
   rarity?: string;
   desc?: string;
   shopIndex?: number;
-  hp: number;
-  atk: number;
-  spd: number;
-  luck: number;
-  affection: number;
+  hp?: number;
+  atk?: number;
+  spd?: number;
+  luck?: number;
+  affection?: number;
   is_active?: boolean;
 }
 

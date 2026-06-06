@@ -43,6 +43,7 @@ class Database:
         self.star_orders = self.db['star_orders']
         self.global_user_bans = self.db['global_user_bans']
         self.global_group_bans = self.db['global_group_bans']
+        self.pet_catalog = self.db['pet_catalog']
 
     async def ensure_indexes(self):
         """Create performance indexes for all collections."""
@@ -87,6 +88,8 @@ class Database:
             (self.global_group_bans, lambda c: c.create_index("chat_id", unique=True)),
             (self.global_user_bans,  lambda c: c.create_index("expires_at_dt", expireAfterSeconds=0)),
             (self.global_group_bans, lambda c: c.create_index("expires_at_dt", expireAfterSeconds=0)),
+            (self.pet_catalog,       lambda c: c.create_index("petid", unique=True)),
+            (self.pet_catalog,       lambda c: c.create_index([("enabled", 1), ("sort_order", 1)])),
         ]
         failed = 0
         for collection, idx_fn in indexes:
@@ -156,6 +159,7 @@ scraped_characters_collection = seal_db.scraped_characters
 star_orders_collection = seal_db.star_orders
 global_user_bans_collection = seal_db.global_user_bans
 global_group_bans_collection = seal_db.global_group_bans
+pet_catalog_collection = seal_db.pet_catalog
 
 
 async def close_connections():
