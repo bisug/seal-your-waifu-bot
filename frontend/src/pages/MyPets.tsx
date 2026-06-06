@@ -1,196 +1,365 @@
-import React, { useState } from 'react';
-import { useUser, Pet } from '../context/UserContext';
-import { apiFetch, getErrorMessage } from '../api/client';
-import { useToast } from '../components/ui/Toast';
+import React, { useMemo, useState } from 'react';
 import {
-    PawPrint,
-    Zap,
-    Heart,
-    Shield,
-    Activity,
-    Star,
-    ChevronRight,
-    Loader2
+  Activity,
+  CheckCircle2,
+  Heart,
+  Loader2,
+  PawPrint,
+  RefreshCw,
+  Shield,
+  Sparkles,
+  Swords,
+  Wind,
+  Zap,
 } from 'lucide-react';
-import { cn } from '../utils';
+import { apiFetch, getErrorMessage } from '../api/client';
+import { EmptyState } from '../components/ui/EmptyState';
 import { ProgressBar } from '../components/ui/ProgressBar';
+import { useToast } from '../components/ui/Toast';
+import { Pet, useUser } from '../context/UserContext';
+import { cn, formatNumber } from '../utils';
 
 interface MyPetsProps {
-    onPetClick?: (pet: Pet) => void;
+  onPetClick?: (pet: Pet) => void;
 }
 
-export const MyPets = ({ onPetClick }: MyPetsProps) => {
-    const { user, triggerRefresh } = useUser();
-    const { addToast } = useToast();
-    const [switching, setSwitching] = useState<string | null>(null);
+const getPetKey = (pet?: Pet | null) => String(pet?.id || pet?.name || '');
 
-    const handleSetActive = async (pet: Pet) => {
-        if (switching) return;
-        const petRef = pet.id || pet.name;
-        setSwitching(petRef);
-        try {
-            await apiFetch(`/pets/set_active/${encodeURIComponent(petRef)}`, { method: 'POST' });
-            addToast(`${pet.name} is now your active pet!`, 'success');
-            triggerRefresh();
-        } catch (err: any) {
-            addToast(getErrorMessage(err), 'error');
-        } finally {
-            setSwitching(null);
-        }
-    };
-
-    if (!user) return null;
-
-    const pets = user.pets || [];
-    const currentPet = user.current_pet;
-
-    return (
-        <div className="px-4 py-8 pb-20">
-            <header className="mb-8 px-2">
-                <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-3">
-                    <PawPrint className="text-brand-accent" size={24} />
-                    My Companions
-                </h1>
-                <p className="text-sm font-medium text-slate-500 mt-1">Manage your pets and choose which one is active.</p>
-            </header>
-
-            {/* Active Pet Hero Card */}
-            {currentPet && (
-                <section className="mb-10">
-                    <h2 className="px-2 text-sm font-bold text-brand-accent/70 mb-4 flex items-center gap-2">
-                        <Zap size={10} /> Active Partner
-                    </h2>
-                    <div className="glass-panel p-6 rounded-xl border border-brand-accent/20 bg-brand-accent/5 relative overflow-hidden">
-                        <div className="relative z-10 flex gap-6 items-center">
-                            <div className="w-28 h-28 rounded-3xl overflow-hidden border-2 border-brand-accent/30 bg-black/40 shadow-2xl">
-                                <img src={currentPet.img} alt={currentPet.name} className="w-full h-full object-cover" />
-                            </div>
-                            <div className="flex-1">
-                                <h3 className="text-2xl font-black text-white italic tracking-tighter leading-none mb-1">{currentPet.name}</h3>
-                                <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-brand-accent/20 border border-brand-accent/20 mb-3">
-                                    <Star size={10} className="text-brand-accent fill-brand-accent" />
-                                    <span className="text-xs font-bold text-brand-accent">Level {currentPet.level}</span>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-3 mb-4">
-                                    <div className="flex items-center gap-2">
-                                        <div className="p-1.5 rounded-lg bg-red-500/10 text-red-500 border border-red-500/10">
-                                            <Heart size={12} fill="currentColor" />
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-[8px] font-bold text-slate-500 uppercase">HP</span>
-                                            <span className="text-xs font-black text-white">{currentPet.hp}</span>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-500 border border-blue-500/10">
-                                            <Shield size={12} />
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-[8px] font-bold text-slate-500 uppercase">Ability</span>
-                                            <span className="text-[10px] font-black text-white leading-tight">{currentPet.ability}</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <ProgressBar
-                                    current={currentPet.xp}
-                                    total={currentPet.xp_needed}
-                                    compact
-                                />
-                            </div>
-                        </div>
-                        {/* Background Decoration */}
-                        <PawPrint className="absolute -bottom-6 -right-6 text-brand-accent/5 w-32 h-32 rotate-12" />
-                    </div>
-                </section>
-            )}
-
-            {/* Pets List */}
-            <section>
-                <div className="flex items-center justify-between px-2 mb-4">
-                    <h2 className="text-sm font-bold text-slate-500">Your collection</h2>
-                    <span className="text-xs font-bold text-slate-600">{pets.length} owned</span>
-                </div>
-
-                <div className="space-y-3">
-                    {pets.length > 0 ? (
-                        pets.map((pet) => {
-                            const isActive = (currentPet?.id || currentPet?.name) === (pet.id || pet.name);
-                            return (
-                                <div
-                                    key={pet.id || pet.name}
-                                    onClick={() => onPetClick?.(pet)}
-                                    className={cn(
-                                        "glass-panel p-4 rounded-2xl border transition-all flex items-center gap-4 active:scale-[0.98]",
-                                        isActive ? "border-brand-accent/30 bg-brand-accent/5" : "border-white/5 bg-white/5"
-                                    )}
-                                >
-                                    <div className="w-14 h-14 rounded-xl overflow-hidden border border-white/10 bg-black/20 shrink-0">
-                                        <img src={pet.img} alt={pet.name} className="w-full h-full object-cover" />
-                                    </div>
-
-                                    <div className="flex-1 min-w-0">
-                                        <h4 className="text-[13px] font-black text-white uppercase italic tracking-tight truncate">{pet.name}</h4>
-                                        <div className="flex items-center gap-3 mt-0.5">
-                                            <div className="flex items-center gap-1">
-                                                <Activity size={10} className="text-slate-500" />
-                                                <span className="text-[9px] font-bold text-slate-500 uppercase">Lv.{pet.level}</span>
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                                <Heart size={10} className="text-brand-accent" />
-                                                <span className="text-[9px] font-bold text-slate-500 uppercase">{pet.affection}%</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {!isActive && (
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleSetActive(pet);
-                                            }}
-                                            disabled={!!switching}
-                                            className="px-4 py-2 bg-white/5 border border-white/10 text-xs font-bold text-white rounded-xl hover:bg-brand-accent hover:text-brand-midnight hover:border-brand-accent transition-all disabled:opacity-50"
-                                        >
-                                            {switching === (pet.id || pet.name) ? <Loader2 size={12} className="animate-spin" /> : 'Activate'}
-                                        </button>
-                                    )}
-                                    {isActive && (
-                                        <div className="p-2 text-brand-accent">
-                                            <CheckCircle2 size={18} />
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })
-                    ) : (
-                        <div className="glass-panel p-12 rounded-xl border border-white/5 text-center flex flex-col items-center">
-                            <PawPrint size={40} className="text-slate-800 mb-4" />
-                            <h3 className="text-sm font-bold text-white mb-2">No pets yet</h3>
-                            <p className="text-sm text-slate-500 font-medium leading-relaxed">
-                                Visit the Pet Store to buy your first companion.
-                            </p>
-                        </div>
-                    )}
-                </div>
-            </section>
-        </div>
-    );
+const samePet = (a?: Pet | null, b?: Pet | null) => {
+  if (!a || !b) return false;
+  const aKeys = new Set([a.id, a.name].filter(Boolean).map(String));
+  return [b.id, b.name].filter(Boolean).some((key) => aKeys.has(String(key)));
 };
 
-const CheckCircle2 = ({ size, className }: { size?: number, className?: string }) => (
-    <svg
-        width={size || 24}
-        height={size || 24}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className={className}
-    >
-        <path d="M20 6 9 17l-5-5" />
-    </svg>
+const getPetPower = (pet: Pet) => (
+  Number(pet.hp || 0)
+  + Number(pet.atk || 0) * 4
+  + Number(pet.spd || 0) * 3
+  + Math.round(Number(pet.luck || 0) * 100)
 );
+
+const StatPill = ({
+  icon: Icon,
+  label,
+  value,
+  tone = 'neutral',
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: string | number;
+  tone?: 'neutral' | 'accent' | 'danger' | 'success';
+}) => (
+  <div className="min-w-0 rounded-lg border border-white/5 bg-brand-midnight px-3 py-2.5">
+    <div className="flex items-center gap-1.5 text-[10px] font-semibold text-neutral-500">
+      <Icon
+        size={12}
+        className={cn(
+          tone === 'accent' && 'text-brand-accent',
+          tone === 'danger' && 'text-red-400',
+          tone === 'success' && 'text-emerald-400',
+          tone === 'neutral' && 'text-neutral-600'
+        )}
+      />
+      <span className="truncate">{label}</span>
+    </div>
+    <p className="mt-1 truncate text-sm font-bold text-white tabular-nums">{value}</p>
+  </div>
+);
+
+const InlineStat = ({
+  icon: Icon,
+  label,
+  value,
+  tone = 'neutral',
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: string | number;
+  tone?: 'neutral' | 'accent' | 'danger' | 'success';
+}) => (
+  <div className="min-w-0">
+    <div className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold text-neutral-500">
+      <Icon
+        size={11}
+        className={cn(
+          tone === 'accent' && 'text-brand-accent',
+          tone === 'danger' && 'text-red-400',
+          tone === 'success' && 'text-emerald-400',
+          tone === 'neutral' && 'text-neutral-600'
+        )}
+      />
+      <span className="truncate">{label}</span>
+    </div>
+    <p className="truncate text-sm font-bold text-white tabular-nums">{value}</p>
+  </div>
+);
+
+const ActivePetCard = ({ pet, onOpen }: { pet: Pet; onOpen?: (pet: Pet) => void }) => (
+  <button
+    type="button"
+    onClick={() => onOpen?.(pet)}
+    className="w-full rounded-lg border border-brand-accent/20 bg-brand-accent/10 p-4 text-left transition-colors active:scale-[0.99]"
+  >
+    <div className="grid grid-cols-[84px_minmax(0,1fr)] gap-4 sm:grid-cols-[112px_minmax(0,1fr)]">
+      <div className="aspect-square overflow-hidden rounded-lg border border-brand-accent/25 bg-brand-midnight">
+        {pet.img ? (
+          <img src={pet.img} alt={pet.name} className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-neutral-700">
+            <PawPrint size={24} />
+          </div>
+        )}
+      </div>
+
+      <div className="min-w-0 self-center">
+        <div className="mb-2 flex min-w-0 items-center gap-2">
+          <h2 className="truncate text-xl font-bold tracking-tight text-white sm:text-2xl">{pet.name}</h2>
+          <span className="shrink-0 rounded-lg border border-brand-accent/20 bg-brand-accent/15 px-2 py-1 text-[10px] font-bold text-brand-accent">
+            Active
+          </span>
+        </div>
+        <p className="line-clamp-2 text-xs font-medium leading-relaxed text-neutral-400">
+          {pet.desc || pet.ability || 'This companion is currently active.'}
+        </p>
+
+        <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-white/5 pt-4 sm:grid-cols-4">
+          <InlineStat icon={Activity} label="Level" value={pet.level || 1} tone="success" />
+          <InlineStat icon={Heart} label="Affection" value={`${pet.affection ?? 0}%`} tone="danger" />
+          <InlineStat icon={Swords} label="ATK" value={pet.atk ?? 0} tone="accent" />
+          <InlineStat icon={Wind} label="SPD" value={pet.spd ?? 0} />
+        </div>
+
+        <div className="mt-4">
+          <ProgressBar current={pet.xp || 0} total={Math.max(1, pet.xp_needed || 100)} compact />
+        </div>
+      </div>
+    </div>
+  </button>
+);
+
+const PetCard = ({
+  pet,
+  isActive,
+  switching,
+  onOpen,
+  onActivate,
+}: {
+  pet: Pet;
+  isActive: boolean;
+  switching: boolean;
+  onOpen?: (pet: Pet) => void;
+  onActivate: (pet: Pet) => void;
+}) => (
+  <div
+    className={cn(
+      'rounded-lg border bg-brand-deep p-3 transition-colors',
+      isActive ? 'border-brand-accent/25 bg-brand-accent/5' : 'border-white/5'
+    )}
+  >
+    <button
+      type="button"
+      onClick={() => onOpen?.(pet)}
+      className="grid w-full grid-cols-[64px_minmax(0,1fr)] gap-3 text-left"
+    >
+      <div className="aspect-square overflow-hidden rounded-lg border border-white/10 bg-brand-midnight">
+        {pet.img ? (
+          <img src={pet.img} alt={pet.name} className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-neutral-700">
+            <PawPrint size={20} />
+          </div>
+        )}
+      </div>
+
+      <div className="min-w-0 py-0.5">
+        <div className="mb-1 flex min-w-0 items-center gap-2">
+          <h3 className="truncate text-sm font-bold text-white">{pet.name}</h3>
+          {isActive && <CheckCircle2 size={14} className="shrink-0 text-brand-accent" />}
+        </div>
+        <p className="truncate text-xs font-semibold text-brand-accent">{pet.ability || 'No ability'}</p>
+        <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-semibold text-neutral-500">
+          <span>Lv. {pet.level || 1}</span>
+          <span>{pet.affection ?? 0}% affection</span>
+          <span>{pet.mood || 'Neutral'}</span>
+        </div>
+      </div>
+    </button>
+
+    <div className="mt-3 grid grid-cols-3 gap-3 border-t border-white/5 pt-3">
+      <InlineStat icon={Shield} label="HP" value={pet.hp ?? 0} />
+      <InlineStat icon={Swords} label="ATK" value={pet.atk ?? 0} tone="accent" />
+      <InlineStat icon={Wind} label="SPD" value={pet.spd ?? 0} />
+    </div>
+
+    <button
+      type="button"
+      onClick={() => onActivate(pet)}
+      disabled={isActive || switching}
+      className={cn(
+        'mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-lg text-xs font-bold transition-all active:scale-95',
+        isActive
+          ? 'border border-brand-accent/20 bg-brand-accent/10 text-brand-accent'
+          : 'bg-white text-brand-midnight',
+        switching && 'opacity-70'
+      )}
+    >
+      {switching ? <Loader2 size={14} className="animate-spin" /> : isActive ? <CheckCircle2 size={14} /> : <Zap size={14} />}
+      <span>{isActive ? 'Active pet' : 'Set active'}</span>
+    </button>
+  </div>
+);
+
+export const MyPets = ({ onPetClick }: MyPetsProps) => {
+  const { user, refreshUser } = useUser();
+  const { addToast } = useToast();
+  const [switching, setSwitching] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const pets = useMemo(() => user?.pets || [], [user?.pets]);
+  const currentPet = useMemo(() => {
+    if (!pets.length) return user?.current_pet || null;
+    return pets.find((pet) => pet.is_active || samePet(pet, user?.current_pet)) || user?.current_pet || pets[0];
+  }, [pets, user?.current_pet]);
+
+  const sortedPets = useMemo(() => (
+    [...pets].sort((a, b) => {
+      const activeDiff = Number(samePet(b, currentPet) || b.is_active) - Number(samePet(a, currentPet) || a.is_active);
+      if (activeDiff !== 0) return activeDiff;
+      const levelDiff = Number(b.level || 1) - Number(a.level || 1);
+      if (levelDiff !== 0) return levelDiff;
+      return a.name.localeCompare(b.name);
+    })
+  ), [currentPet, pets]);
+
+  const summary = useMemo(() => {
+    const bestPet = pets.reduce<Pet | null>((best, pet) => (!best || getPetPower(pet) > getPetPower(best) ? pet : best), null);
+    const averageAffection = pets.length
+      ? Math.round(pets.reduce((total, pet) => total + Number(pet.affection || 0), 0) / pets.length)
+      : 0;
+
+    return {
+      total: pets.length,
+      averageAffection,
+      bestPet,
+      totalPower: pets.reduce((total, pet) => total + getPetPower(pet), 0),
+    };
+  }, [pets]);
+
+  const handleRefresh = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
+    try {
+      await refreshUser();
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const handleSetActive = async (pet: Pet) => {
+    const petRef = getPetKey(pet);
+    if (!petRef || switching || samePet(pet, currentPet) || pet.is_active) return;
+
+    setSwitching(petRef);
+    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
+    try {
+      await apiFetch(`/pets/set_active/${encodeURIComponent(petRef)}`, { method: 'POST' });
+      await refreshUser();
+      addToast(`${pet.name} is now active`, 'success');
+      window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
+    } catch (err: any) {
+      addToast(getErrorMessage(err), 'error');
+      window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('error');
+    } finally {
+      setSwitching(null);
+    }
+  };
+
+  if (!user) return null;
+
+  return (
+    <div className="pb-20 pt-4 max-w-5xl mx-auto">
+      <header className="px-4 pb-5 mb-5 border-b border-white/5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <PawPrint size={18} className="text-brand-accent shrink-0" />
+              <h1 className="text-lg font-bold text-white tracking-tight">My Pets</h1>
+            </div>
+            <p className="text-sm font-medium text-neutral-400 leading-snug">
+              Review companion stats and choose the pet that should stay active.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="p-2.5 rounded-lg bg-brand-deep border border-white/5 text-neutral-400 hover:text-white hover:bg-white/5 disabled:opacity-60 transition-colors active:scale-95 shrink-0"
+            aria-label="Refresh pets"
+          >
+            <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
+          </button>
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <StatPill icon={PawPrint} label="Owned" value={summary.total} tone="accent" />
+          <StatPill icon={Heart} label="Affection" value={`${summary.averageAffection}%`} tone="danger" />
+          <StatPill icon={Shield} label="Power" value={formatNumber(summary.totalPower)} tone="success" />
+          <StatPill icon={Sparkles} label="Best" value={summary.bestPet?.name || 'None'} />
+        </div>
+      </header>
+
+      <div className="space-y-6 px-4">
+        {currentPet && (
+          <section>
+            <div className="mb-3 flex items-center gap-2">
+              <Zap size={15} className="text-brand-accent" />
+              <h2 className="text-sm font-bold text-white">Active companion</h2>
+            </div>
+            <ActivePetCard pet={currentPet} onOpen={onPetClick} />
+          </section>
+        )}
+
+        <section>
+          <div className="mb-3 flex items-end justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <Sparkles size={15} className="text-brand-accent" />
+                <h2 className="text-sm font-bold text-white">Collection</h2>
+              </div>
+              <p className="mt-1 text-xs font-medium text-neutral-500">
+                Active pet stays first, then higher-level companions.
+              </p>
+            </div>
+          </div>
+
+          {sortedPets.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {sortedPets.map((pet) => {
+                const petKey = getPetKey(pet);
+                const isActive = pet.is_active || samePet(pet, currentPet);
+                return (
+                  <PetCard
+                    key={petKey || pet.name}
+                    pet={pet}
+                    isActive={isActive}
+                    switching={switching === petKey}
+                    onOpen={onPetClick}
+                    onActivate={handleSetActive}
+                  />
+                );
+              })}
+            </div>
+          ) : (
+            <EmptyState
+              icon={PawPrint}
+              title="No pets yet"
+              message="Visit the Pet Store to buy your first companion."
+            />
+          )}
+        </section>
+      </div>
+    </div>
+  );
+};
