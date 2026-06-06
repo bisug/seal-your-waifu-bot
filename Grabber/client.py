@@ -289,6 +289,8 @@ class SealClient(Client):
                 except Exception as e:
                     LOGGER.warning(f"Redis ping failed; Redis-backed features will use fallbacks where available: {e}")
             await seal_db.ensure_indexes()
+            from Grabber.core.pets import seed_pet_catalog
+            await seed_pet_catalog()
 
             from Grabber.core.deletion import deletion_worker
             run_background_task(deletion_worker(), name="deletion-worker")
