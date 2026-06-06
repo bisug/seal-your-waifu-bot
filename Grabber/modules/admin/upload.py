@@ -1,18 +1,23 @@
-import asyncio
 import os
 import shlex
-import urllib.parse
-import httpx
+
 from pyrogram import enums, filters, types
-from pyrogram.errors import FloodWait
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-from Grabber import GALLERY_CHANNEL_ID, LOGGER, OWNER_ID, app, sudo_users, sudo_filter
-from Grabber.core.utils import handle_errors, html_escape, send_media_dynamic
-from Grabber.core.waifu import (add_character_to_db,
-                                invalidate_character_cache,
-                                upload_media_safely)
+
+from Grabber import GALLERY_CHANNEL_ID, LOGGER, app, sudo_filter
+from Grabber.core.uploads import (
+    UploadError,
+    download_media_url,
+    parse_luck,
+    remove_temp_file,
+    upload_character_from_path,
+    upload_pet_from_path,
+)
+from Grabber.core.utils import handle_errors, html_escape
 from Grabber.database import collection
 from Grabber.modules.collection.rarities import RARITY_MAP
+
+
 def get_rarity_help():
     """Generates dynamic rarity map help text."""
     rarity_list = "\n".join([f"({v}={k})" for k, v in RARITY_MAP.items()])
@@ -23,161 +28,235 @@ def get_rarity_help():
         "<b>Rarity Map:</b>\n"
         f"{rarity_list}"
     )
+
+
+def get_pet_upload_help():
+    return (
+        "<b>Format:</b>\n"
+        "Reply to media:\n"
+        "<code>/uploadpet \"Name\" \"Rarity\" HP ATK SPD Luck Price ReqLevel \"Ability\" \"Description\" [petid] [sort_order] [enabled]</code>\n\n"
+        "With URL:\n"
+        "<code>/uploadpet URL \"Name\" \"Rarity\" HP ATK SPD Luck Price ReqLevel \"Ability\" \"Description\" [petid] [sort_order] [enabled]</code>\n\n"
+        "Luck accepts decimals or percent values, for example <code>0.12</code> or <code>12%</code>."
+    )
+
+
+def _message_has_upload_media(message: types.Message | None) -> bool:
+    return bool(
+        message
+        and (
+            message.photo
+            or message.document
+            or getattr(message, "video", None)
+            or getattr(message, "animation", None)
+        )
+    )
+
+
+def _parse_command_args(message: types.Message) -> list[str] | None:
+    cmd_text = message.text or message.caption
+    if not cmd_text:
+        return None
+    return shlex.split(cmd_text)[1:]
+
+
+async def _materialize_message_media(
+    message: types.Message,
+    *,
+    media_url: str | None,
+    is_reply: bool,
+    status: types.Message,
+    temp_prefix: str,
+) -> str:
+    if is_reply:
+        await status.edit_text("📥 Downloading media from Telegram...")
+        temp_path = await message.reply_to_message.download()
+        if not temp_path or not os.path.exists(temp_path):
+            raise UploadError("Failed to retrieve Telegram media.")
+        return temp_path
+
+    await status.edit_text("📥 Fetching media from URL (10MB limit)...")
+    return await download_media_url(media_url or "", temp_prefix=temp_prefix)
+
+
+def _parse_bool(value: str) -> bool:
+    return str(value).strip().lower() in {"1", "true", "yes", "y", "on", "enabled"}
+
+
+def _split_media_args(args: list[str], is_reply: bool, required_count: int) -> tuple[str | None, list[str]]:
+    if is_reply:
+        values = args
+        media_url = None
+    else:
+        if len(args) < required_count + 1:
+            raise UploadError("Missing media URL or required fields.")
+        media_url = args[0]
+        values = args[1:]
+
+    if len(values) < required_count:
+        raise UploadError("Missing required fields.")
+    return media_url, values
+
+
 @app.on_message(filters.command("upload") & sudo_filter)
 @handle_errors
 async def upload_waifu_handler(_, message: types.Message):
-    # Use shlex to support quoted arguments (e.g. "Muzan Kibutsuji")
-    cmd_text = message.text or message.caption
-    if not cmd_text:
-        return
     try:
-        # Split command and keep quoted segments together
-        args = shlex.split(cmd_text)[1:]
+        args = _parse_command_args(message)
     except ValueError as e:
-        return await message.reply_text(f"❌ <b>Parsing Error:</b> {e}")
-    is_reply = bool(message.reply_to_message and (
-        message.reply_to_message.photo or 
-        message.reply_to_message.document or 
-        getattr(message.reply_to_message, 'video', None) or 
-        getattr(message.reply_to_message, 'animation', None)
-    ))
-    if is_reply:
-        if len(args) < 3:
-            return await message.reply_text(get_rarity_help(), parse_mode=enums.ParseMode.HTML)
-        name, anime, rarity_num = args[0], args[1], args[2]
-        img_url = None
-    elif len(args) >= 4:
-        img_url, name, anime, rarity_num = args[0], args[1], args[2], args[3]
-    else:
-        return await message.reply_text(get_rarity_help(), parse_mode=enums.ParseMode.HTML)
+        return await message.reply_text(f"❌ <b>Parsing Error:</b> {html_escape(str(e))}", parse_mode=enums.ParseMode.HTML)
+
+    if args is None:
+        return
+
+    is_reply = _message_has_upload_media(message.reply_to_message)
     try:
-        rarity_num = int(rarity_num)
-        if rarity_num not in RARITY_MAP:
-            raise ValueError
-    except ValueError:
-        return await message.reply_text(f"❌ Rarity must be a valid number from the map.\n\n{get_rarity_help()}", parse_mode=enums.ParseMode.HTML)
-    char_name = name.strip().title()
-    anime_name = anime.strip().title()
-    rarity_text = RARITY_MAP[rarity_num]
+        media_url, values = _split_media_args(args, is_reply, 3)
+        name, anime, rarity = values[0], values[1], values[2]
+    except UploadError:
+        return await message.reply_text(get_rarity_help(), parse_mode=enums.ParseMode.HTML)
+
     status = await message.reply_text("⏳ <b>Processing upload...</b>", parse_mode=enums.ParseMode.HTML)
     temp_path = None
+
     try:
-        # 1. Acquire Media
-        if is_reply:
-            await status.edit_text("📥 Downloading media from Telegram...")
-            temp_path = await message.reply_to_message.download()
-        else:
-            parsed = urllib.parse.urlparse(img_url)
-            if parsed.scheme not in ("http", "https"):
-                return await status.edit_text("❌ Invalid media URL scheme. Only HTTP/HTTPS allowed.")
-            await status.edit_text("📥 Fetching media from URL (10MB limit)...")
-            # SECURE DOWNLOAD: Streaming with size limit
-            MAX_SIZE = 10 * 1024 * 1024 # 10MB
-            async with httpx.AsyncClient() as client:
-                async with client.stream("GET", img_url, timeout=20.0) as response:
-                    if response.status_code != 200:
-                        return await status.edit_text(f"❌ Failed to fetch media (HTTP {response.status_code}).")
-                    content_length = response.headers.get("Content-Length")
-                    if content_length and int(content_length) > MAX_SIZE:
-                        return await status.edit_text("❌ File is too large! (Max 10MB)")
-                    ext = os.path.splitext(parsed.path)[1] or ".jpg"
-                    temp_path = f"temp_{message.id}{ext}"
-                    downloaded_size = 0
-                    with open(temp_path, "wb") as f:
-                        async for chunk in response.aiter_bytes():
-                            downloaded_size += len(chunk)
-                            if downloaded_size > MAX_SIZE:
-                                f.close()
-                                os.remove(temp_path)
-                                return await status.edit_text("❌ File reached 10MB limit and was terminated.")
-                            f.write(chunk)
-        if not temp_path or not os.path.exists(temp_path):
-            return await status.edit_text("❌ Failed to retrieve media.")
-        # 2. Upload Media
-        await status.edit_text("☁️ Uploading Media to secure host...")
-        final_url = await upload_media_safely(temp_path)
-        if not final_url:
-            return await status.edit_text("❌ Media upload failed (Catbox/ImgBB reject).")
-        # 3. Finalize Database
-        caption = (
-            f"<b>Character Name:</b> {char_name}\n"
-            f"<b>Anime Name:</b> {anime_name}\n"
-            f"<b>Rarity:</b> {rarity_text}\n"
-            f"Added by <a href=\"tg://user?id={message.from_user.id}\">{html_escape(message.from_user.first_name)}</a>"
+        temp_path = await _materialize_message_media(
+            message,
+            media_url=media_url,
+            is_reply=is_reply,
+            status=status,
+            temp_prefix=f"tg_char_{message.id}",
         )
-        sent_msg = await send_media_dynamic(
-            client=app,
-            chat_id=GALLERY_CHANNEL_ID,
-            media_url=final_url,
-            caption=caption,
-            parse_mode=enums.ParseMode.HTML
+        await status.edit_text("☁️ Uploading media to secure host...")
+        character = await upload_character_from_path(
+            temp_path,
+            name=name,
+            anime=anime,
+            rarity=rarity,
+            added_by_id=message.from_user.id,
+            added_by_name=message.from_user.first_name,
         )
-        char_data = {
-            'img_url': final_url,
-            'name': char_name,
-            'anime': anime_name,
-            'rarity': rarity_text,
-            'message_id': sent_msg.id
-        }
-        char_id = await add_character_to_db(char_data)
-        invalidate_character_cache(rarity_text)
+        final_url = character["img_url"]
         await status.edit_text(
-            f"✅ <b>Waifu Uploaded!</b>\nID: <code>{char_id}</code>\n"
-            f"Name: {char_name}\n"
-            f"Host: {'Catbox' if 'catbox' in final_url else 'ImgBB'}", 
-            parse_mode=enums.ParseMode.HTML
+            f"✅ <b>Waifu Uploaded!</b>\n"
+            f"ID: <code>{character['id']}</code>\n"
+            f"Name: {html_escape(character['name'])}\n"
+            f"Host: {'Catbox' if 'catbox' in final_url else 'ImgBB'}",
+            parse_mode=enums.ParseMode.HTML,
         )
-    except FloodWait as e:
-        LOGGER.warning(f"[Upload] FloodWait {e.value}s — retrying gallery send once...")
-        await asyncio.sleep(e.value + 2)
-        try:
-            sent_msg = await send_media_dynamic(app, GALLERY_CHANNEL_ID, final_url, caption=caption, parse_mode=enums.ParseMode.HTML)
-            char_data = {'img_url': final_url, 'name': char_name, 'anime': anime_name, 'rarity': rarity_text, 'message_id': sent_msg.id}
-            char_id = await add_character_to_db(char_data)
-            invalidate_character_cache(rarity_text)
-            await status.edit_text(f"✅ <b>Waifu Uploaded!</b>\nID: <code>{char_id}</code>\nName: {char_name}", parse_mode=enums.ParseMode.HTML)
-        except Exception as retry_err:
-            await status.edit_text(f"❌ Upload failed after FloodWait retry: {html_escape(str(retry_err))}")
+    except UploadError as e:
+        await status.edit_text(f"❌ {html_escape(str(e))}", parse_mode=enums.ParseMode.HTML)
     except Exception as e:
-        LOGGER.error(f"Upload Failure: {e}")
-        await status.edit_text(f"❌ Error: {html_escape(str(e))}")
+        LOGGER.error("Upload Failure: %s", e, exc_info=True)
+        await status.edit_text(f"❌ Error: {html_escape(str(e))}", parse_mode=enums.ParseMode.HTML)
     finally:
-        if temp_path and os.path.exists(temp_path):
-            try:
-                os.remove(temp_path)
-            except:
-                pass
+        remove_temp_file(temp_path)
+
+
+@app.on_message(filters.command("uploadpet") & sudo_filter)
+@handle_errors
+async def upload_pet_handler(_, message: types.Message):
+    try:
+        args = _parse_command_args(message)
+    except ValueError as e:
+        return await message.reply_text(f"❌ <b>Parsing Error:</b> {html_escape(str(e))}", parse_mode=enums.ParseMode.HTML)
+
+    if args is None:
+        return
+
+    is_reply = _message_has_upload_media(message.reply_to_message)
+    try:
+        media_url, values = _split_media_args(args, is_reply, 10)
+        name, rarity, hp, atk, spd, luck, price, req_level, ability, desc = values[:10]
+        petid = values[10] if len(values) > 10 and values[10].lower() not in {"-", "auto", "none"} else None
+        sort_order = int(values[11]) if len(values) > 11 else 100
+        enabled = _parse_bool(values[12]) if len(values) > 12 else True
+        hp = int(hp)
+        atk = int(atk)
+        spd = int(spd)
+        price = int(price)
+        req_level = int(req_level)
+        parse_luck(luck)
+    except (UploadError, ValueError):
+        return await message.reply_text(get_pet_upload_help(), parse_mode=enums.ParseMode.HTML)
+
+    status = await message.reply_text("⏳ <b>Processing pet upload...</b>", parse_mode=enums.ParseMode.HTML)
+    temp_path = None
+
+    try:
+        temp_path = await _materialize_message_media(
+            message,
+            media_url=media_url,
+            is_reply=is_reply,
+            status=status,
+            temp_prefix=f"tg_pet_{message.id}",
+        )
+        await status.edit_text("☁️ Uploading pet media to secure host...")
+        pet = await upload_pet_from_path(
+            temp_path,
+            name=name,
+            petid=petid,
+            rarity=rarity,
+            hp=hp,
+            atk=atk,
+            spd=spd,
+            luck=luck,
+            ability=ability,
+            desc=desc,
+            zenith_price=price,
+            req_level=req_level,
+            sort_order=sort_order,
+            enabled=enabled,
+            uploaded_by=message.from_user.id,
+        )
+        await status.edit_text(
+            f"✅ <b>Pet Uploaded!</b>\n"
+            f"ID: <code>{html_escape(pet['petid'])}</code>\n"
+            f"Name: {html_escape(pet['name'])}\n"
+            f"Price: <code>{pet['zenith_price']}</code> Zenith\n"
+            f"Enabled: <code>{str(pet['enabled'])}</code>",
+            parse_mode=enums.ParseMode.HTML,
+        )
+    except UploadError as e:
+        await status.edit_text(f"❌ {html_escape(str(e))}", parse_mode=enums.ParseMode.HTML)
+    except Exception as e:
+        LOGGER.error("Pet Upload Failure: %s", e, exc_info=True)
+        await status.edit_text(f"❌ Error: {html_escape(str(e))}", parse_mode=enums.ParseMode.HTML)
+    finally:
+        remove_temp_file(temp_path)
+
+
 @app.on_message(filters.command(["delete", "del"]) & sudo_filter)
 @handle_errors
 async def delete_waifu_handler(_, message: types.Message):
     if len(message.command) < 2:
         return await message.reply_text("❌ Usage: <code>/delete &lt;id&gt;</code>", parse_mode=enums.ParseMode.HTML)
-    # Pad with leading zero if ID is short and purely numeric (matches DB format)
     raw_id = message.command[1]
     char_id = raw_id.zfill(2) if raw_id.isdigit() else raw_id
-    # Find first to show confirmation
-    character = await collection.find_one({'id': char_id})
+    character = await collection.find_one({"id": char_id})
     if not character:
         return await message.reply_text(f"❌ Character not found with ID: <code>{char_id}</code>", parse_mode=enums.ParseMode.HTML)
     text = (
         f"⚠️ <b>Delete Confirmation</b>\n\n"
         f"Are you sure you want to delete this character?\n\n"
         f"🆔 ID: <code>{char_id}</code>\n"
-        f"📛 Name: <b>{character['name']}</b>\n"
-        f"🎬 Anime: {character['anime']}\n"
-        f"🔮 Rarity: {character['rarity']}"
+        f"📛 Name: <b>{html_escape(character['name'])}</b>\n"
+        f"🎬 Anime: {html_escape(character['anime'])}\n"
+        f"🔮 Rarity: {html_escape(character['rarity'])}"
     )
     buttons = [
         [
             InlineKeyboardButton("✅ Confirm", callback_data=f"del_confirm:{char_id}"),
-            InlineKeyboardButton("❌ Cancel", callback_data="del_cancel")
+            InlineKeyboardButton("❌ Cancel", callback_data="del_cancel"),
         ]
     ]
     await message.reply_text(
-        text, 
-        reply_markup=InlineKeyboardMarkup(buttons), 
-        parse_mode=enums.ParseMode.HTML
+        text,
+        reply_markup=InlineKeyboardMarkup(buttons),
+        parse_mode=enums.ParseMode.HTML,
     )
+
+
 @app.on_callback_query(filters.regex(r"^del_") & sudo_filter)
 async def delete_callback_handler(_, query: types.CallbackQuery):
     data = query.data.split(":")
@@ -187,20 +266,22 @@ async def delete_callback_handler(_, query: types.CallbackQuery):
         return await query.answer("Deletion cancelled.")
     if action == "del_confirm":
         char_id = data[1]
-        character = await collection.find_one_and_delete({'id': char_id})
+        character = await collection.find_one_and_delete({"id": char_id})
         if character:
-            msg_id = character.get('message_id')
+            msg_id = character.get("message_id")
             if msg_id:
                 try:
                     await app.delete_messages(GALLERY_CHANNEL_ID, msg_id)
                 except Exception as e:
                     LOGGER.debug(f"Failed to delete gallery message {msg_id}: {e}")
-            invalidate_character_cache(character.get('rarity'))
+            from Grabber.core.waifu import invalidate_character_cache
+
+            invalidate_character_cache(character.get("rarity"))
             await query.message.edit_text(
                 f"✅ <b>Successfully Deleted!</b>\n"
                 f"ID: <code>{char_id}</code>\n"
-                f"Name: <b>{character['name']}</b>",
-                parse_mode=enums.ParseMode.HTML
+                f"Name: <b>{html_escape(character['name'])}</b>",
+                parse_mode=enums.ParseMode.HTML,
             )
             await query.answer("Character deleted.")
         else:
