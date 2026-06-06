@@ -75,6 +75,8 @@ class UserProfileResponse(BaseModel):
     can_upload: bool = False
     can_edit_character: bool = False
     upload_reward: Optional[dict[str, int]] = None
+    role_perks: dict[str, int] = Field(default_factory=dict)
+    role_benefits: List[str] = Field(default_factory=list)
     stats: StatsModel
     achievements: List[AchievementModel] = Field(default_factory=list)
     titles: TitlesModel
