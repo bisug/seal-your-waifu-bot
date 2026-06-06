@@ -48,6 +48,7 @@ export interface Pet {
   spd: number;
   luck: number;
   affection: number;
+  is_active?: boolean;
 }
 
 export interface Egg {
