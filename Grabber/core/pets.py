@@ -144,6 +144,10 @@ def _clean_pet_doc(pet: dict) -> dict:
     return doc
 
 
+def clean_pet_catalog_doc(pet: dict) -> dict:
+    return _clean_pet_doc(pet)
+
+
 def _seed_catalog_by_id() -> dict[str, dict]:
     return {pet["petid"]: _clean_pet_doc(pet) for pet in PET_CATALOG_SEED}
 
@@ -283,6 +287,22 @@ async def seed_pet_catalog() -> None:
             },
             upsert=True,
         )
+
+
+async def upsert_catalog_pet(pet: dict) -> dict:
+    from Grabber.database import pet_catalog_collection
+
+    now = datetime.now(timezone.utc)
+    doc = _clean_pet_doc(pet)
+    await pet_catalog_collection.update_one(
+        {"petid": doc["petid"]},
+        {
+            "$set": {**doc, "updated_at": now},
+            "$setOnInsert": {"created_at": now},
+        },
+        upsert=True,
+    )
+    return doc
 
 
 async def list_pet_catalog(include_disabled: bool = False, shop_only: bool = False) -> list[dict]:

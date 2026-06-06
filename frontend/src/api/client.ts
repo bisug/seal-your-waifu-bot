@@ -27,6 +27,10 @@ interface ApiErrorInit {
   cause?: unknown;
 }
 
+interface ApiRequestInit extends RequestInit {
+  timeoutMs?: number;
+}
+
 export class ApiError extends Error {
   status?: number;
   code: string;
@@ -59,14 +63,14 @@ interface RefreshSubscriber {
   resolve: (value: any) => void;
   reject: (reason?: any) => void;
   endpoint: string;
-  options: RequestInit;
+  options: ApiRequestInit;
   retries: number;
 }
 
 let isRefreshing = false;
 let refreshSubscribers: RefreshSubscriber[] = [];
 
-function subscribeToRefresh(endpoint: string, options: RequestInit, retries: number) {
+function subscribeToRefresh(endpoint: string, options: ApiRequestInit, retries: number) {
   return new Promise((resolve, reject) => {
     refreshSubscribers.push({ resolve, reject, endpoint, options, retries });
   });
@@ -118,13 +122,13 @@ function isIdempotentRequest(options: RequestInit) {
   return method === 'GET' || method === 'HEAD' || method === 'OPTIONS';
 }
 
-function createRequestSignal(externalSignal?: AbortSignal | null) {
+function createRequestSignal(externalSignal?: AbortSignal | null, timeoutMs = REQUEST_TIMEOUT_MS) {
   const controller = new AbortController();
   let timedOut = false;
   const timeoutId = window.setTimeout(() => {
     timedOut = true;
     controller.abort();
-  }, REQUEST_TIMEOUT_MS);
+  }, timeoutMs);
 
   const abortFromExternal = () => controller.abort();
   if (externalSignal) {
@@ -257,19 +261,20 @@ function wait(ms: number) {
   return new Promise(resolve => window.setTimeout(resolve, ms));
 }
 
-export async function apiFetch(endpoint: string, options: RequestInit = {}, retries = 2): Promise<any> {
+export async function apiFetch(endpoint: string, options: ApiRequestInit = {}, retries = 2): Promise<any> {
   const url = `${API_BASE}${endpoint}`;
   const method = options.method || 'GET';
   const headers = mergeHeaders(options.headers);
+  const { timeoutMs, ...fetchOptions } = options as ApiRequestInit;
 
   if (sessionToken) {
     headers.Authorization = `Bearer ${sessionToken}`;
   }
 
-  const requestSignal = createRequestSignal(options.signal);
+  const requestSignal = createRequestSignal(options.signal, timeoutMs);
 
   try {
-    const response = await fetch(url, { ...options, headers, signal: requestSignal.signal });
+    const response = await fetch(url, { ...fetchOptions, headers, signal: requestSignal.signal });
     const payload = await parseResponseBody(response);
 
     if (response.status === 401) {

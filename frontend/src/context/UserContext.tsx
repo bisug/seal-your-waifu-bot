@@ -73,6 +73,7 @@ export interface User {
   first_name: string;
   username: string;
   avatar: string;
+  is_sudo?: boolean;
   balance: number;
   zenith: number;
   stats: UserStats;

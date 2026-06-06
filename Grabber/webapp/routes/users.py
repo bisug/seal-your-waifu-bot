@@ -26,7 +26,7 @@ from Grabber.core.pets import (
     normalize_pet,
     pet_matches,
 )
-from Grabber.webapp.auth import get_current_user, get_current_user_data, r
+from Grabber.webapp.auth import get_current_user, get_current_user_data, is_sudo_user_id, r
 from Grabber.webapp.schemas import UserProfileResponse
 
 router = APIRouter()
@@ -104,6 +104,7 @@ async def get_me(user: dict = Depends(get_current_user_data)):
         "first_name": (user.get("first_name") or "User"),
         "username": user.get("username"),
         "avatar": user.get("avatar"),
+        "is_sudo": is_sudo_user_id(user_id),
         "stats": {
             "level": progress["level"],
             "xp": progress["xp"],
