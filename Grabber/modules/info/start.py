@@ -119,6 +119,11 @@ HELP_DATA = {
 <b>Admin Tools</b>
 /cnow - [OWNER] Spawn a character immediately
 /broadcast - [OWNER] Send a global message
+/gban - [SUDO] Globally ban a user for 30 days
+/ungban - [SUDO] Remove a global user ban
+/gbangroup - [SUDO] Globally ban a group for 30 days
+/ungbangroup - [SUDO] Remove a global group ban
+/gbanlist - [SUDO] List global bans
 """,
     }
 }
