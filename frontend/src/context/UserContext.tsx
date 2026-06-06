@@ -21,6 +21,8 @@ export interface Character {
   rarity: string;
   img_url: string;
   zenith_price: number;
+  base_zenith_price?: number;
+  staff_discount?: number;
   owned: boolean;
   count: number;
   stock_limit?: number;
@@ -85,6 +87,8 @@ export interface User {
     balance?: number;
     zenith?: number;
   } | null;
+  role_perks?: Record<string, number>;
+  role_benefits?: string[];
   balance: number;
   zenith: number;
   stats: UserStats;

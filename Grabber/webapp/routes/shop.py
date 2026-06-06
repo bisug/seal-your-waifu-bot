@@ -32,6 +32,7 @@ from Grabber.core.pass_config import (
 )
 from Grabber.core.pass_payments import PassPaymentError, create_pass_invoice
 from Grabber.core.progression import get_user_progress
+from Grabber.core.roles import apply_role_discount
 from Grabber.core.utils import get_user_id_query, normalize_user_id
 from Grabber.database import collection, user_collection
 from Grabber.modules.economy.shop import get_daily_shop_characters
@@ -123,6 +124,7 @@ async def exchange_currency_api(
 @router.get("/shop/characters")
 async def get_shop_characters(user: dict = Depends(get_current_user_data)):
     chars = await get_daily_shop_characters()
+    uid_int = normalize_user_id(user["id"])
     owned_ids = set(c.get("id") for c in (user.get("characters") or []))
     
     response = []
@@ -136,7 +138,11 @@ async def get_shop_characters(user: dict = Depends(get_current_user_data)):
         char_dict["sold_count"] = sold_count
         char_dict["stock_remaining"] = stock_remaining
         char_dict["sold_out"] = stock_remaining <= 0
-        char_dict["zenith_price"] = RARITY_PRICES.get(c.rarity, 5)
+        base_price = RARITY_PRICES.get(c.rarity, 5)
+        price, discount = apply_role_discount(uid_int, base_price)
+        char_dict["base_zenith_price"] = base_price
+        char_dict["zenith_price"] = price
+        char_dict["staff_discount"] = discount
         response.append(char_dict)
     return response
 
@@ -155,7 +161,8 @@ async def buy_character_api(char_id: str, user_id: int = Depends(get_current_use
     if not char_raw:
         raise HTTPException(status_code=404, detail="Character not found")
 
-    price = RARITY_PRICES.get(char_raw.get("rarity"), 5)
+    base_price = RARITY_PRICES.get(char_raw.get("rarity"), 5)
+    price, staff_discount = apply_role_discount(user_id, base_price)
     if user_raw.get("zenith", 0) < price:
         LOGGER.info(f"Shop Purchase Error: User {user_id} has insufficient Zenith ({user_raw.get('zenith', 0)}) for price {price}")
         raise HTTPException(status_code=400, detail=f"Insufficient Zenith (Need {price})")
@@ -201,7 +208,13 @@ async def buy_character_api(char_id: str, user_id: int = Depends(get_current_use
     await check_achievements(user_id)
     await sync_user_to_redis(user_id)
     
-    return {"status": "success", "char_name": char_raw["name"]}
+    return {
+        "status": "success",
+        "char_name": char_raw["name"],
+        "price": price,
+        "base_price": base_price,
+        "staff_discount": staff_discount,
+    }
 
 @router.get("/shop/pets")
 async def get_shop_pets(user: dict = Depends(get_current_user_data)):

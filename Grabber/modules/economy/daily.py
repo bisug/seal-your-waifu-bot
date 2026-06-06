@@ -9,6 +9,7 @@ from Grabber.core.cache import (get_daily_date, get_weekly_date,
                                 invalidate_user_cache, set_daily_date,
                                 set_weekly_date, sync_user_to_redis)
 from Grabber.core.pass_config import PASS_BENEFITS, get_active_pass_type
+from Grabber.core.roles import apply_role_bonus
 from Grabber.core.user import add_user_set_on_insert, get_user_data
 from Grabber.core.utils import get_user_id_query, handle_errors, html_escape, reply_media_dynamic
 from Grabber.database import collection, user_collection
@@ -67,6 +68,8 @@ async def daily_command_handler(_, message: types.Message):
     reward_coins = int(base_coins * multiplier)
     bonus_coins = reward_coins - base_coins
     pass_bonus_text = f"\n<b>Pass Bonus:</b> +{bonus_coins} ⬪" if multiplier > 1.0 else ""
+    reward_coins, staff_bonus = apply_role_bonus(user_id, reward_coins, "daily_bonus_percent")
+    staff_bonus_text = f"\n<b>Staff Bonus:</b> +{staff_bonus} ⬪" if staff_bonus else ""
     # Give Rewards
     char = await get_daily_waifu()
     if not char:
@@ -95,7 +98,7 @@ async def daily_command_handler(_, message: types.Message):
         f"<b>Character:</b> {html_escape(char['name'])}\n"
         f"<b>Rarity:</b> {html_escape(char['rarity'])}\n"
         f"<b>Anime:</b> {html_escape(char['anime'])}\n\n"
-        f"<b>Coins:</b> +{reward_coins} ⬪{pass_bonus_text}\n"
+        f"<b>Coins:</b> +{reward_coins} ⬪{pass_bonus_text}{staff_bonus_text}\n"
         f"<b>Streak:</b> {streak}/7 Days"
     )
     await reply_media_dynamic(message, char['img_url'], caption=caption, parse_mode=enums.ParseMode.HTML)
@@ -127,6 +130,10 @@ async def weekly_command_handler(_, message: types.Message):
     xp_reward = int(500 * PASS_BENEFITS[pass_type]["xp_multiplier"])
     bonus_coins = reward_coins - base_coins
     pass_bonus_text = f"\n(+{bonus_coins} Pass Bonus)" if multiplier > 1.0 else ""
+    reward_coins, staff_coin_bonus = apply_role_bonus(user_id, reward_coins, "weekly_bonus_percent")
+    xp_reward, staff_xp_bonus = apply_role_bonus(user_id, xp_reward, "weekly_xp_bonus_percent")
+    staff_coin_text = f"\n(+{staff_coin_bonus:,} Staff Bonus)" if staff_coin_bonus else ""
+    staff_xp_text = f"\n(+{staff_xp_bonus:,} Staff XP)" if staff_xp_bonus else ""
     weekly_filter = get_user_id_query(user_id)
     weekly_filter["$or"] = [
         {"last_weekly_date": {"$exists": False}},
@@ -152,8 +159,8 @@ async def weekly_command_handler(_, message: types.Message):
     await add_xp(user_id, xp_reward, "weekly_claim")
     await message.reply_text(
         f"<b>Weekly Reward Claimed!</b>\n\n"
-        f"<b>Coins:</b> +{reward_coins} ⬪{pass_bonus_text}\n"
-        f"<b>XP:</b> +{xp_reward} XP\n"
+        f"<b>Coins:</b> +{reward_coins} ⬪{pass_bonus_text}{staff_coin_text}\n"
+        f"<b>XP:</b> +{xp_reward} XP{staff_xp_text}\n"
         f"Come back in 7 days!",
         parse_mode=enums.ParseMode.HTML
     )
