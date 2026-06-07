@@ -7,8 +7,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "build:cloudflare": "bun install --frozen-lockfile && bun run build",
     "deploy": "bunx wrangler pages deploy dist --project-name seal-bot-frontend",
-    "deploy:cloudflare": "bun run build && bunx wrangler pages deploy dist --project-name seal-bot-frontend",
+    "deploy:cloudflare": "bun run build:cloudflare && bunx wrangler pages deploy dist --project-name seal-bot-frontend",
     "deploy:cloudflare:prebuilt": "bunx wrangler pages deploy dist --project-name seal-bot-frontend",
     "lint": "eslint .",
     "preview": "vite preview",
