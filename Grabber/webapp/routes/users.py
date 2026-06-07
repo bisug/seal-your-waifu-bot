@@ -14,7 +14,7 @@ from Grabber.core.progression import get_level_from_xp, get_user_progress
 from Grabber.core.tasks import run_background_task
 from Grabber.core.user import get_user_rank_with_fallback
 from Grabber.core.utils import get_user_id_query, normalize_user_id
-from Grabber.database import user_collection
+from Grabber.database import collection, user_collection
 from Grabber.core.eggs import get_egg_tier_info, get_incubating_count, get_incubation_wait_minutes
 from Grabber.core.pass_config import apply_pass_incubation_bonus, get_active_pass_type, get_pass_incubation_slots
 from Grabber.modules.progression.achievements import ACHIEVEMENTS
@@ -85,15 +85,28 @@ async def get_me(user: dict = Depends(get_current_user_data)):
 
     titles_list = user.get("titles") or ["Rookie"]
     clean_titles = [re.sub(r'[^\x00-\x7F]+', '', str(t or "")).strip() for t in titles_list]
-    current_title = re.sub(r'[^\x00-\x7F]+', '', str(user.get("title") or "Rookie")).strip()
+    current_title_source = user.get("title") or (titles_list[-1] if titles_list else "Rookie")
+    current_title = re.sub(r'[^\x00-\x7F]+', '', str(current_title_source or "Rookie")).strip()
     
     progress = await get_user_progress(user_id, user_data=user)
     
-    # Calculate total characters dynamically 
-    # using denormalized char_count
+    characters = user.get("characters") or []
+
+    # Calculate total owned copies from the denormalized counter, but track
+    # unique character completion separately so duplicates do not inflate it.
     total_characters = user.get("char_count")
     if total_characters is None:
-        total_characters = len(user.get("characters") or [])
+        total_characters = len(characters)
+    unique_characters = len({
+        str(char.get("id"))
+        for char in characters
+        if isinstance(char, dict) and char.get("id") is not None
+    })
+    total_available_characters = await collection.estimated_document_count()
+    collection_percent = (
+        round((unique_characters / total_available_characters) * 100, 1)
+        if total_available_characters > 0 else 0.0
+    )
     
     eggs = user.get("eggs", [])
     pass_type = get_active_pass_type(user)
@@ -108,6 +121,8 @@ async def get_me(user: dict = Depends(get_current_user_data)):
         "avatar": user.get("avatar"),
         "is_sudo": is_sudo_user_id(user_id),
         **role_payload,
+        "balance": user.get("balance", 0),
+        "zenith": user.get("zenith", 0),
         "stats": {
             "level": progress["level"],
             "xp": progress["xp"],
@@ -118,6 +133,9 @@ async def get_me(user: dict = Depends(get_current_user_data)):
             "zenith": user.get("zenith", 0),
             "badges": user.get("badges") or [],
             "total_characters": total_characters,
+            "unique_characters": unique_characters,
+            "total_available_characters": total_available_characters,
+            "collection_percent": collection_percent,
             "rank": rank,
             "percentile": percentile,
             "pass_type": pass_type,
