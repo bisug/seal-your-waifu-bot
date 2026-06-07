@@ -6,11 +6,7 @@
   "packageManager": "bun@1.3.14",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
-    "build:cloudflare": "bun install --frozen-lockfile && bun run build",
-    "deploy": "bunx wrangler pages deploy dist --project-name seal-bot-frontend",
-    "deploy:cloudflare": "bun run build:cloudflare && bunx wrangler pages deploy dist --project-name seal-bot-frontend",
-    "deploy:cloudflare:prebuilt": "bunx wrangler pages deploy dist --project-name seal-bot-frontend",
+    "build": "bun install --frozen-lockfile && tsc --noEmit && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "type-check": "tsc --noEmit"
