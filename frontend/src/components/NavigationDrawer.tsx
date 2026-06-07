@@ -76,7 +76,7 @@ const SECTIONS: NavSection[] = [
 export const NavigationDrawer = ({ isOpen, onClose, activeTab, onNavigate }: NavigationDrawerProps) => {
   const { user } = useUser();
   const staffItems = [
-    ...(user?.is_sudo ? [{ id: 'sudos', label: 'Sudos', icon: ShieldCheck }] : []),
+    ...(user?.is_sudo ? [{ id: 'staff', label: 'Staff', icon: ShieldCheck }] : []),
     ...((user?.can_upload ?? user?.is_sudo) ? [{ id: 'upload', label: 'Upload', icon: CloudUpload }] : []),
   ];
   const sections = staffItems.length > 0
