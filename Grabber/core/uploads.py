@@ -309,6 +309,9 @@ async def upload_character_from_path(
         "anime": anime_name,
         "rarity": rarity_text,
         "message_id": sent_msg.id,
+        "added_by_id": int(added_by_id),
+        "added_by_name": str(added_by_name or added_by_id),
+        "uploaded_at": datetime.now(timezone.utc),
     }
     char_id = await add_character_to_db(char_data)
     invalidate_character_cache(rarity_text)
