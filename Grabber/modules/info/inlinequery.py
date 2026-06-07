@@ -1,7 +1,7 @@
-import re
 from html import escape
 from pyrogram import enums, errors, filters, types
 from Grabber import LOGGER, app, collection, user_collection
+from Grabber.core.character_search import build_character_search_filter
 from Grabber.core.utils import html_escape as html_escape_v2
 RESULTS_PER_PAGE = 50
 @app.on_inline_query()
@@ -26,14 +26,9 @@ async def inline_query_handler(_, query: types.InlineQuery) -> None:
                 {"$replaceRoot": {"newRoot": "$characters"}}
             ]
             if search_text:
-                pipeline.append({
-                    "$match": {
-                        "$or": [
-                            {"name": {"$regex": search_text, "$options": "i"}},
-                            {"anime": {"$regex": search_text, "$options": "i"}}
-                        ]
-                    }
-                })
+                search_filter = build_character_search_filter(search_text)
+                if search_filter:
+                    pipeline.append({"$match": search_filter})
             pipeline.extend([
                 {"$group": {
                     "_id": "$id",
@@ -64,12 +59,7 @@ async def inline_query_handler(_, query: types.InlineQuery) -> None:
     filter_query = {}
     if query_text:
         search_context = f"q_{query_text[:10]}"
-        filter_query = {
-            "$or": [
-                {"name": {"$regex": query_text, "$options": "i"}},
-                {"anime": {"$regex": query_text, "$options": "i"}}
-            ]
-        }
+        filter_query = build_character_search_filter(query_text) or {}
     cursor = collection.find(filter_query).sort("id", 1).skip(offset).limit(RESULTS_PER_PAGE)
     characters = await cursor.to_list(length=RESULTS_PER_PAGE)
     for i, char in enumerate(characters):

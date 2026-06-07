@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useUser } from '../context/UserContext';
 import { apiFetch } from '../api/client';
 import { ProgressBar } from '../components/ui/ProgressBar';
@@ -11,6 +11,7 @@ import {
   Activity,
   Award,
   BadgeCheck,
+  ChevronDown,
   Coins,
   Crown,
   Egg,
@@ -24,7 +25,7 @@ import {
   Trophy,
   Users,
 } from 'lucide-react';
-import { formatNumber, cn } from '../utils';
+import { cleanRarityLabel, formatNumber, cn } from '../utils';
 import { useInfiniteGrid } from '../hooks/useInfiniteGrid';
 import { Character } from '../context/UserContext';
 
@@ -77,6 +78,10 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
   } = useInfiniteGrid<Character>('/harem');
   
   const [availableRarities, setAvailableRarities] = useState<string[]>([]);
+  const rarityOptions = useMemo(
+    () => availableRarities.map((value) => ({ value, label: cleanRarityLabel(value) || value })),
+    [availableRarities],
+  );
 
   useEffect(() => {
     apiFetch('/rarities').then(setAvailableRarities).catch(console.error);
@@ -265,39 +270,29 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-500" size={16} />
               <input
                 type="text"
-                placeholder="Search collection..."
+                placeholder="Search by name, ID, or anime..."
                 className="w-full bg-brand-deep border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm font-medium focus:border-brand-accent outline-none transition-all placeholder:text-neutral-500 text-white"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
 
-            <div className="flex space-x-2 overflow-x-auto no-scrollbar pb-1">
-              <button 
-                onClick={() => setRarity('')}
-                className={cn(
-                  "px-4 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-all border",
-                  rarity === '' 
-                  ? "bg-white text-brand-midnight border-white shadow-sm"
-                  : "bg-brand-deep text-neutral-400 border-white/5 hover:border-white/10 hover:text-neutral-200"
-                )}
+            <div className="relative max-w-xs">
+              <select
+                aria-label="Filter by rarity"
+                value={rarity}
+                onChange={(event) => setRarity(event.target.value)}
+                className="h-10 w-full appearance-none rounded-lg border border-white/10 bg-brand-deep px-3 pr-9 text-sm font-semibold text-white outline-none transition-colors focus:border-brand-accent"
               >
-                All
-              </button>
-              {availableRarities.map((r) => (
-                <button 
-                  key={r}
-                  onClick={() => setRarity(r)}
-                  className={cn(
-                    "px-4 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-all border",
-                    rarity === r 
-                    ? "bg-white text-brand-midnight border-white shadow-sm"
-                    : "bg-brand-deep text-neutral-400 border-white/5 hover:border-white/10 hover:text-neutral-200"
-                  )}
-                >
-                  {r.replace(/[\u2700-\u27bf]|[\u2190-\u21ff]|[\u2000-\u206f]|[\u2600-\u26ff]|[\u2b00-\u2bff]|[\u00a0-\u00bf]|\u2013|\u2014/g, '').trim()}
-                </button>
-              ))}
+                <option value="">All Rarities</option>
+                {rarityOptions.map(({ value, label }) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+              <ChevronDown
+                size={16}
+                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500"
+              />
             </div>
           </div>
         </div>

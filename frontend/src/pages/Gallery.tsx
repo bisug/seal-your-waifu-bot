@@ -7,7 +7,7 @@ import { ErrorState } from '../components/ui/ErrorState';
 import { ArrowDown10, ArrowDownZA, ArrowUp01, ArrowUpAZ, ChevronDown, Search, Loader2, Users, type LucideIcon } from 'lucide-react';
 import { useInfiniteGrid } from '../hooks/useInfiniteGrid';
 import { Character } from '../context/UserContext';
-import { cn } from '../utils';
+import { cleanRarityLabel, cn } from '../utils';
 
 interface GalleryProps {
   onCharClick: (character: Character) => void;
@@ -27,10 +27,6 @@ const SORT_OPTIONS: Array<{
   { sort: 'alphabet', order: 'asc', label: 'A-Z', Icon: ArrowUpAZ },
   { sort: 'alphabet', order: 'desc', label: 'Z-A', Icon: ArrowDownZA },
 ];
-
-const cleanRarityLabel = (rarity: string) => (
-  rarity.replace(/[\u2700-\u27bf]|[\u2190-\u21ff]|[\u2000-\u206f]|[\u2600-\u26ff]|[\u2b00-\u2bff]|[\u00a0-\u00bf]|\u2013|\u2014/g, '').trim()
-);
 
 export const Gallery = ({ onCharClick }: GalleryProps) => {
   const [sort, setSort] = useState<CatalogSort>('numeric');
@@ -70,7 +66,7 @@ export const Gallery = ({ onCharClick }: GalleryProps) => {
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-500 group-focus-within:text-brand-accent transition-colors" size={16} />
           <input 
             type="text" 
-            placeholder="Search catalog..."
+            placeholder="Search by name, ID, or anime..."
             className="w-full bg-brand-deep border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm font-medium focus:border-brand-accent outline-none transition-all placeholder:text-neutral-500 text-white"
             value={search}
             onChange={(e) => setSearch(e.target.value)}

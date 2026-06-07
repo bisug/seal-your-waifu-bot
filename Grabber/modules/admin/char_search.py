@@ -1,11 +1,11 @@
 import hashlib
 from collections import OrderedDict
 from pyrogram import enums, errors, filters, types
-from pyrogram.enums import ParseMode
 
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from Grabber import LOGGER, app, collection
 from Grabber.core.cache import rget, rset
+from Grabber.core.character_search import build_character_search_filter
 from Grabber.core.utils import handle_errors, html_escape as escape
 # --- PAGINATION HELPERS ---
 _MAX_SEARCH_FALLBACK = 1000
@@ -22,23 +22,37 @@ def _remember_search(query_id: str, query: str):
 async def get_search_results_page(query, search_type, page=1):
     """
     Common helper to fetch a page of search results and generate the message + buttons.
-    search_type: 'name' or 'anime'
+    search_type: 'all', 'name', 'anime', or 'id'
     """
     limit = 20
     skip = (page - 1) * limit
+    field_map = {
+        "all": None,
+        "name": ("name",),
+        "anime": ("anime",),
+        "id": ("id",),
+    }
+    search_filter = build_character_search_filter(query, fields=field_map.get(search_type))
+    if not search_filter:
+        return None, None
+
     # 1. Fetch matching documents
-    cursor = collection.find({search_type: {"$regex": f".*{query}.*", "$options": "i"}}).skip(skip).limit(limit + 1)
+    cursor = collection.find(search_filter).skip(skip).limit(limit + 1)
     found_characters = await cursor.to_list(length=limit + 1)
     if not found_characters and page == 1:
         return None, None
     # 2. Format the Text Block
-    header = "🔍 <b>Character Search</b>" if search_type == 'name' else f"🎬 <b>Characters from '{escape(query)}'</b>"
+    if search_type == "anime":
+        header = f"🎬 <b>Characters from '{escape(query)}'</b>"
+    elif search_type == "id":
+        header = f"🆔 <b>Character ID Search: {escape(query)}</b>"
+    else:
+        header = f"🔍 <b>Character Search: {escape(query)}</b>"
     response_message = f"{header}\n<i>Page: {page}</i>\n\n"
     for character in found_characters[:limit]:
         response_message += f"🆔 <code>ID: {character['id']}</code>\n"
         response_message += f"📛 Name: {escape(character['name'])}\n"
-        if search_type == 'name':
-             response_message += f"🎬 Series: {escape(character['anime'])}\n"
+        response_message += f"🎬 Series: {escape(character['anime'])}\n"
         response_message += f"🔮 Rarity: {escape(character['rarity'])}\n\n"
     # 3. Generate Buttons
     buttons = []
@@ -46,9 +60,10 @@ async def get_search_results_page(query, search_type, page=1):
     has_next = len(found_characters) > limit
     # Manage Callback Data Session (Telegram 64-byte limit)
     # Prefix: sc:{type_idx}:{page}:{query_id}
-    type_idx = "1" if search_type == "name" else "2"
+    type_map = {"all": "0", "name": "1", "anime": "2", "id": "3"}
+    type_idx = type_map.get(search_type, "0")
     # If query is too long, store in Redis
-    if len(query) > 30:
+    if len(query) > 30 or ":" in query:
         query_id = hashlib.md5(query.encode()).hexdigest()[:10]
         await rset(f"search:{query_id}", query, 3600)
         _remember_search(query_id, query)
@@ -66,11 +81,11 @@ async def get_search_results_page(query, search_type, page=1):
 @handle_errors
 async def search_character(_, message: types.Message):
     if len(message.command) < 2:
-        return await message.reply_text("Please provide a name to search for.")
+        return await message.reply_text("Please provide a name, character ID, or anime title to search for.")
     query = " ".join(message.command[1:]).strip()
-    text, buttons = await get_search_results_page(query, "name", 1)
+    text, buttons = await get_search_results_page(query, "all", 1)
     if not text:
-        return await message.reply_text("No characters found with that name.")
+        return await message.reply_text("No characters found for that search.")
     await message.reply_text(text, reply_markup=buttons, parse_mode=enums.ParseMode.HTML)
 @app.on_message(filters.command("sani"))
 @handle_errors
@@ -84,11 +99,11 @@ async def search_anime(_, message: types.Message):
     await message.reply_text(text, reply_markup=buttons, parse_mode=enums.ParseMode.HTML)
 @app.on_callback_query(filters.regex(r"^sc:"))
 async def search_callback_handler(_, query: types.CallbackQuery):
-    data = query.data.split(":")
+    data = query.data.split(":", 3)
     type_idx = data[1]
     page = int(data[2])
     query_id = data[3]
-    search_type = "name" if type_idx == "1" else "anime"
+    search_type = {"0": "all", "1": "name", "2": "anime", "3": "id"}.get(type_idx, "all")
     # Retrieve query from Redis if it looks like a hash
     if len(query_id) == 10:
         search_query = await rget(f"search:{query_id}") or _search_fallback.get(query_id)
