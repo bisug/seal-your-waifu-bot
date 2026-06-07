@@ -1,5 +1,5 @@
 import React, { memo, useEffect, forwardRef } from 'react';
-import { CheckCircle2, Gem, Hash, Shield } from 'lucide-react';
+import { CheckCircle2, Gem, Hash, ImageOff } from 'lucide-react';
 import { cn, formatNumber } from '../../utils';
 import { Character } from '../../context/UserContext';
 
@@ -58,7 +58,7 @@ export const Card = memo(forwardRef<HTMLDivElement, CardProps>(({ character, onC
                 />
             ) : (
                 <div className="absolute inset-0 bg-brand-deep flex flex-col items-center justify-center">
-                    <Shield size={24} className="text-neutral-800" />
+                    <ImageOff size={24} className="text-neutral-800" />
                 </div>
             )}
             

@@ -1,7 +1,19 @@
 import React, { useEffect } from 'react';
 import {
-  X, User, Egg, ShoppingBag, Search, Dog, ArrowLeftRight,
-  Zap, Trophy, Swords, Users, Award, PawPrint, UploadCloud
+  X,
+  UserRound,
+  Egg,
+  Store,
+  BookOpen,
+  Bone,
+  Repeat2,
+  ListChecks,
+  Ticket,
+  ChartNoAxesColumnIncreasing,
+  UserPlus,
+  BadgeCheck,
+  PawPrint,
+  CloudUpload,
 } from 'lucide-react';
 import { cn } from '../utils';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -29,33 +41,33 @@ const SECTIONS: NavSection[] = [
   {
     title: "Personal",
     items: [
-      { id: 'profile', label: 'Profile', icon: User },
+      { id: 'profile', label: 'Profile', icon: UserRound },
       { id: 'mypets', label: 'My Pets', icon: PawPrint },
       { id: 'incubation', label: 'Incubation', icon: Egg },
-      { id: 'achievements', label: 'Achievements', icon: Award },
+      { id: 'achievements', label: 'Achievements', icon: BadgeCheck },
     ]
   },
   {
     title: "Marketplace",
     items: [
-      { id: 'shop', label: 'Daily Shop', icon: ShoppingBag },
-      { id: 'exchange', label: 'Exchange', icon: ArrowLeftRight },
-      { id: 'gallery', label: 'Catalog', icon: Search },
-      { id: 'pets', label: 'Pet Store', icon: Dog },
+      { id: 'shop', label: 'Daily Shop', icon: Store },
+      { id: 'exchange', label: 'Exchange', icon: Repeat2 },
+      { id: 'gallery', label: 'Catalog', icon: BookOpen },
+      { id: 'pets', label: 'Pet Store', icon: Bone },
     ]
   },
   {
     title: "Social",
     items: [
-      { id: 'referrals', label: 'Referrals', icon: Users },
+      { id: 'referrals', label: 'Referrals', icon: UserPlus },
     ]
   },
   {
     title: "Competitive",
     items: [
-      { id: 'quests', label: 'Tasks', icon: Zap },
-      { id: 'pass', label: 'Pass', icon: Trophy },
-      { id: 'leaderboard', label: 'Leaderboards', icon: Swords },
+      { id: 'quests', label: 'Tasks', icon: ListChecks },
+      { id: 'pass', label: 'Pass', icon: Ticket },
+      { id: 'leaderboard', label: 'Leaderboards', icon: ChartNoAxesColumnIncreasing },
     ]
   }
 ];
@@ -67,7 +79,7 @@ export const NavigationDrawer = ({ isOpen, onClose, activeTab, onNavigate }: Nav
         ...SECTIONS,
         {
           title: "Staff",
-          items: [{ id: 'upload', label: 'Upload', icon: UploadCloud }],
+          items: [{ id: 'upload', label: 'Upload', icon: CloudUpload }],
         },
       ]
     : SECTIONS;

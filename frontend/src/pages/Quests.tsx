@@ -2,7 +2,7 @@ import React from 'react';
 import { useApi } from '../hooks/useApi';
 import { useToast } from '../components/ui/Toast';
 import { apiFetch, getErrorMessage } from '../api/client';
-import { CheckCircle2, Loader2, Target, Zap } from 'lucide-react';
+import { CheckCircle2, ClipboardList, Gift, Loader2, Target } from 'lucide-react';
 import { formatNumber } from '../utils';
 import { useUser } from '../context/UserContext';
 import { cn } from '../utils';
@@ -65,10 +65,10 @@ const QuestItem = ({ quest, onComplete, completing }) => (
                 >
                   {completing === quest.id ? <Loader2 size={18} className="animate-spin" /> : !quest.locked && quest.progress >= quest.target ? (
                     <>
-                      <Zap size={16} strokeWidth={2.5} />
+                      <Gift size={16} strokeWidth={2.5} />
                       <span className="text-xs font-bold">Claim</span>
                     </>
-                  ) : <Zap size={18} strokeWidth={2.5} />}
+                  ) : <Gift size={18} strokeWidth={2.5} />}
               </button>
           )}
       </div>
@@ -154,7 +154,10 @@ export const Quests = () => {
     return (
         <div className="pb-20 pt-4 max-w-2xl mx-auto">
             <header className="px-4 mb-6 border-b border-white/5 pb-4">
-                <h1 className="text-xl font-bold text-white tracking-tight mb-1">Tasks</h1>
+                <div className="mb-1 flex items-center gap-2">
+                    <ClipboardList size={20} className="text-brand-accent" />
+                    <h1 className="text-xl font-bold text-white tracking-tight">Tasks</h1>
+                </div>
                 <p className="text-sm font-medium text-neutral-400">Complete objectives to earn currency</p>
             </header>
 

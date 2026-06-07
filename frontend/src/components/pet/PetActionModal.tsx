@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Loader2, Heart, Zap, X, Swords, Wind, Sparkles, Check, Lock, PawPrint } from 'lucide-react';
+import { Loader2, Heart, Gem, X, Swords, Wind, Sparkles, Check, Lock, PawPrint } from 'lucide-react';
 import { useToast } from '../ui/Toast';
 import { apiFetch, getErrorMessage } from '../../api/client';
 import { cn } from '../../utils';
@@ -190,7 +190,7 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }) => {
                                     disabled={!canAfford}
                                     className="w-full py-5 rounded-xl bg-brand-accent text-brand-midnight font-bold text-sm shadow-xl shadow-brand-accent/20 active:scale-95 transition-all flex items-center justify-center gap-3"
                                 >
-                                    {canAfford ? `Buy for ${selectedPet.zenith_price} Zenith` : `${Math.max(0, (selectedPet.zenith_price || 0) - zenithBalance)} more Zenith needed`} <Zap size={16} />
+                                    {canAfford ? `Buy for ${selectedPet.zenith_price} Zenith` : `${Math.max(0, (selectedPet.zenith_price || 0) - zenithBalance)} more Zenith needed`} <Gem size={16} />
                                 </button>
                             ) : (
                                 <div className="p-1 glass-panel rounded-xl border border-brand-accent/20 flex space-x-1">

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useUser } from '../context/UserContext';
-import { Sparkles, Timer, Zap, CheckCircle2, Loader2, ArrowRight } from 'lucide-react';
+import { Egg, Timer, CheckCircle2, Loader2, ArrowRight } from 'lucide-react';
 import { cn } from '../utils';
 import { apiFetch, getErrorMessage } from '../api/client';
 import { useToast } from '../components/ui/Toast';
@@ -86,7 +86,7 @@ export const Hatchery = () => {
                         "w-12 h-12 rounded-lg flex items-center justify-center border shrink-0",
                         egg.isReady ? "bg-emerald-500/10 border-emerald-500/20" : "bg-brand-midnight border-white/5"
                     )}>
-                        <Sparkles className={egg.isReady ? "text-emerald-500 animate-pulse" : "text-neutral-500"} size={20} />
+                        <Egg className={egg.isReady ? "text-emerald-500 animate-pulse" : "text-neutral-500"} size={20} />
                     </div>
                     <div className="min-w-0">
                         <p className="text-base font-bold text-white leading-none mb-1.5 truncate">{egg.name}</p>
@@ -108,7 +108,7 @@ export const Hatchery = () => {
                             )}
                             {egg.isFresh && (
                                 <>
-                                    <Zap size={14} className="text-neutral-500" />
+                                    <Egg size={14} className="text-neutral-500" />
                                     <span className="text-xs font-medium text-neutral-500">
                                         {waitMin > 0 ? `${waitMin}m incubation` : 'Fresh egg'}
                                     </span>
@@ -167,7 +167,10 @@ export const Hatchery = () => {
     return (
         <div className="px-4 py-8 pb-20 max-w-2xl mx-auto space-y-8">
             <header className="border-b border-white/5 pb-4">
-                <h1 className="text-xl font-bold text-white tracking-tight mb-1">Incubation</h1>
+                <div className="mb-1 flex items-center gap-2">
+                    <Egg size={20} className="text-brand-accent" />
+                    <h1 className="text-xl font-bold text-white tracking-tight">Incubation</h1>
+                </div>
                 <p className="text-sm font-medium text-neutral-400">Incubate eggs and hatch new characters.</p>
             </header>
 
@@ -200,7 +203,7 @@ export const Hatchery = () => {
                 </div>
             ) : (
                 <div className="bg-brand-deep p-8 rounded-xl border border-white/5 text-center flex flex-col items-center shadow-sm">
-                    <Zap size={24} className="text-neutral-700 mb-3" />
+                    <Egg size={24} className="text-neutral-700 mb-3" />
                     <p className="text-neutral-500 text-sm font-medium">
                         You do not have any eggs yet.
                     </p>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Award, CheckCircle2, Crown, Gift, Loader2, Lock, Sparkles, Star, Trophy, Zap } from 'lucide-react';
+import { CheckCircle2, Crown, Gift, Loader2, Lock, Star, Ticket, TicketCheck, TicketPlus } from 'lucide-react';
 import { apiFetch, getErrorMessage } from '../api/client';
 import { useUser } from '../context/UserContext';
 import { useApi } from '../hooks/useApi';
@@ -18,7 +18,7 @@ const EGG_TIER_LABELS: Record<number, string> = {
 
 const TIER_ORDER = ['free', 'premium', 'elite'];
 const TIER_ICON = {
-  free: Trophy,
+  free: Ticket,
   premium: Star,
   elite: Crown,
 };
@@ -147,7 +147,7 @@ export const Pass = () => {
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2 text-brand-accent mb-1.5">
-              <Sparkles size={16} />
+              <TicketCheck size={16} />
               <span className="text-xs font-semibold uppercase">Battle Pass</span>
             </div>
             <h1 className="text-xl font-bold text-white tracking-tight truncate">{passData.season_name || 'Season Pass'}</h1>
@@ -228,7 +228,7 @@ export const Pass = () => {
             disabled={upgrading !== null}
             className="w-full h-12 rounded-lg bg-brand-accent text-white text-sm font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
           >
-            {upgrading === nextTier ? <Loader2 size={18} className="animate-spin" /> : <Zap size={18} />}
+            {upgrading === nextTier ? <Loader2 size={18} className="animate-spin" /> : <TicketPlus size={18} />}
             <span>{upgrading === nextTier ? 'Opening invoice' : `Buy ${nextTier} pass`}</span>
           </button>
         </section>
