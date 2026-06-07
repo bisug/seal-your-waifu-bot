@@ -7,10 +7,44 @@ from Grabber.database import r
 from Grabber.webapp.auth import get_user_id_from_token
 
 router = APIRouter()
+WS_AUTH_TIMEOUT_SECONDS = 5.0
+
+
+def _split_subprotocols(value: str | None) -> list[str]:
+    if not value:
+        return []
+    return [part.strip() for part in value.split(",") if part.strip()]
+
+
+def _extract_token_from_subprotocol(value: str | None) -> str | None:
+    protocols = _split_subprotocols(value)
+    for index, protocol in enumerate(protocols):
+        if protocol.startswith("seal-token."):
+            return protocol.removeprefix("seal-token.").strip() or None
+        if protocol == "seal-auth" and index + 1 < len(protocols):
+            return protocols[index + 1].strip() or None
+    return None
+
+
+async def _receive_ws_token(websocket: WebSocket) -> str | None:
+    token = _extract_token_from_subprotocol(websocket.headers.get("sec-websocket-protocol"))
+    if token:
+        return token
+    try:
+        raw = await asyncio.wait_for(websocket.receive_text(), timeout=WS_AUTH_TIMEOUT_SECONDS)
+        payload = json.loads(raw)
+    except Exception:
+        return None
+    if not isinstance(payload, dict) or payload.get("type") != "auth":
+        return None
+    token = payload.get("token")
+    return token.strip() if isinstance(token, str) and token.strip() else None
 
 @router.websocket("/ws/leaderboard")
 async def leaderboard_ws(websocket: WebSocket):
-    await websocket.accept()
+    requested_protocols = _split_subprotocols(websocket.headers.get("sec-websocket-protocol"))
+    accepted_protocol = "seal-auth" if "seal-auth" in requested_protocols else None
+    await websocket.accept(subprotocol=accepted_protocol)
 
     # Fix #6: Guard against Redis being None (e.g. REDIS_URL not configured)
     if not r:
@@ -18,8 +52,9 @@ async def leaderboard_ws(websocket: WebSocket):
         await websocket.close(code=1011)
         return
 
-    # Validate token from query param before proceeding
-    token = websocket.query_params.get("token")
+    # Validate token before subscribing. Tokens are accepted through a
+    # subprotocol value or the first JSON message, not through the URL.
+    token = await _receive_ws_token(websocket)
     if not token:
         await websocket.send_text(json.dumps({"error": "Unauthorized: no token"}))
         await websocket.close(code=4001)

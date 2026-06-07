@@ -57,6 +57,8 @@ interface StaffMember {
   uploads: {
     characters: StaffUploadItem[];
     pets: StaffUploadItem[];
+    limit?: number;
+    truncated?: boolean;
   };
 }
 
@@ -200,7 +202,14 @@ const StaffDetails = ({ member }: { member: StaffMember }) => {
 
       <div className="mt-4">
         {uploads.length > 0 ? (
-          uploads.map(item => <UploadRow key={`${item.type}:${item.id}:${item.name}`} item={item} />)
+          <>
+            {uploads.map(item => <UploadRow key={`${item.type}:${item.id}:${item.name}`} item={item} />)}
+            {member.uploads.truncated && (
+              <p className="border-t border-white/5 pt-3 text-center text-xs font-semibold text-neutral-500">
+                Showing latest {formatNumber(member.uploads.limit || uploads.length)} upload records.
+              </p>
+            )}
+          </>
         ) : (
           <div className="py-5 text-center text-sm font-medium text-neutral-500">No upload records yet.</div>
         )}

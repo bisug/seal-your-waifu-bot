@@ -68,4 +68,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD curl -f http://localhost:${PORT:-8080}/healthz || exit 1
 
 # Default runtime command
-CMD ["sh", "-c", "uv run uvicorn Grabber.webapp.main:app --host 0.0.0.0 --port ${PORT:-8080}"]
+CMD ["sh", "-c", "uvicorn Grabber.webapp.main:app --host 0.0.0.0 --port ${PORT:-8080}"]
