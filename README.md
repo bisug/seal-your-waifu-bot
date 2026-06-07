@@ -843,7 +843,7 @@ Current Cloudflare Workers & Pages build UI:
 3. Create a Pages project and connect the Git repository.
 4. Set Project root directory to `frontend`. Do not set this to `dist`; Cloudflare checks the root directory immediately after cloning, before the build creates `dist`.
 5. Use framework preset `React (Vite)` or configure manually:
-   - Build command: `bun run build`
+   - Build command: `bun run build:cloudflare`
    - Build output directory: `dist`
    - Deploy command: `npx wrangler pages deploy dist --project-name seal-bot-frontend`
 6. Set Build token to an API token that can deploy Pages:
@@ -860,6 +860,12 @@ Current Cloudflare Workers & Pages build UI:
 Use the Account ID shown in Cloudflare Dashboard > account overview, or the Account ID printed in Wrangler logs for the account that owns the Pages project.
 
 If your Cloudflare log says `Authentication error [code: 10000]`, the deploy command is now correct but the selected token is not authorized for Pages deploys. Create or select a token with `Account > Cloudflare Pages > Edit`, then retry.
+
+If your Cloudflare log says `/usr/bin/bash: line 1: tsc: command not found`, dependencies were not installed before the build command ran. Use `bun run build:cloudflare` as the Build command, or use the equivalent inline command:
+
+```bash
+bun install --frozen-lockfile && bun run build
+```
 
 If your Cloudflare log says `It seems that you have run wrangler deploy on a Pages project`, the deploy command is still wrong. Replace `npx wrangler deploy` with:
 
