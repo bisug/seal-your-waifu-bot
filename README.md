@@ -835,7 +835,7 @@ Dashboard deployment:
 5. Use framework preset `React (Vite)` or configure manually:
    - Build command: `bun run build`
    - Build output directory: `dist`
-   - Deploy command: leave empty unless Cloudflare specifically requires one for your setup.
+   - Deploy command: leave empty. Do not set this to `bun run deploy` for normal Cloudflare Pages Git deployments.
 6. Add environment variables:
    - `VITE_API_URL=https://your-backend.example.com`
    - `VITE_API_PREFIX=v1_7b82`
@@ -843,7 +843,7 @@ Dashboard deployment:
 8. Set backend `WEB_APP_URL` to the Cloudflare Pages URL or custom domain.
 9. Update BotFather with that frontend URL.
 
-If your Cloudflare log says `It seems that you have run wrangler deploy on a Pages project`, remove `npx wrangler deploy` from the project settings. For a Pages project, use either the dashboard build/output settings above or the Pages deploy command below. `wrangler deploy` is for Workers and expects a Worker entry point or Workers static assets config.
+If your Cloudflare log says `It seems that you have run wrangler deploy on a Pages project`, remove `npx wrangler deploy` from the project settings. For a Pages project connected to Git, use the dashboard build/output settings above and leave Deploy command empty. `wrangler deploy` is for Workers and expects a Worker entry point or Workers static assets config.
 
 Direct upload with Wrangler:
 
@@ -861,7 +861,7 @@ cd frontend
 bun run deploy:cloudflare
 ```
 
-If Cloudflare asks for a custom deploy command after it has already run the build, use:
+Only use a deploy command for manual/direct upload workflows outside the normal Cloudflare Pages Git build. In that case, after the app has already been built, use:
 
 ```bash
 bun run deploy
