@@ -23,7 +23,7 @@ VITE_API_URL=https://your-backend.example.com
 VITE_API_PREFIX=v1_7b82
 ```
 
-Use `frontend` as the Cloudflare project root directory, `bun run build` as the build command, and `dist` as the output directory. Do not set the root directory to `dist`; Cloudflare checks that directory before the build runs. The backend must run separately on Heroku, Render, Railway, a VPS, or another host that supports a persistent Python process.
+Use `frontend` as the Cloudflare project root directory, `bun run build` as the build command, `dist` as the output directory, and leave Deploy command empty for normal Cloudflare Pages Git deployments. Do not set the root directory to `dist`; Cloudflare checks that directory before the build runs. The backend must run separately on Heroku, Render, Railway, a VPS, or another host that supports a persistent Python process.
 
 For Cloudflare Pages, do not use `npx wrangler deploy`; that command is for Workers. Use the dashboard build settings above, or direct upload with:
 
@@ -31,7 +31,7 @@ For Cloudflare Pages, do not use `npx wrangler deploy`; that command is for Work
 bun run deploy:cloudflare
 ```
 
-If Cloudflare has already built the app and only needs a deploy command, use:
+Only use a deploy command for manual/direct upload workflows outside the normal Cloudflare Pages Git build. In that case, after the app has already been built, use:
 
 ```sh
 bun run deploy
