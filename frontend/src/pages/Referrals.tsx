@@ -28,7 +28,7 @@ export const Referrals = () => {
     const { addToast } = useToast();
     const { data: referrals, loading, error } = useApi<Referral[]>('/social/referrals', { initialData: [] });
     const { data: stats } = useApi<ReferralStats>('/social/referrals/stats');
-    const botUsername = (import.meta.env.VITE_BOT_USERNAME || 'Seal_Your_WaifuBot').replace(/^@/, '');
+    const botUsername = (import.meta.env.VITE_BOT_USERNAME || 'SealYourWaifuBot').replace(/^@/, '');
     const referralLink = user?.id ? `https://t.me/${botUsername}?start=ref_${user.id}` : '';
     const referralCount = stats?.invited_count ?? referrals?.length ?? 0;
     const trackedCount = stats?.tracked_count ?? referrals?.length ?? 0;
@@ -59,7 +59,7 @@ export const Referrals = () => {
             return;
         }
 
-        const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent('Join me on Seal Bot and claim your welcome bonus.')}`;
+        const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent('Join me on SEAL YOUR WAIFU and claim your welcome bonus.')}`;
         window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
         if (window.Telegram?.WebApp?.openTelegramLink) {
             window.Telegram.WebApp.openTelegramLink(shareUrl);

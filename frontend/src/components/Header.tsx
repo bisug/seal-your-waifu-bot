@@ -17,7 +17,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
            <Stamp size={16} className="text-white" strokeWidth={2} />
         </div>
         <div className="flex min-w-0 items-center gap-2">
-          <span className="text-sm font-semibold tracking-tight text-white">Seal</span>
+          <span className="truncate text-xs font-semibold text-white">SEAL YOUR WAIFU</span>
           {user?.role_tag && (
             <span className="inline-flex items-center gap-1 rounded bg-brand-accent/10 px-1.5 py-0.5 text-[10px] font-bold text-brand-accent">
               <span className="leading-none">{user.role_symbol}</span>
