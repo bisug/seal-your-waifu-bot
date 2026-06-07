@@ -31,6 +31,11 @@ class SealClient(Client):
             system_version="Linux",
             workdir="Grabber")
         self._kurigram_error_handler_registered = False
+        self._modules_loaded = False
+        self.loaded_modules = []
+        self.failed_modules = []
+        self.commands_synced = False
+        self.command_sync_error = None
         self._register_kurigram_error_handler()
 
     def _register_kurigram_error_handler(self):
@@ -237,7 +242,35 @@ class SealClient(Client):
             LOGGER.error(f"[{self.name}] Error editing message markup in {chat_id}: {e}")
             return None
 
+    def _load_modules(self):
+        """Import command modules and register explicit handlers once per client."""
+        if self._modules_loaded:
+            return
+
+        from Grabber.modules import ALL_MODULES
+
+        loaded = []
+        failed = []
+        for module_name in ALL_MODULES:
+            try:
+                module = importlib.import_module(f"Grabber.modules.{module_name}")
+                if hasattr(module, "load_handlers"):
+                    module.load_handlers(self)
+                    LOGGER.info("Loaded (Explicit): %s", module_name)
+                else:
+                    LOGGER.info("Loaded (Decorator): %s", module_name)
+                loaded.append(module_name)
+            except Exception as e:
+                failed.append({"module": module_name, "error": f"{type(e).__name__}: {e}"})
+                LOGGER.exception("Failed to load %s", module_name)
+
+        self.loaded_modules = loaded
+        self.failed_modules = failed
+        self._modules_loaded = True
+        LOGGER.info("Loaded %s/%s modules for %s.", len(loaded), len(ALL_MODULES), self.name)
+
     async def start(self, *args, **kwargs):
+        self._load_modules()
         await super().start(*args, **kwargs)
 
         import Grabber
@@ -259,39 +292,11 @@ class SealClient(Client):
         else:
             Grabber.GAME_BOT_USERNAME = me.username
 
-        # Dynamic Module Loading
-        from Grabber.modules import ALL_MODULES
-        for module_name in ALL_MODULES:
-            try:
-                module = importlib.import_module(f"Grabber.modules.{module_name}")
-                if hasattr(module, "load_handlers"):
-                    module.load_handlers(self)
-                    LOGGER.info(f"Loaded (Explicit): {module_name}")
-                else:
-                    LOGGER.info(f"Loaded (Decorator): {module_name}")
-            except Exception:
-                LOGGER.exception("Failed to load %s", module_name)
-        LOGGER.info(f"Loaded {len(ALL_MODULES)} modules.")
-
         # Sync bot commands with Telegram
         if self.name != "UserBot":
             await self._set_commands_internal()
 
         if self.name == "MainBot":
-            from Grabber.database import r as redis_client
-            from Grabber.database import seal_db
-            await seal_db.ping()
-            LOGGER.info("MongoDB connectivity verified.")
-            if redis_client:
-                try:
-                    await redis_client.ping()
-                    LOGGER.info("Redis connectivity verified.")
-                except Exception as e:
-                    LOGGER.warning(f"Redis ping failed; Redis-backed features will use fallbacks where available: {e}")
-            await seal_db.ensure_indexes()
-            from Grabber.core.pets import seed_pet_catalog
-            await seed_pet_catalog()
-
             from Grabber.core.deletion import deletion_worker
             run_background_task(deletion_worker(), name="deletion-worker")
 
@@ -310,24 +315,17 @@ class SealClient(Client):
             except Exception as e:
                 LOGGER.error(f"Failed to configure Mini App Menu button: {e}")
 
-            # Send creative startup report to group
-            try:
-                from Grabber.core.startup import send_startup_report
-                run_background_task(
-                    send_startup_report(self, config.LOG_GROUP_ID, len(ALL_MODULES)),
-                    name="startup-report",
-                )
-            except Exception as e:
-                LOGGER.warning(f"Failed to initiate startup report: {e}")
-
         LOGGER.info(f"SealClient started as {me.first_name} (@{me.username}).")
 
-    async def _set_commands_internal(self):
+    async def _set_commands_internal(self, *, _retry: bool = False):
+        self.commands_synced = False
+        self.command_sync_error = None
         try:
             commands = []
             
             # Simplified descriptions for GameBot
             GAMEBOT_CMDS = {
+                "start": "Start the GameBot",
                 "nguess": "Guess character name",
                 "quiz": "Anime trivia quiz",
                 "scramble": "Unscramble name",
@@ -378,7 +376,7 @@ class SealClient(Client):
                 "rarities": "Character counts",
                 "animes": "List available anime",
                 "sani": "Search by anime",
-                "reedem": "Redeem waifugen code",
+                "redeem": "Redeem waifugen code",
                 "ping": "Check bot status",
                 "stats": "Bot statistics",
                 "ctop": "Chat leaderboard",
@@ -397,9 +395,21 @@ class SealClient(Client):
 
             if commands:
                 await self.set_bot_commands(commands)
+                self.commands_synced = True
                 LOGGER.info(f"Registered {len(commands)} commands for {self.name}.")
+            return True
+        except FloodWait as e:
+            self.command_sync_error = f"FloodWait: {e.value}s"
+            if not _retry and e.value <= 60:
+                LOGGER.warning("[%s] FloodWait while setting commands; retrying after %ss", self.name, e.value)
+                await asyncio.sleep(e.value)
+                return await self._set_commands_internal(_retry=True)
+            LOGGER.error("Failed to set commands for %s: %s", self.name, self.command_sync_error)
+            return False
         except Exception as e:
+            self.command_sync_error = f"{type(e).__name__}: {e}"
             LOGGER.error(f"Failed to set commands for {self.name}: {e}")
+            return False
 
     async def stop(self, *args):
         await super().stop()
