@@ -4,8 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException, Body
 from pymongo import ReturnDocument
 from Grabber.database import client, user_collection, sessions_collection
 from Grabber.webapp.auth import get_current_user, get_current_user_data
+from Grabber.core.referrals import get_referral_stats as build_referral_stats, normalize_referral_ids
 from Grabber.core.utils import get_now_utc, get_user_id_query, normalize_user_id
-from Grabber.webapp.schemas import TradeOffer, MarriageModel, ReferralModel, BattleStatsModel, CharacterModel
+from Grabber.webapp.schemas import TradeOffer, MarriageModel, ReferralModel, ReferralStatsModel, BattleStatsModel, CharacterModel
 from Grabber.core.cache import sync_user_to_redis
 import uuid
 
@@ -167,34 +168,44 @@ async def get_marriage(user: dict = Depends(get_current_user_data)):
 
 @router.get("/social/referrals", response_model=List[ReferralModel])
 async def get_referrals(user: dict = Depends(get_current_user_data)):
-    referrals = user.get("referrals", [])
+    referrals = normalize_referral_ids(user.get("referrals", []))
     if not referrals:
         return []
 
     ref_query_ids = []
     for rid in referrals:
-        uid = normalize_user_id(rid)
-        if uid:
-            ref_query_ids.extend([uid, str(uid)])
+        ref_query_ids.extend([rid, str(rid)])
 
     cursor = user_collection.find({"id": {"$in": ref_query_ids}})
     ref_users = await cursor.to_list(length=100)
 
-    # Build map with both int and str keys for robustness
     ref_map = {}
     for u in ref_users:
         first_name = u.get("first_name", "Unknown")
-        uid = u.get("id")
+        uid = normalize_user_id(u.get("id"))
         ref_map[uid] = first_name
         ref_map[str(uid)] = first_name
 
+    event_map = {}
+    for event in user.get("referral_events", []):
+        if not isinstance(event, dict):
+            continue
+        uid = normalize_user_id(event.get("user_id"))
+        first_name = event.get("first_name")
+        if uid and first_name:
+            event_map[uid] = first_name
+
     return [
         {
-            "referred_id": normalize_user_id(rid),
-            "referred_name": ref_map.get(rid) or ref_map.get(normalize_user_id(rid)) or "Unknown",
+            "referred_id": rid,
+            "referred_name": ref_map.get(rid) or ref_map.get(str(rid)) or event_map.get(rid) or "Unknown",
             "rewarded": True
         } for rid in referrals
     ]
+
+@router.get("/social/referrals/stats", response_model=ReferralStatsModel)
+async def get_referrals_stats(user: dict = Depends(get_current_user_data)):
+    return build_referral_stats(user)
 
 # --- BATTLE STATS ---
 

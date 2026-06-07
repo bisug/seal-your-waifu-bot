@@ -143,6 +143,15 @@ class ReferralModel(BaseModel):
     referred_name: str
     rewarded: bool
 
+class ReferralStatsModel(BaseModel):
+    invited_count: int = 0
+    tracked_count: int = 0
+    earned_shards: int = 0
+    referrer_reward_shards: int
+    referrer_reward_xp: int
+    referred_reward_shards: int
+    referred_pet_level: int
+
 class BattleStatsModel(BaseModel):
     total_battles: int = 0
     wins: int = 0
