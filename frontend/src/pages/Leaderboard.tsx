@@ -1,7 +1,7 @@
 import React from 'react';
 import { useApi } from '../hooks/useApi';
 import { CardSkeleton } from '../components/ui/Skeleton';
-import { Trophy, Shield, Activity, Users, Zap, Swords } from 'lucide-react';
+import { BookOpen, Brain, ChartNoAxesColumnIncreasing, Coins, Gem, TrendingUp } from 'lucide-react';
 import { formatNumber } from '../utils';
 import { cn } from '../utils';
 import { ErrorState } from '../components/ui/ErrorState';
@@ -36,11 +36,11 @@ export const Leaderboard = () => {
     const { data, loading, error, execute: fetchLeaderboard } = useApi<LeaderboardUser[]>(`/leaderboard?metric=${metric}`, {}, [metric]);
 
     const METRICS = [
-        { id: 'harem', label: 'Collection', icon: Users },
-        { id: 'shards', label: 'Shards', icon: Zap },
-        { id: 'zenith', label: 'Zenith', icon: Activity },
-        { id: 'level', label: 'Level', icon: Shield },
-        { id: 'guesses', label: 'Guesses', icon: Swords },
+        { id: 'harem', label: 'Collection', icon: BookOpen },
+        { id: 'shards', label: 'Shards', icon: Coins },
+        { id: 'zenith', label: 'Zenith', icon: Gem },
+        { id: 'level', label: 'Level', icon: TrendingUp },
+        { id: 'guesses', label: 'Guesses', icon: Brain },
     ];
     const activeMetric = METRICS.find(m => m.id === metric);
 
@@ -48,7 +48,7 @@ export const Leaderboard = () => {
         <div className="pb-20 pt-4 max-w-2xl mx-auto">
             <header className="px-4 mb-6 flex justify-between items-center border-b border-white/5 pb-4">
                 <h1 className="text-xl font-bold text-white tracking-tight">Leaderboards</h1>
-                <Trophy className="text-amber-500" size={24} />
+                <ChartNoAxesColumnIncreasing className="text-amber-500" size={24} />
             </header>
 
             <div className="px-4 mb-6">

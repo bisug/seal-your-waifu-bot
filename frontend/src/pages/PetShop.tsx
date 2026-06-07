@@ -4,7 +4,7 @@ import { useUser, Pet } from '../context/UserContext';
 import { Skeleton } from '../components/ui/Skeleton';
 import { ErrorState } from '../components/ui/ErrorState';
 import { formatNumber, cn } from '../utils';
-import { ShoppingBag, Lock, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
+import { Bone, Lock, CheckCircle2, Loader2, PawPrint, Sparkles } from 'lucide-react';
 import { apiFetch, getErrorMessage } from '../api/client';
 import { useToast } from '../components/ui/Toast';
 
@@ -46,7 +46,7 @@ const PetShopImage = ({ pet, className }: { pet: Pet; className?: string }) => {
         />
     ) : (
         <div className={cn(className, 'flex items-center justify-center text-neutral-700')}>
-            <ShoppingBag size={22} />
+            <PawPrint size={22} />
         </div>
     );
 };
@@ -102,7 +102,7 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
         <div className="px-4 py-6 pb-20 max-w-2xl mx-auto">
             <header className="mb-8 border-b border-white/5 pb-4">
                 <h1 className="text-xl font-bold text-white flex items-center gap-2 mb-1">
-                    <ShoppingBag className="text-brand-accent" size={20} />
+                    <Bone className="text-brand-accent" size={20} />
                     Pet Store
                 </h1>
                 <p className="text-sm font-medium text-neutral-400">Buy pets and choose one to stay active.</p>

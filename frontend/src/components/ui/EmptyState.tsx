@@ -1,6 +1,5 @@
 import React from 'react';
-import { Shield } from 'lucide-react';
-import { LucideIcon } from 'lucide-react';
+import { PackageOpen, type LucideIcon } from 'lucide-react';
 
 interface EmptyStateProps {
   icon?: LucideIcon;
@@ -10,7 +9,7 @@ interface EmptyStateProps {
 }
 
 export const EmptyState = ({
-  icon: Icon = Shield,
+  icon: Icon = PackageOpen,
   title = "No data available",
   message = "Try adjusting your filters or come back later.",
   className = ""

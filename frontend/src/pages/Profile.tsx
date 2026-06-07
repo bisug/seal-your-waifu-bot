@@ -8,22 +8,20 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { ErrorState } from '../components/ui/ErrorState';
 import { Avatar } from '../components/Avatar';
 import {
-  Activity,
-  Award,
   BadgeCheck,
+  BookOpen,
+  CalendarCheck,
   ChevronDown,
   Coins,
   Crown,
   Egg,
   Gem,
-  Layers,
   Loader2,
   PawPrint,
   Search,
-  Shield,
-  Sparkles,
+  Ticket,
   Trophy,
-  Users,
+  TrendingUp,
 } from 'lucide-react';
 import { cleanRarityLabel, formatNumber, cn } from '../utils';
 import { useInfiniteGrid } from '../hooks/useInfiniteGrid';
@@ -189,7 +187,7 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
                   </span>
                 )}
                 <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/5 bg-brand-midnight px-2 py-1 text-[10px] font-semibold text-neutral-300">
-                  <Sparkles size={12} className="shrink-0 text-brand-accent" />
+                  <Ticket size={12} className="shrink-0 text-brand-accent" />
                   <span>{passLabel}</span>
                 </span>
                 {user.can_upload && uploadReward && (
@@ -215,7 +213,7 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
         <StatTile icon={Coins} label="Shards" value={formatNumber(shardBalance)} tone="warning" />
         <StatTile icon={Gem} label="Zenith" value={formatNumber(stats?.zenith || 0)} tone="success" />
         <StatTile icon={Trophy} label="Rank" value={rankLabel} detail={percentileLabel} tone="warning" />
-        <StatTile icon={Users} label="Collection" value={`${formatNumber(collectionOwned)} / ${formatNumber(collectionTotal)}`} detail={`${collectionPercent}% complete`} tone="purple" />
+        <StatTile icon={BookOpen} label="Collection" value={`${formatNumber(collectionOwned)} / ${formatNumber(collectionTotal)}`} detail={`${collectionPercent}% complete`} tone="purple" />
       </div>
 
       <section className="px-4 mb-6 grid grid-cols-1 gap-3 lg:grid-cols-[1.1fr_0.9fr]">
@@ -227,7 +225,7 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
                 {formatNumber(stats?.xp || 0)} total XP
               </p>
             </div>
-            <Shield size={17} className="shrink-0 text-brand-accent" />
+            <TrendingUp size={17} className="shrink-0 text-brand-accent" />
           </div>
           <ProgressBar
             current={stats?.xp_current || 0}
@@ -244,7 +242,7 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
                 {formatNumber(totalCopies)} total owned copies
               </p>
             </div>
-            <Layers size={17} className="shrink-0 text-purple-500" />
+            <BookOpen size={17} className="shrink-0 text-purple-500" />
           </div>
           <ProgressBar
             current={collectionOwned}
@@ -258,8 +256,8 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
       <section className="px-4 mb-8 grid grid-cols-2 gap-2 lg:grid-cols-4">
         <StatTile icon={PawPrint} label="Active Pet" value={activePet?.name || 'None'} detail={petDetail} tone="accent" />
         <StatTile icon={Egg} label="Incubation" value={`${activeIncubations} / ${incubationSlots}`} detail="Active slots" tone="success" />
-        <StatTile icon={Award} label="Achievements" value={formatNumber(achievementCount)} detail={`${formatNumber(user.titles?.all?.length || 1)} titles`} tone="warning" />
-        <StatTile icon={Activity} label="Streak" value={formatNumber(stats?.streak || 0)} detail="Daily activity" tone="neutral" />
+        <StatTile icon={BadgeCheck} label="Achievements" value={formatNumber(achievementCount)} detail={`${formatNumber(user.titles?.all?.length || 1)} titles`} tone="warning" />
+        <StatTile icon={CalendarCheck} label="Streak" value={formatNumber(stats?.streak || 0)} detail="Daily activity" tone="neutral" />
       </section>
 
       {/* Collection Filters */}
@@ -321,7 +319,7 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
           </div>
         ) : (
           <EmptyState
-            icon={Users}
+            icon={BookOpen}
             title="Collection empty"
             message="Characters you collect will appear here."
           />

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { AlertCircle, ArrowLeftRight, CheckCircle2, Coins, Gem, Loader2, RefreshCw } from 'lucide-react';
+import { AlertCircle, BadgePercent, CheckCircle2, Coins, Gem, Loader2, RefreshCw, Repeat2 } from 'lucide-react';
 import { apiFetch, getErrorMessage } from '../api/client';
 import { useApi } from '../hooks/useApi';
 import { ErrorState } from '../components/ui/ErrorState';
@@ -211,7 +211,7 @@ export const Exchange = () => {
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <ArrowLeftRight size={18} className="text-brand-accent shrink-0" />
+              <Repeat2 size={18} className="text-brand-accent shrink-0" />
               <h1 className="text-lg font-bold text-white tracking-tight">Exchange</h1>
             </div>
             <p className="text-sm font-medium text-neutral-400 leading-snug">
@@ -232,7 +232,7 @@ export const Exchange = () => {
         <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2">
           <Metric icon={Coins} label="Shards" value={formatNumber(shardBalance)} />
           <Metric icon={Gem} label="Zenith" value={formatNumber(zenithBalance)} tone="accent" />
-          <Metric icon={ArrowLeftRight} label="Rate" value={`${formatNumber(rate)}:1`} tone="success" />
+          <Metric icon={BadgePercent} label="Rate" value={`${formatNumber(rate)}:1`} tone="success" />
         </div>
 
         {error && data && (
@@ -284,7 +284,7 @@ export const Exchange = () => {
               className="h-9 w-9 rounded-lg border border-white/5 bg-brand-midnight flex items-center justify-center text-brand-accent transition-colors hover:bg-white/5 active:scale-95"
               aria-label="Switch exchange direction"
             >
-              <ArrowLeftRight size={16} />
+              <Repeat2 size={16} />
             </button>
             <div className="min-w-0 rounded-lg border border-brand-accent/20 bg-brand-accent/10 px-3 py-3 text-right">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-accent/80">{copy.outputLabel}</p>
@@ -333,7 +333,7 @@ export const Exchange = () => {
                   : 'bg-brand-midnight text-neutral-600 border border-white/5'
               )}
             >
-              {exchanging ? <Loader2 size={16} className="animate-spin" /> : <ArrowLeftRight size={15} />}
+              {exchanging ? <Loader2 size={16} className="animate-spin" /> : <Repeat2 size={15} />}
               <span>Exchange</span>
             </button>
           </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Menu, Gem, Shield } from 'lucide-react';
+import { Menu, Gem, Stamp } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 import { formatNumber } from '../utils';
 
@@ -14,7 +14,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
     <header className="sticky top-0 z-50 flex items-center justify-between px-4 bg-brand-midnight h-14 shrink-0 select-none border-b border-white/5">
       <div className="flex items-center space-x-3">
         <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-brand-deep">
-           <Shield size={16} className="text-white" strokeWidth={2} />
+           <Stamp size={16} className="text-white" strokeWidth={2} />
         </div>
         <div className="flex min-w-0 items-center gap-2">
           <span className="text-sm font-semibold tracking-tight text-white">Seal</span>
