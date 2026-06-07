@@ -13,6 +13,9 @@ class StatsModel(BaseModel):
     zenith: int = 0
     badges: List[str] = Field(default_factory=list)
     total_characters: int = 0
+    unique_characters: int = 0
+    total_available_characters: int = 0
+    collection_percent: float = 0.0
     rank: int = 0
     percentile: float = 0.0
     pass_type: str = "free"
@@ -77,6 +80,8 @@ class UserProfileResponse(BaseModel):
     upload_reward: Optional[dict[str, int]] = None
     role_perks: dict[str, int] = Field(default_factory=dict)
     role_benefits: List[str] = Field(default_factory=list)
+    balance: int = 0
+    zenith: int = 0
     stats: StatsModel
     achievements: List[AchievementModel] = Field(default_factory=list)
     titles: TitlesModel

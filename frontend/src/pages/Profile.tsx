@@ -7,7 +7,23 @@ import { Skeleton, CardSkeleton } from '../components/ui/Skeleton';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ErrorState } from '../components/ui/ErrorState';
 import { Avatar } from '../components/Avatar';
-import { Shield, Activity, Users, Trophy, Search, Loader2 } from 'lucide-react';
+import {
+  Activity,
+  Award,
+  BadgeCheck,
+  Coins,
+  Crown,
+  Egg,
+  Gem,
+  Layers,
+  Loader2,
+  PawPrint,
+  Search,
+  Shield,
+  Sparkles,
+  Trophy,
+  Users,
+} from 'lucide-react';
 import { formatNumber, cn } from '../utils';
 import { useInfiniteGrid } from '../hooks/useInfiniteGrid';
 import { Character } from '../context/UserContext';
@@ -16,6 +32,33 @@ interface ProfileProps {
   onCharClick: (character: Character) => void;
   focusCollection?: boolean;
 }
+
+const statTone = {
+  neutral: 'text-neutral-500',
+  accent: 'text-brand-accent',
+  success: 'text-emerald-500',
+  warning: 'text-amber-500',
+  purple: 'text-purple-500',
+};
+
+interface StatTileProps {
+  icon: React.ElementType;
+  label: string;
+  value: React.ReactNode;
+  detail?: string;
+  tone?: keyof typeof statTone;
+}
+
+const StatTile = ({ icon: Icon, label, value, detail, tone = 'neutral' }: StatTileProps) => (
+  <div className="min-w-0 rounded-lg border border-white/5 bg-brand-deep p-3 shadow-sm">
+    <div className="mb-2 flex items-center justify-between gap-2">
+      <span className="truncate text-[10px] font-semibold text-neutral-500">{label}</span>
+      <Icon size={15} className={cn('shrink-0', statTone[tone])} />
+    </div>
+    <p className="truncate text-base font-bold text-white tabular-nums">{value}</p>
+    {detail && <p className="mt-1 truncate text-[11px] font-medium text-neutral-500">{detail}</p>}
+  </div>
+);
 
 export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) => {
   const { user, loading: userLoading } = useUser();
@@ -79,39 +122,77 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
       ].filter(Boolean).join(' + ')
     : '';
   const roleBenefits = user.role_benefits || [];
+  const stats = user.stats;
+  const passType = stats?.pass_type || 'free';
+  const passLabel = `${passType.charAt(0).toUpperCase()}${passType.slice(1)} Pass`;
+  const collectionOwned = stats?.unique_characters ?? stats?.total_characters ?? 0;
+  const collectionTotal = stats?.total_available_characters || Math.max(collectionOwned, 1);
+  const collectionPercent = stats?.collection_percent ?? (
+    collectionTotal > 0 ? Math.round((collectionOwned / collectionTotal) * 1000) / 10 : 0
+  );
+  const totalCopies = stats?.total_characters || 0;
+  const shardBalance = stats?.points ?? user.balance ?? 0;
+  const rankLabel = stats?.rank ? `#${formatNumber(stats.rank)}` : 'Unranked';
+  const percentileLabel = typeof stats?.percentile === 'number' && stats.percentile > 0
+    ? `Top ${stats.percentile}%`
+    : undefined;
+  const currentTitle = user.titles?.current || 'Rookie';
+  const achievementCount = user.achievements?.length || 0;
+  const activePet = user.current_pet;
+  const petDetail = activePet
+    ? `Lvl ${activePet.level || 1} / ${activePet.mood || 'Neutral'}`
+    : 'Select one in My Pets';
+  const activeIncubations = stats?.active_incubations || 0;
+  const incubationSlots = stats?.incubation_slots || 1;
+  const usernameLabel = user.username ? `@${user.username}` : `ID ${user.id}`;
 
   return (
-    <div className="pb-20 pt-4 max-w-4xl mx-auto">
-      {/* Profile Header */}
-      <section className="px-4 mb-6">
-        <div className="flex items-center space-x-4 bg-brand-deep border border-white/5 p-4 rounded-2xl shadow-sm">
-          <div className="relative shrink-0">
-            <Avatar 
-              src={user.avatar} 
-              alt="User" 
-              className="w-16 h-16 rounded-xl border border-white/10"
-            />
-            <div className="absolute -bottom-2 -right-2 bg-brand-accent text-white text-xs font-bold px-2 py-0.5 rounded-lg border-2 border-brand-deep">
-              Lvl {user.stats?.level || 1}
+    <div className="pb-20 pt-4 max-w-5xl mx-auto">
+      <section className="px-4 mb-4">
+        <div className="rounded-lg border border-white/5 bg-brand-deep p-4 shadow-sm">
+          <div className="flex items-start gap-4">
+            <div className="relative shrink-0">
+              <Avatar
+                src={user.avatar}
+                alt="User"
+                className="w-16 h-16 rounded-lg border border-white/10"
+              />
+              <div className="absolute -bottom-2 -right-2 rounded-lg border-2 border-brand-deep bg-brand-accent px-2 py-0.5 text-xs font-bold text-white">
+                Lvl {stats?.level || 1}
+              </div>
             </div>
-          </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-bold text-white truncate tracking-tight mb-0.5">
-              {user.first_name || 'Collector'}
-            </h1>
-            <p className="text-sm text-neutral-400 font-medium">@{user.username || 'unknown'}</p>
-            {user.role_tag && (
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-lg border border-brand-accent/20 bg-brand-accent/10 px-2 py-1 text-[10px] font-bold text-brand-accent">
-                  <span className="text-sm leading-none">{user.role_symbol}</span>
-                  <span>{user.role_label || user.role_tag}</span>
+
+            <div className="min-w-0 flex-1">
+              <div className="mb-1 flex min-w-0 flex-wrap items-center gap-2">
+                <h1 className="truncate text-lg font-bold text-white">
+                  {user.first_name || 'Collector'}
+                </h1>
+                <span className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-white/5 bg-brand-midnight px-2 py-1 text-[10px] font-semibold text-neutral-300">
+                  <Crown size={12} className="shrink-0 text-amber-500" />
+                  <span className="truncate">{currentTitle}</span>
+                </span>
+              </div>
+
+              <p className="truncate text-sm font-medium text-neutral-400">{usernameLabel}</p>
+
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {user.role_tag && (
+                  <span className="inline-flex items-center gap-1.5 rounded-lg border border-brand-accent/20 bg-brand-accent/10 px-2 py-1 text-[10px] font-bold text-brand-accent">
+                    <BadgeCheck size={12} className="shrink-0" />
+                    <span>{user.role_symbol}</span>
+                    <span>{user.role_label || user.role_tag}</span>
+                  </span>
+                )}
+                <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/5 bg-brand-midnight px-2 py-1 text-[10px] font-semibold text-neutral-300">
+                  <Sparkles size={12} className="shrink-0 text-brand-accent" />
+                  <span>{passLabel}</span>
                 </span>
                 {user.can_upload && uploadReward && (
                   <span className="rounded-lg border border-white/5 bg-brand-midnight px-2 py-1 text-[10px] font-semibold text-neutral-300">
                     Upload reward: {uploadReward}
                   </span>
                 )}
-                {roleBenefits.slice(0, 3).map((benefit) => (
+                {roleBenefits.slice(0, 2).map((benefit) => (
                   <span
                     key={benefit}
                     className="rounded-lg border border-white/5 bg-brand-midnight px-2 py-1 text-[10px] font-semibold text-neutral-300"
@@ -120,40 +201,60 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
                   </span>
                 ))}
               </div>
-            )}
-          </div>
-          <div className="hidden sm:flex flex-col items-end">
-            <div className="flex items-center space-x-2 text-sm font-semibold text-neutral-300 bg-brand-midnight px-3 py-1.5 rounded-lg border border-white/5 shadow-sm">
-              <Trophy size={16} className="text-amber-500" />
-              <span>Rank #{formatNumber(user.stats?.rank || 0)}</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Primary Stats */}
-      <div className="px-4 grid grid-cols-3 gap-3 mb-6">
-        {[
-          { icon: Shield, label: 'XP', value: user.stats?.xp || 0, color: 'text-brand-accent' },
-          { icon: Activity, label: 'Zenith', value: user.stats?.zenith || 0, color: 'text-emerald-500' },
-          { icon: Users, label: 'Collection', value: user.stats?.total_characters || 0, color: 'text-purple-500' },
-        ].map((stat, i) => (
-          <div key={i} className="bg-brand-deep p-4 rounded-xl border border-white/5 flex flex-col justify-between shadow-sm">
-            <span className="text-xs font-medium text-neutral-500 mb-2">{stat.label}</span>
-            <div className="flex items-center justify-between">
-              <span className="text-base font-bold text-white tabular-nums">{formatNumber(stat.value)}</span>
-              <stat.icon size={16} className={stat.color} />
-            </div>
-          </div>
-        ))}
+      <div className="px-4 mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <StatTile icon={Coins} label="Shards" value={formatNumber(shardBalance)} tone="warning" />
+        <StatTile icon={Gem} label="Zenith" value={formatNumber(stats?.zenith || 0)} tone="success" />
+        <StatTile icon={Trophy} label="Rank" value={rankLabel} detail={percentileLabel} tone="warning" />
+        <StatTile icon={Users} label="Collection" value={`${formatNumber(collectionOwned)} / ${formatNumber(collectionTotal)}`} detail={`${collectionPercent}% complete`} tone="purple" />
       </div>
 
-      <section className="px-4 mb-8">
-        <ProgressBar 
-          current={user.stats?.xp_current || 0} 
-          total={user.stats?.xp_needed || 1000} 
-          label="Progress to next level"
-        />
+      <section className="px-4 mb-6 grid grid-cols-1 gap-3 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="rounded-lg border border-white/5 bg-brand-deep p-4 shadow-sm">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="text-sm font-bold text-white">Level progress</h2>
+              <p className="mt-1 truncate text-xs font-medium text-neutral-500">
+                {formatNumber(stats?.xp || 0)} total XP
+              </p>
+            </div>
+            <Shield size={17} className="shrink-0 text-brand-accent" />
+          </div>
+          <ProgressBar
+            current={stats?.xp_current || 0}
+            total={Math.max(1, stats?.xp_needed || 1000)}
+            label="Progress to next level"
+          />
+        </div>
+
+        <div className="rounded-lg border border-white/5 bg-brand-deep p-4 shadow-sm">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="text-sm font-bold text-white">Catalog progress</h2>
+              <p className="mt-1 truncate text-xs font-medium text-neutral-500">
+                {formatNumber(totalCopies)} total owned copies
+              </p>
+            </div>
+            <Layers size={17} className="shrink-0 text-purple-500" />
+          </div>
+          <ProgressBar
+            current={collectionOwned}
+            total={collectionTotal}
+            label="Unique characters"
+            color="bg-purple-500"
+          />
+        </div>
+      </section>
+
+      <section className="px-4 mb-8 grid grid-cols-2 gap-2 lg:grid-cols-4">
+        <StatTile icon={PawPrint} label="Active Pet" value={activePet?.name || 'None'} detail={petDetail} tone="accent" />
+        <StatTile icon={Egg} label="Incubation" value={`${activeIncubations} / ${incubationSlots}`} detail="Active slots" tone="success" />
+        <StatTile icon={Award} label="Achievements" value={formatNumber(achievementCount)} detail={`${formatNumber(user.titles?.all?.length || 1)} titles`} tone="warning" />
+        <StatTile icon={Activity} label="Streak" value={formatNumber(stats?.streak || 0)} detail="Daily activity" tone="neutral" />
       </section>
 
       {/* Collection Filters */}

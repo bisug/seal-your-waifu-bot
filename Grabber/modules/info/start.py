@@ -90,6 +90,7 @@ HELP_DATA = {
     "INFO": {
         "text": """
 <b>Info & Stats</b>
+/profile - Collector profile
 /stats - Bot statistics
 /rarities - Character counts
 /ctop - Chat leaderboard
