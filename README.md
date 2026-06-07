@@ -826,7 +826,17 @@ netlify deploy --prod --dir=dist
 
 #### Cloudflare Pages
 
-Dashboard deployment:
+This repo is configured for Cloudflare Pages through `frontend/wrangler.toml`:
+
+```toml
+name = "seal-bot-frontend"
+compatibility_date = "2026-06-02"
+pages_build_output_dir = "./dist"
+```
+
+Use the Pages deploy command for this project. Do not use `npx wrangler deploy`; that command is for Workers and will fail with `Missing entry-point to Worker script or to assets directory` when Wrangler sees a Pages config.
+
+Current Cloudflare Workers & Pages build UI:
 
 1. Open Cloudflare Dashboard.
 2. Go to Workers & Pages.
@@ -835,15 +845,27 @@ Dashboard deployment:
 5. Use framework preset `React (Vite)` or configure manually:
    - Build command: `bun run build`
    - Build output directory: `dist`
-   - Deploy command: leave empty. Do not set this to `bun run deploy` for normal Cloudflare Pages Git deployments.
-6. Add environment variables:
+   - Deploy command: `npx wrangler pages deploy dist --project-name seal-bot-frontend`
+6. Set Build token to an API token that can deploy Pages:
+   - Permission: `Account > Cloudflare Pages > Edit`
+   - Account resources: include the account that owns the Pages project
+7. Add build variables:
    - `VITE_API_URL=https://your-backend.example.com`
    - `VITE_API_PREFIX=v1_7b82`
-7. Deploy.
-8. Set backend `WEB_APP_URL` to the Cloudflare Pages URL or custom domain.
-9. Update BotFather with that frontend URL.
+   - `CLOUDFLARE_ACCOUNT_ID=<your-cloudflare-account-id>`
+8. Deploy.
+9. Set backend `WEB_APP_URL` to the Cloudflare Pages URL or custom domain.
+10. Update BotFather with that frontend URL.
 
-If your Cloudflare log says `It seems that you have run wrangler deploy on a Pages project`, remove `npx wrangler deploy` from the project settings. For a Pages project connected to Git, use the dashboard build/output settings above and leave Deploy command empty. `wrangler deploy` is for Workers and expects a Worker entry point or Workers static assets config.
+Use the Account ID shown in Cloudflare Dashboard > account overview, or the Account ID printed in Wrangler logs for the account that owns the Pages project.
+
+If your Cloudflare log says `Authentication error [code: 10000]`, the deploy command is now correct but the selected token is not authorized for Pages deploys. Create or select a token with `Account > Cloudflare Pages > Edit`, then retry.
+
+If your Cloudflare log says `It seems that you have run wrangler deploy on a Pages project`, the deploy command is still wrong. Replace `npx wrangler deploy` with:
+
+```bash
+npx wrangler pages deploy dist --project-name seal-bot-frontend
+```
 
 Direct upload with Wrangler:
 
@@ -861,13 +883,15 @@ cd frontend
 bun run deploy:cloudflare
 ```
 
-Only use a deploy command for manual/direct upload workflows outside the normal Cloudflare Pages Git build. In that case, after the app has already been built, use:
+After the app has already been built, the committed prebuilt deploy script is:
 
 ```bash
 bun run deploy
 ```
 
-Cloudflare's React/Vite Pages preset uses `dist` as the build output. The committed `frontend/wrangler.toml` also declares `pages_build_output_dir = "dist"`.
+Cloudflare's React/Vite Pages preset uses `dist` as the build output. The committed `frontend/wrangler.toml` also declares `pages_build_output_dir = "./dist"`.
+
+Cloudflare Workers Static Assets is a different deployment mode. Only use `npx wrangler deploy` if you intentionally create a Worker project and replace the Pages config with Workers `[assets]` config. Do not mix Workers deploy commands with this Pages project.
 
 #### Wasmer Edge
 
@@ -941,7 +965,10 @@ Provider references:
 - [Vercel Vite deployment](https://vercel.com/docs/frameworks/frontend/vite)
 - [Netlify Vite deployment](https://docs.netlify.com/build/frameworks/framework-setup-guides/vite/)
 - [Cloudflare Pages React deployment](https://developers.cloudflare.com/pages/framework-guides/deploy-a-react-site/)
-- [Cloudflare Pages build configuration](https://developers.cloudflare.com/pages/configuration/build-configuration/)
+- [Cloudflare Pages Wrangler commands](https://developers.cloudflare.com/workers/wrangler/commands/pages/)
+- [Cloudflare Pages direct upload and API token permissions](https://developers.cloudflare.com/pages/how-to/use-direct-upload-with-continuous-integration/)
+- [Cloudflare Workers Builds configuration](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/)
+- [Cloudflare Workers Static Assets](https://developers.cloudflare.com/workers/static-assets/)
 - [Wasmer React static site guide](https://docs.wasmer.io/edge/guides/react-static-site/)
 
 ## GitHub Actions
