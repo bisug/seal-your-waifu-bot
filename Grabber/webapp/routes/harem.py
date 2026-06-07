@@ -1,5 +1,4 @@
 import asyncio
-import re
 import time
 from collections import Counter
 from typing import List, Optional
@@ -8,6 +7,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Query
 
 from Grabber import LOGGER
 from Grabber.core.cache import sync_user_to_redis
+from Grabber.core.character_search import build_character_search_filter
 from Grabber.core.constants import PAYOUTS
 from Grabber.core.utils import get_user_id_query, normalize_user_id
 from Grabber.database import collection, user_collection
@@ -53,17 +53,9 @@ async def get_harem(
         {"$unwind": "$characters"}
     ]
 
-    if search:
-        search = search.strip()
-        search_regex = {"$regex": re.escape(search), "$options": "i"}
-        pipeline.append({
-            "$match": {
-                "$or": [
-                    {"characters.name": search_regex},
-                    {"characters.anime": search_regex}
-                ]
-            }
-        })
+    search_filter = build_character_search_filter(search, field_prefix="characters.")
+    if search_filter:
+        pipeline.append({"$match": search_filter})
         
     if rarity:
         pipeline.append({
@@ -238,13 +230,7 @@ async def get_gallery(
     order: str = Query("asc", pattern="^(asc|desc)$"),
     user_id: int = Depends(get_current_user)
 ):
-    match_query = {}
-    if search:
-        search_escaped = re.escape(search.strip())
-        match_query["$or"] = [
-            {"name": {"$regex": search_escaped, "$options": "i"}},
-            {"anime": {"$regex": search_escaped, "$options": "i"}}
-        ]
+    match_query = build_character_search_filter(search) or {}
     if rarity:
         match_query["rarity"] = rarity.strip()
 
