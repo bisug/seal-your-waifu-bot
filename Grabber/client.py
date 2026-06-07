@@ -341,7 +341,7 @@ class SealClient(Client):
                 # Core & Info
                 "start": "Start the bot",
                 "help": "Show help menu",
-                "profile": "Your info & stats",
+                "profile": "Collector profile",
                 "balance": "Check Shards",
                 "harem": "Your collection",
                 "shop": "Open the shop",

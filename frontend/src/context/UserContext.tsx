@@ -6,12 +6,30 @@ export interface UserStats {
   xp: number;
   xp_current: number;
   xp_needed: number;
+  streak?: number;
+  points?: number;
   zenith: number;
+  badges?: string[];
   total_characters: number;
+  unique_characters?: number;
+  total_available_characters?: number;
+  collection_percent?: number;
   rank: number;
+  percentile?: number;
   pass_type?: string;
   incubation_slots?: number;
   active_incubations?: number;
+}
+
+export interface Achievement {
+  id: string;
+  name: string;
+  icon: string;
+}
+
+export interface Titles {
+  current: string;
+  all: string[];
 }
 
 export interface Character {
@@ -92,6 +110,8 @@ export interface User {
   balance: number;
   zenith: number;
   stats: UserStats;
+  achievements?: Achievement[];
+  titles?: Titles;
   characters: Character[];
   current_pet: Pet | null;
   eggs?: Egg[];
