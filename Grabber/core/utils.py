@@ -79,7 +79,7 @@ async def check_member_requirement(bot, chat, min_count=50):
         return True, None, count
     except Exception as e:
         LOGGER.error(f"Group membership resolution error: {e}")
-        return True, None, 0
+        return False, "membership_check_failed", 0
 async def send_media_dynamic(client, chat_id, media_url, **kwargs):
     """Dynamically sends either a photo or a video based on the URL extension."""
     from pyrogram import enums, errors, filters, types

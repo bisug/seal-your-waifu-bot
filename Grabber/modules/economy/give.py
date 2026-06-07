@@ -93,7 +93,12 @@ async def take_balance(_, message: types.Message):
     except (IndexError, ValueError):
         await message.reply_text("Usage: <code>/takebalance &lt;amount&gt;</code> (Reply to user)", parse_mode=enums.ParseMode.HTML)
         return
-    await user_collection.update_one(get_user_id_query(recipient_id), {'$inc': {'balance': -amount, 'version': 1}})
+    update_filter = get_user_id_query(recipient_id)
+    update_filter["balance"] = {"$gte": amount}
+    result = await user_collection.update_one(update_filter, {'$inc': {'balance': -amount, 'version': 1}})
+    if result.modified_count == 0:
+        await message.reply_text("User does not have enough balance to take that amount.")
+        return
     await invalidate_user_cache(recipient_id)
     await message.reply_text(f"{amount} ⬪ taken from {html_escape(recipient.first_name)}!")
     LOGGER.info(f"ADMIN {sender_id} took {amount} from {recipient_id}")

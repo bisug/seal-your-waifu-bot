@@ -34,7 +34,7 @@ from Grabber.core.pass_payments import PassPaymentError, create_pass_invoice
 from Grabber.core.progression import get_user_progress
 from Grabber.core.roles import apply_role_discount
 from Grabber.core.utils import get_user_id_query, normalize_user_id
-from Grabber.database import collection, user_collection
+from Grabber.database import client, collection, user_collection
 from Grabber.modules.economy.shop import get_daily_shop_characters
 from Grabber.core.pets import ensure_user_pet_state, get_pet_key, list_shop_pets, normalize_pet
 from Grabber.webapp.auth import get_current_user, get_current_user_data
@@ -148,65 +148,80 @@ async def get_shop_characters(user: dict = Depends(get_current_user_data)):
 
 @router.post("/shop/buy/character/{char_id}")
 async def buy_character_api(char_id: str, user_id: int = Depends(get_current_user)):
-    user_raw = await user_collection.find_one(get_user_id_query(user_id))
-    if not user_raw: raise HTTPException(status_code=404, detail="User not found")
-    
     chars = await get_daily_shop_characters()
     shop_ids = [c.id for c in chars]
     
     if char_id not in shop_ids:
         raise HTTPException(status_code=404, detail="Character has rotated out of the shop")
-        
-    char_raw = await collection.find_one({"id": char_id})
-    if not char_raw:
-        raise HTTPException(status_code=404, detail="Character not found")
 
-    base_price = RARITY_PRICES.get(char_raw.get("rarity"), 5)
-    price, staff_discount = apply_role_discount(user_id, base_price)
-    if user_raw.get("zenith", 0) < price:
-        LOGGER.info(f"Shop Purchase Error: User {user_id} has insufficient Zenith ({user_raw.get('zenith', 0)}) for price {price}")
-        raise HTTPException(status_code=400, detail=f"Insufficient Zenith (Need {price})")
+    async with await client.start_session() as mongo_session:
+        async with mongo_session.start_transaction():
+            user_raw = await user_collection.find_one(get_user_id_query(user_id), session=mongo_session)
+            if not user_raw:
+                raise HTTPException(status_code=404, detail="User not found")
 
-    owned_ids = [c["id"] for c in user_raw.get("characters", []) if isinstance(c, dict) and "id" in c]
-    if char_id in owned_ids:
-        LOGGER.info(f"Shop Purchase Error: User {user_id} already owns character {char_id}")
-        raise HTTPException(status_code=400, detail="You already own this character")
+            char_raw = await collection.find_one({"id": char_id}, session=mongo_session)
+            if not char_raw:
+                raise HTTPException(status_code=404, detail="Character not found")
 
-    stock_limit = RARITY_STOCK_LIMITS.get(char_raw.get("rarity"), SHOP_LIMIT)
-    stock_update = await collection.update_one(
-        {"id": char_id, "$or": [{"sold_count": {"$lt": stock_limit}}, {"sold_count": {"$exists": False}}]},
-        {"$inc": {"sold_count": 1}}
-    )
-    if stock_update.modified_count == 0:
-        LOGGER.info(f"Shop Purchase Error: Character {char_id} is SOLD OUT (Limit: {stock_limit})")
-        raise HTTPException(status_code=400, detail="Character is SOLD OUT")
+            base_price = RARITY_PRICES.get(char_raw.get("rarity"), 5)
+            price, staff_discount = apply_role_discount(user_id, base_price)
+            if user_raw.get("zenith", 0) < price:
+                LOGGER.info(
+                    "Shop Purchase Error: User %s has insufficient Zenith (%s) for price %s",
+                    user_id,
+                    user_raw.get("zenith", 0),
+                    price,
+                )
+                raise HTTPException(status_code=400, detail=f"Insufficient Zenith (Need {price})")
 
-    q = get_user_id_query(user_id)
-    q["zenith"] = {"$gte": price}
-    q["characters.id"] = {"$ne": char_id} # Atomic OCC guard against duplicate purchase
-    user_update = await user_collection.update_one(
-        q,
-        {
-            "$inc": {"zenith": -price, "char_count": 1},
-            "$push": {"characters": {
-                "id": char_raw["id"], 
-                "name": char_raw["name"], 
-                "anime": char_raw["anime"], 
-                "rarity": char_raw["rarity"], 
-                "img_url": char_raw["img_url"]
-            }}
-        }
-    )
+            owned_ids = [c["id"] for c in user_raw.get("characters", []) if isinstance(c, dict) and "id" in c]
+            if char_id in owned_ids:
+                LOGGER.info("Shop Purchase Error: User %s already owns character %s", user_id, char_id)
+                raise HTTPException(status_code=400, detail="You already own this character")
 
-    if user_update.modified_count == 0:
-        await collection.update_one({"id": char_id}, {"$inc": {"sold_count": -1}}) # Rollback
-        raise HTTPException(status_code=400, detail="Transaction failed or character already owned.")
+            stock_limit = RARITY_STOCK_LIMITS.get(char_raw.get("rarity"), SHOP_LIMIT)
+            stock_update = await collection.update_one(
+                {"id": char_id, "$or": [{"sold_count": {"$lt": stock_limit}}, {"sold_count": {"$exists": False}}]},
+                {"$inc": {"sold_count": 1}},
+                session=mongo_session,
+            )
+            if stock_update.modified_count == 0:
+                LOGGER.info("Shop Purchase Error: Character %s is SOLD OUT (Limit: %s)", char_id, stock_limit)
+                raise HTTPException(status_code=400, detail="Character is SOLD OUT")
+
+            q = get_user_id_query(user_id)
+            q["zenith"] = {"$gte": price}
+            q["characters.id"] = {"$ne": char_id}
+            user_update = await user_collection.update_one(
+                q,
+                {
+                    "$inc": {"zenith": -price, "char_count": 1, "version": 1},
+                    "$push": {"characters": {
+                        "id": char_raw["id"],
+                        "name": char_raw["name"],
+                        "anime": char_raw["anime"],
+                        "rarity": char_raw["rarity"],
+                        "img_url": char_raw["img_url"],
+                    }},
+                },
+                session=mongo_session,
+            )
+
+            if user_update.modified_count == 0:
+                raise HTTPException(status_code=400, detail="Purchase failed or character already owned.")
 
     from Grabber.modules.progression.achievements import check_achievements
     from Grabber.modules.progression.quests import update_quest_progress
-    await update_quest_progress(user_id, "big_spender", price)
-    await check_achievements(user_id)
-    await sync_user_to_redis(user_id)
+    try:
+        await update_quest_progress(user_id, "big_spender", price)
+        await check_achievements(user_id)
+    except Exception:
+        LOGGER.exception("Post-purchase progression update failed for user %s", user_id)
+    try:
+        await sync_user_to_redis(user_id)
+    except Exception:
+        LOGGER.exception("Post-purchase cache sync failed for user %s", user_id)
     
     return {
         "status": "success",
@@ -433,24 +448,41 @@ async def claim_pass_level(level: int, user_id: int = Depends(get_current_user))
 @router.post("/buy_level")
 async def api_buy_level(levels: int = Query(1, ge=1, le=50), user_id: int = Depends(get_current_user)):
     cost = levels * LEVEL_BUY_SHARD_COST
-    user = await user_collection.find_one(get_user_id_query(user_id))
-    
-    if not user or user.get("balance", 0) < cost:
-        raise HTTPException(status_code=400, detail=f"Insufficient Shards (Need {cost})")
-        
-    deduct_result = await user_collection.update_one(
-        {**get_user_id_query(user_id), "balance": {"$gte": cost}},
-        {"$inc": {"balance": -cost}}
-    )
-    if deduct_result.modified_count == 0:
-        raise HTTPException(status_code=400, detail="Insufficient Shards (concurrent check failed)")
-    
+    new_xp = None
+
+    async with await client.start_session() as mongo_session:
+        async with mongo_session.start_transaction():
+            user = await user_collection.find_one(get_user_id_query(user_id), session=mongo_session)
+            if not user or user.get("balance", 0) < cost:
+                raise HTTPException(status_code=400, detail=f"Insufficient Shards (Need {cost})")
+
+            deduct_result = await user_collection.update_one(
+                {**get_user_id_query(user_id), "balance": {"$gte": cost}},
+                {"$inc": {"balance": -cost, "version": 1}},
+                session=mongo_session,
+            )
+            if deduct_result.modified_count == 0:
+                raise HTTPException(status_code=400, detail="Insufficient Shards (concurrent check failed)")
+
+            from Grabber.core.progression import add_xp
+            new_xp = await add_xp(
+                user_id,
+                levels * 100,
+                "shop_buylevel",
+                session=mongo_session,
+                sync_rank=False,
+            )
+
+    if new_xp is not None:
+        from Grabber.core.cache import update_user_rank
+
+        try:
+            await update_user_rank(user_id, new_xp)
+        except Exception:
+            LOGGER.exception("Post-buy-level rank update failed for user %s", user_id)
     try:
-        from Grabber.core.progression import add_xp
-        await add_xp(user_id, levels * 100, "shop_buylevel")
-    except Exception as e:
-        LOGGER.error(f"buy_level XP add failed for user {user_id}, rolling back: {e}")
-        await user_collection.update_one(get_user_id_query(user_id), {"$inc": {"balance": cost}})
-        raise HTTPException(status_code=500, detail="Transaction failed. Your shards have been refunded.")
+        await sync_user_to_redis(user_id)
+    except Exception:
+        LOGGER.exception("Post-buy-level cache sync failed for user %s", user_id)
     
     return {"status": "success", "message": f"Bought {levels} levels for {cost} Shards!"}

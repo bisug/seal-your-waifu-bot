@@ -80,6 +80,7 @@ class Database:
             (self.sessions,          lambda c: c.create_index([("id", 1), ("type", 1), ("status", 1)])),
             (self.sessions,          lambda c: c.create_index([("type", 1), ("sender_id", 1), ("receiver_id", 1), ("status", 1)])),
             (self.sessions,          lambda c: c.create_index("token", sparse=True)),
+            (self.sessions,          lambda c: c.create_index("token_digest", sparse=True)),
             (self.daily_shop,        lambda c: c.create_index("date", unique=True)),
             (self.star_orders,       lambda c: c.create_index("order_id", unique=True)),
             (self.star_orders,       lambda c: c.create_index("payload", unique=True)),

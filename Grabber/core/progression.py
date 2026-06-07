@@ -46,14 +46,21 @@ def get_progress_bar(current: int, total: int, length: int = 10) -> str:
     filled = int((current / total) * length)
     empty = length - filled
     return "[" + "█" * filled + "░" * empty + "]"
-async def add_xp(user_id: int, amount: int, source: str = "unknown"):
+async def add_xp(
+    user_id: int,
+    amount: int,
+    source: str = "unknown",
+    *,
+    session=None,
+    sync_rank: bool = True,
+):
     """
     Add XP to a user's profile and handle level-ups atomically.
     """
     user = await user_collection.find_one_and_update(
         get_user_filter(user_id),
         add_user_set_on_insert({
-            "$inc": {"xp": amount},
+            "$inc": {"xp": amount, "version": 1},
             "$setOnInsert": {
                 "pass_type": "free",
                 "claimed_levels": [],
@@ -61,27 +68,30 @@ async def add_xp(user_id: int, amount: int, source: str = "unknown"):
             }
         }, user_id),
         upsert=True,
-        return_document=True
+        return_document=True,
+        session=session,
     )
     if not user:
         return
     new_xp = user.get("xp", 0)
     # Sync with Redis Ranking Cache
-    from Grabber.core.cache import update_user_rank
-    await update_user_rank(user_id, new_xp)
+    if sync_rank:
+        from Grabber.core.cache import update_user_rank
+        await update_user_rank(user_id, new_xp)
     old_xp = new_xp - amount
     old_level = get_level_from_xp(old_xp)
     new_level = get_level_from_xp(new_xp)
     LOGGER.info(f"User {user_id} gained {amount} XP from {source}. Level: {old_level} -> {new_level}")
     if new_level > old_level:
-        await check_and_grant_rewards(user_id, old_level, new_level, user)
-async def check_and_grant_rewards(user_id: int, old_level: int, new_level: int, user_data: dict = None):
+        await check_and_grant_rewards(user_id, old_level, new_level, user, session=session)
+    return new_xp
+async def check_and_grant_rewards(user_id: int, old_level: int, new_level: int, user_data: dict = None, *, session=None):
     """
     Iterate through newly reached levels and grant corresponding rewards
     based on the user's Battle Pass type. Also tracks Pass Bank for free users.
     """
     if user_data is None:
-        user = await user_collection.find_one(get_user_filter(user_id))
+        user = await user_collection.find_one(get_user_filter(user_id), session=session)
     else:
         user = user_data
     pass_type = get_active_pass_type(user)
@@ -167,7 +177,8 @@ async def check_and_grant_rewards(user_id: int, old_level: int, new_level: int, 
     if updates.get("$inc") or updates.get("$push") or updates.get("$addToSet"):
         await user_collection.update_one(
             get_user_filter(user_id),
-            updates
+            updates,
+            session=session,
         )
         if total_coins_earned > 0 or eggs_awarded:
             LOGGER.info(f"User {user_id} pass rewards: {total_coins_earned} shards, {len(eggs_awarded)} eggs")
