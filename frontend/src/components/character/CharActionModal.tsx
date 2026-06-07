@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Gem, Image as ImageIcon, Loader2, Lock, Pencil, Save, Trash2, X, Zap } from 'lucide-react';
+import { Coins, Gem, Image as ImageIcon, Loader2, Lock, Pencil, Save, Trash2, X } from 'lucide-react';
 import { useToast } from '../ui/Toast';
 import { Modal } from './Modal';
 import { apiFetch, getErrorMessage } from '../../api/client';
@@ -374,7 +374,7 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                         disabled={sellStage !== 'idle'}
                         className="flex-1 py-3 rounded-lg bg-brand-accent/10 text-brand-accent hover:bg-brand-accent/20 font-semibold text-sm active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 transition-all"
                     >
-                        {sellStage === 'selling' ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />}
+                        {sellStage === 'selling' ? <Loader2 size={16} className="animate-spin" /> : <Coins size={16} />}
                         <span>Sell</span>
                     </button>
                 </div>

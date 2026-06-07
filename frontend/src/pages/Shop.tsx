@@ -4,7 +4,7 @@ import { Card } from '../components/character/Card';
 import { CardSkeleton } from '../components/ui/Skeleton';
 import { ErrorState } from '../components/ui/ErrorState';
 import { EmptyState } from '../components/ui/EmptyState';
-import { AlertCircle, CheckCircle2, Clock, Coins, Gem, Package, RefreshCw, ShoppingBag, Sparkles } from 'lucide-react';
+import { AlertCircle, CalendarDays, CheckCircle2, Clock, Coins, Gem, PackageOpen, RefreshCw, Store } from 'lucide-react';
 import { Character, useUser } from '../context/UserContext';
 import { cn, formatNumber } from '../utils';
 
@@ -176,7 +176,7 @@ export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <ShoppingBag size={18} className="text-brand-accent shrink-0" />
+              <Store size={18} className="text-brand-accent shrink-0" />
               <h1 className="text-lg font-bold text-white tracking-tight">Daily Shop</h1>
             </div>
             <p className="text-sm font-medium text-neutral-400 leading-snug">
@@ -198,7 +198,7 @@ export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
           <Metric icon={Coins} label="Shards" value={formatNumber(shardBalance)} />
           <Metric icon={Gem} label="Zenith" value={formatNumber(zenithBalance)} tone="accent" />
           <Metric icon={Clock} label="Resets in" value={getCountdown(hubData?.reset_at, now)} />
-          <Metric icon={Package} label="Available" value={summary.available} tone="success" />
+          <Metric icon={PackageOpen} label="Available" value={summary.available} tone="success" />
           <Metric icon={CheckCircle2} label="Owned" value={summary.owned} />
         </div>
 
@@ -214,7 +214,7 @@ export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
         <div className="mb-3 flex items-end justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <Sparkles size={15} className="text-brand-accent" />
+              <CalendarDays size={15} className="text-brand-accent" />
               <h2 className="text-sm font-bold text-white">Today's rotation</h2>
             </div>
             <p className="mt-1 text-xs font-medium text-neutral-500">
@@ -231,7 +231,7 @@ export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
           </div>
         ) : (
           <EmptyState
-            icon={ShoppingBag}
+            icon={Store}
             title="Shop is empty"
             message="The daily rotation could not find characters right now. Refresh or check back later."
           />

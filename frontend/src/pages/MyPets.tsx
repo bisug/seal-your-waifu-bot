@@ -5,11 +5,10 @@ import {
   Loader2,
   PawPrint,
   RefreshCw,
-  Shield,
+  Star,
   Sparkles,
   Swords,
   Wind,
-  Zap,
 } from 'lucide-react';
 import { apiFetch, getErrorMessage } from '../api/client';
 import { EmptyState } from '../components/ui/EmptyState';
@@ -156,7 +155,7 @@ const ActivePetCard = ({ pet, onOpen }: { pet: Pet; onOpen?: (pet: Pet) => void 
         </p>
 
         <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-white/5 pt-4 sm:grid-cols-4">
-          <InlineStat icon={Shield} label="HP" value={pet.hp ?? 0} tone="success" />
+          <InlineStat icon={Heart} label="HP" value={pet.hp ?? 0} tone="success" />
           <InlineStat icon={Swords} label="ATK" value={pet.atk ?? 0} tone="accent" />
           <InlineStat icon={Wind} label="SPD" value={pet.spd ?? 0} />
           <InlineStat icon={Sparkles} label="Luck" value={`${Math.round(Number(pet.luck || 0) * 100)}%`} tone="accent" />
@@ -217,7 +216,7 @@ const PetCard = ({
     </button>
 
     <div className="mt-3 grid grid-cols-4 gap-3 border-t border-white/5 pt-3">
-      <InlineStat icon={Shield} label="HP" value={pet.hp ?? 0} />
+      <InlineStat icon={Heart} label="HP" value={pet.hp ?? 0} />
       <InlineStat icon={Swords} label="ATK" value={pet.atk ?? 0} tone="accent" />
       <InlineStat icon={Wind} label="SPD" value={pet.spd ?? 0} />
       <InlineStat icon={Sparkles} label="Luck" value={`${Math.round(Number(pet.luck || 0) * 100)}%`} tone="accent" />
@@ -235,7 +234,7 @@ const PetCard = ({
         switching && 'opacity-70'
       )}
     >
-      {switching ? <Loader2 size={14} className="animate-spin" /> : isActive ? <CheckCircle2 size={14} /> : <Zap size={14} />}
+      {switching ? <Loader2 size={14} className="animate-spin" /> : isActive ? <CheckCircle2 size={14} /> : <PawPrint size={14} />}
       <span>{isActive ? 'Active pet' : 'Set active'}</span>
     </button>
   </div>
@@ -337,8 +336,8 @@ export const MyPets = ({ onPetClick }: MyPetsProps) => {
         <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
           <StatPill icon={PawPrint} label="Owned" value={summary.total} tone="accent" />
           <StatPill icon={Heart} label="Affection" value={`${summary.averageAffection}%`} tone="danger" />
-          <StatPill icon={Shield} label="Power" value={formatNumber(summary.totalPower)} tone="success" />
-          <StatPill icon={Sparkles} label="Best" value={summary.bestPet?.name || 'None'} />
+          <StatPill icon={Swords} label="Power" value={formatNumber(summary.totalPower)} tone="success" />
+          <StatPill icon={Star} label="Best" value={summary.bestPet?.name || 'None'} />
         </div>
       </header>
 
@@ -346,7 +345,7 @@ export const MyPets = ({ onPetClick }: MyPetsProps) => {
         {currentPet && (
           <section>
             <div className="mb-3 flex items-center gap-2">
-              <Zap size={15} className="text-brand-accent" />
+              <PawPrint size={15} className="text-brand-accent" />
               <h2 className="text-sm font-bold text-white">Active companion</h2>
             </div>
             <ActivePetCard pet={currentPet} onOpen={onPetClick} />
@@ -357,7 +356,7 @@ export const MyPets = ({ onPetClick }: MyPetsProps) => {
           <div className="mb-3 flex items-end justify-between gap-3">
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <Sparkles size={15} className="text-brand-accent" />
+                <PawPrint size={15} className="text-brand-accent" />
                 <h2 className="text-sm font-bold text-white">Collection</h2>
               </div>
               <p className="mt-1 text-xs font-medium text-neutral-500">

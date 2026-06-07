@@ -1,7 +1,7 @@
 import React from 'react';
 import { useApi } from '../hooks/useApi';
 import { Skeleton } from '../components/ui/Skeleton';
-import { Award, Lock, CheckCircle2, Trophy } from 'lucide-react';
+import { BadgeCheck, Lock, CheckCircle2 } from 'lucide-react';
 import { cn } from '../utils';
 import { ErrorState } from '../components/ui/ErrorState';
 
@@ -41,7 +41,7 @@ export const Achievements = () => {
         <div className="px-4 py-8 pb-20">
             <header className="mb-8">
                 <h1 className="text-xl font-bold text-zinc-100 flex items-center gap-2">
-                    <Award className="text-brand-accent" size={20} />
+                    <BadgeCheck className="text-brand-accent" size={20} />
                     Achievements
                 </h1>
                 <p className="text-xs font-medium text-zinc-500 mt-1">Unlock milestones to earn experience</p>
@@ -64,7 +64,11 @@ export const Achievements = () => {
                                 ? "bg-emerald-500/10 border-emerald-500/20"
                                 : "bg-zinc-950 border-white/5 grayscale"
                         )}>
-                            <Trophy size={20} className={ach.unlocked ? 'text-emerald-500' : 'text-zinc-700'} />
+                            {ach.unlocked ? (
+                                <BadgeCheck size={20} className="text-emerald-500" />
+                            ) : (
+                                <Lock size={18} className="text-zinc-700" />
+                            )}
                         </div>
 
                         <div className="flex-1 min-w-0">

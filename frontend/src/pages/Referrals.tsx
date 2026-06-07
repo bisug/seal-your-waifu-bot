@@ -1,7 +1,7 @@
 import React from 'react';
 import { useApi } from '../hooks/useApi';
 import { Skeleton } from '../components/ui/Skeleton';
-import { Users, Copy, CheckCircle2 } from 'lucide-react';
+import { UserPlus, Copy, CheckCircle2 } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 import { useToast } from '../components/ui/Toast';
 
@@ -43,7 +43,7 @@ export const Referrals = () => {
     return (
         <div className="px-6 pb-12 pt-4 max-w-2xl mx-auto">
             <div className="flex items-center space-x-3 mb-8">
-                <Users className="text-brand-accent" size={24} />
+                <UserPlus className="text-brand-accent" size={24} />
                 <div>
                     <h1 className="text-xl font-bold text-white tracking-tight">Referrals</h1>
                     <p className="text-sm font-medium text-neutral-400">Invite friends and track who joined.</p>

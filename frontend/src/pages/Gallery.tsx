@@ -4,7 +4,7 @@ import { Card } from '../components/character/Card';
 import { CardSkeleton } from '../components/ui/Skeleton';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ErrorState } from '../components/ui/ErrorState';
-import { ArrowDown10, ArrowDownZA, ArrowUp01, ArrowUpAZ, ChevronDown, Search, Loader2, Users, type LucideIcon } from 'lucide-react';
+import { ArrowDown10, ArrowDownZA, ArrowUp01, ArrowUpAZ, ChevronDown, Search, Loader2, type LucideIcon } from 'lucide-react';
 import { useInfiniteGrid } from '../hooks/useInfiniteGrid';
 import { Character } from '../context/UserContext';
 import { cleanRarityLabel, cn } from '../utils';
@@ -139,7 +139,7 @@ export const Gallery = ({ onCharClick }: GalleryProps) => {
         </div>
       ) : (
         <EmptyState
-          icon={Users}
+          icon={Search}
           title="No results found"
           message="Adjust your search criteria to discover more characters."
         />
