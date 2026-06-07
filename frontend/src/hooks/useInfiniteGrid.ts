@@ -31,7 +31,6 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [rarity, setRarity] = useState('');
-  const [initialized, setInitialized] = useState(false);
 
   const observer = useRef<IntersectionObserver | null>(null);
   const searchAbortController = useRef<AbortController | null>(null);
@@ -83,12 +82,10 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
                 setHasMore(cached.hasMore);
                 setError(null);
                 setLoading(false);
-                setInitialized(true);
                 return;
             }
         }
     }
-    setInitialized(true);
 
     try {
       const data = await apiFetch(
@@ -132,7 +129,7 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
         setLoading(false);
       }
     }
-  }, [endpoint, page, search, rarity, options.limit, paramsKey, items, initialized]);
+  }, [endpoint, page, search, rarity, options.limit, paramsKey, items]);
 
   // Initial fetch and search/rarity debounce
   useEffect(() => {

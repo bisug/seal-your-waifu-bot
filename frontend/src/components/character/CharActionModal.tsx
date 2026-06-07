@@ -43,6 +43,7 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
     const [editForm, setEditForm] = useState<CharacterEditForm>(() => buildEditForm(selectedChar));
     const [rarityOptions, setRarityOptions] = useState<RarityOption[]>([]);
     const canEdit = Boolean(user?.can_edit_character ?? user?.is_sudo);
+    const selectedCharId = selectedChar?.id;
 
     useEffect(() => {
         setPurchaseStage('idle');
@@ -50,7 +51,7 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
         setEditStage('idle');
         setEditMode(false);
         setEditForm(buildEditForm(selectedChar));
-    }, [selectedChar?.id]);
+    }, [selectedCharId, selectedChar]);
 
     useEffect(() => {
         if (!canEdit || rarityOptions.length > 0) return;

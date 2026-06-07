@@ -22,6 +22,7 @@ from Grabber.webapp.auth import require_sudo_user
 router = APIRouter()
 
 UPLOAD_SOURCE_KEYS = ("web_character", "bot_character", "web_pet", "bot_pet")
+UPLOAD_DETAIL_LIMIT = 50
 
 
 def _safe_int(value: Any, default: int = 0) -> int:
@@ -161,7 +162,7 @@ async def _get_uploads(user_id: int) -> tuple[int, int, list[dict[str, Any]], li
     characters = await collection.find(
         character_filter,
         {"_id": 0, "id": 1, "name": 1, "anime": 1, "rarity": 1, "img_url": 1, "uploaded_at": 1},
-    ).sort([("uploaded_at", -1), ("id", -1)]).to_list(length=None)
+    ).sort([("uploaded_at", -1), ("id", -1)]).to_list(length=UPLOAD_DETAIL_LIMIT)
 
     pets = await pet_catalog_collection.find(
         pet_filter,
@@ -177,7 +178,7 @@ async def _get_uploads(user_id: int) -> tuple[int, int, list[dict[str, Any]], li
             "updated_at": 1,
             "created_at": 1,
         },
-    ).sort([("updated_at", -1), ("created_at", -1)]).to_list(length=None)
+    ).sort([("updated_at", -1), ("created_at", -1)]).to_list(length=UPLOAD_DETAIL_LIMIT)
 
     return (
         character_count,
@@ -256,6 +257,11 @@ async def get_sudo_contributions(user_id: int = Depends(require_sudo_user)):
             "uploads": {
                 "characters": character_uploads_list,
                 "pets": pet_uploads_list,
+                "limit": UPLOAD_DETAIL_LIMIT,
+                "truncated": (
+                    persisted_character_count > len(character_uploads_list)
+                    or persisted_pet_count > len(pet_uploads_list)
+                ),
             },
             "recent_uploads": {
                 "characters": character_uploads_list[:8],

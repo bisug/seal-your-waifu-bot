@@ -55,12 +55,27 @@ _MAX_FALLBACK = 5000
 _fallback_rate_limits = OrderedDict()
 
 
-async def _store_session_mongo(session_key: str, token_key: str, token: str, user_id: int | str):
+def _token_digest(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def _token_key(token: str) -> str:
+    return f"auth_token:{_token_digest(token)}"
+
+
+def _legacy_token_key(token: str) -> str:
+    return f"auth_token:{token}"
+
+
+async def _store_session_mongo(session_key: str, token_key: str, token_digest: str, user_id: int | str):
     expiry = time.time() + SESSION_TTL
     expiry_dt = datetime.now(timezone.utc) + timedelta(seconds=SESSION_TTL)
     await sessions_collection.update_one(
         {"_id": session_key},
-        {"$set": {"token": token, "expires_at": expiry, "expires_at_dt": expiry_dt}},
+        {
+            "$set": {"token_digest": token_digest, "expires_at": expiry, "expires_at_dt": expiry_dt},
+            "$unset": {"token": ""},
+        },
         upsert=True
     )
     await sessions_collection.update_one(
@@ -72,17 +87,18 @@ async def _store_session_mongo(session_key: str, token_key: str, token: str, use
 
 async def get_user_id_from_token(token: str) -> str | None:
     """Resolve a WebApp auth token through Redis, falling back to MongoDB."""
-    token_key = f"auth_token:{token}"
+    token_keys = [_token_key(token), _legacy_token_key(token)]
     if r:
         try:
-            user_id = await asyncio.wait_for(r.get(token_key), timeout=3.0)
-            if user_id:
-                return str(user_id)
+            for token_key in token_keys:
+                user_id = await asyncio.wait_for(r.get(token_key), timeout=3.0)
+                if user_id:
+                    return str(user_id)
         except Exception as e:
             LOGGER.warning(f"Redis auth token lookup failed, using Mongo fallback: {e}")
 
     token_doc = await sessions_collection.find_one({
-        "_id": token_key,
+        "_id": {"$in": token_keys},
         "$or": [
             {"expires_at": {"$gt": time.time()}},
             {"expires_at_dt": {"$gt": datetime.now(timezone.utc)}},
@@ -103,14 +119,15 @@ async def create_session(user_data: dict):
         return None
         
     token = str(uuid.uuid4())
+    token_digest = _token_digest(token)
     session_key = f"user_session:{user_id}"
-    token_key = f"auth_token:{token}"
+    token_key = _token_key(token)
 
     redis_written = False
     if r:
         try:
             async with r.pipeline(transaction=True) as pipe:
-                pipe.setex(session_key, SESSION_TTL, token)
+                pipe.setex(session_key, SESSION_TTL, token_digest)
                 pipe.setex(token_key, SESSION_TTL, str(user_id))
                 await asyncio.wait_for(pipe.execute(), timeout=3.0)
             redis_written = True
@@ -118,7 +135,7 @@ async def create_session(user_data: dict):
             LOGGER.warning(f"Redis auth session write failed, using Mongo fallback: {e}")
 
     try:
-        await _store_session_mongo(session_key, token_key, token, user_id)
+        await _store_session_mongo(session_key, token_key, token_digest, user_id)
     except Exception:
         if redis_written:
             LOGGER.exception("Mongo auth session fallback write failed; Redis session is active")
