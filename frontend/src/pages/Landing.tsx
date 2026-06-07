@@ -170,7 +170,7 @@ export const Landing = ({ error, onRetry }: LandingProps) => {
   const [pointer, setPointer] = useState<ScenePointer>({ x: 0, y: 0 });
 
   const botUsername = useMemo(
-    () => (import.meta.env.VITE_BOT_USERNAME || 'Seal_Your_WaifuBot').replace(/^@/, ''),
+    () => (import.meta.env.VITE_BOT_USERNAME || 'SealYourWaifuBot').replace(/^@/, ''),
     [],
   );
   const telegramUrl = `https://t.me/${botUsername}`;
@@ -229,7 +229,7 @@ export const Landing = ({ error, onRetry }: LandingProps) => {
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5">
                 <img src="/favicon.svg" alt="" className="h-5 w-5" aria-hidden="true" />
               </span>
-              <span className="truncate text-sm font-black text-white">Seal</span>
+              <span className="truncate text-sm font-black text-white">SEAL YOUR WAIFU</span>
             </a>
             <a
               href={telegramUrl}

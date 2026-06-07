@@ -37,7 +37,7 @@ async def get_bot_info():
     """Public endpoint to get bot identity for branding."""
     return {
         "name": getattr(config, "BOT_NAME", "SEAL YOUR WAIFU"),
-        "username": getattr(config, "BOT_USERNAME", "Seal_Your_WaifuBot"),
+        "username": getattr(config, "BOT_USERNAME", "SealYourWaifuBot"),
         "id": getattr(config, "BOT_ID", None),
         "avatar": config.PHOTO_URL[0] if config.PHOTO_URL else "https://files.catbox.moe/2hsawz.jpg"
     }
