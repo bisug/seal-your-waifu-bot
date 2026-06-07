@@ -39,9 +39,9 @@ class Config:
     # --- BOT IDENTITY ---
     TOKEN = os.getenv("TOKEN", "7888451649:AAFsl_vtOiN7dDvE-bLx32WJ-Gof-oc1zA0")
     SUB_TOKEN = os.getenv("SUB_TOKEN", "8785400009:AAG6gvkM-BH8Jq7NCKzVczNRUPrkm3O9-Y4")
-    BOT_USERNAME = None  # Fetched automatically at startup
+    BOT_USERNAME = os.getenv("BOT_USERNAME", "SealYourWaifuBot")  # Fetched automatically at startup
     BOT_ID = None        # Fetched automatically at startup
-    BOT_NAME = None      # Fetched automatically at startup
+    BOT_NAME = os.getenv("BOT_NAME", "SEAL YOUR WAIFU")  # Fetched automatically at startup
 
     # --- TELEGRAM API CREDENTIALS ---
     API_ID = int(os.getenv("API_ID", "20098819"))
