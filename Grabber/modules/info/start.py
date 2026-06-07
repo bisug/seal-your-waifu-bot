@@ -5,12 +5,11 @@ from Grabber import (LOGGER, PHOTO_URL, SUPPORT_CHAT, UPDATE_CHAT, WEB_APP_URL,
 from Grabber.core.cache import (get_total_ranked_users, get_user_rank,
                                 invalidate_user_cache, update_user_rank)
 from Grabber.core.keyboard import KeyboardBuilder, get_webapp_button
-from Grabber.core.progression import add_xp, get_user_progress
+from Grabber.core.progression import get_user_progress
+from Grabber.core.referrals import claim_referral_bonus, parse_referral_payload
 from Grabber.core.user import (add_user_set_on_insert, ensure_user_document,
-                               get_user_filter, get_user_id, update_user)
+                               get_user_filter)
 from Grabber.core.utils import handle_errors, html_escape, reply_media_dynamic
-from Grabber.modules.progression.achievements import check_achievements
-from Grabber.core.pets import copy_default_pet, get_pet_key
 LOGGER.info("Loading Start module...")
 START_TEXT_NEW = """
 <b>{bot_name}</b>
@@ -237,37 +236,38 @@ async def start_handler(_, message: types.Message):
             except Exception as e:
                 LOGGER.error(f"Claim Error: {e}")
                 pass
-        elif is_new_user and param.startswith("ref_"):
-            try:
-                referrer_id = int(param.split("_")[1])
-                if referrer_id != user_id:
-                    upgraded_pet = copy_default_pet()
-                    upgraded_pet["level"] = 10
-                    await user_collection.update_one(
-                        {"id": get_user_id(user_id)},
-                        add_user_set_on_insert(
-                            {"$set": {"pets": [upgraded_pet], "current_pet": get_pet_key(upgraded_pet), "referred_by": referrer_id}},
-                            user_id,
-                            first_name=first_name_clean,
-                            username=message.from_user.username,
+        elif param.startswith("ref_"):
+            referral_result = await claim_referral_bonus(
+                user_id=user_id,
+                referrer_id=parse_referral_payload(param),
+                is_new_user=is_new_user,
+                first_name=first_name_clean,
+                username=message.from_user.username,
+            )
+            if referral_result.applied:
+                try:
+                    await app.send_message(
+                        referral_result.referrer_id,
+                        (
+                            f'🎉 <b>New Referral!</b>\n\n'
+                            f'<a href="tg://user?id={message.from_user.id}">{html_escape(first_name_clean)}</a> '
+                            f"joined using your link.\n"
+                            f"+{referral_result.referrer_reward_shards:,} ⬪ | "
+                            f"+{referral_result.referrer_reward_xp:,} XP"
                         ),
-                        upsert=True
+                        parse_mode=enums.ParseMode.HTML
                     )
-                    await update_user(user_id, {"$inc": {"balance": 1500}})
-                    await update_user(referrer_id, {"$inc": {"balance": 500, "referrals_count": 1, "referrals_earned": 500}})
-                    await add_xp(referrer_id, 50, "referral")
-                    await check_achievements(referrer_id)
-                    try:
-                        await app.send_message(
-                            referrer_id,
-                            f'🎉 <b>New Referral!</b>\n\n<a href="tg://user?id={message.from_user.id}">{html_escape(first_name_clean)}</a> joined using your link.\n+500 ⬪ | +50 XP',
-                            parse_mode=enums.ParseMode.HTML
-                        )
-                    except:
-                        pass
-                    await message.reply_text("🎁 <b>Welcome Bonus!</b>\nYou received <b>1,500 ⬪</b> and a <b>Level 10 Pet</b> for using a referral link! 🚀", parse_mode=enums.ParseMode.HTML)
-            except ValueError:
-                pass
+                except Exception:
+                    pass
+                await message.reply_text(
+                    (
+                        "🎁 <b>Welcome Bonus!</b>\n"
+                        f"You received <b>{referral_result.referred_reward_shards:,} ⬪</b> "
+                        f"and a <b>Level {referral_result.referred_pet_level} Pet</b> "
+                        "for using a referral link! 🚀"
+                    ),
+                    parse_mode=enums.ParseMode.HTML,
+                )
     is_private = message.chat.type == enums.ChatType.PRIVATE
     # Refresh user state after referral DB logic just in case
     if is_new_user:
