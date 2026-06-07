@@ -831,16 +831,19 @@ Dashboard deployment:
 1. Open Cloudflare Dashboard.
 2. Go to Workers & Pages.
 3. Create a Pages project and connect the Git repository.
-4. Set Project root directory to `frontend`.
+4. Set Project root directory to `frontend`. Do not set this to `dist`; Cloudflare checks the root directory immediately after cloning, before the build creates `dist`.
 5. Use framework preset `React (Vite)` or configure manually:
    - Build command: `bun run build`
    - Build output directory: `dist`
+   - Deploy command: leave empty unless Cloudflare specifically requires one for your setup.
 6. Add environment variables:
    - `VITE_API_URL=https://your-backend.example.com`
    - `VITE_API_PREFIX=v1_7b82`
 7. Deploy.
 8. Set backend `WEB_APP_URL` to the Cloudflare Pages URL or custom domain.
 9. Update BotFather with that frontend URL.
+
+If your Cloudflare log says `It seems that you have run wrangler deploy on a Pages project`, remove `npx wrangler deploy` from the project settings. For a Pages project, use either the dashboard build/output settings above or the Pages deploy command below. `wrangler deploy` is for Workers and expects a Worker entry point or Workers static assets config.
 
 Direct upload with Wrangler:
 
@@ -849,6 +852,19 @@ cd frontend
 bun install --frozen-lockfile
 bun run build
 bunx wrangler pages deploy dist --project-name seal-bot-frontend
+```
+
+You can run the same flow through the committed scripts:
+
+```bash
+cd frontend
+bun run deploy:cloudflare
+```
+
+If Cloudflare asks for a custom deploy command after it has already run the build, use:
+
+```bash
+bun run deploy
 ```
 
 Cloudflare's React/Vite Pages preset uses `dist` as the build output. The committed `frontend/wrangler.toml` also declares `pages_build_output_dir = "dist"`.
