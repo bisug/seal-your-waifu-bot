@@ -14,6 +14,7 @@ import {
   BadgeCheck,
   PawPrint,
   CloudUpload,
+  ShieldCheck,
 } from 'lucide-react';
 import { cn } from '../utils';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -74,12 +75,16 @@ const SECTIONS: NavSection[] = [
 
 export const NavigationDrawer = ({ isOpen, onClose, activeTab, onNavigate }: NavigationDrawerProps) => {
   const { user } = useUser();
-  const sections = (user?.can_upload ?? user?.is_sudo)
+  const staffItems = [
+    ...(user?.is_sudo ? [{ id: 'sudos', label: 'Sudos', icon: ShieldCheck }] : []),
+    ...((user?.can_upload ?? user?.is_sudo) ? [{ id: 'upload', label: 'Upload', icon: CloudUpload }] : []),
+  ];
+  const sections = staffItems.length > 0
     ? [
         ...SECTIONS,
         {
           title: "Staff",
-          items: [{ id: 'upload', label: 'Upload', icon: CloudUpload }],
+          items: staffItems,
         },
       ]
     : SECTIONS;

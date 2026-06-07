@@ -25,8 +25,9 @@ const Achievements = lazy(() => import('./pages/Achievements').then(m => ({ defa
 const MyPets = lazy(() => import('./pages/MyPets').then(m => ({ default: m.MyPets })));
 const Exchange = lazy(() => import('./pages/Exchange').then(m => ({ default: m.Exchange })));
 const Upload = lazy(() => import('./pages/Upload').then(m => ({ default: m.Upload })));
+const Sudos = lazy(() => import('./pages/Sudos').then(m => ({ default: m.Sudos })));
 
-const VALID_TABS = ['profile', 'incubation', 'shop', 'exchange', 'gallery', 'pets', 'referrals', 'quests', 'pass', 'leaderboard', 'achievements', 'mypets', 'upload'];
+const VALID_TABS = ['profile', 'incubation', 'shop', 'exchange', 'gallery', 'pets', 'referrals', 'quests', 'pass', 'leaderboard', 'achievements', 'mypets', 'upload', 'sudos'];
 const TAB_ALIASES: Record<string, string> = {
   profile: 'profile',
   home: 'profile',
@@ -68,6 +69,11 @@ const TAB_ALIASES: Record<string, string> = {
   upload: 'upload',
   uploads: 'upload',
   admin: 'upload',
+  sudo: 'sudos',
+  sudos: 'sudos',
+  staff: 'sudos',
+  contributors: 'sudos',
+  contributions: 'sudos',
   referrals: 'referrals',
   referral: 'referrals',
   invite: 'referrals',
@@ -344,6 +350,12 @@ const AppContent = () => {
     );
   }
 
+  const canViewUpload = Boolean(user?.can_upload ?? user?.is_sudo);
+  const canViewSudos = Boolean(user?.is_sudo);
+  const isBlockedTab =
+    (activeTab === 'upload' && !canViewUpload) ||
+    (activeTab === 'sudos' && !canViewSudos);
+
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-brand-midnight">
       <Header onMenuClick={() => setIsMenuOpen(true)} />
@@ -371,9 +383,10 @@ const AppContent = () => {
           {activeTab === 'leaderboard' && <Leaderboard />}
           {activeTab === 'achievements' && <Achievements />}
           {activeTab === 'mypets' && <MyPets onPetClick={setSelectedPet} />}
-          {activeTab === 'upload' && (user?.can_upload ?? user?.is_sudo) && <Upload />}
+          {activeTab === 'upload' && canViewUpload && <Upload />}
+          {activeTab === 'sudos' && canViewSudos && <Sudos />}
 
-          {(!VALID_TABS.includes(activeTab) || (activeTab === 'upload' && !(user?.can_upload ?? user?.is_sudo))) && (
+          {(!VALID_TABS.includes(activeTab) || isBlockedTab) && (
             <NotFound onReset={() => handleNavigate('profile')} />
           )}
         </Suspense>

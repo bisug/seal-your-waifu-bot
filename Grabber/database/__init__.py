@@ -66,6 +66,7 @@ class Database:
             (self.users,             lambda c: c.create_index("characters.id")),
             (self.users,             lambda c: c.create_index([("id", 1), ("characters.id", 1)])),
             (self.anime_characters,  lambda c: c.create_index([("rarity", 1), ("name", 1)])),
+            (self.anime_characters,  lambda c: c.create_index([("added_by_id", 1), ("uploaded_at", -1)], sparse=True)),
             (self.users,             lambda c: c.create_index("char_count", sparse=True)),
             (self.users,             lambda c: c.create_index("xp", sparse=True)),
             (self.users,             lambda c: c.create_index("balance", sparse=True)),
@@ -91,6 +92,7 @@ class Database:
             (self.global_group_bans, lambda c: c.create_index("expires_at_dt", expireAfterSeconds=0)),
             (self.pet_catalog,       lambda c: c.create_index("petid", unique=True)),
             (self.pet_catalog,       lambda c: c.create_index([("enabled", 1), ("sort_order", 1)])),
+            (self.pet_catalog,       lambda c: c.create_index([("uploaded_by", 1), ("updated_at", -1)], sparse=True)),
         ]
         failed = 0
         for collection, idx_fn in indexes:
