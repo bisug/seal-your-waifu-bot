@@ -130,6 +130,17 @@ interface UserContextType {
 
 export const UserContext = createContext<UserContextType | null>(null);
 
+const hasAuthBootstrap = () => {
+  const telegramInit = Boolean(window.Telegram?.WebApp?.initData);
+  if (telegramInit) return true;
+
+  try {
+    return Boolean(sessionStorage.getItem('auth_token'));
+  } catch {
+    return false;
+  }
+};
+
 export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -164,6 +175,13 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [refreshUser]);
 
   useEffect(() => {
+    if (!hasAuthBootstrap()) {
+      setUser(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
     refreshUser();
   }, [refreshUser]);
 
