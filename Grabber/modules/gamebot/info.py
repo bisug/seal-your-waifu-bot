@@ -1,11 +1,12 @@
 from pyrogram import enums, filters, types
 
 from config import config
-from Grabber import BOT_USERNAME, game_bot
+from Grabber import game_bot
 @game_bot.on_message(filters.command(["start", "help"]))
 async def gamebot_start_handler(_, message: types.Message):
     """Dedicated /start and /help handler for GameBot."""
-    main_bot_mention = f"@{BOT_USERNAME}" if BOT_USERNAME else "our main bot"
+    main_bot_username = config.BOT_USERNAME
+    main_bot_mention = f"@{main_bot_username}" if main_bot_username else "our main bot"
     text = (
         "<b>🎮 Welcome to the GameBot!</b>\n\n"
         f"I am the secondary assistant for {main_bot_mention}, dedicated to providing fun and interactive mini-games. "
@@ -23,7 +24,7 @@ async def gamebot_start_handler(_, message: types.Message):
             types.InlineKeyboardButton("📢 Updates Channel", url=f"https://t.me/{config.UPDATE_CHAT}", style=enums.ButtonStyle.PRIMARY)
         ],
         [
-            types.InlineKeyboardButton("🤖 Visit Main Bot", url=f"https://t.me/{BOT_USERNAME}", style=enums.ButtonStyle.SUCCESS) if BOT_USERNAME else None
+            types.InlineKeyboardButton("🤖 Visit Main Bot", url=f"https://t.me/{main_bot_username}", style=enums.ButtonStyle.SUCCESS) if main_bot_username else None
         ]
     ]
     # Filter out None buttons
