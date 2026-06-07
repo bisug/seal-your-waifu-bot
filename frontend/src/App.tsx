@@ -7,6 +7,7 @@ import { NavigationDrawer } from './components/NavigationDrawer';
 import { IntroLoading } from './components/IntroLoading';
 import { Profile } from './pages/Profile';
 import { NotFound } from './pages/NotFound';
+import { Landing } from './pages/Landing';
 import { ToastProvider } from './components/ui/Toast';
 import { CharActionModal } from './components/character/CharActionModal';
 import { PetActionModal } from './components/pet/PetActionModal';
@@ -310,6 +311,19 @@ const AppContent = () => {
   if (loading) return <IntroLoading />;
 
   if (error || (!loading && !user)) {
+    const hasTelegramInit = Boolean(window.Telegram?.WebApp?.initData);
+    const hasSavedSession = (() => {
+      try {
+        return Boolean(sessionStorage.getItem('auth_token'));
+      } catch {
+        return false;
+      }
+    })();
+
+    if (!hasTelegramInit && !hasSavedSession) {
+      return <Landing error={error} onRetry={() => window.location.reload()} />;
+    }
+
     return (
       <div className="flex-1 flex flex-col items-center justify-center px-8 text-center min-h-svh bg-zinc-950 relative overflow-hidden select-none">
         <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-white/5 flex items-center justify-center mb-8">
