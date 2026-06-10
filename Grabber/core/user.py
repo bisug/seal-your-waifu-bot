@@ -184,7 +184,7 @@ async def remove_char_from_user(user_id: int, char_id: str) -> bool:
             return False
 
         chars = user['characters']
-        version = user.get('version', 0)
+        version = user.get('version')
 
         # Find the first index of the character
         idx_to_remove = -1
@@ -201,7 +201,10 @@ async def remove_char_from_user(user_id: int, char_id: str) -> bool:
 
         # Atomic update with version check
         filt = get_user_filter(user_id)
-        filt["version"] = version
+        if version is None:
+            filt["version"] = {"$exists": False}
+        else:
+            filt["version"] = version
 
         res = await user_collection.update_one(
             filt,
