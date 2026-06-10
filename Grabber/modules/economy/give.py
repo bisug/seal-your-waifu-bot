@@ -41,7 +41,7 @@ async def give_balance(_, message: types.Message):
         LOGGER.info(f"ADMIN {sender_id} gave {amount} to {recipient_id}")
         return
     try:
-        async with await client.start_session() as mongo_session:
+        async with client.start_session() as mongo_session:
             async with mongo_session.start_transaction():
                 sender_filter = get_user_id_query(sender_id)
                 sender_filter['balance'] = {'$gte': amount}
