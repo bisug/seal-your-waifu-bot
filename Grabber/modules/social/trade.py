@@ -78,7 +78,7 @@ async def trade_callback_handler(_, query: types.CallbackQuery):
     from Grabber.database import user_collection
     try:
         async with client.start_session() as mongo_session:
-            async with mongo_session.start_transaction():
+            async with await mongo_session.start_transaction():
                 sender_result = await user_collection.update_one(
                     {**get_user_id_query(sender_id), "characters.id": s_char['id']},
                     {"$set": {"characters.$": r_char}, "$inc": {"version": 1}},

@@ -112,7 +112,7 @@ async def transfer_callback(_, query: types.CallbackQuery):
         num_chars = 0
         try:
             async with client.start_session() as mongo_session:
-                async with mongo_session.start_transaction():
+                async with await mongo_session.start_transaction():
                     sender_data = await user_collection.find_one(get_user_filter(sender_id), session=mongo_session)
                     if not sender_data or not sender_data.get("characters"):
                         raise ValueError("You no longer have any characters.")

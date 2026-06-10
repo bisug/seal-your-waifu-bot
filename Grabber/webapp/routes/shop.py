@@ -155,7 +155,7 @@ async def buy_character_api(char_id: str, user_id: int = Depends(get_current_use
         raise HTTPException(status_code=404, detail="Character has rotated out of the shop")
 
     async with client.start_session() as mongo_session:
-        async with mongo_session.start_transaction():
+        async with await mongo_session.start_transaction():
             user_raw = await user_collection.find_one(get_user_id_query(user_id), session=mongo_session)
             if not user_raw:
                 raise HTTPException(status_code=404, detail="User not found")
@@ -451,7 +451,7 @@ async def api_buy_level(levels: int = Query(1, ge=1, le=50), user_id: int = Depe
     new_xp = None
 
     async with client.start_session() as mongo_session:
-        async with mongo_session.start_transaction():
+        async with await mongo_session.start_transaction():
             user = await user_collection.find_one(get_user_id_query(user_id), session=mongo_session)
             if not user or user.get("balance", 0) < cost:
                 raise HTTPException(status_code=400, detail=f"Insufficient Shards (Need {cost})")
