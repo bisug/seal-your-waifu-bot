@@ -119,7 +119,7 @@ async def respond_to_trade(
     r_char = locked_offer["receiver_char"]
 
     try:
-        async with await client.start_session() as mongo_session:
+        async with client.start_session() as mongo_session:
             async with mongo_session.start_transaction():
                 res1 = await user_collection.update_one(
                     {**get_user_id_query(sender_id), "characters.id": s_char["id"]},
