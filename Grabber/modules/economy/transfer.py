@@ -119,7 +119,7 @@ async def transfer_callback(_, query: types.CallbackQuery):
 
                     characters_to_move = list(sender_data["characters"])
                     num_chars = len(characters_to_move)
-                    sender_version = sender_data.get("version", 0)
+                    sender_version = sender_data.get("version")
 
                     await user_collection.update_one(
                         get_user_filter(receiver_id),
@@ -133,7 +133,10 @@ async def transfer_callback(_, query: types.CallbackQuery):
                     )
 
                     sender_filter = get_user_filter(sender_id)
-                    sender_filter["version"] = sender_version
+                    if sender_version is None:
+                        sender_filter["version"] = {"$exists": False}
+                    else:
+                        sender_filter["version"] = sender_version
                     sender_update = await user_collection.update_one(
                         sender_filter,
                         {
