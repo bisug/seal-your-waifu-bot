@@ -8,11 +8,25 @@ import {
   PawPrint,
   ShieldCheck,
   UploadCloud,
+  Target,
+  Sparkles,
+  Info,
+  ChevronRight,
+  Database,
+  Type,
+  Video,
+  Zap,
+  Gem,
 } from 'lucide-react';
 import { apiFetch, getErrorMessage } from '../api/client';
 import { useToast } from '../components/ui/Toast';
 import { useUser } from '../context/UserContext';
 import { cn } from '../utils';
+import { Card } from '../components/ui/Card';
+import { Badge } from '../components/ui/Badge';
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
+import { motion, AnimatePresence } from 'framer-motion';
 
 type UploadMode = 'character' | 'pet';
 type MediaSource = 'file' | 'url';
@@ -115,8 +129,8 @@ export const Upload = () => {
 
   const uploadReward = user?.upload_reward
     ? [
-        user.upload_reward.balance ? `${numberFrom(String(user.upload_reward.balance), 0).toLocaleString()} Shards` : '',
-        user.upload_reward.zenith ? `${numberFrom(String(user.upload_reward.zenith), 0).toLocaleString()} Zenith` : '',
+        user.upload_reward.balance ? `${numberFrom(String(user.upload_reward.balance), 0).toLocaleString()} SHARDS` : '',
+        user.upload_reward.zenith ? `${numberFrom(String(user.upload_reward.zenith), 0).toLocaleString()} ZENITH` : '',
       ].filter(Boolean).join(' + ')
     : '';
   const roleBenefits = user?.role_benefits || options?.role?.role_benefits || [];
@@ -133,7 +147,7 @@ export const Upload = () => {
 
     const maxBytes = (options?.max_size_mb || 10) * 1024 * 1024;
     if (file.size > maxBytes) {
-      addToast(`File must be ${options?.max_size_mb || 10}MB or smaller.`, 'error');
+      addToast(`Protocol Limit: File must be ${options?.max_size_mb || 10}MB or smaller.`, 'error');
       event.target.value = '';
       return;
     }
@@ -143,17 +157,17 @@ export const Upload = () => {
       setMediaData(String(reader.result || ''));
       setFilename(file.name);
     };
-    reader.onerror = () => addToast('Could not read selected file.', 'error');
+    reader.onerror = () => addToast('System error: Could not read selected file.', 'error');
     reader.readAsDataURL(file);
   };
 
   const buildMediaPayload = () => {
     if (source === 'url') {
       const url = mediaUrl.trim();
-      if (!url) throw new Error('Add a media URL.');
+      if (!url) throw new Error('Input required: Add a media URL.');
       return { media_url: url };
     }
-    if (!mediaData) throw new Error('Choose a media file.');
+    if (!mediaData) throw new Error('Input required: Choose a media file.');
     return { media_data: mediaData, filename };
   };
 
@@ -163,6 +177,7 @@ export const Upload = () => {
 
     setSubmitting(true);
     setLastResult(null);
+    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
 
     try {
       const mediaPayload = buildMediaPayload();
@@ -194,12 +209,13 @@ export const Upload = () => {
       const result = await apiFetch(endpoint, {
         method: 'POST',
         body: JSON.stringify(payload),
-        timeoutMs: 70000,
+        timeoutMs: 90000,
       });
 
-      const message = result?.message || 'Upload complete.';
+      const message = result?.message || 'Transmission complete. Asset secured.';
       setLastResult(message);
       addToast(message, 'success');
+      window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
       refreshUser().catch(() => undefined);
       clearMedia();
       if (mode === 'character') {
@@ -209,282 +225,355 @@ export const Upload = () => {
       }
     } catch (err) {
       addToast(getErrorMessage(err), 'error');
+      window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('error');
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="px-4 py-6 pb-24 max-w-3xl mx-auto select-none">
-      <header className="mb-6 border-b border-white/5 pb-4">
-        <div className="flex items-center gap-2 mb-1">
-          <ShieldCheck size={18} className="text-brand-accent" />
-          <h1 className="text-xl font-bold text-white">Upload</h1>
+    <div className="pb-32 pt-8 max-w-3xl mx-auto adaptive-px space-y-10 select-none">
+      <header className="space-y-6">
+        <div className="flex items-center gap-4">
+           <div className="w-12 h-12 rounded-2xl bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.1)]">
+                <UploadCloud className="text-brand-accent" size={26} />
+           </div>
+           <div className="flex flex-col gap-1">
+              <h1 className="text-3xl font-black text-white tracking-tighter uppercase leading-none">Intake</h1>
+              <div className="flex items-center gap-2">
+                 <ShieldCheck size={11} className="text-neutral-600" />
+                 <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest leading-none">
+                    ASSET INGESTION & REGISTRY TERMINAL
+                 </p>
+              </div>
+           </div>
         </div>
-        <p className="text-sm font-medium text-neutral-400">Add catalog characters and pet store entries.</p>
+
         {user?.role_tag && (
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-lg border border-brand-accent/20 bg-brand-accent/10 px-2 py-1 text-[10px] font-bold text-brand-accent">
-              <span className="text-sm leading-none">{user.role_symbol}</span>
-              <span>{user.role_label || user.role_tag}</span>
-            </span>
+          <div className="flex flex-wrap gap-2 pt-2">
+            <Badge variant="primary" size="xs" className="px-2.5 py-1 rounded-md font-black border-brand-accent/30 bg-brand-accent/10">
+              {user.role_symbol} {user.role_label || user.role_tag}
+            </Badge>
             {uploadReward && (
-              <span className="rounded-lg border border-white/5 bg-brand-deep px-2 py-1 text-[10px] font-semibold text-neutral-300">
-                Reward per upload: {uploadReward}
-              </span>
+              <Badge variant="success" size="xs" className="px-2.5 py-1 rounded-md font-mono border-success/10 bg-success/5 text-success">
+                REWARD: {uploadReward}
+              </Badge>
             )}
             {roleBenefits.slice(0, 3).map((benefit) => (
-              <span
-                key={benefit}
-                className="rounded-lg border border-white/5 bg-brand-deep px-2 py-1 text-[10px] font-semibold text-neutral-300"
-              >
-                {benefit}
-              </span>
+              <Badge key={benefit} variant="secondary" size="xs" className="px-2.5 py-1 rounded-md border-white/5 bg-white/[0.02] text-neutral-400">
+                {benefit.toUpperCase()}
+              </Badge>
             ))}
           </div>
         )}
       </header>
 
-      <div className="grid grid-cols-2 gap-2 mb-5 rounded-lg bg-brand-deep border border-white/5 p-1">
+      <div className="p-1.5 rounded-2xl bg-black/40 border border-white/[0.03] grid grid-cols-2 gap-3">
         {[
-          { id: 'character' as const, label: 'Character', icon: Image },
-          { id: 'pet' as const, label: 'Pet', icon: PawPrint },
+          { id: 'character' as const, label: 'ASSET_CHAR', icon: Image },
+          { id: 'pet' as const, label: 'UNIT_COMP', icon: PawPrint },
         ].map(item => {
-          const Icon = item.icon;
           const active = mode === item.id;
           return (
             <button
               key={item.id}
               type="button"
-              onClick={() => setMode(item.id)}
+              onClick={() => {
+                  window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
+                  setMode(item.id);
+              }}
               className={cn(
-                'h-10 rounded-md text-sm font-semibold flex items-center justify-center gap-2 transition-colors',
-                active ? 'bg-white text-brand-midnight' : 'text-neutral-400 hover:text-white'
+                'h-12 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all duration-300',
+                active ? 'bg-white text-black shadow-xl' : 'text-neutral-600 hover:text-white hover:bg-white/[0.02]'
               )}
             >
-              <Icon size={16} />
+              <item.icon size={16} strokeWidth={2.5} />
               {item.label}
             </button>
           );
         })}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <section className="rounded-lg border border-white/5 bg-brand-deep p-4">
-          <div className="grid grid-cols-2 gap-2 mb-4 rounded-lg bg-brand-midnight border border-white/5 p-1">
-            {[
-              { id: 'file' as const, label: 'File', icon: FileImage },
-              { id: 'url' as const, label: 'URL', icon: LinkIcon },
-            ].map(item => {
-              const Icon = item.icon;
-              const active = source === item.id;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => {
-                    setSource(item.id);
-                    clearMedia();
-                  }}
-                  className={cn(
-                    'h-9 rounded-md text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors',
-                    active ? 'bg-white text-brand-midnight' : 'text-neutral-500 hover:text-neutral-200'
-                  )}
-                >
-                  <Icon size={14} />
-                  {item.label}
-                </button>
-              );
-            })}
+      <form onSubmit={handleSubmit} className="space-y-8">
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 px-1">
+             <Target size={12} className="text-neutral-700" />
+             <span className="text-[9px] font-black text-neutral-600 uppercase tracking-[0.3em]">MEDIA_SOURCE</span>
           </div>
-
-          {source === 'file' ? (
-            <label className="block">
-              <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Media file</span>
-              <input
-                type="file"
-                accept="image/*,video/mp4,video/webm"
-                onChange={handleFileChange}
-                className="mt-2 w-full text-sm text-neutral-300 file:mr-3 file:rounded-md file:border-0 file:bg-white file:px-3 file:py-2 file:text-sm file:font-bold file:text-brand-midnight"
-              />
-              {filename && <span className="mt-2 block text-xs font-medium text-neutral-500 truncate">{filename}</span>}
-            </label>
-          ) : (
-            <label className="block">
-              <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Media URL</span>
-              <input
-                value={mediaUrl}
-                onChange={event => setMediaUrl(event.target.value)}
-                placeholder="https://..."
-                className="mt-2 w-full h-11 rounded-lg bg-brand-midnight border border-white/10 px-3 text-sm font-medium text-white outline-none focus:border-brand-accent"
-              />
-            </label>
-          )}
-
-          {previewSrc && (
-            <div className="mt-4 overflow-hidden rounded-lg border border-white/5 bg-brand-midnight">
-              {isVideoSrc(previewSrc) ? (
-                <video src={previewSrc} controls className="w-full max-h-72 object-contain bg-black" />
-              ) : (
-                <img src={previewSrc} alt="Upload preview" className="w-full max-h-72 object-contain bg-black" />
-              )}
+          <Card variant="tactical" className="p-6 border-white/[0.04] bg-white/[0.01] space-y-6">
+            <div className="grid grid-cols-2 gap-3 p-1 bg-black/40 rounded-xl border border-white/[0.03]">
+                {[
+                { id: 'file' as const, label: 'LOCAL_STORAGE', icon: FileImage },
+                { id: 'url' as const, label: 'REMOTE_LINK', icon: LinkIcon },
+                ].map(item => {
+                const active = source === item.id;
+                return (
+                    <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                        window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
+                        setSource(item.id);
+                        clearMedia();
+                    }}
+                    className={cn(
+                        'h-10 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all duration-300',
+                        active ? 'bg-neutral-800 text-white shadow-lg' : 'text-neutral-600 hover:text-neutral-300'
+                    )}
+                    >
+                    <item.icon size={14} />
+                    {item.label}
+                    </button>
+                );
+                })}
             </div>
-          )}
+
+            {source === 'file' ? (
+                <div className="space-y-3">
+                    <span className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.2em] pl-1">Media Manifest</span>
+                    <div className="relative group">
+                        <input
+                            type="file"
+                            accept="image/*,video/mp4,video/webm"
+                            onChange={handleFileChange}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                        />
+                        <div className="h-20 w-full rounded-2xl border border-dashed border-white/10 group-hover:border-brand-accent/40 group-hover:bg-brand-accent/[0.01] transition-all flex flex-col items-center justify-center gap-2 bg-black/20">
+                            <UploadCloud size={20} className="text-neutral-700 group-hover:text-brand-accent transition-colors" />
+                            <p className="text-[10px] font-black text-neutral-600 uppercase tracking-widest group-hover:text-white transition-colors">
+                                {filename ? filename : 'DROP FILE OR TAP TO BROWSE'}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 opacity-40 pl-1">
+                       <Info size={10} />
+                       <span className="text-[8px] font-black uppercase tracking-widest">LIMIT: {options?.max_size_mb || 10}MB_MAX</span>
+                    </div>
+                </div>
+            ) : (
+                <div className="space-y-3">
+                    <span className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.2em] pl-1">Remote Link ID</span>
+                    <Input
+                        icon={LinkIcon}
+                        value={mediaUrl}
+                        onChange={event => setMediaUrl(event.target.value)}
+                        placeholder="https://secure.registry/asset.jpg"
+                    />
+                </div>
+            )}
+
+            <AnimatePresence>
+                {previewSrc && (
+                    <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="mt-4 rounded-2xl overflow-hidden border border-white/[0.05] bg-brand-midnight shadow-2xl relative group">
+                        <div className="absolute top-3 left-3 z-10">
+                           <Badge variant="tactical" size="xs" className="bg-black/60 backdrop-blur-md border-white/10 opacity-60">PREVIEW_SYNC_OK</Badge>
+                        </div>
+                        {isVideoSrc(previewSrc) ? (
+                            <video src={previewSrc} controls className="w-full max-h-80 object-contain bg-black" />
+                        ) : (
+                            <img src={previewSrc} alt="Upload preview" className="w-full max-h-80 object-contain bg-black transition-transform duration-1000 group-hover:scale-105" />
+                        )}
+                        <div className="absolute inset-0 bg-scanline opacity-[0.03] pointer-events-none" />
+                    </motion.div>
+                )}
+            </AnimatePresence>
+          </Card>
         </section>
 
-        {mode === 'character' ? (
-          <section className="rounded-lg border border-white/5 bg-brand-deep p-4 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <label>
-                <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Name</span>
-                <input
-                  value={character.name}
-                  onChange={event => setCharacter(prev => ({ ...prev, name: event.target.value }))}
-                  required
-                  className="mt-2 w-full h-11 rounded-lg bg-brand-midnight border border-white/10 px-3 text-sm font-medium text-white outline-none focus:border-brand-accent"
-                />
-              </label>
-              <label>
-                <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Anime</span>
-                <input
-                  value={character.anime}
-                  onChange={event => setCharacter(prev => ({ ...prev, anime: event.target.value }))}
-                  required
-                  className="mt-2 w-full h-11 rounded-lg bg-brand-midnight border border-white/10 px-3 text-sm font-medium text-white outline-none focus:border-brand-accent"
-                />
-              </label>
-            </div>
-            <label className="block">
-              <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Rarity</span>
-              <select
-                value={character.rarity}
-                onChange={event => setCharacter(prev => ({ ...prev, rarity: event.target.value }))}
-                className="mt-2 w-full h-11 rounded-lg bg-brand-midnight border border-white/10 px-3 text-sm font-medium text-white outline-none focus:border-brand-accent"
-              >
-                {(options?.character_rarities || []).map(rarity => (
-                  <option key={rarity.value} value={rarity.value}>
-                    {rarity.value}. {rarity.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </section>
-        ) : (
-          <section className="rounded-lg border border-white/5 bg-brand-deep p-4 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <label>
-                <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Name</span>
-                <input
-                  value={pet.name}
-                  onChange={event => setPet(prev => ({ ...prev, name: event.target.value }))}
-                  required
-                  className="mt-2 w-full h-11 rounded-lg bg-brand-midnight border border-white/10 px-3 text-sm font-medium text-white outline-none focus:border-brand-accent"
-                />
-              </label>
-              <label>
-                <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Pet ID</span>
-                <input
-                  value={pet.petid}
-                  onChange={event => setPet(prev => ({ ...prev, petid: event.target.value }))}
-                  placeholder="Auto from name"
-                  className="mt-2 w-full h-11 rounded-lg bg-brand-midnight border border-white/10 px-3 text-sm font-medium text-white outline-none focus:border-brand-accent"
-                />
-              </label>
-            </div>
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 px-1">
+             <Database size={12} className="text-neutral-700" />
+             <span className="text-[9px] font-black text-neutral-600 uppercase tracking-[0.3em]">METADATA_REGISTRY</span>
+          </div>
+          <Card variant="tactical" className="p-6 border-white/[0.04] bg-white/[0.01] space-y-6">
+            {mode === 'character' ? (
+                <div className="space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <div className="space-y-3">
+                           <span className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.2em] pl-1">Designation</span>
+                           <Input
+                             icon={Type}
+                             value={character.name}
+                             onChange={event => setCharacter(prev => ({ ...prev, name: event.target.value }))}
+                             required
+                             placeholder="ASSET NAME..."
+                           />
+                        </div>
+                        <div className="space-y-3">
+                           <span className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.2em] pl-1">Origin Origin</span>
+                           <Input
+                             icon={Database}
+                             value={character.anime}
+                             onChange={event => setCharacter(prev => ({ ...prev, anime: event.target.value }))}
+                             required
+                             placeholder="DATA SOURCE..."
+                           />
+                        </div>
+                    </div>
+                    <div className="space-y-3">
+                        <span className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.2em] pl-1">Rarity Classification</span>
+                        <div className="relative group">
+                            <select
+                                value={character.rarity}
+                                onChange={event => setCharacter(prev => ({ ...prev, rarity: event.target.value }))}
+                                className="w-full h-12 bg-black/40 border border-white/10 rounded-xl px-4 text-[11px] font-black text-white uppercase tracking-widest outline-none focus:border-brand-accent transition-all appearance-none cursor-pointer hover:bg-white/[0.02]"
+                            >
+                                {(options?.character_rarities || []).map(rarity => (
+                                <option key={rarity.value} value={rarity.value}>
+                                    CLASS_{rarity.value}: {rarity.label.toUpperCase()}
+                                </option>
+                                ))}
+                            </select>
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-600 group-hover:text-brand-accent transition-colors pointer-events-none">
+                               <ChevronRight size={16} />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <div className="space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <div className="space-y-3">
+                           <span className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.2em] pl-1">Unit Name</span>
+                           <Input
+                             icon={PawPrint}
+                             value={pet.name}
+                             onChange={event => setPet(prev => ({ ...prev, name: event.target.value }))}
+                             required
+                             placeholder="UNIT DESIGNATION..."
+                           />
+                        </div>
+                        <div className="space-y-3">
+                           <span className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.2em] pl-1">Personnel ID</span>
+                           <Input
+                             icon={Target}
+                             value={pet.petid}
+                             onChange={event => setPet(prev => ({ ...prev, petid: event.target.value }))}
+                             placeholder="AUTO_ID_GEN"
+                           />
+                        </div>
+                    </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {[
-                ['hp', 'HP'],
-                ['atk', 'ATK'],
-                ['spd', 'SPD'],
-                ['luck', 'Luck'],
-              ].map(([key, label]) => (
-                <label key={key}>
-                  <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">{label}</span>
-                  <input
-                    value={pet[key as keyof typeof pet] as string}
-                    onChange={event => setPet(prev => ({ ...prev, [key]: event.target.value }))}
-                    inputMode="decimal"
-                    className="mt-2 w-full h-11 rounded-lg bg-brand-midnight border border-white/10 px-3 text-sm font-medium text-white outline-none focus:border-brand-accent"
-                  />
-                </label>
-              ))}
-            </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        {[
+                            { key: 'hp', label: 'VITALITY', icon: Target },
+                            { key: 'atk', label: 'STRIKE', icon: Target },
+                            { key: 'spd', label: 'VELOCITY', icon: Target },
+                            { key: 'luck', label: 'LUCK_RT', icon: Target },
+                        ].map((stat) => (
+                            <div key={stat.key} className="space-y-2">
+                                <span className="text-[9px] font-black text-neutral-700 uppercase tracking-widest pl-1">{stat.label}</span>
+                                <Input
+                                    value={pet[stat.key as keyof typeof pet] as string}
+                                    onChange={event => setPet(prev => ({ ...prev, [stat.key]: event.target.value }))}
+                                    inputMode="decimal"
+                                    className="font-mono text-center px-2"
+                                    placeholder="0"
+                                />
+                            </div>
+                        ))}
+                    </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <label>
-                <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Rarity</span>
-                <input
-                  value={pet.rarity}
-                  onChange={event => setPet(prev => ({ ...prev, rarity: event.target.value }))}
-                  className="mt-2 w-full h-11 rounded-lg bg-brand-midnight border border-white/10 px-3 text-sm font-medium text-white outline-none focus:border-brand-accent"
-                />
-              </label>
-              <label>
-                <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Ability</span>
-                <input
-                  value={pet.ability}
-                  onChange={event => setPet(prev => ({ ...prev, ability: event.target.value }))}
-                  className="mt-2 w-full h-11 rounded-lg bg-brand-midnight border border-white/10 px-3 text-sm font-medium text-white outline-none focus:border-brand-accent"
-                />
-              </label>
-            </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <div className="space-y-3">
+                           <span className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.2em] pl-1">Class Rank</span>
+                           <Input
+                             value={pet.rarity}
+                             onChange={event => setPet(prev => ({ ...prev, rarity: event.target.value }))}
+                             placeholder="RANK..."
+                           />
+                        </div>
+                        <div className="space-y-3">
+                           <span className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.2em] pl-1">Primary Ability</span>
+                           <Input
+                             icon={Zap}
+                             value={pet.ability}
+                             onChange={event => setPet(prev => ({ ...prev, ability: event.target.value }))}
+                             placeholder="SPECIAL PERK..."
+                           />
+                        </div>
+                    </div>
 
-            <label className="block">
-              <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Description</span>
-              <textarea
-                value={pet.desc}
-                onChange={event => setPet(prev => ({ ...prev, desc: event.target.value }))}
-                rows={3}
-                className="mt-2 w-full rounded-lg bg-brand-midnight border border-white/10 px-3 py-3 text-sm font-medium text-white outline-none focus:border-brand-accent resize-none"
-              />
-            </label>
+                    <div className="space-y-3">
+                        <span className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.2em] pl-1">Registry Description</span>
+                        <textarea
+                            value={pet.desc}
+                            onChange={event => setPet(prev => ({ ...prev, desc: event.target.value }))}
+                            rows={3}
+                            placeholder="INPUT DETAILED ASSET OVERVIEW..."
+                            className="w-full rounded-xl bg-black/40 border border-white/10 px-4 py-4 text-xs font-bold text-white outline-none focus:border-brand-accent transition-all resize-none uppercase tracking-widest placeholder:text-neutral-800 shadow-inner"
+                        />
+                    </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {[
-                ['zenith_price', 'Price'],
-                ['req_level', 'Req Level'],
-                ['sort_order', 'Sort'],
-              ].map(([key, label]) => (
-                <label key={key}>
-                  <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">{label}</span>
-                  <input
-                    value={pet[key as keyof typeof pet] as string}
-                    onChange={event => setPet(prev => ({ ...prev, [key]: event.target.value }))}
-                    inputMode="numeric"
-                    className="mt-2 w-full h-11 rounded-lg bg-brand-midnight border border-white/10 px-3 text-sm font-medium text-white outline-none focus:border-brand-accent"
-                  />
-                </label>
-              ))}
-              <label className="flex items-end gap-3 h-full pb-2">
-                <input
-                  type="checkbox"
-                  checked={pet.enabled}
-                  onChange={event => setPet(prev => ({ ...prev, enabled: event.target.checked }))}
-                  className="h-5 w-5 rounded border-white/10 bg-brand-midnight accent-brand-accent"
-                />
-                <span className="text-sm font-semibold text-neutral-300">Enabled</span>
-              </label>
-            </div>
-          </section>
-        )}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 items-end">
+                        {[
+                            { key: 'zenith_price', label: 'COST', icon: Gem },
+                            { key: 'req_level', label: 'LEVEL', icon: Target },
+                            { key: 'sort_order', label: 'ORDER', icon: History },
+                        ].map((item) => (
+                            <div key={item.key} className="space-y-2">
+                                <span className="text-[9px] font-black text-neutral-700 uppercase tracking-widest pl-1">{item.label}</span>
+                                <Input
+                                    value={pet[item.key as keyof typeof pet] as string}
+                                    onChange={event => setPet(prev => ({ ...prev, [item.key]: event.target.value }))}
+                                    inputMode="numeric"
+                                    className="font-mono text-center"
+                                />
+                            </div>
+                        ))}
+                        <div className="flex items-center gap-3 pb-3 pl-2">
+                            <input
+                            type="checkbox"
+                            checked={pet.enabled}
+                            onChange={event => setPet(prev => ({ ...prev, enabled: event.target.checked }))}
+                            className="h-6 w-6 rounded-lg border-white/10 bg-black/40 accent-brand-accent cursor-pointer"
+                            id="pet-enabled"
+                            />
+                            <label htmlFor="pet-enabled" className="text-[10px] font-black text-neutral-500 uppercase tracking-widest cursor-pointer select-none">
+                                ONLINE
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            )}
+          </Card>
+        </section>
 
         {lastResult && (
-          <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 flex items-center gap-3 text-sm font-semibold text-emerald-400">
-            <CheckCircle2 size={18} />
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-success/20 bg-success/[0.03] p-5 flex items-center gap-4 text-[11px] font-black uppercase tracking-widest text-success shadow-lg">
+            <div className="w-8 h-8 rounded-full bg-success/10 flex items-center justify-center border border-success/20 shadow-inner">
+               <CheckCircle2 size={18} strokeWidth={3} />
+            </div>
             {lastResult}
-          </div>
+          </motion.div>
         )}
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full h-12 rounded-lg bg-white text-brand-midnight font-bold text-sm flex items-center justify-center gap-2 transition-transform active:scale-[0.98] disabled:opacity-60"
-        >
-          {submitting ? <Loader2 size={18} className="animate-spin" /> : <UploadCloud size={18} />}
-          {submitting ? 'Uploading' : `Upload ${mode === 'character' ? 'Character' : 'Pet'}`}
-        </button>
+        <div className="pt-4">
+            <Button
+            type="submit"
+            disabled={submitting}
+            variant="tactical"
+            className="w-full h-16 rounded-2xl font-black text-[12px] uppercase tracking-[0.4em] shadow-2xl active:scale-[0.98] transition-all"
+            >
+            {submitting ? (
+                <>
+                    <Loader2 size={20} className="animate-spin mr-3" />
+                    TRANSMITTING...
+                </>
+            ) : (
+                <>
+                    <UploadCloud size={20} strokeWidth={2.5} className="mr-3" />
+                    AUTHORIZE_UPLOAD
+                </>
+            )}
+            </Button>
+        </div>
       </form>
+
+      <div className="flex items-center justify-center gap-3 opacity-20 py-4 pt-12">
+         <Sparkles size={12} className="text-brand-accent" />
+         <span className="text-[9px] font-black uppercase tracking-[0.4em] text-white">Secure Upload Channel</span>
+      </div>
     </div>
   );
 };

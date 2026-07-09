@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { CheckCircle2, Crown, Gift, Loader2, Lock, Star, Ticket, TicketCheck, TicketPlus, Zap, Heart } from 'lucide-react';
+import { CheckCircle2, Crown, Gift, Lock, Star, Ticket, TicketCheck, Zap, Heart, ArrowRight, ShieldCheck, Trophy, Target } from 'lucide-react';
 import { apiFetch, getErrorMessage } from '../api/client';
 import { useUser } from '../context/UserContext';
 import { useApi } from '../hooks/useApi';
@@ -11,6 +11,7 @@ import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card } from '../components/ui/Card';
 import { ProgressBar } from '../components/ui/ProgressBar';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const EGG_TIER_LABELS: Record<number, string> = {
   1: 'Common',
@@ -47,7 +48,7 @@ function bankSummary(bank: Record<string, number> = {}) {
 
 function percentBonus(multiplier: number | undefined, invert = false) {
   const value = Number(multiplier || 1);
-  if (invert) return `${Math.round((1 - value) * 100)}% FASTER`;
+  if (invert) return `${Math.round((1 - value) * 100)}% SPEED`;
   return `+${Math.round((value - 1) * 100)}%`;
 }
 
@@ -66,12 +67,12 @@ export const Pass = () => {
 
   const handleClaim = async (level: number) => {
     setClaiming(level);
-    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
+    window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
     try {
       const res = await apiFetch(`/claim_level/${level}`, { method: 'POST' });
       if (res.status === 'success' || res.status === 'already_claimed') {
         addToast(
-          res.status === 'already_claimed' ? 'Reward already secured' : `Collected rewards for Level ${level}`,
+          res.status === 'already_claimed' ? 'Security check: Reward already claimed' : `Success: Level ${level} rewards secured`,
           'success'
         );
         await refreshAll();
@@ -87,7 +88,7 @@ export const Pass = () => {
     setClaimingBank(true);
     try {
       const res = await apiFetch('/claim_bank', { method: 'POST' });
-      addToast(res.message || 'Bank contents secured', 'success');
+      addToast(res.message || 'Vault emptied. Rewards secured.', 'success');
       await refreshAll();
     } catch (err: any) {
       addToast(getErrorMessage(err), 'error');
@@ -108,7 +109,7 @@ export const Pass = () => {
       const invoice = await apiFetch(`/shop/pass_invoice/${tier}`, { method: 'POST' });
       tg.openInvoice(invoice.invoice_url, async (status: string) => {
         if (status === 'paid') {
-          addToast(`${tier.toUpperCase()} PASS ACTIVATED`, 'success');
+          addToast(`${tier.toUpperCase()} CLEARANCE ACTIVATED`, 'success');
           window.setTimeout(refreshAll, 1200);
         } else if (status === 'cancelled') {
           addToast('Payment cancelled', 'error');
@@ -124,22 +125,22 @@ export const Pass = () => {
   };
 
   if (error && !passData) return (
-    <div className="px-4 py-12 max-w-2xl mx-auto">
+    <div className="px-5 py-20 max-w-2xl mx-auto">
       <ErrorState message={error} onAction={fetchPassData} />
     </div>
   );
 
   if (passLoading || !passData) return (
-    <div className="pb-24 pt-4 max-w-2xl mx-auto adaptive-px space-y-4">
+    <div className="pb-32 pt-8 max-w-2xl mx-auto adaptive-px space-y-8">
         <div className="flex justify-between items-center">
-            <Skeleton className="h-6 w-40 rounded-md" />
-            <Skeleton className="h-10 w-16 rounded-lg" />
+            <Skeleton className="h-10 w-48 rounded-lg" />
+            <Skeleton className="h-12 w-20 rounded-2xl" />
         </div>
-        <Skeleton className="h-2 w-full rounded-full" />
-        <div className="grid grid-cols-3 gap-2.5">
-            {[1,2,3].map(i => <Skeleton key={i} className="h-20 rounded-lg" />)}
+        <Skeleton className="h-3 w-full rounded-full" />
+        <div className="grid grid-cols-3 gap-4">
+            {[1,2,3].map(i => <Skeleton key={i} className="h-24 rounded-2xl" />)}
         </div>
-        <Skeleton className="h-32 rounded-lg" />
+        <Skeleton className="h-64 rounded-[32px]" />
     </div>
   );
 
@@ -150,34 +151,47 @@ export const Pass = () => {
   const currentTier = passData.pass_type || 'free';
   const bank = bankSummary(passData.pass_bank);
   const nextTier = currentTier === 'free' ? 'premium' : currentTier === 'premium' ? 'elite' : null;
-  const _progressPercent = Math.min(100, Math.round((userLevel / Math.max(maxLevel, 1)) * 100));
   const nextBenefits = nextTier ? passData.benefits?.[nextTier] : null;
 
   return (
-    <div className="pb-24 pt-4 max-w-2xl mx-auto adaptive-px space-y-6">
-      <header className="space-y-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-md bg-brand-accent/5 border border-brand-accent/20 flex items-center justify-center text-brand-accent">
-                    <TicketCheck size={20} />
+    <div className="pb-32 pt-8 max-w-2xl mx-auto adaptive-px space-y-10">
+      <header className="space-y-6">
+        <div className="flex items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.1)]">
+                    <TicketCheck size={26} className="text-brand-accent" />
                 </div>
-                <h1 className="text-lg font-black text-white tracking-tighter uppercase truncate max-w-[180px]">{passData.season_name || 'WAIFU PASS'}</h1>
+                <div className="flex flex-col gap-1">
+                   <h1 className="text-3xl font-black text-white tracking-tighter uppercase leading-none truncate max-w-[180px]">
+                      {passData.season_name || 'WAIFU PASS'}
+                   </h1>
+                   <div className="flex items-center gap-2">
+                      <Target size={11} className="text-neutral-600" />
+                      <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest leading-none">
+                        STRATEGIC PROGRESSION LOG
+                      </p>
+                   </div>
+                </div>
             </div>
-            <p className="text-[9px] font-black text-neutral-600 uppercase tracking-[0.2em] px-0.5">SEASONAL PROGRESSION</p>
           </div>
-          <Card variant="tactical" className="px-3 py-1.5 border-brand-accent/20 bg-brand-accent/5">
-            <p className="text-[8px] font-black text-brand-accent uppercase tracking-widest text-center">TIER</p>
-            <p className="text-xl font-black text-white tabular-nums leading-none text-center font-mono">{userLevel}</p>
+          <Card variant="accent" className="px-5 py-3 border-brand-accent/30 bg-brand-accent/10 shadow-lg">
+            <p className="text-[8px] font-black text-brand-accent uppercase tracking-[0.3em] text-center mb-1">LVL</p>
+            <p className="text-2xl font-black text-white tabular-nums leading-none text-center font-mono">{userLevel}</p>
           </Card>
         </div>
 
-        <div className="space-y-1.5">
-            <ProgressBar current={userLevel} total={maxLevel} label="WAIFU PROGRESS" color="bg-brand-accent" compact />
+        <div className="px-1">
+            <ProgressBar
+               current={userLevel}
+               total={maxLevel}
+               label="GLOBAL CLEARANCE PROGRESS"
+               variant="default"
+            />
         </div>
       </header>
 
-      <section className="grid grid-cols-3 gap-2.5">
+      <section className="grid grid-cols-3 gap-3">
         {TIER_ORDER.map((tier) => {
           const Icon = TIER_ICON[tier as keyof typeof TIER_ICON];
           const active = currentTier === tier;
@@ -187,14 +201,19 @@ export const Pass = () => {
               key={tier}
               variant="tactical"
               className={cn(
-                'p-3 flex flex-col items-center justify-center text-center space-y-1.5 transition-all',
-                active ? 'border-brand-accent/40 bg-brand-accent/[0.03]' : unlocked ? 'border-emerald-500/20' : 'opacity-40 grayscale'
+                'p-4 flex flex-col items-center justify-center text-center space-y-2 transition-all duration-500',
+                active ? 'border-brand-accent/40 bg-brand-accent/[0.04] shadow-[0_0_20px_rgba(59,130,246,0.05)]' : unlocked ? 'border-success/20 bg-success/[0.02]' : 'opacity-30 grayscale border-white/[0.03]'
               )}
             >
-              <Icon size={16} className={active ? 'text-brand-accent' : unlocked ? 'text-emerald-500' : 'text-neutral-700'} fill={tier === 'elite' && unlocked ? 'currentColor' : 'none'} />
-              <p className="text-[9px] font-black text-white uppercase tracking-widest">{tier}</p>
-              <Badge variant={unlocked ? "success" : "tactical"} size="xs" className="border-none py-0 px-1 opacity-80">
-                {unlocked ? 'SECURED' : `${passData.prices?.[tier] ?? 0}★`}
+              <div className={cn(
+                  "p-2 rounded-xl transition-all duration-500",
+                  active ? "bg-brand-accent/20" : unlocked ? "bg-success/10" : "bg-white/[0.02]"
+              )}>
+                 <Icon size={18} className={active ? 'text-brand-accent' : unlocked ? 'text-success' : 'text-neutral-700'} fill={(tier === 'elite' || tier === 'premium') && unlocked ? 'currentColor' : 'none'} />
+              </div>
+              <p className="text-[9px] font-black text-white uppercase tracking-widest leading-none">{tier}</p>
+              <Badge variant={unlocked ? "success" : "tactical"} size="xs" className="border-none py-1 px-1.5 opacity-80 text-[8px] leading-none">
+                {unlocked ? 'SECURED' : `${passData.prices?.[tier] ?? 0} STARS`}
               </Badge>
             </Card>
           );
@@ -202,43 +221,43 @@ export const Pass = () => {
       </section>
 
       {nextTier && (
-        <Card variant="tactical" className="p-5 space-y-5 bg-gradient-to-br from-[#0c0c0e] to-brand-midnight border-white/[0.05] relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-3 opacity-[0.03]">
-              <Heart size={80} className="rotate-12" fill="currentColor" />
+        <Card variant="tactical" className="p-8 space-y-8 bg-gradient-to-br from-[#0c0c0e] to-brand-midnight border-white/[0.06] rounded-[32px] relative overflow-hidden group shadow-2xl">
+          <div className="absolute top-0 right-0 p-6 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-700">
+              <ShieldCheck size={120} className="rotate-12" />
           </div>
 
-          <div className="flex items-start justify-between gap-4 relative z-10">
-            <div className="space-y-1">
-              <Badge variant="primary" icon={Zap} size="xs" className="rounded-sm px-1.5 py-0 text-[8px] font-black tracking-widest mb-1 uppercase">Recommended</Badge>
-              <h2 className="text-lg font-black text-white uppercase tracking-tight">{nextTier} ACCESS</h2>
-              <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest leading-relaxed max-w-[200px]">
-                {passData.tiers?.[nextTier]?.summary || 'SECURE EXCLUSIVE REWARDS & BUFFS'}
+          <div className="flex items-start justify-between gap-6 relative z-10">
+            <div className="space-y-2">
+              <Badge variant="primary" icon={Zap} size="xs" className="rounded-md px-2 py-1 text-[9px] font-black tracking-widest mb-2 uppercase border-brand-accent/30 shadow-[0_0_10px_rgba(59,130,246,0.2)] animate-pulse">RECOMMENDED</Badge>
+              <h2 className="text-2xl font-black text-white uppercase tracking-tighter drop-shadow-md">{nextTier.toUpperCase()} CLEARANCE</h2>
+              <p className="text-[11px] font-bold text-neutral-500 uppercase tracking-[0.1em] leading-relaxed max-w-[240px]">
+                {passData.tiers?.[nextTier]?.summary || 'UNRESTRICTED ACCESS TO PREMIUM ASSETS & BUFFS.'}
               </p>
             </div>
-            <div className="flex flex-col items-end">
-                <span className="text-lg font-black text-white tabular-nums font-mono">{passData.upgrade_prices?.[nextTier]}</span>
-                <span className="text-[8px] font-black text-neutral-600 uppercase tracking-widest">STARS</span>
+            <div className="flex flex-col items-end pt-2">
+                <span className="text-2xl font-black text-white tabular-nums font-mono drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
+                   {passData.upgrade_prices?.[nextTier]}
+                </span>
+                <span className="text-[9px] font-black text-neutral-600 uppercase tracking-[0.2em] mt-1">STARS</span>
             </div>
           </div>
 
           {nextBenefits && (
-            <div className="grid grid-cols-2 gap-2 relative z-10">
-              <Card variant="tactical" className="bg-black/20 p-2.5 space-y-1 border-white/[0.03]">
-                <p className="text-[8px] font-black text-neutral-700 uppercase tracking-widest">Shard Rate</p>
-                <p className="text-[10px] font-black text-white uppercase font-mono">{percentBonus(nextBenefits.hunt_multiplier)}</p>
-              </Card>
-              <Card variant="tactical" className="bg-black/20 p-2.5 space-y-1 border-white/[0.03]">
-                <p className="text-[8px] font-black text-neutral-700 uppercase tracking-widest">Drop Luck</p>
-                <p className="text-[10px] font-black text-white uppercase font-mono">{percentBonus(nextBenefits.egg_drop_multiplier)}</p>
-              </Card>
-              <Card variant="tactical" className="bg-black/20 p-2.5 space-y-1 border-white/[0.03]">
-                <p className="text-[8px] font-black text-neutral-700 uppercase tracking-widest">Sync Speed</p>
-                <p className="text-[10px] font-black text-white uppercase font-mono">{percentBonus(nextBenefits.incubation_multiplier, true)}</p>
-              </Card>
-              <Card variant="tactical" className="bg-black/20 p-2.5 space-y-1 border-white/[0.03]">
-                <p className="text-[8px] font-black text-neutral-700 uppercase tracking-widest">Hatch Slots</p>
-                <p className="text-[10px] font-black text-white uppercase font-mono">{nextBenefits.incubation_slots} ACTIVE</p>
-              </Card>
+            <div className="grid grid-cols-2 gap-3 relative z-10">
+              {[
+                  { label: 'CREDIT YIELD', value: percentBonus(nextBenefits.hunt_multiplier), icon: Zap, color: 'text-warning' },
+                  { label: 'DROP LUCK', value: percentBonus(nextBenefits.egg_drop_multiplier), icon: Star, color: 'text-brand-accent' },
+                  { label: 'SYNC SPEED', value: percentBonus(nextBenefits.incubation_multiplier, true), icon: Target, color: 'text-success' },
+                  { label: 'ACTIVE SLOTS', value: `${nextBenefits.incubation_slots} UNITS`, icon: ShieldCheck, color: 'text-epic' },
+              ].map((benefit, i) => (
+                <div key={i} className="bg-black/40 p-4 rounded-2xl space-y-2 border border-white/[0.04] hover:border-white/[0.1] transition-colors group/benefit">
+                   <div className="flex items-center gap-2">
+                      <benefit.icon size={12} className={cn("transition-transform group-hover/benefit:scale-110", benefit.color)} />
+                      <p className="text-[8px] font-black text-neutral-600 uppercase tracking-widest">{benefit.label}</p>
+                   </div>
+                   <p className="text-xs font-black text-white uppercase font-mono leading-none">{benefit.value}</p>
+                </div>
+              ))}
             </div>
           )}
 
@@ -246,22 +265,22 @@ export const Pass = () => {
             onClick={() => handleUpgrade(nextTier)}
             isLoading={upgrading === nextTier}
             variant="tactical"
-            className="w-full py-5 rounded-md uppercase tracking-[0.2em] text-[10px] font-black relative z-10"
+            className="w-full h-14 rounded-2xl uppercase tracking-[0.3em] text-[11px] font-black relative z-10 shadow-xl active:scale-[0.98]"
           >
-            ACTIVATE {nextTier.toUpperCase()} PROTOCOL
+            ACTIVATE CLEARANCE
           </Button>
         </Card>
       )}
 
       {currentTier !== 'free' && bank.hasValue && (
-        <Card variant="tactical" className="p-3.5 border-amber-500/20 bg-amber-500/[0.02] flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-md bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
-                    <Gift size={20} />
+        <Card variant="accent" className="p-5 border-warning/30 bg-warning/[0.03] flex items-center justify-between gap-6 rounded-[24px] shadow-lg animate-in">
+            <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-warning/10 border border-warning/20 flex items-center justify-center text-warning shadow-[0_0_15px_rgba(245,158,11,0.15)]">
+                    <Gift size={24} />
                 </div>
                 <div>
-                    <h2 className="text-xs font-black text-amber-500 uppercase tracking-widest">REWARD VAULT</h2>
-                    <p className="text-[9px] font-bold text-amber-500/40 uppercase tracking-widest mt-0.5 font-mono">
+                    <h2 className="text-sm font-black text-warning uppercase tracking-[0.15em] leading-none mb-1.5">REWARD VAULT</h2>
+                    <p className="text-[10px] font-bold text-warning/50 uppercase tracking-widest font-mono leading-none">
                         {formatNumber(bank.shards)} SHARDS {bank.eggs ? `+ ${bank.eggs} EGGS` : ''}
                     </p>
                 </div>
@@ -271,22 +290,26 @@ export const Pass = () => {
               size="sm"
               onClick={handleClaimBank}
               isLoading={claimingBank}
-              className="bg-amber-500 text-black hover:bg-amber-400 border-none px-5 font-black uppercase text-[9px] tracking-widest h-8"
+              className="bg-warning text-black hover:bg-white border-none px-6 font-black uppercase text-[10px] tracking-widest h-10 rounded-xl"
             >
               CLAIM
             </Button>
         </Card>
       )}
 
-      <section className="space-y-4">
+      <section className="space-y-6">
         <div className="flex items-center justify-between px-1">
-          <h2 className="text-[9px] font-black text-neutral-700 uppercase tracking-[0.3em]">REWARD PIPELINE</h2>
-          <Badge variant="tactical" size="xs" className="opacity-60">
-            {claimedLevels.length} / {maxLevel} SECURED
+          <div className="flex items-center gap-2.5">
+             <h2 className="text-[11px] font-black text-neutral-600 uppercase tracking-[0.3em]">PIPELINE LOG</h2>
+             <div className="h-1 w-1 rounded-full bg-neutral-800" />
+          </div>
+          <Badge variant="tactical" size="xs" className="opacity-40 font-mono tracking-tighter uppercase">
+            {claimedLevels.length}<span className="mx-1 opacity-30">/</span>{maxLevel} SECURED
           </Badge>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
+            <AnimatePresence mode="popLayout">
             {milestones.map((lvl: number) => {
             const track = passData.tracks?.[lvl];
             if (!track) return null;
@@ -294,82 +317,88 @@ export const Pass = () => {
             const isClaimed = claimedLevels.includes(lvl);
 
             return (
-                <Card
-                variant="tactical"
-                key={lvl}
-                className={cn(
-                    'p-4 space-y-4 transition-all duration-300',
-                    isReached ? 'border-white/[0.08]' : 'opacity-40 grayscale'
-                )}
-                >
-                <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                        <div className={cn(
-                            'w-10 h-10 rounded-md flex flex-col items-center justify-center border transition-all duration-500',
-                            isReached ? 'border-brand-accent/40 text-brand-accent bg-brand-accent/5' : 'border-white/[0.05] text-neutral-700'
-                        )}>
-                            <span className="text-[7px] font-black uppercase opacity-60">LVL</span>
-                            <span className="text-base font-black tabular-nums leading-none font-mono">{lvl}</span>
-                        </div>
-                        <div>
-                            <p className="text-xs font-black text-white uppercase tracking-tight">Milestone {lvl}</p>
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                                {isClaimed ? (
-                                    <Badge variant="success" size="xs" className="border-none py-0 px-1 uppercase opacity-90">Secured</Badge>
-                                ) : isReached ? (
-                                    <Badge variant="primary" size="xs" className="border-none py-0 px-1 uppercase opacity-90">Available</Badge>
-                                ) : (
-                                    <Badge variant="tactical" size="xs" className="border-none py-0 px-1 uppercase opacity-60">Locked</Badge>
-                                )}
+                <motion.div layout key={lvl} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                    <Card
+                        variant="tactical"
+                        className={cn(
+                            'p-6 space-y-6 transition-all duration-500 overflow-hidden relative',
+                            isReached ? 'border-white/[0.08] bg-white/[0.01]' : 'opacity-30 grayscale border-transparent'
+                        )}
+                    >
+                    {isReached && !isClaimed && (
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-brand-accent/40 to-transparent animate-shimmer" />
+                    )}
+
+                    <div className="flex items-center justify-between gap-6 relative z-10">
+                        <div className="flex items-center gap-4">
+                            <div className={cn(
+                                'w-12 h-12 rounded-2xl flex flex-col items-center justify-center border transition-all duration-700 shadow-sm',
+                                isReached ? 'border-brand-accent/40 text-brand-accent bg-brand-accent/5' : 'border-white/[0.05] text-neutral-800 bg-black/20'
+                            )}>
+                                <span className="text-[8px] font-black uppercase opacity-40 leading-none mb-1">LVL</span>
+                                <span className="text-xl font-black tabular-nums leading-none font-mono">{lvl}</span>
+                            </div>
+                            <div>
+                                <p className="text-sm font-black text-white uppercase tracking-tight mb-1">Milestone {lvl}</p>
+                                <div className="flex items-center gap-2">
+                                    {isClaimed ? (
+                                        <Badge variant="success" size="xs" className="border-none py-0.5 px-2 uppercase font-black tracking-widest bg-success/10 text-success rounded-md">SECURED</Badge>
+                                    ) : isReached ? (
+                                        <Badge variant="primary" size="xs" className="border-none py-0.5 px-2 uppercase font-black tracking-widest bg-brand-accent/10 text-brand-accent rounded-md">AVAILABLE</Badge>
+                                    ) : (
+                                        <Badge variant="tactical" size="xs" className="border-none py-0.5 px-2 uppercase font-black tracking-widest opacity-40 rounded-md">ENCRYPTED</Badge>
+                                    )}
+                                </div>
                             </div>
                         </div>
+
+                        <div className="shrink-0">
+                            {isClaimed ? (
+                            <div className="w-10 h-10 rounded-2xl bg-success/10 border border-success/20 flex items-center justify-center text-success shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+                                <CheckCircle2 size={20} strokeWidth={3} />
+                            </div>
+                            ) : isReached ? (
+                            <Button
+                                onClick={() => handleClaim(lvl)}
+                                isLoading={claiming === lvl}
+                                variant="tactical"
+                                className="h-10 px-6 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl shadow-lg active:scale-95"
+                            >
+                                CLAIM
+                            </Button>
+                            ) : (
+                            <div className="w-10 h-10 rounded-2xl bg-black/40 border border-white/[0.03] flex items-center justify-center text-neutral-800">
+                                <Lock size={18} />
+                            </div>
+                            )}
+                        </div>
                     </div>
 
-                    <div className="shrink-0">
-                        {isClaimed ? (
-                        <div className="w-8 h-8 rounded-md bg-emerald-500/10 flex items-center justify-center text-emerald-500">
-                            <CheckCircle2 size={18} strokeWidth={3} />
-                        </div>
-                        ) : isReached ? (
-                        <Button
-                            onClick={() => handleClaim(lvl)}
-                            isLoading={claiming === lvl}
-                            variant="tactical"
-                            className="h-8 px-4 text-[9px] font-black uppercase tracking-widest"
-                        >
-                            CLAIM
-                        </Button>
-                        ) : (
-                        <div className="w-8 h-8 rounded-md bg-[#0a0a0c] border border-white/[0.03] flex items-center justify-center text-neutral-800">
-                            <Lock size={14} />
-                        </div>
-                        )}
+                    <div className="grid grid-cols-1 gap-2 relative z-10">
+                        {TIER_ORDER.map((tier) => {
+                        const unlocked = TIER_ORDER.indexOf(currentTier) >= TIER_ORDER.indexOf(tier);
+                        const Icon = TIER_ICON[tier as keyof typeof TIER_ICON];
+                        return (
+                            <div key={tier} className={cn(
+                                "flex items-center justify-between gap-4 px-4 py-3 rounded-xl border transition-all duration-300",
+                                unlocked ? "bg-white/[0.02] border-white/[0.05] hover:bg-white/[0.04]" : "bg-black/60 border-transparent opacity-30"
+                            )}>
+                            <div className="flex items-center gap-3 min-w-0">
+                                <Icon size={14} className={unlocked ? (tier === 'elite' ? 'text-epic' : tier === 'premium' ? 'text-brand-accent' : 'text-neutral-400') : 'text-neutral-800'} fill={(tier === 'elite' || tier === 'premium') && unlocked ? 'currentColor' : 'none'} />
+                                <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest leading-none">{tier}</span>
+                            </div>
+                            <span className={cn('text-[11px] font-black text-right tracking-tight truncate ml-4 font-mono uppercase leading-none', unlocked ? 'text-white/90' : 'text-neutral-800')}>
+                                {formatReward(track, tier)}
+                            </span>
+                            </div>
+                        );
+                        })}
                     </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-1.5">
-                    {TIER_ORDER.map((tier) => {
-                    const unlocked = TIER_ORDER.indexOf(currentTier) >= TIER_ORDER.indexOf(tier);
-                    const Icon = TIER_ICON[tier as keyof typeof TIER_ICON];
-                    return (
-                        <div key={tier} className={cn(
-                            "flex items-center justify-between gap-4 px-3 py-2 rounded-md border transition-all",
-                            unlocked ? "bg-white/[0.01] border-white/[0.03]" : "bg-black/40 border-transparent opacity-40"
-                        )}>
-                        <div className="flex items-center gap-2.5 min-w-0">
-                            <Icon size={12} className={unlocked ? 'text-brand-accent' : 'text-neutral-800'} fill={tier === 'elite' && unlocked ? 'currentColor' : 'none'} />
-                            <span className="text-[8px] font-black text-neutral-600 uppercase tracking-widest">{tier}</span>
-                        </div>
-                        <span className={cn('text-[10px] font-black text-right tracking-tight truncate ml-4 font-mono uppercase', unlocked ? 'text-white' : 'text-neutral-800')}>
-                            {formatReward(track, tier)}
-                        </span>
-                        </div>
-                    );
-                    })}
-                </div>
-                </Card>
+                    </Card>
+                </motion.div>
             );
             })}
+            </AnimatePresence>
         </div>
       </section>
     </div>
