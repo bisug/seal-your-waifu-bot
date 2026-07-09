@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { Character } from '../../context/UserContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, ShieldCheck, Zap } from 'lucide-react';

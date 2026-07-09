@@ -100,7 +100,6 @@ export const Leaderboard = () => {
                             {data?.map((user, i) => {
                                 const displayName = getDisplayName(user, i);
                                 const rank = user.rank || i + 1;
-                                const isTopThree = rank <= 3;
 
                                 return (
                                 <Card key={user.id} variant="default" className={cn(
