@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "lint": "eslint .",
+    "lint": "bun add -D typescript@6.0.3 && eslint . && bun add -D typescript@7.0.2",
     "preview": "vite preview",
     "type-check": "tsc --noEmit"
   },
