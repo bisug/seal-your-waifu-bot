@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Character } from '../../context/UserContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Heart, ShieldCheck, Target, Zap } from 'lucide-react';
@@ -11,6 +11,14 @@ interface GachaRevealProps {
 }
 
 export const GachaReveal = ({ character, onClose }: GachaRevealProps) => {
+    const particles = useMemo(() => {
+        return [...Array(6)].map((_, i) => ({
+            delay: i * 0.2,
+            x: (i - 2.5) * 40,
+            duration: 2 + (i % 3) // Use deterministic values for render purity
+        }));
+    }, []);
+
     useEffect(() => {
         if (character) {
             window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
@@ -44,12 +52,12 @@ export const GachaReveal = ({ character, onClose }: GachaRevealProps) => {
                     <div className="w-full h-full rounded-[40px] border border-white/20 bg-brand-midnight shadow-[0_0_100px_rgba(0,0,0,0.9)] overflow-hidden relative group">
                         {/* Particle Effects */}
                         <div className="absolute inset-0 pointer-events-none z-20">
-                             {[...Array(6)].map((_, i) => (
+                             {particles.map((p, i) => (
                                  <motion.div
                                     key={i}
                                     initial={{ opacity: 0, y: 100, x: 0 }}
-                                    animate={{ opacity: [0, 1, 0], y: -200, x: (i - 2.5) * 40 }}
-                                    transition={{ duration: 2 + Math.random(), repeat: Infinity, delay: i * 0.2 }}
+                                    animate={{ opacity: [0, 1, 0], y: -200, x: p.x }}
+                                    transition={{ duration: p.duration, repeat: Infinity, delay: p.delay }}
                                     className="absolute bottom-0 left-1/2 w-1 h-1 bg-brand-accent rounded-full blur-[2px]"
                                  />
                              ))}

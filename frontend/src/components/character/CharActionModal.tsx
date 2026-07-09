@@ -4,7 +4,7 @@ import { useToast } from '../ui/Toast';
 import { Modal } from './Modal';
 import { apiFetch, getErrorMessage } from '../../api/client';
 import { useUser, type Character, type User } from '../../context/UserContext';
-import { formatNumber, cn } from '../../utils';
+import { formatNumber } from '../../utils';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Badge } from '../ui/Badge';
