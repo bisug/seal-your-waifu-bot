@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Coins, Gem, Image as ImageIcon, Loader2, Lock, Pencil, Save, Trash2, X, Heart, Sparkles, Target, History } from 'lucide-react';
+import { Coins, Gem, Image as ImageIcon, Loader2, Lock, Pencil, History, X } from 'lucide-react';
 import { useToast } from '../ui/Toast';
 import { Modal } from './Modal';
 import { apiFetch, getErrorMessage } from '../../api/client';
@@ -8,7 +8,7 @@ import { formatNumber } from '../../utils';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Badge } from '../ui/Badge';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 interface CharActionModalProps {
     selectedChar: Character | null;
@@ -65,7 +65,7 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
             .then((data) => {
                 if (!cancelled) setRarityOptions(data?.character_rarities || []);
             })
-            .catch((err) => console.warn('Registry error: Could not load rarity classification:', err));
+            .catch((err) => console.warn('Registry error:', err));
 
         return () => {
             cancelled = true;
@@ -100,7 +100,7 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
         };
 
         if (!payload.name || !payload.anime || !payload.rarity || !payload.img_url) {
-            addToast('Input required: Complete all asset fields.', 'error');
+            addToast('All fields are required.', 'error');
             return;
         }
 
@@ -119,7 +119,7 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
             setSelectedChar(updatedChar);
             setEditForm(buildEditForm(updatedChar));
             setEditMode(false);
-            addToast(result?.message || 'Archive registry updated successfully.', result?.status === 'unchanged' ? 'info' : 'success');
+            addToast('Registry updated.', 'success');
             triggerRefresh();
             window.dispatchEvent(new Event('gallery-refresh'));
             window.dispatchEvent(new Event('harem-refresh'));
@@ -141,7 +141,6 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
             if (onPurchaseSuccess) onPurchaseSuccess(selectedChar);
         } catch (err: any) {
             addToast(getErrorMessage(err), 'error');
-            window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('error');
             setPurchaseStage('idle');
         }
     };
@@ -155,7 +154,7 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
             });
 
             window.Telegram?.WebApp?.showConfirm(
-                `AUTHORIZE RECYCLE: ${selectedChar.name.toUpperCase()} FOR ${preview.reward} ZENITH?`,
+                `Recycle ${selectedChar.name.toUpperCase()} for ${preview.reward} Zenith?`,
                 async (confirmed) => {
                     if (!confirmed) {
                         setSellStage('idle');
@@ -163,13 +162,12 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                     }
 
                     setSellStage('selling');
-                    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
                     try {
                         const res = await apiFetch('/recycle', {
                             method: 'POST',
                             body: JSON.stringify([selectedChar.id])
                         });
-                        addToast(`Asset recycled. +${res.reward} Zenith assets secured.`, 'success');
+                        addToast(`Asset recycled: +${res.reward} Zenith`, 'success');
                         triggerRefresh();
                         setSelectedChar(null);
                     } catch (err: any) {
@@ -188,17 +186,16 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
         setSellStage('selling');
         try {
             window.Telegram?.WebApp?.showConfirm(
-                `AUTHORIZE LIQUIDATION: ${selectedChar.name.toUpperCase()} FOR SHARDS?`,
+                `Sell ${selectedChar.name.toUpperCase()} for Shards?`,
                 async (confirmed) => {
                     if (!confirmed) {
                         setSellStage('idle');
                         return;
                     }
 
-                    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
                     try {
                         const res = await apiFetch(`/character/sell/${selectedChar.id}`, { method: 'POST' });
-                        addToast(`Asset liquidated. +${res.reward} Shards secured.`, 'success');
+                        addToast(`Asset sold: +${res.reward} Shards`, 'success');
                         triggerRefresh();
                         setSelectedChar(null);
                     } catch (err: any) {
@@ -218,77 +215,79 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
             {canEdit && (
                 <div className="w-full">
                     {editMode ? (
-                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-5 p-6 rounded-[24px] border border-white/[0.04] bg-white/[0.01] shadow-inner">
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <span className="text-[10px] font-black uppercase text-neutral-600 tracking-[0.2em] pl-1">ASSET_NAME</span>
+                        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4 p-4 rounded-md border border-white/5 bg-zinc-900">
+                            <div className="space-y-3">
+                                <div className="space-y-1">
+                                    <span className="text-[9px] font-bold uppercase text-zinc-600 tracking-widest pl-0.5">Asset Name</span>
                                     <Input
                                         value={editForm.name}
                                         onChange={event => updateEditField('name', event.target.value)}
                                         disabled={editStage === 'saving'}
-                                        placeholder="DESIGNATION..."
+                                        placeholder="Name..."
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <span className="text-[10px] font-black uppercase text-neutral-600 tracking-[0.2em] pl-1">DATA_SOURCE</span>
+                                <div className="space-y-1">
+                                    <span className="text-[9px] font-bold uppercase text-zinc-600 tracking-widest pl-0.5">Source</span>
                                     <Input
                                         value={editForm.anime}
                                         onChange={event => updateEditField('anime', event.target.value)}
                                         disabled={editStage === 'saving'}
-                                        placeholder="ORIGIN..."
+                                        placeholder="Source..."
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <span className="text-[10px] font-black uppercase text-neutral-600 tracking-[0.2em] pl-1">RARITY_CLASS</span>
+                                <div className="space-y-1">
+                                    <span className="text-[9px] font-bold uppercase text-zinc-600 tracking-widest pl-0.5">Rarity Class</span>
                                     <div className="relative group">
                                         <select
                                             value={editForm.rarity}
                                             onChange={event => updateEditField('rarity', event.target.value)}
                                             disabled={editStage === 'saving'}
-                                            className="w-full h-12 bg-[#0a0a0c] border border-white/10 rounded-xl px-4 text-xs font-black text-white uppercase tracking-widest outline-none focus:border-brand-accent transition-all appearance-none cursor-pointer"
+                                            className="w-full h-10 bg-zinc-950 border border-white/10 rounded-md px-3.5 text-[11px] font-bold text-zinc-100 uppercase tracking-widest outline-none focus:border-brand-accent transition-all appearance-none cursor-pointer"
                                         >
                                             {!rarityOptions.some(option => option.label === editForm.rarity) && editForm.rarity && (
                                                 <option value={editForm.rarity}>{editForm.rarity.toUpperCase()}</option>
                                             )}
                                             {rarityOptions.map(option => (
                                                 <option key={option.value} value={option.label}>
-                                                    CLASS_{option.value}: {option.label.toUpperCase()}
+                                                    Tier {option.value}: {option.label.toUpperCase()}
                                                 </option>
                                             ))}
                                         </select>
                                     </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <span className="text-[10px] font-black uppercase text-neutral-600 tracking-[0.2em] pl-1">VISUAL_MANIFEST</span>
+                                <div className="space-y-1">
+                                    <span className="text-[9px] font-bold uppercase text-zinc-600 tracking-widest pl-0.5">Visual Manifest</span>
                                     <Input
                                         icon={ImageIcon}
                                         value={editForm.img_url}
                                         onChange={event => updateEditField('img_url', event.target.value)}
                                         disabled={editStage === 'saving'}
-                                        placeholder="URL_ID..."
+                                        placeholder="Image URL..."
                                     />
                                 </div>
                             </div>
 
-                            <div className="flex gap-3 pt-2">
+                            <div className="flex gap-2 pt-1">
                                 <Button
-                                    variant="secondary"
+                                    variant="outline"
+                                    size="sm"
                                     onClick={() => {
                                         setEditForm(buildEditForm(selectedChar));
                                         setEditMode(false);
                                     }}
                                     disabled={editStage === 'saving'}
-                                    className="flex-1 rounded-xl h-11 uppercase tracking-widest text-[10px] font-black"
+                                    className="flex-1"
                                 >
-                                    ABORT
+                                    Cancel
                                 </Button>
                                 <Button
                                     onClick={handleEditSave}
-                                    variant="tactical"
+                                    variant="secondary"
+                                    size="sm"
                                     isLoading={editStage === 'saving'}
-                                    className="flex-[1.5] rounded-xl h-11 uppercase tracking-widest text-[10px] font-black"
+                                    className="flex-[1.5]"
                                 >
-                                    UPDATE_REGISTRY
+                                    Update Asset
                                 </Button>
                             </div>
                         </motion.div>
@@ -296,10 +295,10 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                         <Button
                             variant="secondary"
                             onClick={() => setEditMode(true)}
-                            className="w-full rounded-xl uppercase tracking-[0.2em] text-[10px] font-black border-white/5 py-5 group shadow-lg"
+                            className="w-full group h-12"
+                            leftIcon={<Pencil size={14} className="text-zinc-500 transition-colors group-hover:text-brand-accent" />}
                         >
-                            <Pencil size={14} className="mr-3 text-neutral-600 group-hover:text-brand-accent transition-colors" />
-                            AUTHORIZE_REGISTRY_PATCH
+                            Modify Registry
                         </Button>
                     )}
                 </div>
@@ -308,40 +307,40 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
             {!editMode && activeTab === 'shop' && !isOwned && (
                 <div className="w-full">
                     {isSoldOut ? (
-                        <Badge variant="danger" icon={Lock} size="md" className="w-full py-5 rounded-2xl justify-center font-black tracking-[0.3em] border-none shadow-xl bg-danger/10 text-danger">
-                            SUMMONS_EXHAUSTED
+                        <Badge variant="danger" icon={Lock} className="w-full py-4 rounded-md justify-center font-bold border-none bg-red-500/10 text-red-500">
+                            DEPLETED
                         </Badge>
                     ) : !canAfford ? (
                         <div className="flex flex-col gap-2">
-                            <Badge variant="tactical" icon={Gem} size="md" className="w-full py-5 rounded-2xl justify-center font-black tracking-[0.2em] border-white/10 bg-black/40 opacity-50">
-                                {formatNumber(price - zenithBalance)} ZENITH REQUIRED
+                            <Badge variant="secondary" icon={Gem} className="w-full py-4 rounded-md justify-center font-bold border-white/5 opacity-50">
+                                {formatNumber(price - zenithBalance)} Zenith Needed
                             </Badge>
-                            <p className="text-[8px] font-black text-center text-neutral-700 uppercase tracking-widest">INSUFFICIENT_FUNDS_DETECTED</p>
+                            <p className="text-[8px] font-bold text-center text-zinc-700 uppercase tracking-widest">Insufficient funds</p>
                         </div>
                     ) : purchaseStage === 'idle' ? (
                         <Button
                             onClick={() => setPurchaseStage('confirm')}
-                            variant="tactical"
-                            className="w-full py-6 rounded-2xl uppercase tracking-[0.3em] text-[12px] font-black shadow-2xl active:scale-[0.98]"
+                            variant="accent"
+                            className="w-full h-14"
                         >
-                            SUMMON_ASSET ({formatNumber(price)} ZENITH)
+                            Summon Asset ({formatNumber(price)} Zenith)
                         </Button>
                     ) : (
-                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex gap-4">
+                        <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="flex gap-3">
                             <Button
-                                variant="secondary"
+                                variant="outline"
                                 onClick={() => setPurchaseStage('idle')}
-                                className="flex-1 rounded-2xl h-14 uppercase tracking-[0.2em] text-[10px] font-black border-white/5"
+                                className="flex-1 h-14"
                             >
-                                ABORT
+                                Abort
                             </Button>
                             <Button
-                                variant="tactical"
+                                variant="accent"
                                 onClick={handleBuy}
                                 isLoading={purchaseStage === 'buying'}
-                                className="flex-[2.5] rounded-2xl h-14 uppercase tracking-[0.2em] text-[11px] font-black shadow-xl"
+                                className="flex-[2] h-14"
                             >
-                                CONFIRM_SUMMON
+                                Confirm Summon
                             </Button>
                         </motion.div>
                     )}
@@ -349,25 +348,25 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
             )}
 
             {!editMode && isOwned && (
-                <div className="flex gap-4">
+                <div className="flex gap-3">
                     <Button
                         variant="danger"
                         onClick={handleRecycle}
                         disabled={sellStage !== 'idle'}
-                        className="flex-1 rounded-2xl h-14 uppercase tracking-[0.2em] text-[10px] font-black shadow-lg"
+                        className="flex-1 h-14"
+                        leftIcon={sellStage === 'previewing' || sellStage === 'selling' ? <Loader2 size={14} className="animate-spin" /> : <History size={14} />}
                     >
-                        {sellStage === 'previewing' || sellStage === 'selling' ? <Loader2 size={16} className="animate-spin" /> : <History size={16} strokeWidth={2.5} className="mr-2" />}
-                        RECYCLE
+                        Recycle
                     </Button>
 
                     <Button
                         variant="secondary"
                         onClick={handleSell}
                         disabled={sellStage !== 'idle'}
-                        className="flex-1 rounded-2xl h-14 uppercase tracking-[0.2em] text-[10px] font-black border-white/10"
+                        className="flex-1 h-14"
+                        leftIcon={sellStage === 'selling' ? <Loader2 size={14} className="animate-spin" /> : <Coins size={14} />}
                     >
-                        {sellStage === 'selling' ? <Loader2 size={16} className="animate-spin" /> : <Coins size={16} strokeWidth={2.5} className="mr-2" />}
-                        LIQUIDATE
+                        Liquidate
                     </Button>
                 </div>
             )}

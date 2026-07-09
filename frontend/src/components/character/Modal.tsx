@@ -54,7 +54,7 @@ export const Modal = ({ character, onClose, actions }: ModalProps) => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="absolute inset-0 bg-black/80 backdrop-blur-md"
+                    className="absolute inset-0 bg-black/60 backdrop-blur-md"
                     onClick={onClose}
                 />
 
@@ -62,42 +62,41 @@ export const Modal = ({ character, onClose, actions }: ModalProps) => {
                     initial={{ y: '100%' }}
                     animate={{ y: 0 }}
                     exit={{ y: '100%' }}
-                    transition={{ type: 'spring', damping: 30, stiffness: 300, mass: 0.8 }}
-                    className="relative w-full max-w-[420px] bg-brand-midnight rounded-t-[32px] sm:rounded-[32px] flex flex-col overflow-hidden shadow-2xl border-t sm:border border-white/[0.08]"
+                    transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                    className="relative w-full max-w-[440px] bg-zinc-950 rounded-t-xl sm:rounded-xl flex flex-col overflow-hidden shadow-2xl border-t sm:border border-white/5"
                 >
                     {/* Header Controls */}
-                    <div className="absolute right-6 top-6 z-20">
+                    <div className="absolute right-4 top-4 z-20">
                         <Button
                             variant="ghost"
+                            size="sm"
                             onClick={onClose}
-                            className="w-10 h-10 p-0 rounded-full bg-black/40 backdrop-blur-xl border border-white/5 hover:bg-white/10"
+                            className="w-8 h-8 p-0 rounded-full bg-black/20 backdrop-blur-md border border-white/5 hover:bg-black/40"
                             aria-label="Close"
                         >
-                            <X size={20} />
+                            <X size={16} />
                         </Button>
                     </div>
 
                     {/* Image Section */}
-                    <div className="relative aspect-[4/3] flex-shrink-0 bg-brand-deep/30 flex items-center justify-center overflow-hidden group">
-                        <div className="absolute inset-0 bg-gradient-to-t from-brand-midnight via-transparent to-black/40" />
-                        <div className="absolute inset-0 bg-scanline opacity-[0.03] pointer-events-none" />
-                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.1),transparent_70%)]" />
+                    <div className="relative aspect-[4/3] flex-shrink-0 bg-zinc-900/50 flex items-center justify-center overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent" />
 
                         <motion.img
-                            initial={{ scale: 0.9, opacity: 0 }}
+                            initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
-                            transition={{ delay: 0.1, duration: 0.5 }}
+                            transition={{ delay: 0.1, duration: 0.4 }}
                             src={character.img_url}
-                            className="relative z-10 w-full h-full object-contain p-8 drop-shadow-[0_20px_50px_rgba(0,0,0,0.6)] transition-transform duration-1000 group-hover:scale-105"
+                            className="relative z-10 w-full h-full object-contain p-6"
                             alt={character.name}
                         />
 
-                        <div className="absolute bottom-6 left-6 z-20 flex gap-2">
-                            <Badge variant={rarityVariant} size="sm" className="px-3 py-1 border-none shadow-xl backdrop-blur-md font-black">
+                        <div className="absolute bottom-4 left-4 z-20 flex gap-2">
+                            <Badge variant={rarityVariant} size="sm">
                                 {rarityLabel || 'STANDARD'}
                             </Badge>
                             {character.owned && (
-                                <Badge variant="success" size="sm" className="px-3 py-1 border-none shadow-xl backdrop-blur-md font-black">
+                                <Badge variant="success" size="sm">
                                     SECURED
                                 </Badge>
                             )}
@@ -105,38 +104,38 @@ export const Modal = ({ character, onClose, actions }: ModalProps) => {
                     </div>
 
                     {/* Content Section */}
-                    <div className="flex-1 bg-brand-midnight p-6 sm:p-8 space-y-6">
-                        <div className="space-y-2">
-                            <div className="flex items-center gap-2 opacity-50">
-                                <Target size={12} className="text-brand-accent" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white font-mono">ASSET_ID: {characterId}</span>
+                    <div className="flex-1 p-6 space-y-6">
+                        <div className="space-y-1.5">
+                            <div className="flex items-center gap-1.5">
+                                <Target size={11} className="text-zinc-500" />
+                                <span className="text-[9px] font-mono font-bold uppercase text-zinc-500 tracking-widest">ASSET_ID: #{characterId}</span>
                             </div>
-                            <h2 className="text-2xl font-black text-white leading-tight uppercase tracking-tighter drop-shadow-sm">{character.name}</h2>
-                            <div className="flex items-center gap-2">
-                               <Info size={12} className="text-neutral-600" />
-                               <p className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest leading-none">{character.anime}</p>
+                            <h2 className="text-2xl font-bold text-zinc-100 uppercase tracking-tight">{character.name}</h2>
+                            <div className="flex items-center gap-1.5 opacity-60">
+                               <Info size={11} className="text-zinc-500" />
+                               <p className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest leading-none">{character.anime}</p>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-3 gap-3">
                             {[
                                 { icon: ShieldCheck, label: 'STATUS', value: character.owned ? "SECURED" : "PENDING", variant: character.owned ? "success" : "secondary" },
-                                { icon: Package, label: 'QUANTITY', value: hasStock ? (soldOut ? "DEPLETED" : `${stockRemaining}/${stockLimit}`) : (character.count > 0 ? `x${character.count}` : "UNLIMITED"), variant: soldOut ? "danger" : "default" },
-                                { icon: Gem, label: 'ASSET_VAL', value: hasPrice ? formatNumber(character.zenith_price) : '0', variant: 'primary' },
+                                { icon: Package, label: 'SUPPLY', value: hasStock ? (soldOut ? "DEPLETED" : `${stockRemaining}/${stockLimit}`) : (character.count > 0 ? `x${character.count}` : "UNLIMITED"), variant: soldOut ? "danger" : "default" },
+                                { icon: Gem, label: 'PRICE', value: hasPrice ? formatNumber(character.zenith_price) : '0', variant: 'primary' },
                             ].map((stat, i) => (
-                                <Card key={i} variant="tactical" className="p-3 bg-white/[0.02] flex flex-col justify-between border-white/[0.04]">
-                                    <stat.icon size={14} className={cn(
-                                        stat.variant === 'success' && "text-success",
-                                        stat.variant === 'danger' && "text-danger",
+                                <Card key={i} variant="default" className="p-3 flex flex-col justify-between border-white/[0.04] bg-zinc-900/50">
+                                    <stat.icon size={13} className={cn(
+                                        stat.variant === 'success' && "text-emerald-500",
+                                        stat.variant === 'danger' && "text-red-500",
                                         stat.variant === 'primary' && "text-brand-accent",
-                                        stat.variant === 'default' && "text-neutral-500",
-                                        stat.variant === 'secondary' && "text-neutral-700"
+                                        stat.variant === 'default' && "text-zinc-500",
+                                        stat.variant === 'secondary' && "text-zinc-700"
                                     )} />
                                     <div className="mt-3">
-                                        <span className="block text-[8px] font-black text-neutral-700 uppercase tracking-widest mb-1">{stat.label}</span>
+                                        <span className="block text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-1">{stat.label}</span>
                                         <span className={cn(
-                                            "block truncate text-[10px] font-black uppercase tracking-tight tabular-nums font-mono leading-none",
-                                            stat.variant === 'success' ? "text-success" : stat.variant === 'danger' ? "text-danger" : "text-white"
+                                            "block truncate text-[10px] font-mono font-bold uppercase tracking-tight tabular-nums leading-none",
+                                            stat.variant === 'success' ? "text-emerald-500" : stat.variant === 'danger' ? "text-red-500" : "text-zinc-100"
                                         )}>
                                             {stat.value}
                                         </span>
@@ -146,18 +145,18 @@ export const Modal = ({ character, onClose, actions }: ModalProps) => {
                         </div>
 
                         {actions && (
-                            <div className="pt-6 border-t border-white/[0.06] flex flex-col gap-4">
+                            <div className="pt-6 border-t border-white/5 flex flex-col gap-4">
                                 {actions}
                             </div>
                         )}
 
-                        <div className="flex items-center justify-center gap-2 py-2 opacity-20">
+                        <div className="flex items-center justify-center gap-2 py-1 opacity-20">
                             <Sparkles size={10} className="text-brand-accent" />
-                            <span className="text-[8px] font-black uppercase tracking-[0.4em] text-white">End of Record</span>
+                            <span className="text-[8px] font-bold uppercase text-zinc-100 tracking-widest">End of Record</span>
                         </div>
                     </div>
 
-                    {/* Safe Area Padding for Mobile Bottom Sheet */}
+                    {/* Safe Area Padding */}
                     <div className="h-[calc(var(--sab,24px)+4px)] sm:hidden" />
                 </motion.div>
             </div>

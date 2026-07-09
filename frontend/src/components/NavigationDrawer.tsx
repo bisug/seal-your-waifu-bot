@@ -20,7 +20,6 @@ import { cn } from '../utils';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useUser } from '../context/UserContext';
 import { Button } from './ui/Button';
-import { Badge } from './ui/Badge';
 
 interface NavItem {
   id: string;
@@ -53,8 +52,8 @@ const SECTIONS: NavSection[] = [
     title: "SOCIAL",
     items: [
       { id: 'referrals', label: 'Recruit', icon: UserPlus },
-      { id: 'quests', label: 'Daily Tasks', icon: ListChecks },
-      { id: 'pass', label: 'Waifu Pass', icon: Ticket },
+      { id: 'quests', label: 'Tasks', icon: ListChecks },
+      { id: 'pass', label: 'Season Pass', icon: Ticket },
       { id: 'leaderboard', label: 'Rankings', icon: ChartNoAxesColumnIncreasing },
     ]
   }
@@ -101,41 +100,41 @@ export const NavigationDrawer = ({ isOpen, onClose, activeTab, onNavigate }: Nav
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 z-[110] bg-black/80 backdrop-blur-sm"
+            className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-md"
           />
 
           <motion.div
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed top-0 right-0 z-[120] h-full w-[280px] bg-[#050506] border-l border-white/[0.05] flex flex-col shadow-2xl"
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="fixed top-0 right-0 z-[120] h-full w-[280px] bg-zinc-950 border-l border-white/5 flex flex-col shadow-2xl"
           >
             {/* Header */}
             <div className="p-6 flex items-center justify-between border-b border-white/[0.04]">
               <div className="flex flex-col">
                 <div className="flex items-center gap-2">
-                    <Terminal size={14} className="text-brand-accent" />
-                    <span className="text-[11px] font-black text-white tracking-[0.2em] uppercase">SYSTEM</span>
+                    <Terminal size={14} className="text-zinc-500" />
+                    <span className="text-[11px] font-bold text-zinc-100 tracking-wider uppercase">SYSTEM</span>
                 </div>
-                <span className="text-[8px] font-bold text-neutral-600 uppercase tracking-widest mt-1">PROTO_v2.4_READY</span>
+                <span className="text-[8px] font-mono text-zinc-600 uppercase mt-0.5">V2.4</span>
               </div>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={onClose}
-                className="w-9 h-9 p-0 rounded-xl bg-white/[0.02] border border-white/[0.05]"
+                className="w-8 h-8 p-0 rounded-md border border-white/5 bg-zinc-900"
                 aria-label="Close"
               >
-                <X size={18} />
+                <X size={16} />
               </Button>
             </div>
 
             {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto px-3 py-6 space-y-8 scrollbar-hide">
+            <div className="flex-1 overflow-y-auto px-4 py-6 space-y-8">
               {sections.map((section) => (
-                <div key={section.title} className="space-y-2">
-                  <h3 className="px-4 text-[9px] font-black text-neutral-700 uppercase tracking-[0.3em]">
+                <div key={section.title} className="space-y-3">
+                  <h3 className="px-2 text-[9px] font-bold text-zinc-600 uppercase tracking-widest">
                     {section.title}
                   </h3>
                   <div className="space-y-1">
@@ -148,24 +147,24 @@ export const NavigationDrawer = ({ isOpen, onClose, activeTab, onNavigate }: Nav
                           key={item.id}
                           onClick={() => handleItemClick(item.id)}
                           className={cn(
-                            "group w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-300 relative overflow-hidden",
+                            "group w-full flex items-center justify-between px-3 py-2.5 rounded-md transition-all duration-200 relative",
                             isActive
-                              ? "bg-brand-accent/10 text-brand-accent shadow-[inset_3px_0_0_rgba(59,130,246,1)]"
-                              : "text-neutral-500 hover:text-white hover:bg-white/[0.03]"
+                              ? "bg-brand-accent/10 text-brand-accent"
+                              : "text-zinc-500 hover:text-zinc-200 hover:bg-white/5"
                           )}
                         >
-                          <div className="flex items-center gap-4">
-                            <Icon size={16} strokeWidth={isActive ? 2.5 : 2} className={isActive ? "text-brand-accent" : "text-neutral-600 group-hover:text-neutral-300"} />
+                          <div className="flex items-center gap-3">
+                            <Icon size={16} className={isActive ? "text-brand-accent" : "text-zinc-500 transition-colors group-hover:text-zinc-300"} />
                             <span className={cn(
-                              "text-[11px] font-bold tracking-widest uppercase",
-                              isActive ? "text-brand-accent" : "text-neutral-500 group-hover:text-neutral-300"
+                              "text-[11px] font-bold uppercase tracking-wider",
+                              isActive ? "text-brand-accent" : "text-zinc-500 transition-colors group-hover:text-zinc-300"
                             )}>
                               {item.label}
                             </span>
                           </div>
 
                           {isActive && (
-                            <div className="w-1 h-1 rounded-full bg-brand-accent shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
+                            <div className="w-1 h-1 rounded-full bg-brand-accent" />
                           )}
                         </button>
                       );
@@ -174,18 +173,18 @@ export const NavigationDrawer = ({ isOpen, onClose, activeTab, onNavigate }: Nav
                 </div>
               ))}
 
-              {/* Secondary Actions */}
-              <div className="space-y-2 pt-4">
-                  <h3 className="px-4 text-[9px] font-black text-neutral-700 uppercase tracking-[0.3em]">PREFERENCES</h3>
+              {/* Preferences */}
+              <div className="space-y-3 pt-4">
+                  <h3 className="px-2 text-[9px] font-bold text-zinc-600 uppercase tracking-widest">PREFERENCES</h3>
                   <div className="space-y-1">
                       {[
                           { icon: Settings, label: 'Settings' },
                           { icon: HelpCircle, label: 'Support' },
-                          { icon: LogOut, label: 'Disconnect' },
+                          { icon: LogOut, label: 'Logout' },
                       ].map((item) => (
-                          <button key={item.label} className="w-full flex items-center gap-4 px-4 py-3 text-neutral-600 hover:text-neutral-300 transition-colors">
+                          <button key={item.label} className="w-full flex items-center gap-3 px-3 py-2.5 text-zinc-500 hover:text-zinc-200 transition-colors">
                               <item.icon size={16} />
-                              <span className="text-[11px] font-bold tracking-widest uppercase">{item.label}</span>
+                              <span className="text-[11px] font-bold uppercase tracking-wider">{item.label}</span>
                           </button>
                       ))}
                   </div>
@@ -194,23 +193,23 @@ export const NavigationDrawer = ({ isOpen, onClose, activeTab, onNavigate }: Nav
 
             {/* Footer */}
             <div className="p-6 border-t border-white/[0.04] bg-white/[0.01]">
-               <div className="flex items-center gap-4 p-3 rounded-xl bg-black border border-white/[0.03] mb-5">
-                  <div className="w-10 h-10 rounded-lg bg-brand-accent/10 flex items-center justify-center shrink-0 border border-brand-accent/20">
-                    <Heart size={18} className="text-brand-accent" fill="currentColor" />
+               <div className="flex items-center gap-3 p-3 rounded-md bg-zinc-900 border border-white/5 mb-5">
+                  <div className="w-8 h-8 rounded bg-brand-accent/10 flex items-center justify-center shrink-0 border border-brand-accent/20">
+                    <Heart size={14} className="text-brand-accent" fill="currentColor" />
                   </div>
                   <div className="flex flex-col min-w-0">
-                    <span className="text-[10px] font-black text-white uppercase tracking-widest truncate">
+                    <span className="text-[10px] font-bold text-zinc-100 uppercase tracking-wider truncate">
                         {user?.role_label || user?.role_tag || 'OPERATOR'}
                     </span>
-                    <span className="text-[8px] font-bold text-neutral-600 uppercase tracking-tighter">SECURE ACCESS GRANTED</span>
+                    <span className="text-[7px] font-bold text-zinc-600 uppercase tracking-widest">AUTHORIZED ACCESS</span>
                   </div>
                </div>
 
                <div className="flex items-center justify-between px-1">
-                  <div className="text-[8px] font-black text-neutral-800 uppercase tracking-[0.2em]">NODE_STATUS</div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                    <span className="text-[8px] font-mono text-success/60 uppercase">ONLINE</span>
+                  <div className="text-[8px] font-bold text-zinc-700 uppercase tracking-widest">SYSTEM_STATUS</div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-1 h-1 rounded-full bg-emerald-500" />
+                    <span className="text-[8px] font-mono text-emerald-500/80 uppercase">ONLINE</span>
                   </div>
                </div>
             </div>
