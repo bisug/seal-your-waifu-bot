@@ -5,6 +5,9 @@ import { useToast } from '../ui/Toast';
 import { apiFetch, getErrorMessage } from '../../api/client';
 import { cn } from '../../utils';
 import { useUser, type Pet, type User } from '../../context/UserContext';
+import { Button } from '../ui/Button';
+import { Badge } from '../ui/Badge';
+import { Card } from '../ui/Card';
 
 interface StatBoxProps {
     icon: ElementType;
@@ -14,15 +17,15 @@ interface StatBoxProps {
 }
 
 const StatBox = ({ icon: Icon, label, value, colorClass }: StatBoxProps) => (
-    <div className="bg-white/[0.03] border border-white/5 p-4 rounded-2xl flex items-center space-x-3">
-        <div className={`p-2 rounded-xl bg-black/20 ${colorClass}`}>
+    <Card className="p-4 bg-white/[0.02] flex items-center space-x-3">
+        <div className={cn("p-2 rounded-xl bg-black/20", colorClass)}>
             <Icon size={16} />
         </div>
         <div>
-            <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">{label}</p>
-            <p className="text-[12px] font-black text-white">{value}</p>
+            <p className="text-[8px] font-black text-neutral-500 uppercase tracking-widest">{label}</p>
+            <p className="text-[12px] font-black text-white uppercase">{value}</p>
         </div>
-    </div>
+    </Card>
 );
 
 const getPetImageSrc = (pet: Pet | null) => {
@@ -97,15 +100,15 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }: PetActionM
     };
 
     return (
-        <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-0 sm:p-4 select-none">
             <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setSelectedPet(null)}
                 className={cn(
-                    "absolute inset-0 bg-brand-midnight/90",
-                    !liteMode && "backdrop-blur-2xl"
+                    "absolute inset-0 bg-black/90",
+                    !liteMode && "backdrop-blur-xl"
                 )}
             />
 
@@ -114,112 +117,115 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }: PetActionM
                 animate={{ y: 0 }}
                 exit={{ y: "100%" }}
                 transition={liteMode 
-                    ? { duration: 0.2 }
-                    : { type: "spring", damping: 25, stiffness: 200 }
+                    ? { duration: 0.15 }
+                    : { type: "spring", damping: 30, stiffness: 300 }
                 }
-                className="relative w-full max-w-[500px] bg-brand-midnight border-t sm:border border-white/10 rounded-t-2xl sm:rounded-2xl overflow-hidden flex flex-col max-h-[90vh]"
+                className="relative w-full max-w-md bg-brand-midnight border-t sm:border border-white/5 rounded-t-[2.5rem] sm:rounded-[2.5rem] overflow-hidden flex flex-col max-h-[95vh] shadow-[0_0_50px_rgba(0,0,0,0.8)]"
             >
-                <div className="p-8 overflow-y-auto no-scrollbar">
-                    <div className="flex justify-between items-start mb-8">
-                        <div className="w-24 h-24 rounded-xl overflow-hidden border-2 border-brand-accent/20 bg-black/40 shadow-2xl">
-                            {petImage && !imageFailed ? (
-                                <img
-                                    key={petImage}
-                                    src={petImage}
-                                    alt={selectedPet.name}
-                                    className="w-full h-full object-cover"
-                                    referrerPolicy="no-referrer"
-                                    onError={() => setImageFailed(true)}
-                                />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center text-slate-700 bg-brand-midnight">
-                                    <PawPrint size={26} />
-                                </div>
-                            )}
+                <div className="p-8 overflow-y-auto no-scrollbar space-y-8">
+                    <div className="flex justify-between items-start">
+                        <div className="relative">
+                            <div className="absolute -inset-1 bg-brand-accent/30 rounded-3xl blur-md opacity-50" />
+                            <div className="w-28 h-28 rounded-3xl overflow-hidden border-2 border-brand-accent/20 bg-black/40 relative z-10 shadow-2xl">
+                                {petImage && !imageFailed ? (
+                                    <img
+                                        key={petImage}
+                                        src={petImage}
+                                        alt={selectedPet.name}
+                                        className="w-full h-full object-cover transition-transform duration-700 hover:scale-110"
+                                        referrerPolicy="no-referrer"
+                                        onError={() => setImageFailed(true)}
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-neutral-800 bg-brand-midnight">
+                                        <PawPrint size={32} />
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                        <button
+                        <Button
+                            variant="secondary"
                             onClick={() => setSelectedPet(null)}
-                            className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-slate-500"
+                            className="w-10 h-10 p-0 rounded-full bg-white/5 border-white/10"
                         >
                             <X size={20} />
-                        </button>
+                        </Button>
                     </div>
 
-                    <div className="mb-8">
-                        <div className="flex items-center gap-3 mb-2 min-w-0">
-                            <h2 className="text-3xl font-black text-white italic tracking-tighter uppercase truncate min-w-0">{selectedPet.name}</h2>
-                            <span className="px-2 py-0.5 rounded-lg bg-brand-accent/10 border border-brand-accent/20 text-brand-accent text-[8px] font-black uppercase tracking-widest shrink-0">
-                                {selectedPet.rarity || 'Pet'}
-                            </span>
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-3 min-w-0">
+                            <h2 className="text-3xl font-black text-white tracking-tighter uppercase truncate">{selectedPet.name}</h2>
+                            <Badge variant="primary" className="py-1 px-2 rounded-lg font-black uppercase tracking-widest text-[9px] shrink-0">
+                                {selectedPet.rarity || 'ELITE'}
+                            </Badge>
                         </div>
-                        <p className="text-xs font-semibold text-slate-500">Companion pet</p>
+                        <p className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">Biological Companion Asset</p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 mb-10">
-                        <StatBox icon={Heart} label="HP" value={selectedPet.hp ?? 0} colorClass="text-red-500" />
-                        <StatBox icon={Swords} label="ATK" value={selectedPet.atk ?? 0} colorClass="text-brand-accent" />
-                        <StatBox icon={Wind} label="SPD" value={selectedPet.spd ?? 0} colorClass="text-blue-400" />
-                        <StatBox icon={Sparkles} label="Luck" value={`${Math.round(Number(selectedPet.luck || 0) * 100)}%`} colorClass="text-amber-400" />
+                    <div className="grid grid-cols-2 gap-3">
+                        <StatBox icon={Heart} label="Endurance" value={selectedPet.hp ?? 0} colorClass="text-red-500" />
+                        <StatBox icon={Swords} label="Offense" value={selectedPet.atk ?? 0} colorClass="text-brand-accent" />
+                        <StatBox icon={Wind} label="Velocity" value={selectedPet.spd ?? 0} colorClass="text-blue-400" />
+                        <StatBox icon={Sparkles} label="Probability" value={`${Math.round(Number(selectedPet.luck || 0) * 100)}%`} colorClass="text-amber-400" />
                     </div>
 
-                    <div className="space-y-4">
-                        <div className="flex items-center space-x-2 text-brand-accent mb-4">
-                            <Sparkles size={12} className="text-brand-accent" />
-                            <span className="text-[10px] font-black uppercase tracking-widest">Active Ability</span>
+                    <div className="space-y-3">
+                        <div className="flex items-center space-x-2 text-brand-accent">
+                            <Sparkles size={14} className="text-brand-accent" />
+                            <span className="text-[10px] font-black uppercase tracking-widest">Innate Talent</span>
                         </div>
-                        <p className="text-[12px] text-slate-300 leading-relaxed font-medium">
-                            {selectedPet.desc || `${selectedPet.name} gives you a practical bonus while it is your active pet.`}
+                        <p className="text-xs font-bold text-neutral-400 leading-relaxed uppercase tracking-wide bg-white/[0.02] p-4 rounded-2xl border border-white/5">
+                            {selectedPet.desc || `${selectedPet.name} provides specialized tactical support while deployed.`}
                         </p>
                     </div>
                 </div>
 
-                <div className="p-8 pt-0 mt-auto">
+                <div className="p-8 pt-2 mt-auto">
                     {isActive ? (
-                         <div className="w-full py-5 rounded-xl bg-brand-accent/10 text-brand-accent border border-brand-accent/20 font-bold text-sm flex items-center justify-center gap-3">
-                             <Check size={16} />
-                             <span>Currently active</span>
-                         </div>
+                         <Badge variant="primary" icon={Check} className="w-full py-5 rounded-2xl justify-center text-xs font-black tracking-widest uppercase border-brand-accent/30 bg-brand-accent/5">
+                             Currently Deployed
+                         </Badge>
                     ) : isOwned ? (
-                        <button
+                        <Button
                             onClick={handleSync}
-                            disabled={syncStage === 'syncing'}
-                            className="w-full py-5 rounded-xl bg-white text-brand-midnight font-bold text-sm shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3"
+                            isLoading={syncStage === 'syncing'}
+                            className="w-full py-6 rounded-2xl uppercase tracking-[0.2em] text-[11px] font-black shadow-[0_10px_30px_rgba(59,130,246,0.3)]"
                         >
-                            {syncStage === 'syncing' ? <Loader2 size={16} className="animate-spin" /> : 'Set active pet'}
-                        </button>
+                            Deploy Companion
+                        </Button>
                     ) : isLocked ? (
-                        <div className="w-full py-5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-bold flex items-center justify-center gap-3">
-                            <Lock size={16} />
-                            <span>Requires Level {selectedPet.req_level}</span>
-                        </div>
+                        <Badge variant="danger" icon={Lock} className="w-full py-5 rounded-2xl justify-center text-xs font-black tracking-widest uppercase bg-red-500/5 border-red-500/20">
+                            Lvl {selectedPet.req_level} Required
+                        </Badge>
                     ) : (
                         <div className="w-full">
                             {purchaseStage === 'idle' ? (
-                                <button
+                                <Button
                                     onClick={() => {
                                         window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
                                         setPurchaseStage('confirm');
                                     }}
                                     disabled={!canAfford}
-                                    className="w-full py-5 rounded-xl bg-brand-accent text-brand-midnight font-bold text-sm shadow-xl shadow-brand-accent/20 active:scale-95 transition-all flex items-center justify-center gap-3"
+                                    className="w-full py-6 rounded-2xl uppercase tracking-[0.2em] text-[11px] font-black shadow-[0_10px_30px_rgba(59,130,246,0.3)]"
                                 >
-                                    {canAfford ? `Buy for ${selectedPet.zenith_price} Zenith` : `${Math.max(0, (selectedPet.zenith_price || 0) - zenithBalance)} more Zenith needed`} <Gem size={16} />
-                                </button>
+                                    {canAfford ? `Acquire for ${selectedPet.zenith_price} Zenith` : `Need ${Math.max(0, (selectedPet.zenith_price || 0) - zenithBalance)} more Zenith`}
+                                </Button>
                             ) : (
-                                <div className="p-1 glass-panel rounded-xl border border-brand-accent/20 flex space-x-1">
-                                    <button
+                                <div className="flex gap-3">
+                                    <Button
+                                        variant="secondary"
                                         onClick={() => setPurchaseStage('idle')}
-                                        className="flex-1 py-4 text-sm font-bold text-slate-500"
+                                        className="flex-1 rounded-2xl uppercase tracking-widest text-[10px] font-black"
                                     >
                                         Cancel
-                                    </button>
-                                    <button
+                                    </Button>
+                                    <Button
                                         onClick={handleBuy}
-                                        disabled={purchaseStage === 'buying'}
-                                        className="flex-[2] py-4 bg-brand-accent text-brand-midnight rounded-lg text-sm font-bold flex items-center justify-center gap-2"
+                                        isLoading={purchaseStage === 'buying'}
+                                        className="flex-[2] rounded-2xl uppercase tracking-widest text-[10px] font-black"
                                     >
-                                        {purchaseStage === 'buying' ? <Loader2 size={16} className="animate-spin" /> : 'Confirm purchase'}
-                                    </button>
+                                        Confirm Acquisition
+                                    </Button>
                                 </div>
                             )}
                         </div>

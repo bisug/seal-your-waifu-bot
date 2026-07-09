@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useApi } from '../hooks/useApi';
-import { CardSkeleton } from '../components/ui/Skeleton';
-import { BookOpen, Brain, ChartNoAxesColumnIncreasing, Coins, Gem, TrendingUp } from 'lucide-react';
+import { BookOpen, Brain, ChartNoAxesColumnIncreasing, Coins, Gem, TrendingUp, Trophy } from 'lucide-react';
 import { formatNumber } from '../utils';
 import { cn } from '../utils';
 import { ErrorState } from '../components/ui/ErrorState';
 import { Avatar } from '../components/Avatar';
+import { Card } from '../components/ui/Card';
+import { Badge } from '../components/ui/Badge';
+import { Skeleton } from '../components/ui/Skeleton';
 
 interface LeaderboardUser {
     id: number | string;
@@ -22,7 +24,7 @@ const getDisplayName = (user: LeaderboardUser, index: number) => {
     const name = (user.full_name || user.first_name || '').trim();
     if (name && name.toLowerCase() !== 'user') return name;
     if (user.username) return user.username;
-    return `Collector ${String(user.id || index + 1).slice(-4)}`;
+    return `COLLECTOR ${String(user.id || index + 1).slice(-4).toUpperCase()}`;
 };
 
 const getInitials = (name: string) => {
@@ -36,91 +38,108 @@ export const Leaderboard = () => {
     const { data, loading, error, execute: fetchLeaderboard } = useApi<LeaderboardUser[]>(`/leaderboard?metric=${metric}`, {}, [metric]);
 
     const METRICS = [
-        { id: 'harem', label: 'Collection', icon: BookOpen },
+        { id: 'harem', label: 'Archive', icon: BookOpen },
         { id: 'shards', label: 'Shards', icon: Coins },
         { id: 'zenith', label: 'Zenith', icon: Gem },
         { id: 'level', label: 'Level', icon: TrendingUp },
-        { id: 'guesses', label: 'Guesses', icon: Brain },
+        { id: 'guesses', label: 'Intel', icon: Brain },
     ];
     const activeMetric = METRICS.find(m => m.id === metric);
 
     return (
-        <div className="pb-20 pt-4 max-w-2xl mx-auto">
-            <header className="px-4 mb-6 flex justify-between items-center border-b border-white/5 pb-4">
-                <h1 className="text-xl font-bold text-white tracking-tight">Leaderboards</h1>
-                <ChartNoAxesColumnIncreasing className="text-amber-500" size={24} />
+        <div className="pb-24 pt-6 max-w-2xl mx-auto adaptive-px space-y-8 select-none">
+            <header className="space-y-1">
+                <div className="flex items-center gap-3">
+                   <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                        <Trophy className="text-amber-500" size={22} />
+                   </div>
+                   <h1 className="text-2xl font-black text-white tracking-tighter uppercase">Global Ranking</h1>
+                </div>
+                <p className="text-sm font-bold text-neutral-500 uppercase tracking-widest">
+                    The elite leaderboard of the seal's top collectors.
+                </p>
             </header>
 
-            <div className="px-4 mb-6">
-                <div className="flex space-x-2 overflow-x-auto no-scrollbar py-1">
-                    {METRICS.map(m => (
-                        <button
-                            key={m.id}
-                            onClick={() => setMetric(m.id)}
-                            className={cn(
-                                "px-4 py-2 rounded-lg flex items-center space-x-2 border transition-all whitespace-nowrap text-sm font-semibold",
-                                metric === m.id
-                                ? 'bg-white text-brand-midnight border-white shadow-sm'
-                                : 'bg-brand-deep border-white/5 text-neutral-400 hover:text-neutral-200 hover:border-white/10'
-                            )}
-                        >
-                            <m.icon size={16} strokeWidth={2.5} />
-                            <span>{m.label}</span>
-                        </button>
-                    ))}
-                </div>
+            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 -mx-1 px-1">
+                {METRICS.map(m => (
+                    <button
+                        key={m.id}
+                        onClick={() => setMetric(m.id)}
+                        className={cn(
+                            "px-5 py-2.5 rounded-xl flex items-center gap-2 border transition-all whitespace-nowrap text-[10px] font-black uppercase tracking-widest",
+                            metric === m.id
+                            ? 'bg-white text-brand-midnight border-white shadow-[0_5px_15px_rgba(255,255,255,0.2)]'
+                            : 'bg-brand-deep border-white/5 text-neutral-500 hover:text-white hover:border-white/10'
+                        )}
+                    >
+                        <m.icon size={14} strokeWidth={3} />
+                        <span>{m.label}</span>
+                    </button>
+                ))}
             </div>
 
-            <div className="px-4 space-y-2">
+            <div className="space-y-3">
                 {error && !data ? (
                     <ErrorState message={error} onAction={fetchLeaderboard} />
                 ) : loading ? (
-                    Array.from({ length: 8 }).map((_, i) => <div key={i} className="h-16 bg-brand-deep rounded-xl animate-pulse border border-white/5" />)
+                    Array.from({ length: 10 }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-2xl" />)
                 ) : data && data.length > 0 ? (
                     data?.map((user, i) => {
                         const displayName = getDisplayName(user, i);
                         const rank = user.rank || i + 1;
+                        const isTopThree = rank <= 3;
 
                         return (
-                        <div key={user.id} className="bg-brand-deep p-3 rounded-xl border border-white/5 flex items-center justify-between shadow-sm">
-                            <div className="flex items-center space-x-3">
+                        <Card key={user.id} className={cn(
+                            "p-3 flex items-center justify-between group",
+                            rank === 1 ? "border-amber-500/30 bg-amber-500/5 shadow-[0_0_20px_rgba(245,158,11,0.05)]" :
+                            rank === 2 ? "border-neutral-300/30 bg-neutral-300/5" :
+                            rank === 3 ? "border-orange-400/30 bg-orange-400/5" : ""
+                        )}>
+                            <div className="flex items-center gap-4 min-w-0">
                                 <div className={cn(
-                                    "w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0",
-                                    rank === 1 ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' :
-                                    rank === 2 ? 'bg-neutral-300/10 text-neutral-300 border border-neutral-300/20' :
-                                    rank === 3 ? 'bg-orange-400/10 text-orange-400 border border-orange-400/20' :
-                                    'bg-brand-midnight text-neutral-500 border border-white/5'
+                                    "w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black shrink-0 border transition-all duration-500 group-hover:scale-110",
+                                    rank === 1 ? 'bg-amber-500/20 text-amber-500 border-amber-500/30 shadow-[0_0_15px_rgba(245,158,11,0.3)]' :
+                                    rank === 2 ? 'bg-neutral-300/20 text-neutral-300 border-neutral-300/30' :
+                                    rank === 3 ? 'bg-orange-400/20 text-orange-400 border-orange-400/30' :
+                                    'bg-brand-surface text-neutral-500 border-white/5'
                                 )}>
                                     {rank}
                                 </div>
-                                <div className="flex items-center space-x-3 min-w-0">
+                                <div className="flex items-center gap-3 min-w-0">
                                     <Avatar
                                         src={user.avatar}
                                         alt={displayName}
                                         fallbackText={getInitials(displayName)}
-                                        className="w-10 h-10 rounded-lg bg-brand-midnight border border-white/10"
+                                        className="w-11 h-11 rounded-xl bg-brand-surface border border-white/5"
                                     />
                                     <div className="min-w-0">
-                                        <p className="text-sm font-bold text-white truncate pr-2">
+                                        <p className="text-sm font-black text-white uppercase tracking-tight truncate pr-2">
                                             {displayName}
                                         </p>
                                         {user.username && (
-                                            <p className="text-xs font-medium text-neutral-500 truncate">@{user.username}</p>
+                                            <p className="text-[10px] font-bold text-neutral-500 truncate uppercase tracking-widest">@{user.username}</p>
                                         )}
                                     </div>
                                 </div>
                             </div>
-                            <div className="text-right shrink-0 pl-2">
-                                <p className="text-base font-bold text-white tabular-nums">{formatNumber(user.value)}</p>
-                                <p className="text-xs font-medium text-neutral-500">{activeMetric?.label || metric}</p>
+                            <div className="text-right shrink-0 pl-4 space-y-0.5">
+                                <div className="flex items-center justify-end gap-1.5">
+                                    <span className="text-base font-black text-white tabular-nums">{formatNumber(user.value)}</span>
+                                    {isTopThree && activeMetric && <activeMetric.icon size={12} className={cn(
+                                        rank === 1 ? 'text-amber-500' : rank === 2 ? 'text-neutral-300' : 'text-orange-400'
+                                    )} />}
+                                </div>
+                                <p className="text-[9px] font-black text-neutral-600 uppercase tracking-widest">{activeMetric?.label || metric}</p>
                             </div>
-                        </div>
+                        </Card>
                         );
                     })
                 ) : (
-                    <div className="p-10 rounded-xl border border-white/5 border-dashed text-center bg-brand-deep">
-                        <p className="text-sm font-medium text-neutral-500">No leaderboard data yet.</p>
-                    </div>
+                    <Card className="py-20 border-dashed bg-brand-deep/30 text-center flex flex-col items-center">
+                        <ChartNoAxesColumnIncreasing size={40} className="text-neutral-800 mb-4" />
+                        <p className="text-[10px] font-black text-neutral-600 uppercase tracking-widest">No ranking data detected</p>
+                    </Card>
                 )}
             </div>
         </div>
