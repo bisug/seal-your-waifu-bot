@@ -5,6 +5,9 @@ import { Modal } from './Modal';
 import { apiFetch, getErrorMessage } from '../../api/client';
 import { useUser, type Character, type User } from '../../context/UserContext';
 import { formatNumber } from '../../utils';
+import { Button } from '../ui/Button';
+import { Input } from '../ui/Input';
+import { Badge } from '../ui/Badge';
 
 interface CharActionModalProps {
     selectedChar: Character | null;
@@ -151,7 +154,7 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
             });
 
             window.Telegram?.WebApp?.showConfirm(
-                `Recycle ${selectedChar.name} for ${preview.reward} Zenith?`,
+                `RECYCLE ${selectedChar.name.toUpperCase()} FOR ${preview.reward} ZENITH?`,
                 async (confirmed) => {
                     if (!confirmed) {
                         setSellStage('idle');
@@ -182,9 +185,8 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
     const handleSell = async () => {
         setSellStage('selling');
         try {
-            // Confirm selling for Shards (using bot's sell logic)
             window.Telegram?.WebApp?.showConfirm(
-                `Sell ${selectedChar.name} for Shards?`,
+                `SELL ${selectedChar.name.toUpperCase()} FOR SHARDS?`,
                 async (confirmed) => {
                     if (!confirmed) {
                         setSellStage('idle');
@@ -209,7 +211,7 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
     };
 
     const actions = (
-        <div className="w-full space-y-3">
+        <div className="w-full space-y-4">
             {canEdit && (
                 <div className="w-full">
                     {editMode ? (
@@ -218,103 +220,89 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                                 event.preventDefault();
                                 handleEditSave();
                             }}
-                            className="space-y-3 rounded-lg border border-white/10 bg-white/[0.03] p-3"
+                            className="space-y-4 rounded-3xl border border-white/5 bg-white/[0.02] p-5"
                         >
-                            <div className="grid grid-cols-1 gap-3">
-                                <label>
-                                    <span className="text-[10px] font-bold uppercase text-neutral-500">Name</span>
-                                    <input
+                            <div className="space-y-4">
+                                <div className="space-y-1.5">
+                                    <span className="text-[10px] font-black uppercase text-neutral-600 tracking-widest pl-1">Identified Name</span>
+                                    <Input
                                         value={editForm.name}
                                         onChange={event => updateEditField('name', event.target.value)}
                                         disabled={editStage === 'saving'}
-                                        className="mt-1.5 h-10 w-full rounded-lg border border-white/10 bg-brand-deep px-3 text-sm font-medium text-white outline-none focus:border-brand-accent disabled:opacity-60"
+                                        placeholder="NAME..."
                                     />
-                                </label>
-                                <label>
-                                    <span className="text-[10px] font-bold uppercase text-neutral-500">Anime</span>
-                                    <input
+                                </div>
+                                <div className="space-y-1.5">
+                                    <span className="text-[10px] font-black uppercase text-neutral-600 tracking-widest pl-1">Origin Archive</span>
+                                    <Input
                                         value={editForm.anime}
                                         onChange={event => updateEditField('anime', event.target.value)}
                                         disabled={editStage === 'saving'}
-                                        className="mt-1.5 h-10 w-full rounded-lg border border-white/10 bg-brand-deep px-3 text-sm font-medium text-white outline-none focus:border-brand-accent disabled:opacity-60"
+                                        placeholder="ANIME..."
                                     />
-                                </label>
-                                <label>
-                                    <span className="text-[10px] font-bold uppercase text-neutral-500">Rarity</span>
-                                    {rarityOptions.length > 0 ? (
+                                </div>
+                                <div className="space-y-1.5">
+                                    <span className="text-[10px] font-black uppercase text-neutral-600 tracking-widest pl-1">Rarity Classification</span>
+                                    <div className="relative group">
                                         <select
                                             value={editForm.rarity}
                                             onChange={event => updateEditField('rarity', event.target.value)}
                                             disabled={editStage === 'saving'}
-                                            className="mt-1.5 h-10 w-full rounded-lg border border-white/10 bg-brand-deep px-3 text-sm font-medium text-white outline-none focus:border-brand-accent disabled:opacity-60"
+                                            className="w-full h-11 bg-brand-deep border border-white/10 rounded-xl px-4 text-xs font-black text-white uppercase tracking-widest outline-none focus:border-brand-accent transition-all appearance-none cursor-pointer"
                                         >
                                             {!rarityOptions.some(option => option.label === editForm.rarity) && editForm.rarity && (
-                                                <option value={editForm.rarity}>{editForm.rarity}</option>
+                                                <option value={editForm.rarity}>{editForm.rarity.toUpperCase()}</option>
                                             )}
                                             {rarityOptions.map(option => (
                                                 <option key={option.value} value={option.label}>
-                                                    {option.value}. {option.label}
+                                                    {option.label.toUpperCase()}
                                                 </option>
                                             ))}
                                         </select>
-                                    ) : (
-                                        <input
-                                            value={editForm.rarity}
-                                            onChange={event => updateEditField('rarity', event.target.value)}
-                                            disabled={editStage === 'saving'}
-                                            className="mt-1.5 h-10 w-full rounded-lg border border-white/10 bg-brand-deep px-3 text-sm font-medium text-white outline-none focus:border-brand-accent disabled:opacity-60"
-                                        />
-                                    )}
-                                </label>
-                                <label>
-                                    <span className="text-[10px] font-bold uppercase text-neutral-500">Image URL</span>
-                                    <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-white/10 bg-brand-deep px-3 focus-within:border-brand-accent">
-                                        <ImageIcon size={15} className="shrink-0 text-neutral-500" />
-                                        <input
-                                            value={editForm.img_url}
-                                            onChange={event => updateEditField('img_url', event.target.value)}
-                                            disabled={editStage === 'saving'}
-                                            className="h-10 min-w-0 flex-1 bg-transparent text-sm font-medium text-white outline-none disabled:opacity-60"
-                                        />
                                     </div>
-                                </label>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <span className="text-[10px] font-black uppercase text-neutral-600 tracking-widest pl-1">Visual Asset Source</span>
+                                    <Input
+                                        icon={ImageIcon}
+                                        value={editForm.img_url}
+                                        onChange={event => updateEditField('img_url', event.target.value)}
+                                        disabled={editStage === 'saving'}
+                                        placeholder="URL..."
+                                    />
+                                </div>
                             </div>
 
-                            <div className="flex gap-2">
-                                <button
-                                    type="button"
+                            <div className="flex gap-3 pt-2">
+                                <Button
+                                    variant="secondary"
                                     onClick={() => {
                                         setEditForm(buildEditForm(selectedChar));
                                         setEditMode(false);
                                     }}
                                     disabled={editStage === 'saving'}
-                                    className="flex-1 rounded-lg bg-white/5 py-3 text-sm font-semibold text-neutral-300 transition-colors hover:bg-white/10 disabled:opacity-60"
+                                    className="flex-1 rounded-2xl uppercase tracking-widest text-[10px] font-black"
                                 >
-                                    <span className="flex items-center justify-center gap-2">
-                                        <X size={16} />
-                                        Cancel
-                                    </span>
-                                </button>
-                                <button
+                                    Cancel
+                                </Button>
+                                <Button
                                     type="submit"
-                                    disabled={editStage === 'saving'}
-                                    className="flex-[1.5] rounded-lg bg-brand-accent py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-accent-secondary disabled:pointer-events-none disabled:opacity-60"
+                                    isLoading={editStage === 'saving'}
+                                    className="flex-[1.5] rounded-2xl uppercase tracking-widest text-[10px] font-black"
                                 >
-                                    <span className="flex items-center justify-center gap-2">
-                                        {editStage === 'saving' ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                                        Save
-                                    </span>
-                                </button>
+                                    Save Changes
+                                </Button>
                             </div>
                         </form>
                     ) : (
-                        <button
+                        <Button
+                            variant="secondary"
                             onClick={() => setEditMode(true)}
-                            className="w-full rounded-lg border border-brand-accent/20 bg-brand-accent/10 py-3 text-sm font-semibold text-brand-accent transition-all hover:bg-brand-accent/20 active:scale-[0.98] flex items-center justify-center gap-2"
+                            className="w-full rounded-2xl uppercase tracking-widest text-[10px] font-black border-white/5 py-4"
                         >
-                            <Pencil size={16} />
-                            <span>Edit info</span>
-                        </button>
+                            <Pencil size={14} className="mr-2" />
+                            Update Registry
+                        </Button>
                     )}
                 </div>
             )}
@@ -322,62 +310,62 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
             {!editMode && activeTab === 'shop' && !isOwned && (
                 <div className="w-full">
                     {isSoldOut ? (
-                        <div className="w-full rounded-lg border border-red-500/15 bg-red-500/10 px-3 py-3 text-sm font-semibold text-red-300 flex items-center justify-center gap-2">
-                            <Lock size={16} />
-                            <span>Sold out for this rotation</span>
-                        </div>
+                        <Badge variant="danger" icon={Lock} className="w-full py-4 rounded-2xl justify-center font-black tracking-widest text-xs">
+                            STOCK DEPLETED
+                        </Badge>
                     ) : !canAfford ? (
-                        <div className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-sm font-semibold text-neutral-300 flex items-center justify-center gap-2">
-                            <Gem size={16} className="text-brand-accent" />
-                            <span>{formatNumber(price - zenithBalance)} more Zenith needed</span>
-                        </div>
+                        <Badge variant="secondary" icon={Gem} className="w-full py-4 rounded-2xl justify-center font-black tracking-widest text-xs border-white/5">
+                            {formatNumber(price - zenithBalance)} MORE ZENITH NEEDED
+                        </Badge>
                     ) : purchaseStage === 'idle' ? (
-                        <button
+                        <Button
                             onClick={() => setPurchaseStage('confirm')}
-                            className="w-full py-3 rounded-lg bg-brand-accent text-white font-semibold text-sm hover:bg-brand-accent-secondary active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                            className="w-full py-5 rounded-2xl uppercase tracking-[0.2em] text-[11px] font-black shadow-[0_10px_30px_rgba(59,130,246,0.3)]"
                         >
-                            <span>Buy for {formatNumber(price)}</span>
-                            <Gem size={16} />
-                        </button>
+                            Acquire for {formatNumber(price)} Zenith
+                        </Button>
                     ) : (
-                        <div className="flex gap-2">
-                            <button 
+                        <div className="flex gap-3">
+                            <Button
+                                variant="secondary"
                                 onClick={() => setPurchaseStage('idle')}
-                                className="flex-1 py-3 rounded-lg bg-white/5 text-neutral-300 hover:bg-white/10 font-semibold text-sm transition-colors"
+                                className="flex-1 rounded-2xl uppercase tracking-widest text-[10px] font-black"
                             >
                                 Cancel
-                            </button>
-                            <button 
+                            </Button>
+                            <Button
                                 onClick={handleBuy}
-                                disabled={purchaseStage === 'buying'}
-                                className="flex-[2] py-3 rounded-lg bg-brand-accent text-white font-semibold text-sm hover:bg-brand-accent-secondary disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 transition-colors"
+                                isLoading={purchaseStage === 'buying'}
+                                className="flex-[2] rounded-2xl uppercase tracking-widest text-[10px] font-black"
                             >
-                                {purchaseStage === 'buying' ? <Loader2 size={16} className="animate-spin" /> : 'Confirm purchase'}
-                            </button>
+                                Confirm Acquisition
+                            </Button>
                         </div>
                     )}
                 </div>
             )}
 
             {!editMode && isOwned && (
-                <div className="flex gap-2">
-                    <button
+                <div className="flex gap-3">
+                    <Button
+                        variant="danger"
                         onClick={handleRecycle}
                         disabled={sellStage !== 'idle'}
-                        className="flex-1 py-3 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 font-semibold text-sm active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 transition-all"
+                        className="flex-1 rounded-2xl uppercase tracking-widest text-[10px] font-black py-4"
                     >
-                        {sellStage === 'previewing' || sellStage === 'selling' ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-                        <span>Recycle</span>
-                    </button>
+                        {sellStage === 'previewing' || sellStage === 'selling' ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} className="mr-2" />}
+                        Recycle
+                    </Button>
 
-                    <button
+                    <Button
+                        variant="primary"
                         onClick={handleSell}
                         disabled={sellStage !== 'idle'}
-                        className="flex-1 py-3 rounded-lg bg-brand-accent/10 text-brand-accent hover:bg-brand-accent/20 font-semibold text-sm active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 transition-all"
+                        className="flex-1 rounded-2xl uppercase tracking-widest text-[10px] font-black py-4"
                     >
-                        {sellStage === 'selling' ? <Loader2 size={16} className="animate-spin" /> : <Coins size={16} />}
-                        <span>Sell</span>
-                    </button>
+                        {sellStage === 'selling' ? <Loader2 size={14} className="animate-spin" /> : <Coins size={14} className="mr-2" />}
+                        Sell
+                    </Button>
                 </div>
             )}
         </div>
