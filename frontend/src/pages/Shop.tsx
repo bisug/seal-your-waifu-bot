@@ -152,10 +152,10 @@ export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
           <div className="space-y-1">
             <div className="flex items-center gap-2.5">
               <Store size={20} className="text-brand-accent" />
-              <h1 className="text-xl font-bold text-zinc-100 uppercase tracking-tight">Summon Terminal</h1>
+              <h1 className="text-xl font-bold text-zinc-100 uppercase tracking-tight">Market</h1>
             </div>
             <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-relaxed">
-              Global personnel rotation active. Sector synchronization online.
+              Global unit rotation active. Nexus synchronization online.
             </p>
           </div>
 
@@ -204,7 +204,7 @@ export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
         <div className="flex items-center justify-between gap-4 px-1">
           <div className="flex items-center gap-2">
             <Sparkles size={14} className="text-brand-accent" />
-            <h2 className="text-[10px] font-bold text-zinc-100 uppercase tracking-widest">Available Personnel</h2>
+            <h2 className="text-[10px] font-bold text-zinc-100 uppercase tracking-widest">Available Characters</h2>
           </div>
           <Badge variant="secondary" size="xs">
             {summary.affordable} READY
@@ -221,8 +221,8 @@ export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
           <div className="py-20 border border-dashed border-white/5 rounded-lg bg-zinc-950/50">
             <EmptyState
               icon={Store}
-              title="Terminal Offline"
-              message="No personnel available in the current rotation."
+            title="Nexus Offline"
+            message="No characters available in the current rotation."
             />
           </div>
         )}
