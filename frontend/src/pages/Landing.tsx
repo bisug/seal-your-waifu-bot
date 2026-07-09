@@ -214,7 +214,7 @@ export const Landing = ({ error, onRetry }: LandingProps) => {
                 <Heart size={18} className="text-white" fill="currentColor" />
               </div>
               <div className="flex flex-col">
-                 <span className="text-[10px] font-bold text-white tracking-widest uppercase leading-none">PROTOCOL</span>
+                 <span className="text-[10px] font-bold text-white tracking-widest uppercase leading-none">SEAL</span>
                  <span className="text-[8px] font-mono text-zinc-600 uppercase mt-0.5">V2.4</span>
               </div>
             </div>
@@ -224,7 +224,7 @@ export const Landing = ({ error, onRetry }: LandingProps) => {
               onClick={() => window.open(telegramUrl, '_blank')}
               className="h-9 px-4 rounded-md text-[10px]"
             >
-              Terminal
+              Nexus
             </Button>
           </nav>
         </header>
@@ -243,7 +243,7 @@ export const Landing = ({ error, onRetry }: LandingProps) => {
             </h1>
 
             <p className="max-w-md text-xs font-medium leading-relaxed text-zinc-500 uppercase tracking-widest sm:text-sm">
-              The definitive Telegram personnel management system. Secure assets, expand your archive, and compete for network dominance.
+              The definitive Telegram character management system. Secure units, expand your archive, and compete for network dominance.
             </p>
 
             <div className="flex flex-col gap-3 sm:flex-row pt-4">
@@ -288,10 +288,10 @@ export const Landing = ({ error, onRetry }: LandingProps) => {
             <div className="space-y-6">
               <div className="space-y-4">
                  <h2 className="text-4xl font-bold uppercase tracking-tight sm:text-5xl">
-                   Tactical<br />Management.
+                   Tactical<br />Summoning.
                  </h2>
                  <p className="text-xs font-medium leading-relaxed text-zinc-500 uppercase tracking-widest max-w-sm">
-                   Engineered for elite collectors. Every interaction is optimized for high-frequency asset extraction within the Telegram ecosystem.
+                   Engineered for elite collectors. Every interaction is optimized for high-frequency unit summoning within the Telegram ecosystem.
                  </p>
               </div>
               <div className="flex gap-2">
@@ -312,8 +312,8 @@ export const Landing = ({ error, onRetry }: LandingProps) => {
           <div className="mx-auto max-w-7xl text-center space-y-16">
             <div className="space-y-4">
               <Badge variant="primary" className="px-4 py-1">Hierarchy</Badge>
-              <h2 className="text-4xl font-bold uppercase tracking-tight sm:text-6xl">Asset Classes</h2>
-              <p className="text-xs font-medium text-zinc-500 uppercase tracking-widest">Master the probability fields and secure high-value personnel.</p>
+              <h2 className="text-4xl font-bold uppercase tracking-tight sm:text-6xl">Unit Classes</h2>
+              <p className="text-xs font-medium text-zinc-500 uppercase tracking-widest">Master the probability fields and secure high-value characters.</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -359,7 +359,7 @@ export const Landing = ({ error, onRetry }: LandingProps) => {
             <div className="space-y-4">
               <h2 className="text-4xl font-bold uppercase tracking-tight sm:text-6xl">Ready?</h2>
               <p className="text-xs font-medium text-zinc-500 uppercase tracking-widest max-w-sm">
-                 Connect your Telegram ID and initialize the recruitment protocol immediately.
+                 Connect your Telegram ID and initialize the summoning nexus immediately.
               </p>
             </div>
 
@@ -378,7 +378,7 @@ export const Landing = ({ error, onRetry }: LandingProps) => {
       <footer className="px-8 py-12 border-t border-white/5 bg-zinc-950 text-center">
         <div className="flex flex-col items-center gap-4">
            <Heart size={16} className="text-zinc-800" fill="currentColor" />
-           <p className="text-[10px] font-bold text-zinc-700 uppercase tracking-widest">© 2025 PROTOCOL. ALL RIGHTS RESERVED.</p>
+           <p className="text-[10px] font-bold text-zinc-700 uppercase tracking-widest">© 2025 SEAL. ALL RIGHTS RESERVED.</p>
         </div>
       </footer>
     </div>
