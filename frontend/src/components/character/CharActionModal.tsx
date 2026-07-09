@@ -167,7 +167,7 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                             method: 'POST',
                             body: JSON.stringify([selectedChar.id])
                         });
-                        addToast(`Asset recycled: +${res.reward} Zenith`, 'success');
+                        addToast(`Character recycled: +${res.reward} Zenith`, 'success');
                         triggerRefresh();
                         setSelectedChar(null);
                     } catch (err: any) {
@@ -195,7 +195,7 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
 
                     try {
                         const res = await apiFetch(`/character/sell/${selectedChar.id}`, { method: 'POST' });
-                        addToast(`Asset sold: +${res.reward} Shards`, 'success');
+                        addToast(`Character sold: +${res.reward} Shards`, 'success');
                         triggerRefresh();
                         setSelectedChar(null);
                     } catch (err: any) {
@@ -218,7 +218,7 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4 p-4 rounded-md border border-white/5 bg-zinc-900">
                             <div className="space-y-3">
                                 <div className="space-y-1">
-                                    <span className="text-[9px] font-bold uppercase text-zinc-600 tracking-widest pl-0.5">Asset Name</span>
+                                    <span className="text-[9px] font-bold uppercase text-zinc-600 tracking-widest pl-0.5">Character Name</span>
                                     <Input
                                         value={editForm.name}
                                         onChange={event => updateEditField('name', event.target.value)}
@@ -287,7 +287,7 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                                     isLoading={editStage === 'saving'}
                                     className="flex-[1.5]"
                                 >
-                                    Update Asset
+                                    Update Character
                                 </Button>
                             </div>
                         </motion.div>
@@ -298,7 +298,7 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                             className="w-full group h-12"
                             leftIcon={<Pencil size={14} className="text-zinc-500 transition-colors group-hover:text-brand-accent" />}
                         >
-                            Modify Registry
+                            Modify Records
                         </Button>
                     )}
                 </div>
@@ -323,7 +323,7 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                             variant="accent"
                             className="w-full h-14"
                         >
-                            Summon Asset ({formatNumber(price)} Zenith)
+                            Summon Character ({formatNumber(price)} Zenith)
                         </Button>
                     ) : (
                         <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="flex gap-3">

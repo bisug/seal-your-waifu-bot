@@ -1,21 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShieldCheck, Zap, Lock, Heart, Terminal } from 'lucide-react';
+import { Sparkles, Terminal } from 'lucide-react';
 import { cn } from '../utils';
 
 const loadingSteps = [
   'INITIALIZING',
-  'SYNC ARCHIVES',
-  'SECURE LINK',
-  'MAP ASSETS',
+  'SYNCING NEXUS',
+  'SECURING LINK',
+  'MAPPING UNITS',
   'AUTHORIZING',
-];
-
-const cardFaces = [
-  { letter: 'S', icon: ShieldCheck, color: 'text-brand-accent' },
-  { letter: 'E', icon: Zap, color: 'text-amber-500' },
-  { letter: 'A', icon: Heart, color: 'text-red-500' },
-  { letter: 'L', icon: Lock, color: 'text-emerald-500' },
 ];
 
 export const IntroLoading = () => {
@@ -25,10 +18,10 @@ export const IntroLoading = () => {
     const timer = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) return 100;
-        const step = Math.random() * 12 + 6;
+        const step = Math.random() * 12 + 8;
         return Math.min(100, prev + step);
       });
-    }, 180);
+    }, 150);
 
     return () => clearInterval(timer);
   }, []);
@@ -43,44 +36,78 @@ export const IntroLoading = () => {
 
   return (
     <div className="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-zinc-950 px-8 select-none">
-      <div className="w-full max-w-xs space-y-12 relative z-10">
-        {/* Visual Brand */}
-        <div className="relative h-32 flex items-center justify-center">
-            <div className="flex items-center justify-center gap-2.5">
-                {cardFaces.map((card, i) => {
-                    const isLoaded = progress > (i * 22);
-                    return (
-                        <motion.div
-                            key={card.letter}
-                            initial={{ y: 8, opacity: 0 }}
-                            animate={{
-                                y: isLoaded ? 0 : 8,
-                                opacity: isLoaded ? 1 : 0.05,
-                                scale: isLoaded ? 1 : 0.95
+      <div className="w-full max-w-xs space-y-16 relative z-10">
+        {/* Visual Brand - Creative Minimalist Animation */}
+        <div className="relative flex flex-col items-center justify-center gap-8">
+            <div className="relative w-24 h-24 flex items-center justify-center">
+                {/* Outer Ring */}
+                <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                    className="absolute inset-0 rounded-full border border-dashed border-brand-accent/20"
+                />
+
+                {/* Middle Ring */}
+                <motion.div
+                    animate={{ rotate: -360 }}
+                    transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                    className="absolute inset-2 rounded-full border border-white/5"
+                />
+
+                {/* Core Brand Symbol */}
+                <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="relative w-12 h-12 bg-zinc-900 rounded-lg border border-white/10 flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.02)]"
+                >
+                    <span className="text-xl font-black text-white tracking-tighter">S</span>
+                    <motion.div
+                        animate={{
+                            opacity: [0.2, 0.5, 0.2],
+                            scale: [1, 1.1, 1]
+                        }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                        className="absolute inset-0 rounded-lg bg-brand-accent/5"
+                    />
+                </motion.div>
+
+                {/* Orbiting particles */}
+                {[0, 120, 240].map((angle, i) => (
+                    <motion.div
+                        key={i}
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 3 + i, repeat: Infinity, ease: "linear" }}
+                        className="absolute inset-0"
+                    >
+                        <div
+                            className="w-1 h-1 bg-brand-accent rounded-full absolute"
+                            style={{
+                                top: '0',
+                                left: '50%',
+                                transform: 'translate(-50%, -50%)',
+                                opacity: progress > (i * 30) ? 1 : 0.1
                             }}
-                            className={cn(
-                                "w-11 h-14 rounded-md border flex flex-col items-center justify-center gap-1.5 transition-all duration-500",
-                                isLoaded ? 'border-white/10 bg-zinc-900' : 'border-white/5 bg-transparent'
-                            )}
-                        >
-                            <card.icon size={12} className={cn("transition-colors duration-500", isLoaded ? card.color : 'text-zinc-900')} />
-                            <span className="text-lg font-mono font-bold text-zinc-100 leading-none">{card.letter}</span>
-                        </motion.div>
-                    )
-                })}
+                        />
+                    </motion.div>
+                ))}
+            </div>
+
+            <div className="flex flex-col items-center gap-1">
+                <span className="text-2xl font-black text-white tracking-[0.2em] uppercase">SEAL</span>
+                <span className="text-[8px] font-bold text-zinc-600 tracking-[0.4em] uppercase">Nexus Protocol</span>
             </div>
         </div>
 
-        {/* Progress */}
-        <div className="space-y-5">
-            <div className="space-y-2.5">
+        {/* Progress & Stats */}
+        <div className="space-y-6">
+            <div className="space-y-3">
                 <div className="flex justify-between items-end px-1">
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={currentStep}
-                            initial={{ opacity: 0, x: -8 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 8 }}
+                            initial={{ opacity: 0, y: 4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -4 }}
                             className="flex items-center gap-2"
                         >
                             <Terminal size={10} className="text-brand-accent" />
@@ -89,33 +116,41 @@ export const IntroLoading = () => {
                             </span>
                         </motion.div>
                     </AnimatePresence>
-                    <span className="text-[10px] font-mono text-zinc-500 font-bold tabular-nums">{Math.round(progress)}%</span>
+                    <span className="text-[10px] font-mono text-zinc-500 font-bold tabular-nums">
+                        {Math.round(progress)}%
+                    </span>
                 </div>
-                <div className="h-1 w-full bg-zinc-900 rounded-full overflow-hidden border border-white/5 p-[1px]">
+
+                <div className="h-0.5 w-full bg-zinc-900 rounded-full overflow-hidden">
                     <motion.div
-                        className="h-full bg-brand-accent rounded-full"
+                        className="h-full bg-white"
                         animate={{ width: `${progress}%` }}
-                        transition={{ ease: "easeOut", duration: 0.4 }}
+                        transition={{ ease: "easeOut", duration: 0.3 }}
                     />
                 </div>
             </div>
 
-            <div className="flex items-center justify-between px-1 opacity-20">
-               <div className="flex gap-1.5">
-                  <div className="h-0.5 w-3 bg-zinc-100 rounded-full" />
-                  <div className="h-0.5 w-0.5 bg-zinc-100 rounded-full" />
-                  <div className="h-0.5 w-0.5 bg-zinc-100 rounded-full" />
+            <div className="flex items-center justify-between px-1">
+               <div className="flex items-center gap-1.5">
+                  <Sparkles size={8} className="text-zinc-600" />
+                  <span className="text-[7px] font-bold text-zinc-600 uppercase tracking-widest">Authorized Access</span>
                </div>
-               <span className="text-[7px] font-bold text-zinc-600 uppercase tracking-widest">Protocol Link Active</span>
+               <div className="flex items-center gap-1.5">
+                  <div className={cn(
+                    "w-1 h-1 rounded-full transition-colors duration-500",
+                    progress === 100 ? "bg-emerald-500" : "bg-zinc-800"
+                  )} />
+                  <span className="text-[7px] font-mono text-zinc-600 uppercase tracking-widest">
+                    {progress === 100 ? 'READY' : 'SYNCING'}
+                  </span>
+               </div>
             </div>
         </div>
+      </div>
 
-        <div className="text-center pt-4">
-            <div className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-md bg-zinc-900 border border-white/5">
-                <div className="w-1 h-1 rounded-full bg-emerald-500" />
-                <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">System Ready</span>
-            </div>
-        </div>
+      {/* Decorative Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20">
+         <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.02)_0%,transparent_50%)]" />
       </div>
     </div>
   );

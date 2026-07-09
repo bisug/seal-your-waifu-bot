@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { UserProvider, useUser } from './context/UserContext';
 import { Header } from './components/Header';
-import { BottomNav } from './components/BottomNav';
 import { NavigationDrawer } from './components/NavigationDrawer';
 import { IntroLoading } from './components/IntroLoading';
 import { Profile } from './pages/Profile';
@@ -298,7 +297,7 @@ const AppContent = () => {
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-zinc-950">
       <Header onMenuClick={() => setIsMenuOpen(true)} />
 
-      <main className="app-scroller adaptive-px">
+      <main className="app-scroller adaptive-px pb-8">
         <Suspense fallback={
           <div className="flex flex-col items-center justify-center h-full gap-4">
             <Loader2 size={24} className="animate-spin text-zinc-700" />
@@ -340,8 +339,6 @@ const AppContent = () => {
           </AnimatePresence>
         </Suspense>
       </main>
-
-      <BottomNav activeTab={activeTab} onNavigate={handleNavigate} />
 
       {selectedChar && (
         <CharActionModal
