@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { AlertCircle, BadgePercent, CheckCircle2, Coins, Gem, Loader2, RefreshCw, Repeat2, Target, Zap, ArrowRight, TrendingUp } from 'lucide-react';
+import { AlertCircle, BadgePercent, CheckCircle2, Coins, Gem, Loader2, RefreshCw, Repeat2, Target, ArrowRight } from 'lucide-react';
 import { apiFetch, getErrorMessage } from '../api/client';
 import { useApi } from '../hooks/useApi';
 import { ErrorState } from '../components/ui/ErrorState';
@@ -11,7 +11,6 @@ import { cn, formatNumber } from '../utils';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { motion, AnimatePresence } from 'framer-motion';
 
 type ExchangeMode = 'shards_to_zenith' | 'zenith_to_shards';
 
@@ -26,16 +25,14 @@ interface ExchangeData {
 const getModeCopy = (mode: ExchangeMode) => {
   if (mode === 'shards_to_zenith') {
     return {
-      inputLabel: 'CREDIT SHARDS',
-      outputLabel: 'ZENITH ASSETS',
-      activeText: 'Shards to Zenith',
+      inputLabel: 'SHARDS',
+      outputLabel: 'ZENITH',
     };
   }
 
   return {
-    inputLabel: 'ZENITH ASSETS',
-    outputLabel: 'CREDIT SHARDS',
-    activeText: 'Zenith to Shards',
+    inputLabel: 'ZENITH',
+    outputLabel: 'SHARDS',
   };
 };
 
@@ -73,17 +70,17 @@ export const Exchange = () => {
   const canUseMax = maxInputAmount >= minimumInputAmount;
 
   const validationMessage = useMemo(() => {
-    if (!rawAmount) return 'Enter exchange amount';
-    if (!hasValidAmount) return 'Enter a positive integer';
+    if (!rawAmount) return 'Enter amount';
+    if (!hasValidAmount) return 'Positive integers only';
 
     if (isShardMode) {
-      if (amountNumber < minimumShards) return `Minimum: ${formatNumber(minimumShards)} Shards`;
-      if (amountNumber % rate !== 0) return `Multiplier: ${formatNumber(rate)} Shards`;
+      if (amountNumber < minimumShards) return `Min: ${formatNumber(minimumShards)} Shards`;
+      if (amountNumber % rate !== 0) return `Use ${formatNumber(rate)} increments`;
       if (shardBalance < amountNumber) return 'Insufficient Shards';
       return null;
     }
 
-    if (amountNumber < minimumZenith) return `Minimum: ${formatNumber(minimumZenith)} Zenith`;
+    if (amountNumber < minimumZenith) return `Min: ${formatNumber(minimumZenith)} Zenith`;
     if (zenithBalance < amountNumber) return 'Insufficient Zenith';
     return null;
   }, [amountNumber, hasValidAmount, isShardMode, minimumShards, minimumZenith, rate, rawAmount, shardBalance, zenithBalance]);
@@ -92,16 +89,16 @@ export const Exchange = () => {
   const presetOptions = useMemo(() => {
     const baseOptions = isShardMode
       ? [
-          { label: '1 ZENITH', amount: rate },
-          { label: '5 ZENITH', amount: rate * 5 },
-          { label: '10 ZENITH', amount: rate * 10 },
+          { label: '1 Zenith', amount: rate },
+          { label: '5 Zenith', amount: rate * 5 },
+          { label: '10 Zenith', amount: rate * 10 },
         ]
       : [
-          { label: '1 ZENITH', amount: 1 },
-          { label: '5 ZENITH', amount: 5 },
-          { label: '10 ZENITH', amount: 10 },
+          { label: '1 Zenith', amount: 1 },
+          { label: '5 Zenith', amount: 5 },
+          { label: '10 Zenith', amount: 10 },
         ];
-    const options = [...baseOptions, { label: 'MAX ASSETS', amount: maxInputAmount }];
+    const options = [...baseOptions, { label: 'Max', amount: maxInputAmount }];
     const seen = new Set<number>();
 
     return options
@@ -114,37 +111,25 @@ export const Exchange = () => {
   }, [isShardMode, maxInputAmount, rate]);
 
   const handleRefresh = async () => {
-    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
+    window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
     await Promise.allSettled([fetchExchange(), refreshUser()]);
   };
 
-  const handleModeChange = (nextMode: ExchangeMode) => {
+  const handleSwapMode = () => {
+    const nextMode = isShardMode ? 'zenith_to_shards' : 'shards_to_zenith';
     setMode(nextMode);
     setAmount(nextMode === 'shards_to_zenith' ? String(rate) : String(minimumZenith));
     window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
-  };
-
-  const handleSwapMode = () => {
-    handleModeChange(isShardMode ? 'zenith_to_shards' : 'shards_to_zenith');
-  };
-
-  const setPreset = (presetAmount: number) => {
-    setAmount(String(presetAmount));
-    window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
-  };
-
-  const handleAmountChange = (value: string) => {
-    setAmount(value.replace(/\D/g, ''));
   };
 
   const handleExchange = async () => {
     if (!canExchange || exchanging) return;
 
     setExchanging(true);
-    window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
+    window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
     try {
       const result = await apiFetch(`/shop/exchange/${mode}?amount=${amountNumber}`, { method: 'POST' });
-      addToast(result.message || 'Transaction executed successfully.', 'success');
+      addToast(result.message || 'Exchange successful.', 'success');
       await Promise.allSettled([fetchExchange(), refreshUser()]);
       window.dispatchEvent(new Event('shop-refresh'));
     } catch (err: any) {
@@ -154,111 +139,87 @@ export const Exchange = () => {
     }
   };
 
-  if (loading && !data) {
-    return (
-      <div className="pb-32 pt-8 max-w-2xl mx-auto adaptive-px space-y-10">
-        <div className="flex flex-col gap-2">
-           <Skeleton className="h-10 w-48 rounded-lg" />
-           <Skeleton className="h-4 w-64 rounded-lg opacity-50" />
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          {[1, 2, 3].map((item) => <Skeleton key={item} className="h-20 rounded-2xl" />)}
-        </div>
-        <Skeleton className="h-96 rounded-[32px]" />
-      </div>
-    );
-  }
+  if (loading && !data) return (
+    <div className="pb-32 pt-6 adaptive-px max-w-2xl mx-auto space-y-8">
+       <div className="flex flex-col gap-1.5">
+          <Skeleton className="h-8 w-40 rounded-md" />
+          <Skeleton className="h-4 w-56 rounded-md opacity-50" />
+       </div>
+       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {[1,2,3].map(i => <Skeleton key={i} className="h-16 rounded-md" />)}
+       </div>
+       <Skeleton className="h-80 w-full rounded-md" />
+    </div>
+  );
 
-  if (error && !data) {
-    return (
-      <div className="pb-32 pt-8 max-w-2xl mx-auto adaptive-px">
-        <ErrorState message={error} onAction={fetchExchange} />
-      </div>
-    );
-  }
+  if (error && !data) return (
+    <div className="pb-32 pt-6 max-w-2xl mx-auto adaptive-px">
+        <ErrorState message={error} onAction={handleRefresh} />
+    </div>
+  );
 
   return (
-    <div className="pb-32 pt-8 max-w-2xl mx-auto adaptive-px space-y-10 select-none">
-      <header className="space-y-8">
+    <div className="pb-32 pt-6 max-w-2xl mx-auto adaptive-px space-y-8 select-none">
+      <header className="space-y-6">
         <div className="flex items-start justify-between gap-6">
-          <div className="space-y-2">
-            <div className="flex items-center gap-4">
-               <div className="w-12 h-12 rounded-2xl bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.1)]">
-                    <Repeat2 size={26} className="text-brand-accent" />
-               </div>
-               <div className="flex flex-col gap-1">
-                  <h1 className="text-3xl font-black text-white tracking-tighter uppercase leading-none">Exchange</h1>
-                  <div className="flex items-center gap-2">
-                     <Target size={11} className="text-neutral-600" />
-                     <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest leading-none">
-                       ASSET CONVERSION TERMINAL
-                     </p>
-                  </div>
-               </div>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2.5">
+              <Repeat2 size={20} className="text-brand-accent" />
+              <h1 className="text-xl font-bold text-zinc-100 uppercase tracking-tight">Market</h1>
             </div>
+            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest opacity-60">
+              Currency conversion terminal
+            </p>
           </div>
 
           <Button
             variant="secondary"
+            size="sm"
             onClick={handleRefresh}
-            isLoading={loading || exchanging}
-            className="w-12 h-12 p-0 rounded-2xl border-white/5 shadow-xl active:scale-95"
-            aria-label="Refresh data"
+            isLoading={loading}
+            className="w-9 h-9 p-0"
           >
-            <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+            <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
           </Button>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {[
               { icon: Coins, label: 'Shards', value: formatNumber(shardBalance), variant: 'default' },
               { icon: Gem, label: 'Zenith', value: formatNumber(zenithBalance), variant: 'primary' },
-              { icon: BadgePercent, label: 'Protocol Rate', value: `${formatNumber(rate)}:1`, variant: 'success' },
+              { icon: BadgePercent, label: 'Rate', value: `${formatNumber(rate)}:1`, variant: 'success' },
           ].map((metric, i) => (
-            <Card key={i} variant="tactical" className="p-4 border-white/[0.04] bg-white/[0.01]">
+            <Card key={i} variant="default" className="p-3.5">
               <div className="flex items-center gap-2 mb-2">
-                <metric.icon size={12} className={cn(
+                <metric.icon size={11} className={cn(
                     metric.variant === 'primary' ? 'text-brand-accent' :
-                    metric.variant === 'success' ? 'text-success' : 'text-neutral-600'
+                    metric.variant === 'success' ? 'text-emerald-500' : 'text-zinc-600'
                 )} />
-                <span className="text-[9px] font-black text-neutral-600 uppercase tracking-widest leading-none">{metric.label}</span>
+                <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">{metric.label}</span>
               </div>
-              <p className="text-sm font-black text-white stats-value tabular-nums leading-none">{metric.value}</p>
+              <p className="text-sm font-mono font-bold text-zinc-100 tabular-nums">{metric.value}</p>
             </Card>
           ))}
         </div>
-
-        {(error || data) && (
-          <AnimatePresence>
-            {error && (
-              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-start gap-3 p-4 rounded-2xl border border-warning/10 bg-warning/[0.03] text-[10px] font-black uppercase tracking-widest text-warning/80">
-                <AlertCircle size={16} className="shrink-0" />
-                <span className="leading-relaxed">LOCAL CACHE DETECTED. REFRESH TO SYNCHRONIZE PROTOCOL BALANCES.</span>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        )}
       </header>
 
       <section className="space-y-6">
-        <Card variant="tactical" className="p-8 space-y-10 rounded-[32px] border-white/[0.06] bg-white/[0.01] shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-8 opacity-[0.02] pointer-events-none">
-             <TrendingUp size={140} />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 p-1.5 bg-black/40 rounded-2xl border border-white/[0.03]">
+        <Card variant="surface" className="p-6 sm:p-8 space-y-8">
+          <div className="flex items-center justify-between gap-4 p-1 bg-zinc-950 rounded-md border border-white/5">
             {[
               { id: 'shards_to_zenith', label: 'Shards → Zenith' },
               { id: 'zenith_to_shards', label: 'Zenith → Shards' },
             ].map(m => (
               <button
                 key={m.id}
-                onClick={() => handleModeChange(m.id as ExchangeMode)}
+                onClick={() => {
+                  setMode(m.id as ExchangeMode);
+                  setAmount(m.id === 'shards_to_zenith' ? String(rate) : String(minimumZenith));
+                  window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
+                }}
                 className={cn(
-                  'h-12 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300',
-                  mode === m.id
-                    ? 'bg-white text-black shadow-xl scale-100'
-                    : 'text-neutral-600 hover:text-neutral-300'
+                  'flex-1 h-9 rounded text-[10px] font-bold uppercase tracking-widest transition-all',
+                  mode === m.id ? 'bg-zinc-100 text-zinc-950' : 'text-zinc-500 hover:text-zinc-300'
                 )}
               >
                 {m.label}
@@ -266,118 +227,98 @@ export const Exchange = () => {
             ))}
           </div>
 
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-6 relative z-10">
-            <motion.div layout className="min-w-0 rounded-2xl bg-brand-midnight border border-white/[0.05] p-5 shadow-inner group">
-              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600 mb-2">{copy.inputLabel}</p>
-              <div className="flex items-baseline gap-2 mb-3">
-                 <p className="text-2xl font-black text-white tabular-nums leading-none font-mono truncate">{formatNumber(amountNumber)}</p>
+          <div className="flex flex-col sm:flex-row items-center gap-6">
+            <div className="flex-1 w-full space-y-2">
+              <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">{copy.inputLabel}</p>
+              <div className="h-16 flex items-center px-4 bg-zinc-950 border border-white/5 rounded-md font-mono text-xl font-bold text-zinc-100">
+                {formatNumber(amountNumber)}
               </div>
-              <div className="h-px bg-white/[0.05] w-full mb-3" />
-              <div className="flex items-center justify-between text-[9px] font-bold text-neutral-500 uppercase tracking-tighter">
-                <span>RESERVE</span>
-                <span className="tabular-nums font-mono">{formatNumber(isShardMode ? shardBalance : zenithBalance)}</span>
-              </div>
-            </motion.div>
+            </div>
 
             <button
-              type="button"
               onClick={handleSwapMode}
-              className="w-12 h-12 rounded-full bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center text-brand-accent transition-all hover:bg-brand-accent hover:text-black hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] active:scale-90 group"
-              aria-label="Switch direction"
+              className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-zinc-500 hover:text-zinc-100 hover:border-white/20 transition-all active:scale-90"
             >
-              <Repeat2 size={20} strokeWidth={2.5} className="group-hover:rotate-180 transition-transform duration-500" />
+              <Repeat2 size={18} />
             </button>
 
-            <motion.div layout className="min-w-0 rounded-2xl bg-brand-accent/[0.03] border border-brand-accent/10 p-5 text-right shadow-inner">
-              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-brand-accent/60 mb-2">{copy.outputLabel}</p>
-              <div className="flex items-baseline justify-end gap-2 mb-3">
-                 <p className="text-2xl font-black text-white tabular-nums leading-none font-mono truncate">{formatNumber(outputAmount)}</p>
+            <div className="flex-1 w-full space-y-2">
+              <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">{copy.outputLabel}</p>
+              <div className="h-16 flex items-center px-4 bg-zinc-900 border border-brand-accent/20 rounded-md font-mono text-xl font-bold text-brand-accent">
+                {formatNumber(outputAmount)}
               </div>
-              <div className="h-px bg-brand-accent/10 w-full mb-3" />
-              <div className="flex items-center justify-between text-[9px] font-bold text-brand-accent/40 uppercase tracking-tighter">
-                <span className="font-mono">POST-OP</span>
-                <span className="tabular-nums font-mono">{formatNumber(isShardMode ? zenithBalance + outputAmount : shardBalance + outputAmount)}</span>
-              </div>
-            </motion.div>
+            </div>
           </div>
 
           <div className="space-y-4">
-            <div className="flex items-center justify-between px-1">
-                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-600">
-                    TRANSACTION_AMOUNT
-                </label>
-                <button
-                  onClick={() => setPreset(maxInputAmount)}
-                  disabled={!canUseMax}
-                  className="text-[9px] font-black text-brand-accent uppercase tracking-widest hover:text-white transition-colors disabled:opacity-20"
-                >
-                  SET MAX CLEARANCE
-                </button>
+            <div className="flex justify-between items-end px-1">
+              <label className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">Amount</label>
+              <button
+                onClick={() => {
+                  setAmount(String(maxInputAmount));
+                  window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
+                }}
+                disabled={!canUseMax}
+                className="text-[9px] font-bold text-brand-accent uppercase tracking-widest disabled:opacity-20"
+              >
+                Use Max
+              </button>
             </div>
             <Input
                 type="text"
                 value={amount}
-                onChange={(event) => handleAmountChange(event.target.value)}
-                className="h-14 bg-brand-midnight text-lg font-mono px-6 rounded-2xl shadow-inner border-white/5"
+                onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))}
+                className="h-12 font-mono text-base"
                 inputMode="numeric"
-                placeholder="0.00"
+                placeholder="0"
             />
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {presetOptions.map(({ label, amount: presetAmount }) => {
-              const isDisabled = presetAmount < minimumInputAmount || (presetAmount > maxInputAmount && label !== 'MAX ASSETS');
-              const isActive = presetAmount === amountNumber;
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {presetOptions.map(({ label, amount: pAmount }) => {
+              const isDisabled = pAmount < minimumInputAmount || (pAmount > maxInputAmount && label !== 'Max');
+              const isActive = pAmount === amountNumber;
 
               return (
                 <button
-                  key={presetAmount}
-                  onClick={() => setPreset(presetAmount)}
+                  key={pAmount}
+                  onClick={() => {
+                    setAmount(String(pAmount));
+                    window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
+                  }}
                   disabled={isDisabled}
                   className={cn(
-                    'h-14 rounded-2xl bg-brand-midnight border p-3 text-left transition-all duration-300 active:scale-95 group',
-                    isActive
-                      ? 'border-brand-accent/40 bg-brand-accent/[0.05] shadow-[inset_0_0_10px_rgba(59,130,246,0.05)]'
-                      : 'border-white/5 hover:border-white/20',
-                    isDisabled && 'opacity-20'
+                    'h-12 px-3 rounded border text-left transition-all disabled:opacity-20',
+                    isActive ? 'border-brand-accent bg-brand-accent/5' : 'border-white/5 hover:border-white/20 bg-zinc-950'
                   )}
                 >
-                  <span className={cn(
-                      "block text-[8px] font-black uppercase tracking-tighter mb-1 transition-colors",
-                      isActive ? "text-brand-accent" : "text-neutral-600"
-                  )}>{label}</span>
-                  <span className="block truncate text-xs font-black text-white tabular-nums font-mono">{formatNumber(presetAmount)}</span>
+                  <span className={cn("block text-[8px] font-bold uppercase mb-0.5", isActive ? "text-brand-accent" : "text-zinc-600")}>{label}</span>
+                  <span className="block truncate text-[11px] font-mono font-bold text-zinc-100">{formatNumber(pAmount)}</span>
                 </button>
               );
             })}
           </div>
 
-          <div className="pt-2">
+          <div className="pt-4 border-t border-white/5 space-y-4">
             <Button
                 onClick={handleExchange}
                 disabled={!canExchange || exchanging}
-                variant="tactical"
-                className="w-full h-16 rounded-2xl uppercase tracking-[0.3em] text-[12px] font-black shadow-2xl active:scale-[0.98]"
+                variant="accent"
+                className="w-full h-14"
+                isLoading={exchanging}
+                leftIcon={<Repeat2 size={16} />}
             >
-                {exchanging ? <Loader2 size={20} className="animate-spin" /> : <Repeat2 size={20} strokeWidth={2.5} />}
-                <span>AUTHORIZE CONVERSION</span>
+                Authorize Exchange
             </Button>
-          </div>
 
-          <motion.div
-            layout
-            className={cn(
-              'flex items-center gap-4 p-5 rounded-2xl border text-[10px] font-black uppercase tracking-widest transition-all duration-500 shadow-sm',
-              validationMessage
-                ? 'border-warning/20 bg-warning/[0.03] text-warning'
-                : 'border-success/20 bg-success/[0.03] text-success'
-            )}
-          >
-            {validationMessage ? <AlertCircle size={18} /> : <CheckCircle2 size={18} className="animate-in" />}
-            <span className="leading-tight">
-              {validationMessage || `System Ready: Finalizing conversion of ${formatNumber(amountNumber)} ${copy.inputLabel}`}
-            </span>
-          </motion.div>
+            <div className={cn(
+                'flex items-center gap-3 px-4 py-3 rounded-md border text-[10px] font-bold uppercase tracking-widest transition-colors',
+                validationMessage ? 'border-amber-500/20 bg-amber-500/5 text-amber-500' : 'border-emerald-500/20 bg-emerald-500/5 text-emerald-500'
+            )}>
+              <AlertCircle size={14} className="shrink-0" />
+              <span>{validationMessage || 'Transaction ready for processing'}</span>
+            </div>
+          </div>
         </Card>
       </section>
     </div>
