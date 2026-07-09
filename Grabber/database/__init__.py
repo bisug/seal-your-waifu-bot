@@ -3,10 +3,8 @@ import inspect
 
 import redis.asyncio as redis
 from pymongo import AsyncMongoClient
-from beanie import init_beanie
 
 from config import config
-from Grabber.database.models.user import User
 
 LOGGER = logging.getLogger(__name__)
 
@@ -108,11 +106,6 @@ class Database:
             LOGGER.warning(f"DB index setup: {failed} index(es) skipped (see above).")
         else:
             LOGGER.info("Database indexes ensured successfully.")
-
-    async def init_beanie(self):
-        """Initialize Beanie ODM with models."""
-        await init_beanie(database=self.db, document_models=[User])
-        LOGGER.info("Beanie ODM initialized successfully.")
 
     async def ping(self):
         """Validate MongoDB connectivity without forcing this check at import time."""

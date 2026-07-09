@@ -1,5 +1,5 @@
-import { useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
-import { useUserStore } from '../store/userStore';
+import React, { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
+import { apiFetch, getErrorMessage } from '../api/client';
 
 export interface UserStats {
   level: number;
@@ -142,15 +142,37 @@ const hasAuthBootstrap = () => {
 };
 
 export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const { user, loading, error, liteMode, fetchUser, setUser, setLoading, setError, toggleLiteMode } = useUserStore();
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Enforce Lite Mode permanently for all users
+  const liteMode = true;
 
   useEffect(() => {
     document.body.classList.add('lite-mode');
   }, []);
 
+  const toggleLiteMode = useCallback(() => {
+    // No-op as requested: lite only
+  }, []);
+
+  const refreshUser = useCallback(async () => {
+    try {
+      const data = await apiFetch('/me');
+      setUser(data);
+      setError(null);
+    } catch (err: any) {
+      console.error('Failed to fetch user:', err);
+      setError(getErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const triggerRefresh = useCallback(() => {
-    fetchUser();
-  }, [fetchUser]);
+    refreshUser();
+  }, [refreshUser]);
 
   useEffect(() => {
     if (!hasAuthBootstrap()) {
@@ -160,8 +182,8 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return;
     }
 
-    fetchUser();
-  }, [fetchUser, setUser, setLoading, setError]);
+    refreshUser();
+  }, [refreshUser]);
 
   useEffect(() => {
     window.addEventListener('user-data-refresh', triggerRefresh);
@@ -169,7 +191,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [triggerRefresh]);
 
   return (
-    <UserContext.Provider value={{ user, loading, error, liteMode, refreshUser: fetchUser, triggerRefresh, toggleLiteMode }}>
+    <UserContext.Provider value={{ user, loading, error, liteMode, refreshUser, triggerRefresh, toggleLiteMode }}>
       {children}
     </UserContext.Provider>
   );
