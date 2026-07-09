@@ -1,5 +1,6 @@
 import 'react';
 import { PackageOpen, type LucideIcon } from 'lucide-react';
+import { Card } from './Card';
 
 interface EmptyStateProps {
   icon?: LucideIcon;
@@ -10,17 +11,17 @@ interface EmptyStateProps {
 
 export const EmptyState = ({
   icon: Icon = PackageOpen,
-  title = "No data available",
-  message = "Try adjusting your filters or come back later.",
+  title = "No data detected",
+  message = "Try adjusting your parameters or check back later.",
   className = ""
 }: EmptyStateProps) => (
-  <div className={`py-16 px-6 rounded-xl border border-white/5 bg-zinc-900/20 text-center flex flex-col items-center select-none ${className}`}>
-    <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-white/5 flex items-center justify-center mb-6">
-       <Icon size={20} className="text-zinc-700" />
+  <Card className={`py-16 px-6 border-dashed bg-brand-deep/30 text-center flex flex-col items-center select-none ${className}`}>
+    <div className="w-14 h-14 rounded-2xl bg-brand-surface border border-white/5 flex items-center justify-center mb-6">
+       <Icon size={24} className="text-neutral-700" />
     </div>
-    <h3 className="text-sm font-bold text-zinc-400 mb-2">{title}</h3>
-    <p className="text-sm text-zinc-600 font-medium max-w-[240px] leading-relaxed">
+    <h3 className="text-sm font-black text-white uppercase tracking-widest mb-2">{title}</h3>
+    <p className="text-[11px] text-neutral-500 font-bold uppercase tracking-wider max-w-[240px] leading-relaxed">
       {message}
     </p>
-  </div>
+  </Card>
 );

@@ -2,6 +2,7 @@ import React, { memo, useEffect, forwardRef } from 'react';
 import { CheckCircle2, Gem, Hash, ImageOff } from 'lucide-react';
 import { cn, formatNumber } from '../../utils';
 import { Character } from '../../context/UserContext';
+import { Badge } from '../ui/Badge';
 
 interface CardProps {
     character: Character;
@@ -31,7 +32,7 @@ export const Card = memo(forwardRef<HTMLDivElement, CardProps>(({ character, onC
     const hasStock = stockLimit !== null && stockRemaining !== null;
     const soldOut = character.sold_out || (hasStock && stockRemaining <= 0);
     const copyCount = Number(character.count || 0);
-    const statusLabel = soldOut ? 'Sold out' : character.owned ? 'Owned' : copyCount > 1 ? `x${copyCount}` : null;
+    const statusLabel = soldOut ? 'SOLD OUT' : character.owned ? 'OWNED' : copyCount > 1 ? `x${copyCount}` : null;
     const showPrice = hasPrice && !character.owned && !soldOut;
     const characterId = String(character.id || '');
 
@@ -40,8 +41,9 @@ export const Card = memo(forwardRef<HTMLDivElement, CardProps>(({ character, onC
             ref={ref}
             onClick={handleClick}
             className={cn(
-                "relative rounded-xl overflow-hidden aspect-[3/4] group cursor-pointer select-none",
-                "bg-brand-deep border border-white/5 active:scale-[0.98] transition-all duration-200"
+                "relative rounded-2xl overflow-hidden aspect-[3/4.2] group cursor-pointer select-none",
+                "bg-brand-deep border border-white/5 active:scale-[0.98] transition-all duration-300",
+                "hover:border-white/20 hover:shadow-[0_8px_30px_rgb(0,0,0,0.5)]"
             )}
         >
             {!imgError ? (
@@ -52,8 +54,8 @@ export const Card = memo(forwardRef<HTMLDivElement, CardProps>(({ character, onC
                     decoding="async"
                     onError={() => setImgError(true)}
                     className={cn(
-                        "absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105",
-                        soldOut && "grayscale opacity-70"
+                        "absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110",
+                        soldOut && "grayscale opacity-50"
                     )}
                 />
             ) : (
@@ -62,45 +64,44 @@ export const Card = memo(forwardRef<HTMLDivElement, CardProps>(({ character, onC
                 </div>
             )}
             
-            <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 via-black/35 to-transparent" />
-            {soldOut && (
-                <div className="absolute inset-0 bg-black/15" />
-            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity" />
 
             {characterId && (
-                <div className="absolute left-2 top-2 flex max-w-[calc(100%-1rem)] items-center gap-0.5 rounded bg-black/45 px-1.5 py-0.5 text-[9px] font-bold text-white/90 backdrop-blur-sm">
-                    <Hash size={9} className="shrink-0 text-brand-accent" />
-                    <span className="truncate tabular-nums">{characterId}</span>
+                <div className="absolute left-2.5 top-2.5 z-10">
+                    <div className="flex items-center gap-1 rounded-lg bg-black/60 px-2 py-1 text-[9px] font-black text-white/90 backdrop-blur-md border border-white/10">
+                        <Hash size={10} className="text-brand-accent" />
+                        <span className="tabular-nums">{characterId}</span>
+                    </div>
                 </div>
             )}
 
-            <div className="absolute bottom-0 inset-x-0 p-2">
-                <h3 className="text-xs font-semibold text-white leading-tight line-clamp-1 drop-shadow">
-                    {character.name}
-                </h3>
+            <div className="absolute bottom-0 inset-x-0 p-3 space-y-2">
+                <div>
+                    <h3 className="text-xs font-black text-white leading-tight line-clamp-2 uppercase tracking-tight drop-shadow-md group-hover:text-brand-accent transition-colors">
+                        {character.name}
+                    </h3>
+                    <p className="text-[9px] font-bold text-neutral-400 truncate uppercase tracking-widest mt-0.5">
+                        {rarityLabel || 'STANDARD'}
+                    </p>
+                </div>
 
-                <div className="mt-1 flex min-w-0 items-center gap-1">
-                    <span className="min-w-0 flex-1 truncate rounded bg-black/35 px-1.5 py-0.5 text-[9px] font-semibold text-neutral-300 backdrop-blur-sm">
-                        {rarityLabel || 'Unknown'}
-                    </span>
-
-                    {statusLabel && (
-                        <span className={cn(
-                            "inline-flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-bold tabular-nums backdrop-blur-sm",
-                            soldOut ? "bg-red-500/20 text-red-200" :
-                            character.owned ? "bg-emerald-500/15 text-emerald-300" :
-                            "bg-brand-accent/20 text-brand-accent"
-                        )}>
-                            {character.owned && <CheckCircle2 size={9} />}
+                <div className="flex items-center justify-between gap-2">
+                    {statusLabel ? (
+                        <Badge
+                            variant={soldOut ? "danger" : character.owned ? "success" : "primary"}
+                            size="xs"
+                            className="rounded-lg border-none bg-opacity-80"
+                        >
+                            {character.owned && <CheckCircle2 size={10} />}
                             {statusLabel}
-                        </span>
-                    )}
+                        </Badge>
+                    ) : <div />}
 
                     {showPrice && (
-                        <span className="inline-flex shrink-0 items-center gap-0.5 rounded bg-black/35 px-1.5 py-0.5 text-[9px] font-bold tabular-nums text-white/90 backdrop-blur-sm">
-                            <Gem size={9} className="text-brand-accent" />
+                        <div className="flex items-center gap-1 rounded-lg bg-white/10 px-2 py-1 text-[10px] font-black tabular-nums text-white backdrop-blur-md">
+                            <Gem size={10} className="text-brand-accent" />
                             {formatNumber(character.zenith_price)}
-                        </span>
+                        </div>
                     )}
                 </div>
             </div>

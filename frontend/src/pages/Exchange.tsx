@@ -184,75 +184,77 @@ export const Exchange = () => {
 
   if (loading && !data) {
     return (
-      <div className="px-4 py-6 pb-20 max-w-3xl mx-auto">
-        <div className="mb-6 border-b border-white/5 pb-5">
-          <Skeleton className="h-6 w-44 rounded-lg mb-3" />
-          <Skeleton className="h-4 w-64 rounded-lg" />
+      <div className="pb-24 pt-6 max-w-2xl mx-auto adaptive-px space-y-8">
+        <div className="flex flex-col gap-2">
+           <Skeleton className="h-8 w-44 rounded-lg" />
+           <Skeleton className="h-4 w-64 rounded-lg" />
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-6">
-          {[1, 2, 3].map((item) => <Skeleton key={item} className="h-16 rounded-lg" />)}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {[1, 2, 3].map((item) => <Skeleton key={item} className="h-16 rounded-xl" />)}
         </div>
-        <Skeleton className="h-72 rounded-lg" />
+        <Skeleton className="h-80 rounded-2xl" />
       </div>
     );
   }
 
   if (error && !data) {
     return (
-      <div className="px-4 py-8 max-w-2xl mx-auto">
+      <div className="pb-24 pt-6 max-w-2xl mx-auto adaptive-px">
         <ErrorState message={error} onAction={fetchExchange} />
       </div>
     );
   }
 
   return (
-    <div className="pb-20 pt-4 max-w-3xl mx-auto">
-      <header className="px-4 pb-5 mb-5 border-b border-white/5">
+    <div className="pb-24 pt-6 max-w-2xl mx-auto adaptive-px space-y-8 select-none">
+      <header className="space-y-6">
         <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <Repeat2 size={18} className="text-brand-accent shrink-0" />
-              <h1 className="text-lg font-bold text-white tracking-tight">Exchange</h1>
+          <div className="space-y-1">
+            <div className="flex items-center gap-3">
+               <div className="w-10 h-10 rounded-xl bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center">
+                    <Repeat2 size={22} className="text-brand-accent" />
+               </div>
+               <h1 className="text-2xl font-black text-white tracking-tighter uppercase">Currency</h1>
             </div>
-            <p className="text-sm font-medium text-neutral-400 leading-snug">
-              Convert balances between Shards and Zenith.
+            <p className="text-sm font-bold text-neutral-500 uppercase tracking-widest">
+              Authorized currency conversion protocol.
             </p>
           </div>
 
           <button
             onClick={handleRefresh}
             disabled={loading || exchanging}
-            className="p-2.5 rounded-lg bg-brand-deep border border-white/5 text-neutral-400 hover:text-white hover:bg-white/5 disabled:opacity-60 transition-colors active:scale-95 shrink-0"
+            className="w-12 h-12 flex items-center justify-center rounded-xl bg-brand-deep border border-white/5 text-neutral-400 hover:text-white transition-all active:scale-95 shrink-0"
             aria-label="Refresh exchange"
           >
-            <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+            <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
           </button>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2">
-          <Metric icon={Coins} label="Shards" value={formatNumber(shardBalance)} />
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <Metric icon={Coins} label="Shards" value={formatNumber(shardBalance)} tone="neutral" />
           <Metric icon={Gem} label="Zenith" value={formatNumber(zenithBalance)} tone="accent" />
-          <Metric icon={BadgePercent} label="Rate" value={`${formatNumber(rate)}:1`} tone="success" />
+          <Metric icon={BadgePercent} label="Protocol Rate" value={`${formatNumber(rate)}:1`} tone="success" />
         </div>
 
         {error && data && (
-          <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-500/15 bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-200">
-            <AlertCircle size={14} className="mt-0.5 shrink-0" />
-            <span>Showing the latest loaded exchange data. Refresh again if balances look out of date.</span>
+          <div className="flex items-start gap-3 p-3 rounded-xl border border-amber-500/20 bg-amber-500/5 text-[10px] font-black uppercase tracking-widest text-amber-500/80">
+            <AlertCircle size={14} className="shrink-0" />
+            <span>Legacy data detected. Refresh to synchronize local balances.</span>
           </div>
         )}
       </header>
 
-      <section className="px-4">
-        <div className="rounded-lg border border-white/5 bg-brand-deep p-4 sm:p-5">
-          <div className="mb-4 grid grid-cols-2 gap-2">
+      <section className="space-y-4">
+        <Card className="p-5 space-y-6">
+          <div className="grid grid-cols-2 gap-2">
             <button
               onClick={() => handleModeChange('shards_to_zenith')}
               className={cn(
-                'h-11 rounded-lg border text-xs font-bold transition-all active:scale-[0.98]',
+                'h-12 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all active:scale-[0.98]',
                 mode === 'shards_to_zenith'
-                  ? 'bg-white text-brand-midnight border-white'
-                  : 'bg-brand-midnight text-neutral-400 border-white/5 hover:text-neutral-200'
+                  ? 'bg-white text-brand-midnight border-white shadow-lg'
+                  : 'bg-brand-midnight text-neutral-500 border-white/5 hover:text-white'
               )}
             >
               Shards to Zenith
@@ -260,85 +262,69 @@ export const Exchange = () => {
             <button
               onClick={() => handleModeChange('zenith_to_shards')}
               className={cn(
-                'h-11 rounded-lg border text-xs font-bold transition-all active:scale-[0.98]',
+                'h-12 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all active:scale-[0.98]',
                 mode === 'zenith_to_shards'
-                  ? 'bg-white text-brand-midnight border-white'
-                  : 'bg-brand-midnight text-neutral-400 border-white/5 hover:text-neutral-200'
+                  ? 'bg-white text-brand-midnight border-white shadow-lg'
+                  : 'bg-brand-midnight text-neutral-500 border-white/5 hover:text-white'
               )}
             >
               Zenith to Shards
             </button>
           </div>
 
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 xs:gap-3 mb-5">
-            <div className="min-w-0 rounded-lg border border-white/5 bg-brand-midnight px-3 py-3">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">{copy.inputLabel}</p>
-              <p className="mt-1 truncate text-lg font-bold text-white tabular-nums">{formatNumber(amountNumber)}</p>
-              <p className="mt-1 truncate text-[10px] font-semibold text-neutral-600 tabular-nums">
-                Balance {formatNumber(isShardMode ? shardBalance : zenithBalance)}
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+            <div className="min-w-0 rounded-2xl bg-brand-midnight border border-white/5 p-4">
+              <p className="text-[9px] font-black uppercase tracking-widest text-neutral-600 mb-1">{copy.inputLabel}</p>
+              <p className="text-xl font-black text-white tabular-nums leading-none mb-2">{formatNumber(amountNumber)}</p>
+              <div className="h-px bg-white/5 w-full mb-2" />
+              <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-tighter truncate">
+                Available: {formatNumber(isShardMode ? shardBalance : zenithBalance)}
               </p>
             </div>
             <button
               type="button"
               onClick={handleSwapMode}
-              className="h-9 w-9 rounded-lg border border-white/5 bg-brand-midnight flex items-center justify-center text-brand-accent transition-colors hover:bg-white/5 active:scale-95"
+              className="w-10 h-10 rounded-xl bg-brand-midnight border border-white/5 flex items-center justify-center text-brand-accent transition-all hover:bg-brand-accent/10 active:scale-90"
               aria-label="Switch exchange direction"
             >
-              <Repeat2 size={16} />
+              <Repeat2 size={18} />
             </button>
-            <div className="min-w-0 rounded-lg border border-brand-accent/20 bg-brand-accent/10 px-3 py-3 text-right">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-accent/80">{copy.outputLabel}</p>
-              <p className="mt-1 truncate text-lg font-bold text-white tabular-nums">{formatNumber(outputAmount)}</p>
-              <p className="mt-1 truncate text-[10px] font-semibold text-brand-accent/60 tabular-nums">
-                Balance {formatNumber(isShardMode ? zenithBalance : shardBalance)}
+            <div className="min-w-0 rounded-2xl bg-brand-accent/5 border border-brand-accent/20 p-4 text-right">
+              <p className="text-[9px] font-black uppercase tracking-widest text-brand-accent/60 mb-1">{copy.outputLabel}</p>
+              <p className="text-xl font-black text-white tabular-nums leading-none mb-2">{formatNumber(outputAmount)}</p>
+              <div className="h-px bg-brand-accent/10 w-full mb-2" />
+              <p className="text-[9px] font-bold text-brand-accent/40 uppercase tracking-tighter truncate">
+                Result: {formatNumber(isShardMode ? zenithBalance + outputAmount : shardBalance + outputAmount)}
               </p>
             </div>
           </div>
 
-          <label className="mb-2 block text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
-            Amount
-          </label>
-          <div className="grid grid-cols-1 xs:grid-cols-[minmax(0,1fr)_72px_112px] gap-2">
-            <input
-              type="text"
-              min={isShardMode ? minimumShards : minimumZenith}
-              step={isShardMode ? rate : 1}
-              value={amount}
-              onChange={(event) => handleAmountChange(event.target.value)}
-              className="h-12 min-w-0 flex-1 rounded-lg border border-white/5 bg-brand-midnight px-3 text-sm font-bold text-white outline-none focus:border-brand-accent/50"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              aria-label={`${copy.inputLabel} amount`}
-            />
-            <button
-              type="button"
-              onClick={() => setPreset(maxInputAmount)}
-              disabled={!canUseMax}
-              className={cn(
-                'h-12 rounded-lg border text-xs font-bold transition-all active:scale-95',
-                canUseMax
-                  ? 'border-white/10 bg-brand-midnight text-neutral-300 hover:text-white hover:bg-white/5'
-                  : 'border-white/5 bg-brand-midnight text-neutral-700'
-              )}
-            >
-              Max
-            </button>
-            <button
-              onClick={handleExchange}
-              disabled={!canExchange || exchanging}
-              className={cn(
-                'h-12 px-4 rounded-lg text-xs font-bold min-w-[104px] flex items-center justify-center gap-2 transition-all active:scale-95',
-                canExchange
-                  ? 'bg-brand-accent text-white'
-                  : 'bg-brand-midnight text-neutral-600 border border-white/5'
-              )}
-            >
-              {exchanging ? <Loader2 size={16} className="animate-spin" /> : <Repeat2 size={15} />}
-              <span>Exchange</span>
-            </button>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between px-1">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-600">
+                    Input Amount
+                </label>
+                <button
+                  onClick={() => setPreset(maxInputAmount)}
+                  disabled={!canUseMax}
+                  className="text-[9px] font-black text-brand-accent uppercase tracking-widest hover:underline disabled:opacity-30"
+                >
+                  Max Available
+                </button>
+            </div>
+            <div className="flex gap-2">
+                <input
+                    type="text"
+                    value={amount}
+                    onChange={(event) => handleAmountChange(event.target.value)}
+                    className="h-14 flex-1 rounded-2xl border border-white/5 bg-brand-midnight px-4 text-sm font-black text-white outline-none focus:border-brand-accent/40 transition-all tabular-nums"
+                    inputMode="numeric"
+                    placeholder="ENTER AMOUNT..."
+                />
+            </div>
           </div>
 
-          <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {presetOptions.map(({ label, amount: presetAmount }) => {
               const isDisabled = presetAmount < minimumInputAmount || presetAmount > maxInputAmount;
               const isActive = presetAmount === amountNumber;
@@ -349,45 +335,48 @@ export const Exchange = () => {
                   onClick={() => setPreset(presetAmount)}
                   disabled={isDisabled}
                   className={cn(
-                    'h-11 rounded-lg bg-brand-midnight border px-2 text-left transition-colors',
+                    'h-12 rounded-xl bg-brand-midnight border p-2 text-left transition-all active:scale-95',
                     isActive
-                      ? 'border-brand-accent/50 text-white'
-                      : 'border-white/5 text-neutral-400 hover:text-neutral-200',
-                    isDisabled && 'opacity-45 hover:text-neutral-400'
+                      ? 'border-brand-accent/40 bg-brand-accent/5'
+                      : 'border-white/5 hover:border-white/20',
+                    isDisabled && 'opacity-30'
                   )}
                 >
-                  <span className="block text-[10px] font-bold leading-none">{label}</span>
-                  <span className="mt-1 block truncate text-[11px] font-semibold tabular-nums">{formatNumber(presetAmount)}</span>
+                  <span className="block text-[8px] font-black text-neutral-500 uppercase tracking-tighter">{label}</span>
+                  <span className="block truncate text-xs font-black text-white tabular-nums">{formatNumber(presetAmount)}</span>
                 </button>
               );
             })}
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            <div className="min-w-0 rounded-lg border border-white/5 bg-brand-midnight px-3 py-2.5">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">Shards after</p>
-              <p className="mt-1 truncate text-sm font-bold text-white tabular-nums">{formatNumber(afterShardBalance)}</p>
-            </div>
-            <div className="min-w-0 rounded-lg border border-white/5 bg-brand-midnight px-3 py-2.5">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">Zenith after</p>
-              <p className="mt-1 truncate text-sm font-bold text-white tabular-nums">{formatNumber(afterZenithBalance)}</p>
-            </div>
-          </div>
+          <button
+            onClick={handleExchange}
+            disabled={!canExchange || exchanging}
+            className={cn(
+                'w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] flex items-center justify-center gap-3 transition-all active:scale-[0.98]',
+                canExchange
+                    ? 'bg-brand-accent text-white shadow-[0_10px_30px_rgba(59,130,246,0.2)]'
+                    : 'bg-brand-midnight text-neutral-600 border border-white/5'
+            )}
+          >
+            {exchanging ? <Loader2 size={18} className="animate-spin" /> : <Repeat2 size={18} />}
+            <span>Execute Transaction</span>
+          </button>
 
           <div
             className={cn(
-              'mt-4 flex items-start gap-2 rounded-lg border px-3 py-2 text-xs font-medium',
+              'flex items-center gap-3 p-4 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all',
               validationMessage
-                ? 'border-amber-500/15 bg-amber-500/10 text-amber-200'
-                : 'border-emerald-500/15 bg-emerald-500/10 text-emerald-200'
+                ? 'border-amber-500/20 bg-amber-500/5 text-amber-500'
+                : 'border-emerald-500/20 bg-emerald-500/5 text-emerald-500'
             )}
           >
-            {validationMessage ? <AlertCircle size={14} className="mt-0.5 shrink-0" /> : <CheckCircle2 size={14} className="mt-0.5 shrink-0" />}
+            {validationMessage ? <AlertCircle size={16} /> : <CheckCircle2 size={16} />}
             <span>
-              {validationMessage || `${copy.activeText}: ${formatNumber(amountNumber)} ${copy.inputLabel} to ${formatNumber(outputAmount)} ${copy.outputLabel}`}
+              {validationMessage || `Protocol Ready: Convert ${formatNumber(amountNumber)} ${copy.inputLabel}`}
             </span>
           </div>
-        </div>
+        </Card>
       </section>
     </div>
   );
