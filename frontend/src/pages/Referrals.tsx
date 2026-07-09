@@ -4,6 +4,7 @@ import { Skeleton } from '../components/ui/Skeleton';
 import { UserPlus, Copy, CheckCircle2, Send, Gem, Gift } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 import { useToast } from '../components/ui/Toast';
+import { ErrorState } from '../components/ui/ErrorState';
 
 interface Referral {
     referred_id: number;

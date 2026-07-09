@@ -7,6 +7,7 @@ import { useApi } from '../hooks/useApi';
 import { useToast } from '../components/ui/Toast';
 import { cn, formatNumber } from '../utils';
 import { ErrorState } from '../components/ui/ErrorState';
+import { Skeleton } from '../components/ui/Skeleton';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card } from '../components/ui/Card';
