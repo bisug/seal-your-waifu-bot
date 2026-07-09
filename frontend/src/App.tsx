@@ -112,7 +112,7 @@ const normalizeRouteToken = (value?: string | null) => {
   try {
     token = decodeURIComponent(token);
   } catch {
-    // Keep the raw token if Telegram/browser encoding is malformed.
+    // ignore
   }
 
   token = token
@@ -124,9 +124,7 @@ const normalizeRouteToken = (value?: string | null) => {
     .replace(/^\/+|\/+$/g, '');
 
   const lastSegment = token.split('/').filter(Boolean).pop() || token;
-  const normalized = lastSegment.replace(/[-\s]+/g, '_').replace(/[^a-z0-9_]/g, '');
-
-  return normalized || null;
+  return lastSegment.replace(/[-\s]+/g, '_').replace(/[^a-z0-9_]/g, '') || null;
 };
 
 const resolveRouteToken = (value?: string | null): RouteTarget | null => {
@@ -137,35 +135,17 @@ const resolveRouteToken = (value?: string | null): RouteTarget | null => {
   return tab ? { tab, alias } : null;
 };
 
-const getHashCandidates = () => {
-  const hash = window.location.hash.replace(/^#/, '');
-  if (!hash) return [];
-
-  const params = new URLSearchParams(hash.startsWith('?') ? hash.slice(1) : hash);
-  return [
-    hash.split(/[?&]/)[0],
-    params.get('tgWebAppStartParam'),
-    params.get('startapp'),
-    params.get('start_param'),
-    params.get('tab'),
-    params.get('section'),
-    params.get('route'),
-  ];
-};
-
-const getSearchCandidates = () => {
+const getCandidates = () => {
   const params = new URLSearchParams(window.location.search);
+  const hash = window.location.hash.replace(/^#/, '').split(/[?&]/)[0];
   return [
+    hash,
     params.get('tgWebAppStartParam'),
     params.get('startapp'),
-    params.get('start_param'),
     params.get('tab'),
-    params.get('section'),
     params.get('route'),
   ];
 };
-
-const getPathCandidates = () => window.location.pathname.split('/').filter(Boolean).reverse();
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -173,50 +153,35 @@ interface ErrorBoundaryProps {
 
 interface ErrorBoundaryState {
   hasError: boolean;
-  error: Error | null;
 }
 
 class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("UI error:", error, errorInfo);
+  static getDerivedStateFromError() {
+    return { hasError: true };
   }
 
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center min-h-svh bg-zinc-950 select-none">
-          <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-white/5 flex items-center justify-center mb-8">
+        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center min-h-svh bg-zinc-950">
+          <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6">
              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
           </div>
-          
-          <h2 className="text-white font-bold mb-4 tracking-tight text-base">Something went wrong</h2>
-          <p className="text-sm text-zinc-500 font-medium leading-relaxed mb-10 max-w-[260px]">
-            This screen crashed. Reload the app and try again.
+          <h2 className="text-white font-bold mb-2 uppercase tracking-widest">System Error</h2>
+          <p className="text-xs text-zinc-500 uppercase tracking-widest mb-8">
+            Session encountered an anomaly.
           </p>
-
           <button 
             onClick={() => window.location.reload()}
-            className="w-full max-w-[200px] py-4 bg-white text-zinc-950 font-bold rounded-xl uppercase tracking-widest text-[10px] active:scale-[0.98] transition-transform"
+            className="px-8 py-3 bg-zinc-100 text-zinc-950 font-bold rounded-md uppercase tracking-widest text-[10px]"
           >
-            Reload
+            Reload Terminal
           </button>
-
-          {this.state.error && (
-            <div className="mt-12 p-3 bg-zinc-900/50 border border-white/5 rounded-lg max-w-xs overflow-hidden">
-               <p className="text-[8px] text-zinc-600 font-mono break-all line-clamp-2 uppercase">
-                  Error: {this.state.error.toString()}
-               </p>
-            </div>
-          )}
         </div>
       );
     }
@@ -230,12 +195,7 @@ const AppContent = () => {
   
   const getInitialRoute = useCallback((): RouteTarget => {
     const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
-    const candidates = [
-      ...getHashCandidates(),
-      ...getSearchCandidates(),
-      startParam,
-      ...getPathCandidates(),
-    ];
+    const candidates = [...getCandidates(), startParam];
 
     for (const candidate of candidates) {
       const route = resolveRouteToken(candidate);
@@ -266,46 +226,37 @@ const AppContent = () => {
     const tg = window.Telegram?.WebApp;
     if (!tg) return;
 
-    try {
-      if (backHandlerRef.current) {
+    if (backHandlerRef.current) {
         tg.BackButton?.offClick?.(backHandlerRef.current);
-      }
+    }
 
-      if (selectedChar || selectedPet || isMenuOpen) {
+    if (selectedChar || selectedPet || isMenuOpen) {
         const handler = () => {
-          setSelectedChar(null);
-          setSelectedPet(null);
-          setIsMenuOpen(false);
+            setSelectedChar(null);
+            setSelectedPet(null);
+            setIsMenuOpen(false);
         };
         backHandlerRef.current = handler;
         tg.BackButton?.show?.();
         tg.BackButton?.onClick?.(handler);
-      } else {
+    } else {
         backHandlerRef.current = null;
         tg.BackButton?.hide?.();
-      }
-
-      tg.setHeaderColor?.('#09090b');
-      tg.setBackgroundColor?.('#09090b');
-      tg.expand?.();
-       } catch {
-      console.warn('Telegram API error (non-critical)');
     }
 
+    tg.setHeaderColor?.('#09090b');
+    tg.setBackgroundColor?.('#09090b');
+    tg.expand?.();
+
     return () => {
-      try {
         if (backHandlerRef.current) {
-          tg?.BackButton?.offClick?.(backHandlerRef.current);
+            tg?.BackButton?.offClick?.(backHandlerRef.current);
         }
-         } catch {
-        // ignore
-      }
     };
   }, [selectedChar, selectedPet, isMenuOpen]);
 
   const handleNavigate = useCallback((tab: string) => {
-    const tg = window.Telegram?.WebApp;
-    tg?.HapticFeedback?.impactOccurred('light');
+    window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
     setActiveRoute({ tab, alias: tab });
     if (VALID_TABS.includes(tab) && window.location.hash !== `#${tab}`) {
       window.history.replaceState(null, '', `#${tab}`);
@@ -316,85 +267,50 @@ const AppContent = () => {
 
   if (error || (!loading && !user)) {
     const hasTelegramInit = Boolean(window.Telegram?.WebApp?.initData);
-    const hasSavedSession = (() => {
-      try {
-        return Boolean(sessionStorage.getItem('auth_token'));
-      } catch {
-        return false;
-      }
-    })();
-
-    if (!hasTelegramInit && !hasSavedSession) {
+    if (!hasTelegramInit && !sessionStorage.getItem('auth_token')) {
       return <Landing error={error} onRetry={() => window.location.reload()} />;
     }
 
     return (
-      <div className="flex-1 flex flex-col items-center justify-center px-8 text-center min-h-svh bg-zinc-950 relative overflow-hidden select-none">
-        <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-white/5 flex items-center justify-center mb-8">
-           <div className="w-2 h-2 rounded-full bg-zinc-700 animate-pulse" />
+      <div className="flex-1 flex flex-col items-center justify-center px-8 text-center min-h-svh bg-zinc-950">
+        <div className="w-12 h-12 rounded-full bg-zinc-900 border border-white/5 flex items-center justify-center mb-6">
+           <div className="w-1.5 h-1.5 rounded-full bg-zinc-700 animate-pulse" />
         </div>
-
-        <h2 className="text-white font-bold mb-4 tracking-tight text-base">Could not connect</h2>
-        <p className="text-sm text-zinc-500 font-medium leading-relaxed mb-10 max-w-[280px]">
-          {error || "We could not authenticate your Telegram session. Open the app from the bot and try again."}
+        <h2 className="text-white font-bold mb-2 uppercase tracking-widest">Offline</h2>
+        <p className="text-xs text-zinc-500 uppercase tracking-widest mb-8 max-w-[240px]">
+          {error || "Authentication failed. Restart from the bot."}
         </p>
-
-        <div className="w-full max-w-[240px] space-y-3">
-          <button
+        <button
             onClick={() => window.location.reload()}
-            className="w-full py-4 rounded-xl bg-white text-zinc-950 font-bold uppercase text-[10px] tracking-widest transition-transform active:scale-[0.98]"
-          >
-            Try again
-          </button>
-          <button
-            onClick={() => {
-              window.Telegram?.WebApp?.showConfirm(
-                "Clear saved session data and reload?",
-                (confirmed) => {
-                  if (confirmed) {
-                    sessionStorage.clear();
-                    localStorage.clear();
-                    window.location.reload();
-                  }
-                }
-              );
-            }}
-            className="w-full py-3 text-zinc-700 text-[9px] font-bold uppercase tracking-[0.2em] hover:text-zinc-500 transition-colors"
-          >
-            Clear saved session
-          </button>
-        </div>
+            className="px-8 py-3 bg-zinc-100 text-zinc-950 font-bold rounded-md uppercase tracking-widest text-[10px]"
+        >
+            Retry Connection
+        </button>
       </div>
     );
   }
 
   const canViewUpload = Boolean(user?.can_upload ?? user?.is_sudo);
   const canViewStaff = Boolean(user?.is_sudo);
-  const isBlockedTab =
-    (activeTab === 'upload' && !canViewUpload) ||
-    (activeTab === 'staff' && !canViewStaff);
+  const isBlockedTab = (activeTab === 'upload' && !canViewUpload) || (activeTab === 'staff' && !canViewStaff);
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-brand-midnight tactical-noise">
+    <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-zinc-950">
       <Header onMenuClick={() => setIsMenuOpen(true)} />
 
-      <main className="app-scroller adaptive-px overflow-x-hidden">
+      <main className="app-scroller adaptive-px">
         <Suspense fallback={
-          <div className="flex flex-col items-center justify-center h-full bg-brand-midnight gap-4">
-            <div className="relative">
-               <Loader2 size={32} className="animate-spin text-brand-accent/40" />
-               <div className="absolute inset-0 bg-brand-accent/10 blur-xl rounded-full" />
-            </div>
-            <p className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.3em] animate-pulse">Initializing Sector...</p>
+          <div className="flex flex-col items-center justify-center h-full gap-4">
+            <Loader2 size={24} className="animate-spin text-zinc-700" />
           </div>
         }>
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
               className="page-transition-wrapper"
             >
               {activeTab === 'profile' && (
@@ -404,18 +320,18 @@ const AppContent = () => {
                 />
               )}
               {activeTab === 'incubation' && <Hatchery />}
-          {activeTab === 'shop' && <Shop onCharClick={setSelectedChar} />}
-          {activeTab === 'exchange' && <Exchange />}
-          {activeTab === 'gallery' && <Gallery onCharClick={setSelectedChar} />}
-          {activeTab === 'pets' && <PetShop onPetClick={setSelectedPet} />}
-          {activeTab === 'referrals' && <Referrals />}
-          {activeTab === 'quests' && <Quests />}
-          {activeTab === 'pass' && <Pass />}
-          {activeTab === 'leaderboard' && <Leaderboard />}
-          {activeTab === 'achievements' && <Achievements />}
-          {activeTab === 'mypets' && <MyPets onPetClick={setSelectedPet} />}
-          {activeTab === 'upload' && canViewUpload && <Upload />}
-          {activeTab === 'staff' && canViewStaff && <Staff />}
+              {activeTab === 'shop' && <Shop onCharClick={setSelectedChar} />}
+              {activeTab === 'exchange' && <Exchange />}
+              {activeTab === 'gallery' && <Gallery onCharClick={setSelectedChar} />}
+              {activeTab === 'pets' && <PetShop onPetClick={setSelectedPet} />}
+              {activeTab === 'referrals' && <Referrals />}
+              {activeTab === 'quests' && <Quests />}
+              {activeTab === 'pass' && <Pass />}
+              {activeTab === 'leaderboard' && <Leaderboard />}
+              {activeTab === 'achievements' && <Achievements />}
+              {activeTab === 'mypets' && <MyPets onPetClick={setSelectedPet} />}
+              {activeTab === 'upload' && canViewUpload && <Upload />}
+              {activeTab === 'staff' && canViewStaff && <Staff />}
 
               {(!VALID_TABS.includes(activeTab) || isBlockedTab) && (
                 <NotFound onReset={() => handleNavigate('profile')} />
@@ -425,10 +341,7 @@ const AppContent = () => {
         </Suspense>
       </main>
 
-      <BottomNav
-        activeTab={activeTab}
-        onNavigate={handleNavigate}
-      />
+      <BottomNav activeTab={activeTab} onNavigate={handleNavigate} />
 
       {selectedChar && (
         <CharActionModal
@@ -466,8 +379,8 @@ const AppContent = () => {
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      gcTime: 1000 * 60 * 30, // 30 minutes
+      staleTime: 1000 * 60 * 5,
+      gcTime: 1000 * 60 * 30,
       retry: 1,
       refetchOnWindowFocus: false,
     },

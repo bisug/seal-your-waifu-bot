@@ -39,19 +39,19 @@ const isSoldOut = (character: Character) => {
 };
 
 const getCountdown = (resetAt: string | undefined, now: number) => {
-  if (!resetAt) return 'AUTO-CYCLE';
+  if (!resetAt) return '--:--';
 
   const resetTime = new Date(resetAt).getTime();
-  if (!Number.isFinite(resetTime)) return 'AUTO-CYCLE';
+  if (!Number.isFinite(resetTime)) return '--:--';
 
   const diff = Math.max(0, resetTime - now);
   const hours = Math.floor(diff / (1000 * 60 * 60));
   const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
   const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
-  if (hours <= 0 && minutes <= 0 && seconds <= 10) return 'RESETTING...';
-  if (hours <= 0) return `${minutes}M ${seconds}S`;
-  return `${hours}H ${minutes}M`;
+  if (hours <= 0 && minutes <= 0 && seconds <= 10) return 'RESETTING';
+  if (hours <= 0) return `${minutes}m ${seconds}s`;
+  return `${hours}h ${minutes}m`;
 };
 
 export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
@@ -119,21 +119,21 @@ export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
   }, [inventory, zenithBalance]);
 
   const handleRefresh = async () => {
-    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
+    window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
     await Promise.allSettled([fetchShop(), fetchHub(), refreshUser()]);
     if (triggerRefresh) triggerRefresh();
   };
 
   if (loading && !shopData) return (
-    <div className="pb-32 pt-6 max-w-5xl mx-auto adaptive-px space-y-8">
+    <div className="pb-32 pt-6 adaptive-px max-w-5xl mx-auto space-y-8">
        <div className="flex flex-col gap-2">
-          <Skeleton className="h-8 w-48 rounded-lg" />
-          <Skeleton className="h-4 w-64 rounded-lg opacity-50" />
+          <Skeleton className="h-8 w-48 rounded-md" />
+          <Skeleton className="h-4 w-64 rounded-md opacity-50" />
        </div>
        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-          {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-20 rounded-2xl" />)}
+          {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-20 rounded-md" />)}
        </div>
-       <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-6 gap-3 sm:gap-4">
+       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
           {Array.from({ length: 12 }).map((_, i) => <CardSkeleton key={i} />)}
        </div>
     </div>
@@ -149,82 +149,80 @@ export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
     <div className="pb-32 pt-6 max-w-5xl mx-auto adaptive-px space-y-8">
       <header className="space-y-6">
         <div className="flex items-start justify-between gap-6">
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.1)]">
-                 <Store size={22} className="text-brand-accent" />
-              </div>
-              <h1 className="text-2xl font-black text-white tracking-tighter uppercase">Gacha Market</h1>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2.5">
+              <Store size={20} className="text-brand-accent" />
+              <h1 className="text-xl font-bold text-zinc-100 uppercase tracking-tight">Summon Terminal</h1>
             </div>
-            <p className="text-[11px] font-black text-neutral-500 uppercase tracking-widest max-w-xs leading-relaxed opacity-60">
-              Personnel summoning terminal. Global asset rotation active.
+            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-relaxed">
+              Global personnel rotation active. Sector synchronization online.
             </p>
           </div>
 
           <Button
             variant="secondary"
+            size="sm"
             onClick={handleRefresh}
             isLoading={loading || hubLoading}
-            className="w-10 h-10 p-0 rounded-xl border-white/5 shadow-lg active:scale-95"
-            aria-label="Refresh market"
+            className="w-9 h-9 p-0"
           >
-            <RefreshCw size={18} className={loading || hubLoading ? 'animate-spin' : ''} />
+            <RefreshCw size={16} className={loading || hubLoading ? 'animate-spin' : ''} />
           </Button>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {[
             { icon: Coins, label: 'Shards', value: formatNumber(shardBalance), variant: 'warning' },
             { icon: Gem, label: 'Zenith', value: formatNumber(zenithBalance), variant: 'primary' },
-            { icon: Clock, label: 'Rotation', value: getCountdown(hubData?.reset_at, now), variant: 'secondary' },
-            { icon: PackageOpen, label: 'In Stock', value: `${summary.available} OPS`, variant: 'success' },
-            { icon: CheckCircle2, label: 'Secured', value: `${summary.owned} OWNED`, variant: 'secondary' },
+            { icon: Clock, label: 'Reset In', value: getCountdown(hubData?.reset_at, now), variant: 'secondary' },
+            { icon: PackageOpen, label: 'Available', value: `${summary.available}`, variant: 'success' },
+            { icon: CheckCircle2, label: 'Collected', value: `${summary.owned}`, variant: 'secondary' },
           ].map((metric, i) => (
-            <Card key={i} variant="tactical" className="p-4 border-white/[0.03] group hover:border-white/[0.08] transition-colors">
-              <div className="flex items-center gap-2 mb-2.5">
-                <metric.icon size={12} className={cn(
+            <Card key={i} variant="default" className="p-3.5">
+              <div className="flex items-center gap-2 mb-2">
+                <metric.icon size={11} className={cn(
                   metric.variant === 'primary' && 'text-brand-accent',
-                  metric.variant === 'success' && 'text-success',
-                  metric.variant === 'warning' && 'text-warning',
-                  metric.variant === 'secondary' && 'text-neutral-600'
+                  metric.variant === 'success' && 'text-emerald-500',
+                  metric.variant === 'warning' && 'text-amber-500',
+                  metric.variant === 'secondary' && 'text-zinc-600'
                 )} />
-                <span className="text-[9px] font-black text-neutral-600 uppercase tracking-widest truncate leading-none">{metric.label}</span>
+                <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest truncate">{metric.label}</span>
               </div>
-              <p className="text-sm font-black text-white stats-value tabular-nums uppercase truncate leading-none">{metric.value}</p>
+              <p className="text-sm font-mono font-bold text-zinc-100 tabular-nums uppercase truncate">{metric.value}</p>
             </Card>
           ))}
         </div>
 
         {(error || hubError) && shopData && (
-          <Badge variant="warning" icon={AlertCircle} size="sm" className="w-full py-3 rounded-xl justify-center border-warning/10 shadow-lg animate-in">
-            CONNECTION UNSTABLE: DISPLAYING OFFLINE CACHE
+          <Badge variant="warning" icon={AlertCircle} className="w-full py-2.5 rounded-md justify-center border-amber-500/10">
+            CONNECTION UNSTABLE: USING LOCAL CACHE
           </Badge>
         )}
       </header>
 
       <section className="space-y-6">
         <div className="flex items-center justify-between gap-4 px-1">
-          <div className="flex items-center gap-2.5">
-            <Sparkles size={16} className="text-brand-accent animate-pulse" />
-            <h2 className="text-[11px] font-black text-white uppercase tracking-[0.25em]">Manifest Database</h2>
+          <div className="flex items-center gap-2">
+            <Sparkles size={14} className="text-brand-accent" />
+            <h2 className="text-[10px] font-bold text-zinc-100 uppercase tracking-widest">Available Personnel</h2>
           </div>
-          <Badge variant="tactical" size="xs" className="opacity-40 font-mono tracking-tighter">
+          <Badge variant="secondary" size="xs">
             {summary.affordable} READY
           </Badge>
         </div>
 
         {inventory.length > 0 ? (
-          <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3 sm:gap-4 px-0.5">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-4 px-0.5">
             {inventory.map((char) => (
               <CharacterCard key={char.id} character={char} onClick={() => onCharClick(char)} />
             ))}
           </div>
         ) : (
-          <div className="py-24">
+          <div className="py-20 border border-dashed border-white/5 rounded-lg bg-zinc-950/50">
             <EmptyState
               icon={Store}
-              title="Terminal Closed"
-              message="No assets available for summoning at this moment."
+              title="Terminal Offline"
+              message="No personnel available in the current rotation."
             />
           </div>
         )}
