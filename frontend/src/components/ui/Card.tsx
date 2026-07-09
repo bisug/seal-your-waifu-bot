@@ -9,7 +9,7 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, variant = 'default', hover = false, withCorners = false, children, onAnimationStart, onDrag, onDragStart, onDragEnd, ...props }, ref) => {
+  ({ className, variant = 'default', hover = false, withCorners = false, children, onAnimationStart: _onAnimationStart, onDrag: _onDrag, onDragStart: _onDragStart, onDragEnd: _onDragEnd, ...props }, ref) => {
     const variants = {
       default: 'bg-brand-deep border border-white/5',
       glass: 'bg-brand-glass backdrop-blur-xl border border-brand-glass-border',
