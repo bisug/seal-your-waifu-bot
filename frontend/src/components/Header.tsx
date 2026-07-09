@@ -1,5 +1,5 @@
 import 'react';
-import { Menu, Gem, Stamp, Shield, Zap } from 'lucide-react';
+import { Menu, Gem, Stamp, Zap, Heart } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 import { formatNumber } from '../utils';
 import { Button } from './ui/Button';
@@ -16,17 +16,17 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
     <header className="sticky top-0 z-[100] flex items-center justify-between px-4 bg-background/80 backdrop-blur-xl h-14 shrink-0 select-none border-b border-white/[0.04]">
       {/* Brand Section */}
       <div className="flex items-center gap-2.5">
-        <div className="w-9 h-9 rounded-md flex items-center justify-center bg-brand-surface border border-white/10 shadow-inner relative overflow-hidden group">
-           <Stamp size={18} className="text-white relative z-10" strokeWidth={2.5} />
+        <div className="w-9 h-9 rounded-md bg-brand-surface border border-white/10 flex items-center justify-center relative overflow-hidden group">
+           <Heart size={18} className="text-white relative z-10" fill="currentColor" />
            <div className="absolute inset-0 bg-brand-accent/10 opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
         <div className="flex flex-col">
           <div className="flex items-center gap-1.5">
-            <span className="text-[10px] font-black text-white tracking-[0.15em] uppercase leading-none">SEAL PROTOCOL</span>
+            <span className="text-[10px] font-black text-white tracking-[0.15em] uppercase leading-none">WAIFU PROTOCOL</span>
             <div className="w-1 h-1 rounded-full bg-brand-accent animate-pulse" />
           </div>
           <div className="mt-1 flex items-center gap-1">
-            <span className="text-[8px] font-bold text-neutral-600 uppercase tracking-widest">EST. 2024</span>
+            <span className="text-[8px] font-bold text-neutral-600 uppercase tracking-widest">SENSITIVE ASSETS</span>
             <span className="text-[8px] font-bold text-neutral-800 uppercase tracking-widest">•</span>
             <span className="text-[8px] font-bold text-brand-accent/60 uppercase tracking-widest">v2.2-STABLE</span>
           </div>
@@ -41,7 +41,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
             {formatNumber(user?.stats?.zenith || 0)}
           </span>
           <div className="h-2 w-[1px] bg-white/10" />
-          <span className="text-[8px] font-black text-neutral-500 uppercase tracking-widest">ZNTH</span>
+          <span className="text-[8px] font-black text-neutral-500 uppercase tracking-widest">ZENITH</span>
         </div>
 
         <Button

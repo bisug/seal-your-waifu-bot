@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShieldCheck, Zap, Lock, Database } from 'lucide-react';
+import { ShieldCheck, Zap, Lock, Database, Heart } from 'lucide-react';
 
 const loadingSteps = [
   'INITIALIZING LINK',
   'SYNC ARCHIVES',
-  'DECRYPT ASSETS',
+  'SUMMONING WAIFUS',
   'MAP BIOMETRICS',
   'FINALIZING',
 ];
@@ -13,7 +13,7 @@ const loadingSteps = [
 const cardFaces = [
   { letter: 'S', icon: ShieldCheck, color: 'text-sky-500' },
   { letter: 'E', icon: Zap, color: 'text-amber-500' },
-  { letter: 'A', icon: Database, color: 'text-purple-500' },
+  { letter: 'A', icon: Heart, color: 'text-pink-500' },
   { letter: 'L', icon: Lock, color: 'text-emerald-500' },
 ];
 
@@ -67,7 +67,7 @@ export const IntroLoading = () => {
                                     className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.05] to-transparent"
                                 />
                             )}
-                            <card.icon size={12} className={isLoaded ? card.color : 'text-neutral-800'} />
+                            <card.icon size={12} className={isLoaded ? card.color : 'text-neutral-800'} fill={card.letter === 'A' && isLoaded ? 'currentColor' : 'none'} />
                             <span className="text-base font-black text-white font-mono">{card.letter}</span>
                         </motion.div>
                     )
@@ -105,7 +105,7 @@ export const IntroLoading = () => {
         <div className="text-center pt-4">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-sm bg-white/[0.02] border border-white/[0.05]">
                 <div className="w-1 h-1 rounded-full bg-brand-accent animate-pulse" />
-                <span className="text-[8px] font-black text-neutral-600 uppercase tracking-widest">Seal Protocol Secured / v2.2.0</span>
+                <span className="text-[8px] font-black text-neutral-600 uppercase tracking-widest">Waifu Protocol Secured / v2.2.0</span>
             </div>
         </div>
       </div>

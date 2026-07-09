@@ -27,6 +27,8 @@ import {
   Target,
   Database,
   Activity,
+  Heart,
+  Sparkles,
 } from 'lucide-react';
 import { cleanRarityLabel, formatNumber, cn } from '../utils';
 import { useInfiniteGrid } from '../hooks/useInfiniteGrid';
@@ -90,7 +92,7 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
     return () => window.clearTimeout(timeoutId);
   }, [focusCollection, userLoading]);
 
-  if (userLoading && items.length === 0) return (
+  if (userLoading && (items?.length || 0) === 0) return (
     <div className="pb-24 pt-4 px-4 max-w-5xl mx-auto space-y-4">
        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <Skeleton className="md:col-span-2 h-32 rounded-lg" />
@@ -121,7 +123,7 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
   const percentileLabel = typeof stats?.percentile === 'number' && stats.percentile > 0
     ? `TOP ${stats.percentile}%`
     : 'UNRANKED';
-  const currentTitle = user.titles?.current || 'OPERATIVE';
+  const currentTitle = user.titles?.current || 'COLLECTOR';
   const activePet = user.current_pet;
   const usernameLabel = user.username ? `@${user.username}` : `ID ${user.id}`;
 
@@ -149,7 +151,7 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
             <div>
                 <div className="flex flex-wrap items-center gap-2 mb-0.5">
                     <h1 className="text-lg font-black text-white tracking-tight uppercase truncate">
-                        {user.first_name || 'Collector'}
+                        {user.first_name || 'Master'}
                     </h1>
                     {user.role_tag && (
                         <Badge variant="primary" size="xs" className="tracking-[0.1em]">
@@ -181,7 +183,7 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
 
           {/* Subtle Decorative Element */}
           <div className="absolute right-4 top-4 text-white/[0.02] pointer-events-none select-none">
-             <Target size={80} strokeWidth={1} />
+             <Heart size={80} strokeWidth={1} />
           </div>
         </BentoTile>
 
@@ -189,8 +191,8 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
         <BentoTile className="bg-brand-surface/40 border-white/[0.05]">
            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-1.5">
-                <Database size={12} className="text-purple-500" />
-                <span className="text-[9px] font-black text-neutral-500 uppercase tracking-[0.2em]">Data Archives</span>
+                <BookOpen size={12} className="text-purple-500" />
+                <span className="text-[9px] font-black text-neutral-500 uppercase tracking-[0.2em]">Harem Progress</span>
               </div>
               <div className="w-1.5 h-1.5 rounded-full bg-purple-500/40 animate-pulse" />
            </div>
@@ -201,7 +203,7 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
                     {collectionPercent}<span className="text-xs text-purple-500 ml-0.5">%</span>
                  </div>
                  <div className="text-right">
-                    <div className="text-[9px] font-black text-neutral-600 uppercase tracking-tighter">Inventory</div>
+                    <div className="text-[9px] font-black text-neutral-600 uppercase tracking-tighter">Waifus</div>
                     <div className="text-[11px] font-mono font-bold text-white tabular-nums">
                         {formatNumber(collectionOwned)}<span className="mx-0.5 text-neutral-700">/</span>{formatNumber(collectionTotal)}
                     </div>
@@ -257,7 +259,7 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
            <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
                 <Activity size={14} className="text-blue-400" />
-                <span className="stats-label">Uptime</span>
+                <span className="stats-label">Streak</span>
               </div>
            </div>
            <div className="stats-value text-lg text-white tabular-nums truncate">{formatNumber(stats?.streak || 0)} <span className="text-[10px] text-neutral-500 font-black ml-0.5">DAYS</span></div>
@@ -272,7 +274,7 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
            </div>
            <div className="min-w-0 flex-1">
               <div className="text-[8px] font-black text-neutral-600 uppercase tracking-widest mb-0.5">Active Companion</div>
-              <div className="text-xs font-black text-white truncate uppercase tracking-tight">{activePet?.name || 'STANDBY...'}</div>
+              <div className="text-xs font-black text-white truncate uppercase tracking-tight">{activePet?.name || 'NONE...'}</div>
            </div>
            {activePet && (
               <Badge variant="tactical" size="xs" className="font-mono px-1.5">L.{activePet.level || 1}</Badge>
@@ -284,8 +286,8 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
               <Egg size={20} className="text-emerald-500" />
            </div>
            <div className="min-w-0 flex-1">
-              <div className="text-[8px] font-black text-neutral-600 uppercase tracking-widest mb-0.5">Incubation Status</div>
-              <div className="text-xs font-black text-white truncate uppercase tracking-tight">{stats?.active_incubations || 0}<span className="text-neutral-700 mx-1">/</span>{stats?.incubation_slots || 1} SEALS ACTIVE</div>
+              <div className="text-[8px] font-black text-neutral-600 uppercase tracking-widest mb-0.5">Hatchery Status</div>
+              <div className="text-xs font-black text-white truncate uppercase tracking-tight">{stats?.active_incubations || 0}<span className="text-neutral-700 mx-1">/</span>{stats?.incubation_slots || 1} EGGS</div>
            </div>
            <div className="w-6 h-6 rounded-full border border-emerald-500/20 flex items-center justify-center">
                 <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
@@ -297,10 +299,10 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
       <section ref={collectionRef} className="pt-2 space-y-4">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div className="space-y-0.5">
-                <h2 className="text-lg font-black text-white tracking-tighter uppercase">Registry Archives</h2>
+                <h2 className="text-lg font-black text-white tracking-tighter uppercase">My Harem</h2>
                 <div className="flex items-center gap-1.5">
-                    <Zap size={10} className="text-brand-accent animate-pulse" />
-                    <p className="text-[9px] font-bold text-neutral-600 uppercase tracking-[0.2em]">Querying centralized storage...</p>
+                    <Sparkles size={10} className="text-brand-accent animate-pulse" />
+                    <p className="text-[9px] font-bold text-neutral-600 uppercase tracking-[0.2em]">Scanning waifu database...</p>
                 </div>
             </div>
 
@@ -321,7 +323,7 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
                         onChange={(event) => setRarity(event.target.value)}
                         className="h-9 pl-3 pr-8 bg-[#0a0a0c] border border-white/10 rounded-md text-[10px] font-black text-white uppercase tracking-widest outline-none focus:border-brand-accent transition-all appearance-none cursor-pointer"
                     >
-                        <option value="">ALL CLASSIFICATIONS</option>
+                        <option value="">ALL RARITIES</option>
                         {rarityOptions.map(({ value, label }) => (
                             <option key={value} value={value}>{label.toUpperCase()}</option>
                         ))}
@@ -334,7 +336,7 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
         {error && (items?.length || 0) === 0 ? (
           <ErrorState message={error} onAction={refresh} />
         ) : (items?.length || 0) > 0 || (loading && page > 1) ? (
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2.5 sm:gap-3">
                {(items || []).map((char, i) => (
                  <CharacterCard
                   key={char.id}
@@ -348,7 +350,7 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
              ))}
           </div>
         ) : loading && page === 1 ? (
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2.5 sm:gap-3">
              {Array.from({ length: 18 }).map((_, i) => (
                 <CardSkeleton key={`loading-new-${i}`} />
              ))}
@@ -356,12 +358,12 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
         ) : (
           <EmptyState
             icon={BookOpen}
-            title="Archive Empty"
-            message="Characters you collect will appear in your archive."
+            title="Harem Empty"
+            message="Waifus you summon will appear here."
           />
         )}
 
-        {loading && items.length > 0 && (
+        {loading && (items?.length || 0) > 0 && (
            <div className="flex justify-center py-8">
               <Loader2 className="animate-spin text-brand-accent/30" size={24} />
            </div>
