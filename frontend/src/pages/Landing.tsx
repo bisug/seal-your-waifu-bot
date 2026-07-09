@@ -460,7 +460,7 @@ export const Landing = ({ error, onRetry }: LandingProps) => {
            </div>
            <p className="text-[10px] font-black text-neutral-700 uppercase tracking-[0.5em]">© 2025 WAIFU PROTOCOL. ALL RIGHTS RESERVED.</p>
            <div className="flex gap-4 opacity-10 font-mono text-[8px] uppercase tracking-tighter">
-              <span>NODE_ID: {Math.random().toString(36).substring(7).toUpperCase()}</span>
+              <span>NODE_ID: {useMemo(() => "7X4K9L2".toUpperCase(), [])}</span>
               <span>•</span>
               <span>LINK_STATUS: SECURE</span>
            </div>
