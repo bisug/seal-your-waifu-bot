@@ -13,7 +13,11 @@ import {
   Star,
   Trophy,
   Zap,
+  ShieldCheck,
 } from 'lucide-react';
+import { Button } from '../components/ui/Button';
+import { Badge } from '../components/ui/Badge';
+import { Card } from '../components/ui/Card';
 
 interface LandingProps {
   error?: string | null;
@@ -37,21 +41,21 @@ const sceneCards = [
     id: 'mythic',
     badge: 'SSR',
     title: 'Mythic',
-    meta: 'Animated pull',
+    meta: 'Level 100',
     className: 'left-[9%] top-[17%] hidden sm:block',
     rotate: -13,
     speed: -0.55,
-    tone: 'from-rose-500/30 via-fuchsia-500/10 to-cyan-400/25',
+    tone: 'from-brand-accent/30 via-brand-accent/10 to-brand-midnight',
   },
   {
     id: 'pet',
     badge: 'PET',
     title: 'Nova Lynx',
-    meta: 'Luck aura',
+    meta: 'Luck Aura',
     className: 'right-[8%] top-[16%]',
     rotate: 11,
     speed: 0.48,
-    tone: 'from-emerald-400/25 via-cyan-300/10 to-zinc-950',
+    tone: 'from-emerald-500/30 via-emerald-500/10 to-brand-midnight',
   },
   {
     id: 'egg',
@@ -61,59 +65,52 @@ const sceneCards = [
     className: 'left-[14%] bottom-[12%]',
     rotate: 9,
     speed: 0.36,
-    tone: 'from-amber-300/30 via-orange-500/10 to-zinc-950',
+    tone: 'from-amber-500/30 via-amber-500/10 to-brand-midnight',
   },
   {
     id: 'rank',
     badge: 'TOP',
     title: 'Rank 01',
-    meta: 'Daily ladder',
+    meta: 'Season 1',
     className: 'right-[17%] bottom-[10%] hidden md:block',
     rotate: -8,
     speed: -0.4,
-    tone: 'from-sky-400/25 via-indigo-400/10 to-zinc-950',
+    tone: 'from-purple-500/30 via-purple-500/10 to-brand-midnight',
   },
 ];
 
 const featureCards: FeatureCardProps[] = [
   {
     icon: Sparkles,
-    title: 'Cinematic pulls',
-    description: 'Daily shop rolls, rarity reveals, and fast collection loops built for Telegram.',
-    tone: 'text-fuchsia-300 bg-fuchsia-400/10 border-fuchsia-300/20',
+    title: 'Archive Secured',
+    description: 'A complete collection system with rarity reveals and live ownership checks.',
+    tone: 'text-brand-accent border-brand-accent/20 bg-brand-accent/5',
   },
   {
     icon: Egg,
-    title: 'Egg incubation',
-    description: 'Hatch timed eggs, unlock fresh characters, and keep your queue moving.',
-    tone: 'text-amber-300 bg-amber-300/10 border-amber-300/20',
+    title: 'Biological Sync',
+    description: 'Incubate timed eggs and hatch unique characters to expand your roster.',
+    tone: 'text-emerald-500 border-emerald-500/20 bg-emerald-500/5',
   },
   {
     icon: PawPrint,
-    title: 'Pet companions',
-    description: 'Bring pets into the economy with mood, levels, abilities, and shop unlocks.',
-    tone: 'text-emerald-300 bg-emerald-300/10 border-emerald-300/20',
+    title: 'Tactical Pets',
+    description: 'Deploy companion assets with specialized abilities and leveling paths.',
+    tone: 'text-amber-500 border-amber-500/20 bg-amber-500/5',
   },
   {
     icon: Trophy,
-    title: 'Ranked chase',
-    description: 'Quests, referrals, passes, and leaderboards give collectors a reason to return.',
-    tone: 'text-sky-300 bg-sky-300/10 border-sky-300/20',
+    title: 'Global Ladder',
+    description: 'Compete for dominance on global leaderboards and complete seasonal tasks.',
+    tone: 'text-purple-500 border-purple-500/20 bg-purple-500/5',
   },
 ];
 
 const metrics = [
-  { label: 'Daily shop', value: 'Rotating' },
-  { label: 'Collection', value: 'Catalog' },
-  { label: 'Pets', value: 'Active' },
-  { label: 'Quests', value: 'Live' },
-];
-
-const rarityRows = [
-  { label: 'Common', width: '32%', color: 'bg-neutral-400' },
-  { label: 'Rare', width: '48%', color: 'bg-sky-400' },
-  { label: 'Epic', width: '66%', color: 'bg-fuchsia-400' },
-  { label: 'Mythic', width: '84%', color: 'bg-amber-300' },
+  { label: 'Daily Market', value: 'ROTATING' },
+  { label: 'Asset Archive', value: 'CATALOG' },
+  { label: 'Companion', value: 'ACTIVE' },
+  { label: 'Objectives', value: 'LIVE' },
 ];
 
 const SceneCard = ({
@@ -134,21 +131,19 @@ const SceneCard = ({
   return (
     <div className={`absolute z-10 ${className}`} style={wrapperStyle} aria-hidden="true">
       <motion.div
-        className={`landing-holo-card h-40 w-28 overflow-hidden rounded-lg border border-white/15 bg-gradient-to-br ${tone} p-3 shadow-2xl backdrop-blur-md sm:h-44 sm:w-32`}
+        className={`landing-holo-card h-40 w-28 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br ${tone} p-4 shadow-2xl backdrop-blur-md sm:h-44 sm:w-32`}
         animate={reduceMotion ? undefined : { y: [0, -10, 0], rotate: [rotate, rotate + 2, rotate] }}
-        transition={{ duration: 5.8, repeat: Infinity, ease: 'easeInOut' }}
+        transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
         style={reduceMotion ? { transform: `rotate(${rotate}deg)` } : undefined}
       >
-        <div className="mb-12 flex items-center justify-between">
-          <span className="rounded-md border border-white/15 bg-black/25 px-2 py-1 text-[10px] font-black text-white">
-            {badge}
-          </span>
-          <Star size={15} className="text-white/70" />
+        <div className="mb-10 flex items-center justify-between">
+            <Badge variant="secondary" className="px-1.5 py-0 rounded-md font-black">{badge}</Badge>
+            <ShieldCheck size={14} className="text-white/30" />
         </div>
-        <div className="absolute inset-x-4 top-16 h-14 rounded-lg border border-white/10 bg-black/20" />
+        <div className="absolute inset-x-3 top-16 h-14 rounded-xl border border-white/5 bg-black/40" />
         <div className="absolute inset-x-3 bottom-3">
-          <p className="text-sm font-black leading-tight text-white">{title}</p>
-          <p className="mt-1 text-[10px] font-bold uppercase text-white/55">{meta}</p>
+          <p className="text-xs font-black leading-tight text-white uppercase truncate">{title}</p>
+          <p className="mt-1 text-[9px] font-bold uppercase text-neutral-500 tracking-widest">{meta}</p>
         </div>
       </motion.div>
     </div>
@@ -156,13 +151,13 @@ const SceneCard = ({
 };
 
 const FeatureCard = ({ icon: Icon, title, description, tone }: FeatureCardProps) => (
-  <article className="rounded-lg border border-white/10 bg-white/[0.035] p-5 shadow-sm">
-    <div className={`mb-5 flex h-10 w-10 items-center justify-center rounded-lg border ${tone}`}>
-      <Icon size={19} />
+  <Card className="p-6 border-white/5 bg-white/[0.02]">
+    <div className={`mb-5 flex h-10 w-10 items-center justify-center rounded-xl border ${tone}`}>
+      <Icon size={20} />
     </div>
-    <h3 className="text-base font-black text-white">{title}</h3>
-    <p className="mt-3 text-sm font-medium leading-6 text-neutral-400">{description}</p>
-  </article>
+    <h3 className="text-sm font-black text-white uppercase tracking-tight">{title}</h3>
+    <p className="mt-3 text-xs font-bold leading-6 text-neutral-500 uppercase tracking-widest">{description}</p>
+  </Card>
 );
 
 export const Landing = ({ error, onRetry }: LandingProps) => {
@@ -180,8 +175,8 @@ export const Landing = ({ error, onRetry }: LandingProps) => {
 
     const rect = event.currentTarget.getBoundingClientRect();
     setPointer({
-      x: ((event.clientX - rect.left) / rect.width - 0.5) * 52,
-      y: ((event.clientY - rect.top) / rect.height - 0.5) * 52,
+      x: ((event.clientX - rect.left) / rect.width - 0.5) * 50,
+      y: ((event.clientY - rect.top) / rect.height - 0.5) * 50,
     });
   };
 
@@ -191,109 +186,100 @@ export const Landing = ({ error, onRetry }: LandingProps) => {
   } as CSSProperties;
 
   return (
-    <div className="landing-page h-svh min-h-svh overflow-x-hidden overflow-y-auto bg-[#08090b] text-white">
+    <div className="landing-page h-svh min-h-svh overflow-x-hidden overflow-y-auto bg-background text-white select-none">
       <section
-        className="landing-hero relative min-h-[82svh] overflow-hidden px-5 pb-12 pt-24 sm:px-8 lg:px-10"
+        className="landing-hero relative min-h-[85svh] overflow-hidden px-6 pb-12 pt-24 sm:px-10"
         onPointerMove={handlePointerMove}
         onPointerLeave={() => setPointer({ x: 0, y: 0 })}
         style={sceneStyle}
       >
         <div className="landing-grid pointer-events-none absolute inset-0" aria-hidden="true" />
-        <div className="landing-stage pointer-events-none absolute inset-0" aria-hidden="true">
+
+        <div className="landing-stage pointer-events-none absolute inset-0 opacity-40 sm:opacity-100" aria-hidden="true">
           <motion.div
-            className="landing-core absolute left-1/2 top-[46%] h-72 w-72 rounded-full border border-white/10"
+            className="absolute left-1/2 top-[46%] h-80 w-80 rounded-full border border-white/5"
             animate={reduceMotion ? undefined : { rotate: 360 }}
-            transition={{ duration: 34, repeat: Infinity, ease: 'linear' }}
+            transition={{ duration: 40, repeat: Infinity, ease: 'linear' }}
             style={{ x: '-50%', y: '-50%' }}
           />
-          <motion.div
-            className="landing-core landing-core-wide absolute left-1/2 top-[46%] h-[27rem] w-[27rem] rounded-full border border-cyan-300/10"
-            animate={reduceMotion ? undefined : { rotate: -360 }}
-            transition={{ duration: 46, repeat: Infinity, ease: 'linear' }}
-            style={{ x: '-50%', y: '-50%' }}
-          />
-          <div className="landing-runway absolute left-1/2 top-[46%] h-[34rem] w-[34rem] -translate-x-1/2 -translate-y-1/2 rounded-full" />
+          <div className="landing-runway absolute left-1/2 top-[46%] h-[36rem] w-[36rem] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-40" />
 
           {sceneCards.map((card) => (
             <SceneCard key={card.id} {...card} pointer={pointer} reduceMotion={reduceMotion} />
           ))}
 
-          <div className="absolute left-1/2 top-[47%] z-10 flex h-28 w-28 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-lg border border-white/15 bg-black/30 shadow-2xl backdrop-blur-md">
-            <img src="/favicon.svg" alt="" className="h-14 w-14" aria-hidden="true" />
+          <div className="absolute left-1/2 top-[47%] z-10 flex h-32 w-32 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-[2.5rem] border border-white/10 bg-brand-midnight/40 shadow-2xl backdrop-blur-2xl">
+            <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10">
+                <ShieldCheck size={32} className="text-white" strokeWidth={1} />
+            </div>
           </div>
         </div>
 
         <header className="absolute left-0 right-0 top-0 z-30">
-          <nav className="mx-auto flex h-[72px] w-full max-w-7xl items-center justify-between px-5 sm:px-8 lg:px-10">
-            <a href="/" className="flex min-w-0 items-center gap-3" aria-label="Seal home">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5">
-                <img src="/favicon.svg" alt="" className="h-5 w-5" aria-hidden="true" />
-              </span>
-              <span className="truncate text-sm font-black text-white">SEAL YOUR WAIFU</span>
-            </a>
-            <a
-              href={telegramUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="hidden h-10 shrink-0 items-center gap-2 rounded-lg border border-white/10 bg-white/10 px-4 text-xs font-black uppercase text-white transition-colors hover:bg-white/15 sm:inline-flex"
-              aria-label="Open Seal in Telegram"
+          <nav className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between px-6 sm:px-10">
+            <div className="flex items-center gap-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/5 bg-white/5 shadow-inner">
+                <ShieldCheck size={20} className="text-white" strokeWidth={2} />
+              </div>
+              <span className="text-xs font-black text-white tracking-tighter uppercase">SEAL YOUR WAIFU</span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.open(telegramUrl, '_blank')}
+              className="rounded-xl border-white/5 bg-white/5 font-black uppercase text-[10px] tracking-widest h-10"
             >
-              <Send size={14} />
-              <span>Telegram</span>
-            </a>
+              <Send size={14} className="mr-2" />
+              Telegram
+            </Button>
           </nav>
         </header>
 
         <div className="relative z-20 mx-auto flex max-w-7xl flex-col justify-center">
-          <div className="w-full max-w-[22rem] pt-2 sm:max-w-3xl sm:pt-10 lg:pt-16">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-lg border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-xs font-black uppercase text-cyan-200">
+          <div className="w-full max-w-[24rem] pt-8 sm:max-w-3xl lg:pt-20 space-y-6 sm:space-y-8">
+            <div className="inline-flex items-center gap-2 rounded-lg border border-brand-accent/20 bg-brand-accent/10 px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-brand-accent">
               <Zap size={14} />
-              Telegram collector RPG
+              Operational Protocol Active
             </div>
 
-            <h1 className="max-w-4xl text-[2.15rem] font-black leading-[1.02] tracking-normal text-white sm:text-6xl sm:leading-[0.95] lg:text-7xl">
-              <span className="block sm:inline">Collect rare cards, </span>
-              <span className="block sm:inline">hatch eggs, </span>
-              <span className="block sm:inline">and flex the </span>
-              <span className="block sm:inline">perfect lineup.</span>
+            <h1 className="text-4xl font-black leading-[0.9] tracking-tighter text-white sm:text-7xl lg:text-8xl uppercase">
+                Secure. <br />
+                Archive. <br />
+                Deploy.
             </h1>
 
-            <p className="mt-6 max-w-[21rem] text-base font-semibold leading-7 text-neutral-300 sm:max-w-xl sm:text-lg">
-              Seal turns every Telegram session into a compact anime collection loop with drops, pets,
-              quests, shops, and leaderboards.
+            <p className="max-w-[22rem] text-sm font-bold leading-7 text-neutral-500 uppercase tracking-widest sm:max-w-xl sm:text-base">
+              The definitive Telegram asset collection RPG. <br /> Secure rare cards, synchronize biological assets, and dominate the global leaderboards.
             </p>
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <a
-                href={telegramUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-white px-5 text-sm font-black text-zinc-950 transition-transform active:scale-[0.98]"
+            <div className="flex flex-col gap-3 sm:flex-row pt-4">
+              <Button
+                onClick={() => window.open(telegramUrl, '_blank')}
+                className="h-14 px-10 rounded-2xl text-xs font-black uppercase tracking-[0.2em] shadow-[0_10px_40px_rgba(255,255,255,0.1)]"
               >
-                <Send size={17} />
-                Open in Telegram
-              </a>
-              <a
-                href="#drops"
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/10 px-5 text-sm font-black text-white transition-colors hover:bg-white/15"
+                Launch Protocol
+              </Button>
+              <Button
+                variant="outline"
+                className="h-14 px-8 rounded-2xl text-xs font-black uppercase tracking-[0.2em] border-white/5 bg-white/5"
+                onClick={() => document.getElementById('drops')?.scrollIntoView({ behavior: 'smooth' })}
               >
-                <BookOpen size={17} />
-                View drops
-                <ArrowRight size={16} />
-              </a>
+                Archive Access
+              </Button>
             </div>
 
             {error && (
-              <div className="mt-5 flex max-w-xl flex-col gap-3 rounded-lg border border-amber-300/20 bg-amber-300/10 p-4 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm font-semibold leading-6 text-amber-100">{error}</p>
+              <div className="mt-8 p-5 rounded-2xl border border-red-500/20 bg-red-500/5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p className="text-[10px] font-black uppercase tracking-widest text-red-400">{error}</p>
                 {onRetry && (
-                  <button
-                    type="button"
+                  <Button
+                    variant="outline"
+                    size="xs"
                     onClick={onRetry}
-                    className="inline-flex h-10 shrink-0 items-center justify-center rounded-lg border border-amber-100/20 px-4 text-xs font-black uppercase text-amber-50 transition-colors hover:bg-amber-100/10"
+                    className="border-red-500/30 text-red-400 font-black uppercase tracking-widest px-4 py-2"
                   >
-                    Retry
-                  </button>
+                    Retry Connection
+                  </Button>
                 )}
               </div>
             )}
@@ -301,33 +287,33 @@ export const Landing = ({ error, onRetry }: LandingProps) => {
         </div>
       </section>
 
-      <section className="border-y border-white/10 bg-[#0d0f13]" aria-label="Seal highlights">
-        <div className="mx-auto grid max-w-7xl grid-cols-2 gap-px bg-white/10 sm:grid-cols-4">
+      <section className="border-y border-white/5 bg-brand-deep">
+        <div className="mx-auto grid max-w-7xl grid-cols-2 gap-px bg-white/5 sm:grid-cols-4">
           {metrics.map((metric) => (
-            <div key={metric.label} className="bg-[#0d0f13] px-5 py-5 sm:px-8">
-              <p className="text-[10px] font-black uppercase text-neutral-500">{metric.label}</p>
-              <p className="mt-2 text-lg font-black text-white">{metric.value}</p>
+            <div key={metric.label} className="bg-brand-deep px-6 py-8 sm:px-10">
+              <p className="text-[9px] font-black uppercase tracking-[0.3em] text-neutral-600">{metric.label}</p>
+              <p className="mt-3 text-xl font-black text-white tracking-widest">{metric.value}</p>
             </div>
           ))}
         </div>
       </section>
 
-      <main id="drops">
-        <section className="px-5 py-14 sm:px-8 lg:px-10">
-          <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-end">
-            <div>
-              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-lg border border-white/10 bg-white/5">
-                <Gem size={21} className="text-cyan-300" />
+      <main id="drops" className="space-y-32 py-32">
+        <section className="px-6 sm:px-10">
+          <div className="mx-auto grid max-w-7xl gap-16 lg:grid-cols-[0.85fr_1.15fr] items-center">
+            <div className="space-y-6">
+              <div className="w-14 h-14 rounded-2xl bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center">
+                <Gem size={28} className="text-brand-accent" />
               </div>
-              <h2 className="max-w-lg text-3xl font-black leading-tight tracking-normal text-white sm:text-4xl">
-                A compact loop with enough depth to keep collectors plotting.
+              <h2 className="text-3xl font-black leading-tight uppercase tracking-tighter sm:text-5xl">
+                Advanced Tactical <br /> Collection.
               </h2>
-              <p className="mt-4 max-w-xl text-sm font-medium leading-7 text-neutral-400">
-                The webapp is tuned for quick taps, clear progress, and high-signal collection moments.
+              <p className="text-sm font-bold leading-8 text-neutral-500 uppercase tracking-widest max-w-lg">
+                Engineered for speed and precision. Every interaction is optimized for high-frequency gameplay directly within Telegram.
               </p>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2">
               {featureCards.map((feature) => (
                 <FeatureCard key={feature.title} {...feature} />
               ))}
@@ -335,80 +321,58 @@ export const Landing = ({ error, onRetry }: LandingProps) => {
           </div>
         </section>
 
-        <section className="border-t border-white/10 bg-[#0c0c10] px-5 py-14 sm:px-8 lg:px-10">
-          <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-2">
-              {['SR', 'SSR', 'UR', 'EX'].map((rarity, index) => (
-                <article
-                  key={rarity}
-                  className="landing-drop-card relative min-h-44 overflow-hidden rounded-lg border border-white/10 bg-white/[0.035] p-4"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="rounded-md border border-white/10 bg-black/20 px-2 py-1 text-[10px] font-black text-white">
-                      {rarity}
-                    </span>
-                    {index % 2 === 0 ? (
-                      <Crown size={16} className="text-amber-300" />
-                    ) : (
-                      <Bot size={16} className="text-cyan-300" />
-                    )}
-                  </div>
-                  <div className="absolute inset-x-4 top-16 h-16 rounded-lg border border-white/10 bg-black/20" />
-                  <div className="absolute bottom-4 left-4 right-4">
-                    <p className="text-sm font-black text-white">Drop tier {index + 1}</p>
-                    <div className="mt-3 h-1.5 rounded-full bg-white/10">
-                      <div
-                        className={`h-full rounded-full ${rarityRows[index].color}`}
-                        style={{ width: rarityRows[index].width }}
-                      />
-                    </div>
-                  </div>
-                </article>
-              ))}
+        <section className="px-6 sm:px-10">
+          <div className="mx-auto max-w-7xl flex flex-col items-center text-center space-y-16">
+            <div className="space-y-4 max-w-2xl">
+              <Badge variant="primary" className="rounded-full px-4 py-1 font-black tracking-widest text-[9px] uppercase">Asset Hierarchy</Badge>
+              <h2 className="text-3xl font-black uppercase tracking-tighter sm:text-6xl">Rare Tier Archives</h2>
+              <p className="text-sm font-bold text-neutral-500 uppercase tracking-widest">Master the probability fields and secure high-value assets for your collection.</p>
             </div>
 
-            <div>
-              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-lg border border-white/10 bg-white/5">
-                <Sparkles size={21} className="text-fuchsia-300" />
-              </div>
-              <h2 className="max-w-lg text-3xl font-black leading-tight tracking-normal text-white sm:text-4xl">
-                Designed for quick decisions, clean reveals, and a daily reason to return.
-              </h2>
-              <div className="mt-6 space-y-4">
-                {rarityRows.map((row) => (
-                  <div key={row.label}>
-                    <div className="mb-2 flex items-center justify-between text-xs font-black uppercase">
-                      <span className="text-neutral-400">{row.label}</span>
-                      <span className="text-white">{row.width}</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-white/10">
-                      <div className={`h-full rounded-full ${row.color}`} style={{ width: row.width }} />
-                    </div>
-                  </div>
+            <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {['SR', 'SSR', 'UR', 'EX'].map((rarity, i) => (
+                    <Card key={rarity} className="p-6 bg-white/[0.02] border-white/5 space-y-6">
+                        <div className="flex justify-between items-center">
+                            <Badge variant={i === 3 ? 'purple' : i === 2 ? 'danger' : i === 1 ? 'warning' : 'primary'} className="font-black px-2 py-0.5 rounded-lg">{rarity}</Badge>
+                            <ShieldCheck size={16} className="text-neutral-700" />
+                        </div>
+                        <div className="h-32 w-full rounded-2xl bg-black/40 border border-white/5 flex items-center justify-center">
+                            <Gem size={32} className="text-neutral-800" />
+                        </div>
+                        <div className="space-y-3">
+                            <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-neutral-600">
+                                <span>SECURE RATE</span>
+                                <span className="text-white">{(i + 1) * 20}%</span>
+                            </div>
+                            <div className="h-1.5 w-full bg-brand-surface rounded-full overflow-hidden">
+                                <div className="h-full bg-brand-accent" style={{ width: `${(i + 1) * 20}%` }} />
+                            </div>
+                        </div>
+                    </Card>
                 ))}
-              </div>
             </div>
           </div>
         </section>
 
-        <section className="px-5 py-14 sm:px-8 lg:px-10">
-          <div className="mx-auto flex max-w-7xl flex-col items-start gap-6 border-t border-white/10 pt-10 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-2xl font-black tracking-normal text-white">Ready to start the collection?</h2>
-              <p className="mt-2 text-sm font-semibold text-neutral-400">Open Seal from Telegram and jump into your profile.</p>
+        <section className="px-6 sm:px-10">
+          <Card className="mx-auto max-w-7xl p-10 sm:p-16 flex flex-col md:flex-row items-center justify-between gap-10 border-white/10 bg-gradient-to-br from-brand-deep to-brand-midnight shadow-2xl">
+            <div className="space-y-4 text-center md:text-left">
+              <h2 className="text-3xl font-black uppercase tracking-tighter sm:text-5xl">Ready to Initiate?</h2>
+              <p className="text-sm font-bold text-neutral-500 uppercase tracking-widest">Connect your Telegram account and start your collection protocol today.</p>
             </div>
-            <a
-              href={telegramUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-cyan-300 px-5 text-sm font-black text-zinc-950 transition-transform active:scale-[0.98]"
+            <Button
+              onClick={() => window.open(telegramUrl, '_blank')}
+              className="h-16 px-12 rounded-2xl text-sm font-black uppercase tracking-[0.2em] shadow-xl"
             >
-              <Send size={17} />
-              Launch Seal
-            </a>
-          </div>
+              Initialize Sync
+            </Button>
+          </Card>
         </section>
       </main>
+
+      <footer className="px-6 py-12 sm:px-10 border-t border-white/5 text-center">
+        <p className="text-[10px] font-black text-neutral-600 uppercase tracking-widest">© 2025 SEAL YOUR WAIFU PROTOCOL. ALL RIGHTS RESERVED.</p>
+      </footer>
     </div>
   );
 };
