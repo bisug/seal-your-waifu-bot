@@ -1,12 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, type ElementType } from 'react';
 import { motion } from 'framer-motion';
 import { Loader2, Heart, Gem, X, Swords, Wind, Sparkles, Check, Lock, PawPrint } from 'lucide-react';
 import { useToast } from '../ui/Toast';
 import { apiFetch, getErrorMessage } from '../../api/client';
 import { cn } from '../../utils';
-import { useUser } from '../../context/UserContext';
+import { useUser, type Pet, type User } from '../../context/UserContext';
 
-const StatBox = ({ icon: Icon, label, value, colorClass }) => (
+interface StatBoxProps {
+    icon: ElementType;
+    label: string;
+    value: string | number;
+    colorClass: string;
+}
+
+const StatBox = ({ icon: Icon, label, value, colorClass }: StatBoxProps) => (
     <div className="bg-white/[0.03] border border-white/5 p-4 rounded-2xl flex items-center space-x-3">
         <div className={`p-2 rounded-xl bg-black/20 ${colorClass}`}>
             <Icon size={16} />
@@ -18,12 +25,18 @@ const StatBox = ({ icon: Icon, label, value, colorClass }) => (
     </div>
 );
 
-const getPetImageSrc = (pet) => {
+const getPetImageSrc = (pet: Pet | null) => {
     const src = String(pet?.img || pet?.img_url || pet?.image || pet?.photo_url || '').trim();
     return /^https?:\/\//i.test(src) || src.startsWith('/') ? src : '';
 };
 
-export const PetActionModal = ({ selectedPet, setSelectedPet, user }) => {
+interface PetActionModalProps {
+    selectedPet: Pet | null;
+    setSelectedPet: (pet: Pet | null) => void;
+    user: User | null;
+}
+
+export const PetActionModal = ({ selectedPet, setSelectedPet, user }: PetActionModalProps) => {
     const { addToast } = useToast();
     const { triggerRefresh, liteMode } = useUser();
     const [purchaseStage, setPurchaseStage] = useState('idle');
@@ -46,7 +59,7 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }) => {
 
     const ownedPets = user?.pets || [];
     const selectedRef = String(selectedPet.petid || selectedPet.id || selectedPet.name || '');
-    const isOwned = ownedPets.some(p => [p.petid, p.id, p.name].filter(Boolean).includes(selectedRef) || p.name === selectedPet.name);
+    const isOwned = ownedPets.some((p: Pet) => [p.petid, p.id, p.name].filter(Boolean).includes(selectedRef) || p.name === selectedPet.name);
     const activeRef = user?.current_pet?.petid || user?.current_pet?.id || user?.current_pet?.name;
     const isActive = activeRef === selectedRef;
     const isLocked = (user?.stats?.level || 0) < (selectedPet.req_level || 0);

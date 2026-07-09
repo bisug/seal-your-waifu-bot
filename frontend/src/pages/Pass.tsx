@@ -1,4 +1,4 @@
-import React from 'react';
+import { useCallback, useState } from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle2, Crown, Gift, Loader2, Lock, Star, Ticket, TicketCheck, TicketPlus } from 'lucide-react';
 import { apiFetch, getErrorMessage } from '../api/client';
@@ -51,11 +51,11 @@ export const Pass = () => {
   const { refreshUser } = useUser();
   const { addToast } = useToast();
   const { data: passData, loading: passLoading, error, execute: fetchPassData } = useApi<any>('/pass_data');
-  const [claiming, setClaiming] = React.useState<number | null>(null);
-  const [claimingBank, setClaimingBank] = React.useState(false);
-  const [upgrading, setUpgrading] = React.useState<string | null>(null);
+  const [claiming, setClaiming] = useState<number | null>(null);
+  const [claimingBank, setClaimingBank] = useState(false);
+  const [upgrading, setUpgrading] = useState<string | null>(null);
 
-  const refreshAll = React.useCallback(async () => {
+  const refreshAll = useCallback(async () => {
     await fetchPassData();
     await refreshUser();
   }, [fetchPassData, refreshUser]);

@@ -1,4 +1,4 @@
-import React from 'react';
+import 'react';
 import { Menu, Gem, Stamp } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 import { formatNumber } from '../utils';
