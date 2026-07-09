@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { UserProvider, useUser } from './context/UserContext';
 import { Header } from './components/Header';
+import { BottomNav } from './components/BottomNav';
 import { NavigationDrawer } from './components/NavigationDrawer';
 import { IntroLoading } from './components/IntroLoading';
 import { Profile } from './pages/Profile';
@@ -14,6 +15,7 @@ import { ToastProvider } from './components/ui/Toast';
 import { CharActionModal } from './components/character/CharActionModal';
 import { PetActionModal } from './components/pet/PetActionModal';
 import { GachaReveal } from './components/ui/GachaReveal';
+import { AnimatePresence, motion } from 'framer-motion';
 
 // Lazy load all pages
 const Shop = lazy(() => import('./pages/Shop').then(m => ({ default: m.Shop })));
@@ -378,17 +380,30 @@ const AppContent = () => {
 
       <main className="app-scroller adaptive-px overflow-x-hidden">
         <Suspense fallback={
-          <div className="flex items-center justify-center h-full bg-brand-midnight">
-            <Loader2 size={24} className="animate-spin text-brand-accent/20" />
+          <div className="flex flex-col items-center justify-center h-full bg-brand-midnight gap-4">
+            <div className="relative">
+               <Loader2 size={32} className="animate-spin text-brand-accent/40" />
+               <div className="absolute inset-0 bg-brand-accent/10 blur-xl rounded-full" />
+            </div>
+            <p className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.3em] animate-pulse">Initializing Sector...</p>
           </div>
         }>
-          {activeTab === 'profile' && (
-            <Profile
-              onCharClick={setSelectedChar}
-              focusCollection={activeRoute.alias === 'harem' || activeRoute.alias === 'collection'}
-            />
-          )}
-          {activeTab === 'incubation' && <Hatchery />}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              className="page-transition-wrapper"
+            >
+              {activeTab === 'profile' && (
+                <Profile
+                  onCharClick={setSelectedChar}
+                  focusCollection={activeRoute.alias === 'harem' || activeRoute.alias === 'collection'}
+                />
+              )}
+              {activeTab === 'incubation' && <Hatchery />}
           {activeTab === 'shop' && <Shop onCharClick={setSelectedChar} />}
           {activeTab === 'exchange' && <Exchange />}
           {activeTab === 'gallery' && <Gallery onCharClick={setSelectedChar} />}
@@ -402,11 +417,18 @@ const AppContent = () => {
           {activeTab === 'upload' && canViewUpload && <Upload />}
           {activeTab === 'staff' && canViewStaff && <Staff />}
 
-          {(!VALID_TABS.includes(activeTab) || isBlockedTab) && (
-            <NotFound onReset={() => handleNavigate('profile')} />
-          )}
+              {(!VALID_TABS.includes(activeTab) || isBlockedTab) && (
+                <NotFound onReset={() => handleNavigate('profile')} />
+              )}
+            </motion.div>
+          </AnimatePresence>
         </Suspense>
       </main>
+
+      <BottomNav
+        activeTab={activeTab}
+        onNavigate={handleNavigate}
+      />
 
       {selectedChar && (
         <CharActionModal
