@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { AlertCircle, BadgePercent, CheckCircle2, Coins, Gem, Loader2, RefreshCw, Repeat2 } from 'lucide-react';
+import { AlertCircle, BadgePercent, CheckCircle2, Coins, Gem, Loader2, RefreshCw, Repeat2, Target, Zap, ArrowRight, TrendingUp } from 'lucide-react';
 import { apiFetch, getErrorMessage } from '../api/client';
 import { useApi } from '../hooks/useApi';
 import { ErrorState } from '../components/ui/ErrorState';
@@ -8,6 +8,10 @@ import { Card } from '../components/ui/Card';
 import { useToast } from '../components/ui/Toast';
 import { useUser } from '../context/UserContext';
 import { cn, formatNumber } from '../utils';
+import { Badge } from '../components/ui/Badge';
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
+import { motion, AnimatePresence } from 'framer-motion';
 
 type ExchangeMode = 'shards_to_zenith' | 'zenith_to_shards';
 
@@ -19,45 +23,18 @@ interface ExchangeData {
   minimum_zenith: number;
 }
 
-const Metric = ({
-  icon: Icon,
-  label,
-  value,
-  tone = 'neutral',
-}: {
-  icon: React.ElementType;
-  label: string;
-  value: string | number;
-  tone?: 'neutral' | 'accent' | 'success';
-}) => (
-  <div className="min-w-0 rounded-lg border border-white/5 bg-brand-deep px-3 py-2.5">
-    <div className="flex items-center gap-1.5 text-[10px] font-semibold text-neutral-500">
-      <Icon
-        size={12}
-        className={cn(
-          tone === 'accent' && 'text-brand-accent',
-          tone === 'success' && 'text-emerald-400',
-          tone === 'neutral' && 'text-neutral-600'
-        )}
-      />
-      <span className="truncate">{label}</span>
-    </div>
-    <p className="mt-1 truncate text-sm font-bold text-white tabular-nums">{value}</p>
-  </div>
-);
-
 const getModeCopy = (mode: ExchangeMode) => {
   if (mode === 'shards_to_zenith') {
     return {
-      inputLabel: 'Shards',
-      outputLabel: 'Zenith',
+      inputLabel: 'CREDIT SHARDS',
+      outputLabel: 'ZENITH ASSETS',
       activeText: 'Shards to Zenith',
     };
   }
 
   return {
-    inputLabel: 'Zenith',
-    outputLabel: 'Shards',
+    inputLabel: 'ZENITH ASSETS',
+    outputLabel: 'CREDIT SHARDS',
     activeText: 'Zenith to Shards',
   };
 };
@@ -96,41 +73,35 @@ export const Exchange = () => {
   const canUseMax = maxInputAmount >= minimumInputAmount;
 
   const validationMessage = useMemo(() => {
-    if (!rawAmount) return 'Enter an amount';
-    if (!hasValidAmount) return 'Enter a positive whole number';
+    if (!rawAmount) return 'Enter exchange amount';
+    if (!hasValidAmount) return 'Enter a positive integer';
 
     if (isShardMode) {
-      if (amountNumber < minimumShards) return `Minimum is ${formatNumber(minimumShards)} Shards`;
-      if (amountNumber % rate !== 0) return `Use multiples of ${formatNumber(rate)} Shards`;
-      if (shardBalance < amountNumber) return 'Not enough Shards';
+      if (amountNumber < minimumShards) return `Minimum: ${formatNumber(minimumShards)} Shards`;
+      if (amountNumber % rate !== 0) return `Multiplier: ${formatNumber(rate)} Shards`;
+      if (shardBalance < amountNumber) return 'Insufficient Shards';
       return null;
     }
 
-    if (amountNumber < minimumZenith) return `Minimum is ${formatNumber(minimumZenith)} Zenith`;
-    if (zenithBalance < amountNumber) return 'Not enough Zenith';
+    if (amountNumber < minimumZenith) return `Minimum: ${formatNumber(minimumZenith)} Zenith`;
+    if (zenithBalance < amountNumber) return 'Insufficient Zenith';
     return null;
   }, [amountNumber, hasValidAmount, isShardMode, minimumShards, minimumZenith, rate, rawAmount, shardBalance, zenithBalance]);
 
   const canExchange = !validationMessage && outputAmount > 0;
-  const _afterShardBalance = canExchange
-    ? (isShardMode ? shardBalance - amountNumber : shardBalance + outputAmount)
-    : shardBalance;
-  const _afterZenithBalance = canExchange
-    ? (isShardMode ? zenithBalance + outputAmount : zenithBalance - amountNumber)
-    : zenithBalance;
   const presetOptions = useMemo(() => {
     const baseOptions = isShardMode
       ? [
-          { label: '1 Zenith', amount: rate },
-          { label: '5 Zenith', amount: rate * 5 },
-          { label: '10 Zenith', amount: rate * 10 },
+          { label: '1 ZENITH', amount: rate },
+          { label: '5 ZENITH', amount: rate * 5 },
+          { label: '10 ZENITH', amount: rate * 10 },
         ]
       : [
-          { label: '1 Zenith', amount: 1 },
-          { label: '5 Zenith', amount: 5 },
-          { label: '10 Zenith', amount: 10 },
+          { label: '1 ZENITH', amount: 1 },
+          { label: '5 ZENITH', amount: 5 },
+          { label: '10 ZENITH', amount: 10 },
         ];
-    const options = [...baseOptions, { label: 'Max', amount: maxInputAmount }];
+    const options = [...baseOptions, { label: 'MAX ASSETS', amount: maxInputAmount }];
     const seen = new Set<number>();
 
     return options
@@ -170,10 +141,10 @@ export const Exchange = () => {
     if (!canExchange || exchanging) return;
 
     setExchanging(true);
-    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
+    window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
     try {
       const result = await apiFetch(`/shop/exchange/${mode}?amount=${amountNumber}`, { method: 'POST' });
-      addToast(result.message || 'Exchange complete', 'success');
+      addToast(result.message || 'Transaction executed successfully.', 'success');
       await Promise.allSettled([fetchExchange(), refreshUser()]);
       window.dispatchEvent(new Event('shop-refresh'));
     } catch (err: any) {
@@ -185,149 +156,177 @@ export const Exchange = () => {
 
   if (loading && !data) {
     return (
-      <div className="pb-24 pt-6 max-w-2xl mx-auto adaptive-px space-y-8">
+      <div className="pb-32 pt-8 max-w-2xl mx-auto adaptive-px space-y-10">
         <div className="flex flex-col gap-2">
-           <Skeleton className="h-8 w-44 rounded-lg" />
-           <Skeleton className="h-4 w-64 rounded-lg" />
+           <Skeleton className="h-10 w-48 rounded-lg" />
+           <Skeleton className="h-4 w-64 rounded-lg opacity-50" />
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {[1, 2, 3].map((item) => <Skeleton key={item} className="h-16 rounded-xl" />)}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          {[1, 2, 3].map((item) => <Skeleton key={item} className="h-20 rounded-2xl" />)}
         </div>
-        <Skeleton className="h-80 rounded-2xl" />
+        <Skeleton className="h-96 rounded-[32px]" />
       </div>
     );
   }
 
   if (error && !data) {
     return (
-      <div className="pb-24 pt-6 max-w-2xl mx-auto adaptive-px">
+      <div className="pb-32 pt-8 max-w-2xl mx-auto adaptive-px">
         <ErrorState message={error} onAction={fetchExchange} />
       </div>
     );
   }
 
   return (
-    <div className="pb-24 pt-6 max-w-2xl mx-auto adaptive-px space-y-8 select-none">
-      <header className="space-y-6">
-        <div className="flex items-start justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-3">
-               <div className="w-10 h-10 rounded-xl bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center">
-                    <Repeat2 size={22} className="text-brand-accent" />
+    <div className="pb-32 pt-8 max-w-2xl mx-auto adaptive-px space-y-10 select-none">
+      <header className="space-y-8">
+        <div className="flex items-start justify-between gap-6">
+          <div className="space-y-2">
+            <div className="flex items-center gap-4">
+               <div className="w-12 h-12 rounded-2xl bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.1)]">
+                    <Repeat2 size={26} className="text-brand-accent" />
                </div>
-               <h1 className="text-2xl font-black text-white tracking-tighter uppercase">Currency</h1>
+               <div className="flex flex-col gap-1">
+                  <h1 className="text-3xl font-black text-white tracking-tighter uppercase leading-none">Exchange</h1>
+                  <div className="flex items-center gap-2">
+                     <Target size={11} className="text-neutral-600" />
+                     <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest leading-none">
+                       ASSET CONVERSION TERMINAL
+                     </p>
+                  </div>
+               </div>
             </div>
-            <p className="text-sm font-bold text-neutral-500 uppercase tracking-widest">
-              Authorized currency conversion protocol.
-            </p>
           </div>
 
-          <button
+          <Button
+            variant="secondary"
             onClick={handleRefresh}
-            disabled={loading || exchanging}
-            className="w-12 h-12 flex items-center justify-center rounded-xl bg-brand-deep border border-white/5 text-neutral-400 hover:text-white transition-all active:scale-95 shrink-0"
-            aria-label="Refresh exchange"
+            isLoading={loading || exchanging}
+            className="w-12 h-12 p-0 rounded-2xl border-white/5 shadow-xl active:scale-95"
+            aria-label="Refresh data"
           >
-            <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
-          </button>
+            <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+          </Button>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <Metric icon={Coins} label="Shards" value={formatNumber(shardBalance)} tone="neutral" />
-          <Metric icon={Gem} label="Zenith" value={formatNumber(zenithBalance)} tone="accent" />
-          <Metric icon={BadgePercent} label="Protocol Rate" value={`${formatNumber(rate)}:1`} tone="success" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          {[
+              { icon: Coins, label: 'Shards', value: formatNumber(shardBalance), variant: 'default' },
+              { icon: Gem, label: 'Zenith', value: formatNumber(zenithBalance), variant: 'primary' },
+              { icon: BadgePercent, label: 'Protocol Rate', value: `${formatNumber(rate)}:1`, variant: 'success' },
+          ].map((metric, i) => (
+            <Card key={i} variant="tactical" className="p-4 border-white/[0.04] bg-white/[0.01]">
+              <div className="flex items-center gap-2 mb-2">
+                <metric.icon size={12} className={cn(
+                    metric.variant === 'primary' ? 'text-brand-accent' :
+                    metric.variant === 'success' ? 'text-success' : 'text-neutral-600'
+                )} />
+                <span className="text-[9px] font-black text-neutral-600 uppercase tracking-widest leading-none">{metric.label}</span>
+              </div>
+              <p className="text-sm font-black text-white stats-value tabular-nums leading-none">{metric.value}</p>
+            </Card>
+          ))}
         </div>
 
-        {error && data && (
-          <div className="flex items-start gap-3 p-3 rounded-xl border border-amber-500/20 bg-amber-500/5 text-[10px] font-black uppercase tracking-widest text-amber-500/80">
-            <AlertCircle size={14} className="shrink-0" />
-            <span>Legacy data detected. Refresh to synchronize local balances.</span>
-          </div>
+        {(error || data) && (
+          <AnimatePresence>
+            {error && (
+              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-start gap-3 p-4 rounded-2xl border border-warning/10 bg-warning/[0.03] text-[10px] font-black uppercase tracking-widest text-warning/80">
+                <AlertCircle size={16} className="shrink-0" />
+                <span className="leading-relaxed">LOCAL CACHE DETECTED. REFRESH TO SYNCHRONIZE PROTOCOL BALANCES.</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
         )}
       </header>
 
-      <section className="space-y-4">
-        <Card className="p-5 space-y-6">
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => handleModeChange('shards_to_zenith')}
-              className={cn(
-                'h-12 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all active:scale-[0.98]',
-                mode === 'shards_to_zenith'
-                  ? 'bg-white text-brand-midnight border-white shadow-lg'
-                  : 'bg-brand-midnight text-neutral-500 border-white/5 hover:text-white'
-              )}
-            >
-              Shards to Zenith
-            </button>
-            <button
-              onClick={() => handleModeChange('zenith_to_shards')}
-              className={cn(
-                'h-12 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all active:scale-[0.98]',
-                mode === 'zenith_to_shards'
-                  ? 'bg-white text-brand-midnight border-white shadow-lg'
-                  : 'bg-brand-midnight text-neutral-500 border-white/5 hover:text-white'
-              )}
-            >
-              Zenith to Shards
-            </button>
+      <section className="space-y-6">
+        <Card variant="tactical" className="p-8 space-y-10 rounded-[32px] border-white/[0.06] bg-white/[0.01] shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-8 opacity-[0.02] pointer-events-none">
+             <TrendingUp size={140} />
           </div>
 
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-            <div className="min-w-0 rounded-2xl bg-brand-midnight border border-white/5 p-4">
-              <p className="text-[9px] font-black uppercase tracking-widest text-neutral-600 mb-1">{copy.inputLabel}</p>
-              <p className="text-xl font-black text-white tabular-nums leading-none mb-2">{formatNumber(amountNumber)}</p>
-              <div className="h-px bg-white/5 w-full mb-2" />
-              <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-tighter truncate">
-                Available: {formatNumber(isShardMode ? shardBalance : zenithBalance)}
-              </p>
-            </div>
+          <div className="grid grid-cols-2 gap-3 p-1.5 bg-black/40 rounded-2xl border border-white/[0.03]">
+            {[
+              { id: 'shards_to_zenith', label: 'Shards → Zenith' },
+              { id: 'zenith_to_shards', label: 'Zenith → Shards' },
+            ].map(m => (
+              <button
+                key={m.id}
+                onClick={() => handleModeChange(m.id as ExchangeMode)}
+                className={cn(
+                  'h-12 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300',
+                  mode === m.id
+                    ? 'bg-white text-black shadow-xl scale-100'
+                    : 'text-neutral-600 hover:text-neutral-300'
+                )}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-6 relative z-10">
+            <motion.div layout className="min-w-0 rounded-2xl bg-brand-midnight border border-white/[0.05] p-5 shadow-inner group">
+              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600 mb-2">{copy.inputLabel}</p>
+              <div className="flex items-baseline gap-2 mb-3">
+                 <p className="text-2xl font-black text-white tabular-nums leading-none font-mono truncate">{formatNumber(amountNumber)}</p>
+              </div>
+              <div className="h-px bg-white/[0.05] w-full mb-3" />
+              <div className="flex items-center justify-between text-[9px] font-bold text-neutral-500 uppercase tracking-tighter">
+                <span>RESERVE</span>
+                <span className="tabular-nums font-mono">{formatNumber(isShardMode ? shardBalance : zenithBalance)}</span>
+              </div>
+            </motion.div>
+
             <button
               type="button"
               onClick={handleSwapMode}
-              className="w-10 h-10 rounded-xl bg-brand-midnight border border-white/5 flex items-center justify-center text-brand-accent transition-all hover:bg-brand-accent/10 active:scale-90"
-              aria-label="Switch exchange direction"
+              className="w-12 h-12 rounded-full bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center text-brand-accent transition-all hover:bg-brand-accent hover:text-black hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] active:scale-90 group"
+              aria-label="Switch direction"
             >
-              <Repeat2 size={18} />
+              <Repeat2 size={20} strokeWidth={2.5} className="group-hover:rotate-180 transition-transform duration-500" />
             </button>
-            <div className="min-w-0 rounded-2xl bg-brand-accent/5 border border-brand-accent/20 p-4 text-right">
-              <p className="text-[9px] font-black uppercase tracking-widest text-brand-accent/60 mb-1">{copy.outputLabel}</p>
-              <p className="text-xl font-black text-white tabular-nums leading-none mb-2">{formatNumber(outputAmount)}</p>
-              <div className="h-px bg-brand-accent/10 w-full mb-2" />
-              <p className="text-[9px] font-bold text-brand-accent/40 uppercase tracking-tighter truncate">
-                Result: {formatNumber(isShardMode ? zenithBalance + outputAmount : shardBalance + outputAmount)}
-              </p>
-            </div>
+
+            <motion.div layout className="min-w-0 rounded-2xl bg-brand-accent/[0.03] border border-brand-accent/10 p-5 text-right shadow-inner">
+              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-brand-accent/60 mb-2">{copy.outputLabel}</p>
+              <div className="flex items-baseline justify-end gap-2 mb-3">
+                 <p className="text-2xl font-black text-white tabular-nums leading-none font-mono truncate">{formatNumber(outputAmount)}</p>
+              </div>
+              <div className="h-px bg-brand-accent/10 w-full mb-3" />
+              <div className="flex items-center justify-between text-[9px] font-bold text-brand-accent/40 uppercase tracking-tighter">
+                <span className="font-mono">POST-OP</span>
+                <span className="tabular-nums font-mono">{formatNumber(isShardMode ? zenithBalance + outputAmount : shardBalance + outputAmount)}</span>
+              </div>
+            </motion.div>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div className="flex items-center justify-between px-1">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-600">
-                    Input Amount
+                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-600">
+                    TRANSACTION_AMOUNT
                 </label>
                 <button
                   onClick={() => setPreset(maxInputAmount)}
                   disabled={!canUseMax}
-                  className="text-[9px] font-black text-brand-accent uppercase tracking-widest hover:underline disabled:opacity-30"
+                  className="text-[9px] font-black text-brand-accent uppercase tracking-widest hover:text-white transition-colors disabled:opacity-20"
                 >
-                  Max Available
+                  SET MAX CLEARANCE
                 </button>
             </div>
-            <div className="flex gap-2">
-                <input
-                    type="text"
-                    value={amount}
-                    onChange={(event) => handleAmountChange(event.target.value)}
-                    className="h-14 flex-1 rounded-2xl border border-white/5 bg-brand-midnight px-4 text-sm font-black text-white outline-none focus:border-brand-accent/40 transition-all tabular-nums"
-                    inputMode="numeric"
-                    placeholder="ENTER AMOUNT..."
-                />
-            </div>
+            <Input
+                type="text"
+                value={amount}
+                onChange={(event) => handleAmountChange(event.target.value)}
+                className="h-14 bg-brand-midnight text-lg font-mono px-6 rounded-2xl shadow-inner border-white/5"
+                inputMode="numeric"
+                placeholder="0.00"
+            />
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {presetOptions.map(({ label, amount: presetAmount }) => {
-              const isDisabled = presetAmount < minimumInputAmount || presetAmount > maxInputAmount;
+              const isDisabled = presetAmount < minimumInputAmount || (presetAmount > maxInputAmount && label !== 'MAX ASSETS');
               const isActive = presetAmount === amountNumber;
 
               return (
@@ -336,47 +335,49 @@ export const Exchange = () => {
                   onClick={() => setPreset(presetAmount)}
                   disabled={isDisabled}
                   className={cn(
-                    'h-12 rounded-xl bg-brand-midnight border p-2 text-left transition-all active:scale-95',
+                    'h-14 rounded-2xl bg-brand-midnight border p-3 text-left transition-all duration-300 active:scale-95 group',
                     isActive
-                      ? 'border-brand-accent/40 bg-brand-accent/5'
+                      ? 'border-brand-accent/40 bg-brand-accent/[0.05] shadow-[inset_0_0_10px_rgba(59,130,246,0.05)]'
                       : 'border-white/5 hover:border-white/20',
-                    isDisabled && 'opacity-30'
+                    isDisabled && 'opacity-20'
                   )}
                 >
-                  <span className="block text-[8px] font-black text-neutral-500 uppercase tracking-tighter">{label}</span>
-                  <span className="block truncate text-xs font-black text-white tabular-nums">{formatNumber(presetAmount)}</span>
+                  <span className={cn(
+                      "block text-[8px] font-black uppercase tracking-tighter mb-1 transition-colors",
+                      isActive ? "text-brand-accent" : "text-neutral-600"
+                  )}>{label}</span>
+                  <span className="block truncate text-xs font-black text-white tabular-nums font-mono">{formatNumber(presetAmount)}</span>
                 </button>
               );
             })}
           </div>
 
-          <button
-            onClick={handleExchange}
-            disabled={!canExchange || exchanging}
-            className={cn(
-                'w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] flex items-center justify-center gap-3 transition-all active:scale-[0.98]',
-                canExchange
-                    ? 'bg-brand-accent text-white shadow-[0_10px_30px_rgba(59,130,246,0.2)]'
-                    : 'bg-brand-midnight text-neutral-600 border border-white/5'
-            )}
-          >
-            {exchanging ? <Loader2 size={18} className="animate-spin" /> : <Repeat2 size={18} />}
-            <span>Execute Transaction</span>
-          </button>
-
-          <div
-            className={cn(
-              'flex items-center gap-3 p-4 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all',
-              validationMessage
-                ? 'border-amber-500/20 bg-amber-500/5 text-amber-500'
-                : 'border-emerald-500/20 bg-emerald-500/5 text-emerald-500'
-            )}
-          >
-            {validationMessage ? <AlertCircle size={16} /> : <CheckCircle2 size={16} />}
-            <span>
-              {validationMessage || `Protocol Ready: Convert ${formatNumber(amountNumber)} ${copy.inputLabel}`}
-            </span>
+          <div className="pt-2">
+            <Button
+                onClick={handleExchange}
+                disabled={!canExchange || exchanging}
+                variant="tactical"
+                className="w-full h-16 rounded-2xl uppercase tracking-[0.3em] text-[12px] font-black shadow-2xl active:scale-[0.98]"
+            >
+                {exchanging ? <Loader2 size={20} className="animate-spin" /> : <Repeat2 size={20} strokeWidth={2.5} />}
+                <span>AUTHORIZE CONVERSION</span>
+            </Button>
           </div>
+
+          <motion.div
+            layout
+            className={cn(
+              'flex items-center gap-4 p-5 rounded-2xl border text-[10px] font-black uppercase tracking-widest transition-all duration-500 shadow-sm',
+              validationMessage
+                ? 'border-warning/20 bg-warning/[0.03] text-warning'
+                : 'border-success/20 bg-success/[0.03] text-success'
+            )}
+          >
+            {validationMessage ? <AlertCircle size={18} /> : <CheckCircle2 size={18} className="animate-in" />}
+            <span className="leading-tight">
+              {validationMessage || `System Ready: Finalizing conversion of ${formatNumber(amountNumber)} ${copy.inputLabel}`}
+            </span>
+          </motion.div>
         </Card>
       </section>
     </div>
