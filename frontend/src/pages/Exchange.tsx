@@ -11,7 +11,6 @@ import { cn, formatNumber } from '../utils';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { motion, AnimatePresence } from 'framer-motion';
 
 type ExchangeMode = 'shards_to_zenith' | 'zenith_to_shards';
 

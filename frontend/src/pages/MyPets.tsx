@@ -16,7 +16,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { useToast } from '../components/ui/Toast';
 import { Pet, useUser } from '../context/UserContext';
-import { cn, formatNumber } from '../utils';
+import { cn } from '../utils';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
@@ -38,13 +38,6 @@ const samePet = (a?: Pet | null, b?: Pet | null) => {
   const aKeys = new Set([a.petid, a.id, a.name].filter(Boolean).map(String));
   return [b.petid, b.id, b.name].filter(Boolean).some((key) => aKeys.has(String(key)));
 };
-
-const getPetPower = (pet: Pet) => (
-  Number(pet.hp || 0)
-  + Number(pet.atk || 0) * 4
-  + Number(pet.spd || 0) * 3
-  + Math.round(Number(pet.luck || 0) * 100)
-);
 
 const PetImage = ({
   pet,
