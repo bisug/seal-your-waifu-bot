@@ -14,6 +14,7 @@ import {
   Trophy,
   Zap,
   ShieldCheck,
+  Heart,
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
@@ -82,14 +83,14 @@ const sceneCards = [
 const featureCards: FeatureCardProps[] = [
   {
     icon: Sparkles,
-    title: 'Archive Secured',
-    description: 'A complete collection system with rarity reveals and live ownership checks.',
+    title: 'Gacha Secured',
+    description: 'A complete collection system with waifu reveals and live ownership checks.',
     tone: 'text-brand-accent border-brand-accent/20 bg-brand-accent/5',
   },
   {
     icon: Egg,
     title: 'Biological Sync',
-    description: 'Incubate timed eggs and hatch unique characters to expand your roster.',
+    description: 'Incubate timed eggs and hatch unique characters to expand your harem.',
     tone: 'text-emerald-500 border-emerald-500/20 bg-emerald-500/5',
   },
   {
@@ -107,8 +108,8 @@ const featureCards: FeatureCardProps[] = [
 ];
 
 const metrics = [
-  { label: 'Daily Market', value: 'ROTATING' },
-  { label: 'Asset Archive', value: 'CATALOG' },
+  { label: 'Gacha Market', value: 'ROTATING' },
+  { label: 'Waifu Archive', value: 'CATALOG' },
   { label: 'Companion', value: 'ACTIVE' },
   { label: 'Objectives', value: 'LIVE' },
 ];
@@ -210,7 +211,7 @@ export const Landing = ({ error, onRetry }: LandingProps) => {
 
           <div className="absolute left-1/2 top-[47%] z-10 flex h-32 w-32 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-[2.5rem] border border-white/10 bg-brand-midnight/40 shadow-2xl backdrop-blur-2xl">
             <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10">
-                <ShieldCheck size={32} className="text-white" strokeWidth={1} />
+                <Heart size={32} className="text-white" strokeWidth={1} fill="currentColor" />
             </div>
           </div>
         </div>
@@ -219,9 +220,9 @@ export const Landing = ({ error, onRetry }: LandingProps) => {
           <nav className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between px-6 sm:px-10">
             <div className="flex items-center gap-4">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/5 bg-white/5 shadow-inner">
-                <ShieldCheck size={20} className="text-white" strokeWidth={2} />
+                <Heart size={20} className="text-white" strokeWidth={2} fill="currentColor" />
               </div>
-              <span className="text-xs font-black text-white tracking-tighter uppercase">SEAL YOUR WAIFU</span>
+              <span className="text-xs font-black text-white tracking-tighter uppercase">WAIFU PROTOCOL</span>
             </div>
             <Button
               variant="outline"
@@ -239,17 +240,17 @@ export const Landing = ({ error, onRetry }: LandingProps) => {
           <div className="w-full max-w-[24rem] pt-8 sm:max-w-3xl lg:pt-20 space-y-6 sm:space-y-8">
             <div className="inline-flex items-center gap-2 rounded-lg border border-brand-accent/20 bg-brand-accent/10 px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-brand-accent">
               <Zap size={14} />
-              Operational Protocol Active
+              Waifu Protocol Active
             </div>
 
             <h1 className="text-4xl font-black leading-[0.9] tracking-tighter text-white sm:text-7xl lg:text-8xl uppercase">
-                Secure. <br />
+                Summon. <br />
                 Archive. <br />
-                Deploy.
+                Dominate.
             </h1>
 
             <p className="max-w-[22rem] text-sm font-bold leading-7 text-neutral-500 uppercase tracking-widest sm:max-w-xl sm:text-base">
-              The definitive Telegram asset collection RPG. <br /> Secure rare cards, synchronize biological assets, and dominate the global leaderboards.
+              The definitive Telegram gacha collection RPG. <br /> Summon rare waifus, expand your harem, and dominate the global leaderboards.
             </p>
 
             <div className="flex flex-col gap-3 sm:flex-row pt-4">
@@ -306,10 +307,10 @@ export const Landing = ({ error, onRetry }: LandingProps) => {
                 <Gem size={28} className="text-brand-accent" />
               </div>
               <h2 className="text-3xl font-black leading-tight uppercase tracking-tighter sm:text-5xl">
-                Advanced Tactical <br /> Collection.
+                Advanced Waifu <br /> Gacha System.
               </h2>
               <p className="text-sm font-bold leading-8 text-neutral-500 uppercase tracking-widest max-w-lg">
-                Engineered for speed and precision. Every interaction is optimized for high-frequency gameplay directly within Telegram.
+                Engineered for waifu collectors. Every interaction is optimized for high-frequency summons directly within Telegram.
               </p>
             </div>
 
@@ -324,9 +325,9 @@ export const Landing = ({ error, onRetry }: LandingProps) => {
         <section className="px-6 sm:px-10">
           <div className="mx-auto max-w-7xl flex flex-col items-center text-center space-y-16">
             <div className="space-y-4 max-w-2xl">
-              <Badge variant="primary" className="rounded-full px-4 py-1 font-black tracking-widest text-[9px] uppercase">Asset Hierarchy</Badge>
-              <h2 className="text-3xl font-black uppercase tracking-tighter sm:text-6xl">Rare Tier Archives</h2>
-              <p className="text-sm font-bold text-neutral-500 uppercase tracking-widest">Master the probability fields and secure high-value assets for your collection.</p>
+              <Badge variant="primary" className="rounded-full px-4 py-1 font-black tracking-widest text-[9px] uppercase">Harem Hierarchy</Badge>
+              <h2 className="text-3xl font-black uppercase tracking-tighter sm:text-6xl">Rare Waifu Archives</h2>
+              <p className="text-sm font-bold text-neutral-500 uppercase tracking-widest">Master the probability fields and secure high-value waifus for your harem.</p>
             </div>
 
             <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -337,11 +338,11 @@ export const Landing = ({ error, onRetry }: LandingProps) => {
                             <ShieldCheck size={16} className="text-neutral-700" />
                         </div>
                         <div className="h-32 w-full rounded-2xl bg-black/40 border border-white/5 flex items-center justify-center">
-                            <Gem size={32} className="text-neutral-800" />
+                            <Heart size={32} className="text-neutral-800" fill="currentColor" />
                         </div>
                         <div className="space-y-3">
                             <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-neutral-600">
-                                <span>SECURE RATE</span>
+                                <span>SUMMON RATE</span>
                                 <span className="text-white">{(i + 1) * 20}%</span>
                             </div>
                             <div className="h-1.5 w-full bg-brand-surface rounded-full overflow-hidden">
@@ -357,8 +358,8 @@ export const Landing = ({ error, onRetry }: LandingProps) => {
         <section className="px-6 sm:px-10">
           <Card className="mx-auto max-w-7xl p-10 sm:p-16 flex flex-col md:flex-row items-center justify-between gap-10 border-white/10 bg-gradient-to-br from-brand-deep to-brand-midnight shadow-2xl">
             <div className="space-y-4 text-center md:text-left">
-              <h2 className="text-3xl font-black uppercase tracking-tighter sm:text-5xl">Ready to Initiate?</h2>
-              <p className="text-sm font-bold text-neutral-500 uppercase tracking-widest">Connect your Telegram account and start your collection protocol today.</p>
+              <h2 className="text-3xl font-black uppercase tracking-tighter sm:text-5xl">Ready to Summon?</h2>
+              <p className="text-sm font-bold text-neutral-500 uppercase tracking-widest">Connect your Telegram account and start your harem protocol today.</p>
             </div>
             <Button
               onClick={() => window.open(telegramUrl, '_blank')}
@@ -371,7 +372,7 @@ export const Landing = ({ error, onRetry }: LandingProps) => {
       </main>
 
       <footer className="px-6 py-12 sm:px-10 border-t border-white/5 text-center">
-        <p className="text-[10px] font-black text-neutral-600 uppercase tracking-widest">© 2025 SEAL YOUR WAIFU PROTOCOL. ALL RIGHTS RESERVED.</p>
+        <p className="text-[10px] font-black text-neutral-600 uppercase tracking-widest">© 2025 WAIFU PROTOCOL. ALL RIGHTS RESERVED.</p>
       </footer>
     </div>
   );

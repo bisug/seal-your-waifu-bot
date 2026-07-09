@@ -16,6 +16,8 @@ import {
   CloudUpload,
   ShieldCheck,
   Terminal,
+  Heart,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '../utils';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -45,27 +47,27 @@ const SECTIONS: NavSection[] = [
   {
     title: "OPERATIONS",
     items: [
-      { id: 'profile', label: 'Dashboard', icon: UserRound },
-      { id: 'incubation', label: 'Incubator', icon: Egg },
+      { id: 'profile', label: 'My Harem', icon: Heart },
+      { id: 'incubation', label: 'Hatchery', icon: Egg },
       { id: 'mypets', label: 'Companions', icon: PawPrint },
       { id: 'achievements', label: 'Milestones', icon: BadgeCheck },
     ]
   },
   {
-    title: "LOGISTICS",
+    title: "RESOURCES",
     items: [
-      { id: 'shop', label: 'Daily Market', icon: Store },
+      { id: 'shop', label: 'Gacha Market', icon: Store },
       { id: 'exchange', label: 'Currency', icon: Repeat2 },
-      { id: 'gallery', label: 'Archives', icon: BookOpen },
+      { id: 'gallery', label: 'Waifu Archive', icon: BookOpen },
       { id: 'pets', label: 'Breeder', icon: Bone },
     ]
   },
   {
-    title: "ENGAGEMENT",
+    title: "SOCIAL",
     items: [
       { id: 'referrals', label: 'Recruit', icon: UserPlus },
-      { id: 'quests', label: 'Missions', icon: ListChecks },
-      { id: 'pass', label: 'Operations Pass', icon: Ticket },
+      { id: 'quests', label: 'Daily Tasks', icon: ListChecks },
+      { id: 'pass', label: 'Waifu Pass', icon: Ticket },
       { id: 'leaderboard', label: 'Rankings', icon: ChartNoAxesColumnIncreasing },
     ]
   }
@@ -129,7 +131,7 @@ export const NavigationDrawer = ({ isOpen, onClose, activeTab, onNavigate }: Nav
                     <Terminal size={12} className="text-brand-accent" />
                     <span className="text-[10px] font-black text-white tracking-[0.2em] uppercase">SYSTEM MENU</span>
                 </div>
-                <span className="text-[8px] font-bold text-neutral-600 uppercase tracking-widest mt-1">v2.2.0-AUTH_OK</span>
+                <span className="text-[8px] font-bold text-neutral-600 uppercase tracking-widest mt-1">WAIFU_PROTO_OK</span>
               </div>
               <Button
                 variant="ghost"
@@ -198,13 +200,13 @@ export const NavigationDrawer = ({ isOpen, onClose, activeTab, onNavigate }: Nav
             <div className="p-4 border-t border-white/[0.04] bg-white/[0.01]">
                <div className="flex items-center gap-3 p-2.5 rounded-lg bg-black border border-white/[0.03] mb-4">
                   <div className="w-8 h-8 rounded bg-brand-accent/10 flex items-center justify-center shrink-0 border border-brand-accent/20">
-                    <ShieldCheck size={16} className="text-brand-accent" />
+                    <Heart size={16} className="text-brand-accent" fill="currentColor" />
                   </div>
                   <div className="flex flex-col min-w-0">
                     <span className="text-[9px] font-black text-white uppercase tracking-widest truncate">
                         {user?.role_label || user?.role_tag || 'MEMBER'} STATUS
                     </span>
-                    <span className="text-[8px] font-bold text-neutral-600 uppercase tracking-tighter">AUTHENTICATED SESSION</span>
+                    <span className="text-[8px] font-bold text-neutral-600 uppercase tracking-tighter">WAIFU VERIFIED</span>
                   </div>
                </div>
 
@@ -212,7 +214,7 @@ export const NavigationDrawer = ({ isOpen, onClose, activeTab, onNavigate }: Nav
                   <div className="text-[8px] font-black text-neutral-800 uppercase tracking-[0.2em]">CONNECTION SECURE</div>
                   <div className="flex items-center gap-1.5">
                     <div className="w-1 h-1 rounded-full bg-emerald-500" />
-                    <span className="text-[8px] font-mono text-emerald-500/60 uppercase">9.1ms / SFO</span>
+                    <span className="text-[8px] font-mono text-emerald-500/60 uppercase">WAIFU_LINK_OK</span>
                   </div>
                </div>
             </div>
