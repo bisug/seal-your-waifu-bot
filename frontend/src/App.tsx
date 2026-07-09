@@ -373,7 +373,7 @@ const AppContent = () => {
     (activeTab === 'staff' && !canViewStaff);
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-brand-midnight">
+    <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-brand-midnight tactical-noise">
       <Header onMenuClick={() => setIsMenuOpen(true)} />
 
       <main className="app-scroller adaptive-px overflow-x-hidden">
