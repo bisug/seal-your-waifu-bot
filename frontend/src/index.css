@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  /* Colors - Refined Tactical Palette */
+  /* Colors - Refined Premium Tactical Palette */
   --color-background: #050506;
   --color-foreground: #fafafa;
   
@@ -10,63 +10,62 @@
   --color-brand-surface: #111114;
   --color-brand-accent: #3b82f6;
   --color-brand-accent-muted: rgba(59, 130, 246, 0.1);
-  --color-brand-glass: rgba(10, 10, 12, 0.7);
-  --color-brand-glass-border: rgba(255, 255, 255, 0.04);
+  --color-brand-glass: rgba(5, 5, 6, 0.7);
+  --color-brand-glass-border: rgba(255, 255, 255, 0.06);
 
   --color-muted: #71717a;
   --color-muted-foreground: #a1a1aa;
 
-  --color-border: rgba(255, 255, 255, 0.06);
+  --color-border: rgba(255, 255, 255, 0.08);
 
-  /* System States */
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
-  --color-danger: #ef4444;
+  /* Semantic Accents */
+  --color-success: #10b981; /* Emerald */
+  --color-warning: #f59e0b; /* Amber */
+  --color-danger: #ef4444;  /* Crimson */
+  --color-premium: #facc15; /* Gold */
+  --color-rare: #06b6d4;    /* Cyan */
+  --color-epic: #a855f7;    /* Violet */
 
-  /* Radius - More geometric/tactical */
+  /* Radius - Precise & Refined */
   --radius-xs: 2px;
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-2xl: 24px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-2xl: 32px;
 
   /* Spacing */
-  --spacing-container: 1rem;
+  --spacing-container: 1.25rem;
 
   /* Breakpoints */
   --breakpoint-xs: 360px;
 
-  /* Animations - Snappy/Mechanical */
-  --animate-in: in 0.1s cubic-bezier(0, 0, 0.2, 1);
-  --animate-out: out 0.08s cubic-bezier(0.4, 0, 1, 1);
+  /* Animations - Premium & Purposeful */
+  --animate-in: in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-out: out 0.15s cubic-bezier(0.7, 0, 0.84, 0);
   --animate-glitch: glitch 0.3s cubic-bezier(.25,.46,.45,.94) both;
   --animate-scanline: scanline 8s linear infinite;
-  --animate-noise: noise 0.2s infinite;
+  --animate-shimmer: shimmer 2s linear infinite;
 
-  @keyframes noise {
-    0%, 100% { transform: translate(0, 0); }
-    10% { transform: translate(-1px, -1px); }
-    30% { transform: translate(1px, 1px); }
-    50% { transform: translate(-1px, 1px); }
-    70% { transform: translate(1px, -1px); }
-    90% { transform: translate(0, 0); }
+  @keyframes shimmer {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(100%); }
   }
 
   @keyframes in {
-    from { opacity: 0; transform: translateY(4px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(8px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
   }
   @keyframes out {
-    from { opacity: 1; transform: translateY(0); }
-    to { opacity: 0; transform: translateY(4px); }
+    from { opacity: 1; transform: translateY(0) scale(1); }
+    to { opacity: 0; transform: translateY(8px) scale(0.98); }
   }
   @keyframes glitch {
     0% { transform: translate(0); }
-    20% { transform: translate(-2px, 2px); }
-    40% { transform: translate(-2px, -2px); }
-    60% { transform: translate(2px, 2px); }
-    80% { transform: translate(2px, -2px); }
+    20% { transform: translate(-1px, 1px); }
+    40% { transform: translate(-1px, -1px); }
+    60% { transform: translate(1px, 1px); }
+    80% { transform: translate(1px, -1px); }
     100% { transform: translate(0); }
   }
   @keyframes scanline {
@@ -79,11 +78,17 @@
   color-scheme: dark;
   --background: #050506;
   --foreground: #fafafa;
-  --content-px: 1rem;
+  --content-px: 1.25rem;
 
-  /* Tactical UI specific variables */
-  --tactical-border: rgba(255, 255, 255, 0.08);
-  --tactical-glow: 0 0 15px rgba(59, 130, 246, 0.15);
+  /* Premium UI specific variables */
+  --tactical-border: rgba(255, 255, 255, 0.05);
+  --tactical-glow: 0 0 20px rgba(59, 130, 246, 0.08);
+
+  /* Safe Area Insets for Mobile */
+  --sat: env(safe-area-inset-top);
+  --sar: env(safe-area-inset-right);
+  --sab: env(safe-area-inset-bottom);
+  --sal: env(safe-area-inset-left);
 }
 
 * {
@@ -112,7 +117,8 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overscroll-behavior: none;
-  line-height: 1.4;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
 }
 
 .font-mono {
@@ -126,7 +132,7 @@ button, a, .select-none {
 
 button, a {
   touch-action: manipulation;
-  transition: all 0.1s cubic-bezier(0, 0, 0.2, 1);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .adaptive-px {
@@ -140,17 +146,18 @@ button, a {
 
 .glass-panel {
   background: var(--color-brand-glass);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid var(--color-brand-glass-border);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
-/* Tactical UI Elements */
+/* Tactical & Premium UI Elements */
 .tactical-grid {
   background-image:
     linear-gradient(var(--tactical-border) 1px, transparent 1px),
     linear-gradient(90deg, var(--tactical-border) 1px, transparent 1px);
-  background-size: 20px 20px;
+  background-size: 32px 32px;
   background-position: center center;
 }
 
@@ -162,10 +169,17 @@ button, a {
 .corner-border::after {
   content: '';
   position: absolute;
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-color: var(--color-brand-accent);
+  opacity: 0.4;
   pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.corner-border:hover::before,
+.corner-border:hover::after {
+  opacity: 1;
 }
 
 .corner-border-tl::before { top: 0; left: 0; border-top-width: 1px; border-left-width: 1px; }
@@ -190,10 +204,11 @@ button, a {
   overscroll-behavior-y: contain;
   position: relative;
   contain: layout style;
+  padding-bottom: calc(80px + var(--sab, 24px)); /* Space for BottomNav */
 }
 
 .safe-bottom {
-  padding-bottom: env(safe-area-inset-bottom, 24px);
+  padding-bottom: var(--sab, 24px);
 }
 
 .tactical-noise {
@@ -208,34 +223,50 @@ button, a {
   width: 200%;
   height: 200%;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-  opacity: 0.015;
+  opacity: 0.012;
   pointer-events: none;
-  animation: noise 0.2s infinite;
   z-index: 1000;
 }
 
-/* Animations & Transitions */
-.page-transition-enter {
-  opacity: 0;
-  transform: scale(0.99) translateY(4px);
-}
-.page-transition-enter-active {
-  opacity: 1;
-  transform: scale(1) translateY(0);
-  transition: opacity 200ms, transform 200ms;
+/* Page Transitions */
+.page-transition-wrapper {
+  display: contents;
 }
 
 /* Stats Typography */
 .stats-value {
   font-family: 'JetBrains Mono', monospace;
-  font-weight: 800;
-  letter-spacing: -0.05em;
+  font-weight: 700;
+  letter-spacing: -0.04em;
 }
 
 .stats-label {
   font-size: 10px;
-  font-weight: 900;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   color: var(--color-muted-foreground);
+}
+
+/* Shimmer/Skeleton Effect */
+.shimmer {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-brand-surface);
+}
+
+.shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.03),
+    transparent
+  );
+  animation: shimmer 2s infinite;
 }

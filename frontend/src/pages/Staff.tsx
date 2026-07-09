@@ -10,11 +10,20 @@ import {
   ShieldCheck,
   UploadCloud,
   UsersRound,
+  Terminal,
+  Target,
+  Sparkles,
+  Activity,
+  History,
 } from 'lucide-react';
 import { Avatar } from '../components/Avatar';
 import { ErrorState } from '../components/ui/ErrorState';
 import { useApi } from '../hooks/useApi';
 import { cn, formatNumber } from '../utils';
+import { Card } from '../components/ui/Card';
+import { Badge } from '../components/ui/Badge';
+import { Skeleton } from '../components/ui/Skeleton';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface UploadReward {
   balance?: number;
@@ -73,10 +82,10 @@ interface StaffContributionsResponse {
 }
 
 const SOURCE_LABELS: Record<string, string> = {
-  web_character: 'Web chars',
-  bot_character: 'Bot chars',
-  web_pet: 'Web pets',
-  bot_pet: 'Bot pets',
+  web_character: 'WEB_CHAR',
+  bot_character: 'BOT_CHAR',
+  web_pet: 'WEB_PET',
+  bot_pet: 'BOT_PET',
 };
 
 const getInitials = (name: string) => {
@@ -84,11 +93,11 @@ const getInitials = (name: string) => {
   return (parts.slice(0, 2).map(part => part[0]).join('') || 'U').toUpperCase();
 };
 
-const formatReward = (reward?: UploadReward | null) => {
+const formatRewardLabel = (reward?: UploadReward | null) => {
   if (!reward) return '';
   return [
-    reward.balance ? `${formatNumber(reward.balance)} Shards` : '',
-    reward.zenith ? `${formatNumber(reward.zenith)} Zenith` : '',
+    reward.balance ? `${formatNumber(reward.balance)} SHARDS` : '',
+    reward.zenith ? `${formatNumber(reward.zenith)} ZENITH` : '',
   ].filter(Boolean).join(' + ');
 };
 
@@ -96,7 +105,7 @@ const formatDate = (value?: string | null) => {
   if (!value) return '';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }).toUpperCase();
 };
 
 const sourceEntries = (sources: Record<string, number>) => (
@@ -113,108 +122,108 @@ const allUploadsFor = (member: StaffMember) => (
   })
 );
 
-const StatPill = ({ icon: Icon, label, value }: { icon: any; label: string; value: string | number }) => (
-  <div className="flex min-w-0 items-center gap-2 rounded-lg border border-white/5 bg-brand-midnight px-3 py-2">
-    <Icon size={15} className="shrink-0 text-brand-accent" />
-    <div className="min-w-0">
-      <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">{label}</p>
-      <p className="truncate text-sm font-bold text-white tabular-nums">{value}</p>
-    </div>
-  </div>
-);
-
-const UploadRow = ({ item }: { item: StaffUploadItem }) => {
-  const isPet = item.type === 'pet';
-  const Icon = isPet ? PawPrint : Image;
-
-  return (
-    <div className="flex items-center gap-3 border-t border-white/5 py-3 first:border-t-0">
-      <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-white/5 bg-brand-midnight">
-        {item.image ? (
-          <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-neutral-600">
-            <Icon size={18} />
-          </div>
-        )}
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex min-w-0 items-center gap-2">
-          <p className="truncate text-sm font-bold text-white">{item.name}</p>
-          <span className="shrink-0 rounded border border-white/5 px-1.5 py-0.5 text-[9px] font-bold uppercase text-neutral-400">
-            {isPet ? 'Pet' : 'Char'}
-          </span>
-        </div>
-        <p className="truncate text-xs font-medium text-neutral-500">
-          {[item.subtitle, item.rarity, item.id ? `ID ${item.id}` : ''].filter(Boolean).join(' · ')}
-        </p>
-      </div>
-      <div className="shrink-0 text-right">
-        <p className="text-[10px] font-semibold text-neutral-500">{formatDate(item.uploaded_at)}</p>
-        {isPet && item.enabled === false && (
-          <p className="text-[10px] font-bold text-red-400">Disabled</p>
-        )}
-      </div>
-    </div>
-  );
-};
-
 const StaffDetails = ({ member }: { member: StaffMember }) => {
-  const reward = formatReward(member.upload_reward);
+  const reward = formatRewardLabel(member.upload_reward);
   const sources = sourceEntries(member.contributions.sources);
   const uploads = allUploadsFor(member);
 
   return (
-    <div className="mt-4 border-t border-white/5 pt-4">
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <StatPill icon={Image} label="Chars" value={formatNumber(member.contributions.character_uploads)} />
-        <StatPill icon={PawPrint} label="Pets" value={formatNumber(member.contributions.pet_uploads)} />
-        <StatPill icon={Gem} label="Zenith" value={formatNumber(member.stats.zenith)} />
-        <StatPill icon={Coins} label="Shards" value={formatNumber(member.stats.balance)} />
+    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} className="mt-6 border-t border-white/[0.04] pt-6 space-y-6 overflow-hidden">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+            { icon: Image, label: 'ASSETS', value: formatNumber(member.contributions.character_uploads) },
+            { icon: PawPrint, label: 'UNITS', value: formatNumber(member.contributions.pet_uploads) },
+            { icon: Gem, label: 'ZENITH', value: formatNumber(member.stats.zenith) },
+            { icon: Coins, label: 'SHARDS', value: formatNumber(member.stats.balance) },
+        ].map((stat, i) => (
+            <Card key={i} variant="tactical" className="p-3 border-white/[0.03] bg-black/20">
+               <div className="flex items-center gap-2 mb-2">
+                  <stat.icon size={11} className="text-brand-accent/60" />
+                  <span className="text-[8px] font-black text-neutral-600 uppercase tracking-widest leading-none">{stat.label}</span>
+               </div>
+               <p className="text-xs font-black text-white tabular-nums font-mono leading-none">{stat.value}</p>
+            </Card>
+        ))}
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/5 bg-brand-midnight px-2 py-1 text-[10px] font-bold text-neutral-300">
-          <BadgeCheck size={13} className="text-brand-accent" />
-          Level {formatNumber(member.stats.level)}
-        </span>
+      <div className="flex flex-wrap gap-2">
+        <Badge variant="tactical" size="xs" className="px-2 py-1 border-white/10 bg-white/[0.02]">
+          LVL {formatNumber(member.stats.level)}
+        </Badge>
         {reward && (
-          <span className="rounded-lg border border-white/5 bg-brand-midnight px-2 py-1 text-[10px] font-bold text-neutral-300">
-            Reward: {reward}
-          </span>
+          <Badge variant="success" size="xs" className="px-2 py-1 border-success/10 bg-success/5 text-success">
+            REWARD: {reward}
+          </Badge>
         )}
         {sources.map(source => (
-          <span key={source.key} className="rounded-lg border border-white/5 bg-brand-midnight px-2 py-1 text-[10px] font-bold text-neutral-300">
+          <Badge key={source.key} variant="secondary" size="xs" className="px-2 py-1 font-mono">
             {source.label}: {formatNumber(source.value)}
-          </span>
+          </Badge>
         ))}
       </div>
 
       {member.role_benefits && member.role_benefits.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2">
           {member.role_benefits.map(benefit => (
-            <span key={benefit} className="rounded-lg border border-brand-accent/10 bg-brand-accent/5 px-2 py-1 text-[10px] font-semibold text-brand-accent">
-              {benefit}
-            </span>
+            <Badge key={benefit} variant="primary" size="xs" className="px-2 py-1 border-brand-accent/20 bg-brand-accent/5">
+              {benefit.toUpperCase()}
+            </Badge>
           ))}
         </div>
       )}
 
-      <div className="mt-4">
+      <div className="space-y-3 pt-2">
+        <div className="flex items-center gap-2 px-1">
+           <History size={12} className="text-neutral-700" />
+           <span className="text-[9px] font-black text-neutral-600 uppercase tracking-[0.3em]">CONTRIBUTION_LOG</span>
+        </div>
         {uploads.length > 0 ? (
-          <>
-            {uploads.map(item => <UploadRow key={`${item.type}:${item.id}:${item.name}`} item={item} />)}
+          <div className="space-y-1.5 bg-black/40 rounded-2xl border border-white/[0.03] p-1.5">
+            {uploads.map(item => (
+                <div key={`${item.type}:${item.id}:${item.name}`} className="flex items-center gap-3 p-2 hover:bg-white/[0.02] rounded-xl transition-colors group/item">
+                    <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-brand-midnight">
+                        {item.image ? (
+                        <img src={item.image} alt={item.name} className="h-full w-full object-cover opacity-80 group-hover/item:opacity-100 transition-opacity" />
+                        ) : (
+                        <div className="flex h-full w-full items-center justify-center text-neutral-800">
+                            {item.type === 'pet' ? <PawPrint size={18} /> : <Image size={18} />}
+                        </div>
+                        )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        <div className="flex min-w-0 items-center gap-2">
+                        <p className="truncate text-xs font-black text-white uppercase tracking-tight">{item.name}</p>
+                        <Badge variant="tactical" size="xs" className="px-1 py-0 border-white/5 opacity-40 font-mono text-[7px]">
+                            {item.type === 'pet' ? 'UNIT' : 'ASSET'}
+                        </Badge>
+                        </div>
+                        <p className="truncate text-[9px] font-bold text-neutral-600 uppercase tracking-widest mt-0.5">
+                        {[item.subtitle, item.rarity, item.id ? `ID_${item.id}` : ''].filter(Boolean).join(' • ')}
+                        </p>
+                    </div>
+                    <div className="shrink-0 text-right pr-2">
+                        <p className="text-[8px] font-black text-neutral-500 font-mono">{formatDate(item.uploaded_at)}</p>
+                        {item.type === 'pet' && item.enabled === false && (
+                        <p className="text-[8px] font-black text-danger uppercase tracking-tighter">OFFLINE</p>
+                        )}
+                    </div>
+                </div>
+            ))}
             {member.uploads.truncated && (
-              <p className="border-t border-white/5 pt-3 text-center text-xs font-semibold text-neutral-500">
-                Showing latest {formatNumber(member.uploads.limit || uploads.length)} upload records.
-              </p>
+              <div className="py-3 text-center border-t border-white/[0.03]">
+                 <p className="text-[8px] font-black text-neutral-700 uppercase tracking-[0.2em]">
+                    LIMIT REACHED: SHOWING LATEST {formatNumber(member.uploads.limit || uploads.length)} RECORDS
+                 </p>
+              </div>
             )}
-          </>
+          </div>
         ) : (
-          <div className="py-5 text-center text-sm font-medium text-neutral-500">No upload records yet.</div>
+          <div className="py-8 text-center bg-black/20 rounded-2xl border border-dashed border-white/5">
+             <p className="text-[9px] font-black text-neutral-800 uppercase tracking-widest">No contribution records detected.</p>
+          </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 };
 
@@ -229,94 +238,135 @@ export const Staff = () => {
     });
   }, [data]);
 
-  const summaryItems = [
-    { label: 'Staff', value: data?.summary.total_staff || 0, icon: UsersRound },
-    { label: 'Uploads', value: data?.summary.total_uploads || 0, icon: UploadCloud },
-    { label: 'Characters', value: data?.summary.character_uploads || 0, icon: Image },
-    { label: 'Pets', value: data?.summary.pet_uploads || 0, icon: PawPrint },
-  ];
-
   return (
-    <div className="mx-auto max-w-4xl px-4 py-6 pb-24 select-none">
-      <header className="mb-6 border-b border-white/5 pb-4">
-        <div className="mb-1 flex items-center gap-2">
-          <ShieldCheck size={18} className="text-brand-accent" />
-          <h1 className="text-xl font-bold text-white">Staff</h1>
+    <div className="pb-32 pt-8 max-w-4xl mx-auto adaptive-px space-y-10 select-none">
+      <header className="space-y-2">
+        <div className="flex items-center gap-4">
+           <div className="w-12 h-12 rounded-2xl bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.1)]">
+                <ShieldCheck className="text-brand-accent" size={26} />
+           </div>
+           <div className="flex flex-col gap-1">
+              <h1 className="text-3xl font-black text-white tracking-tighter uppercase leading-none">Admin Terminal</h1>
+              <div className="flex items-center gap-2">
+                 <Terminal size={11} className="text-neutral-600" />
+                 <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest leading-none">
+                    STAFF RECORDS & CONTRIBUTION PROTOCOL
+                 </p>
+              </div>
+           </div>
         </div>
-        <p className="text-sm font-medium text-neutral-400">Roles, contribution totals, uploads, and account info.</p>
       </header>
 
-      <div className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {summaryItems.map(item => (
-          <StatPill
-            key={item.label}
-            icon={item.icon}
-            label={item.label}
-            value={formatNumber(item.value)}
-          />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {[
+            { label: 'STAFF', value: data?.summary.total_staff || 0, icon: UsersRound, variant: 'primary' },
+            { label: 'UPLOADS', value: data?.summary.total_uploads || 0, icon: UploadCloud, variant: 'default' },
+            { label: 'ASSETS', value: data?.summary.character_uploads || 0, icon: Image, variant: 'success' },
+            { label: 'UNITS', value: data?.summary.pet_uploads || 0, icon: PawPrint, variant: 'warning' },
+        ].map((item, i) => (
+            <Card key={i} variant="tactical" className="p-4 border-white/[0.04] bg-white/[0.01]">
+              <div className="flex items-center gap-2 mb-2">
+                <item.icon size={12} className={cn(
+                    item.variant === 'primary' ? 'text-brand-accent' :
+                    item.variant === 'success' ? 'text-success' :
+                    item.variant === 'warning' ? 'text-amber-500' : 'text-neutral-600'
+                )} />
+                <span className="text-[9px] font-black text-neutral-600 uppercase tracking-widest leading-none">{item.label}</span>
+              </div>
+              <p className="text-sm font-black text-white tabular-nums leading-none font-mono">{formatNumber(item.value)}</p>
+            </Card>
         ))}
       </div>
 
-      {error && !data ? (
-        <ErrorState message={error} onAction={() => execute()} />
-      ) : loading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 5 }).map((_, index) => (
-            <div key={index} className="h-20 animate-pulse rounded-lg border border-white/5 bg-brand-deep" />
-          ))}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 px-1">
+            <h2 className="text-[11px] font-black text-neutral-600 uppercase tracking-[0.3em]">PERSONNEL_ROSTER</h2>
+            <div className="h-px flex-1 bg-white/[0.03]" />
         </div>
-      ) : rankedStaff.length > 0 ? (
-        <div className="space-y-3">
-          {rankedStaff.map(member => {
-            const isOpen = openStaffId === member.id;
 
-            return (
-              <section key={member.id} className="rounded-lg border border-white/5 bg-brand-deep p-4">
-                <button
-                  type="button"
-                  onClick={() => setOpenStaffId(isOpen ? null : member.id)}
-                  className="flex w-full items-center gap-3 text-left"
-                >
-                  <Avatar
-                    src={member.avatar}
-                    alt={member.display_name}
-                    fallbackText={getInitials(member.display_name)}
-                    className="h-12 w-12 rounded-lg border border-white/10 bg-brand-midnight"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex min-w-0 flex-wrap items-center gap-2">
-                      <h2 className="truncate text-base font-bold text-white">{member.display_name}</h2>
-                      <span className="inline-flex items-center gap-1 rounded border border-brand-accent/20 bg-brand-accent/10 px-1.5 py-0.5 text-[10px] font-bold text-brand-accent">
-                        <span className="text-sm leading-none">{member.role_symbol}</span>
-                        <span>{member.role_tag}</span>
-                      </span>
-                    </div>
-                    <p className="mt-1 truncate text-xs font-medium text-neutral-500">
-                      {[member.username ? `@${member.username}` : '', `ID ${member.id}`, member.role_label].filter(Boolean).join(' · ')}
-                    </p>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <p className="text-lg font-bold text-white tabular-nums">{formatNumber(member.contributions.total_uploads)}</p>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">Uploads</p>
-                  </div>
-                  <div className={cn(
-                    'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/5',
-                    isOpen ? 'bg-white text-brand-midnight' : 'bg-brand-midnight text-neutral-400'
-                  )}>
-                    {isOpen ? <ChevronUp size={17} /> : <ChevronDown size={17} />}
-                  </div>
-                </button>
+        <AnimatePresence mode="wait">
+        {error && !data ? (
+            <div className="py-12">
+                <ErrorState message={error} onAction={() => execute()} />
+            </div>
+        ) : loading ? (
+            <div className="space-y-3">
+                {Array.from({ length: 5 }).map((_, index) => (
+                    <Skeleton key={index} className="h-24 w-full rounded-2xl" />
+                ))}
+            </div>
+        ) : rankedStaff.length > 0 ? (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+            {rankedStaff.map(member => {
+                const isOpen = openStaffId === member.id;
 
-                {isOpen && <StaffDetails member={member} />}
-              </section>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="rounded-lg border border-dashed border-white/10 bg-brand-deep p-10 text-center">
-          <p className="text-sm font-medium text-neutral-500">No staff records found.</p>
-        </div>
-      )}
+                return (
+                <Card key={member.id} variant="tactical" className={cn(
+                    "p-5 transition-all duration-500 relative overflow-hidden",
+                    isOpen ? "border-brand-accent/30 bg-brand-accent/[0.01]" : "bg-white/[0.01] border-white/[0.03]"
+                )}>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
+                            setOpenStaffId(isOpen ? null : member.id);
+                        }}
+                        className="flex w-full items-center gap-4 text-left group"
+                    >
+                        <div className="relative shrink-0">
+                            <Avatar
+                                src={member.avatar}
+                                alt={member.display_name}
+                                fallbackText={getInitials(member.display_name)}
+                                className="h-14 w-14 rounded-2xl border border-white/10 bg-brand-midnight shadow-lg group-hover:border-brand-accent/30 transition-colors"
+                            />
+                            {isOpen && <div className="absolute -inset-1 bg-brand-accent/20 blur-md rounded-2xl -z-10 animate-pulse" />}
+                        </div>
+                        <div className="min-w-0 flex-1 space-y-1.5">
+                            <div className="flex min-w-0 flex-wrap items-center gap-3">
+                                <h2 className="truncate text-lg font-black text-white uppercase tracking-tight">{member.display_name}</h2>
+                                <Badge variant="primary" size="xs" className="px-2 py-0.5 rounded-md font-black border-brand-accent/30 bg-brand-accent/10">
+                                    {member.role_symbol} {member.role_tag}
+                                </Badge>
+                            </div>
+                            <p className="truncate text-[10px] font-bold text-neutral-600 uppercase tracking-widest leading-none">
+                                {[member.username ? `@${member.username}` : '', `ID_${member.id}`, member.role_label].filter(Boolean).join(' • ')}
+                            </p>
+                        </div>
+                        <div className="shrink-0 text-right pr-4 hidden xs:block">
+                            <p className="text-xl font-black text-white tabular-nums font-mono drop-shadow-md leading-none mb-1">{formatNumber(member.contributions.total_uploads)}</p>
+                            <p className="text-[8px] font-black uppercase tracking-widest text-neutral-700">UPLOADS</p>
+                        </div>
+                        <div className={cn(
+                            'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all duration-300',
+                            isOpen ? 'bg-brand-accent border-brand-accent text-black shadow-[0_0_15px_rgba(59,130,246,0.4)] rotate-180' : 'bg-brand-midnight border-white/10 text-neutral-500 hover:text-white hover:border-white/30'
+                        )}>
+                            <ChevronDown size={20} strokeWidth={3} />
+                        </div>
+                    </button>
+
+                    <AnimatePresence>
+                       {isOpen && <StaffDetails member={member} />}
+                    </AnimatePresence>
+                </Card>
+                );
+            })}
+            </motion.div>
+        ) : (
+            <Card variant="tactical" className="py-24 border-dashed border-white/[0.08] bg-white/[0.01] text-center flex flex-col items-center justify-center space-y-4 rounded-[32px]">
+                <div className="w-16 h-16 rounded-full border border-white/5 flex items-center justify-center opacity-10">
+                   <Target size={40} />
+                </div>
+                <p className="text-[11px] font-black text-neutral-700 uppercase tracking-[0.4em]">Personnel Missing</p>
+            </Card>
+        )}
+        </AnimatePresence>
+      </div>
+
+      <div className="flex items-center justify-center gap-3 opacity-20 py-4">
+         <Sparkles size={12} className="text-brand-accent" />
+         <span className="text-[9px] font-black uppercase tracking-[0.4em] text-white">Security Mainframe Active</span>
+      </div>
     </div>
   );
 };
