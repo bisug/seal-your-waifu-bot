@@ -145,7 +145,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Enforce Lite Mode permanently for all users
   const liteMode = true;
 

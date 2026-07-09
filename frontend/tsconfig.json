@@ -14,8 +14,9 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "noImplicitAny": false,
-    "useUnknownInCatchVariables": false
+    "noImplicitAny": true,
+    "useUnknownInCatchVariables": true,
+    "rootDir": "src"
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]

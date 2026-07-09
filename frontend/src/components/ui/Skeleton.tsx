@@ -1,4 +1,4 @@
-import React from 'react';
+import 'react';
 import { cn } from '../../utils';
 
 const isLite = () => localStorage.getItem('sealbot-lite-mode') === 'true';
