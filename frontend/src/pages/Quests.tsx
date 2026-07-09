@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useToast } from '../components/ui/Toast';
 import { apiFetch, getErrorMessage } from '../api/client';
-import { CheckCircle2, ClipboardList, Gift, Loader2, Target, Trophy, Zap } from 'lucide-react';
+import { CheckCircle2, ClipboardList, Gift, Loader2, Target, Trophy, Zap, Sparkles } from 'lucide-react';
 import { formatNumber } from '../utils';
 import { useUser } from '../context/UserContext';
 import { cn } from '../utils';
@@ -32,39 +32,39 @@ interface QuestItemProps {
 }
 
 const QuestItem = ({ quest, onComplete, completing }: QuestItemProps) => (
-  <Card key={quest.id} className={cn(
+  <Card variant="tactical" key={quest.id} className={cn(
     "p-4 group relative overflow-hidden",
-    quest.locked ? 'opacity-60 grayscale' : quest.claimed ? 'border-emerald-500/30 bg-emerald-500/5' : ''
+    quest.locked ? 'opacity-60 grayscale' : quest.claimed ? 'border-emerald-500/20 bg-emerald-500/[0.02]' : ''
   )}>
       <div className="flex justify-between items-start mb-4 gap-4">
           <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <div className="w-8 h-8 rounded-lg bg-brand-surface border border-white/5 flex items-center justify-center text-brand-accent shrink-0">
-                  <Target size={16} />
+                <div className="w-8 h-8 rounded-md bg-white/[0.02] border border-white/[0.05] flex items-center justify-center text-brand-accent shrink-0">
+                  <Sparkles size={14} />
                 </div>
-                <h3 className="text-sm font-black text-white tracking-tight uppercase truncate">{quest.name}</h3>
+                <h3 className="text-[13px] font-black text-white tracking-tight uppercase truncate">{quest.name}</h3>
               </div>
-              <p className="text-[11px] text-neutral-500 font-bold uppercase tracking-wider line-clamp-1">{quest.description}</p>
+              <p className="text-[9px] text-neutral-600 font-bold uppercase tracking-widest line-clamp-1">{quest.description}</p>
           </div>
           <div className="flex flex-col items-end shrink-0">
               <div className="flex items-center gap-1">
-                  <span className="text-sm font-black text-white tabular-nums">{formatNumber(quest.reward_shards)}</span>
-                  <Badge variant="warning" size="xs" className="px-1 py-0">SHARDS</Badge>
+                  <span className="text-xs font-black text-white tabular-nums font-mono">{formatNumber(quest.reward_shards)}</span>
+                  <Badge variant="warning" size="xs" className="px-1 py-0 border-none bg-amber-500/10">SHARDS</Badge>
               </div>
               <div className="flex items-center gap-1 mt-1">
-                  <span className="text-[10px] font-black text-neutral-500 tabular-nums">+{quest.reward_xp}</span>
-                  <span className="text-[8px] font-black text-neutral-600">XP</span>
+                  <span className="text-[9px] font-black text-neutral-600 tabular-nums font-mono">+{quest.reward_xp}</span>
+                  <span className="text-[8px] font-black text-neutral-800">XP</span>
               </div>
           </div>
       </div>
 
       <div className="flex items-center gap-4">
           <div className="flex-1">
-              <div className="flex justify-between text-[9px] font-black text-neutral-500 uppercase tracking-widest mb-1.5 px-0.5">
-                  <span>Progress</span>
-                  <span className="tabular-nums">{quest.progress} / {quest.target}</span>
+              <div className="flex justify-between text-[8px] font-black text-neutral-700 uppercase tracking-[0.2em] mb-1.5 px-0.5">
+                  <span>PROGRESS</span>
+                  <span className="tabular-nums font-mono">{quest.progress} / {quest.target}</span>
               </div>
-              <div className="h-1.5 bg-brand-surface rounded-full overflow-hidden border border-white/5">
+              <div className="h-1 bg-black/40 rounded-full overflow-hidden border border-white/5">
                   <div
                       className={`h-full transition-all duration-700 ${quest.claimed ? 'bg-emerald-500' : 'bg-brand-accent'}`}
                       style={{ width: `${Math.min(100, (quest.progress / Math.max(quest.target, 1)) * 100)}%` }}
@@ -74,19 +74,19 @@ const QuestItem = ({ quest, onComplete, completing }: QuestItemProps) => (
           
           <div className="shrink-0">
             {quest.claimed ? (
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
-                    <CheckCircle2 size={20} strokeWidth={3} />
+                <div className="w-8 h-8 rounded-md bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+                    <CheckCircle2 size={16} strokeWidth={3} />
                 </div>
             ) : (
                 <Button
-                    variant={quest.progress >= quest.target ? "primary" : "secondary"}
+                    variant={quest.progress >= quest.target ? "tactical" : "secondary"}
                     size="sm"
                     onClick={() => onComplete(quest.id)}
                     disabled={quest.locked || quest.progress < quest.target || completing === quest.id}
-                    className="h-10 px-4 rounded-xl font-black text-[10px] uppercase tracking-widest"
+                    className="h-8 px-3"
                     isLoading={completing === quest.id}
                   >
-                    {quest.progress >= quest.target ? 'Claim' : <Gift size={16} />}
+                    {quest.progress >= quest.target ? 'CLAIM' : <Gift size={14} />}
                 </Button>
             )}
           </div>
@@ -111,7 +111,7 @@ export const Quests = () => {
         setCompleting(questId);
         try {
             const res = await apiFetch(`/quests/claim/${questId}`, { method: 'POST' });
-            addToast(`Quest completed! +${res.reward_shards} Shards`, 'success');
+            addToast(`Mission complete! +${res.reward_shards} Shards`, 'success');
             window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
             triggerRefresh();
             fetchQuests();
@@ -123,28 +123,28 @@ export const Quests = () => {
     };
 
     if (loading && !questsData) return (
-        <div className="pb-24 pt-6 max-w-2xl mx-auto adaptive-px space-y-4">
-            <Skeleton className="h-8 w-48 rounded-lg" />
-            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-32 rounded-2xl" />)}
+        <div className="pb-24 pt-4 max-w-2xl mx-auto adaptive-px space-y-4">
+            <Skeleton className="h-6 w-40 rounded-md" />
+            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-lg" />)}
         </div>
     );
 
     if (error && !questsData) return (
-        <div className="px-4 pb-12 pt-6 max-w-2xl mx-auto">
+        <div className="px-4 pb-12 pt-4 max-w-2xl mx-auto">
             <ErrorState message={error} onAction={fetchQuests} />
         </div>
     );
 
     const renderQuestSection = (title: string, quests: Quest[]) => (
-        <section className="space-y-4">
+        <section className="space-y-3">
             <div className="flex items-center justify-between px-1">
-                <h2 className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.2em]">{title}</h2>
-                <Badge variant="secondary" size="xs" className="rounded-lg font-black tracking-widest">
-                    {quests.filter(q => q.claimed).length} / {quests.length} COMPLETE
+                <h2 className="text-[9px] font-black text-neutral-700 uppercase tracking-[0.3em]">{title}</h2>
+                <Badge variant="tactical" size="xs" className="opacity-60">
+                    {quests.filter(q => q.claimed).length} / {quests.length} COMPLETED
                 </Badge>
             </div>
             {quests.length > 0 ? (
-                <div className="space-y-3">
+                <div className="space-y-2">
                     {quests.map((quest) => (
                         <QuestItem
                             key={quest.id}
@@ -155,31 +155,31 @@ export const Quests = () => {
                     ))}
                 </div>
             ) : (
-                <Card className="p-8 border-dashed bg-brand-deep/30 text-center flex flex-col items-center">
-                    <p className="text-[10px] font-black text-neutral-600 uppercase tracking-widest">No {title.toLowerCase()} available</p>
+                <Card variant="tactical" className="p-6 border-dashed border-white/5 bg-transparent text-center flex flex-col items-center">
+                    <p className="text-[8px] font-black text-neutral-800 uppercase tracking-[0.3em]">No {title.toLowerCase()} available</p>
                 </Card>
             )}
         </section>
     );
 
     return (
-        <div className="pb-24 pt-6 max-w-2xl mx-auto adaptive-px space-y-8">
-            <header className="space-y-1">
-                <div className="flex items-center gap-3">
-                   <div className="w-10 h-10 rounded-xl bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center">
-                        <ClipboardList className="text-brand-accent" size={22} />
+        <div className="pb-24 pt-4 max-w-2xl mx-auto adaptive-px space-y-6">
+            <header className="space-y-1.5">
+                <div className="flex items-center gap-2.5">
+                   <div className="w-9 h-9 rounded-md bg-brand-accent/5 border border-brand-accent/20 flex items-center justify-center text-brand-accent">
+                        <ClipboardList size={20} />
                    </div>
-                   <h1 className="text-2xl font-black text-white tracking-tighter uppercase">Daily Tasks</h1>
+                   <h1 className="text-lg font-black text-white tracking-tighter uppercase">Daily Missions</h1>
                 </div>
-                <p className="text-sm font-bold text-neutral-500 uppercase tracking-widest">
-                    Complete tactical objectives to secure rewards and XP.
+                <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest leading-relaxed">
+                    COMPLETE OBJECTIVES TO SECURE ASSETS AND XP.
                 </p>
             </header>
 
-            <div className="space-y-10">
+            <div className="space-y-8">
                 {renderQuestSection('Operational Daily', questsData?.daily || [])}
                 {renderQuestSection('Strategic Weekly', questsData?.weekly || [])}
-                {renderQuestSection('Pass Objectives', questsData?.pass || [])}
+                {renderQuestSection('Waifu Pass Objectives', questsData?.pass || [])}
             </div>
         </div>
     );

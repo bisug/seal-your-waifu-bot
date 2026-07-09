@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Coins, Gem, Image as ImageIcon, Loader2, Lock, Pencil, Save, Trash2, X } from 'lucide-react';
+import { Coins, Gem, Image as ImageIcon, Loader2, Lock, Pencil, Save, Trash2, X, Heart, Sparkles } from 'lucide-react';
 import { useToast } from '../ui/Toast';
 import { Modal } from './Modal';
 import { apiFetch, getErrorMessage } from '../../api/client';
@@ -118,7 +118,7 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
             setSelectedChar(updatedChar);
             setEditForm(buildEditForm(updatedChar));
             setEditMode(false);
-            addToast(result?.message || 'Character updated.', result?.status === 'unchanged' ? 'info' : 'success');
+            addToast(result?.message || 'Waifu entry updated.', result?.status === 'unchanged' ? 'info' : 'success');
             triggerRefresh();
             window.dispatchEvent(new Event('gallery-refresh'));
             window.dispatchEvent(new Event('harem-refresh'));
@@ -220,11 +220,11 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                                 event.preventDefault();
                                 handleEditSave();
                             }}
-                            className="space-y-4 rounded-3xl border border-white/5 bg-white/[0.02] p-5"
+                            className="space-y-4 rounded-xl border border-white/[0.05] bg-white/[0.01] p-5"
                         >
                             <div className="space-y-4">
                                 <div className="space-y-1.5">
-                                    <span className="text-[10px] font-black uppercase text-neutral-600 tracking-widest pl-1">Identified Name</span>
+                                    <span className="text-[10px] font-black uppercase text-neutral-600 tracking-widest pl-1">Waifu Name</span>
                                     <Input
                                         value={editForm.name}
                                         onChange={event => updateEditField('name', event.target.value)}
@@ -233,7 +233,7 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <span className="text-[10px] font-black uppercase text-neutral-600 tracking-widest pl-1">Origin Archive</span>
+                                    <span className="text-[10px] font-black uppercase text-neutral-600 tracking-widest pl-1">Origin Anime</span>
                                     <Input
                                         value={editForm.anime}
                                         onChange={event => updateEditField('anime', event.target.value)}
@@ -242,13 +242,13 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <span className="text-[10px] font-black uppercase text-neutral-600 tracking-widest pl-1">Rarity Classification</span>
+                                    <span className="text-[10px] font-black uppercase text-neutral-600 tracking-widest pl-1">Rarity Class</span>
                                     <div className="relative group">
                                         <select
                                             value={editForm.rarity}
                                             onChange={event => updateEditField('rarity', event.target.value)}
                                             disabled={editStage === 'saving'}
-                                            className="w-full h-11 bg-brand-deep border border-white/10 rounded-xl px-4 text-xs font-black text-white uppercase tracking-widest outline-none focus:border-brand-accent transition-all appearance-none cursor-pointer"
+                                            className="w-full h-11 bg-brand-deep border border-white/10 rounded-md px-4 text-xs font-black text-white uppercase tracking-widest outline-none focus:border-brand-accent transition-all appearance-none cursor-pointer"
                                         >
                                             {!rarityOptions.some(option => option.label === editForm.rarity) && editForm.rarity && (
                                                 <option value={editForm.rarity}>{editForm.rarity.toUpperCase()}</option>
@@ -262,7 +262,7 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                                     </div>
                                 </div>
                                 <div className="space-y-1.5">
-                                    <span className="text-[10px] font-black uppercase text-neutral-600 tracking-widest pl-1">Visual Asset Source</span>
+                                    <span className="text-[10px] font-black uppercase text-neutral-600 tracking-widest pl-1">Visual Asset</span>
                                     <Input
                                         icon={ImageIcon}
                                         value={editForm.img_url}
@@ -281,16 +281,17 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                                         setEditMode(false);
                                     }}
                                     disabled={editStage === 'saving'}
-                                    className="flex-1 rounded-2xl uppercase tracking-widest text-[10px] font-black"
+                                    className="flex-1 rounded-md uppercase tracking-widest text-[10px] font-black"
                                 >
                                     Cancel
                                 </Button>
                                 <Button
                                     type="submit"
+                                    variant="tactical"
                                     isLoading={editStage === 'saving'}
-                                    className="flex-[1.5] rounded-2xl uppercase tracking-widest text-[10px] font-black"
+                                    className="flex-[1.5] rounded-md uppercase tracking-widest text-[10px] font-black"
                                 >
-                                    Save Changes
+                                    Update Entry
                                 </Button>
                             </div>
                         </form>
@@ -298,10 +299,10 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                         <Button
                             variant="secondary"
                             onClick={() => setEditMode(true)}
-                            className="w-full rounded-2xl uppercase tracking-widest text-[10px] font-black border-white/5 py-4"
+                            className="w-full rounded-md uppercase tracking-widest text-[10px] font-black border-white/5 py-4"
                         >
                             <Pencil size={14} className="mr-2" />
-                            Update Registry
+                            Update Archive Registry
                         </Button>
                     )}
                 </div>
@@ -310,35 +311,37 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
             {!editMode && activeTab === 'shop' && !isOwned && (
                 <div className="w-full">
                     {isSoldOut ? (
-                        <Badge variant="danger" icon={Lock} className="w-full py-4 rounded-2xl justify-center font-black tracking-widest text-xs">
-                            STOCK DEPLETED
+                        <Badge variant="danger" icon={Lock} size="md" className="w-full py-4 rounded-md justify-center font-black tracking-widest border-none">
+                            SUMMONS DEPLETED
                         </Badge>
                     ) : !canAfford ? (
-                        <Badge variant="secondary" icon={Gem} className="w-full py-4 rounded-2xl justify-center font-black tracking-widest text-xs border-white/5">
-                            {formatNumber(price - zenithBalance)} MORE ZENITH NEEDED
+                        <Badge variant="secondary" icon={Gem} size="md" className="w-full py-4 rounded-md justify-center font-black tracking-widest border-white/5">
+                            {formatNumber(price - zenithBalance)} ZENITH NEEDED
                         </Badge>
                     ) : purchaseStage === 'idle' ? (
                         <Button
                             onClick={() => setPurchaseStage('confirm')}
-                            className="w-full py-5 rounded-2xl uppercase tracking-[0.2em] text-[11px] font-black shadow-[0_10px_30px_rgba(59,130,246,0.3)]"
+                            variant="tactical"
+                            className="w-full py-5 rounded-md uppercase tracking-[0.2em] text-[11px] font-black"
                         >
-                            Acquire for {formatNumber(price)} Zenith
+                            Summon for {formatNumber(price)} Zenith
                         </Button>
                     ) : (
                         <div className="flex gap-3">
                             <Button
                                 variant="secondary"
                                 onClick={() => setPurchaseStage('idle')}
-                                className="flex-1 rounded-2xl uppercase tracking-widest text-[10px] font-black"
+                                className="flex-1 rounded-md uppercase tracking-widest text-[10px] font-black"
                             >
                                 Cancel
                             </Button>
                             <Button
+                                variant="tactical"
                                 onClick={handleBuy}
                                 isLoading={purchaseStage === 'buying'}
-                                className="flex-[2] rounded-2xl uppercase tracking-widest text-[10px] font-black"
+                                className="flex-[2] rounded-md uppercase tracking-widest text-[10px] font-black"
                             >
-                                Confirm Acquisition
+                                Confirm Summon
                             </Button>
                         </div>
                     )}
@@ -351,17 +354,17 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                         variant="danger"
                         onClick={handleRecycle}
                         disabled={sellStage !== 'idle'}
-                        className="flex-1 rounded-2xl uppercase tracking-widest text-[10px] font-black py-4"
+                        className="flex-1 rounded-md uppercase tracking-widest text-[10px] font-black py-4"
                     >
                         {sellStage === 'previewing' || sellStage === 'selling' ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} className="mr-2" />}
                         Recycle
                     </Button>
 
                     <Button
-                        variant="primary"
+                        variant="secondary"
                         onClick={handleSell}
                         disabled={sellStage !== 'idle'}
-                        className="flex-1 rounded-2xl uppercase tracking-widest text-[10px] font-black py-4"
+                        className="flex-1 rounded-md uppercase tracking-widest text-[10px] font-black py-4"
                     >
                         {sellStage === 'selling' ? <Loader2 size={14} className="animate-spin" /> : <Coins size={14} className="mr-2" />}
                         Sell
