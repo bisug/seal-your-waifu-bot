@@ -21,7 +21,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
         </div>
         <div className="flex flex-col justify-center">
           <div className="flex items-center gap-1.5">
-            <span className="text-[10px] font-black text-zinc-100 tracking-wider uppercase leading-none">PROTOCOL</span>
+            <span className="text-[10px] font-black text-zinc-100 tracking-wider uppercase leading-none">SEAL</span>
             <span className="text-[8px] font-mono text-zinc-600 uppercase">V2.4</span>
           </div>
           <div className="flex items-center gap-1 mt-0.5">
