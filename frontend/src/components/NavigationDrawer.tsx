@@ -15,6 +15,10 @@ import {
   Settings,
   HelpCircle,
   LogOut,
+  Egg,
+  Store,
+  BookOpen,
+  LayoutDashboard,
 } from 'lucide-react';
 import { cn } from '../utils';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -41,11 +45,20 @@ interface NavigationDrawerProps {
 
 const SECTIONS: NavSection[] = [
   {
+    title: "CORE",
+    items: [
+      { id: 'profile', label: 'Dashboard', icon: LayoutDashboard },
+      { id: 'incubation', label: 'Hatchery', icon: Egg },
+      { id: 'shop', label: 'Market', icon: Store },
+      { id: 'exchange', label: 'Currency', icon: Repeat2 },
+      { id: 'gallery', label: 'Archive', icon: BookOpen },
+    ]
+  },
+  {
     title: "OPERATIONS",
     items: [
       { id: 'mypets', label: 'Companions', icon: PawPrint },
       { id: 'achievements', label: 'Milestones', icon: BadgeCheck },
-      { id: 'exchange', label: 'Currency', icon: Repeat2 },
     ]
   },
   {

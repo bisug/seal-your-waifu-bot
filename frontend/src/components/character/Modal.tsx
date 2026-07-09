@@ -104,11 +104,11 @@ export const Modal = ({ character, onClose, actions }: ModalProps) => {
                     </div>
 
                     {/* Content Section */}
-                    <div className="flex-1 p-6 space-y-6">
-                        <div className="space-y-1.5">
+                    <div className="flex-1 p-6 sm:p-6 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
+                        <div className="space-y-1">
                             <div className="flex items-center gap-1.5">
                                 <Target size={11} className="text-zinc-500" />
-                                <span className="text-[9px] font-mono font-bold uppercase text-zinc-500 tracking-widest">ASSET_ID: #{characterId}</span>
+                                <span className="text-[9px] font-mono font-bold uppercase text-zinc-500 tracking-widest">UNIT_ID: #{characterId}</span>
                             </div>
                             <h2 className="text-2xl font-bold text-zinc-100 uppercase tracking-tight">{character.name}</h2>
                             <div className="flex items-center gap-1.5 opacity-60">
@@ -117,7 +117,7 @@ export const Modal = ({ character, onClose, actions }: ModalProps) => {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-3 gap-2 sm:gap-3">
                             {[
                                 { icon: ShieldCheck, label: 'STATUS', value: character.owned ? "SECURED" : "PENDING", variant: character.owned ? "success" : "secondary" },
                                 { icon: Package, label: 'SUPPLY', value: hasStock ? (soldOut ? "DEPLETED" : `${stockRemaining}/${stockLimit}`) : (character.count > 0 ? `x${character.count}` : "UNLIMITED"), variant: soldOut ? "danger" : "default" },
@@ -145,19 +145,19 @@ export const Modal = ({ character, onClose, actions }: ModalProps) => {
                         </div>
 
                         {actions && (
-                            <div className="pt-6 border-t border-white/5 flex flex-col gap-4">
+                            <div className="pt-4 sm:pt-6 border-t border-white/5 flex flex-col gap-3 sm:gap-4">
                                 {actions}
                             </div>
                         )}
 
-                        <div className="flex items-center justify-center gap-2 py-1 opacity-20">
+                        <div className="flex items-center justify-center gap-2 py-0 opacity-20">
                             <Sparkles size={10} className="text-brand-accent" />
-                            <span className="text-[8px] font-bold uppercase text-zinc-100 tracking-widest">End of Record</span>
+                            <span className="text-[8px] font-bold uppercase text-zinc-100 tracking-widest">End of Data</span>
                         </div>
                     </div>
 
                     {/* Safe Area Padding */}
-                    <div className="h-[calc(var(--sab,24px)+4px)] sm:hidden" />
+                    <div className="h-[calc(var(--sab,8px)+4px)] sm:hidden" />
                 </motion.div>
             </div>
         </AnimatePresence>
