@@ -1,27 +1,24 @@
 import 'react';
 import { PackageOpen, type LucideIcon } from 'lucide-react';
-import { Card } from './Card';
 
 interface EmptyStateProps {
   icon?: LucideIcon;
   title?: string;
   message?: string;
-  className?: string;
 }
 
 export const EmptyState = ({
   icon: Icon = PackageOpen,
-  title = "DATA ARCHIVE EMPTY",
-  message = "No records found in the current sector.",
-  className = ""
+  title = "No results found",
+  message = "No records matching your search were found."
 }: EmptyStateProps) => (
-  <Card variant="tactical" className={`py-12 px-6 bg-[#08080a]/50 text-center flex flex-col items-center select-none border-dashed border-white/5 ${className}`}>
-    <div className="w-12 h-12 rounded-lg bg-white/[0.02] border border-white/[0.05] flex items-center justify-center mb-5">
-       <Icon size={20} className="text-neutral-800" />
+  <div className="py-12 px-6 text-center flex flex-col items-center select-none">
+    <div className="w-12 h-12 rounded-full bg-zinc-900 border border-white/5 flex items-center justify-center mb-4">
+       <Icon size={20} className="text-zinc-700" />
     </div>
-    <h3 className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.3em] mb-2">{title}</h3>
-    <p className="text-[9px] text-neutral-600 font-bold uppercase tracking-widest max-w-[200px] leading-relaxed">
+    <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-widest mb-1">{title}</h3>
+    <p className="text-[10px] text-zinc-600 font-medium uppercase tracking-widest max-w-[200px] leading-relaxed">
       {message}
     </p>
-  </Card>
+  </div>
 );
