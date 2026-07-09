@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { Character } from '../../context/UserContext';
 
 interface GachaRevealProps {
