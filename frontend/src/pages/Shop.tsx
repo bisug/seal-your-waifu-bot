@@ -7,7 +7,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card } from '../components/ui/Card';
-import { AlertCircle, CalendarDays, CheckCircle2, Clock, Coins, Gem, PackageOpen, RefreshCw, Store, Sparkles } from 'lucide-react';
+import { AlertCircle, Clock, Coins, Gem, PackageOpen, RefreshCw, Store, Sparkles, CheckCircle2 } from 'lucide-react';
 import { Character, useUser } from '../context/UserContext';
 import { formatNumber, cn } from '../utils';
 
@@ -39,47 +39,20 @@ const isSoldOut = (character: Character) => {
 };
 
 const getCountdown = (resetAt: string | undefined, now: number) => {
-  if (!resetAt) return 'DAILY RESET';
+  if (!resetAt) return 'AUTO-CYCLE';
 
   const resetTime = new Date(resetAt).getTime();
-  if (!Number.isFinite(resetTime)) return 'DAILY RESET';
+  if (!Number.isFinite(resetTime)) return 'AUTO-CYCLE';
 
   const diff = Math.max(0, resetTime - now);
   const hours = Math.floor(diff / (1000 * 60 * 60));
   const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
-  if (hours <= 0 && minutes <= 0) return 'RESET SOON';
-  if (hours <= 0) return `${minutes}M`;
+  if (hours <= 0 && minutes <= 0 && seconds <= 10) return 'RESETTING...';
+  if (hours <= 0) return `${minutes}M ${seconds}S`;
   return `${hours}H ${minutes}M`;
 };
-
-const Metric = ({
-  icon: Icon,
-  label,
-  value,
-  variant = 'secondary',
-}: {
-  icon: React.ElementType;
-  label: string;
-  value: string | number;
-  variant?: 'primary' | 'secondary' | 'warning' | 'success';
-}) => (
-  <Card variant="tactical" className="p-3 flex flex-col justify-between border-white/[0.03]">
-    <div className="flex items-center gap-1.5 mb-1.5">
-      <Icon
-        size={11}
-        className={cn(
-          variant === 'primary' && 'text-brand-accent',
-          variant === 'success' && 'text-emerald-500',
-          variant === 'warning' && 'text-amber-500',
-          variant === 'secondary' && 'text-neutral-600'
-        )}
-      />
-      <span className="text-[8px] font-black text-neutral-600 uppercase tracking-[0.2em] truncate">{label}</span>
-    </div>
-    <p className="text-xs font-black text-white stats-value tabular-nums uppercase truncate">{value}</p>
-  </Card>
-);
 
 export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
   const { user, refreshUser } = useUser();
@@ -88,7 +61,7 @@ export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
 
@@ -152,41 +125,39 @@ export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
   };
 
   if (loading && !shopData) return (
-    <div className="pb-24 pt-4 max-w-5xl mx-auto adaptive-px">
-       <div className="space-y-4">
-          <div className="flex flex-col gap-1.5">
-             <Skeleton className="h-6 w-40 rounded-md" />
-             <Skeleton className="h-3 w-56 rounded-md" />
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-             {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-14 rounded-lg" />)}
-          </div>
-          <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-6 gap-2.5">
-             {Array.from({ length: 12 }).map((_, i) => <CardSkeleton key={i} />)}
-          </div>
+    <div className="pb-32 pt-6 max-w-5xl mx-auto adaptive-px space-y-8">
+       <div className="flex flex-col gap-2">
+          <Skeleton className="h-8 w-48 rounded-lg" />
+          <Skeleton className="h-4 w-64 rounded-lg opacity-50" />
+       </div>
+       <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+          {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-20 rounded-2xl" />)}
+       </div>
+       <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-6 gap-3 sm:gap-4">
+          {Array.from({ length: 12 }).map((_, i) => <CardSkeleton key={i} />)}
        </div>
     </div>
   );
 
   if (error && !shopData) return (
-    <div className="px-4 py-12 max-w-2xl mx-auto">
+    <div className="px-5 py-20 max-w-2xl mx-auto">
       <ErrorState message={error} onAction={handleRefresh} />
     </div>
   );
 
   return (
-    <div className="pb-24 pt-4 max-w-5xl mx-auto adaptive-px space-y-6">
-      <header className="space-y-4">
-        <div className="flex items-start justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-md bg-brand-accent/5 border border-brand-accent/20 flex items-center justify-center">
-                 <Store size={20} className="text-brand-accent" />
+    <div className="pb-32 pt-6 max-w-5xl mx-auto adaptive-px space-y-8">
+      <header className="space-y-6">
+        <div className="flex items-start justify-between gap-6">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.1)]">
+                 <Store size={22} className="text-brand-accent" />
               </div>
-              <h1 className="text-lg font-black text-white tracking-tighter uppercase">Gacha Market</h1>
+              <h1 className="text-2xl font-black text-white tracking-tighter uppercase">Gacha Market</h1>
             </div>
-            <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest max-w-xs leading-relaxed">
-              SUMMON NEW WAIFUS. SHARED GLOBAL STOCK.
+            <p className="text-[11px] font-black text-neutral-500 uppercase tracking-widest max-w-xs leading-relaxed opacity-60">
+              Personnel summoning terminal. Global asset rotation active.
             </p>
           </div>
 
@@ -194,51 +165,68 @@ export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
             variant="secondary"
             onClick={handleRefresh}
             isLoading={loading || hubLoading}
-            className="w-9 h-9 p-0 rounded-md border-white/5"
+            className="w-10 h-10 p-0 rounded-xl border-white/5 shadow-lg active:scale-95"
             aria-label="Refresh market"
           >
-            <RefreshCw size={16} className={loading || hubLoading ? 'animate-spin' : ''} />
+            <RefreshCw size={18} className={loading || hubLoading ? 'animate-spin' : ''} />
           </Button>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-          <Metric icon={Coins} label="Credit Shards" value={formatNumber(shardBalance)} variant="warning" />
-          <Metric icon={Gem} label="Zenith Assets" value={formatNumber(zenithBalance)} variant="primary" />
-          <Metric icon={Clock} label="Next Rotation" value={getCountdown(hubData?.reset_at, now)} variant="secondary" />
-          <Metric icon={PackageOpen} label="In Stock" value={`${summary.available} UNITS`} variant="success" />
-          <Metric icon={CheckCircle2} label="Secured" value={`${summary.owned} OWNED`} variant="secondary" />
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+          {[
+            { icon: Coins, label: 'Shards', value: formatNumber(shardBalance), variant: 'warning' },
+            { icon: Gem, label: 'Zenith', value: formatNumber(zenithBalance), variant: 'primary' },
+            { icon: Clock, label: 'Rotation', value: getCountdown(hubData?.reset_at, now), variant: 'secondary' },
+            { icon: PackageOpen, label: 'In Stock', value: `${summary.available} OPS`, variant: 'success' },
+            { icon: CheckCircle2, label: 'Secured', value: `${summary.owned} OWNED`, variant: 'secondary' },
+          ].map((metric, i) => (
+            <Card key={i} variant="tactical" className="p-4 border-white/[0.03] group hover:border-white/[0.08] transition-colors">
+              <div className="flex items-center gap-2 mb-2.5">
+                <metric.icon size={12} className={cn(
+                  metric.variant === 'primary' && 'text-brand-accent',
+                  metric.variant === 'success' && 'text-success',
+                  metric.variant === 'warning' && 'text-warning',
+                  metric.variant === 'secondary' && 'text-neutral-600'
+                )} />
+                <span className="text-[9px] font-black text-neutral-600 uppercase tracking-widest truncate leading-none">{metric.label}</span>
+              </div>
+              <p className="text-sm font-black text-white stats-value tabular-nums uppercase truncate leading-none">{metric.value}</p>
+            </Card>
+          ))}
         </div>
 
         {(error || hubError) && shopData && (
-          <Badge variant="warning" icon={AlertCircle} size="xs" className="w-full py-2 rounded-md justify-center border-amber-500/10">
-            CONNECTION UNSTABLE: DISPLAYING CACHED MARKET DATA
+          <Badge variant="warning" icon={AlertCircle} size="sm" className="w-full py-3 rounded-xl justify-center border-warning/10 shadow-lg animate-in">
+            CONNECTION UNSTABLE: DISPLAYING OFFLINE CACHE
           </Badge>
         )}
       </header>
 
-      <section className="space-y-4">
-        <div className="flex items-center justify-between gap-3 border-b border-white/[0.03] pb-2">
-          <div className="flex items-center gap-2">
-            <Sparkles size={14} className="text-brand-accent" />
-            <h2 className="text-[10px] font-black text-white uppercase tracking-[0.2em]">Current Summon List</h2>
+      <section className="space-y-6">
+        <div className="flex items-center justify-between gap-4 px-1">
+          <div className="flex items-center gap-2.5">
+            <Sparkles size={16} className="text-brand-accent animate-pulse" />
+            <h2 className="text-[11px] font-black text-white uppercase tracking-[0.25em]">Manifest Database</h2>
           </div>
-          <Badge variant="tactical" size="xs" className="opacity-60">
-            {summary.affordable} AFFORDABLE
+          <Badge variant="tactical" size="xs" className="opacity-40 font-mono tracking-tighter">
+            {summary.affordable} READY
           </Badge>
         </div>
 
         {inventory.length > 0 ? (
-          <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2.5 sm:gap-3">
+          <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3 sm:gap-4 px-0.5">
             {inventory.map((char) => (
               <CharacterCard key={char.id} character={char} onClick={() => onCharClick(char)} />
             ))}
           </div>
         ) : (
-          <EmptyState
-            icon={Store}
-            title="Market Closed"
-            message="No waifus available in the current rotation."
-          />
+          <div className="py-24">
+            <EmptyState
+              icon={Store}
+              title="Terminal Closed"
+              message="No assets available for summoning at this moment."
+            />
+          </div>
         )}
       </section>
     </div>
