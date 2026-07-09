@@ -2,6 +2,8 @@ import 'react';
 import { Menu, Gem, Stamp } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 import { formatNumber } from '../utils';
+import { Button } from './ui/Button';
+import { Badge } from './ui/Badge';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -11,38 +13,42 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
   const { user } = useUser();
 
   return (
-    <header className="sticky top-0 z-50 flex items-center justify-between px-4 bg-brand-midnight h-14 shrink-0 select-none border-b border-white/5">
-      <div className="flex items-center space-x-3">
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-brand-deep">
-           <Stamp size={16} className="text-white" strokeWidth={2} />
+    <header className="sticky top-0 z-50 flex items-center justify-between px-4 bg-background/80 backdrop-blur-md h-16 shrink-0 select-none border-b border-white/5">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-brand-deep border border-white/5 shadow-inner">
+           <Stamp size={20} className="text-white" strokeWidth={2} />
         </div>
-        <div className="flex min-w-0 items-center gap-2">
-          <span className="truncate text-xs font-semibold text-white">SEAL YOUR WAIFU</span>
-          {user?.role_tag && (
-            <span className="inline-flex items-center gap-1 rounded bg-brand-accent/10 px-1.5 py-0.5 text-[10px] font-bold text-brand-accent">
-              <span className="leading-none">{user.role_symbol}</span>
-              <span>{user.role_tag}</span>
-            </span>
-          )}
+        <div className="flex flex-col">
+          <span className="text-[11px] font-black text-white tracking-tighter uppercase leading-none">SEAL YOUR WAIFU</span>
+          <div className="mt-1 flex items-center gap-1.5">
+            {user?.role_tag && (
+              <Badge variant="primary" size="xs">
+                {user.role_symbol} {user.role_tag}
+              </Badge>
+            )}
+            <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest">BETA v2.1</span>
+          </div>
         </div>
       </div>
 
-      <div className="flex items-center space-x-3">
-        <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-brand-deep">
-          <Gem size={14} className="text-brand-accent" />
-          <span className="text-xs font-semibold text-white tabular-nums">
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-deep border border-white/5 shadow-sm">
+          <Gem size={14} className="text-brand-accent animate-pulse" />
+          <span className="text-xs font-bold text-white tabular-nums">
             {formatNumber(user?.stats?.zenith || 0)}
           </span>
-          <span className="text-[10px] font-semibold text-neutral-500">Zenith</span>
+          <span className="hidden xs:inline text-[10px] font-bold text-neutral-500 uppercase tracking-tighter">Zenith</span>
         </div>
 
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={onMenuClick}
-          className="p-2 -mr-2 rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 active:scale-95 transition-all"
+          className="w-10 h-10 p-0 rounded-xl"
           aria-label="Menu"
         >
-          <Menu size={20} />
-        </button>
+          <Menu size={22} />
+        </Button>
       </div>
     </header>
   );
