@@ -30,13 +30,7 @@ Project Seal is a high-performance, character-collection Telegram ecosystem util
 
 ### **[C-01] Hardcoded Production Credentials**
 - **File:** `config.py` (Lines 34-45, 87)
-- **Evidence:**
-  ```python
-   TOKEN = os.getenv("TOKEN", "[REDACTED_BOT_TOKEN]")
-   MONGO_URL = os.getenv("MONGO_URL", "mongodb+srv://[USER]:[PASS]@[CLUSTER].mongodb.net/...")
-   REDIS_URL = os.getenv("REDIS_URL", "rediss://default:[PASS]@[HOST]:[PORT]")
-   STRING_SESSION = os.getenv("STRING_SESSION", "[REDACTED_SESSION_STRING]")
-  ```
+- **Finding:** The configuration file contains hardcoded fallback values for sensitive environment variables including `TOKEN`, `MONGO_URL`, `REDIS_URL`, and `STRING_SESSION`.
 - **Why it is an issue:** Defaulting secrets to hardcoded strings in code leads to permanent credential leakage if the source is shared or compromised.
 - **Risk Level:** Critical | **Impact:** Compromise of Bot, Database, and User Sessions.
 - **Migration:** Move all secrets to environment variables; use a `.env` file with no fallbacks in `config.py`.
