@@ -14,15 +14,12 @@ export const Avatar = ({ src, alt = "Avatar", className = "", fallbackText }: Av
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    // Wrap in microtask to avoid cascading render warning
-    Promise.resolve().then(() => {
-      setError(false);
-      setLoaded(false);
-    });
+    setError(false);
+    setLoaded(false);
   }, [src]);
 
   return (
-    <div className={cn("relative overflow-hidden bg-white/5 flex items-center justify-center shrink-0", className)}>
+    <div className={cn("relative overflow-hidden bg-zinc-900 flex items-center justify-center shrink-0", className)}>
       {!error && src ? (
         <>
           <img
@@ -36,14 +33,14 @@ export const Avatar = ({ src, alt = "Avatar", className = "", fallbackText }: Av
             )}
           />
           {!loaded && (
-            <div className="absolute inset-0 bg-white/5" />
+            <div className="absolute inset-0 bg-zinc-900 animate-pulse" />
           )}
         </>
       ) : (
         fallbackText ? (
-          <span className="text-xs font-bold uppercase text-white/55">{fallbackText}</span>
+          <span className="text-xs font-bold uppercase text-zinc-600">{fallbackText}</span>
         ) : (
-          <User className="text-white/20 w-1/2 h-1/2" />
+          <User className="text-zinc-800 w-1/2 h-1/2" />
         )
       )}
     </div>

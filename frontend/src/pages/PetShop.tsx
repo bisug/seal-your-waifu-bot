@@ -4,7 +4,7 @@ import { useUser, Pet } from '../context/UserContext';
 import { Skeleton } from '../components/ui/Skeleton';
 import { ErrorState } from '../components/ui/ErrorState';
 import { formatNumber, cn } from '../utils';
-import { Bone, Lock, CheckCircle2, Loader2, PawPrint, Sparkles, Gem, Target, Activity, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Bone, Lock, CheckCircle2, PawPrint, Gem, Target, ShieldCheck } from 'lucide-react';
 import { apiFetch, getErrorMessage } from '../api/client';
 import { useToast } from '../components/ui/Toast';
 import { Badge } from '../components/ui/Badge';
@@ -49,8 +49,8 @@ const PetShopImage = ({ pet, className }: { pet: Pet; className?: string }) => {
             onError={() => setImageFailed(true)}
         />
     ) : (
-        <div className={cn(className, 'flex items-center justify-center text-neutral-800 bg-brand-surface')}>
-            <PawPrint size={40} />
+        <div className={cn(className, 'flex items-center justify-center text-zinc-800 bg-zinc-900')}>
+            <PawPrint size={32} />
         </div>
     );
 };
@@ -66,19 +66,17 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
         const petRef = getPetRef(pet);
 
         window.Telegram?.WebApp?.showConfirm(
-            `AUTHORIZE ACQUISITION OF ${pet.name.toUpperCase()}? SYSTEM SYNC WILL BE AUTOMATIC.`,
+            `Acquire ${pet.name.toUpperCase()}?`,
             async (confirmed) => {
                 if (confirmed) {
                     setBuying(petRef);
-                    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
+                    window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
                     try {
                         await apiFetch(`/shop/buy/pet/${encodeURIComponent(petRef)}`, { method: 'POST' });
-                        addToast(`Success: ${pet.name} acquired and synced.`, 'success');
-                        window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
+                        addToast(`${pet.name} acquired.`, 'success');
                         triggerRefresh();
                     } catch (err: any) {
                         addToast(getErrorMessage(err), 'error');
-                        window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('error');
                     } finally {
                         setBuying(null);
                     }
@@ -88,12 +86,12 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
     };
 
     if (loading && !shopData) return (
-        <div className="pb-32 pt-8 max-w-2xl mx-auto adaptive-px space-y-10">
-            <div className="flex flex-col gap-2">
-               <Skeleton className="h-10 w-48 rounded-lg" />
-               <Skeleton className="h-4 w-64 rounded-lg opacity-50 mb-4" />
+        <div className="pb-32 pt-6 adaptive-px max-w-2xl mx-auto space-y-8">
+            <div className="flex flex-col gap-1.5">
+               <Skeleton className="h-8 w-40 rounded-md" />
+               <Skeleton className="h-4 w-56 rounded-md opacity-50" />
             </div>
-            {[1,2,3].map(i => <Skeleton key={i} className="h-40 rounded-[28px]" />)}
+            {[1,2,3].map(i => <Skeleton key={i} className="h-32 rounded-md" />)}
         </div>
     );
 
@@ -109,25 +107,21 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
     const zenithBalance = user?.stats?.zenith ?? user?.zenith ?? 0;
 
     return (
-        <div className="pb-32 pt-8 max-w-3xl mx-auto adaptive-px space-y-10 select-none">
-            <header className="space-y-2">
-                <div className="flex items-center gap-4">
-                   <div className="w-12 h-12 rounded-2xl bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.1)]">
-                        <Bone className="text-brand-accent" size={26} />
-                   </div>
-                   <div className="flex flex-col gap-1">
-                      <h1 className="text-3xl font-black text-white tracking-tighter uppercase leading-none">Breeder</h1>
-                      <div className="flex items-center gap-2">
-                         <Target size={11} className="text-neutral-600" />
-                         <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest leading-none">
-                            COMPANION ACQUISITION TERMINAL
-                         </p>
-                      </div>
-                   </div>
+        <div className="pb-32 pt-6 max-w-3xl mx-auto adaptive-px space-y-8 select-none">
+            <header className="space-y-1">
+                <div className="flex items-center gap-2.5">
+                    <Bone className="text-brand-accent" size={20} />
+                    <h1 className="text-xl font-bold text-zinc-100 uppercase tracking-tight">Breeder</h1>
+                </div>
+                <div className="flex items-center gap-2 opacity-60">
+                    <ShieldCheck size={10} className="text-zinc-500" />
+                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+                        Companion acquisition terminal
+                    </p>
                 </div>
             </header>
 
-            <div className="grid grid-cols-1 gap-5">
+            <div className="grid grid-cols-1 gap-4">
                 <AnimatePresence mode="popLayout">
                 {pets.map((pet, i) => {
                     const petRef = getPetRef(pet);
@@ -138,62 +132,55 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
                     const canAfford = zenithBalance >= price;
 
                     return (
-                        <motion.div layout key={pet.id || pet.name} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                        <motion.div layout key={pet.id || pet.name} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
                             <Card
-                                variant="tactical"
+                                variant="default"
                                 onClick={() => onPetClick?.({ ...pet, shopIndex: i })}
                                 className={cn(
-                                    "p-6 flex flex-col sm:flex-row gap-6 items-center group cursor-pointer relative overflow-hidden transition-all duration-500",
-                                    isOwned ? "border-success/20 bg-success/[0.02]" : "bg-white/[0.01] border-white/[0.04] hover:bg-white/[0.02] hover:border-white/[0.1]",
+                                    "p-5 flex flex-col sm:flex-row gap-5 items-center cursor-pointer transition-all",
+                                    isOwned ? "border-emerald-500/10 bg-emerald-500/[0.01]" : "hover:bg-zinc-900",
                                     isLocked && "opacity-40 grayscale"
                                 )}
                             >
-                                <div className="relative shrink-0 w-full sm:w-auto flex justify-center">
+                                <div className="relative shrink-0">
                                     <div className={cn(
-                                        "w-32 h-32 rounded-[24px] overflow-hidden border-2 bg-brand-midnight shadow-2xl group-hover:scale-105 transition-all duration-700 relative z-10",
-                                        isOwned ? "border-success/40" : "border-white/[0.05]"
+                                        "w-24 h-24 rounded-md overflow-hidden border bg-zinc-900",
+                                        isOwned ? "border-emerald-500/30" : "border-white/5"
                                     )}>
-                                        <PetShopImage pet={pet} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                                        <PetShopImage pet={pet} className="w-full h-full object-cover" />
                                     </div>
 
                                     {isOwned && (
-                                        <div className="absolute -top-3 -right-3 sm:top-[-10px] sm:right-[-10px] bg-success text-black p-2 rounded-2xl shadow-[0_0_20px_rgba(16,185,129,0.4)] border-4 border-brand-midnight z-20 animate-in">
-                                            <CheckCircle2 size={20} strokeWidth={3} />
+                                        <div className="absolute -top-2 -right-2 bg-emerald-500 text-black w-6 h-6 rounded-full flex items-center justify-center shadow-lg border-4 border-zinc-950">
+                                            <CheckCircle2 size={14} strokeWidth={3} />
                                         </div>
                                     )}
 
                                     {isLocked && (
-                                        <div className="absolute inset-0 flex items-center justify-center z-20">
-                                            <div className="w-12 h-12 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center border border-white/10 text-white shadow-2xl">
-                                                <Lock size={24} />
-                                            </div>
+                                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-md">
+                                            <Lock size={18} className="text-white" />
                                         </div>
                                     )}
                                 </div>
 
-                                <div className="flex-1 min-w-0 space-y-5 w-full text-center sm:text-left">
-                                    <div className="space-y-2">
-                                        <h2 className="text-2xl font-black text-white truncate uppercase tracking-tighter drop-shadow-md group-hover:text-brand-accent transition-colors">{pet.name}</h2>
-                                        <div className="flex items-center justify-center sm:justify-start gap-2.5">
-                                            <Sparkles size={14} className="text-brand-accent shrink-0 animate-pulse" />
-                                            <p className="text-[12px] font-black text-brand-accent uppercase tracking-widest truncate">{pet.ability || 'AUTHORIZED_SYSTEM_PERK'}</p>
-                                        </div>
+                                <div className="flex-1 min-w-0 space-y-4 w-full text-center sm:text-left">
+                                    <div className="space-y-1">
+                                        <h2 className="text-lg font-bold text-zinc-100 uppercase tracking-tight">{pet.name}</h2>
+                                        <p className="text-[10px] font-bold text-brand-accent uppercase tracking-widest truncate">{pet.ability || 'AUTHORIZED_SYSTEM_PERK'}</p>
                                     </div>
 
-                                    <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pt-4 border-t border-white/[0.04]">
-                                        <div className="flex items-center gap-6">
-                                            <div className="space-y-1.5">
-                                                <span className="text-[9px] font-black text-neutral-600 uppercase tracking-[0.2em] block">PROTOCOL_COST</span>
-                                                <div className="flex items-center justify-center sm:justify-start gap-2">
-                                                    <Gem size={16} className="text-brand-accent shadow-sm" />
-                                                    <span className="text-lg font-black text-white tabular-nums font-mono leading-none">{formatNumber(price)}</span>
+                                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-white/5">
+                                        <div className="flex items-center gap-5">
+                                            <div className="space-y-0.5">
+                                                <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest block">Cost</span>
+                                                <div className="flex items-center justify-center sm:justify-start gap-1.5">
+                                                    <Gem size={14} className="text-brand-accent" />
+                                                    <span className="text-base font-mono font-bold text-zinc-100">{formatNumber(price)}</span>
                                                 </div>
                                             </div>
-                                            <div className="h-8 w-px bg-white/[0.04]" />
-                                            <div className="space-y-1.5">
-                                                <span className="text-[9px] font-black text-neutral-600 uppercase tracking-[0.2em] block">CLASS_RANK</span>
-                                                <Badge variant="tactical" size="xs" className="px-2 py-0.5 rounded-md font-mono border-white/10 bg-white/[0.02]">
+                                            <div className="space-y-0.5">
+                                                <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest block">Class</span>
+                                                <Badge variant="secondary" size="xs">
                                                    {pet.rarity?.toUpperCase() || 'STANDARD'}
                                                 </Badge>
                                             </div>
@@ -202,32 +189,28 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
                                         <div className="w-full sm:w-auto">
                                             {!isOwned && !isLocked && (
                                                 <Button
-                                                    variant={canAfford ? "tactical" : "secondary"}
-                                                    size="lg"
+                                                    variant={canAfford ? "accent" : "secondary"}
+                                                    size="sm"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         handleBuy(pet);
                                                     }}
                                                     isLoading={buying === petRef}
                                                     disabled={!canAfford}
-                                                    className="w-full sm:w-auto px-10 h-12 rounded-[18px] uppercase tracking-[0.2em] text-[11px] font-black shadow-xl active:scale-95"
+                                                    className="w-full sm:w-auto px-8 h-10"
                                                 >
-                                                    {canAfford ? 'ACQUIRE' : 'INSUFFICIENT'}
+                                                    {canAfford ? 'Acquire' : 'Insufficient'}
                                                 </Button>
                                             )}
 
                                             {isOwned && (
-                                                <Badge variant="success" className="py-2.5 px-8 rounded-xl font-black tracking-[0.2em] uppercase text-[10px] border-none shadow-lg bg-success/10 text-success">
-                                                    SECURED
-                                                </Badge>
+                                                <Badge variant="success" className="py-2 px-6">SECURED</Badge>
                                             )}
 
                                             {isLocked && (
-                                                <div className="flex flex-col items-center sm:items-end gap-2">
-                                                    <Badge variant="tactical" icon={Lock} className="py-2.5 px-8 rounded-xl font-black tracking-[0.2em] uppercase text-[10px] opacity-40">
-                                                        LOCKED
-                                                    </Badge>
-                                                    <span className="text-[9px] font-black text-neutral-700 uppercase tracking-widest">MIN_LVL_{reqLevel}_REQ</span>
+                                                <div className="text-center sm:text-right">
+                                                    <Badge variant="secondary" className="opacity-40 px-6">LOCKED</Badge>
+                                                    <p className="text-[8px] font-bold text-zinc-700 uppercase tracking-widest mt-1">REQ LEVEL {reqLevel}</p>
                                                 </div>
                                             )}
                                         </div>
@@ -238,11 +221,6 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
                     );
                 })}
                 </AnimatePresence>
-            </div>
-
-            <div className="flex items-center justify-center gap-3 opacity-20 py-8">
-               <Sparkles size={12} className="text-brand-accent" />
-               <span className="text-[9px] font-black uppercase tracking-[0.4em] text-white">Breeding Terminal Secure</span>
             </div>
         </div>
     );
