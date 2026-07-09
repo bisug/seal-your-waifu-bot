@@ -1,5 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
-import { Gem, Hash, Package, ShieldCheck, Tag, X, Target } from 'lucide-react';
+import { Gem, Hash, Package, ShieldCheck, X, Target, Info, Sparkles } from 'lucide-react';
 import { cn, formatNumber } from '../../utils';
 import { Character } from '../../context/UserContext';
 import { Badge } from '../ui/Badge';
@@ -35,100 +35,130 @@ export const Modal = ({ character, onClose, actions }: ModalProps) => {
     const hasPrice = typeof character.zenith_price === 'number' && character.zenith_price > 0;
     const characterId = String(character.id || '');
 
+    const getRarityVariant = (rarity: string) => {
+        const r = rarity.toLowerCase();
+        if (r.includes('common')) return 'secondary';
+        if (r.includes('uncommon')) return 'success';
+        if (r.includes('rare')) return 'rare';
+        if (r.includes('epic')) return 'epic';
+        if (r.includes('legendary') || r.includes('limited')) return 'premium';
+        return 'primary';
+    };
+
+    const rarityVariant = getRarityVariant(rarityLabel);
+
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+            <div className="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center p-0 sm:p-6">
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="absolute inset-0 bg-black/95 backdrop-blur-sm"
+                    className="absolute inset-0 bg-black/80 backdrop-blur-md"
                     onClick={onClose}
                 />
 
                 <motion.div
-                    initial={{ scale: 0.95, opacity: 0, y: 20 }}
-                    animate={{ scale: 1, opacity: 1, y: 0 }}
-                    exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                    className="relative w-full max-w-[360px] bg-[#050506] rounded-xl flex flex-col overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.8)] border border-white/[0.05]"
+                    initial={{ y: '100%' }}
+                    animate={{ y: 0 }}
+                    exit={{ y: '100%' }}
+                    transition={{ type: 'spring', damping: 30, stiffness: 300, mass: 0.8 }}
+                    className="relative w-full max-w-[420px] bg-brand-midnight rounded-t-[32px] sm:rounded-[32px] flex flex-col overflow-hidden shadow-2xl border-t sm:border border-white/[0.08]"
                 >
                     {/* Header Controls */}
-                    <div className="absolute right-3 top-3 z-20 flex gap-2">
+                    <div className="absolute right-6 top-6 z-20">
                         <Button
                             variant="ghost"
                             onClick={onClose}
-                            className="w-8 h-8 p-0 rounded-md bg-black/40 backdrop-blur-xl border border-white/5 hover:bg-white/10"
+                            className="w-10 h-10 p-0 rounded-full bg-black/40 backdrop-blur-xl border border-white/5 hover:bg-white/10"
                             aria-label="Close"
                         >
-                            <X size={16} />
+                            <X size={20} />
                         </Button>
                     </div>
 
                     {/* Image Section */}
-                    <div className="relative aspect-square flex-shrink-0 bg-brand-deep/30 flex items-center justify-center overflow-hidden group">
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#050506] via-transparent to-black/40" />
+                    <div className="relative aspect-[4/3] flex-shrink-0 bg-brand-deep/30 flex items-center justify-center overflow-hidden group">
+                        <div className="absolute inset-0 bg-gradient-to-t from-brand-midnight via-transparent to-black/40" />
                         <div className="absolute inset-0 bg-scanline opacity-[0.03] pointer-events-none" />
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.1),transparent_70%)]" />
 
-                        <img
+                        <motion.img
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ delay: 0.1, duration: 0.5 }}
                             src={character.img_url}
-                            className="relative z-10 w-full h-full object-contain p-6 drop-shadow-[0_15px_40px_rgba(0,0,0,0.8)] transition-transform duration-1000 group-hover:scale-105"
+                            className="relative z-10 w-full h-full object-contain p-8 drop-shadow-[0_20px_50px_rgba(0,0,0,0.6)] transition-transform duration-1000 group-hover:scale-105"
                             alt={character.name}
                         />
 
-                        <div className="absolute bottom-4 left-4 z-20">
-                            <Badge variant="tactical" size="xs" className="bg-brand-accent text-white border-none px-2 py-1">
+                        <div className="absolute bottom-6 left-6 z-20 flex gap-2">
+                            <Badge variant={rarityVariant} size="sm" className="px-3 py-1 border-none shadow-xl backdrop-blur-md font-black">
                                 {rarityLabel || 'STANDARD'}
                             </Badge>
+                            {character.owned && (
+                                <Badge variant="success" size="sm" className="px-3 py-1 border-none shadow-xl backdrop-blur-md font-black">
+                                    SECURED
+                                </Badge>
+                            )}
                         </div>
                     </div>
 
                     {/* Content Section */}
-                    <div className="flex-1 bg-[#050506] p-5 space-y-5">
-                        <div className="space-y-1">
-                            <div className="flex items-center gap-1.5 opacity-40">
-                                <Target size={10} className="text-brand-accent" />
-                                <span className="text-[8px] font-black uppercase tracking-[0.3em] text-white">Registry Entry #{characterId}</span>
+                    <div className="flex-1 bg-brand-midnight p-6 sm:p-8 space-y-6">
+                        <div className="space-y-2">
+                            <div className="flex items-center gap-2 opacity-50">
+                                <Target size={12} className="text-brand-accent" />
+                                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white font-mono">ASSET_ID: {characterId}</span>
                             </div>
-                            <h2 className="text-xl font-black text-white leading-tight uppercase tracking-tight">{character.name}</h2>
-                            <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-[0.2em]">{character.anime}</p>
+                            <h2 className="text-2xl font-black text-white leading-tight uppercase tracking-tighter drop-shadow-sm">{character.name}</h2>
+                            <div className="flex items-center gap-2">
+                               <Info size={12} className="text-neutral-600" />
+                               <p className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest leading-none">{character.anime}</p>
+                            </div>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-2">
-                            <Card variant="tactical" className="p-2.5 bg-white/[0.02] flex flex-col justify-between">
-                                <ShieldCheck size={12} className={cn(character.owned ? "text-emerald-500" : "text-neutral-700")} />
-                                <div className="mt-2">
-                                    <span className="block text-[7px] font-black text-neutral-700 uppercase tracking-widest">STATUS</span>
-                                    <span className={cn("block truncate text-[9px] font-black uppercase tracking-tight", character.owned ? "text-emerald-500" : "text-neutral-500")}>
-                                        {character.owned ? "SECURED" : "PENDING"}
-                                    </span>
-                                </div>
-                            </Card>
-                            <Card variant="tactical" className="p-2.5 bg-white/[0.02] flex flex-col justify-between">
-                                <Package size={12} className={cn(soldOut ? "text-red-500" : "text-neutral-500")} />
-                                <div className="mt-2">
-                                    <span className="block text-[7px] font-black text-neutral-700 uppercase tracking-widest">STOCK</span>
-                                    <span className={cn("block truncate text-[9px] font-black uppercase tracking-tight tabular-nums font-mono", soldOut ? "text-red-400" : "text-white")}>
-                                        {hasStock ? (soldOut ? "0/0" : `${stockRemaining}/${stockLimit}`) : (character.count > 0 ? `x${character.count}` : "∞")}
-                                    </span>
-                                </div>
-                            </Card>
-                            <Card variant="tactical" className="p-2.5 bg-white/[0.02] flex flex-col justify-between">
-                                <Gem size={12} className="text-brand-accent" />
-                                <div className="mt-2">
-                                    <span className="block text-[7px] font-black text-neutral-700 uppercase tracking-widest">VALUE</span>
-                                    <span className="block truncate text-[9px] font-black text-white tabular-nums uppercase font-mono">
-                                        {hasPrice ? formatNumber(character.zenith_price) : '0'}
-                                    </span>
-                                </div>
-                            </Card>
+                        <div className="grid grid-cols-3 gap-3">
+                            {[
+                                { icon: ShieldCheck, label: 'STATUS', value: character.owned ? "SECURED" : "PENDING", variant: character.owned ? "success" : "secondary" },
+                                { icon: Package, label: 'QUANTITY', value: hasStock ? (soldOut ? "DEPLETED" : `${stockRemaining}/${stockLimit}`) : (character.count > 0 ? `x${character.count}` : "UNLIMITED"), variant: soldOut ? "danger" : "default" },
+                                { icon: Gem, label: 'ASSET_VAL', value: hasPrice ? formatNumber(character.zenith_price) : '0', variant: 'primary' },
+                            ].map((stat, i) => (
+                                <Card key={i} variant="tactical" className="p-3 bg-white/[0.02] flex flex-col justify-between border-white/[0.04]">
+                                    <stat.icon size={14} className={cn(
+                                        stat.variant === 'success' && "text-success",
+                                        stat.variant === 'danger' && "text-danger",
+                                        stat.variant === 'primary' && "text-brand-accent",
+                                        stat.variant === 'default' && "text-neutral-500",
+                                        stat.variant === 'secondary' && "text-neutral-700"
+                                    )} />
+                                    <div className="mt-3">
+                                        <span className="block text-[8px] font-black text-neutral-700 uppercase tracking-widest mb-1">{stat.label}</span>
+                                        <span className={cn(
+                                            "block truncate text-[10px] font-black uppercase tracking-tight tabular-nums font-mono leading-none",
+                                            stat.variant === 'success' ? "text-success" : stat.variant === 'danger' ? "text-danger" : "text-white"
+                                        )}>
+                                            {stat.value}
+                                        </span>
+                                    </div>
+                                </Card>
+                            ))}
                         </div>
 
                         {actions && (
-                            <div className="pt-2 border-t border-white/[0.04]">
+                            <div className="pt-6 border-t border-white/[0.06] flex flex-col gap-4">
                                 {actions}
                             </div>
                         )}
+
+                        <div className="flex items-center justify-center gap-2 py-2 opacity-20">
+                            <Sparkles size={10} className="text-brand-accent" />
+                            <span className="text-[8px] font-black uppercase tracking-[0.4em] text-white">End of Record</span>
+                        </div>
                     </div>
+
+                    {/* Safe Area Padding for Mobile Bottom Sheet */}
+                    <div className="h-[calc(var(--sab,24px)+4px)] sm:hidden" />
                 </motion.div>
             </div>
         </AnimatePresence>
