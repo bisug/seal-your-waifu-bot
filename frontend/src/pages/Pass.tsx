@@ -1,5 +1,4 @@
 import { useCallback, useState } from 'react';
-import { motion } from 'framer-motion';
 import { CheckCircle2, Crown, Gift, Loader2, Lock, Star, Ticket, TicketCheck, TicketPlus, Zap } from 'lucide-react';
 import { apiFetch, getErrorMessage } from '../api/client';
 import { useUser } from '../context/UserContext';
@@ -151,7 +150,6 @@ export const Pass = () => {
   const currentTier = passData.pass_type || 'free';
   const bank = bankSummary(passData.pass_bank);
   const nextTier = currentTier === 'free' ? 'premium' : currentTier === 'premium' ? 'elite' : null;
-  const progressPercent = Math.min(100, Math.round((userLevel / Math.max(maxLevel, 1)) * 100));
   const nextBenefits = nextTier ? passData.benefits?.[nextTier] : null;
 
   return (
@@ -286,7 +284,7 @@ export const Pass = () => {
         </div>
 
         <div className="space-y-4">
-            {milestones.map((lvl: number, index: number) => {
+            {milestones.map((lvl: number) => {
             const track = passData.tracks?.[lvl];
             if (!track) return null;
             const isReached = userLevel >= lvl;

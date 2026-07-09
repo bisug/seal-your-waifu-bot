@@ -112,12 +112,6 @@ export const Exchange = () => {
   }, [amountNumber, hasValidAmount, isShardMode, minimumShards, minimumZenith, rate, rawAmount, shardBalance, zenithBalance]);
 
   const canExchange = !validationMessage && outputAmount > 0;
-  const afterShardBalance = canExchange
-    ? (isShardMode ? shardBalance - amountNumber : shardBalance + outputAmount)
-    : shardBalance;
-  const afterZenithBalance = canExchange
-    ? (isShardMode ? zenithBalance + outputAmount : zenithBalance - amountNumber)
-    : zenithBalance;
   const presetOptions = useMemo(() => {
     const baseOptions = isShardMode
       ? [

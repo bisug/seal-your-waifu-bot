@@ -32,10 +32,10 @@ Project Seal is a high-performance, character-collection Telegram ecosystem util
 - **File:** `config.py` (Lines 34-45, 87)
 - **Evidence:**
   ```python
-  TOKEN = os.getenv("TOKEN", "7888451649:AAFsl_vtOiN7dDvE-bLx32WJ-Gof-oc1zA0")
-  MONGO_URL = os.getenv("MONGO_URL", "mongodb+srv://sumiloo:gurasnani@cluster0.nb0umdm.mongodb.net/...")
-  REDIS_URL = os.getenv("REDIS_URL", "rediss://default:AVNS_3H0cohKfeMSPJAn2TeO@...")
-  STRING_SESSION = os.getenv("STRING_SESSION", "BQEyrwMApp5yi6-jKRCfwSBL2tVRNfSgDCGYMh...")
+   TOKEN = os.getenv("TOKEN", "[REDACTED_BOT_TOKEN]")
+   MONGO_URL = os.getenv("MONGO_URL", "mongodb+srv://[USER]:[PASS]@[CLUSTER].mongodb.net/...")
+   REDIS_URL = os.getenv("REDIS_URL", "rediss://default:[PASS]@[HOST]:[PORT]")
+   STRING_SESSION = os.getenv("STRING_SESSION", "[REDACTED_SESSION_STRING]")
   ```
 - **Why it is an issue:** Defaulting secrets to hardcoded strings in code leads to permanent credential leakage if the source is shared or compromised.
 - **Risk Level:** Critical | **Impact:** Compromise of Bot, Database, and User Sessions.
