@@ -5,7 +5,6 @@ import { formatNumber, cn } from '../../utils';
 interface ProgressBarProps {
   current: number;
   total: number;
-  color?: string;
   label?: string;
   compact?: boolean;
   showValue?: boolean;
@@ -15,7 +14,6 @@ interface ProgressBarProps {
 export const ProgressBar = ({
   current,
   total,
-  color,
   label,
   compact,
   showValue = true,
@@ -24,42 +22,40 @@ export const ProgressBar = ({
   const percentage = total > 0 ? Math.min(100, Math.max(0, (current / total) * 100)) : 0;
 
   const variants = {
-    default: 'bg-brand-accent shadow-[0_0_12px_rgba(59,130,246,0.3)]',
-    success: 'bg-success shadow-[0_0_12px_rgba(16,185,129,0.3)]',
-    warning: 'bg-warning shadow-[0_0_12px_rgba(245,158,11,0.3)]',
-    danger: 'bg-danger shadow-[0_0_12px_rgba(239,68,68,0.3)]',
-    premium: 'bg-premium shadow-[0_0_12px_rgba(250,204,21,0.3)]',
-    epic: 'bg-epic shadow-[0_0_12px_rgba(168,85,247,0.3)]',
+    default: 'bg-brand-accent',
+    success: 'bg-emerald-500',
+    warning: 'bg-amber-500',
+    danger: 'bg-red-500',
+    premium: 'bg-amber-400',
+    epic: 'bg-purple-500',
   };
 
   return (
-    <div className={`w-full ${compact ? 'space-y-1.5' : 'space-y-2.5'}`}>
+    <div className={`w-full ${compact ? 'space-y-1' : 'space-y-2'}`}>
       {(label || showValue) && (
         <div className="flex justify-between items-end px-0.5">
-          {label && <span className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600 leading-none">{label}</span>}
+          {label && <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest leading-none">{label}</span>}
           {showValue && (
-            <span className="text-[10px] font-mono font-bold text-neutral-500 tabular-nums leading-none">
+            <span className="text-[10px] font-mono font-medium text-zinc-400 tabular-nums leading-none">
               {formatNumber(current)}<span className="mx-0.5 opacity-30">/</span>{formatNumber(total)}
             </span>
           )}
         </div>
       )}
       <div className={cn(
-        'w-full bg-black/60 rounded-full overflow-hidden border border-white/[0.03] relative p-[1px]',
-        compact ? 'h-2' : 'h-3'
+        'w-full bg-zinc-900 rounded-full overflow-hidden border border-white/[0.04] p-[1.5px]',
+        compact ? 'h-1.5' : 'h-2.5'
       )}>
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${percentage}%` }}
-          transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className={cn(
-            'h-full rounded-full relative',
-            color || variants[variant]
+            'h-full rounded-full relative overflow-hidden',
+            variants[variant]
           )}
         >
-          {/* Animated gradient sheen */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent w-full animate-[shimmer_2s_infinite]" />
-          <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent" />
         </motion.div>
       </div>
     </div>
