@@ -1,6 +1,8 @@
 import React, { useState, useEffect, Suspense, lazy, useCallback, useRef, ReactNode } from 'react';
 import { Loader2 } from 'lucide-react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { UserProvider, useUser } from './context/UserContext';
 import { Header } from './components/Header';
 import { NavigationDrawer } from './components/NavigationDrawer';
@@ -439,14 +441,28 @@ const AppContent = () => {
   );
 };
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 30, // 30 minutes
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
 function App() {
   return (
     <ErrorBoundary>
-      <ToastProvider>
-        <UserProvider>
-          <AppContent />
-        </UserProvider>
-      </ToastProvider>
+      <QueryClientProvider client={queryClient}>
+        <ToastProvider>
+          <UserProvider>
+            <AppContent />
+          </UserProvider>
+        </ToastProvider>
+        <ReactQueryDevtools initialIsOpen={false} />
+      </QueryClientProvider>
       <SpeedInsights />
     </ErrorBoundary>
   );

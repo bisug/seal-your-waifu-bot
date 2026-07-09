@@ -1,17 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Coins, Gem, Image as ImageIcon, Loader2, Lock, Pencil, Save, Trash2, X } from 'lucide-react';
 import { useToast } from '../ui/Toast';
 import { Modal } from './Modal';
 import { apiFetch, getErrorMessage } from '../../api/client';
-import { useUser } from '../../context/UserContext';
+import { useUser, type Character, type User } from '../../context/UserContext';
 import { formatNumber } from '../../utils';
 
 interface CharActionModalProps {
-    selectedChar: any;
-    setSelectedChar: (char: any) => void;
+    selectedChar: Character | null;
+    setSelectedChar: (char: Character | null) => void;
     activeTab: string;
-    user: any;
-    onPurchaseSuccess?: (char: any) => void;
+    user: User | null;
+    onPurchaseSuccess?: (char: Character) => void;
 }
 
 interface RarityOption {
@@ -26,7 +26,7 @@ interface CharacterEditForm {
     img_url: string;
 }
 
-const buildEditForm = (character: any): CharacterEditForm => ({
+const buildEditForm = (character: Character | null): CharacterEditForm => ({
     name: character?.name || '',
     anime: character?.anime || '',
     rarity: character?.rarity || '',
@@ -70,8 +70,8 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
 
     if (!selectedChar) return null;
 
-    const isOwned = (user?.characters || []).some(c => String(c.id) === String(selectedChar.id));
-    const zenithBalance = Number(user?.stats?.zenith ?? user?.zenith ?? 0);
+    const isOwned = (user?.characters || []).some((c: Character) => String(c.id) === String(selectedChar.id));
+    const zenithBalance = Number(user?.stats.zenith ?? user?.zenith ?? 0);
     const price = Number(selectedChar.zenith_price || 0);
     const stockRemaining = typeof selectedChar.stock_remaining === 'number'
         ? selectedChar.stock_remaining

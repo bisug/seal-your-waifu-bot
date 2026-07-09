@@ -1,4 +1,4 @@
-import React from 'react';
+import { useState } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useToast } from '../components/ui/Toast';
 import { apiFetch, getErrorMessage } from '../api/client';
@@ -8,7 +8,26 @@ import { useUser } from '../context/UserContext';
 import { cn } from '../utils';
 import { ErrorState } from '../components/ui/ErrorState';
 
-const QuestItem = ({ quest, onComplete, completing }) => (
+interface Quest {
+    id: string;
+    name: string;
+    description: string;
+    icon: string;
+    reward_xp: number;
+    reward_shards: number;
+    progress: number;
+    target: number;
+    claimed: boolean;
+    locked?: boolean;
+}
+
+interface QuestItemProps {
+    quest: Quest;
+    onComplete: (questId: string) => void;
+    completing: string | null;
+}
+
+const QuestItem = ({ quest, onComplete, completing }: QuestItemProps) => (
   <div key={quest.id} className={cn(
     "p-4 rounded-xl border transition-all shadow-sm",
     quest.locked
@@ -99,9 +118,9 @@ export const Quests = () => {
     const { data: questsData, loading, error, execute: fetchQuests } = useApi<QuestsResponse>('/quests');
     const { addToast } = useToast();
     const { triggerRefresh } = useUser();
-    const [completing, setCompleting] = React.useState(null);
+    const [completing, setCompleting] = useState<string | null>(null);
 
-    const handleComplete = async (questId) => {
+    const handleComplete = async (questId: string) => {
         setCompleting(questId);
         try {
             const res = await apiFetch(`/quests/claim/${questId}`, { method: 'POST' });

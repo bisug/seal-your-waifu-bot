@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch, getErrorMessage } from '../api/client';
 
 const apiCache = new Map<string, { data: any, timestamp: number }>();
@@ -25,61 +26,56 @@ interface UseApiOptions<T> extends RequestInit {
  * Standardized API Hook
  */
 export const useApi = <T = any>(endpoint: string, options: UseApiOptions<T> = {}, deps: any[] = []) => {
-  const [data, setData] = useState<T | null>(options.initialData || null);
-  const [loading, setLoading] = useState(!options.manual);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const isManual = options.manual;
+  const isGet = !options.method || options.method === 'GET';
 
-  const optionsRef = useRef<UseApiOptions<T>>(options);
-  const [currentOptions, setCurrentOptions] = useState<UseApiOptions<T>>(options);
+  const queryKey = [endpoint, options.body, ...deps];
 
-  useEffect(() => {
-    if (!shallowEqual(currentOptions, options)) {
-      optionsRef.current = options;
-      // Use setTimeout to move the state update out of the render/effect cycle
-      // to avoid cascading renders warning.
-      setTimeout(() => {
-        setData(options.initialData || null);
-        setCurrentOptions(options);
-      }, 0);
-    }
-  }, [options, currentOptions]);
+  const { data, isLoading, error, refetch } = useQuery<T, Error>({
+    queryKey,
+    queryFn: async () => {
+      const res = await apiFetch(endpoint, options);
+      return res;
+    },
+    enabled: !isManual && isGet,
+    initialData: options.initialData,
+  });
+
+  const [manualData, setManualData] = useState<T | null>(options.initialData || null);
+  const [manualLoading, setManualLoading] = useState(false);
+  const [manualError, setManualError] = useState<string | null>(null);
 
   const execute = useCallback(async (overrides: RequestInit = {}) => {
-    const isGet = !optionsRef.current.method || optionsRef.current.method === 'GET';
-    const cacheKey = endpoint + JSON.stringify(optionsRef.current.body || {});
-
-    if (isGet && apiCache.has(cacheKey)) {
-        const cached = apiCache.get(cacheKey)!;
-        if (Date.now() - cached.timestamp < CACHE_TTL) {
-            setData(cached.data);
-            setLoading(false);
-            // We can still fetch in background to update cache, but for instant UI we return early
-        }
+    if (isGet && !isManual) {
+      const result = await refetch();
+      return result.data;
     }
 
-    setLoading(true);
-    setError(null);
+    setManualLoading(true);
+    setManualError(null);
     try {
-      const res = await apiFetch(endpoint, { ...optionsRef.current, ...overrides });
-      if (isGet) {
-          apiCache.set(cacheKey, { data: res, timestamp: Date.now() });
+      const res = await apiFetch(endpoint, { ...options, ...overrides });
+      setManualData(res);
+      // Invalidate related queries if it was a mutation
+      if (!isGet) {
+        queryClient.invalidateQueries({ queryKey: [endpoint] });
       }
-      setData(res);
       return res;
     } catch (err: any) {
-      setError(getErrorMessage(err));
+      const msg = getErrorMessage(err);
+      setManualError(msg);
       throw err;
     } finally {
-      setLoading(false);
+      setManualLoading(false);
     }
-  }, [endpoint]);
+  }, [endpoint, isGet, isManual, options, queryClient, refetch]);
 
-  useEffect(() => {
-    if (!optionsRef.current.manual) {
-      execute();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
-
-  return { data, loading, error, execute, setData };
+  return {
+    data: isGet && !isManual ? data : manualData,
+    loading: isGet && !isManual ? isLoading : manualLoading,
+    error: isGet && !isManual ? (error ? error.message : null) : manualError,
+    execute,
+    setData: setManualData
+  };
 };
