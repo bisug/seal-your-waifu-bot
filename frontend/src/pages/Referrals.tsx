@@ -1,4 +1,4 @@
-import React from 'react';
+import 'react';
 import { useApi } from '../hooks/useApi';
 import { Skeleton } from '../components/ui/Skeleton';
 import { UserPlus, Copy, CheckCircle2, Send, Gem, Gift } from 'lucide-react';
