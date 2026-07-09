@@ -18,7 +18,7 @@ import {
 import { apiFetch, getErrorMessage } from '../../api/client';
 import { useToast } from '../ui/Toast';
 import { useUser, type Pet, type User } from '../../context/UserContext';
-import { formatNumber, cn } from '../../utils';
+import { cn } from '../../utils';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';

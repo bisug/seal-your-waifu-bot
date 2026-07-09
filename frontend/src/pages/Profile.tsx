@@ -30,7 +30,6 @@ import {
 import { cleanRarityLabel, formatNumber, cn } from '../utils';
 import { useInfiniteGrid } from '../hooks/useInfiniteGrid';
 import { Character } from '../context/UserContext';
-import { motion } from 'framer-motion';
 
 interface ProfileProps {
   onCharClick: (character: Character) => void;
