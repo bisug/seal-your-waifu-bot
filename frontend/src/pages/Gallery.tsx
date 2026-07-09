@@ -66,7 +66,7 @@ export const Gallery = ({ onCharClick }: GalleryProps) => {
         <div className="flex items-center gap-2.5">
            <BookOpen className="text-brand-accent" size={20} />
            <div className="flex flex-col">
-              <h1 className="text-xl font-bold text-zinc-100 uppercase tracking-tight">Main Archive</h1>
+              <h1 className="text-xl font-bold text-zinc-100 uppercase tracking-tight">Archive</h1>
               <div className="flex items-center gap-1.5 opacity-60">
                  <Database size={10} className="text-zinc-500" />
                  <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
@@ -78,10 +78,10 @@ export const Gallery = ({ onCharClick }: GalleryProps) => {
 
         <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-end bg-zinc-950 border border-white/5 p-4 rounded-md">
             <div className="flex-1 space-y-1.5">
-                <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest pl-1">Search Assets</span>
+                <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest pl-1">Search Characters</span>
                 <Input
                     icon={Search}
-                    placeholder="Enter personnel name..."
+                    placeholder="Enter character name..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="h-10"
@@ -90,7 +90,7 @@ export const Gallery = ({ onCharClick }: GalleryProps) => {
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-4">
                 <div className="sm:w-48 space-y-1.5">
-                    <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest pl-1">Class Filter</span>
+                    <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest pl-1">Rarity Filter</span>
                     <div className="relative group">
                         <select
                             aria-label="Filter by rarity"
@@ -98,7 +98,7 @@ export const Gallery = ({ onCharClick }: GalleryProps) => {
                             onChange={(event) => setRarity(event.target.value)}
                             className="w-full h-10 pl-3.5 pr-10 bg-zinc-900 border border-white/10 rounded-md text-[10px] font-bold text-zinc-400 uppercase tracking-widest outline-none focus:border-brand-accent appearance-none cursor-pointer hover:bg-zinc-800 transition-all"
                         >
-                            <option value="">ALL CLASSES</option>
+                            <option value="">ALL RARITIES</option>
                             {rarityOptions.map(({ value, label }) => (
                                 <option key={value} value={value}>{label.toUpperCase()}</option>
                             ))}

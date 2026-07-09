@@ -165,10 +165,10 @@ export const Exchange = () => {
           <div className="space-y-1">
             <div className="flex items-center gap-2.5">
               <Repeat2 size={20} className="text-brand-accent" />
-              <h1 className="text-xl font-bold text-zinc-100 uppercase tracking-tight">Market</h1>
+              <h1 className="text-xl font-bold text-zinc-100 uppercase tracking-tight">Currency</h1>
             </div>
             <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest opacity-60">
-              Currency conversion terminal
+              Currency conversion nexus
             </p>
           </div>
 
