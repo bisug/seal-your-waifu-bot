@@ -1,57 +1,89 @@
 @import "tailwindcss";
 
 @theme {
-  /* Colors - Refined Neutral & Blue palette */
-  --color-background: #050505;
+  /* Colors - Refined Tactical Palette */
+  --color-background: #050506;
   --color-foreground: #fafafa;
   
-  --color-brand-midnight: #050505;
-  --color-brand-deep: #0f0f0f;
-  --color-brand-surface: #1a1a1a;
+  --color-brand-midnight: #050506;
+  --color-brand-deep: #0a0a0c;
+  --color-brand-surface: #111114;
   --color-brand-accent: #3b82f6;
   --color-brand-accent-muted: rgba(59, 130, 246, 0.1);
-  --color-brand-glass: rgba(15, 15, 15, 0.7);
-  --color-brand-glass-border: rgba(255, 255, 255, 0.06);
+  --color-brand-glass: rgba(10, 10, 12, 0.7);
+  --color-brand-glass-border: rgba(255, 255, 255, 0.04);
 
-  --color-muted: #737373;
-  --color-muted-foreground: #a3a3a3;
+  --color-muted: #71717a;
+  --color-muted-foreground: #a1a1aa;
 
-  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border: rgba(255, 255, 255, 0.06);
 
-  /* Radius */
-  --radius-xs: 4px;
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
-  --radius-2xl: 32px;
+  /* System States */
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
 
-  /* Spacing & Sizing */
+  /* Radius - More geometric/tactical */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+
+  /* Spacing */
   --spacing-container: 1rem;
 
   /* Breakpoints */
   --breakpoint-xs: 360px;
 
-  /* Animations - Snappy */
-  --animate-in: in 0.15s cubic-bezier(0.2, 0, 0, 1);
-  --animate-out: out 0.1s cubic-bezier(0.2, 0, 0, 1);
-  --animate-spring: spring 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+  /* Animations - Snappy/Mechanical */
+  --animate-in: in 0.1s cubic-bezier(0, 0, 0.2, 1);
+  --animate-out: out 0.08s cubic-bezier(0.4, 0, 1, 1);
+  --animate-glitch: glitch 0.3s cubic-bezier(.25,.46,.45,.94) both;
+  --animate-scanline: scanline 8s linear infinite;
+  --animate-noise: noise 0.2s infinite;
+
+  @keyframes noise {
+    0%, 100% { transform: translate(0, 0); }
+    10% { transform: translate(-1px, -1px); }
+    30% { transform: translate(1px, 1px); }
+    50% { transform: translate(-1px, 1px); }
+    70% { transform: translate(1px, -1px); }
+    90% { transform: translate(0, 0); }
+  }
 
   @keyframes in {
-    from { opacity: 0; transform: scale(0.98); }
-    to { opacity: 1; transform: scale(1); }
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
   }
   @keyframes out {
-    from { opacity: 1; transform: scale(1); }
-    to { opacity: 0; transform: scale(0.98); }
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(4px); }
+  }
+  @keyframes glitch {
+    0% { transform: translate(0); }
+    20% { transform: translate(-2px, 2px); }
+    40% { transform: translate(-2px, -2px); }
+    60% { transform: translate(2px, 2px); }
+    80% { transform: translate(2px, -2px); }
+    100% { transform: translate(0); }
+  }
+  @keyframes scanline {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100%); }
   }
 }
 
 :root {
   color-scheme: dark;
-  --background: #050505;
+  --background: #050506;
   --foreground: #fafafa;
   --content-px: 1rem;
+
+  /* Tactical UI specific variables */
+  --tactical-border: rgba(255, 255, 255, 0.08);
+  --tactical-glow: 0 0 15px rgba(59, 130, 246, 0.15);
 }
 
 * {
@@ -76,11 +108,15 @@ body {
   overflow: hidden;
   background-color: var(--background);
   color: var(--foreground);
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overscroll-behavior: none;
-  line-height: 1.5;
+  line-height: 1.4;
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', 'Fira Code', 'ui-monospace', 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
 }
 
 button, a, .select-none {
@@ -90,7 +126,7 @@ button, a, .select-none {
 
 button, a {
   touch-action: manipulation;
-  transition: all 0.15s cubic-bezier(0.2, 0, 0, 1);
+  transition: all 0.1s cubic-bezier(0, 0, 0.2, 1);
 }
 
 .adaptive-px {
@@ -104,20 +140,36 @@ button, a {
 
 .glass-panel {
   background: var(--color-brand-glass);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--color-brand-glass-border);
 }
 
-.sticky-header {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  background: rgba(5, 5, 5, 0.8);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--color-border);
+/* Tactical UI Elements */
+.tactical-grid {
+  background-image:
+    linear-gradient(var(--tactical-border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--tactical-border) 1px, transparent 1px);
+  background-size: 20px 20px;
+  background-position: center center;
 }
+
+.corner-border {
+  position: relative;
+}
+
+.corner-border::before,
+.corner-border::after {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-color: var(--color-brand-accent);
+  pointer-events: none;
+}
+
+.corner-border-tl::before { top: 0; left: 0; border-top-width: 1px; border-left-width: 1px; }
+.corner-border-br::after { bottom: 0; right: 0; border-bottom-width: 1px; border-right-width: 1px; }
 
 #root {
   width: 100%;
@@ -140,17 +192,50 @@ button, a {
   contain: layout style;
 }
 
-/* Landing Specific Styles (Preserved but refined) */
-.landing-page {
-  font-family: 'Inter', system-ui, sans-serif;
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 24px);
 }
 
-.landing-grid {
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    #050505;
-  background-size: 40px 40px;
+.tactical-noise {
+  position: relative;
 }
 
-/* ... rest of landing animations remain similar but using new colors ... */
+.tactical-noise::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.015;
+  pointer-events: none;
+  animation: noise 0.2s infinite;
+  z-index: 1000;
+}
+
+/* Animations & Transitions */
+.page-transition-enter {
+  opacity: 0;
+  transform: scale(0.99) translateY(4px);
+}
+.page-transition-enter-active {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  transition: opacity 200ms, transform 200ms;
+}
+
+/* Stats Typography */
+.stats-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+}
+
+.stats-label {
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-muted-foreground);
+}

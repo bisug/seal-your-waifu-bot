@@ -15,6 +15,9 @@ import {
   PawPrint,
   CloudUpload,
   ShieldCheck,
+  Terminal,
+  Heart,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '../utils';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -42,30 +45,30 @@ interface NavigationDrawerProps {
 
 const SECTIONS: NavSection[] = [
   {
-    title: "Account",
+    title: "OPERATIONS",
     items: [
-      { id: 'profile', label: 'Dashboard', icon: UserRound },
-      { id: 'mypets', label: 'My Companions', icon: PawPrint },
-      { id: 'incubation', label: 'Incubator', icon: Egg },
+      { id: 'profile', label: 'My Harem', icon: Heart },
+      { id: 'incubation', label: 'Hatchery', icon: Egg },
+      { id: 'mypets', label: 'Companions', icon: PawPrint },
       { id: 'achievements', label: 'Milestones', icon: BadgeCheck },
     ]
   },
   {
-    title: "Market",
+    title: "RESOURCES",
     items: [
-      { id: 'shop', label: 'Daily Market', icon: Store },
+      { id: 'shop', label: 'Gacha Market', icon: Store },
       { id: 'exchange', label: 'Currency', icon: Repeat2 },
-      { id: 'gallery', label: 'Character Archive', icon: BookOpen },
-      { id: 'pets', label: 'Pet Breeder', icon: Bone },
+      { id: 'gallery', label: 'Waifu Archive', icon: BookOpen },
+      { id: 'pets', label: 'Breeder', icon: Bone },
     ]
   },
   {
-    title: "Activity",
+    title: "SOCIAL",
     items: [
-      { id: 'referrals', label: 'Invite Friends', icon: UserPlus },
+      { id: 'referrals', label: 'Recruit', icon: UserPlus },
       { id: 'quests', label: 'Daily Tasks', icon: ListChecks },
-      { id: 'pass', label: 'Battle Pass', icon: Ticket },
-      { id: 'leaderboard', label: 'Global Ranking', icon: ChartNoAxesColumnIncreasing },
+      { id: 'pass', label: 'Waifu Pass', icon: Ticket },
+      { id: 'leaderboard', label: 'Rankings', icon: ChartNoAxesColumnIncreasing },
     ]
   }
 ];
@@ -73,14 +76,14 @@ const SECTIONS: NavSection[] = [
 export const NavigationDrawer = ({ isOpen, onClose, activeTab, onNavigate }: NavigationDrawerProps) => {
   const { user } = useUser();
   const staffItems = [
-    ...(user?.is_sudo ? [{ id: 'staff', label: 'Admin Panel', icon: ShieldCheck }] : []),
-    ...((user?.can_upload ?? user?.is_sudo) ? [{ id: 'upload', label: 'Creator Hub', icon: CloudUpload }] : []),
+    ...(user?.is_sudo ? [{ id: 'staff', label: 'Admin Terminal', icon: ShieldCheck }] : []),
+    ...((user?.can_upload ?? user?.is_sudo) ? [{ id: 'upload', label: 'Asset Intake', icon: CloudUpload }] : []),
   ];
   const sections = staffItems.length > 0
     ? [
         ...SECTIONS,
         {
-          title: "System",
+          title: "SYSTEM",
           items: staffItems,
         },
       ]
@@ -111,39 +114,44 @@ export const NavigationDrawer = ({ isOpen, onClose, activeTab, onNavigate }: Nav
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm"
+            className="fixed inset-0 z-[110] bg-black/90 backdrop-blur-md"
           />
 
           <motion.div
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed top-0 right-0 z-[70] h-full w-[280px] sm:w-[340px] bg-brand-midnight border-l border-white/5 flex flex-col shadow-2xl"
+            transition={{ type: 'spring', damping: 28, stiffness: 350 }}
+            className="fixed top-0 right-0 z-[120] h-full w-[260px] sm:w-[320px] bg-[#050506] border-l border-white/[0.05] flex flex-col shadow-2xl"
           >
-            <div className="p-5 flex items-center justify-between border-b border-white/5 bg-brand-deep/50">
+            {/* Header */}
+            <div className="p-4 flex items-center justify-between border-b border-white/[0.04] bg-white/[0.01]">
               <div className="flex flex-col">
-                <span className="text-sm font-black text-white tracking-tight uppercase">Menu Navigation</span>
-                <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mt-0.5">Explore the seal</span>
+                <div className="flex items-center gap-1.5">
+                    <Terminal size={12} className="text-brand-accent" />
+                    <span className="text-[10px] font-black text-white tracking-[0.2em] uppercase">SYSTEM MENU</span>
+                </div>
+                <span className="text-[8px] font-bold text-neutral-600 uppercase tracking-widest mt-1">WAIFU_PROTO_OK</span>
               </div>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={onClose}
-                className="w-9 h-9 p-0 rounded-lg hover:bg-white/10"
-                aria-label="Close Menu"
+                className="w-8 h-8 p-0 rounded-md hover:bg-white/5"
+                aria-label="Close"
               >
-                <X size={18} />
+                <X size={16} />
               </Button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-4 py-6 space-y-8 scrollbar-hide">
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto px-2 py-4 space-y-6 scrollbar-hide">
               {sections.map((section) => (
-                <div key={section.title} className="space-y-3">
-                  <h3 className="px-3 text-[10px] font-black text-neutral-600 uppercase tracking-[0.2em]">
+                <div key={section.title} className="space-y-1">
+                  <h3 className="px-3 py-2 text-[9px] font-black text-neutral-700 uppercase tracking-[0.3em]">
                     {section.title}
                   </h3>
-                  <div className="space-y-1">
+                  <div className="space-y-0.5">
                     {section.items.map((item) => {
                       const Icon = item.icon;
                       const isActive = activeTab === item.id;
@@ -153,27 +161,33 @@ export const NavigationDrawer = ({ isOpen, onClose, activeTab, onNavigate }: Nav
                           key={item.id}
                           onClick={() => handleItemClick(item.id)}
                           className={cn(
-                            "group w-full flex items-center justify-between px-3 py-3 rounded-xl transition-all duration-200",
+                            "group w-full flex items-center justify-between px-3 py-2.5 rounded-md transition-all duration-150 relative overflow-hidden",
                             isActive
-                              ? "bg-brand-accent/10 text-brand-accent ring-1 ring-brand-accent/20 shadow-[0_0_15px_rgba(59,130,246,0.1)]"
-                              : "text-neutral-400 hover:text-white hover:bg-white/5 active:scale-[0.98]"
+                              ? "bg-brand-accent/10 text-brand-accent shadow-[inset_2px_0_0_rgba(59,130,246,1)]"
+                              : "text-neutral-500 hover:text-white hover:bg-white/[0.03] active:scale-[0.98]"
                           )}
                         >
                           <div className="flex items-center gap-3">
                             <div className={cn(
-                              "w-8 h-8 rounded-lg flex items-center justify-center transition-colors",
-                              isActive ? "bg-brand-accent/20" : "bg-brand-surface group-hover:bg-brand-surface/80"
+                              "w-7 h-7 rounded-sm flex items-center justify-center transition-colors",
+                              isActive ? "bg-brand-accent/20" : "bg-white/[0.02] border border-white/[0.03]"
                             )}>
-                              <Icon size={16} strokeWidth={isActive ? 2.5 : 2} />
+                              <Icon size={14} strokeWidth={isActive ? 2.5 : 2} />
                             </div>
                             <span className={cn(
-                              "text-sm font-bold tracking-tight",
-                              isActive ? "text-brand-accent" : "text-neutral-300"
+                              "text-[11px] font-bold tracking-widest uppercase",
+                              isActive ? "text-brand-accent" : "text-neutral-400"
                             )}>
                               {item.label}
                             </span>
                           </div>
-                          {isActive && <div className="w-1.5 h-1.5 rounded-full bg-brand-accent shadow-[0_0_8px_rgba(59,130,246,0.5)]" />}
+
+                          {isActive && (
+                            <motion.div
+                                layoutId="nav-active-indicator"
+                                className="w-1 h-1 rounded-full bg-brand-accent shadow-[0_0_8px_rgba(59,130,246,0.6)]"
+                            />
+                          )}
                         </button>
                       );
                     })}
@@ -182,17 +196,26 @@ export const NavigationDrawer = ({ isOpen, onClose, activeTab, onNavigate }: Nav
               ))}
             </div>
 
-            <div className="p-6 border-t border-white/5 bg-brand-deep/30">
-               {user?.role_tag && (
-                 <div className="mb-4">
-                   <Badge variant="primary" className="w-full py-2.5 justify-center rounded-xl text-[11px] uppercase tracking-widest border-brand-accent/30 bg-brand-accent/5">
-                     {user.role_symbol} {user.role_label || user.role_tag} MEMBER
-                   </Badge>
-                 </div>
-               )}
+            {/* Footer */}
+            <div className="p-4 border-t border-white/[0.04] bg-white/[0.01]">
+               <div className="flex items-center gap-3 p-2.5 rounded-lg bg-black border border-white/[0.03] mb-4">
+                  <div className="w-8 h-8 rounded bg-brand-accent/10 flex items-center justify-center shrink-0 border border-brand-accent/20">
+                    <Heart size={16} className="text-brand-accent" fill="currentColor" />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-[9px] font-black text-white uppercase tracking-widest truncate">
+                        {user?.role_label || user?.role_tag || 'MEMBER'} STATUS
+                    </span>
+                    <span className="text-[8px] font-bold text-neutral-600 uppercase tracking-tighter">WAIFU VERIFIED</span>
+                  </div>
+               </div>
+
                <div className="flex items-center justify-between px-1">
-                  <div className="text-[10px] font-black text-neutral-600 uppercase tracking-tighter">System Stability</div>
-                  <div className="text-[10px] font-mono text-emerald-500 uppercase">99.9% / v2.1</div>
+                  <div className="text-[8px] font-black text-neutral-800 uppercase tracking-[0.2em]">CONNECTION SECURE</div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-1 h-1 rounded-full bg-emerald-500" />
+                    <span className="text-[8px] font-mono text-emerald-500/60 uppercase">WAIFU_LINK_OK</span>
+                  </div>
                </div>
             </div>
           </motion.div>
