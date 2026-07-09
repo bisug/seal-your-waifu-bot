@@ -1,4 +1,4 @@
-import React from 'react';
+import { useState } from 'react';
 import { useApi } from '../hooks/useApi';
 import { CardSkeleton } from '../components/ui/Skeleton';
 import { BookOpen, Brain, ChartNoAxesColumnIncreasing, Coins, Gem, TrendingUp } from 'lucide-react';
@@ -32,7 +32,7 @@ const getInitials = (name: string) => {
 };
 
 export const Leaderboard = () => {
-    const [metric, setMetric] = React.useState('harem');
+    const [metric, setMetric] = useState('harem');
     const { data, loading, error, execute: fetchLeaderboard } = useApi<LeaderboardUser[]>(`/leaderboard?metric=${metric}`, {}, [metric]);
 
     const METRICS = [
