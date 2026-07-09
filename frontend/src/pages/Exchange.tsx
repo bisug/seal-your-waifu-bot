@@ -4,6 +4,7 @@ import { apiFetch, getErrorMessage } from '../api/client';
 import { useApi } from '../hooks/useApi';
 import { ErrorState } from '../components/ui/ErrorState';
 import { Skeleton } from '../components/ui/Skeleton';
+import { Card } from '../components/ui/Card';
 import { useToast } from '../components/ui/Toast';
 import { useUser } from '../context/UserContext';
 import { cn, formatNumber } from '../utils';

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useApi } from '../hooks/useApi';
 import { Card as CharacterCard } from '../components/character/Card';
-import { CardSkeleton } from '../components/ui/Skeleton';
+import { Skeleton, CardSkeleton } from '../components/ui/Skeleton';
 import { ErrorState } from '../components/ui/ErrorState';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Button } from '../components/ui/Button';

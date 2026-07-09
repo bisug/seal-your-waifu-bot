@@ -7,6 +7,7 @@ import { formatNumber } from '../utils';
 import { useUser } from '../context/UserContext';
 import { cn } from '../utils';
 import { ErrorState } from '../components/ui/ErrorState';
+import { Skeleton } from '../components/ui/Skeleton';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
