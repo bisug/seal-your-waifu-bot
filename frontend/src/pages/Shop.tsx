@@ -7,7 +7,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card } from '../components/ui/Card';
-import { AlertCircle, CalendarDays, CheckCircle2, Clock, Coins, Gem, PackageOpen, RefreshCw, Store, Target } from 'lucide-react';
+import { AlertCircle, CalendarDays, CheckCircle2, Clock, Coins, Gem, PackageOpen, RefreshCw, Store, Sparkles } from 'lucide-react';
 import { Character, useUser } from '../context/UserContext';
 import { formatNumber, cn } from '../utils';
 
@@ -183,10 +183,10 @@ export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
               <div className="w-9 h-9 rounded-md bg-brand-accent/5 border border-brand-accent/20 flex items-center justify-center">
                  <Store size={20} className="text-brand-accent" />
               </div>
-              <h1 className="text-lg font-black text-white tracking-tighter uppercase">Market Hub</h1>
+              <h1 className="text-lg font-black text-white tracking-tighter uppercase">Gacha Market</h1>
             </div>
             <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest max-w-xs leading-relaxed">
-              LIVE RESOURCE ALLOCATION SYSTEM. SYNCED GLOBAL INVENTORY.
+              SUMMON NEW WAIFUS. SHARED GLOBAL STOCK.
             </p>
           </div>
 
@@ -195,7 +195,7 @@ export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
             onClick={handleRefresh}
             isLoading={loading || hubLoading}
             className="w-9 h-9 p-0 rounded-md border-white/5"
-            aria-label="Sync market"
+            aria-label="Refresh market"
           >
             <RefreshCw size={16} className={loading || hubLoading ? 'animate-spin' : ''} />
           </Button>
@@ -204,14 +204,14 @@ export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
           <Metric icon={Coins} label="Credit Shards" value={formatNumber(shardBalance)} variant="warning" />
           <Metric icon={Gem} label="Zenith Assets" value={formatNumber(zenithBalance)} variant="primary" />
-          <Metric icon={Clock} label="Next Sync" value={getCountdown(hubData?.reset_at, now)} variant="secondary" />
-          <Metric icon={PackageOpen} label="Live Stock" value={`${summary.available} UNITS`} variant="success" />
-          <Metric icon={CheckCircle2} label="Acquired" value={`${summary.owned} SECURED`} variant="secondary" />
+          <Metric icon={Clock} label="Next Rotation" value={getCountdown(hubData?.reset_at, now)} variant="secondary" />
+          <Metric icon={PackageOpen} label="In Stock" value={`${summary.available} UNITS`} variant="success" />
+          <Metric icon={CheckCircle2} label="Secured" value={`${summary.owned} OWNED`} variant="secondary" />
         </div>
 
         {(error || hubError) && shopData && (
           <Badge variant="warning" icon={AlertCircle} size="xs" className="w-full py-2 rounded-md justify-center border-amber-500/10">
-            CONNECTION UNSTABLE: DISPLAYING CACHED REGISTRY DATA
+            CONNECTION UNSTABLE: DISPLAYING CACHED MARKET DATA
           </Badge>
         )}
       </header>
@@ -219,11 +219,11 @@ export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
       <section className="space-y-4">
         <div className="flex items-center justify-between gap-3 border-b border-white/[0.03] pb-2">
           <div className="flex items-center gap-2">
-            <Target size={14} className="text-brand-accent" />
-            <h2 className="text-[10px] font-black text-white uppercase tracking-[0.2em]">Active Manifest</h2>
+            <Sparkles size={14} className="text-brand-accent" />
+            <h2 className="text-[10px] font-black text-white uppercase tracking-[0.2em]">Current Summon List</h2>
           </div>
           <Badge variant="tactical" size="xs" className="opacity-60">
-            {summary.affordable} COMPATIBLE
+            {summary.affordable} AFFORDABLE
           </Badge>
         </div>
 
@@ -236,8 +236,8 @@ export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
         ) : (
           <EmptyState
             icon={Store}
-            title="Manifest Empty"
-            message="No assets detected in the current market cycle."
+            title="Market Closed"
+            message="No waifus available in the current rotation."
           />
         )}
       </section>
