@@ -11,25 +11,31 @@ dependencies = [
     # API Framework
     "fastapi>=0.136.1",
     "uvicorn[standard]>=0.46.0",
+
     # HTTP / Networking
     "httpx>=0.28.1",
     "httptools>=0.7.1",
     "dnspython>=2.8.0",
+
     # Database
     "pymongo>=4.17.0",
     "redis[hiredis]>=6.2.0",
+
     # Telegram
     "kurigram>=2.2.23",
     "tgcrypto>=1.2.5; platform_system == 'Linux'",
+
     # Serialization / Validation
     "orjson>=3.11.0",
     "pydantic>=2.13.0",
+
     # Utilities
     "psutil>=7.2.0",
     "python-dotenv>=1.2.0",
+
     # Browser Automation
     "playwright>=1.59.0",
+
     # Performance
     "uvloop>=0.22.1; platform_system != 'Windows'",
-    "beanie>=2.1.0",
 ]

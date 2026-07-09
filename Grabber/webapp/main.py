@@ -52,7 +52,6 @@ async def sync_leaderboard_periodic():
 async def lifespan(app: FastAPI):
     # Startup
     configure_event_loop_logging()
-    await seal_db.init_beanie()
     await start_bots()
     sync_task = run_background_task(sync_leaderboard_periodic(), name="leaderboard-sync")
     worker_task = run_background_task(background_maintenance(), name="background-maintenance")
