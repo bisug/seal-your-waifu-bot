@@ -30,8 +30,9 @@ const MyPets = lazy(() => import('./pages/MyPets').then(m => ({ default: m.MyPet
 const Exchange = lazy(() => import('./pages/Exchange').then(m => ({ default: m.Exchange })));
 const Upload = lazy(() => import('./pages/Upload').then(m => ({ default: m.Upload })));
 const Staff = lazy(() => import('./pages/Staff').then(m => ({ default: m.Staff })));
+const Minigames = lazy(() => import('./pages/Minigames').then(m => ({ default: m.Minigames })));
 
-const VALID_TABS = ['profile', 'incubation', 'shop', 'exchange', 'gallery', 'pets', 'referrals', 'quests', 'pass', 'leaderboard', 'achievements', 'mypets', 'upload', 'staff'];
+const VALID_TABS = ['profile', 'incubation', 'shop', 'exchange', 'gallery', 'pets', 'referrals', 'quests', 'pass', 'leaderboard', 'achievements', 'mypets', 'upload', 'staff', 'minigames'];
 const TAB_ALIASES: Record<string, string> = {
   profile: 'profile',
   home: 'profile',
@@ -97,6 +98,9 @@ const TAB_ALIASES: Record<string, string> = {
   achievements: 'achievements',
   achievement: 'achievements',
   badges: 'achievements',
+  minigames: 'minigames',
+  games: 'minigames',
+  nexus_games: 'minigames',
 };
 
 interface RouteTarget {
@@ -329,6 +333,7 @@ const AppContent = () => {
               {activeTab === 'leaderboard' && <Leaderboard />}
               {activeTab === 'achievements' && <Achievements />}
               {activeTab === 'mypets' && <MyPets onPetClick={setSelectedPet} />}
+              {activeTab === 'minigames' && <Minigames />}
               {activeTab === 'upload' && canViewUpload && <Upload />}
               {activeTab === 'staff' && canViewStaff && <Staff />}
 
