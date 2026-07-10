@@ -9,6 +9,8 @@ import { NavigationDrawer } from './components/NavigationDrawer';
 import { IntroLoading } from './components/IntroLoading';
 import { Profile } from './pages/Profile';
 import { NotFound } from './pages/NotFound';
+import { Forbidden } from './pages/Forbidden';
+import { ServerError } from './pages/ServerError';
 import { Landing } from './pages/Landing';
 import { ToastProvider } from './components/ui/Toast';
 import { CharActionModal } from './components/character/CharActionModal';
@@ -134,8 +136,8 @@ const resolveRouteToken = (value?: string | null): RouteTarget | null => {
   const alias = normalizeRouteToken(value);
   if (!alias) return null;
 
-  const tab = TAB_ALIASES[alias] || (VALID_TABS.includes(alias) ? alias : null);
-  return tab ? { tab, alias } : null;
+  const tab = TAB_ALIASES[alias] || alias;
+  return { tab, alias };
 };
 
 const getCandidates = () => {
@@ -170,23 +172,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 
   render() {
     if (this.state.hasError) {
-      return (
-        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center min-h-svh bg-zinc-950">
-          <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6">
-             <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-          </div>
-          <h2 className="text-white font-bold mb-2 uppercase tracking-widest">System Error</h2>
-          <p className="text-xs text-zinc-500 uppercase tracking-widest mb-8">
-            Session encountered an anomaly.
-          </p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="px-8 py-3 bg-zinc-100 text-zinc-950 font-bold rounded-md uppercase tracking-widest text-[10px]"
-          >
-            Reload Terminal
-          </button>
-        </div>
-      );
+      return <ServerError onRetry={() => window.location.reload()} />;
     }
     return this.props.children;
   }
@@ -274,23 +260,7 @@ const AppContent = () => {
       return <Landing error={error} onRetry={() => window.location.reload()} />;
     }
 
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center px-8 text-center min-h-svh bg-zinc-950">
-        <div className="w-12 h-12 rounded-full bg-zinc-900 border border-white/5 flex items-center justify-center mb-6">
-           <div className="w-1.5 h-1.5 rounded-full bg-zinc-700 animate-pulse" />
-        </div>
-        <h2 className="text-white font-bold mb-2 uppercase tracking-widest">Offline</h2>
-        <p className="text-xs text-zinc-500 uppercase tracking-widest mb-8 max-w-[240px]">
-          {error || "Authentication failed. Restart from the bot."}
-        </p>
-        <button
-            onClick={() => window.location.reload()}
-            className="px-8 py-3 bg-zinc-100 text-zinc-950 font-bold rounded-md uppercase tracking-widest text-[10px]"
-        >
-            Retry Connection
-        </button>
-      </div>
-    );
+    return <ServerError onRetry={() => window.location.reload()} />;
   }
 
   const canViewUpload = Boolean(user?.can_upload ?? user?.is_sudo);
@@ -337,9 +307,11 @@ const AppContent = () => {
               {activeTab === 'upload' && canViewUpload && <Upload />}
               {activeTab === 'staff' && canViewStaff && <Staff />}
 
-              {(!VALID_TABS.includes(activeTab) || isBlockedTab) && (
+              {isBlockedTab ? (
+                <Forbidden onReset={() => handleNavigate('profile')} />
+              ) : !VALID_TABS.includes(activeTab) ? (
                 <NotFound onReset={() => handleNavigate('profile')} />
-              )}
+              ) : null}
             </motion.div>
           </AnimatePresence>
         </Suspense>
