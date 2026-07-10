@@ -25,11 +25,14 @@ async def start_minigame(game_type: str, user_id: int = Depends(get_current_user
     if game_type not in ["cipher_match", "nexus_wheel"]:
         raise HTTPException(status_code=400, detail="Invalid game type")
 
-    success = await consume_energy(user_id, game_type)
-    if not success:
+    session_data = await consume_energy(user_id, game_type)
+    if not session_data:
         raise HTTPException(status_code=400, detail="Not enough energy")
 
-    return {"status": "success"}
+    return {
+        "status": "success",
+        "session": session_data
+    }
 
 @router.post("/minigames/submit")
 async def submit_minigame(
@@ -42,11 +45,11 @@ async def submit_minigame(
     if game_type not in ["cipher_match", "nexus_wheel"]:
         raise HTTPException(status_code=400, detail="Invalid game type")
 
-    time_taken = await validate_session(user_id, game_type)
-    if time_taken is None:
+    session_data = await validate_session(user_id, game_type)
+    if session_data is None:
         raise HTTPException(status_code=403, detail="No active session for this game. Did you start it?")
 
-    rewards = await reward_minigame(user_id, game_type, score, time_taken)
+    rewards = await reward_minigame(user_id, game_type, score, session_data)
 
     if "error" in rewards:
         raise HTTPException(status_code=400, detail=rewards["error"])
