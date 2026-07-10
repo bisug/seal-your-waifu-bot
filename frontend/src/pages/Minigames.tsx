@@ -13,7 +13,11 @@ import {
     Star,
     Sparkles,
     CircleDashed,
-    Target
+    Target,
+    ShieldAlert,
+    Scan,
+    Activity,
+    Lock
 } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 import { apiFetch, getErrorMessage } from '../api/client';
@@ -21,7 +25,7 @@ import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { useToast } from '../components/ui/Toast';
-import { cn } from '../utils';
+import { cn, haptics } from '../utils';
 
 // --- Types ---
 
@@ -29,6 +33,21 @@ interface MinigameState {
     energy: number;
     max_energy: number;
     last_energy_recharge: string | null;
+}
+
+interface SessionData {
+    start_time: number;
+    cards?: {
+        id: string;
+        img_url: string;
+        name: string;
+    }[];
+    prize?: {
+        type: string;
+        label: string;
+        amount?: number;
+    };
+    prize_index?: number;
 }
 
 interface Reward {
@@ -114,25 +133,28 @@ const EnergyDisplay = ({ energy, maxEnergy, lastRecharge }: { energy: number, ma
 
 // --- Cipher Match (Memory) ---
 
-const CIPHER_SYMBOLS = ['✦', '✧', '◈', '◇', '⬪', '⬫', '⧫', '◊'];
+const MAX_MOVES = 24;
 
-const CipherMatch = ({ onComplete, onCancel }: { onComplete: (score: number) => void, onCancel: () => void }) => {
-    const [cards, setCards] = useState<{ id: number, symbol: string, isFlipped: boolean, isMatched: boolean }[]>([]);
+const CipherMatch = ({ session, onComplete, onCancel }: { session: SessionData, onComplete: (score: number) => void, onCancel: () => void }) => {
+    const [cards, setCards] = useState<{ id: string, img_url: string, name: string, isFlipped: boolean, isMatched: boolean, key: number }[]>([]);
     const [flippedIndices, setFlippedIndices] = useState<number[]>([]);
     const [matches, setMatches] = useState(0);
     const [moves, setMoves] = useState(0);
+    const [failed, setFailed] = useState(false);
 
     useEffect(() => {
-        const symbols = [...CIPHER_SYMBOLS, ...CIPHER_SYMBOLS];
-        const shuffled = symbols
+        if (!session.cards) return;
+        const doubled = [...session.cards, ...session.cards];
+        const shuffled = doubled
             .sort(() => Math.random() - 0.5)
-            .map((symbol, index) => ({ id: index, symbol, isFlipped: false, isMatched: false }));
+            .map((card, index) => ({ ...card, isFlipped: false, isMatched: false, key: index }));
         setCards(shuffled);
-    }, []);
+    }, [session.cards]);
 
     const handleCardClick = (index: number) => {
-        if (cards[index].isFlipped || cards[index].isMatched || flippedIndices.length === 2) return;
+        if (failed || cards[index].isFlipped || cards[index].isMatched || flippedIndices.length === 2) return;
 
+        haptics.light();
         const newCards = [...cards];
         newCards[index].isFlipped = true;
         setCards(newCards);
@@ -141,9 +163,12 @@ const CipherMatch = ({ onComplete, onCancel }: { onComplete: (score: number) => 
         setFlippedIndices(newFlipped);
 
         if (newFlipped.length === 2) {
-            setMoves(m => m + 1);
+            const nextMoves = moves + 1;
+            setMoves(nextMoves);
             const [first, second] = newFlipped;
-            if (cards[first].symbol === cards[second].symbol) {
+
+            if (cards[first].id === cards[second].id) {
+                haptics.notification('success');
                 setTimeout(() => {
                     setCards(prev => {
                         const updated = [...prev];
@@ -153,7 +178,7 @@ const CipherMatch = ({ onComplete, onCancel }: { onComplete: (score: number) => 
                     });
                     setMatches(m => {
                         const next = m + 1;
-                        if (next === CIPHER_SYMBOLS.length) {
+                        if (next === session.cards!.length) {
                              onComplete(next);
                         }
                         return next;
@@ -162,6 +187,10 @@ const CipherMatch = ({ onComplete, onCancel }: { onComplete: (score: number) => 
                 }, 400);
             } else {
                 setTimeout(() => {
+                    if (nextMoves >= MAX_MOVES) {
+                        haptics.notification('error');
+                        setFailed(true);
+                    }
                     setCards(prev => {
                         const updated = [...prev];
                         updated[first].isFlipped = false;
@@ -176,39 +205,85 @@ const CipherMatch = ({ onComplete, onCancel }: { onComplete: (score: number) => 
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <div className="text-center">
-                        <span className="block text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-1">Matches</span>
-                        <span className="text-lg font-mono font-bold text-zinc-200">{matches} / {CIPHER_SYMBOLS.length}</span>
+            <div className="flex items-center justify-between px-2">
+                <div className="flex items-center gap-6">
+                    <div className="relative">
+                        <span className="block text-[7px] font-bold text-zinc-500 uppercase tracking-[0.2em] mb-1">Grid Sync</span>
+                        <div className="flex items-center gap-2">
+                            <Activity size={10} className="text-brand-accent animate-pulse" />
+                            <span className="text-base font-mono font-bold text-zinc-100">{matches} <span className="text-zinc-600 text-xs">/ {session.cards?.length}</span></span>
+                        </div>
                     </div>
-                    <div className="h-8 w-px bg-white/5" />
-                    <div className="text-center">
-                        <span className="block text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-1">Moves</span>
-                        <span className="text-lg font-mono font-bold text-zinc-200">{moves}</span>
+                    <div className="w-px h-6 bg-white/5" />
+                    <div className="relative">
+                        <span className="block text-[7px] font-bold text-zinc-500 uppercase tracking-[0.2em] mb-1">Sync Capacity</span>
+                        <div className="flex items-center gap-2">
+                            <ShieldAlert size={10} className={cn(moves > MAX_MOVES * 0.7 ? "text-red-500" : "text-zinc-500")} />
+                            <span className={cn(
+                                "text-base font-mono font-bold",
+                                moves > MAX_MOVES * 0.7 ? "text-red-400" : "text-zinc-100"
+                            )}>
+                                {MAX_MOVES - moves}
+                                <span className="text-zinc-600 text-xs"> Left</span>
+                            </span>
+                        </div>
                     </div>
                 </div>
-                <Button variant="ghost" size="sm" onClick={onCancel} className="text-zinc-500 hover:text-zinc-200">Abandon</Button>
+                <Button variant="ghost" size="sm" onClick={onCancel} className="text-[9px] font-bold uppercase tracking-widest text-zinc-600 hover:text-red-400">
+                    Abort
+                </Button>
             </div>
 
-            <div className="grid grid-cols-4 gap-2.5">
+            <div className="grid grid-cols-4 gap-2">
                 {cards.map((card, idx) => (
-                    <motion.div
-                        key={card.id}
-                        whileHover={{ scale: card.isMatched || card.isFlipped ? 1 : 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => handleCardClick(idx)}
-                        className={cn(
-                            "aspect-square rounded-lg flex items-center justify-center text-xl cursor-pointer transition-all duration-300 border",
-                            card.isFlipped || card.isMatched
-                                ? "bg-zinc-100 text-zinc-950 border-white"
-                                : "bg-zinc-900 border-white/10 text-transparent"
-                        )}
-                    >
-                        {(card.isFlipped || card.isMatched) ? card.symbol : '✦'}
-                    </motion.div>
+                    <div key={card.key} className="aspect-[3/4] perspective-1000">
+                        <motion.div
+                            initial={false}
+                            animate={{ rotateY: card.isFlipped || card.isMatched ? 180 : 0 }}
+                            transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                            className="relative w-full h-full preserve-3d"
+                            onClick={() => handleCardClick(idx)}
+                        >
+                            {/* Front (Hidden) */}
+                            <div className="absolute inset-0 backface-hidden rounded-lg bg-zinc-900 border border-white/5 flex items-center justify-center cursor-pointer overflow-hidden group">
+                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.05)_0%,transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <Scan size={24} className="text-zinc-800 group-hover:text-brand-accent/40 transition-colors" />
+                                <div className="absolute bottom-1 right-1">
+                                    <div className="w-1 h-1 bg-zinc-800 rounded-full" />
+                                </div>
+                            </div>
+
+                            {/* Back (Visible) */}
+                            <div className="absolute inset-0 backface-hidden rounded-lg bg-zinc-100 border border-white overflow-hidden rotateY-180">
+                                <img src={card.img_url} alt={card.name} className="w-full h-full object-cover" />
+                                {card.isMatched && (
+                                    <div className="absolute inset-0 bg-brand-accent/20 backdrop-blur-[1px] flex items-center justify-center">
+                                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-lg">
+                                            <Star size={14} className="text-brand-accent fill-brand-accent" />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    </div>
                 ))}
             </div>
+
+            {failed && (
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center"
+                >
+                    <ShieldAlert size={48} className="text-red-500 mb-4" />
+                    <h3 className="text-xl font-bold text-white uppercase tracking-tighter mb-2">Sync Failure</h3>
+                    <p className="text-xs text-zinc-500 uppercase tracking-widest mb-6">Operational capacity exceeded</p>
+                    <div className="flex gap-3 w-full">
+                        <Button onClick={onCancel} variant="ghost" className="flex-1 text-zinc-400">Exit</Button>
+                        <Button onClick={() => onComplete(matches)} className="flex-1 bg-red-500 hover:bg-red-600 text-white">Submit Progress</Button>
+                    </div>
+                </motion.div>
+            )}
         </div>
     );
 };
@@ -226,51 +301,93 @@ const WHEEL_PRIZES = [
     { label: 'XP Boost', value: 'xp', color: 'brand' },
 ];
 
-const NexusWheel = ({ onComplete, onCancel }: { onComplete: (score: number) => void, onCancel: () => void }) => {
+const NexusWheel = ({ session, onComplete, _onCancel }: { session: SessionData, onComplete: (score: number) => void, _onCancel: () => void }) => {
     const [isSpinning, setIsSpinning] = useState(false);
     const [rotation, setRotation] = useState(0);
 
     const spin = () => {
-        if (isSpinning) return;
+        if (isSpinning || session.prize_index === undefined) return;
         setIsSpinning(true);
-        const extraRounds = 5 + Math.random() * 5;
-        const newRotation = rotation + (extraRounds * 360) + Math.random() * 360;
-        setRotation(newRotation);
+        haptics.heavy();
+
+        const sectorSize = 360 / WHEEL_PRIZES.length;
+        const targetSector = session.prize_index;
+        // Calculate rotation to land target sector under pointer (at top, 0deg)
+        // sectors are indexed 0 to 7. 0 is at 0-45deg.
+        // We want the middle of the target sector to be at 0deg.
+        const extraRounds = 8;
+        const finalRotation = (extraRounds * 360) - (targetSector * sectorSize + sectorSize / 2);
+        setRotation(finalRotation);
+
+        // Haptic ticks during spin
+        const tickInterval = setInterval(() => {
+            haptics.light();
+        }, 150);
+        setTimeout(() => clearInterval(tickInterval), 3500);
 
         setTimeout(() => {
             setIsSpinning(false);
-            onComplete(0); // Score doesn't matter for wheel, backend handles reward
-        }, 4000);
+            haptics.notification('success');
+            setTimeout(() => onComplete(0), 1000);
+        }, 4500);
     };
 
     return (
-        <div className="flex flex-col items-center py-8 space-y-10">
-            <div className="relative w-64 h-64">
+        <div className="flex flex-col items-center py-4 space-y-12">
+            <div className="w-full flex items-center justify-between px-6">
+                <div className="space-y-1">
+                    <span className="block text-[7px] font-bold text-zinc-500 uppercase tracking-[0.2em]">Flux Capacitor</span>
+                    <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-brand-accent animate-pulse" />
+                        <span className="text-xs font-mono font-bold text-zinc-300">STABLE</span>
+                    </div>
+                </div>
+                <div className="text-right space-y-1">
+                    <span className="block text-[7px] font-bold text-zinc-500 uppercase tracking-[0.2em]">Sync Rate</span>
+                    <span className="text-xs font-mono font-bold text-brand-accent">99.98%</span>
+                </div>
+            </div>
+
+            <div className="relative w-72 h-72">
+                {/* Tactical Ring */}
+                <div className="absolute -inset-4 rounded-full border border-white/[0.02] flex items-center justify-center">
+                     <div className="absolute inset-0 rounded-full border border-dashed border-white/[0.05] animate-[spin_60s_linear_infinite]" />
+                </div>
+
                 {/* Pointer */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
-                    <div className="w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-t-[20px] border-t-brand-accent filter drop-shadow-xl" />
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30">
+                    <div className="flex flex-col items-center">
+                        <div className="w-0.5 h-4 bg-brand-accent shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
+                        <div className="w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[12px] border-t-brand-accent" />
+                    </div>
                 </div>
 
                 {/* Outer Ring */}
-                <div className="absolute inset-0 rounded-full border-[8px] border-zinc-900 shadow-[0_0_40px_rgba(0,0,0,0.5)] z-10" />
+                <div className="absolute inset-0 rounded-full border-[6px] border-zinc-900 shadow-[0_0_50px_rgba(0,0,0,0.8)] z-20 pointer-events-none" />
 
                 <motion.div
                     animate={{ rotate: rotation }}
-                    transition={{ duration: 4, ease: [0.16, 1, 0.3, 1] }}
-                    className="w-full h-full rounded-full bg-zinc-950 overflow-hidden border border-white/5 relative"
+                    transition={{ duration: 4.5, ease: [0.15, 0, 0.15, 1] }}
+                    className="w-full h-full rounded-full bg-zinc-950 overflow-hidden border border-white/10 relative z-10"
                 >
                     {WHEEL_PRIZES.map((prize, i) => (
                         <div
                             key={i}
-                            className="absolute top-0 left-1/2 w-px h-1/2 bg-white/5 origin-bottom"
+                            className="absolute top-0 left-1/2 w-px h-1/2 bg-white/[0.03] origin-bottom"
                             style={{ transform: `rotate(${i * (360 / WHEEL_PRIZES.length)}deg)` }}
                         >
                             <div
-                                className="absolute top-8 left-0 -translate-x-1/2 flex flex-col items-center gap-1"
+                                className="absolute top-10 left-0 -translate-x-1/2 flex flex-col items-center gap-2"
                                 style={{ transform: `rotate(${180 / WHEEL_PRIZES.length}deg)` }}
                             >
+                                <div className={cn(
+                                    "w-1 h-1 rounded-full",
+                                    prize.color === 'brand' ? "bg-brand-accent" :
+                                    prize.color === 'epic' ? "bg-purple-500" :
+                                    prize.color === 'rare' ? "bg-cyan-500" : "bg-zinc-800"
+                                )} />
                                 <span className={cn(
-                                    "text-[7px] font-bold uppercase tracking-widest whitespace-nowrap",
+                                    "text-[8px] font-bold uppercase tracking-[0.15em] [writing-mode:vertical-lr] rotate-180",
                                     prize.color === 'brand' ? "text-brand-accent" :
                                     prize.color === 'epic' ? "text-purple-400" :
                                     prize.color === 'rare' ? "text-cyan-400" : "text-zinc-500"
@@ -282,21 +399,34 @@ const NexusWheel = ({ onComplete, onCancel }: { onComplete: (score: number) => v
                     ))}
                 </motion.div>
 
-                {/* Center Cap */}
-                <div className="absolute inset-0 m-auto w-12 h-12 rounded-full bg-zinc-950 border border-white/10 flex items-center justify-center z-20 shadow-xl">
-                    <CircleDashed size={20} className={cn("text-zinc-700", isSpinning && "animate-spin")} />
+                {/* Center Hub */}
+                <div className="absolute inset-0 m-auto w-16 h-16 rounded-full bg-zinc-950 border border-white/10 flex items-center justify-center z-30 shadow-2xl">
+                    <div className="absolute inset-0 rounded-full border border-white/5 animate-pulse" />
+                    <CircleDashed size={24} className={cn("text-zinc-700 transition-all duration-1000", isSpinning ? "animate-spin text-brand-accent" : "")} />
                 </div>
             </div>
 
-            <div className="flex flex-col items-center gap-4 w-full px-6">
+            <div className="flex flex-col items-center gap-4 w-full px-8 pt-4">
+                <div className="w-full flex justify-between text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-2">
+                    <span>Power Lvl</span>
+                    <span className="text-zinc-400">1.21 GW</span>
+                </div>
                 <Button
                     onClick={spin}
                     disabled={isSpinning}
-                    className="w-full h-12 bg-zinc-100 text-zinc-950 font-bold uppercase tracking-widest text-xs"
+                    className="w-full h-14 bg-zinc-100 text-zinc-950 font-bold uppercase tracking-[0.2em] text-[10px] rounded-xl relative overflow-hidden group shadow-[0_0_20px_rgba(255,255,255,0.1)]"
                 >
-                    {isSpinning ? "Spinning..." : "Engage Protocol"}
+                    <span className="relative z-10">{isSpinning ? "Synchronizing..." : "Initiate Sequence"}</span>
+                    {!isSpinning && (
+                        <motion.div
+                            initial={{ x: '-100%' }}
+                            animate={{ x: '100%' }}
+                            transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+                            className="absolute inset-0 bg-gradient-to-r from-transparent via-black/[0.05] to-transparent"
+                        />
+                    )}
                 </Button>
-                <Button variant="ghost" size="sm" onClick={onCancel} disabled={isSpinning} className="text-zinc-500">Cancel</Button>
+                <p className="text-[7px] text-zinc-600 font-bold uppercase tracking-widest">Authorized use only • Personnel class B+</p>
             </div>
         </div>
     );
@@ -305,72 +435,123 @@ const NexusWheel = ({ onComplete, onCancel }: { onComplete: (score: number) => v
 // --- Reward Modal ---
 
 const RewardModal = ({ rewards, onClose }: { rewards: Reward, onClose: () => void }) => {
+    const [revealed, setRevealed] = useState(false);
+
+    useEffect(() => {
+        haptics.notification('success');
+    }, []);
+
     return (
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-xl flex items-center justify-center p-6"
+            className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-2xl flex items-center justify-center p-6"
         >
-            <motion.div
-                initial={{ scale: 0.9, y: 20 }}
-                animate={{ scale: 1, y: 0 }}
-                className="w-full max-w-sm bg-zinc-950 border border-white/5 rounded-2xl overflow-hidden shadow-2xl"
-            >
-                <div className="p-8 text-center space-y-6">
-                    <div className="flex justify-center">
-                         <div className="w-16 h-16 rounded-2xl bg-brand-accent/10 flex items-center justify-center border border-brand-accent/20 relative">
-                            <Trophy size={32} className="text-brand-accent" />
-                            <motion.div
-                                animate={{ rotate: 360 }}
-                                transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                                className="absolute inset-0 border border-brand-accent/20 border-dashed rounded-2xl"
-                            />
-                         </div>
-                    </div>
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-brand-accent/10 blur-[120px] rounded-full" />
+            </div>
 
-                    <div className="space-y-1">
-                        <h3 className="text-xl font-bold text-zinc-100 uppercase tracking-wider">Mission Success</h3>
-                        <p className="text-[10px] text-zinc-500 uppercase tracking-[0.2em]">Asset allocation complete</p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="p-4 rounded-xl bg-zinc-900/50 border border-white/[0.03]">
-                            <div className="flex items-center justify-center gap-1.5 mb-1">
-                                <Sparkles size={12} className="text-brand-accent" />
-                                <span className="text-[9px] font-bold text-zinc-500 uppercase">Shards</span>
-                            </div>
-                            <span className="text-xl font-mono font-bold text-zinc-100">+{rewards.shards}</span>
-                        </div>
-                        <div className="p-4 rounded-xl bg-zinc-900/50 border border-white/[0.03]">
-                            <div className="flex items-center justify-center gap-1.5 mb-1">
-                                <Zap size={12} className="text-zinc-500" />
-                                <span className="text-[9px] font-bold text-zinc-500 uppercase">Experience</span>
-                            </div>
-                            <span className="text-xl font-mono font-bold text-zinc-100">+{rewards.xp}</span>
-                        </div>
-                    </div>
-
-                    {rewards.character && (
-                        <div className="p-4 rounded-xl bg-purple-500/5 border border-purple-500/20 flex items-center gap-4 text-left">
-                            <div className="w-12 h-12 rounded bg-zinc-800 overflow-hidden border border-white/10 shrink-0">
-                                <img src={rewards.character.img_url} alt={rewards.character.name} className="w-full h-full object-cover" />
-                            </div>
-                            <div className="min-w-0">
-                                <div className="text-[8px] font-bold text-purple-400 uppercase tracking-widest mb-0.5">Character Drop</div>
-                                <div className="text-xs font-bold text-zinc-100 truncate">{rewards.character.name}</div>
-                                <div className="text-[9px] text-zinc-500 truncate">{rewards.character.anime}</div>
-                            </div>
-                        </div>
-                    )}
-
-                    <Button
-                        onClick={onClose}
-                        className="w-full bg-zinc-100 text-zinc-950 font-bold uppercase tracking-widest text-[10px] py-4"
+            <AnimatePresence mode="wait">
+                {!revealed && rewards.character ? (
+                    <motion.div
+                        key="box"
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 1.2, opacity: 0, filter: 'brightness(2) blur(10px)' }}
+                        className="relative flex flex-col items-center gap-8"
                     >
-                        Confirm Intake
-                    </Button>
-                </div>
-            </motion.div>
+                        <motion.div
+                            animate={{
+                                y: [0, -10, 0],
+                                rotate: [0, 1, -1, 0]
+                            }}
+                            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                            className="w-48 h-48 relative"
+                        >
+                            <div className="absolute inset-0 bg-brand-accent/20 rounded-3xl blur-2xl animate-pulse" />
+                            <div className="absolute inset-0 bg-zinc-900 border border-white/10 rounded-3xl flex items-center justify-center overflow-hidden shadow-2xl">
+                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.1)_0%,transparent_70%)]" />
+                                <Lock size={64} className="text-brand-accent" />
+                                <div className="absolute bottom-0 left-0 w-full h-1 bg-brand-accent shadow-[0_0_20px_rgba(59,130,246,0.5)]" />
+                            </div>
+                        </motion.div>
+
+                        <div className="text-center space-y-2">
+                             <h3 className="text-xl font-bold text-white uppercase tracking-[0.3em]">Encrypted Asset</h3>
+                             <p className="text-[9px] text-zinc-500 uppercase tracking-widest">Awaiting manual decryption</p>
+                        </div>
+
+                        <Button
+                            onClick={() => {
+                                haptics.heavy();
+                                setRevealed(true);
+                            }}
+                            className="w-64 bg-white text-black font-bold uppercase tracking-widest text-[10px] py-4 rounded-xl"
+                        >
+                            Decryption Sequence
+                        </Button>
+                    </motion.div>
+                ) : (
+                    <motion.div
+                        key="content"
+                        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                        animate={{ scale: 1, opacity: 1, y: 0 }}
+                        className="w-full max-w-sm bg-zinc-950/50 border border-white/10 rounded-3xl overflow-hidden shadow-2xl relative"
+                    >
+                        <div className="p-8 text-center space-y-8">
+                            <div className="space-y-2">
+                                <div className="flex justify-center mb-4">
+                                     <div className="w-12 h-12 rounded-xl bg-brand-accent/10 flex items-center justify-center border border-brand-accent/20">
+                                        <Trophy size={24} className="text-brand-accent" />
+                                     </div>
+                                </div>
+                                <h3 className="text-xl font-bold text-zinc-100 uppercase tracking-wider">Mission Success</h3>
+                                <p className="text-[10px] text-zinc-500 uppercase tracking-[0.2em]">Operational rewards allocated</p>
+                            </div>
+
+                            {rewards.character && (
+                                <motion.div
+                                    initial={{ y: 20, opacity: 0 }}
+                                    animate={{ y: 0, opacity: 1 }}
+                                    transition={{ delay: 0.2 }}
+                                    className="relative group"
+                                >
+                                    <div className="absolute -inset-4 bg-purple-500/10 blur-2xl rounded-full opacity-50" />
+                                    <div className="relative aspect-[3/4] rounded-2xl overflow-hidden border-2 border-purple-500/30 shadow-2xl">
+                                        <img src={rewards.character.img_url} alt={rewards.character.name} className="w-full h-full object-cover" />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
+                                        <div className="absolute bottom-0 left-0 w-full p-4 text-left">
+                                            <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30 mb-2 uppercase tracking-widest text-[8px]">
+                                                {rewards.character.rarity}
+                                            </Badge>
+                                            <div className="text-lg font-bold text-white leading-tight">{rewards.character.name}</div>
+                                            <div className="text-[10px] text-zinc-400 font-medium">{rewards.character.anime}</div>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="p-4 rounded-2xl bg-zinc-900/50 border border-white/[0.05] flex flex-col items-center gap-1">
+                                    <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Shards</span>
+                                    <span className="text-2xl font-mono font-bold text-zinc-100">+{rewards.shards}</span>
+                                </div>
+                                <div className="p-4 rounded-2xl bg-zinc-900/50 border border-white/[0.05] flex flex-col items-center gap-1">
+                                    <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Exp</span>
+                                    <span className="text-2xl font-mono font-bold text-zinc-100">+{rewards.xp}</span>
+                                </div>
+                            </div>
+
+                            <Button
+                                onClick={onClose}
+                                className="w-full bg-zinc-100 text-zinc-950 font-bold uppercase tracking-widest text-[10px] py-4 rounded-xl"
+                            >
+                                Confirm & Close
+                            </Button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </motion.div>
     );
 };
@@ -383,6 +564,7 @@ export const Minigames = () => {
     const [state, setState] = useState<MinigameState | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [activeGame, setActiveGame] = useState<'cipher_match' | 'nexus_wheel' | null>(null);
+    const [session, setSession] = useState<SessionData | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [rewards, setRewards] = useState<Reward | null>(null);
 
@@ -409,7 +591,8 @@ export const Minigames = () => {
 
         try {
             setIsLoading(true);
-            await apiFetch(`/minigames/start/${game}`, { method: 'POST' });
+            const data = await apiFetch(`/minigames/start/${game}`, { method: 'POST' });
+            setSession(data.session);
             setActiveGame(game);
             // Optimization: update local energy state immediately
             setState(prev => prev ? { ...prev, energy: prev.energy - 1 } : null);
@@ -521,11 +704,11 @@ export const Minigames = () => {
                         exit={{ opacity: 0, scale: 0.98 }}
                         className="min-h-[400px] flex flex-col justify-center"
                     >
-                        {activeGame === 'cipher_match' && (
-                            <CipherMatch onComplete={handleSubmit} onCancel={() => setActiveGame(null)} />
+                        {activeGame === 'cipher_match' && session && (
+                            <CipherMatch session={session} onComplete={handleSubmit} onCancel={() => setActiveGame(null)} />
                         )}
-                        {activeGame === 'nexus_wheel' && (
-                            <NexusWheel onComplete={() => handleSubmit(0)} onCancel={() => setActiveGame(null)} />
+                        {activeGame === 'nexus_wheel' && session && (
+                            <NexusWheel session={session} onComplete={() => handleSubmit(0)} _onCancel={() => setActiveGame(null)} />
                         )}
                     </motion.div>
                 )}
