@@ -39,3 +39,9 @@ dependencies = [
     # Performance
     "uvloop>=0.22.1; platform_system != 'Windows'",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+]

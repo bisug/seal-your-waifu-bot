@@ -14,6 +14,7 @@ from Grabber.core.progression import get_level_from_xp, get_user_progress
 from Grabber.core.tasks import run_background_task
 from Grabber.core.user import get_user_rank_with_fallback
 from Grabber.core.utils import get_user_id_query, normalize_user_id
+from Grabber.core.minigames import get_user_energy
 from Grabber.database import collection, user_collection
 from Grabber.core.eggs import get_egg_tier_info, get_incubating_count, get_incubation_wait_minutes
 from Grabber.core.pass_config import apply_pass_incubation_bonus, get_active_pass_type, get_pass_incubation_slots
@@ -114,6 +115,9 @@ async def get_me(user: dict = Depends(get_current_user_data)):
     active_incubations = get_incubating_count(eggs)
     role_payload = get_role_payload(user_id)
 
+    # Update and get energy
+    energy, last_recharge = await get_user_energy(user_id, user_data=user)
+
     resp_data = {
         "id": int(user_id),
         "first_name": (user.get("first_name") or "User"),
@@ -140,7 +144,9 @@ async def get_me(user: dict = Depends(get_current_user_data)):
             "percentile": percentile,
             "pass_type": pass_type,
             "incubation_slots": incubation_slots,
-            "active_incubations": active_incubations
+            "active_incubations": active_incubations,
+            "energy": energy,
+            "last_energy_recharge": last_recharge.isoformat() if last_recharge else None
         },
         "achievements": enriched_achievements,
         "titles": {
