@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import {
   X,
   Repeat2,
+  Gamepad2,
   ListChecks,
   Ticket,
   ChartNoAxesColumnIncreasing,
@@ -58,6 +59,7 @@ const SECTIONS: NavSection[] = [
     title: "OPERATIONS",
     items: [
       { id: 'mypets', label: 'Companions', icon: PawPrint },
+      { id: 'minigames', label: 'Nexus Games', icon: Gamepad2 },
       { id: 'achievements', label: 'Milestones', icon: BadgeCheck },
     ]
   },
