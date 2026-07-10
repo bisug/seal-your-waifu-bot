@@ -38,6 +38,8 @@ async def get_user_energy(user_id: int, user_data: Optional[dict] = None) -> Tup
 
     if isinstance(last_recharge, datetime):
         last_recharge_dt = last_recharge
+        if last_recharge_dt.tzinfo is None:
+            last_recharge_dt = last_recharge_dt.replace(tzinfo=timezone.utc)
     else:
         # Fallback for unexpected types
         last_recharge_dt = now
