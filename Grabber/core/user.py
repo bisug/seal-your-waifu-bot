@@ -49,6 +49,8 @@ def build_user_set_on_insert(
         "zenith": 0,
         "char_count": 0,
         "xp": 0,
+        "energy": 5,
+        "last_energy_recharge": datetime.now(timezone.utc),
         "pass_type": "free",
         "claimed_levels": [],
         "season": CURRENT_PASS_SEASON,

@@ -21,6 +21,8 @@ class StatsModel(BaseModel):
     pass_type: str = "free"
     incubation_slots: int = 1
     active_incubations: int = 0
+    energy: int = 5
+    last_energy_recharge: Optional[str] = None
 
 class PetModel(BaseModel):
     id: str
