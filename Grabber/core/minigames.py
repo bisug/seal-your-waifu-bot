@@ -1,5 +1,6 @@
 import time
 import random
+import json
 from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict, Any, Tuple
 
@@ -62,8 +63,8 @@ async def get_user_energy(user_id: int, user_data: Optional[dict] = None) -> Tup
 
     return current_energy, last_recharge_dt
 
-async def consume_energy(user_id: int, game_type: Optional[str] = None) -> bool:
-    """Consumes 1 energy point if available. Optionally starts a session."""
+async def consume_energy(user_id: int, game_type: Optional[str] = None) -> Any:
+    """Consumes 1 energy point if available. Optionally starts a session and returns start data."""
     user_data = await user_collection.find_one(get_user_id_query(user_id))
     current_energy, last_recharge = await get_user_energy(user_id, user_data)
 
@@ -81,30 +82,76 @@ async def consume_energy(user_id: int, game_type: Optional[str] = None) -> bool:
 
     await user_collection.update_one(get_user_id_query(user_id), update_fields)
 
+    start_data = {"start_time": now.timestamp()}
+
+    if game_type == "cipher_match":
+        # Get 8 random characters for the grid
+        cursor = await collection.aggregate([{"$sample": {"size": 8}}])
+        chars = await cursor.to_list(length=8)
+        start_data["cards"] = [{
+            "id": c["id"],
+            "img_url": c["img_url"],
+            "name": c["name"]
+        } for c in chars]
+    elif game_type == "nexus_wheel":
+        # Pre-roll the reward based on wheel sectors
+        roll = random.random()
+        if roll < 0.05: # 5% Character
+            index = 3
+        elif roll < 0.15: # 10% 500 Shards
+            index = 5
+        elif roll < 0.30: # 15% 200 Shards
+            index = 2
+        elif roll < 0.45: # 15% 150 Shards
+            index = 4
+        elif roll < 0.60: # 15% 100 Shards
+            index = 1
+        elif roll < 0.75: # 15% 80 Shards
+            index = 6
+        elif roll < 0.90: # 15% 50 Shards
+            index = 0
+        else: # 10% XP Boost
+            index = 7
+
+        prizes = [
+            {"type": "shards", "amount": 50, "label": "50 Shards"},
+            {"type": "shards", "amount": 100, "label": "100 Shards"},
+            {"type": "shards", "amount": 200, "label": "200 Shards"},
+            {"type": "character", "label": "Character"},
+            {"type": "shards", "amount": 150, "label": "150 Shards"},
+            {"type": "shards", "amount": 500, "label": "500 Shards"},
+            {"type": "shards", "amount": 80, "label": "80 Shards"},
+            {"type": "xp", "amount": 0, "label": "XP Boost"}
+        ]
+        start_data["prize"] = prizes[index]
+        start_data["prize_index"] = index
+
     if game_type and r:
-        # Store start time in Redis for anti-cheat
         session_key = f"minigame_session:{user_id}:{game_type}"
-        await r.set(session_key, str(now.timestamp()), ex=300) # 5 min session
+        await r.set(session_key, json.dumps(start_data), ex=300) # 5 min session
 
     await invalidate_user_cache(user_id)
-    return True
+    return start_data if game_type else True
 
-async def validate_session(user_id: int, game_type: str) -> Optional[float]:
-    """Returns elapsed time since game start, or None if no session."""
+async def validate_session(user_id: int, game_type: str) -> Optional[dict]:
+    """Returns session data if valid, or None if no session."""
     if not r:
-        return 10.0 # Fallback if no redis
+        return {"start_time": get_now_utc().timestamp() - 10} # Fallback if no redis
 
     session_key = f"minigame_session:{user_id}:{game_type}"
-    start_time_str = await r.get(session_key)
-    if not start_time_str:
+    session_data_str = await r.get(session_key)
+    if not session_data_str:
         return None
 
     await r.delete(session_key)
-    start_time = float(start_time_str)
-    return get_now_utc().timestamp() - start_time
+    return json.loads(session_data_str)
 
-async def reward_minigame(user_id: int, game_type: str, score: int = 0, time_taken: float = 0) -> Dict[str, Any]:
+async def reward_minigame(user_id: int, game_type: str, score: int = 0, session_data: dict = None) -> Dict[str, Any]:
     """Calculates and applies rewards for mini-games."""
+    if not session_data:
+        return {"error": "Invalid session data"}
+
+    time_taken = get_now_utc().timestamp() - session_data.get("start_time", 0)
 
     # Basic rewards
     shards = 0
@@ -112,37 +159,39 @@ async def reward_minigame(user_id: int, game_type: str, score: int = 0, time_tak
     character_reward = None
 
     if game_type == "cipher_match":
-        # Anti-cheat: 8 pairs matched in less than 3 seconds is highly suspicious
-        if score >= 8 and time_taken < 3.0:
+        # Anti-cheat: 8 pairs matched in less than 5 seconds is highly suspicious
+        if score >= 8 and time_taken < 5.0:
              LOGGER.warning(f"User {user_id} suspicious Cipher Match: {score} pairs in {time_taken}s")
              return {"error": "Suspicious activity detected"}
 
-        # Score is pairs matched
-        base_shards = score * 15
-        shards = base_shards + random.randint(0, 50)
-        xp = score * 3 + random.randint(0, 10)
+        if score < 4:
+            return {"error": "Mission failed: Insufficient data collected"}
+
+        # Score is pairs matched (max 8)
+        base_shards = score * 25
+        shards = base_shards + random.randint(20, 100)
+        xp = score * 5 + random.randint(5, 15)
 
         # Bonus for speed
-        if time_taken < 15:
-            shards += 50
-            xp += 20
+        if score == 8 and time_taken < 25:
+            shards += 100
+            xp += 30
 
     elif game_type == "nexus_wheel":
-        # Random spin result
-        roll = random.random()
-        if roll < 0.03: # 3% chance for a character (slightly balanced)
-            character_reward = await get_random_character(["⚪ Common", "🟢 Medium"])
+        prize = session_data.get("prize")
+        if not prize:
+             return {"error": "No prize determined in session"}
+
+        if prize["type"] == "character":
+            character_reward = await get_random_character(["⚪ Common", "🟢 Medium", "🟡 Rare"])
+            shards = 100
+            xp = 25
+        elif prize["type"] == "xp":
             shards = 50
-            xp = 10
-        elif roll < 0.10: # 7% chance for EPIC shards
-            shards = random.randint(1000, 2000)
-            xp = 100
-        elif roll < 0.30: # 20% chance for decent shards
-            shards = random.randint(200, 500)
-            xp = 50
+            xp = 250
         else:
-            shards = random.randint(50, 100)
-            xp = 20
+            shards = prize.get("amount", 50)
+            xp = shards // 10 + 5
 
     # Apply rewards
     update_query = {"$inc": {"balance": shards}}
