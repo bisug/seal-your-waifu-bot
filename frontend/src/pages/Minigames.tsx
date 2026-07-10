@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Gamepad2,
@@ -121,7 +121,6 @@ const CipherMatch = ({ onComplete, onCancel }: { onComplete: (score: number) => 
     const [flippedIndices, setFlippedIndices] = useState<number[]>([]);
     const [matches, setMatches] = useState(0);
     const [moves, setMoves] = useState(0);
-    const [startTime] = useState(Date.now());
 
     useEffect(() => {
         const symbols = [...CIPHER_SYMBOLS, ...CIPHER_SYMBOLS];
