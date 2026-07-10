@@ -301,7 +301,7 @@ const WHEEL_PRIZES = [
     { label: 'XP Boost', value: 'xp', color: 'brand' },
 ];
 
-const NexusWheel = ({ session, onComplete, onCancel }: { session: SessionData, onComplete: (score: number) => void, onCancel: () => void }) => {
+const NexusWheel = ({ session, onComplete, _onCancel }: { session: SessionData, onComplete: (score: number) => void, _onCancel: () => void }) => {
     const [isSpinning, setIsSpinning] = useState(false);
     const [rotation, setRotation] = useState(0);
 
@@ -564,6 +564,7 @@ export const Minigames = () => {
     const [state, setState] = useState<MinigameState | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [activeGame, setActiveGame] = useState<'cipher_match' | 'nexus_wheel' | null>(null);
+    const [session, setSession] = useState<SessionData | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [rewards, setRewards] = useState<Reward | null>(null);
 
@@ -590,7 +591,8 @@ export const Minigames = () => {
 
         try {
             setIsLoading(true);
-            await apiFetch(`/minigames/start/${game}`, { method: 'POST' });
+            const data = await apiFetch(`/minigames/start/${game}`, { method: 'POST' });
+            setSession(data.session);
             setActiveGame(game);
             // Optimization: update local energy state immediately
             setState(prev => prev ? { ...prev, energy: prev.energy - 1 } : null);
@@ -702,11 +704,11 @@ export const Minigames = () => {
                         exit={{ opacity: 0, scale: 0.98 }}
                         className="min-h-[400px] flex flex-col justify-center"
                     >
-                        {activeGame === 'cipher_match' && (
-                            <CipherMatch onComplete={handleSubmit} onCancel={() => setActiveGame(null)} />
+                        {activeGame === 'cipher_match' && session && (
+                            <CipherMatch session={session} onComplete={handleSubmit} onCancel={() => setActiveGame(null)} />
                         )}
-                        {activeGame === 'nexus_wheel' && (
-                            <NexusWheel onComplete={() => handleSubmit(0)} onCancel={() => setActiveGame(null)} />
+                        {activeGame === 'nexus_wheel' && session && (
+                            <NexusWheel session={session} onComplete={() => handleSubmit(0)} _onCancel={() => setActiveGame(null)} />
                         )}
                     </motion.div>
                 )}
