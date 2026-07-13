@@ -40,7 +40,7 @@ async def send_petshop_page(message_or_query_obj, page: int, user_id: int):
         f"<i>{html_escape(pet.get('desc', 'No ability'))}</i>\n"
         f"HP: {pet.get('hp', 100)} | ATK: {pet.get('atk', 10)} | SPD: {pet.get('spd', 10)}\n"
         f"Luck: {int(pet['luck'] * 100)}%\n"
-        f"Price: <b>{pet['zenith_price']} ⬪</b>"
+        f"Price: <b>{pet['zenith_price']} ⧫</b>"
     )
     if is_locked:
         caption += f"\n\n<b>Requires Level {req_level}</b> (You: {user_level})"
@@ -103,7 +103,7 @@ async def perform_pet_purchase(user_id, pet_ref):
     user_zenith = user.get("zenith", 0)
     price = pet["zenith_price"]
     if user_zenith < price:
-        return f"You need <b>{price} ⬪ Zenith</b> to purchase this pet! (You have: {user_zenith} ⬪)"
+        return f"You need <b>{price} ⧫ Zenith</b> to purchase this pet! (You have: {user_zenith} ⧫)"
     # 3. Atomic Deduction and Push
     pet_id = get_pet_key(pet)
     pet_doc = pet_for_storage(pet)
@@ -238,7 +238,7 @@ async def shop_mypet_navigation_callback(_, query: types.CallbackQuery):
         elif action == "buy":
             page = page % len(shop_pets)
             pet = shop_pets[page]
-            text = f"<b>Confirm Purchase</b>\n\nBuy <b>{html_escape(pet['name'])}</b> for <b>{pet['zenith_price']} ⬪</b>?"
+            text = f"<b>Confirm Purchase</b>\n\nBuy <b>{html_escape(pet['name'])}</b> for <b>{pet['zenith_price']} ⧫</b>?"
             keyboard = [[
                 types.InlineKeyboardButton("Confirm", callback_data=f"petconfirm_{page}_{owner_id}", style=enums.ButtonStyle.SUCCESS),
                 types.InlineKeyboardButton("Cancel", callback_data=f"shop_view_{page}_{owner_id}", style=enums.ButtonStyle.DANGER)

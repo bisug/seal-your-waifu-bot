@@ -8,7 +8,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from Grabber import LOGGER
 from Grabber.core.cache import sync_user_to_redis
 from Grabber.core.character_search import build_character_search_filter
-from Grabber.core.constants import PAYOUTS
+from Grabber.modules.economy.sell import get_sell_price
 from Grabber.core.utils import get_user_id_query, normalize_user_id
 from Grabber.database import collection, user_collection
 from Grabber.webapp.auth import get_current_user, get_current_user_data
@@ -134,7 +134,7 @@ async def recycle_preview(
             char = char_map.get(rid)
             if char:
                 rarity = char.get("rarity", "⚪ Common")
-                total_reward += PAYOUTS.get(rarity, 10)
+                total_reward += get_sell_price(rarity, user_id)
                 current_counts[rid] -= 1
         else:
              raise HTTPException(status_code=400, detail=f"Character ID {rid} not owned or insufficient duplicates")
@@ -194,7 +194,7 @@ async def recycle_characters(
         cid = char["id"]
         if temp_counts[cid] > 0:
             rarity = char.get("rarity", "⚪ Common")
-            total_reward += PAYOUTS.get(rarity, 10)
+            total_reward += get_sell_price(rarity, user_id)
             temp_counts[cid] -= 1
         else:
             new_harem.append(char)
@@ -211,7 +211,7 @@ async def recycle_characters(
         q,
         {
             "$set": {"characters": new_harem, "char_count": new_char_count},
-            "$inc": {"zenith": total_reward, "version": 1}
+            "$inc": {"balance": total_reward, "version": 1}
         }
     )
     if res.modified_count == 0:
