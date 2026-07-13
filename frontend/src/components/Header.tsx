@@ -1,5 +1,5 @@
 import 'react';
-import { Menu, Gem, User } from 'lucide-react';
+import { Menu, Gem, Coins, User } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 import { formatNumber } from '../utils';
 import { Button } from './ui/Button';
@@ -22,17 +22,27 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
         <div className="flex flex-col justify-center">
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] font-black text-zinc-100 tracking-wider uppercase leading-none">SEAL</span>
-            <span className="text-[8px] font-mono text-zinc-600 uppercase">V2.4</span>
+            <span className="text-[8px] font-mono text-zinc-500 uppercase">V2.4</span>
           </div>
           <div className="flex items-center gap-1 mt-0.5">
             <div className="w-1 h-1 rounded-full bg-emerald-500" />
-            <span className="text-[7px] font-bold text-zinc-600 uppercase tracking-widest leading-none">READY</span>
+            <span className="text-[7px] font-bold text-zinc-500 uppercase tracking-widest leading-none">READY</span>
           </div>
         </div>
       </div>
 
       {/* Stats Section */}
       <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5 px-3 h-8 rounded-md bg-zinc-900 border border-white/5 transition-colors hover:border-white/10 group">
+          <Coins size={12} className="text-amber-500" />
+          <div className="flex items-baseline gap-1">
+             <span className="text-[11px] font-mono font-bold text-zinc-100 tabular-nums">
+                {formatNumber(user?.stats?.points ?? user?.balance ?? 0)}
+             </span>
+             <span className="text-[7px] font-bold text-zinc-500 uppercase tracking-wider">SHARDS</span>
+          </div>
+        </div>
+
         <div className="flex items-center gap-2.5 px-3 h-8 rounded-md bg-zinc-900 border border-white/5 transition-colors hover:border-white/10 group">
           <Gem size={12} className="text-brand-accent" />
           <div className="flex items-baseline gap-1">

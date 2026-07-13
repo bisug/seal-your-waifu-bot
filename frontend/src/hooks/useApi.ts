@@ -30,6 +30,7 @@ export const useApi = <T = any>(endpoint: string, options: UseApiOptions<T> = {}
   const [error, setError] = useState<string | null>(null);
 
   const optionsRef = useRef<UseApiOptions<T>>(options);
+  const mountedRef = useRef(false);
   const [currentOptions, setCurrentOptions] = useState<UseApiOptions<T>>(options);
 
   useEffect(() => {
@@ -53,9 +54,12 @@ export const useApi = <T = any>(endpoint: string, options: UseApiOptions<T> = {}
         if (Date.now() - cached.timestamp < CACHE_TTL) {
             setData(cached.data);
             setLoading(false);
-            // We can still fetch in background to update cache, but for instant UI we return early
+            // On first mount we still refetch so a view doesn't open onto
+            // another view's stale cache; later reads may use it directly.
+            if (mountedRef.current) return;
         }
     }
+    mountedRef.current = true;
 
     setLoading(true);
     setError(null);

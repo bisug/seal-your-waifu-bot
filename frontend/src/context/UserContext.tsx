@@ -122,10 +122,8 @@ interface UserContextType {
   user: User | null;
   loading: boolean;
   error: string | null;
-  liteMode: boolean;
   refreshUser: () => Promise<void>;
   triggerRefresh: () => void;
-  toggleLiteMode: () => void;
 }
 
 export const UserContext = createContext<UserContextType | null>(null);
@@ -145,17 +143,6 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Enforce Lite Mode permanently for all users
-  const liteMode = true;
-
-  useEffect(() => {
-    document.body.classList.add('lite-mode');
-  }, []);
-
-  const toggleLiteMode = useCallback(() => {
-    // No-op as requested: lite only
-  }, []);
 
   const refreshUser = useCallback(async () => {
     try {
@@ -191,7 +178,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [triggerRefresh]);
 
   return (
-    <UserContext.Provider value={{ user, loading, error, liteMode, refreshUser, triggerRefresh, toggleLiteMode }}>
+    <UserContext.Provider value={{ user, loading, error, refreshUser, triggerRefresh }}>
       {children}
     </UserContext.Provider>
   );

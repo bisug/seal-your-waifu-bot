@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import {
   X,
   Repeat2,
@@ -13,8 +13,6 @@ import {
   ShieldCheck,
   Terminal,
   Heart,
-  Settings,
-  HelpCircle,
   LogOut,
   Egg,
   Store,
@@ -24,6 +22,7 @@ import {
 import { cn } from '../utils';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useUser } from '../context/UserContext';
+import { setSessionToken } from '../api/client';
 import { Button } from './ui/Button';
 
 interface NavItem {
@@ -76,6 +75,7 @@ const SECTIONS: NavSection[] = [
 
 export const NavigationDrawer = ({ isOpen, onClose, activeTab, onNavigate }: NavigationDrawerProps) => {
   const { user } = useUser();
+  const panelRef = useRef<HTMLDivElement>(null);
   const staffItems = [
     ...(user?.is_sudo ? [{ id: 'staff', label: 'Admin Terminal', icon: ShieldCheck }] : []),
     ...((user?.can_upload ?? user?.is_sudo) ? [{ id: 'upload', label: 'Asset Intake', icon: CloudUpload }] : []),
@@ -101,6 +101,14 @@ export const NavigationDrawer = ({ isOpen, onClose, activeTab, onNavigate }: Nav
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    panelRef.current?.focus();
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isOpen, onClose]);
+
   const handleItemClick = (id: string) => {
     onNavigate(id);
     onClose();
@@ -124,6 +132,11 @@ export const NavigationDrawer = ({ isOpen, onClose, activeTab, onNavigate }: Nav
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             className="fixed top-0 right-0 z-[120] h-full w-[280px] bg-zinc-950 border-l border-white/5 flex flex-col shadow-2xl"
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Navigation"
+            tabIndex={-1}
           >
             {/* Header */}
             <div className="p-6 flex items-center justify-between border-b border-white/[0.04]">
@@ -132,7 +145,7 @@ export const NavigationDrawer = ({ isOpen, onClose, activeTab, onNavigate }: Nav
                     <Terminal size={14} className="text-zinc-500" />
                     <span className="text-[11px] font-bold text-zinc-100 tracking-wider uppercase">SYSTEM</span>
                 </div>
-                <span className="text-[8px] font-mono text-zinc-600 uppercase mt-0.5">V2.4</span>
+                <span className="text-[8px] font-mono text-zinc-500 uppercase mt-0.5">V2.4</span>
               </div>
               <Button
                 variant="ghost"
@@ -149,7 +162,7 @@ export const NavigationDrawer = ({ isOpen, onClose, activeTab, onNavigate }: Nav
             <div className="flex-1 overflow-y-auto px-4 py-6 space-y-8">
               {sections.map((section) => (
                 <div key={section.title} className="space-y-3">
-                  <h3 className="px-2 text-[9px] font-bold text-zinc-600 uppercase tracking-widest">
+                  <h3 className="px-2 text-[9px] font-bold text-zinc-500 uppercase tracking-widest">
                     {section.title}
                   </h3>
                   <div className="space-y-1">
@@ -188,21 +201,21 @@ export const NavigationDrawer = ({ isOpen, onClose, activeTab, onNavigate }: Nav
                 </div>
               ))}
 
-              {/* Preferences */}
+              {/* Account */}
               <div className="space-y-3 pt-4">
-                  <h3 className="px-2 text-[9px] font-bold text-zinc-600 uppercase tracking-widest">PREFERENCES</h3>
-                  <div className="space-y-1">
-                      {[
-                          { icon: Settings, label: 'Settings' },
-                          { icon: HelpCircle, label: 'Support' },
-                          { icon: LogOut, label: 'Logout' },
-                      ].map((item) => (
-                          <button key={item.label} className="w-full flex items-center gap-3 px-3 py-2.5 text-zinc-500 hover:text-zinc-200 transition-colors">
-                              <item.icon size={16} />
-                              <span className="text-[11px] font-bold uppercase tracking-wider">{item.label}</span>
-                          </button>
-                      ))}
-                  </div>
+                  <h3 className="px-2 text-[9px] font-bold text-zinc-600 uppercase tracking-widest">ACCOUNT</h3>
+                  <button
+                    onClick={() => {
+                        window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
+                        onClose();
+                        setSessionToken(null);
+                        window.location.reload();
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 text-red-500 hover:text-red-400 hover:bg-red-500/5 transition-colors rounded-md"
+                  >
+                    <LogOut size={16} />
+                    <span className="text-[11px] font-bold uppercase tracking-wider">Logout</span>
+                  </button>
               </div>
             </div>
 
@@ -216,12 +229,12 @@ export const NavigationDrawer = ({ isOpen, onClose, activeTab, onNavigate }: Nav
                     <span className="text-[10px] font-bold text-zinc-100 uppercase tracking-wider truncate">
                         {user?.role_label || user?.role_tag || 'OPERATOR'}
                     </span>
-                    <span className="text-[7px] font-bold text-zinc-600 uppercase tracking-widest">AUTHORIZED ACCESS</span>
+                    <span className="text-[7px] font-bold text-zinc-500 uppercase tracking-widest">AUTHORIZED ACCESS</span>
                   </div>
                </div>
 
                <div className="flex items-center justify-between px-1">
-                  <div className="text-[8px] font-bold text-zinc-700 uppercase tracking-widest">SYSTEM_STATUS</div>
+                  <div className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">SYSTEM_STATUS</div>
                   <div className="flex items-center gap-1.5">
                     <div className="w-1 h-1 rounded-full bg-emerald-500" />
                     <span className="text-[8px] font-mono text-emerald-500/80 uppercase">ONLINE</span>
