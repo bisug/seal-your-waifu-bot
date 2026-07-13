@@ -34,11 +34,15 @@ async def get_daily_waifu():
     cursor = await collection.aggregate([{'$match': {'rarity': rarity}}, {'$sample': {'size': 1}}])
     res = await cursor.to_list(length=1)
     return res[0] if res else None
-@app.on_message(filters.command("daily") & filters.group)
+@app.on_message(filters.command("daily"))
 @handle_errors
 async def daily_command_handler(_, message: types.Message):
-    if message.chat.id != MAIN_GROUP_ID:
-        return await message.reply_text("This command only works in the main group.", parse_mode=enums.ParseMode.HTML)
+    # Full reward in the main group; a reduced rate elsewhere (other groups
+    # or private chat) so web-app / private users still earn passively
+    # without removing the incentive to gather in the main group.
+    in_main = message.chat.id == MAIN_GROUP_ID
+    reward_mult = 1.0 if in_main else 0.6
+    pm_note = "" if in_main else "\n\n<i>Tip: claim /daily in the main group for full rewards!</i>"
     user_id = message.from_user.id
     user = await get_user_data(user_id)
     user = user or {}
@@ -65,7 +69,7 @@ async def daily_command_handler(_, message: types.Message):
     pass_type = get_active_pass_type(user)
     multiplier = PASS_BENEFITS[pass_type]["daily_multiplier"]
     base_coins = reward_coins
-    reward_coins = int(base_coins * multiplier)
+    reward_coins = int(base_coins * multiplier * reward_mult)
     bonus_coins = reward_coins - base_coins
     pass_bonus_text = f"\n<b>Pass Bonus:</b> +{bonus_coins} ⬪" if multiplier > 1.0 else ""
     reward_coins, staff_bonus = apply_role_bonus(user_id, reward_coins, "daily_bonus_percent")
@@ -99,14 +103,18 @@ async def daily_command_handler(_, message: types.Message):
         f"<b>Rarity:</b> {html_escape(char['rarity'])}\n"
         f"<b>Anime:</b> {html_escape(char['anime'])}\n\n"
         f"<b>Coins:</b> +{reward_coins} ⬪{pass_bonus_text}{staff_bonus_text}\n"
-        f"<b>Streak:</b> {streak}/7 Days"
+        f"<b>Streak:</b> {streak}/7 Days{pm_note}"
     )
     await reply_media_dynamic(message, char['img_url'], caption=caption, parse_mode=enums.ParseMode.HTML)
-@app.on_message(filters.command("weekly") & filters.group)
+@app.on_message(filters.command("weekly"))
 @handle_errors
 async def weekly_command_handler(_, message: types.Message):
-    if message.chat.id != MAIN_GROUP_ID:
-        return await message.reply_text("This command only works in the main group.", parse_mode=enums.ParseMode.HTML)
+    # Full reward in the main group; a reduced rate elsewhere so
+    # web-app / private users still earn passively without removing
+    # the incentive to gather in the main group.
+    in_main = message.chat.id == MAIN_GROUP_ID
+    reward_mult = 1.0 if in_main else 0.6
+    pm_note = "" if in_main else "\n\n<i>Tip: claim /weekly in the main group for full rewards!</i>"
     user_id = message.from_user.id
     user = await get_user_data(user_id)
     user = user or {}
@@ -126,7 +134,7 @@ async def weekly_command_handler(_, message: types.Message):
     pass_type = get_active_pass_type(user)
     multiplier = PASS_BENEFITS[pass_type]["weekly_multiplier"]
     base_coins = 2000
-    reward_coins = int(base_coins * multiplier)
+    reward_coins = int(base_coins * multiplier * reward_mult)
     xp_reward = int(500 * PASS_BENEFITS[pass_type]["xp_multiplier"])
     bonus_coins = reward_coins - base_coins
     pass_bonus_text = f"\n(+{bonus_coins} Pass Bonus)" if multiplier > 1.0 else ""
@@ -161,6 +169,6 @@ async def weekly_command_handler(_, message: types.Message):
         f"<b>Weekly Reward Claimed!</b>\n\n"
         f"<b>Coins:</b> +{reward_coins} ⬪{pass_bonus_text}{staff_coin_text}\n"
         f"<b>XP:</b> +{xp_reward} XP{staff_xp_text}\n"
-        f"Come back in 7 days!",
+        f"Come back in 7 days!{pm_note}",
         parse_mode=enums.ParseMode.HTML
     )
