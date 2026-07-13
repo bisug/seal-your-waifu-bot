@@ -16,7 +16,7 @@ import { ToastProvider } from './components/ui/Toast';
 import { CharActionModal } from './components/character/CharActionModal';
 import { PetActionModal } from './components/pet/PetActionModal';
 import { GachaReveal } from './components/ui/GachaReveal';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, MotionConfig } from 'framer-motion';
 
 // Lazy load all pages
 const Shop = lazy(() => import('./pages/Shop').then(m => ({ default: m.Shop })));
@@ -231,10 +231,15 @@ const AppContent = () => {
     } else {
         backHandlerRef.current = null;
         tg.BackButton?.hide?.();
+        tg.enableVerticalSwipes?.();
     }
 
-    tg.setHeaderColor?.('#09090b');
-    tg.setBackgroundColor?.('#09090b');
+    // Lock Telegram's swipe-to-close while a bottom-sheet dialog is open so it
+    // doesn't fight our own sheet drag.
+    if (selectedChar || selectedPet || isMenuOpen) {
+        tg.disableVerticalSwipes?.();
+    }
+
     tg.expand?.();
 
     return () => {
@@ -243,6 +248,30 @@ const AppContent = () => {
         }
     };
   }, [selectedChar, selectedPet, isMenuOpen]);
+
+  // Harmonize the Telegram chrome (header bar + overscroll area) and the
+  // native control scheme with the user's Telegram theme instead of forcing
+  // a hardcoded dark palette. Re-applies when the user switches themes.
+  useEffect(() => {
+    const tg = window.Telegram?.WebApp;
+    if (!tg) return;
+
+    tg.ready?.();
+
+    const applyTheme = () => {
+        const params = tg.themeParams || {};
+        const bg = params.bg_color || params.secondary_bg_color || '#09090b';
+        tg.setHeaderColor?.(bg);
+        tg.setBackgroundColor?.(bg);
+        document.documentElement.style.colorScheme = tg.colorScheme === 'light' ? 'light' : 'dark';
+    };
+
+    applyTheme();
+    tg.onEvent?.('themeChanged', applyTheme);
+    return () => {
+        tg.offEvent?.('themeChanged', applyTheme);
+    };
+  }, []);
 
   const handleNavigate = useCallback((tab: string) => {
     window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
@@ -364,14 +393,16 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <ToastProvider>
-          <UserProvider>
-            <AppContent />
-          </UserProvider>
-        </ToastProvider>
-        <ReactQueryDevtools initialIsOpen={false} />
-      </QueryClientProvider>
+      <MotionConfig reducedMotion="user">
+        <QueryClientProvider client={queryClient}>
+          <ToastProvider>
+            <UserProvider>
+              <AppContent />
+            </UserProvider>
+          </ToastProvider>
+          <ReactQueryDevtools initialIsOpen={false} />
+        </QueryClientProvider>
+      </MotionConfig>
       <SpeedInsights />
     </ErrorBoundary>
   );

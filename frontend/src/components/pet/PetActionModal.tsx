@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ShieldCheck,
   Heart,
@@ -34,6 +34,7 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }: PetActionM
     const { addToast } = useToast();
     const { triggerRefresh } = useUser();
     const [actionStage, setActionStage] = useState<'idle' | 'loading'>('idle');
+    const dialogRef = useRef<HTMLDivElement>(null);
 
     const isOwned = (user?.pets || []).some((p: Pet) => String(p.petid || p.id) === String(selectedPet?.petid || selectedPet?.id));
     const isActive = user?.current_pet && String(user.current_pet.petid || user.current_pet.id) === String(selectedPet?.petid || selectedPet?.id);
@@ -44,6 +45,14 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }: PetActionM
             return () => { document.body.style.overflow = 'unset'; };
         }
     }, [selectedPet]);
+
+    useEffect(() => {
+        if (!selectedPet) return;
+        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setSelectedPet(null); };
+        window.addEventListener('keydown', onKey);
+        dialogRef.current?.focus();
+        return () => window.removeEventListener('keydown', onKey);
+    }, [selectedPet, setSelectedPet]);
 
     if (!selectedPet) return null;
 
@@ -84,6 +93,11 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }: PetActionM
                     exit={{ y: '100%' }}
                     transition={{ type: 'spring', damping: 25, stiffness: 200 }}
                     className="relative w-full max-w-[440px] bg-zinc-950 rounded-t-xl sm:rounded-xl flex flex-col overflow-hidden shadow-2xl border-t sm:border border-white/5"
+                    ref={dialogRef}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={selectedPet?.name}
+                    tabIndex={-1}
                 >
                     {/* Header Controls */}
                     <div className="absolute right-4 top-4 z-20">

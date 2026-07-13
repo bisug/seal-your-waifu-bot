@@ -333,6 +333,7 @@ export const Upload = () => {
                         <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest pl-1">Rarity</span>
                         <div className="relative group">
                             <select
+                                aria-label="Rarity class"
                                 value={character.rarity}
                                 onChange={event => setCharacter(prev => ({ ...prev, rarity: event.target.value }))}
                                 className="w-full h-10 bg-zinc-950 border border-white/10 rounded-md px-3.5 text-[11px] font-bold text-zinc-100 uppercase tracking-widest outline-none focus:border-brand-accent appearance-none cursor-pointer"
