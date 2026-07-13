@@ -17,6 +17,8 @@ _INSTANCE_LOCK_TTL = 60  # seconds; refreshed while running
 
 async def _acquire_instance_lock(status: dict) -> bool:
     """Try to own the single-instance lock. Returns True if we may start."""
+    from Grabber import LOGGER
+    from Grabber.core.tasks import run_background_task
     from Grabber.database import r as redis_client
     if not redis_client:
         LOGGER.warning(
