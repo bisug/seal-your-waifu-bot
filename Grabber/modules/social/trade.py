@@ -1,3 +1,4 @@
+import uuid
 from pyrogram import enums, errors, filters, types
 from Grabber import LOGGER, app, client
 from Grabber.core.cache import invalidate_user_cache
@@ -27,7 +28,9 @@ async def trade_handler(_, message: types.Message):
         return await message.reply_text("You don't own that character.", parse_mode=enums.ParseMode.HTML)
     if not r_char:
         return await message.reply_text("They don't own that character.", parse_mode=enums.ParseMode.HTML)
-    trade_id = f"tr_{sender_id}_{receiver_id}"
+    # Nonce prevents two concurrent trades between the same pair colliding
+    # on one shared session key.
+    trade_id = f"tr_{uuid.uuid4().hex}"
     await create_session(trade_id, {"s_char": s_char, "r_char": r_char, "s_id": sender_id, "r_id": receiver_id})
     markup = types.InlineKeyboardMarkup([
         [types.InlineKeyboardButton("Confirm", callback_data=f"tr_c:{trade_id}"),
