@@ -1,10 +1,71 @@
 import asyncio
+import os
 
 from Grabber import app, game_bot, userbot
 
 IS_STARTED = False
 STARTUP_STATE = "stopped"
 _START_LOCK = None
+
+# Single-instance guard: MTProto sessions corrupt if two processes drive
+# the same bot token / STRING_SESSION concurrently. Acquire a Redis-held
+# lock at startup so a second replica refuses to start instead of fighting
+# the first for the session.
+_INSTANCE_LOCK_KEY = "sealbot:single_instance_lock"
+_INSTANCE_LOCK_TTL = 60  # seconds; refreshed while running
+
+
+async def _acquire_instance_lock(status: dict) -> bool:
+    """Try to own the single-instance lock. Returns True if we may start."""
+    from Grabber.database import r as redis_client
+    if not redis_client:
+        LOGGER.warning(
+            "Redis unavailable: multi-instance session lock disabled. "
+            "Run exactly ONE process per deployment."
+        )
+        return True
+    try:
+        owned = await redis_client.set(
+            _INSTANCE_LOCK_KEY, str(os.getpid()), ex=_INSTANCE_LOCK_TTL, nx=True
+        )
+        if not owned:
+            owner = await redis_client.get(_INSTANCE_LOCK_KEY)
+            LOGGER.critical(
+                "Another instance (pid=%s) already holds the session lock. "
+                "Refusing to start to avoid MTProto session corruption.",
+                owner,
+            )
+            status["startup"] = "refused:lock_held"
+            return False
+        run_background_task(_refresh_instance_lock(), name="instance-lock-refresh")
+        return True
+    except Exception as e:
+        LOGGER.warning("Instance lock acquire failed (%s); proceeding without lock.", e)
+        return True
+
+
+async def _refresh_instance_lock():
+    from Grabber.database import r as redis_client
+    while True:
+        await asyncio.sleep(_INSTANCE_LOCK_TTL // 2)
+        try:
+            if redis_client:
+                await redis_client.set(
+                    _INSTANCE_LOCK_KEY, str(os.getpid()), ex=_INSTANCE_LOCK_TTL
+                )
+        except Exception:
+            pass
+
+
+async def _release_instance_lock():
+    from Grabber.database import r as redis_client
+    if not redis_client:
+        return
+    try:
+        if await redis_client.get(_INSTANCE_LOCK_KEY) == str(os.getpid()):
+            await redis_client.delete(_INSTANCE_LOCK_KEY)
+    except Exception:
+        pass
 
 
 def _get_start_lock():
@@ -150,6 +211,11 @@ async def start_bots():
             "resource_monitor": "pending",
         }
 
+        if not await _acquire_instance_lock(status):
+            IS_STARTED = False
+            STARTUP_STATE = "refused"
+            return
+
         try:
             try:
                 await _load_sudo_users(status)
@@ -217,7 +283,7 @@ async def stop_bots():
     global IS_STARTED, STARTUP_STATE
     from Grabber import LOGGER
     from Grabber.core.resources import stop_resource_monitor
-    from Grabber.core.tasks import cancel_background_tasks
+    from Grabber.core.tasks import cancel_background_tasks, run_background_task
     from Grabber.database import close_connections
 
     await stop_resource_monitor()
@@ -236,6 +302,7 @@ async def stop_bots():
                 await bot.stop()
         except Exception as e:
             LOGGER.warning(f"Failed to stop {getattr(bot, 'name', type(bot).__name__)} cleanly: {e}")
+    await _release_instance_lock()
     await close_connections()
     IS_STARTED = False
     STARTUP_STATE = "stopped"

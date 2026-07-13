@@ -6,8 +6,9 @@ from pyrogram.enums import ParseMode
 
 from Grabber import app, collection, user_collection
 from Grabber.core.balance import update_user_balance
-from Grabber.core.user import add_char_to_user, get_user_data, update_user
-from Grabber.core.utils import handle_errors, html_escape, reply_media_dynamic
+from Grabber.core.user import add_char_to_user
+from Grabber.core.utils import (get_user_id_query, handle_errors,
+                                html_escape, reply_media_dynamic)
 
 start_messages = [
     "Finally the time has come",
@@ -44,9 +45,15 @@ async def get_random_waifu():
 @handle_errors
 async def propose_command(_, message: types.Message):
     user_id = message.from_user.id
-    user = await get_user_data(user_id)
     now_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    if user and user.get('last_propose_date') == now_date:
+    # Atomic once-per-day claim: the $ne guard folds the read-then-write into a
+    # single conditional update, so concurrent /propose calls can't both grant.
+    claim = await user_collection.update_one(
+        {**get_user_id_query(user_id), "last_propose_date": {"$ne": now_date}},
+        {"$set": {"last_propose_date": now_date}, "$setOnInsert": {"id": user_id}},
+        upsert=True,
+    )
+    if claim.modified_count == 0 and claim.upserted_id is None:
         return await message.reply_text("<b>You have already proposed today! Come back tomorrow.</b>", parse_mode=enums.ParseMode.HTML)
     start_msg = random.choice(start_messages)
     roll_text = random.choice(["Proposing her....", "Getting down on one knee....", "Popping the question...."])
@@ -81,4 +88,3 @@ async def propose_command(_, message: types.Message):
         img = random.choice(rejection_images)
         caption = random.choice(rejection_captions)
         await reply_media_dynamic(message, img, caption=f"<b>Rejection!</b>\n{caption}", parse_mode=enums.ParseMode.HTML)
-    await update_user(user_id, {"$set": {"last_propose_date": now_date}})

@@ -8,6 +8,8 @@ from pyrogram import enums, errors, filters, types
 from pyrogram.enums import ParseMode
 from pyrogram.errors import FloodWait
 
+from Grabber.database import r as _redis
+
 def get_now_utc() -> datetime:
     """Returns the current aware UTC datetime."""
     return datetime.now(timezone.utc)
@@ -112,6 +114,18 @@ def handle_errors(func):
         from Grabber.core.user import get_cached_user
         from Grabber.database import user_collection
         from config import config
+
+        # 0. Idempotency: dedupe by (chat_id, message_id) to collapse
+        # reconnect/replay re-deliveries of the same update. Skips silent on
+        # any error or when Redis is unavailable (failsafe: allow).
+        try:
+            _src = message if isinstance(message, types.Message) else getattr(message, "message", None)
+            if _src is not None and _src.chat is not None and _redis is not None:
+                _dedup_key = f"dedup:{_src.chat.id}:{_src.id}"
+                if not await _redis.set(_dedup_key, "1", ex=60, nx=True):
+                    return
+        except Exception:
+            pass
 
         # 1. Registration Check
         user = getattr(message, "from_user", None)
