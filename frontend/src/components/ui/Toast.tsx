@@ -57,7 +57,7 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <p className="text-[11px] font-bold text-zinc-100 uppercase tracking-tight truncate">
+                  <p title={toast.message} className="text-[11px] font-bold text-zinc-100 uppercase tracking-tight line-clamp-2">
                     {toast.message}
                   </p>
                 </div>

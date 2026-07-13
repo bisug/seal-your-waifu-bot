@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApi } from '../hooks/useApi';
 import { BookOpen, Brain, ChartNoAxesColumnIncreasing, Coins, Gem, TrendingUp, Trophy, ShieldCheck } from 'lucide-react';
 import { formatNumber } from '../utils';
@@ -6,6 +6,7 @@ import { cn } from '../utils';
 import { ErrorState } from '../components/ui/ErrorState';
 import { Avatar } from '../components/Avatar';
 import { Card } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
 import { Skeleton } from '../components/ui/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -35,7 +36,10 @@ const getInitials = (name: string) => {
 
 export const Leaderboard = () => {
     const [metric, setMetric] = useState('harem');
+    const [visible, setVisible] = useState(50);
     const { data, loading, error, execute: fetchLeaderboard } = useApi<LeaderboardUser[]>(`/leaderboard?metric=${metric}`, {}, [metric]);
+
+    useEffect(() => { setVisible(50); }, [metric, data]);
 
     const METRICS = [
         { id: 'harem', label: 'Archive', icon: BookOpen },
@@ -47,7 +51,7 @@ export const Leaderboard = () => {
     const activeMetric = METRICS.find(m => m.id === metric);
 
     return (
-        <div className="pb-32 pt-6 max-w-2xl mx-auto adaptive-px space-y-8 select-none">
+        <div className="pb-32 pt-6 max-w-2xl mx-auto adaptive-px space-y-8">
             <header className="space-y-1">
                 <div className="flex items-center gap-2.5">
                     <Trophy className="text-amber-500" size={20} />
@@ -97,7 +101,7 @@ export const Leaderboard = () => {
                         </div>
                     ) : data && data.length > 0 ? (
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2">
-                            {data?.map((user, i) => {
+                            {data.slice(0, visible).map((user, i) => {
                                 const displayName = getDisplayName(user, i);
                                 const rank = user.rank || i + 1;
 
@@ -147,6 +151,14 @@ export const Leaderboard = () => {
                                 </Card>
                                 );
                             })}
+
+                            {data && visible < data.length && (
+                                <div className="flex justify-center pt-2">
+                                    <Button variant="outline" size="sm" onClick={() => setVisible(v => v + 50)}>
+                                        Load more ({data.length - visible} hidden)
+                                    </Button>
+                                </div>
+                            )}
                         </motion.div>
                     ) : (
                         <div className="py-20 border border-dashed border-white/5 rounded-lg bg-zinc-950/50 text-center flex flex-col items-center justify-center space-y-3">

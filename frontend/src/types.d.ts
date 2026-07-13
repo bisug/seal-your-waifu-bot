@@ -71,6 +71,8 @@ interface TelegramWebApp {
   CloudStorage: any;
   ready: () => void;
   expand: () => void;
+  enableVerticalSwipes: () => void;
+  disableVerticalSwipes: () => void;
   close: () => void;
   sendData: (data: string) => void;
   switchInlineQuery: (query: string, choose_chat_types?: string[]) => void;

@@ -42,6 +42,7 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
     const { triggerRefresh } = useUser();
     const [purchaseStage, setPurchaseStage] = useState('idle');
     const [sellStage, setSellStage] = useState('idle');
+    const [confirm, setConfirm] = useState<null | { kind: 'recycle' | 'sell'; message: string }>(null);
     const [editMode, setEditMode] = useState(false);
     const [editStage, setEditStage] = useState<'idle' | 'saving'>('idle');
     const [editForm, setEditForm] = useState<CharacterEditForm>(() => buildEditForm(selectedChar));
@@ -145,6 +146,56 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
         }
     };
 
+    const doRecycle = async () => {
+        setConfirm(null);
+        setSellStage('selling');
+        try {
+            const res = await apiFetch('/recycle', {
+                method: 'POST',
+                body: JSON.stringify([selectedChar.id])
+            });
+            addToast(`Character recycled: +${res.reward} Zenith`, 'success');
+            triggerRefresh();
+            setSelectedChar(null);
+        } catch (err: any) {
+            addToast(getErrorMessage(err), 'error');
+            setSellStage('idle');
+        }
+    };
+
+    const doSell = async () => {
+        setConfirm(null);
+        setSellStage('selling');
+        try {
+            const res = await apiFetch(`/character/sell/${selectedChar.id}`, { method: 'POST' });
+            addToast(`Character sold: +${res.reward} Shards`, 'success');
+            triggerRefresh();
+            setSelectedChar(null);
+        } catch (err: any) {
+            addToast(getErrorMessage(err), 'error');
+            setSellStage('idle');
+        }
+    };
+
+    // Prefer Telegram's native confirm when present; otherwise fall back to an
+    // in-app confirm (setConfirm) so destructive actions still prompt outside
+    // the Telegram WebApp where showConfirm is undefined.
+    const askConfirm = (kind: 'recycle' | 'sell', message: string) => {
+        const native = window.Telegram?.WebApp?.showConfirm;
+        if (native) {
+            native(message, async (confirmed) => {
+                if (!confirmed) {
+                    setSellStage('idle');
+                    return;
+                }
+                if (kind === 'recycle') await doRecycle();
+                else await doSell();
+            });
+            return;
+        }
+        setConfirm({ kind, message });
+    };
+
     const handleRecycle = async () => {
         setSellStage('previewing');
         try {
@@ -152,62 +203,16 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                 method: 'POST',
                 body: JSON.stringify([selectedChar.id])
             });
-
-            window.Telegram?.WebApp?.showConfirm(
-                `Recycle ${selectedChar.name.toUpperCase()} for ${preview.reward} Zenith?`,
-                async (confirmed) => {
-                    if (!confirmed) {
-                        setSellStage('idle');
-                        return;
-                    }
-
-                    setSellStage('selling');
-                    try {
-                        const res = await apiFetch('/recycle', {
-                            method: 'POST',
-                            body: JSON.stringify([selectedChar.id])
-                        });
-                        addToast(`Character recycled: +${res.reward} Zenith`, 'success');
-                        triggerRefresh();
-                        setSelectedChar(null);
-                    } catch (err: any) {
-                        addToast(getErrorMessage(err), 'error');
-                        setSellStage('idle');
-                    }
-                }
-            );
+            askConfirm('recycle', `Recycle ${selectedChar.name.toUpperCase()} for ${preview.reward} Zenith?`);
         } catch (err: any) {
             addToast(getErrorMessage(err), 'error');
             setSellStage('idle');
         }
     };
 
-    const handleSell = async () => {
+    const handleSell = () => {
         setSellStage('selling');
-        try {
-            window.Telegram?.WebApp?.showConfirm(
-                `Sell ${selectedChar.name.toUpperCase()} for Shards?`,
-                async (confirmed) => {
-                    if (!confirmed) {
-                        setSellStage('idle');
-                        return;
-                    }
-
-                    try {
-                        const res = await apiFetch(`/character/sell/${selectedChar.id}`, { method: 'POST' });
-                        addToast(`Character sold: +${res.reward} Shards`, 'success');
-                        triggerRefresh();
-                        setSelectedChar(null);
-                    } catch (err: any) {
-                        addToast(getErrorMessage(err), 'error');
-                        setSellStage('idle');
-                    }
-                }
-            );
-        } catch (err: any) {
-            addToast(getErrorMessage(err), 'error');
-            setSellStage('idle');
-        }
+        askConfirm('sell', `Sell ${selectedChar.name.toUpperCase()} for Shards?`);
     };
 
     const actions = (
@@ -239,6 +244,7 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                                     <span className="text-[9px] font-bold uppercase text-zinc-600 tracking-widest pl-0.5">Rarity Class</span>
                                     <div className="relative group">
                                         <select
+                                            aria-label="Rarity class"
                                             value={editForm.rarity}
                                             onChange={event => updateEditField('rarity', event.target.value)}
                                             disabled={editStage === 'saving'}
@@ -347,7 +353,7 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                 </div>
             )}
 
-            {!editMode && isOwned && (
+            {!editMode && isOwned && !confirm && (
                 <div className="flex gap-3">
                     <Button
                         variant="danger"
@@ -369,6 +375,29 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                         Liquidate
                     </Button>
                 </div>
+            )}
+
+            {confirm && (
+                <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col gap-3">
+                    <p className="text-center text-[10px] font-bold uppercase tracking-widest text-zinc-300 px-2">{confirm.message}</p>
+                    <div className="flex gap-3">
+                        <Button
+                            variant="outline"
+                            onClick={() => { setConfirm(null); setSellStage('idle'); }}
+                            className="flex-1 h-14"
+                        >
+                            Abort
+                        </Button>
+                        <Button
+                            variant="danger"
+                            onClick={confirm.kind === 'recycle' ? doRecycle : doSell}
+                            isLoading={sellStage === 'selling'}
+                            className="flex-[2] h-14"
+                        >
+                            Confirm
+                        </Button>
+                    </div>
+                </motion.div>
             )}
         </div>
     );

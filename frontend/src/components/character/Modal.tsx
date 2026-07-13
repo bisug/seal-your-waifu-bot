@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { Gem, Hash, Package, ShieldCheck, X, Target, Info, Sparkles } from 'lucide-react';
 import { cn, formatNumber } from '../../utils';
 import { Character } from '../../context/UserContext';
@@ -14,12 +14,22 @@ interface ModalProps {
 }
 
 export const Modal = ({ character, onClose, actions }: ModalProps) => {
+    const dialogRef = useRef<HTMLDivElement>(null);
+
     useEffect(() => {
         if (character) {
             document.body.style.overflow = 'hidden';
             return () => { document.body.style.overflow = 'unset'; };
         }
     }, [character]);
+
+    useEffect(() => {
+        if (!character) return;
+        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+        window.addEventListener('keydown', onKey);
+        dialogRef.current?.focus();
+        return () => window.removeEventListener('keydown', onKey);
+    }, [character, onClose]);
 
     if (!character) return null;
 
@@ -64,6 +74,11 @@ export const Modal = ({ character, onClose, actions }: ModalProps) => {
                     exit={{ y: '100%' }}
                     transition={{ type: 'spring', damping: 25, stiffness: 200 }}
                     className="relative w-full max-w-[440px] bg-zinc-950 rounded-t-xl sm:rounded-xl flex flex-col overflow-hidden shadow-2xl border-t sm:border border-white/5"
+                    ref={dialogRef}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={character.name}
+                    tabIndex={-1}
                 >
                     {/* Header Controls */}
                     <div className="absolute right-4 top-4 z-20">
