@@ -154,7 +154,7 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                 method: 'POST',
                 body: JSON.stringify([selectedChar.id])
             });
-            addToast(`Character recycled: +${res.reward} Zenith`, 'success');
+            addToast(`Character recycled: +${res.reward} Shards`, 'success');
             triggerRefresh();
             setSelectedChar(null);
         } catch (err: any) {
@@ -203,7 +203,7 @@ export const CharActionModal = ({ selectedChar, setSelectedChar, activeTab, user
                 method: 'POST',
                 body: JSON.stringify([selectedChar.id])
             });
-            askConfirm('recycle', `Recycle ${selectedChar.name.toUpperCase()} for ${preview.reward} Zenith?`);
+            askConfirm('recycle', `Recycle ${selectedChar.name.toUpperCase()} for ${preview.reward} Shards?`);
         } catch (err: any) {
             addToast(getErrorMessage(err), 'error');
             setSellStage('idle');

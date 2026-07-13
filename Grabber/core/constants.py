@@ -1,33 +1,10 @@
 # Grabber/core/constants.py
 # Rarity Mappings
 SHOP_RARITY = "🟠 Rare"
-PAYOUTS = {
-    "⚪ Common": 10,
-    "🟢 Medium": 25,
-    "🟣 Epic": 25,
-    "🟠 Rare": 50,
-    "🟡 Legendary": 120,
-    "💠 Cosmic": 250,
-    "🧬 Immortal": 250,
-    "💮 Exclusive": 500,
-    "🌌 Eternal": 500,
-    "🔮 Limited Edition": 750,
-    "🔮 Mystic": 750,
-    "🫧 Royal": 1500,
-    "💎 Antique": 2500,
-    "💎 Mythical": 2500,
-    "🎐 Celestial": 5000,
-    "✨ Divine": 6000,
-    "🌠 Astral": 7500,
-    "🎞️ AMV": 6000,
-    "🪽 Prestige": 7500,
-    "❄️ Winter": 500,
-    "☀️ Summer": 500,
-    "💖 Valentine": 750,
-    "🎃 Halloween": 750,
-    "💸 Luxury": 500,
-    "🎏 Limited": 400
-}
+# NOTE: Character liquidation (sell / recycle) now uses the per-rarity
+# SELL_PRICES table via get_sell_price(). The old PAYOUTS table credited
+# Zenith by mistake (a single Common dupe paid 10 Zenith == 100,000
+# Shards), which made the Zenith sink trivially farmable. Removed.
 # Shop Settings
 SHARDS_PER_ZENITH = 10_000
 LEVEL_BUY_SHARD_COST = SHARDS_PER_ZENITH
