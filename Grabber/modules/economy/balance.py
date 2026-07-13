@@ -121,11 +121,16 @@ async def pay_callback_handler(_, query: types.CallbackQuery):
 @handle_errors
 async def bonus_cmd(_, message: types.Message):
     user_id = message.from_user.id
-    user = await user_collection.find_one(get_user_filter(user_id), {"bonus_claimed": 1})
-    if user and user.get("bonus_claimed"):
-        return await message.reply_text("Already claimed stay tuned!")
-    await update_user_balance(user_id, 3000)
-    await user_collection.update_one({"id": get_user_id(user_id)}, {"$set": {"bonus_claimed": True}})
+    # Atomic claim: the $ne guard turns the read-then-write into a single
+    # conditional update so concurrent /bonus calls can't both grant.
+    result = await user_collection.update_one(
+        {**get_user_filter(user_id), "bonus_claimed": {"$ne": True}},
+        {"$inc": {"balance": 3000}, "$set": {"bonus_claimed": True}},
+        upsert=True,
+    )
+    if result.modified_count == 0 and result.upserted_id is None:
+        return await message.reply_text("Already claimed, stay tuned!")
+    await invalidate_user_cache(user_id)
     await message.reply_text("You've claimed 3000 ⬪!")
 @app.on_message(filters.command("mtop"))
 @handle_errors
