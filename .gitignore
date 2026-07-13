@@ -155,3 +155,22 @@ cython_debug/
 
 # VS Code
 .vscode/
+
+# Claude Code (machine/user-specific settings, local config, memory, session logs)
+.claude/
+claude/
+.claude.json
+*.session-journal
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.swp
+*.swo
+*~
+*.bak
+*.tmp
+*.orig
