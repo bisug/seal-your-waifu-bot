@@ -1,6 +1,6 @@
 import React, { memo, forwardRef } from 'react';
-import { CheckCircle2, Gem, ImageOff, Hash } from 'lucide-react';
-import { cn, formatNumber } from '../../utils';
+import { CheckCircle2, Gem, Hash } from 'lucide-react';
+import { cn, formatNumber, FALLBACK_IMAGE } from '../../utils';
 import { Character } from '../../context/UserContext';
 import { Badge } from '../ui/Badge';
 import { motion } from 'framer-motion';
@@ -17,6 +17,7 @@ export const Card = memo(forwardRef<HTMLDivElement, CardProps>(({ character, onC
     };
 
     const [imgError, setImgError] = React.useState(false);
+    React.useEffect(() => { setImgError(false); }, [character.img_url]);
 
     const rarityLabel = character.rarity.replace(/[\u2700-\u27bf]|[\u2190-\u21ff]|[\u2000-\u206f]|[\u2600-\u26ff]|[\u2b00-\u2bff]|[\u00a0-\u00bf]|\u2013|\u2014/g, '').trim().toUpperCase();
     const hasPrice = typeof character.zenith_price === 'number' && character.zenith_price > 0;
@@ -58,10 +59,11 @@ export const Card = memo(forwardRef<HTMLDivElement, CardProps>(({ character, onC
         >
             {!imgError ? (
                 <img
-                    src={character.img_url || 'https://files.catbox.moe/2hsawz.jpg'}
+                    src={character.img_url || FALLBACK_IMAGE}
                     alt={character.name}
                     loading="lazy"
                     decoding="async"
+                    referrerPolicy="no-referrer"
                     onError={() => setImgError(true)}
                     className={cn(
                         "absolute inset-0 w-full h-full object-cover transition-all duration-500",
@@ -69,9 +71,14 @@ export const Card = memo(forwardRef<HTMLDivElement, CardProps>(({ character, onC
                     )}
                 />
             ) : (
-                <div className="absolute inset-0 bg-zinc-900 flex flex-col items-center justify-center">
-                    <ImageOff size={20} className="text-zinc-800" />
-                </div>
+                <img
+                    src={FALLBACK_IMAGE}
+                    alt={character.name}
+                    className={cn(
+                        "absolute inset-0 w-full h-full object-cover transition-all duration-500",
+                        soldOut && "grayscale opacity-40"
+                    )}
+                />
             )}
             
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/10 to-transparent opacity-80" />
