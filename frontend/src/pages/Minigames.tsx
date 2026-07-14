@@ -255,7 +255,7 @@ const CipherMatch = ({ session, onComplete, onCancel }: { session: SessionData, 
 
                             {/* Back (Visible) */}
                             <div className="absolute inset-0 backface-hidden rounded-lg bg-zinc-100 border border-white overflow-hidden rotateY-180">
-                                <img src={card.img_url} alt={card.name} className="w-full h-full object-cover" />
+                                <img src={card.img_url} alt={card.name} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                                 {card.isMatched && (
                                     <div className="absolute inset-0 bg-brand-accent/20 backdrop-blur-[1px] flex items-center justify-center">
                                         <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-lg">
@@ -518,7 +518,7 @@ const RewardModal = ({ rewards, onClose }: { rewards: Reward, onClose: () => voi
                                 >
                                     <div className="absolute -inset-4 bg-purple-500/10 blur-2xl rounded-full opacity-50" />
                                     <div className="relative aspect-[3/4] rounded-2xl overflow-hidden border-2 border-purple-500/30 shadow-2xl">
-                                        <img src={rewards.character.img_url} alt={rewards.character.name} className="w-full h-full object-cover" />
+                                        <img src={rewards.character.img_url} alt={rewards.character.name} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                                         <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
                                         <div className="absolute bottom-0 left-0 w-full p-4 text-left">
                                             <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30 mb-2 uppercase tracking-widest text-[8px]">

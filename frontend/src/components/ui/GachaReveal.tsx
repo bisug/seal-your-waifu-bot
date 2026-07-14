@@ -40,6 +40,7 @@ export const GachaReveal = ({ character, onClose }: GachaRevealProps) => {
                         <img
                             src={character.img_url}
                             alt={character.name}
+                            referrerPolicy="no-referrer"
                             className="absolute inset-0 w-full h-full object-cover"
                         />
 

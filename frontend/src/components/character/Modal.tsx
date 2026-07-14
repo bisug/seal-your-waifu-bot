@@ -102,6 +102,7 @@ export const Modal = ({ character, onClose, actions }: ModalProps) => {
                             animate={{ scale: 1, opacity: 1 }}
                             transition={{ delay: 0.1, duration: 0.4 }}
                             src={character.img_url}
+                            referrerPolicy="no-referrer"
                             className="relative z-10 w-full h-full object-contain p-6"
                             alt={character.name}
                         />
