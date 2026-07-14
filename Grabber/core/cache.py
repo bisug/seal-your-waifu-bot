@@ -330,7 +330,7 @@ async def update_user_rank(user_id: int, score: int, metric: str = "level"):
     key = _zset_key(metric)
     try:
         await _redis.zadd(key, {str(user_id): score})
-        # SMART: Only keep the top 1000 in the fast cache to stay within 30MB
+        # Only keep the top 1000 in the fast cache to stay within 30MB
         await _redis.zremrangebyrank(key, 0, -1001)
     except Exception as e:
         LOGGER.warning(f"Redis ZSET update error [{metric}]: {e}")
@@ -348,7 +348,7 @@ async def get_total_ranked_users(metric: str = "level") -> int:
     key = _zset_key(metric)
     try: return await _redis.zcard(key)
     except Exception: return 0
-# FIX: Create the lock at module level — no lazy init, no global mutation needed.
+# Create the lock at module level — no lazy init, no global mutation needed.
 # asyncio.Lock() is safe to instantiate at module level in Python 3.10+.
 _rebuild_lock = asyncio.Lock()
 async def rebuild_leaderboard(user_collection, metric: str = "level"):
@@ -418,13 +418,11 @@ async def sync_user_to_redis(user_id: int, user_doc: dict = None):
     uid_str = str(user_id)
     try:
         pipe = _redis.pipeline()
-        # 1. Update all leaderboard scores
         pipe.zadd(_zset_key("level"),   {uid_str: user_doc.get("xp", 0)})
         pipe.zadd(_zset_key("harem"),   {uid_str: user_doc.get("char_count", 0)})
         pipe.zadd(_zset_key("shards"),  {uid_str: user_doc.get("balance", 0)})
         pipe.zadd(_zset_key("zenith"),  {uid_str: user_doc.get("zenith", 0)})
         pipe.zadd(_zset_key("guesses"), {uid_str: user_doc.get("guess_count", 0)})
-        # 2. Invalidate string caches
         pipe.delete(f"user:{user_id}", f"balance:{user_id}")
         await pipe.execute()
     except Exception as e:

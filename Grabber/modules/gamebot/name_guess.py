@@ -12,8 +12,6 @@ from Grabber.modules.gamebot.common import (
 )
 # Local cache is no longer used for character data to ensure persistence
 # Active sessions are stored in sessions_collection with ID: "nguess:{chat_id}"
-# Alias for backward compatibility within this file if needed, but better to use it directly
-escape_html = html_escape
 NGUESS_TTL = timedelta(minutes=5)
 NAME_GUESS_BASE_REWARD = 125
 NAME_GUESS_PLAYER_BONUS = 25

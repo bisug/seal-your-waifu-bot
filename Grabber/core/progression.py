@@ -114,7 +114,7 @@ async def check_and_grant_rewards(user_id: int, old_level: int, new_level: int, 
     for level in range(old_level + 1, new_level + 1):
         if level in claimed_levels:
             continue
-        # FIX: Track *newly* claimed levels separately so we can use $addToSet
+        # Track *newly* claimed levels separately so we can use $addToSet
         # instead of the old $set which overwrote the whole array. Two concurrent
         # reward grants (e.g. rapid XP from two sources) both fetching the same
         # stale claimed_levels and writing back would silently erase each other's

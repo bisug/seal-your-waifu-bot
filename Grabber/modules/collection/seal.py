@@ -34,7 +34,7 @@ async def seal_handler(_, message: types.Message):
     if len(message.command) < 2:
         return await message.reply_text("Provide the character's name! Usage: <code>/seal &lt;name&gt;</code>", parse_mode=enums.ParseMode.HTML)
     guess = " ".join(message.command[1:]).strip().lower()
-    # Guess matching logic (REFINED PER USER REQUEST)
+    # Guess matching logic
     # 1. Normalize both and remove common punctuation
     def normalize(text):
         return " ".join(re.sub(r'[^\w\s]', ' ', text).lower().split())
@@ -55,7 +55,7 @@ async def seal_handler(_, message: types.Message):
         # Atomic claim check to prevent race conditions during catch
         if not await clear_active_spawn(chat_id, user_id):
             return # Someone else caught it already
-        # Enhanced reaction task for v2 compatibility
+        # Fire the catch reaction in the background
         async def send_reactions():
             try:
                 # Use only foundational reactions

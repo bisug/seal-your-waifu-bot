@@ -354,7 +354,6 @@ async def egg_hatch_callback(_, query: types.CallbackQuery):
             hatch_time = hatch_time.replace(tzinfo=timezone.utc)
         if get_now_utc() < hatch_time:
             return await query.answer("Still incubating!")
-    # Restore process_egg_hatch compatibility
     success, result = await process_egg_hatch(owner_id, egg)
     if not success:
         return await query.message.edit_text(result, parse_mode=enums.ParseMode.HTML)

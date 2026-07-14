@@ -46,7 +46,7 @@ async def leaderboard_ws(websocket: WebSocket):
     accepted_protocol = "seal-auth" if "seal-auth" in requested_protocols else None
     await websocket.accept(subprotocol=accepted_protocol)
 
-    # Fix #6: Guard against Redis being None (e.g. REDIS_URL not configured)
+    # Guard against Redis being None (e.g. REDIS_URL not configured)
     if not r:
         await websocket.send_text(json.dumps({"error": "Realtime updates unavailable: Redis not configured"}))
         await websocket.close(code=1011)
@@ -109,7 +109,7 @@ async def leaderboard_ws(websocket: WebSocket):
         for task in pending:
             task.cancel()
     finally:
-        # FIX: Unsubscribe and fully close the pubsub connection in its own
+        # Unsubscribe and fully close the pubsub connection in its own
         # try/except so that a WebSocketDisconnect from websocket.close()
         # below cannot skip aclose() and leak the Redis subscription.
         try:
