@@ -22,7 +22,7 @@ dependencies = [
     "redis[hiredis]>=8.0.1",
 
     # Telegram
-    "kurigram>=2.2.23",
+    "kurigram>=2.2.24",
     "tgcrypto>=1.2.5; platform_system == 'Linux'",
 
     # Serialization / Validation
