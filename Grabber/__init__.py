@@ -3,8 +3,42 @@ import importlib
 import re
 import time
 
-from pyrogram import Client, enums, errors, filters, types
+from pyrogram import Client, enums, errors, filters, raw, types
 from pyrogram.handlers import MessageHandler
+
+# Strip geo from inline queries. kurigram 2.2.24 still builds
+# types.Location(..., client=client) in InlineQuery._parse, but Location.__init__
+# rejects `client`, crashing every geo inline query before any handler runs.
+# We never use query.location, so drop it at parse time.
+_orig_inline_parse = types.InlineQuery._parse
+
+
+@staticmethod
+def _inline_query_parse_no_geo(client, inline_query, users):
+    peer_type = inline_query.peer_type
+    chat_type = None
+    if isinstance(peer_type, raw.types.InlineQueryPeerTypeSameBotPM):
+        chat_type = enums.ChatType.BOT
+    elif isinstance(peer_type, raw.types.InlineQueryPeerTypePM):
+        chat_type = enums.ChatType.PRIVATE
+    elif isinstance(peer_type, raw.types.InlineQueryPeerTypeChat):
+        chat_type = enums.ChatType.GROUP
+    elif isinstance(peer_type, raw.types.InlineQueryPeerTypeMegagroup):
+        chat_type = enums.ChatType.SUPERGROUP
+    elif isinstance(peer_type, raw.types.InlineQueryPeerTypeBroadcast):
+        chat_type = enums.ChatType.CHANNEL
+    return types.InlineQuery(
+        id=str(inline_query.query_id),
+        from_user=types.User._parse(client, users[inline_query.user_id]),
+        query=inline_query.query,
+        offset=inline_query.offset,
+        chat_type=chat_type,
+        location=None,
+        client=client,
+    )
+
+
+types.InlineQuery._parse = _inline_query_parse_no_geo
 
 from config import config
 from Grabber.core.logging import get_logger, install_exception_hooks, setup_logging
