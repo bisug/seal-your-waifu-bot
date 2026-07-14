@@ -28,6 +28,10 @@ async def trade_handler(_, message: types.Message):
         return await message.reply_text("You don't own that character.", parse_mode=enums.ParseMode.HTML)
     if not r_char:
         return await message.reply_text("They don't own that character.", parse_mode=enums.ParseMode.HTML)
+    if str(s_char['id']) in (sender.get('locked') or []):
+        return await message.reply_text("🔒 That character is locked and cannot be traded.", parse_mode=enums.ParseMode.HTML)
+    if str(r_char['id']) in (receiver.get('locked') or []):
+        return await message.reply_text("🔒 Their character is locked and cannot be traded.", parse_mode=enums.ParseMode.HTML)
     # Nonce prevents two concurrent trades between the same pair colliding
     # on one shared session key.
     trade_id = f"tr_{uuid.uuid4().hex}"

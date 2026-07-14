@@ -116,6 +116,8 @@ async def sell_handler(_, message: types.Message):
     char = next((c for c in user['characters'] if str(c.get('id')) == char_id), None)
     if not char:
         return await message.reply_text("<b>You don't own this character.</b>", parse_mode=enums.ParseMode.HTML)
+    if str(char_id) in (user.get('locked') or []):
+        return await message.reply_text("🔒 This character is locked. Unlock it with <code>/unlock &lt;id&gt;</code> first.", parse_mode=enums.ParseMode.HTML)
     rarity = char.get('rarity', 'Common')
     price, staff_bonus = get_sell_price_details(rarity, user_id)
     buttons = [
