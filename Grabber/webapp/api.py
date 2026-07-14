@@ -6,7 +6,6 @@ from .routes.progression import router as progression_router
 from .routes.shop import router as shop_router
 from .routes.staff import router as staff_router
 from .routes.upload import router as upload_router
-# Import the refactored modular routes
 from .routes.users import router as users_router
 from .routes.social import router as social_router
 from .routes.minigames import router as minigames_router

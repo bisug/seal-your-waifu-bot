@@ -88,7 +88,7 @@ async def upload_image_to_imgbb(file_path: str) -> Optional[str]:
         return None
 async def upload_media_safely(file_path: str) -> Optional[str]:
     """
-    Maximized wrapper for uploading media.
+    Best-effort wrapper for uploading media.
     1. Tries Catbox first (supports all media).
     2. If Catbox fails and the file is NOT a video/GIF, tries ImgBB.
     """
