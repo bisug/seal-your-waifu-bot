@@ -43,7 +43,7 @@ class PetModel(BaseModel):
     is_active: bool
 
 class EggModel(BaseModel):
-    # FIX: id is Optional to handle corrupt DB records where the field is missing.
+    # id is Optional to handle corrupt DB records where the field is missing.
     # A required str here caused a Pydantic ValidationError (500) for any user
     # with a malformed egg instead of gracefully returning the rest of the data.
     id: Optional[str] = None
