@@ -1,17 +1,24 @@
+import { HTMLMotionProps, motion } from 'framer-motion';
 import React from 'react';
 import { cn } from '../../utils';
-import { motion, HTMLMotionProps } from 'framer-motion';
 
 type CardVariant = 'default' | 'glass' | 'outline' | 'surface' | 'accent';
 
-interface CardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onAnimationStart' | 'onDrag' | 'onDragStart' | 'onDragEnd'> {
+interface CardProps
+  extends Omit<
+    React.HTMLAttributes<HTMLDivElement>,
+    'onAnimationStart' | 'onDrag' | 'onDragStart' | 'onDragEnd'
+  > {
   variant?: CardVariant;
   hover?: boolean;
   withCorner?: boolean;
 }
 
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, variant = 'default', hover = false, withCorner = false, children, ...props }, ref) => {
+  (
+    { className, variant = 'default', hover = false, withCorner = false, children, ...props },
+    ref,
+  ) => {
     const variants: Record<CardVariant, string> = {
       default: 'bg-brand-deep border border-white/5',
       glass: 'glass-panel',
@@ -28,14 +35,14 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
           variants[variant],
           hover && 'hover:border-white/20 active:scale-[0.995]',
           withCorner && 'corner-accent',
-          className
+          className,
         )}
-        {...(props as HTMLMotionProps<"div">)}
+        {...(props as HTMLMotionProps<'div'>)}
       >
         {children}
       </motion.div>
     );
-  }
+  },
 );
 
 Card.displayName = 'Card';

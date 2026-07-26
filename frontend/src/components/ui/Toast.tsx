@@ -1,6 +1,6 @@
-import { useState, createContext, useContext, useCallback, ReactNode } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, AlertCircle, X, Terminal } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { AlertCircle, CheckCircle2, Terminal, X } from 'lucide-react';
+import { createContext, ReactNode, useCallback, useContext, useState } from 'react';
 import { cn } from '../../utils';
 
 interface Toast {
@@ -20,14 +20,17 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const addToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
     const id = crypto.randomUUID();
-    setToasts(prev => [...prev, { id, message, type }]);
-    setTimeout(() => {
-      setToasts(prev => prev.filter(t => t.id !== id));
-    }, type === 'error' ? 6000 : 4000);
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(
+      () => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+      },
+      type === 'error' ? 6000 : 4000,
+    );
   }, []);
 
   const removeToast = (id: string) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
+    setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
   return (
@@ -35,7 +38,7 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       {children}
       <div className="fixed top-12 left-1/2 -translate-x-1/2 z-[1000] w-full max-w-[400px] px-6 pointer-events-none flex flex-col items-center space-y-2">
         <AnimatePresence mode="popLayout">
-          {toasts.map(toast => (
+          {toasts.map((toast) => (
             <motion.div
               key={toast.id}
               layout
@@ -45,19 +48,30 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               className="w-full pointer-events-auto"
             >
               <div className="bg-zinc-900/90 backdrop-blur-md border border-white/10 rounded-md p-3.5 shadow-2xl flex items-center gap-3.5 relative overflow-hidden">
-                <div className={cn(
-                  "w-8 h-8 rounded flex items-center justify-center shrink-0 border",
-                  toast.type === 'success' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
-                  toast.type === 'error' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
-                  'bg-brand-accent/10 text-brand-accent border-brand-accent/20'
-                )}>
-                  {toast.type === 'success' ? <CheckCircle2 size={16} strokeWidth={2.5} /> :
-                   toast.type === 'error' ? <AlertCircle size={16} strokeWidth={2.5} /> :
-                   <Terminal size={16} strokeWidth={2.5} />}
+                <div
+                  className={cn(
+                    'w-8 h-8 rounded flex items-center justify-center shrink-0 border',
+                    toast.type === 'success'
+                      ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                      : toast.type === 'error'
+                        ? 'bg-red-500/10 text-red-500 border-red-500/20'
+                        : 'bg-brand-accent/10 text-brand-accent border-brand-accent/20',
+                  )}
+                >
+                  {toast.type === 'success' ? (
+                    <CheckCircle2 size={16} strokeWidth={2.5} />
+                  ) : toast.type === 'error' ? (
+                    <AlertCircle size={16} strokeWidth={2.5} />
+                  ) : (
+                    <Terminal size={16} strokeWidth={2.5} />
+                  )}
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <p title={toast.message} className="text-[11px] font-bold text-zinc-100 uppercase tracking-tight line-clamp-2">
+                  <p
+                    title={toast.message}
+                    className="text-[11px] font-bold text-zinc-100 uppercase tracking-tight line-clamp-2"
+                  >
                     {toast.message}
                   </p>
                 </div>
@@ -70,17 +84,19 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 </button>
 
                 <div className="absolute bottom-0 left-0 h-0.5 bg-white/5 w-full">
-                   <motion.div
-                     initial={{ width: '100%' }}
-                     animate={{ width: 0 }}
-                     transition={{ duration: toast.type === 'error' ? 6 : 4, ease: 'linear' }}
-                     className={cn(
-                       "h-full",
-                       toast.type === 'success' ? 'bg-emerald-500/50' :
-                       toast.type === 'error' ? 'bg-red-500/50' :
-                       'bg-brand-accent/50'
-                     )}
-                   />
+                  <motion.div
+                    initial={{ width: '100%' }}
+                    animate={{ width: 0 }}
+                    transition={{ duration: toast.type === 'error' ? 6 : 4, ease: 'linear' }}
+                    className={cn(
+                      'h-full',
+                      toast.type === 'success'
+                        ? 'bg-emerald-500/50'
+                        : toast.type === 'error'
+                          ? 'bg-red-500/50'
+                          : 'bg-brand-accent/50',
+                    )}
+                  />
                 </div>
               </div>
             </motion.div>

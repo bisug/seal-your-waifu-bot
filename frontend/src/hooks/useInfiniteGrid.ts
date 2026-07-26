@@ -1,13 +1,16 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, apiFetch, getErrorMessage } from '../api/client';
 
-const gridCache = new Map<string, { items: any[], page: number, hasMore: boolean, timestamp: number }>();
+const gridCache = new Map<
+  string,
+  { items: any[]; page: number; hasMore: boolean; timestamp: number }
+>();
 const CACHE_TTL = 1000 * 60 * 5; // 5 mins
 const MAX_CACHE_ENTRIES = 24;
 
 const writeGridCache = (
   key: string,
-  value: { items: any[], page: number, hasMore: boolean, timestamp: number },
+  value: { items: any[]; page: number; hasMore: boolean; timestamp: number },
 ) => {
   if (gridCache.has(key)) gridCache.delete(key);
   gridCache.set(key, value);
@@ -37,100 +40,107 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
   const requestSeq = useRef(0);
   const paramsKey = JSON.stringify(options.params || {});
 
-  const lastElementRef = useCallback((node: HTMLElement | null) => {
-    if (loading) return;
-    if (observer.current) observer.current.disconnect();
-    observer.current = new IntersectionObserver(entries => {
-      const entry = entries[0];
-      if (entry && entry.isIntersecting && hasMore && !loading) {
-        setPage(prev => prev + 1);
-      }
-    });
-    if (node) observer.current.observe(node);
-  }, [loading, hasMore]);
-
-  const fetchData = useCallback(async (isNew = false, force = false) => {
-    const requestId = ++requestSeq.current;
-    setLoading(true);
-    setError(null);
-
-    if (isNew) {
-      if (searchAbortController.current) {
-        searchAbortController.current.abort();
-      }
-      searchAbortController.current = new AbortController();
-    }
-
-    const currentPage = isNew ? 1 : page;
-    const optionParams = JSON.parse(paramsKey) as Record<string, string>;
-    const queryParams = new URLSearchParams({
-      page: currentPage.toString(),
-      limit: (options.limit || 24).toString(),
-      search: search.trim(),
-      rarity: rarity.trim(),
-      ...optionParams
-    });
-
-    const cacheKey = `${endpoint}?${search.trim()}:${rarity.trim()}:${options.limit || 24}:${paramsKey}`;
-
-    if (isNew && !force) {
-        if (gridCache.has(cacheKey)) {
-            const cached = gridCache.get(cacheKey)!;
-            if (Date.now() - cached.timestamp < CACHE_TTL) {
-                if (requestId !== requestSeq.current) return;
-                setItems(cached.items);
-                setPage(cached.page);
-                setHasMore(cached.hasMore);
-                setError(null);
-                setLoading(false);
-                return;
-            }
+  const lastElementRef = useCallback(
+    (node: HTMLElement | null) => {
+      if (loading) return;
+      if (observer.current) observer.current.disconnect();
+      observer.current = new IntersectionObserver((entries) => {
+        const entry = entries[0];
+        if (entry && entry.isIntersecting && hasMore && !loading) {
+          setPage((prev) => prev + 1);
         }
-    }
+      });
+      if (node) observer.current.observe(node);
+    },
+    [loading, hasMore],
+  );
 
-    try {
-      const data = await apiFetch(
-        `${endpoint}?${queryParams.toString()}`,
-        { ...(searchAbortController.current?.signal ? { signal: searchAbortController.current.signal } : {}) }
-      );
+  const fetchData = useCallback(
+    async (isNew = false, force = false) => {
+      const requestId = ++requestSeq.current;
+      setLoading(true);
+      setError(null);
 
-      if (requestId !== requestSeq.current) return;
-
-      let newItems;
       if (isNew) {
-        newItems = data.items;
-      } else {
-        newItems = [...items, ...data.items];
+        if (searchAbortController.current) {
+          searchAbortController.current.abort();
+        }
+        searchAbortController.current = new AbortController();
       }
 
-      setItems(newItems);
-      setError(null);
-      const total = typeof data.total === 'number' ? data.total : null;
-      const newHasMore = total === null
-        ? data.items.length === (options.limit || 24)
-        : currentPage * (options.limit || 24) < total;
-      setHasMore(newHasMore);
+      const currentPage = isNew ? 1 : page;
+      const optionParams = JSON.parse(paramsKey) as Record<string, string>;
+      const queryParams = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: (options.limit || 24).toString(),
+        search: search.trim(),
+        rarity: rarity.trim(),
+        ...optionParams,
+      });
 
-      // Save to cache
-      writeGridCache(cacheKey, {
+      const cacheKey = `${endpoint}?${search.trim()}:${rarity.trim()}:${options.limit || 24}:${paramsKey}`;
+
+      if (isNew && !force) {
+        if (gridCache.has(cacheKey)) {
+          const cached = gridCache.get(cacheKey)!;
+          if (Date.now() - cached.timestamp < CACHE_TTL) {
+            if (requestId !== requestSeq.current) return;
+            setItems(cached.items);
+            setPage(cached.page);
+            setHasMore(cached.hasMore);
+            setError(null);
+            setLoading(false);
+            return;
+          }
+        }
+      }
+
+      try {
+        const data = await apiFetch(`${endpoint}?${queryParams.toString()}`, {
+          ...(searchAbortController.current?.signal
+            ? { signal: searchAbortController.current.signal }
+            : {}),
+        });
+
+        if (requestId !== requestSeq.current) return;
+
+        let newItems;
+        if (isNew) {
+          newItems = data.items;
+        } else {
+          newItems = [...items, ...data.items];
+        }
+
+        setItems(newItems);
+        setError(null);
+        const total = typeof data.total === 'number' ? data.total : null;
+        const newHasMore =
+          total === null
+            ? data.items.length === (options.limit || 24)
+            : currentPage * (options.limit || 24) < total;
+        setHasMore(newHasMore);
+
+        // Save to cache
+        writeGridCache(cacheKey, {
           items: newItems,
           page: currentPage,
           hasMore: newHasMore,
-          timestamp: Date.now()
-      });
-
-    } catch (err: any) {
-      if (err instanceof ApiError && err.code === 'cancelled') return;
-      if (requestId !== requestSeq.current) return;
-      const message = getErrorMessage(err);
-      setError(message);
-      console.error(`Fetch error for ${endpoint}: ${message}`, err);
-    } finally {
-      if (requestId === requestSeq.current) {
-        setLoading(false);
+          timestamp: Date.now(),
+        });
+      } catch (err: any) {
+        if (err instanceof ApiError && err.code === 'cancelled') return;
+        if (requestId !== requestSeq.current) return;
+        const message = getErrorMessage(err);
+        setError(message);
+        console.error(`Fetch error for ${endpoint}: ${message}`, err);
+      } finally {
+        if (requestId === requestSeq.current) {
+          setLoading(false);
+        }
       }
-    }
-  }, [endpoint, page, search, rarity, options.limit, paramsKey, items]);
+    },
+    [endpoint, page, search, rarity, options.limit, paramsKey, items],
+  );
 
   // Initial fetch and search/rarity debounce
   useEffect(() => {
@@ -139,8 +149,8 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
       fetchData(true);
     }, 400);
     return () => clearTimeout(timer);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, rarity, paramsKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchData]);
 
   // Infinite scroll trigger
   useEffect(() => {
@@ -150,12 +160,14 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
         if (mounted) fetchData(false);
       });
     }
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [page, fetchData]);
 
   const refresh = useCallback(() => {
-      setPage(1);
-      fetchData(true, true);
+    setPage(1);
+    fetchData(true, true);
   }, [fetchData]);
 
   return {
@@ -170,6 +182,6 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
     rarity,
     setRarity,
     lastElementRef,
-    refresh
+    refresh,
   };
 };

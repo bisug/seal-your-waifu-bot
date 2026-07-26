@@ -1,182 +1,237 @@
-import { useEffect, useRef, type ReactNode } from 'react';
-import { Gem, Hash, Package, ShieldCheck, X, Target, Info, Sparkles } from 'lucide-react';
-import { cn, formatNumber } from '../../utils';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Gem, Info, Package, ShieldCheck, Sparkles, Target, X } from 'lucide-react';
+import { type ReactNode, useEffect, useRef } from 'react';
 import { Character } from '../../context/UserContext';
+import { cn, formatNumber } from '../../utils';
 import { Badge } from '../ui/Badge';
-import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Card } from '../ui/Card';
 
 interface ModalProps {
-    character: Character | null;
-    onClose: () => void;
-    actions?: ReactNode;
+  character: Character | null;
+  onClose: () => void;
+  actions?: ReactNode;
 }
 
 export const Modal = ({ character, onClose, actions }: ModalProps) => {
-    const dialogRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        if (character) {
-            document.body.style.overflow = 'hidden';
-            return () => { document.body.style.overflow = 'unset'; };
-        }
-        return undefined;
-    }, [character]);
+  useEffect(() => {
+    if (character) {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = 'unset';
+      };
+    }
+    return undefined;
+  }, [character]);
 
-    useEffect(() => {
-        if (!character) return;
-        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-        window.addEventListener('keydown', onKey);
-        dialogRef.current?.focus();
-        return () => window.removeEventListener('keydown', onKey);
-    }, [character, onClose]);
-
-    if (!character) return null;
-
-    const rarityLabel = character.rarity.replace(/[\u2700-\u27bf]|[\u2190-\u21ff]|[\u2000-\u206f]|[\u2600-\u26ff]|[\u2b00-\u2bff]|[\u00a0-\u00bf]|\u2013|\u2014/g, '').trim().toUpperCase();
-    const stockLimit = typeof character.stock_limit === 'number' ? character.stock_limit : null;
-    const stockRemaining = typeof character.stock_remaining === 'number'
-        ? character.stock_remaining
-        : stockLimit !== null && typeof character.sold_count === 'number'
-            ? Math.max(0, stockLimit - character.sold_count)
-            : null;
-    const hasStock = stockLimit !== null && stockRemaining !== null;
-    const soldOut = character.sold_out || (hasStock && stockRemaining <= 0);
-    const hasPrice = typeof character.zenith_price === 'number' && character.zenith_price > 0;
-    const characterId = String(character.id || '');
-
-    const getRarityVariant = (rarity: string) => {
-        const r = rarity.toLowerCase();
-        if (r.includes('common')) return 'secondary';
-        if (r.includes('uncommon')) return 'success';
-        if (r.includes('rare')) return 'rare';
-        if (r.includes('epic')) return 'epic';
-        if (r.includes('legendary') || r.includes('limited')) return 'premium';
-        return 'primary';
+  useEffect(() => {
+    if (!character) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
     };
+    window.addEventListener('keydown', onKey);
+    dialogRef.current?.focus();
+    return () => window.removeEventListener('keydown', onKey);
+  }, [character, onClose]);
 
-    const rarityVariant = getRarityVariant(rarityLabel);
+  if (!character) return null;
 
-    return (
-        <AnimatePresence>
-            <div className="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center p-0 sm:p-6">
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="absolute inset-0 bg-black/60 backdrop-blur-md"
-                    onClick={onClose}
-                />
+  const rarityLabel = character.rarity
+    .replace(
+      /[\u2700-\u27bf]|[\u2190-\u21ff]|[\u2000-\u206f]|[\u2600-\u26ff]|[\u2b00-\u2bff]|[\u00a0-\u00bf]|\u2013|\u2014/g,
+      '',
+    )
+    .trim()
+    .toUpperCase();
+  const stockLimit = typeof character.stock_limit === 'number' ? character.stock_limit : null;
+  const stockRemaining =
+    typeof character.stock_remaining === 'number'
+      ? character.stock_remaining
+      : stockLimit !== null && typeof character.sold_count === 'number'
+        ? Math.max(0, stockLimit - character.sold_count)
+        : null;
+  const hasStock = stockLimit !== null && stockRemaining !== null;
+  const soldOut = character.sold_out || (hasStock && stockRemaining <= 0);
+  const hasPrice = typeof character.zenith_price === 'number' && character.zenith_price > 0;
+  const characterId = String(character.id || '');
 
-                <motion.div
-                    initial={{ y: '100%' }}
-                    animate={{ y: 0 }}
-                    exit={{ y: '100%' }}
-                    transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                    className="relative w-full max-w-[440px] bg-zinc-950 rounded-t-xl sm:rounded-xl flex flex-col overflow-hidden shadow-2xl border-t sm:border border-white/5"
-                    ref={dialogRef}
-                    role="dialog"
-                    aria-modal="true"
-                    aria-label={character.name}
-                    tabIndex={-1}
-                >
-                    {/* Header Controls */}
-                    <div className="absolute right-4 top-4 z-20">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={onClose}
-                            className="w-8 h-8 p-0 rounded-full bg-black/20 backdrop-blur-md border border-white/5 hover:bg-black/40"
-                            aria-label="Close"
-                        >
-                            <X size={16} />
-                        </Button>
-                    </div>
+  const getRarityVariant = (rarity: string) => {
+    const r = rarity.toLowerCase();
+    if (r.includes('common')) return 'secondary';
+    if (r.includes('uncommon')) return 'success';
+    if (r.includes('rare')) return 'rare';
+    if (r.includes('epic')) return 'epic';
+    if (r.includes('legendary') || r.includes('limited')) return 'premium';
+    return 'primary';
+  };
 
-                    {/* Image Section */}
-                    <div className="relative aspect-[4/3] flex-shrink-0 bg-zinc-900/50 flex items-center justify-center overflow-hidden">
-                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent" />
+  const rarityVariant = getRarityVariant(rarityLabel);
 
-                        <motion.img
-                            initial={{ scale: 0.95, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            transition={{ delay: 0.1, duration: 0.4 }}
-                            src={character.img_url}
-                            referrerPolicy="no-referrer"
-                            className="relative z-10 w-full h-full object-contain p-6"
-                            alt={character.name}
-                        />
+  return (
+    <AnimatePresence>
+      <div className="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center p-0 sm:p-6">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="absolute inset-0 bg-black/60 backdrop-blur-md"
+          onClick={onClose}
+        />
 
-                        <div className="absolute bottom-4 left-4 z-20 flex gap-2">
-                            <Badge variant={rarityVariant} size="sm">
-                                {rarityLabel || 'STANDARD'}
-                            </Badge>
-                            {character.owned && (
-                                <Badge variant="success" size="sm">
-                                    SECURED
-                                </Badge>
-                            )}
-                        </div>
-                    </div>
+        <motion.div
+          initial={{ y: '100%' }}
+          animate={{ y: 0 }}
+          exit={{ y: '100%' }}
+          transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+          className="relative w-full max-w-[440px] bg-zinc-950 rounded-t-xl sm:rounded-xl flex flex-col overflow-hidden shadow-2xl border-t sm:border border-white/5"
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label={character.name}
+          tabIndex={-1}
+        >
+          {/* Header Controls */}
+          <div className="absolute right-4 top-4 z-20">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="w-8 h-8 p-0 rounded-full bg-black/20 backdrop-blur-md border border-white/5 hover:bg-black/40"
+              aria-label="Close"
+            >
+              <X size={16} />
+            </Button>
+          </div>
 
-                    {/* Content Section */}
-                    <div className="flex-1 p-6 sm:p-6 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
-                        <div className="space-y-1">
-                            <div className="flex items-center gap-1.5">
-                                <Target size={11} className="text-zinc-500" />
-                                <span className="text-[9px] font-mono font-bold uppercase text-zinc-500 tracking-widest">UNIT_ID: #{characterId}</span>
-                            </div>
-                            <h2 className="text-2xl font-bold text-zinc-100 uppercase tracking-tight">{character.name}</h2>
-                            <div className="flex items-center gap-1.5 opacity-60">
-                               <Info size={11} className="text-zinc-500" />
-                               <p className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest leading-none">{character.anime}</p>
-                            </div>
-                        </div>
+          {/* Image Section */}
+          <div className="relative aspect-[4/3] flex-shrink-0 bg-zinc-900/50 flex items-center justify-center overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent" />
 
-                        <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                            {[
-                                { icon: ShieldCheck, label: 'STATUS', value: character.owned ? "SECURED" : "PENDING", variant: character.owned ? "success" : "secondary" },
-                                { icon: Package, label: 'SUPPLY', value: hasStock ? (soldOut ? "DEPLETED" : `${stockRemaining}/${stockLimit}`) : (character.count > 0 ? `x${character.count}` : "UNLIMITED"), variant: soldOut ? "danger" : "default" },
-                                { icon: Gem, label: 'PRICE', value: hasPrice ? formatNumber(character.zenith_price) : '0', variant: 'primary' },
-                            ].map((stat, i) => (
-                                <Card key={i} variant="default" className="p-3 flex flex-col justify-between border-white/[0.04] bg-zinc-900/50">
-                                    <stat.icon size={13} className={cn(
-                                        stat.variant === 'success' && "text-emerald-500",
-                                        stat.variant === 'danger' && "text-red-500",
-                                        stat.variant === 'primary' && "text-brand-accent",
-                                        stat.variant === 'default' && "text-zinc-500",
-                                        stat.variant === 'secondary' && "text-zinc-700"
-                                    )} />
-                                    <div className="mt-3">
-                                        <span className="block text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-1">{stat.label}</span>
-                                        <span className={cn(
-                                            "block truncate text-[10px] font-mono font-bold uppercase tracking-tight tabular-nums leading-none",
-                                            stat.variant === 'success' ? "text-emerald-500" : stat.variant === 'danger' ? "text-red-500" : "text-zinc-100"
-                                        )}>
-                                            {stat.value}
-                                        </span>
-                                    </div>
-                                </Card>
-                            ))}
-                        </div>
+            <motion.img
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.1, duration: 0.4 }}
+              src={character.img_url}
+              referrerPolicy="no-referrer"
+              className="relative z-10 w-full h-full object-contain p-6"
+              alt={character.name}
+            />
 
-                        {actions && (
-                            <div className="pt-4 sm:pt-6 border-t border-white/5 flex flex-col gap-3 sm:gap-4">
-                                {actions}
-                            </div>
-                        )}
-
-                        <div className="flex items-center justify-center gap-2 py-0 opacity-20">
-                            <Sparkles size={10} className="text-brand-accent" />
-                            <span className="text-[8px] font-bold uppercase text-zinc-100 tracking-widest">End of Data</span>
-                        </div>
-                    </div>
-
-                    {/* Safe Area Padding */}
-                    <div className="h-[calc(var(--sab,8px)+4px)] sm:hidden" />
-                </motion.div>
+            <div className="absolute bottom-4 left-4 z-20 flex gap-2">
+              <Badge variant={rarityVariant} size="sm">
+                {rarityLabel || 'STANDARD'}
+              </Badge>
+              {character.owned && (
+                <Badge variant="success" size="sm">
+                  SECURED
+                </Badge>
+              )}
             </div>
-        </AnimatePresence>
-    );
+          </div>
+
+          {/* Content Section */}
+          <div className="flex-1 p-6 sm:p-6 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
+            <div className="space-y-1">
+              <div className="flex items-center gap-1.5">
+                <Target size={11} className="text-zinc-500" />
+                <span className="text-[9px] font-mono font-bold uppercase text-zinc-500 tracking-widest">
+                  UNIT_ID: #{characterId}
+                </span>
+              </div>
+              <h2 className="text-2xl font-bold text-zinc-100 uppercase tracking-tight">
+                {character.name}
+              </h2>
+              <div className="flex items-center gap-1.5 opacity-60">
+                <Info size={11} className="text-zinc-500" />
+                <p className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest leading-none">
+                  {character.anime}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+              {[
+                {
+                  icon: ShieldCheck,
+                  label: 'STATUS',
+                  value: character.owned ? 'SECURED' : 'PENDING',
+                  variant: character.owned ? 'success' : 'secondary',
+                },
+                {
+                  icon: Package,
+                  label: 'SUPPLY',
+                  value: hasStock
+                    ? soldOut
+                      ? 'DEPLETED'
+                      : `${stockRemaining}/${stockLimit}`
+                    : character.count > 0
+                      ? `x${character.count}`
+                      : 'UNLIMITED',
+                  variant: soldOut ? 'danger' : 'default',
+                },
+                {
+                  icon: Gem,
+                  label: 'PRICE',
+                  value: hasPrice ? formatNumber(character.zenith_price) : '0',
+                  variant: 'primary',
+                },
+              ].map((stat, i) => (
+                <Card
+                  key={i}
+                  variant="default"
+                  className="p-3 flex flex-col justify-between border-white/[0.04] bg-zinc-900/50"
+                >
+                  <stat.icon
+                    size={13}
+                    className={cn(
+                      stat.variant === 'success' && 'text-emerald-500',
+                      stat.variant === 'danger' && 'text-red-500',
+                      stat.variant === 'primary' && 'text-brand-accent',
+                      stat.variant === 'default' && 'text-zinc-500',
+                      stat.variant === 'secondary' && 'text-zinc-700',
+                    )}
+                  />
+                  <div className="mt-3">
+                    <span className="block text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-1">
+                      {stat.label}
+                    </span>
+                    <span
+                      className={cn(
+                        'block truncate text-[10px] font-mono font-bold uppercase tracking-tight tabular-nums leading-none',
+                        stat.variant === 'success'
+                          ? 'text-emerald-500'
+                          : stat.variant === 'danger'
+                            ? 'text-red-500'
+                            : 'text-zinc-100',
+                      )}
+                    >
+                      {stat.value}
+                    </span>
+                  </div>
+                </Card>
+              ))}
+            </div>
+
+            {actions && (
+              <div className="pt-4 sm:pt-6 border-t border-white/5 flex flex-col gap-3 sm:gap-4">
+                {actions}
+              </div>
+            )}
+
+            <div className="flex items-center justify-center gap-2 py-0 opacity-20">
+              <Sparkles size={10} className="text-brand-accent" />
+              <span className="text-[8px] font-bold uppercase text-zinc-100 tracking-widest">
+                End of Data
+              </span>
+            </div>
+          </div>
+
+          {/* Safe Area Padding */}
+          <div className="h-[calc(var(--sab,8px)+4px)] sm:hidden" />
+        </motion.div>
+      </div>
+    </AnimatePresence>
+  );
 };

@@ -1,16 +1,15 @@
-import React, { useMemo, useState } from 'react';
-import { AlertCircle, BadgePercent, CheckCircle2, Coins, Gem, Loader2, RefreshCw, Repeat2, Target, ArrowRight } from 'lucide-react';
+import { AlertCircle, BadgePercent, Coins, Gem, RefreshCw, Repeat2 } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { apiFetch, getErrorMessage } from '../api/client';
-import { useApi } from '../hooks/useApi';
-import { ErrorState } from '../components/ui/ErrorState';
-import { Skeleton } from '../components/ui/Skeleton';
+import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
+import { ErrorState } from '../components/ui/ErrorState';
+import { Input } from '../components/ui/Input';
+import { Skeleton } from '../components/ui/Skeleton';
 import { useToast } from '../components/ui/Toast';
 import { useUser } from '../context/UserContext';
+import { useApi } from '../hooks/useApi';
 import { cn, formatNumber } from '../utils';
-import { Badge } from '../components/ui/Badge';
-import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
 
 type ExchangeMode = 'shards_to_zenith' | 'zenith_to_shards';
 
@@ -50,23 +49,26 @@ export const Exchange = () => {
   const [exchanging, setExchanging] = useState(false);
 
   const shardBalance = Math.max(0, Math.floor(Number(data?.balance ?? user?.balance ?? 0) || 0));
-  const zenithBalance = Math.max(0, Math.floor(Number(data?.zenith ?? user?.stats?.zenith ?? user?.zenith ?? 0) || 0));
+  const zenithBalance = Math.max(
+    0,
+    Math.floor(Number(data?.zenith ?? user?.stats?.zenith ?? user?.zenith ?? 0) || 0),
+  );
   const rate = Math.floor(toPositiveNumber(data?.rate, 10000));
   const minimumShards = Math.floor(toPositiveNumber(data?.minimum_shards, rate));
   const minimumZenith = Math.floor(toPositiveNumber(data?.minimum_zenith, 1));
   const rawAmount = amount.trim();
   const parsedAmount = Number(rawAmount);
-  const hasValidAmount = rawAmount.length > 0 && Number.isFinite(parsedAmount) && parsedAmount > 0 && Number.isInteger(parsedAmount);
+  const hasValidAmount =
+    rawAmount.length > 0 &&
+    Number.isFinite(parsedAmount) &&
+    parsedAmount > 0 &&
+    Number.isInteger(parsedAmount);
   const amountNumber = hasValidAmount ? parsedAmount : 0;
   const copy = getModeCopy(mode);
   const isShardMode = mode === 'shards_to_zenith';
-  const outputAmount = isShardMode
-    ? Math.floor(amountNumber / rate)
-    : amountNumber * rate;
+  const outputAmount = isShardMode ? Math.floor(amountNumber / rate) : amountNumber * rate;
   const minimumInputAmount = isShardMode ? minimumShards : minimumZenith;
-  const maxInputAmount = isShardMode
-    ? Math.floor(shardBalance / rate) * rate
-    : zenithBalance;
+  const maxInputAmount = isShardMode ? Math.floor(shardBalance / rate) * rate : zenithBalance;
   const canUseMax = maxInputAmount >= minimumInputAmount;
 
   const validationMessage = useMemo(() => {
@@ -83,7 +85,17 @@ export const Exchange = () => {
     if (amountNumber < minimumZenith) return `Min: ${formatNumber(minimumZenith)} Zenith`;
     if (zenithBalance < amountNumber) return 'Insufficient Zenith';
     return null;
-  }, [amountNumber, hasValidAmount, isShardMode, minimumShards, minimumZenith, rate, rawAmount, shardBalance, zenithBalance]);
+  }, [
+    amountNumber,
+    hasValidAmount,
+    isShardMode,
+    minimumShards,
+    minimumZenith,
+    rate,
+    rawAmount,
+    shardBalance,
+    zenithBalance,
+  ]);
 
   const canExchange = !validationMessage && outputAmount > 0;
   const presetOptions = useMemo(() => {
@@ -104,7 +116,8 @@ export const Exchange = () => {
     return options
       .map((option) => ({ ...option, amount: Math.floor(option.amount) }))
       .filter((option) => {
-        if (!Number.isFinite(option.amount) || option.amount <= 0 || seen.has(option.amount)) return false;
+        if (!Number.isFinite(option.amount) || option.amount <= 0 || seen.has(option.amount))
+          return false;
         seen.add(option.amount);
         return true;
       });
@@ -128,7 +141,9 @@ export const Exchange = () => {
     setExchanging(true);
     window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
     try {
-      const result = await apiFetch(`/shop/exchange/${mode}?amount=${amountNumber}`, { method: 'POST' });
+      const result = await apiFetch(`/shop/exchange/${mode}?amount=${amountNumber}`, {
+        method: 'POST',
+      });
       addToast(result.message || 'Exchange successful.', 'success');
       await Promise.allSettled([fetchExchange(), refreshUser()]);
       window.dispatchEvent(new Event('shop-refresh'));
@@ -139,24 +154,28 @@ export const Exchange = () => {
     }
   };
 
-  if (loading && !data) return (
-    <div className="pb-32 pt-6 adaptive-px max-w-2xl mx-auto space-y-8">
-       <div className="flex flex-col gap-1.5">
+  if (loading && !data)
+    return (
+      <div className="pb-32 pt-6 adaptive-px max-w-2xl mx-auto space-y-8">
+        <div className="flex flex-col gap-1.5">
           <Skeleton className="h-8 w-40 rounded-md" />
           <Skeleton className="h-4 w-56 rounded-md opacity-50" />
-       </div>
-       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {[1,2,3].map(i => <Skeleton key={i} className="h-16 rounded-md" />)}
-       </div>
-       <Skeleton className="h-80 w-full rounded-md" />
-    </div>
-  );
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-16 rounded-md" />
+          ))}
+        </div>
+        <Skeleton className="h-80 w-full rounded-md" />
+      </div>
+    );
 
-  if (error && !data) return (
-    <div className="pb-32 pt-6 max-w-2xl mx-auto adaptive-px">
+  if (error && !data)
+    return (
+      <div className="pb-32 pt-6 max-w-2xl mx-auto adaptive-px">
         <ErrorState message={error} onAction={handleRefresh} />
-    </div>
-  );
+      </div>
+    );
 
   return (
     <div className="pb-32 pt-6 max-w-2xl mx-auto adaptive-px space-y-8">
@@ -185,19 +204,34 @@ export const Exchange = () => {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {[
-              { icon: Coins, label: 'Shards', value: formatNumber(shardBalance), variant: 'default' },
-              { icon: Gem, label: 'Zenith', value: formatNumber(zenithBalance), variant: 'primary' },
-              { icon: BadgePercent, label: 'Rate', value: `${formatNumber(rate)}:1`, variant: 'success' },
+            { icon: Coins, label: 'Shards', value: formatNumber(shardBalance), variant: 'default' },
+            { icon: Gem, label: 'Zenith', value: formatNumber(zenithBalance), variant: 'primary' },
+            {
+              icon: BadgePercent,
+              label: 'Rate',
+              value: `${formatNumber(rate)}:1`,
+              variant: 'success',
+            },
           ].map((metric, i) => (
             <Card key={i} variant="default" className="p-3.5">
               <div className="flex items-center gap-2 mb-2">
-                <metric.icon size={11} className={cn(
-                    metric.variant === 'primary' ? 'text-brand-accent' :
-                    metric.variant === 'success' ? 'text-emerald-500' : 'text-zinc-600'
-                )} />
-                <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">{metric.label}</span>
+                <metric.icon
+                  size={11}
+                  className={cn(
+                    metric.variant === 'primary'
+                      ? 'text-brand-accent'
+                      : metric.variant === 'success'
+                        ? 'text-emerald-500'
+                        : 'text-zinc-600',
+                  )}
+                />
+                <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">
+                  {metric.label}
+                </span>
               </div>
-              <p className="text-sm font-mono font-bold text-zinc-100 tabular-nums">{metric.value}</p>
+              <p className="text-sm font-mono font-bold text-zinc-100 tabular-nums">
+                {metric.value}
+              </p>
             </Card>
           ))}
         </div>
@@ -209,7 +243,7 @@ export const Exchange = () => {
             {[
               { id: 'shards_to_zenith', label: 'Shards → Zenith' },
               { id: 'zenith_to_shards', label: 'Zenith → Shards' },
-            ].map(m => (
+            ].map((m) => (
               <button
                 key={m.id}
                 onClick={() => {
@@ -219,7 +253,7 @@ export const Exchange = () => {
                 }}
                 className={cn(
                   'flex-1 h-9 rounded text-[10px] font-bold uppercase tracking-widest transition-all',
-                  mode === m.id ? 'bg-zinc-100 text-zinc-950' : 'text-zinc-500 hover:text-zinc-300'
+                  mode === m.id ? 'bg-zinc-100 text-zinc-950' : 'text-zinc-500 hover:text-zinc-300',
                 )}
               >
                 {m.label}
@@ -229,7 +263,9 @@ export const Exchange = () => {
 
           <div className="flex flex-col sm:flex-row items-center gap-6">
             <div className="flex-1 w-full space-y-2">
-              <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">{copy.inputLabel}</p>
+              <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">
+                {copy.inputLabel}
+              </p>
               <div className="h-16 flex items-center px-4 bg-zinc-950 border border-white/5 rounded-md font-mono text-xl font-bold text-zinc-100">
                 {formatNumber(amountNumber)}
               </div>
@@ -243,7 +279,9 @@ export const Exchange = () => {
             </button>
 
             <div className="flex-1 w-full space-y-2">
-              <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">{copy.outputLabel}</p>
+              <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">
+                {copy.outputLabel}
+              </p>
               <div className="h-16 flex items-center px-4 bg-zinc-900 border border-brand-accent/20 rounded-md font-mono text-xl font-bold text-brand-accent">
                 {formatNumber(outputAmount)}
               </div>
@@ -252,7 +290,9 @@ export const Exchange = () => {
 
           <div className="space-y-4">
             <div className="flex justify-between items-end px-1">
-              <label className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">Amount</label>
+              <label className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">
+                Amount
+              </label>
               <button
                 onClick={() => {
                   setAmount(String(maxInputAmount));
@@ -265,18 +305,19 @@ export const Exchange = () => {
               </button>
             </div>
             <Input
-                type="text"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))}
-                className="h-12 font-mono text-base"
-                inputMode="numeric"
-                placeholder="0"
+              type="text"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))}
+              className="h-12 font-mono text-base"
+              inputMode="numeric"
+              placeholder="0"
             />
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {presetOptions.map(({ label, amount: pAmount }) => {
-              const isDisabled = pAmount < minimumInputAmount || (pAmount > maxInputAmount && label !== 'Max');
+              const isDisabled =
+                pAmount < minimumInputAmount || (pAmount > maxInputAmount && label !== 'Max');
               const isActive = pAmount === amountNumber;
 
               return (
@@ -289,11 +330,22 @@ export const Exchange = () => {
                   disabled={isDisabled}
                   className={cn(
                     'h-12 px-3 rounded border text-left transition-all disabled:opacity-20',
-                    isActive ? 'border-brand-accent bg-brand-accent/5' : 'border-white/5 hover:border-white/20 bg-zinc-950'
+                    isActive
+                      ? 'border-brand-accent bg-brand-accent/5'
+                      : 'border-white/5 hover:border-white/20 bg-zinc-950',
                   )}
                 >
-                  <span className={cn("block text-[8px] font-bold uppercase mb-0.5", isActive ? "text-brand-accent" : "text-zinc-600")}>{label}</span>
-                  <span className="block truncate text-[11px] font-mono font-bold text-zinc-100">{formatNumber(pAmount)}</span>
+                  <span
+                    className={cn(
+                      'block text-[8px] font-bold uppercase mb-0.5',
+                      isActive ? 'text-brand-accent' : 'text-zinc-600',
+                    )}
+                  >
+                    {label}
+                  </span>
+                  <span className="block truncate text-[11px] font-mono font-bold text-zinc-100">
+                    {formatNumber(pAmount)}
+                  </span>
                 </button>
               );
             })}
@@ -301,20 +353,24 @@ export const Exchange = () => {
 
           <div className="pt-4 border-t border-white/5 space-y-4">
             <Button
-                onClick={handleExchange}
-                disabled={!canExchange || exchanging}
-                variant="accent"
-                className="w-full h-14"
-                isLoading={exchanging}
-                leftIcon={<Repeat2 size={16} />}
+              onClick={handleExchange}
+              disabled={!canExchange || exchanging}
+              variant="accent"
+              className="w-full h-14"
+              isLoading={exchanging}
+              leftIcon={<Repeat2 size={16} />}
             >
-                Authorize Exchange
+              Authorize Exchange
             </Button>
 
-            <div className={cn(
+            <div
+              className={cn(
                 'flex items-center gap-3 px-4 py-3 rounded-md border text-[10px] font-bold uppercase tracking-widest transition-colors',
-                validationMessage ? 'border-amber-500/20 bg-amber-500/5 text-amber-500' : 'border-emerald-500/20 bg-emerald-500/5 text-emerald-500'
-            )}>
+                validationMessage
+                  ? 'border-amber-500/20 bg-amber-500/5 text-amber-500'
+                  : 'border-emerald-500/20 bg-emerald-500/5 text-emerald-500',
+              )}
+            >
               <AlertCircle size={14} className="shrink-0" />
               <span>{validationMessage || 'Transaction ready for processing'}</span>
             </div>

@@ -1,26 +1,14 @@
+import { AnimatePresence, motion } from 'framer-motion';
+import { Heart, PawPrint, RefreshCw, Sparkles, Swords, Wind } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  CheckCircle2,
-  Heart,
-  Loader2,
-  PawPrint,
-  RefreshCw,
-  Sparkles,
-  Swords,
-  Wind,
-  Target,
-  Zap,
-} from 'lucide-react';
 import { apiFetch, getErrorMessage } from '../api/client';
-import { EmptyState } from '../components/ui/EmptyState';
+import { Badge } from '../components/ui/Badge';
+import { Button } from '../components/ui/Button';
+import { Card } from '../components/ui/Card';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { useToast } from '../components/ui/Toast';
 import { Pet, useUser } from '../context/UserContext';
 import { cn } from '../utils';
-import { Card } from '../components/ui/Card';
-import { Badge } from '../components/ui/Badge';
-import { Button } from '../components/ui/Button';
-import { motion, AnimatePresence } from 'framer-motion';
 
 interface MyPetsProps {
   onPetClick?: (pet: Pet) => void;
@@ -53,7 +41,7 @@ const PetImage = ({
 
   useEffect(() => {
     setImageFailed(false);
-  }, [src]);
+  }, []);
 
   return (
     <div className={cn('overflow-hidden bg-zinc-900 relative', className)}>
@@ -104,33 +92,55 @@ const ActivePetCard = ({ pet, onOpen }: { pet: Pet; onOpen?: (pet: Pet) => void 
       className="p-5 flex flex-col sm:flex-row gap-6 cursor-pointer group"
       onClick={() => onOpen?.(pet)}
     >
-        <PetImage pet={pet} iconSize={32} className="w-24 h-24 sm:w-32 sm:h-32 rounded-md border border-white/10 shrink-0 mx-auto sm:mx-0" />
+      <PetImage
+        pet={pet}
+        iconSize={32}
+        className="w-24 h-24 sm:w-32 sm:h-32 rounded-md border border-white/10 shrink-0 mx-auto sm:mx-0"
+      />
 
-        <div className="flex-1 min-w-0 space-y-4">
-          <div className="space-y-1 text-center sm:text-left">
-            <div className="flex items-center justify-center sm:justify-start gap-2.5">
-              <h2 className="text-xl font-bold text-zinc-100 uppercase tracking-tight truncate">{pet.name}</h2>
-              <Badge variant="primary" size="xs">ACTIVE</Badge>
-            </div>
-            <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-widest leading-relaxed line-clamp-2">
-              {pet.desc || pet.ability || 'System support companion'}
-            </p>
+      <div className="flex-1 min-w-0 space-y-4">
+        <div className="space-y-1 text-center sm:text-left">
+          <div className="flex items-center justify-center sm:justify-start gap-2.5">
+            <h2 className="text-xl font-bold text-zinc-100 uppercase tracking-tight truncate">
+              {pet.name}
+            </h2>
+            <Badge variant="primary" size="xs">
+              ACTIVE
+            </Badge>
           </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-4 border-y border-white/5">
-            <InlineStat icon={Heart} label="Vitality" value={pet.hp ?? 0} color="text-emerald-500" />
-            <InlineStat icon={Swords} label="Strike" value={pet.atk ?? 0} color="text-red-500" />
-            <InlineStat icon={Wind} label="Velocity" value={pet.spd ?? 0} color="text-brand-accent" />
-            <InlineStat icon={Sparkles} label="Luck" value={`${Math.round(Number(pet.luck || 0) * 100)}%`} color="text-amber-500" />
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3">
-            <Badge variant="secondary" size="xs" className="font-mono">LVL {pet.level || 1}</Badge>
-            <Badge variant="secondary" size="xs" className="font-mono">SYNC: {pet.affection ?? 0}%</Badge>
-          </div>
-
-          <ProgressBar current={pet.xp || 0} total={Math.max(1, pet.xp_needed || 100)} label="Bond synchronization" compact />
+          <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-widest leading-relaxed line-clamp-2">
+            {pet.desc || pet.ability || 'System support companion'}
+          </p>
         </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-4 border-y border-white/5">
+          <InlineStat icon={Heart} label="Vitality" value={pet.hp ?? 0} color="text-emerald-500" />
+          <InlineStat icon={Swords} label="Strike" value={pet.atk ?? 0} color="text-red-500" />
+          <InlineStat icon={Wind} label="Velocity" value={pet.spd ?? 0} color="text-brand-accent" />
+          <InlineStat
+            icon={Sparkles}
+            label="Luck"
+            value={`${Math.round(Number(pet.luck || 0) * 100)}%`}
+            color="text-amber-500"
+          />
+        </div>
+
+        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3">
+          <Badge variant="secondary" size="xs" className="font-mono">
+            LVL {pet.level || 1}
+          </Badge>
+          <Badge variant="secondary" size="xs" className="font-mono">
+            SYNC: {pet.affection ?? 0}%
+          </Badge>
+        </div>
+
+        <ProgressBar
+          current={pet.xp || 0}
+          total={Math.max(1, pet.xp_needed || 100)}
+          label="Bond synchronization"
+          compact
+        />
+      </div>
     </Card>
   </motion.div>
 );
@@ -144,18 +154,26 @@ export const MyPets = ({ onPetClick }: MyPetsProps) => {
   const pets = useMemo(() => user?.pets || [], [user?.pets]);
   const currentPet = useMemo(() => {
     if (!pets.length) return user?.current_pet || null;
-    return pets.find((pet) => pet.is_active || samePet(pet, user?.current_pet)) || user?.current_pet || pets[0];
+    return (
+      pets.find((pet) => pet.is_active || samePet(pet, user?.current_pet)) ||
+      user?.current_pet ||
+      pets[0]
+    );
   }, [pets, user?.current_pet]);
 
-  const sortedPets = useMemo(() => (
-    [...pets].sort((a, b) => {
-      const activeDiff = Number(samePet(b, currentPet) || b.is_active) - Number(samePet(a, currentPet) || a.is_active);
-      if (activeDiff !== 0) return activeDiff;
-      const levelDiff = Number(b.level || 1) - Number(a.level || 1);
-      if (levelDiff !== 0) return levelDiff;
-      return a.name.localeCompare(b.name);
-    })
-  ), [currentPet, pets]);
+  const sortedPets = useMemo(
+    () =>
+      [...pets].sort((a, b) => {
+        const activeDiff =
+          Number(samePet(b, currentPet) || b.is_active) -
+          Number(samePet(a, currentPet) || a.is_active);
+        if (activeDiff !== 0) return activeDiff;
+        const levelDiff = Number(b.level || 1) - Number(a.level || 1);
+        if (levelDiff !== 0) return levelDiff;
+        return a.name.localeCompare(b.name);
+      }),
+    [currentPet, pets],
+  );
 
   const handleRefresh = async () => {
     if (refreshing) return;
@@ -193,11 +211,13 @@ export const MyPets = ({ onPetClick }: MyPetsProps) => {
         <div className="flex items-start justify-between gap-6">
           <div className="space-y-1">
             <div className="flex items-center gap-2.5">
-               <PawPrint className="text-brand-accent" size={20} />
-               <h1 className="text-xl font-bold text-zinc-100 uppercase tracking-tight">Companions</h1>
+              <PawPrint className="text-brand-accent" size={20} />
+              <h1 className="text-xl font-bold text-zinc-100 uppercase tracking-tight">
+                Companions
+              </h1>
             </div>
             <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest opacity-60">
-                System support asset database
+              System support asset database
             </p>
           </div>
 
@@ -216,83 +236,114 @@ export const MyPets = ({ onPetClick }: MyPetsProps) => {
       <div className="space-y-10">
         {currentPet && (
           <section className="space-y-4">
-            <h2 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest px-1">Active Synchronization</h2>
+            <h2 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest px-1">
+              Active Synchronization
+            </h2>
             <ActivePetCard pet={currentPet} {...(onPetClick ? { onOpen: onPetClick } : {})} />
           </section>
         )}
 
         <section className="space-y-4">
           <div className="flex items-center justify-between px-1">
-            <h2 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Personnel Storage</h2>
-            <p className="text-[9px] font-bold text-zinc-700 uppercase tracking-widest">Sorted by level</p>
+            <h2 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">
+              Personnel Storage
+            </h2>
+            <p className="text-[9px] font-bold text-zinc-700 uppercase tracking-widest">
+              Sorted by level
+            </p>
           </div>
 
           <AnimatePresence mode="popLayout">
-          {sortedPets.length > 0 ? (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {sortedPets.map((pet) => {
-                const petKey = getPetKey(pet);
-                const isActive = pet.is_active || samePet(pet, currentPet);
-                const isSwitching = switching === petKey;
+            {sortedPets.length > 0 ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="grid grid-cols-1 md:grid-cols-2 gap-4"
+              >
+                {sortedPets.map((pet) => {
+                  const petKey = getPetKey(pet);
+                  const isActive = pet.is_active || samePet(pet, currentPet);
+                  const isSwitching = switching === petKey;
 
-                return (
-                  <Card
-                    key={petKey || pet.name}
-                    variant="default"
-                    className={cn(
-                        "p-4 transition-all",
-                        isActive ? "border-brand-accent/30 bg-brand-accent/5" : "hover:bg-zinc-900"
-                    )}
-                  >
-                    <div className="flex gap-4">
-                        <PetImage pet={pet} iconSize={16} className="w-16 h-16 rounded-md border border-white/10 shrink-0" />
+                  return (
+                    <Card
+                      key={petKey || pet.name}
+                      variant="default"
+                      className={cn(
+                        'p-4 transition-all',
+                        isActive ? 'border-brand-accent/30 bg-brand-accent/5' : 'hover:bg-zinc-900',
+                      )}
+                    >
+                      <div className="flex gap-4">
+                        <PetImage
+                          pet={pet}
+                          iconSize={16}
+                          className="w-16 h-16 rounded-md border border-white/10 shrink-0"
+                        />
                         <div className="flex-1 min-w-0 py-0.5 space-y-1">
-                            <div className="flex items-center justify-between gap-2">
-                                <h3 className="text-sm font-bold text-zinc-100 uppercase tracking-tight truncate">{pet.name}</h3>
-                                {isActive && <div className="w-1 h-1 rounded-full bg-brand-accent" />}
-                            </div>
-                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest line-clamp-1">
-                                {pet.ability || 'No special ability'}
-                            </p>
-                            <div className="flex items-center gap-2 pt-0.5">
-                                <span className="text-[9px] font-mono font-bold text-zinc-600 uppercase">LVL {pet.level || 1}</span>
-                                <span className="text-zinc-800">•</span>
-                                <span className="text-[9px] font-mono font-bold text-zinc-600 uppercase">Bond {pet.affection ?? 0}%</span>
-                            </div>
+                          <div className="flex items-center justify-between gap-2">
+                            <h3 className="text-sm font-bold text-zinc-100 uppercase tracking-tight truncate">
+                              {pet.name}
+                            </h3>
+                            {isActive && <div className="w-1 h-1 rounded-full bg-brand-accent" />}
+                          </div>
+                          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest line-clamp-1">
+                            {pet.ability || 'No special ability'}
+                          </p>
+                          <div className="flex items-center gap-2 pt-0.5">
+                            <span className="text-[9px] font-mono font-bold text-zinc-600 uppercase">
+                              LVL {pet.level || 1}
+                            </span>
+                            <span className="text-zinc-800">•</span>
+                            <span className="text-[9px] font-mono font-bold text-zinc-600 uppercase">
+                              Bond {pet.affection ?? 0}%
+                            </span>
+                          </div>
                         </div>
-                    </div>
+                      </div>
 
-                    <div className="grid grid-cols-4 gap-2 mt-4 pt-4 border-t border-white/5">
+                      <div className="grid grid-cols-4 gap-2 mt-4 pt-4 border-t border-white/5">
                         <InlineStat icon={Heart} label="HP" value={pet.hp ?? 0} />
-                        <InlineStat icon={Swords} label="ATK" value={pet.atk ?? 0} color="text-red-500" />
+                        <InlineStat
+                          icon={Swords}
+                          label="ATK"
+                          value={pet.atk ?? 0}
+                          color="text-red-500"
+                        />
                         <InlineStat icon={Wind} label="SPD" value={pet.spd ?? 0} />
-                        <InlineStat icon={Sparkles} label="LCK" value={`${Math.round(Number(pet.luck || 0) * 100)}%`} />
-                    </div>
+                        <InlineStat
+                          icon={Sparkles}
+                          label="LCK"
+                          value={`${Math.round(Number(pet.luck || 0) * 100)}%`}
+                        />
+                      </div>
 
-                    <div className="mt-4">
+                      <div className="mt-4">
                         <Button
-                            onClick={() => handleSetActive(pet)}
-                            disabled={isActive || isSwitching}
-                            variant={isActive ? "accent" : "secondary"}
-                            className="w-full h-9"
-                            isLoading={isSwitching}
-                            size="sm"
+                          onClick={() => handleSetActive(pet)}
+                          disabled={isActive || isSwitching}
+                          variant={isActive ? 'accent' : 'secondary'}
+                          className="w-full h-9"
+                          isLoading={isSwitching}
+                          size="sm"
                         >
-                            {isActive ? 'Active Companion' : 'Activate'}
+                          {isActive ? 'Active Companion' : 'Activate'}
                         </Button>
-                    </div>
-                  </Card>
-                );
-              })}
-            </motion.div>
-          ) : (
-            <div className="py-20 border border-dashed border-white/5 rounded-lg bg-zinc-950/50 text-center flex flex-col items-center justify-center space-y-4">
+                      </div>
+                    </Card>
+                  );
+                })}
+              </motion.div>
+            ) : (
+              <div className="py-20 border border-dashed border-white/5 rounded-lg bg-zinc-950/50 text-center flex flex-col items-center justify-center space-y-4">
                 <div className="w-12 h-12 rounded-full border border-white/5 flex items-center justify-center opacity-10">
-                    <PawPrint size={24} />
+                  <PawPrint size={24} />
                 </div>
-                <p className="text-[9px] font-bold text-zinc-700 uppercase tracking-widest">No companions secured</p>
-            </div>
-          )}
+                <p className="text-[9px] font-bold text-zinc-700 uppercase tracking-widest">
+                  No companions secured
+                </p>
+              </div>
+            )}
           </AnimatePresence>
         </section>
       </div>

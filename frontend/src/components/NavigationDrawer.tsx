@@ -1,28 +1,28 @@
-import { useEffect, useRef } from 'react';
-import {
-  X,
-  Repeat2,
-  Gamepad2,
-  ListChecks,
-  Ticket,
-  ChartNoAxesColumnIncreasing,
-  UserPlus,
-  BadgeCheck,
-  PawPrint,
-  CloudUpload,
-  ShieldCheck,
-  Terminal,
-  Heart,
-  LogOut,
-  Egg,
-  Store,
-  BookOpen,
-  LayoutDashboard,
-} from 'lucide-react';
-import { cn } from '../utils';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useUser } from '../context/UserContext';
+import {
+  BadgeCheck,
+  BookOpen,
+  ChartNoAxesColumnIncreasing,
+  CloudUpload,
+  Egg,
+  Gamepad2,
+  Heart,
+  LayoutDashboard,
+  ListChecks,
+  LogOut,
+  PawPrint,
+  Repeat2,
+  ShieldCheck,
+  Store,
+  Terminal,
+  Ticket,
+  UserPlus,
+  X,
+} from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import { setSessionToken } from '../api/client';
+import { useUser } from '../context/UserContext';
+import { cn } from '../utils';
 import { Button } from './ui/Button';
 
 interface NavItem {
@@ -45,50 +45,58 @@ interface NavigationDrawerProps {
 
 const SECTIONS: NavSection[] = [
   {
-    title: "CORE",
+    title: 'CORE',
     items: [
       { id: 'profile', label: 'Dashboard', icon: LayoutDashboard },
       { id: 'incubation', label: 'Hatchery', icon: Egg },
       { id: 'shop', label: 'Market', icon: Store },
       { id: 'exchange', label: 'Currency', icon: Repeat2 },
       { id: 'gallery', label: 'Archive', icon: BookOpen },
-    ]
+    ],
   },
   {
-    title: "OPERATIONS",
+    title: 'OPERATIONS',
     items: [
       { id: 'mypets', label: 'Companions', icon: PawPrint },
       { id: 'minigames', label: 'Nexus Games', icon: Gamepad2 },
       { id: 'achievements', label: 'Milestones', icon: BadgeCheck },
-    ]
+    ],
   },
   {
-    title: "SOCIAL",
+    title: 'SOCIAL',
     items: [
       { id: 'referrals', label: 'Recruit', icon: UserPlus },
       { id: 'quests', label: 'Tasks', icon: ListChecks },
       { id: 'pass', label: 'Season Pass', icon: Ticket },
       { id: 'leaderboard', label: 'Rankings', icon: ChartNoAxesColumnIncreasing },
-    ]
-  }
+    ],
+  },
 ];
 
-export const NavigationDrawer = ({ isOpen, onClose, activeTab, onNavigate }: NavigationDrawerProps) => {
+export const NavigationDrawer = ({
+  isOpen,
+  onClose,
+  activeTab,
+  onNavigate,
+}: NavigationDrawerProps) => {
   const { user } = useUser();
   const panelRef = useRef<HTMLDivElement>(null);
   const staffItems = [
     ...(user?.is_sudo ? [{ id: 'staff', label: 'Admin Terminal', icon: ShieldCheck }] : []),
-    ...((user?.can_upload ?? user?.is_sudo) ? [{ id: 'upload', label: 'Asset Intake', icon: CloudUpload }] : []),
+    ...((user?.can_upload ?? user?.is_sudo)
+      ? [{ id: 'upload', label: 'Asset Intake', icon: CloudUpload }]
+      : []),
   ];
-  const sections = staffItems.length > 0
-    ? [
-        ...SECTIONS,
-        {
-          title: "SYSTEM",
-          items: staffItems,
-        },
-      ]
-    : SECTIONS;
+  const sections =
+    staffItems.length > 0
+      ? [
+          ...SECTIONS,
+          {
+            title: 'SYSTEM',
+            items: staffItems,
+          },
+        ]
+      : SECTIONS;
 
   useEffect(() => {
     if (isOpen) {
@@ -103,7 +111,9 @@ export const NavigationDrawer = ({ isOpen, onClose, activeTab, onNavigate }: Nav
 
   useEffect(() => {
     if (!isOpen) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
     window.addEventListener('keydown', onKey);
     panelRef.current?.focus();
     return () => window.removeEventListener('keydown', onKey);
@@ -142,8 +152,10 @@ export const NavigationDrawer = ({ isOpen, onClose, activeTab, onNavigate }: Nav
             <div className="p-6 flex items-center justify-between border-b border-white/[0.04]">
               <div className="flex flex-col">
                 <div className="flex items-center gap-2">
-                    <Terminal size={14} className="text-zinc-500" />
-                    <span className="text-[11px] font-bold text-zinc-100 tracking-wider uppercase">SYSTEM</span>
+                  <Terminal size={14} className="text-zinc-500" />
+                  <span className="text-[11px] font-bold text-zinc-100 tracking-wider uppercase">
+                    SYSTEM
+                  </span>
                 </div>
                 <span className="text-[8px] font-mono text-zinc-500 uppercase mt-0.5">V2.4</span>
               </div>
@@ -175,25 +187,34 @@ export const NavigationDrawer = ({ isOpen, onClose, activeTab, onNavigate }: Nav
                           key={item.id}
                           onClick={() => handleItemClick(item.id)}
                           className={cn(
-                            "group w-full flex items-center justify-between px-3 py-2.5 rounded-md transition-all duration-200 relative",
+                            'group w-full flex items-center justify-between px-3 py-2.5 rounded-md transition-all duration-200 relative',
                             isActive
-                              ? "bg-brand-accent/10 text-brand-accent"
-                              : "text-zinc-500 hover:text-zinc-200 hover:bg-white/5"
+                              ? 'bg-brand-accent/10 text-brand-accent'
+                              : 'text-zinc-500 hover:text-zinc-200 hover:bg-white/5',
                           )}
                         >
                           <div className="flex items-center gap-3">
-                            <Icon size={16} className={isActive ? "text-brand-accent" : "text-zinc-500 transition-colors group-hover:text-zinc-300"} />
-                            <span className={cn(
-                              "text-[11px] font-bold uppercase tracking-wider",
-                              isActive ? "text-brand-accent" : "text-zinc-500 transition-colors group-hover:text-zinc-300"
-                            )}>
+                            <Icon
+                              size={16}
+                              className={
+                                isActive
+                                  ? 'text-brand-accent'
+                                  : 'text-zinc-500 transition-colors group-hover:text-zinc-300'
+                              }
+                            />
+                            <span
+                              className={cn(
+                                'text-[11px] font-bold uppercase tracking-wider',
+                                isActive
+                                  ? 'text-brand-accent'
+                                  : 'text-zinc-500 transition-colors group-hover:text-zinc-300',
+                              )}
+                            >
                               {item.label}
                             </span>
                           </div>
 
-                          {isActive && (
-                            <div className="w-1 h-1 rounded-full bg-brand-accent" />
-                          )}
+                          {isActive && <div className="w-1 h-1 rounded-full bg-brand-accent" />}
                         </button>
                       );
                     })}
@@ -203,43 +224,49 @@ export const NavigationDrawer = ({ isOpen, onClose, activeTab, onNavigate }: Nav
 
               {/* Account */}
               <div className="space-y-3 pt-4">
-                  <h3 className="px-2 text-[9px] font-bold text-zinc-600 uppercase tracking-widest">ACCOUNT</h3>
-                  <button
-                    onClick={() => {
-                        window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
-                        onClose();
-                        setSessionToken(null);
-                        window.location.reload();
-                    }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 text-red-500 hover:text-red-400 hover:bg-red-500/5 transition-colors rounded-md"
-                  >
-                    <LogOut size={16} />
-                    <span className="text-[11px] font-bold uppercase tracking-wider">Logout</span>
-                  </button>
+                <h3 className="px-2 text-[9px] font-bold text-zinc-600 uppercase tracking-widest">
+                  ACCOUNT
+                </h3>
+                <button
+                  onClick={() => {
+                    window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
+                    onClose();
+                    setSessionToken(null);
+                    window.location.reload();
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-red-500 hover:text-red-400 hover:bg-red-500/5 transition-colors rounded-md"
+                >
+                  <LogOut size={16} />
+                  <span className="text-[11px] font-bold uppercase tracking-wider">Logout</span>
+                </button>
               </div>
             </div>
 
             {/* Footer */}
             <div className="p-6 border-t border-white/[0.04] bg-white/[0.01]">
-               <div className="flex items-center gap-3 p-3 rounded-md bg-zinc-900 border border-white/5 mb-5">
-                  <div className="w-8 h-8 rounded bg-brand-accent/10 flex items-center justify-center shrink-0 border border-brand-accent/20">
-                    <Heart size={14} className="text-brand-accent" fill="currentColor" />
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-[10px] font-bold text-zinc-100 uppercase tracking-wider truncate">
-                        {user?.role_label || user?.role_tag || 'OPERATOR'}
-                    </span>
-                    <span className="text-[7px] font-bold text-zinc-500 uppercase tracking-widest">AUTHORIZED ACCESS</span>
-                  </div>
-               </div>
+              <div className="flex items-center gap-3 p-3 rounded-md bg-zinc-900 border border-white/5 mb-5">
+                <div className="w-8 h-8 rounded bg-brand-accent/10 flex items-center justify-center shrink-0 border border-brand-accent/20">
+                  <Heart size={14} className="text-brand-accent" fill="currentColor" />
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-[10px] font-bold text-zinc-100 uppercase tracking-wider truncate">
+                    {user?.role_label || user?.role_tag || 'OPERATOR'}
+                  </span>
+                  <span className="text-[7px] font-bold text-zinc-500 uppercase tracking-widest">
+                    AUTHORIZED ACCESS
+                  </span>
+                </div>
+              </div>
 
-               <div className="flex items-center justify-between px-1">
-                  <div className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">SYSTEM_STATUS</div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-1 h-1 rounded-full bg-emerald-500" />
-                    <span className="text-[8px] font-mono text-emerald-500/80 uppercase">ONLINE</span>
-                  </div>
-               </div>
+              <div className="flex items-center justify-between px-1">
+                <div className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">
+                  SYSTEM_STATUS
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-1 h-1 rounded-full bg-emerald-500" />
+                  <span className="text-[8px] font-mono text-emerald-500/80 uppercase">ONLINE</span>
+                </div>
+              </div>
             </div>
           </motion.div>
         </>

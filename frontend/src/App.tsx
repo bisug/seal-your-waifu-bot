@@ -1,40 +1,60 @@
-import React, { useState, useEffect, Suspense, lazy, useCallback, useRef, ReactNode } from 'react';
-import { Loader2 } from 'lucide-react';
-import { SpeedInsights } from '@vercel/speed-insights/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { UserProvider, useUser } from './context/UserContext';
-import { Header } from './components/Header';
-import { NavigationDrawer } from './components/NavigationDrawer';
-import { IntroLoading } from './components/IntroLoading';
-import { Profile } from './pages/Profile';
-import { NotFound } from './pages/NotFound';
-import { Forbidden } from './pages/Forbidden';
-import { ServerError } from './pages/ServerError';
-import { Landing } from './pages/Landing';
-import { ToastProvider } from './components/ui/Toast';
+import { SpeedInsights } from '@vercel/speed-insights/react';
+import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
+import { Loader2 } from 'lucide-react';
+import React, { lazy, ReactNode, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { CharActionModal } from './components/character/CharActionModal';
+import { Header } from './components/Header';
+import { IntroLoading } from './components/IntroLoading';
+import { NavigationDrawer } from './components/NavigationDrawer';
 import { PetActionModal } from './components/pet/PetActionModal';
 import { GachaReveal } from './components/ui/GachaReveal';
-import { AnimatePresence, motion, MotionConfig } from 'framer-motion';
+import { ToastProvider } from './components/ui/Toast';
+import { UserProvider, useUser } from './context/UserContext';
+import { Forbidden } from './pages/Forbidden';
+import { Landing } from './pages/Landing';
+import { NotFound } from './pages/NotFound';
+import { Profile } from './pages/Profile';
+import { ServerError } from './pages/ServerError';
 
 // Lazy load all pages
-const Shop = lazy(() => import('./pages/Shop').then(m => ({ default: m.Shop })));
-const Gallery = lazy(() => import('./pages/Gallery').then(m => ({ default: m.Gallery })));
-const PetShop = lazy(() => import('./pages/PetShop').then(m => ({ default: m.PetShop })));
-const Hatchery = lazy(() => import('./pages/Hatchery').then(m => ({ default: m.Hatchery })));
-const Quests = lazy(() => import('./pages/Quests').then(m => ({ default: m.Quests })));
-const Pass = lazy(() => import('./pages/Pass').then(m => ({ default: m.Pass })));
-const Leaderboard = lazy(() => import('./pages/Leaderboard').then(m => ({ default: m.Leaderboard })));
-const Referrals = lazy(() => import('./pages/Referrals').then(m => ({ default: m.Referrals })));
-const Achievements = lazy(() => import('./pages/Achievements').then(m => ({ default: m.Achievements })));
-const MyPets = lazy(() => import('./pages/MyPets').then(m => ({ default: m.MyPets })));
-const Exchange = lazy(() => import('./pages/Exchange').then(m => ({ default: m.Exchange })));
-const Upload = lazy(() => import('./pages/Upload').then(m => ({ default: m.Upload })));
-const Staff = lazy(() => import('./pages/Staff').then(m => ({ default: m.Staff })));
-const Minigames = lazy(() => import('./pages/Minigames').then(m => ({ default: m.Minigames })));
+const Shop = lazy(() => import('./pages/Shop').then((m) => ({ default: m.Shop })));
+const Gallery = lazy(() => import('./pages/Gallery').then((m) => ({ default: m.Gallery })));
+const PetShop = lazy(() => import('./pages/PetShop').then((m) => ({ default: m.PetShop })));
+const Hatchery = lazy(() => import('./pages/Hatchery').then((m) => ({ default: m.Hatchery })));
+const Quests = lazy(() => import('./pages/Quests').then((m) => ({ default: m.Quests })));
+const Pass = lazy(() => import('./pages/Pass').then((m) => ({ default: m.Pass })));
+const Leaderboard = lazy(() =>
+  import('./pages/Leaderboard').then((m) => ({ default: m.Leaderboard })),
+);
+const Referrals = lazy(() => import('./pages/Referrals').then((m) => ({ default: m.Referrals })));
+const Achievements = lazy(() =>
+  import('./pages/Achievements').then((m) => ({ default: m.Achievements })),
+);
+const MyPets = lazy(() => import('./pages/MyPets').then((m) => ({ default: m.MyPets })));
+const Exchange = lazy(() => import('./pages/Exchange').then((m) => ({ default: m.Exchange })));
+const Upload = lazy(() => import('./pages/Upload').then((m) => ({ default: m.Upload })));
+const Staff = lazy(() => import('./pages/Staff').then((m) => ({ default: m.Staff })));
+const Minigames = lazy(() => import('./pages/Minigames').then((m) => ({ default: m.Minigames })));
 
-const VALID_TABS = ['profile', 'incubation', 'shop', 'exchange', 'gallery', 'pets', 'referrals', 'quests', 'pass', 'leaderboard', 'achievements', 'mypets', 'upload', 'staff', 'minigames'];
+const VALID_TABS = [
+  'profile',
+  'incubation',
+  'shop',
+  'exchange',
+  'gallery',
+  'pets',
+  'referrals',
+  'quests',
+  'pass',
+  'leaderboard',
+  'achievements',
+  'mypets',
+  'upload',
+  'staff',
+  'minigames',
+];
 const TAB_ALIASES: Record<string, string> = {
   profile: 'profile',
   home: 'profile',
@@ -120,13 +140,13 @@ const normalizeRouteToken = (value?: string | null) => {
     // ignore
   }
 
-  token = token
-    .toLowerCase()
-    .replace(/^https?:\/\/[^/]+/i, '')
-    .replace(/^#/, '')
-    .replace(/^[?/]+/, '')
-    .split(/[?&#=]/)[0] ?? ''
-    .replace(/^\/+|\/+$/g, '');
+  token =
+    token
+      .toLowerCase()
+      .replace(/^https?:\/\/[^/]+/i, '')
+      .replace(/^#/, '')
+      .replace(/^[?/]+/, '')
+      .split(/[?&#=]/)[0] ?? ''.replace(/^\/+|\/+$/g, '');
 
   const lastSegment = token.split('/').filter(Boolean).pop() || token;
   return lastSegment.replace(/[-\s]+/g, '_').replace(/[^a-z0-9_]/g, '') || null;
@@ -178,10 +198,9 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 }
 
-
 const AppContent = () => {
   const { user, loading, error } = useUser();
-  
+
   const getInitialRoute = useCallback((): RouteTarget => {
     const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
     const candidates = [...getCandidates(), startParam];
@@ -216,36 +235,36 @@ const AppContent = () => {
     if (!tg) return;
 
     if (backHandlerRef.current) {
-        tg.BackButton?.offClick?.(backHandlerRef.current);
+      tg.BackButton?.offClick?.(backHandlerRef.current);
     }
 
     if (selectedChar || selectedPet || isMenuOpen) {
-        const handler = () => {
-            setSelectedChar(null);
-            setSelectedPet(null);
-            setIsMenuOpen(false);
-        };
-        backHandlerRef.current = handler;
-        tg.BackButton?.show?.();
-        tg.BackButton?.onClick?.(handler);
+      const handler = () => {
+        setSelectedChar(null);
+        setSelectedPet(null);
+        setIsMenuOpen(false);
+      };
+      backHandlerRef.current = handler;
+      tg.BackButton?.show?.();
+      tg.BackButton?.onClick?.(handler);
     } else {
-        backHandlerRef.current = null;
-        tg.BackButton?.hide?.();
-        tg.enableVerticalSwipes?.();
+      backHandlerRef.current = null;
+      tg.BackButton?.hide?.();
+      tg.enableVerticalSwipes?.();
     }
 
     // Lock Telegram's swipe-to-close while a bottom-sheet dialog is open so it
     // doesn't fight our own sheet drag.
     if (selectedChar || selectedPet || isMenuOpen) {
-        tg.disableVerticalSwipes?.();
+      tg.disableVerticalSwipes?.();
     }
 
     tg.expand?.();
 
     return () => {
-        if (backHandlerRef.current) {
-            tg?.BackButton?.offClick?.(backHandlerRef.current);
-        }
+      if (backHandlerRef.current) {
+        tg?.BackButton?.offClick?.(backHandlerRef.current);
+      }
     };
   }, [selectedChar, selectedPet, isMenuOpen]);
 
@@ -259,17 +278,17 @@ const AppContent = () => {
     tg.ready?.();
 
     const applyTheme = () => {
-        const params = tg.themeParams || {};
-        const bg = params.bg_color || params.secondary_bg_color || '#09090b';
-        tg.setHeaderColor?.(bg);
-        tg.setBackgroundColor?.(bg);
-        document.documentElement.style.colorScheme = tg.colorScheme === 'light' ? 'light' : 'dark';
+      const params = tg.themeParams || {};
+      const bg = params.bg_color || params.secondary_bg_color || '#09090b';
+      tg.setHeaderColor?.(bg);
+      tg.setBackgroundColor?.(bg);
+      document.documentElement.style.colorScheme = tg.colorScheme === 'light' ? 'light' : 'dark';
     };
 
     applyTheme();
     tg.onEvent?.('themeChanged', applyTheme);
     return () => {
-        tg.offEvent?.('themeChanged', applyTheme);
+      tg.offEvent?.('themeChanged', applyTheme);
     };
   }, []);
 
@@ -294,18 +313,21 @@ const AppContent = () => {
 
   const canViewUpload = Boolean(user?.can_upload ?? user?.is_sudo);
   const canViewStaff = Boolean(user?.is_sudo);
-  const isBlockedTab = (activeTab === 'upload' && !canViewUpload) || (activeTab === 'staff' && !canViewStaff);
+  const isBlockedTab =
+    (activeTab === 'upload' && !canViewUpload) || (activeTab === 'staff' && !canViewStaff);
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-zinc-950">
       <Header onMenuClick={() => setIsMenuOpen(true)} />
 
       <main className="app-scroller adaptive-px pb-8">
-        <Suspense fallback={
-          <div className="flex flex-col items-center justify-center h-full gap-4">
-            <Loader2 size={24} className="animate-spin text-zinc-700" />
-          </div>
-        }>
+        <Suspense
+          fallback={
+            <div className="flex flex-col items-center justify-center h-full gap-4">
+              <Loader2 size={24} className="animate-spin text-zinc-700" />
+            </div>
+          }
+        >
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
@@ -318,7 +340,9 @@ const AppContent = () => {
               {activeTab === 'profile' && (
                 <Profile
                   onCharClick={setSelectedChar}
-                  focusCollection={activeRoute.alias === 'harem' || activeRoute.alias === 'collection'}
+                  focusCollection={
+                    activeRoute.alias === 'harem' || activeRoute.alias === 'collection'
+                  }
                 />
               )}
               {activeTab === 'incubation' && <Hatchery />}
@@ -356,17 +380,10 @@ const AppContent = () => {
         />
       )}
       {selectedPet && (
-        <PetActionModal
-          selectedPet={selectedPet}
-          setSelectedPet={setSelectedPet}
-          user={user}
-        />
+        <PetActionModal selectedPet={selectedPet} setSelectedPet={setSelectedPet} user={user} />
       )}
       {revealedChar && (
-        <GachaReveal
-          character={revealedChar}
-          onClose={() => setRevealedChar(null)}
-        />
+        <GachaReveal character={revealedChar} onClose={() => setRevealedChar(null)} />
       )}
 
       <NavigationDrawer

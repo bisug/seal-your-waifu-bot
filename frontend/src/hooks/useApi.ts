@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiFetch, getErrorMessage } from '../api/client';
 
-const apiCache = new Map<string, { data: any, timestamp: number }>();
+const apiCache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL = 1000 * 60 * 5; // 5 minutes
 
 // Shallow array comparison utility
@@ -11,7 +11,7 @@ function shallowEqual(obj1: any, obj2: any) {
   const keys2 = Object.keys(obj2 || {});
   if (keys1.length !== keys2.length) return false;
   for (const key of keys1) {
-      if (obj1[key] !== obj2[key]) return false;
+    if (obj1[key] !== obj2[key]) return false;
   }
   return true;
 }
@@ -24,7 +24,11 @@ interface UseApiOptions<T> extends RequestInit {
 /**
  * Standardized API Hook
  */
-export const useApi = <T = any>(endpoint: string, options: UseApiOptions<T> = {}, deps: any[] = []) => {
+export const useApi = <T = any>(
+  endpoint: string,
+  options: UseApiOptions<T> = {},
+  deps: any[] = [],
+) => {
   const [data, setData] = useState<T | null>(options.initialData || null);
   const [loading, setLoading] = useState(!options.manual);
   const [error, setError] = useState<string | null>(null);
@@ -45,38 +49,41 @@ export const useApi = <T = any>(endpoint: string, options: UseApiOptions<T> = {}
     }
   }, [options, currentOptions]);
 
-  const execute = useCallback(async (overrides: RequestInit = {}) => {
-    const isGet = !optionsRef.current.method || optionsRef.current.method === 'GET';
-    const cacheKey = endpoint + JSON.stringify(optionsRef.current.body || {});
+  const execute = useCallback(
+    async (overrides: RequestInit = {}) => {
+      const isGet = !optionsRef.current.method || optionsRef.current.method === 'GET';
+      const cacheKey = endpoint + JSON.stringify(optionsRef.current.body || {});
 
-    if (isGet && apiCache.has(cacheKey)) {
+      if (isGet && apiCache.has(cacheKey)) {
         const cached = apiCache.get(cacheKey)!;
         if (Date.now() - cached.timestamp < CACHE_TTL) {
-            setData(cached.data);
-            setLoading(false);
-            // On first mount we still refetch so a view doesn't open onto
-            // another view's stale cache; later reads may use it directly.
-            if (mountedRef.current) return;
+          setData(cached.data);
+          setLoading(false);
+          // On first mount we still refetch so a view doesn't open onto
+          // another view's stale cache; later reads may use it directly.
+          if (mountedRef.current) return;
         }
-    }
-    mountedRef.current = true;
-
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await apiFetch(endpoint, { ...optionsRef.current, ...overrides });
-      if (isGet) {
-          apiCache.set(cacheKey, { data: res, timestamp: Date.now() });
       }
-      setData(res);
-      return res;
-    } catch (err: any) {
-      setError(getErrorMessage(err));
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [endpoint]);
+      mountedRef.current = true;
+
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await apiFetch(endpoint, { ...optionsRef.current, ...overrides });
+        if (isGet) {
+          apiCache.set(cacheKey, { data: res, timestamp: Date.now() });
+        }
+        setData(res);
+        return res;
+      } catch (err: any) {
+        setError(getErrorMessage(err));
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [endpoint],
+  );
 
   useEffect(() => {
     if (!optionsRef.current.manual) {

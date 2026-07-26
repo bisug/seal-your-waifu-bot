@@ -20,7 +20,9 @@ export const ErrorState = ({
       <AlertCircle size={20} className="text-red-500" />
     </div>
     <h3 className="text-sm font-bold text-zinc-100 uppercase tracking-widest mb-1">{title}</h3>
-    <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-widest max-w-[220px] leading-relaxed">{message}</p>
+    <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-widest max-w-[220px] leading-relaxed">
+      {message}
+    </p>
     {onAction && (
       <Button
         variant="outline"
