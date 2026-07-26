@@ -22,7 +22,7 @@ interface TelegramWebApp {
   };
   version: string;
   platform: string;
-  colorScheme: "light" | "dark";
+  colorScheme: 'light' | 'dark';
   themeParams: {
     bg_color?: string;
     text_color?: string;
@@ -64,8 +64,8 @@ interface TelegramWebApp {
     setParams: (params: any) => void;
   };
   HapticFeedback: {
-    impactOccurred: (style: "light" | "medium" | "heavy" | "rigid" | "soft") => void;
-    notificationOccurred: (type: "error" | "success" | "warning") => void;
+    impactOccurred: (style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft') => void;
+    notificationOccurred: (type: 'error' | 'success' | 'warning') => void;
     selectionChanged: () => void;
   };
   CloudStorage: any;
@@ -87,7 +87,11 @@ interface TelegramWebApp {
   readTextFromClipboard: (callback?: (text: string) => void) => void;
   requestWriteAccess: (callback?: (allowed: boolean) => void) => void;
   requestContact: (callback?: (shared: boolean) => void) => void;
-  invokeCustomMethod: (method: string, params: any, callback?: (err: any, res: any) => void) => void;
+  invokeCustomMethod: (
+    method: string,
+    params: any,
+    callback?: (err: any, res: any) => void,
+  ) => void;
   setHeaderColor: (color: string) => void;
   setBackgroundColor: (color: string) => void;
   enableClosingConfirmation: () => void;

@@ -1,7 +1,16 @@
 import React from 'react';
 import { cn } from '../../utils';
 
-type BadgeVariant = 'primary' | 'secondary' | 'outline' | 'success' | 'warning' | 'danger' | 'premium' | 'rare' | 'epic';
+type BadgeVariant =
+  | 'primary'
+  | 'secondary'
+  | 'outline'
+  | 'success'
+  | 'warning'
+  | 'danger'
+  | 'premium'
+  | 'rare'
+  | 'epic';
 type BadgeSize = 'xs' | 'sm';
 
 interface BadgeProps {
@@ -42,7 +51,7 @@ export const Badge = ({
         'inline-flex items-center gap-1.5 border whitespace-nowrap select-none transition-colors duration-200',
         variants[variant],
         sizes[size],
-        className
+        className,
       )}
     >
       {Icon && <Icon size={size === 'xs' ? 8 : 10} strokeWidth={2.5} className="shrink-0" />}

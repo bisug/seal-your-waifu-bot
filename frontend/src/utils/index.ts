@@ -1,4 +1,4 @@
-import { clsx, type ClassValue } from 'clsx';
+import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
 /**
@@ -18,7 +18,10 @@ export function formatNumber(num: number | string | null | undefined) {
 
 export function cleanRarityLabel(rarity: string) {
   return rarity
-    .replace(/[\u2700-\u27bf]|[\u2190-\u21ff]|[\u2000-\u206f]|[\u2600-\u26ff]|[\u2b00-\u2bff]|[\u00a0-\u00bf]|\u2013|\u2014/g, '')
+    .replace(
+      /[\u2700-\u27bf]|[\u2190-\u21ff]|[\u2000-\u206f]|[\u2600-\u26ff]|[\u2b00-\u2bff]|[\u00a0-\u00bf]|\u2013|\u2014/g,
+      '',
+    )
     .trim();
 }
 
@@ -34,6 +37,6 @@ const PLACEHOLDER_SVG =
   "<rect x='8' y='8' width='284' height='404' rx='10' fill='none' stroke='#1f2230' stroke-width='2'/>" +
   "<text x='150' y='200' font-family='Arial,Helvetica,sans-serif' font-size='26' font-weight='800' fill='#2a2d3a' text-anchor='middle' letter-spacing='3'>SEAL</text>" +
   "<text x='150' y='226' font-family='Arial,Helvetica,sans-serif' font-size='11' font-weight='600' fill='#3a3d4a' text-anchor='middle' letter-spacing='2'>NO IMAGE</text>" +
-  "</svg>";
+  '</svg>';
 
 export const FALLBACK_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(PLACEHOLDER_SVG)}`;

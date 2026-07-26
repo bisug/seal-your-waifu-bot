@@ -1,11 +1,15 @@
+import { HTMLMotionProps, motion } from 'framer-motion';
 import React from 'react';
-import { motion, HTMLMotionProps } from 'framer-motion';
 import { cn } from '../../utils';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'accent' | 'glass';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
-interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onAnimationStart' | 'onDrag' | 'onDragStart' | 'onDragEnd'> {
+interface ButtonProps
+  extends Omit<
+    React.ButtonHTMLAttributes<HTMLButtonElement>,
+    'onAnimationStart' | 'onDrag' | 'onDragStart' | 'onDragEnd'
+  > {
   variant?: ButtonVariant;
   size?: ButtonSize;
   isLoading?: boolean;
@@ -14,14 +18,31 @@ interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = 'primary', size = 'md', isLoading, children, disabled, leftIcon, rightIcon, ...props }, ref) => {
+  (
+    {
+      className,
+      variant = 'primary',
+      size = 'md',
+      isLoading,
+      children,
+      disabled,
+      leftIcon,
+      rightIcon,
+      ...props
+    },
+    ref,
+  ) => {
     const variants: Record<ButtonVariant, string> = {
       primary: 'bg-white text-zinc-950 hover:bg-zinc-200 active:scale-[0.98]',
-      secondary: 'bg-zinc-900 text-zinc-100 border border-white/10 hover:bg-zinc-800 active:scale-[0.98]',
-      outline: 'bg-transparent border border-white/10 text-zinc-300 hover:bg-white/5 active:scale-[0.98]',
+      secondary:
+        'bg-zinc-900 text-zinc-100 border border-white/10 hover:bg-zinc-800 active:scale-[0.98]',
+      outline:
+        'bg-transparent border border-white/10 text-zinc-300 hover:bg-white/5 active:scale-[0.98]',
       ghost: 'bg-transparent text-zinc-500 hover:text-zinc-200 hover:bg-white/5',
-      danger: 'bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 active:scale-[0.98]',
-      accent: 'bg-brand-accent text-white hover:bg-brand-accent/90 shadow-[0_4px_12px_rgba(59,130,246,0.2)] active:scale-[0.98]',
+      danger:
+        'bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 active:scale-[0.98]',
+      accent:
+        'bg-brand-accent text-white hover:bg-brand-accent/90 shadow-[0_4px_12px_rgba(59,130,246,0.2)] active:scale-[0.98]',
       glass: 'glass-panel text-white hover:bg-white/10 active:scale-[0.98]',
     };
 
@@ -40,14 +61,16 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           'inline-flex items-center justify-center gap-2.5 transition-all focus:outline-none focus:ring-2 focus:ring-brand-accent/40 disabled:opacity-40 disabled:pointer-events-none whitespace-nowrap overflow-hidden relative',
           variants[variant],
           sizes[size],
-          className
+          className,
         )}
-        {...(props as HTMLMotionProps<"button">)}
+        {...(props as HTMLMotionProps<'button'>)}
       >
-        <div className={cn(
-          "flex items-center justify-center gap-2 transition-all duration-200",
-          isLoading ? "opacity-0 scale-95" : "opacity-100 scale-100"
-        )}>
+        <div
+          className={cn(
+            'flex items-center justify-center gap-2 transition-all duration-200',
+            isLoading ? 'opacity-0 scale-95' : 'opacity-100 scale-100',
+          )}
+        >
           {leftIcon && <span className="shrink-0 opacity-80">{leftIcon}</span>}
           {children}
           {rightIcon && <span className="shrink-0 opacity-80">{rightIcon}</span>}
@@ -60,7 +83,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         )}
       </motion.button>
     );
-  }
+  },
 );
 
 Button.displayName = 'Button';

@@ -1,22 +1,22 @@
-import React, { useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   ChevronDown,
   Coins,
   Gem,
+  History,
   Image as ImageIcon,
   PawPrint,
   ShieldCheck,
   Terminal,
-  History,
 } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { Avatar } from '../components/Avatar';
+import { Badge } from '../components/ui/Badge';
+import { Card } from '../components/ui/Card';
 import { ErrorState } from '../components/ui/ErrorState';
+import { Skeleton } from '../components/ui/Skeleton';
 import { useApi } from '../hooks/useApi';
 import { cn, formatNumber } from '../utils';
-import { Card } from '../components/ui/Card';
-import { Badge } from '../components/ui/Badge';
-import { Skeleton } from '../components/ui/Skeleton';
-import { motion, AnimatePresence } from 'framer-motion';
 
 interface UploadReward {
   balance?: number;
@@ -76,7 +76,12 @@ interface StaffContributionsResponse {
 
 const getInitials = (name: string) => {
   const parts = name.replace(/^@/, '').split(/\s+/).filter(Boolean);
-  return (parts.slice(0, 2).map(part => part[0]).join('') || 'U').toUpperCase();
+  return (
+    parts
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join('') || 'U'
+  ).toUpperCase();
 };
 
 const formatDate = (value?: string | null) => {
@@ -86,71 +91,95 @@ const formatDate = (value?: string | null) => {
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }).toUpperCase();
 };
 
-const allUploadsFor = (member: StaffMember) => (
+const allUploadsFor = (member: StaffMember) =>
   [...member.uploads.characters, ...member.uploads.pets].sort((a, b) => {
     const aTime = a.uploaded_at ? new Date(a.uploaded_at).getTime() : 0;
     const bTime = b.uploaded_at ? new Date(b.uploaded_at).getTime() : 0;
     return bTime - aTime;
-  })
-);
+  });
 
 const StaffDetails = ({ member }: { member: StaffMember }) => {
   const uploads = allUploadsFor(member);
 
   return (
-    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} className="mt-4 pt-4 border-t border-white/5 space-y-6 overflow-hidden">
+    <motion.div
+      initial={{ height: 0, opacity: 0 }}
+      animate={{ height: 'auto', opacity: 1 }}
+      className="mt-4 pt-4 border-t border-white/5 space-y-6 overflow-hidden"
+    >
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {[
-            { icon: ImageIcon, label: 'Assets', value: formatNumber(member.contributions.character_uploads) },
-            { icon: PawPrint, label: 'Units', value: formatNumber(member.contributions.pet_uploads) },
-            { icon: Gem, label: 'Zenith', value: formatNumber(member.stats.zenith) },
-            { icon: Coins, label: 'Shards', value: formatNumber(member.stats.balance) },
+          {
+            icon: ImageIcon,
+            label: 'Assets',
+            value: formatNumber(member.contributions.character_uploads),
+          },
+          { icon: PawPrint, label: 'Units', value: formatNumber(member.contributions.pet_uploads) },
+          { icon: Gem, label: 'Zenith', value: formatNumber(member.stats.zenith) },
+          { icon: Coins, label: 'Shards', value: formatNumber(member.stats.balance) },
         ].map((stat, i) => (
-            <div key={i} className="bg-zinc-950 p-2.5 rounded border border-white/5">
-               <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-1">{stat.label}</p>
-               <p className="text-[11px] font-mono font-bold text-zinc-100 leading-none">{stat.value}</p>
-            </div>
+          <div key={i} className="bg-zinc-950 p-2.5 rounded border border-white/5">
+            <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-1">
+              {stat.label}
+            </p>
+            <p className="text-[11px] font-mono font-bold text-zinc-100 leading-none">
+              {stat.value}
+            </p>
+          </div>
         ))}
       </div>
 
       <div className="space-y-2.5">
         <div className="flex items-center gap-2 px-1">
-           <History size={12} className="text-zinc-600" />
-           <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">Recent Activity</span>
+          <History size={12} className="text-zinc-600" />
+          <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">
+            Recent Activity
+          </span>
         </div>
         {uploads.length > 0 ? (
           <div className="divide-y divide-white/5 bg-zinc-950 border border-white/5 rounded-md overflow-hidden">
-            {uploads.map(item => (
-                <div key={`${item.type}:${item.id}:${item.name}`} className="flex items-center gap-3 p-2.5 hover:bg-white/[0.02] transition-colors">
-                    <div className="h-9 w-9 shrink-0 overflow-hidden rounded bg-zinc-900 border border-white/10">
-                        {item.image ? (
-                        <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
-                        ) : (
-                        <div className="flex h-full w-full items-center justify-center text-zinc-800">
-                            {item.type === 'pet' ? <PawPrint size={16} /> : <ImageIcon size={16} />}
-                        </div>
-                        )}
+            {uploads.map((item) => (
+              <div
+                key={`${item.type}:${item.id}:${item.name}`}
+                className="flex items-center gap-3 p-2.5 hover:bg-white/[0.02] transition-colors"
+              >
+                <div className="h-9 w-9 shrink-0 overflow-hidden rounded bg-zinc-900 border border-white/10">
+                  {item.image ? (
+                    <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-zinc-800">
+                      {item.type === 'pet' ? <PawPrint size={16} /> : <ImageIcon size={16} />}
                     </div>
-                    <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                            <p className="truncate text-[11px] font-bold text-zinc-100 uppercase tracking-tight">{item.name}</p>
-                            <Badge variant="secondary" size="xs" className="px-1 py-0 opacity-60">
-                                {item.type === 'pet' ? 'UNIT' : 'ASSET'}
-                            </Badge>
-                        </div>
-                        <p className="truncate text-[9px] font-medium text-zinc-600 uppercase tracking-widest mt-0.5">
-                            {[item.subtitle, item.rarity, item.id ? `ID_${item.id}` : ''].filter(Boolean).join(' • ')}
-                        </p>
-                    </div>
-                    <div className="shrink-0 text-right pr-1">
-                        <p className="text-[8px] font-mono font-bold text-zinc-500">{formatDate(item.uploaded_at)}</p>
-                    </div>
+                  )}
                 </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="truncate text-[11px] font-bold text-zinc-100 uppercase tracking-tight">
+                      {item.name}
+                    </p>
+                    <Badge variant="secondary" size="xs" className="px-1 py-0 opacity-60">
+                      {item.type === 'pet' ? 'UNIT' : 'ASSET'}
+                    </Badge>
+                  </div>
+                  <p className="truncate text-[9px] font-medium text-zinc-600 uppercase tracking-widest mt-0.5">
+                    {[item.subtitle, item.rarity, item.id ? `ID_${item.id}` : '']
+                      .filter(Boolean)
+                      .join(' • ')}
+                  </p>
+                </div>
+                <div className="shrink-0 text-right pr-1">
+                  <p className="text-[8px] font-mono font-bold text-zinc-500">
+                    {formatDate(item.uploaded_at)}
+                  </p>
+                </div>
+              </div>
             ))}
           </div>
         ) : (
           <div className="py-6 text-center bg-zinc-950 border border-dashed border-white/5 rounded-md">
-             <p className="text-[9px] font-bold text-zinc-700 uppercase tracking-widest">No contribution records</p>
+            <p className="text-[9px] font-bold text-zinc-700 uppercase tracking-widest">
+              No contribution records
+            </p>
           </div>
         )}
       </div>
@@ -159,7 +188,9 @@ const StaffDetails = ({ member }: { member: StaffMember }) => {
 };
 
 export const Staff = () => {
-  const { data, loading, error, execute } = useApi<StaffContributionsResponse>('/admin/sudos/contributions');
+  const { data, loading, error, execute } = useApi<StaffContributionsResponse>(
+    '/admin/sudos/contributions',
+  );
   const [openStaffId, setOpenStaffId] = useState<number | null>(null);
 
   const rankedStaff = useMemo(() => {
@@ -173,97 +204,118 @@ export const Staff = () => {
     <div className="pb-32 pt-6 max-w-4xl mx-auto adaptive-px space-y-8">
       <header className="space-y-1">
         <div className="flex items-center gap-2.5">
-            <ShieldCheck className="text-brand-accent" size={20} />
-            <h1 className="text-xl font-bold text-zinc-100 uppercase tracking-tight">Admin Terminal</h1>
+          <ShieldCheck className="text-brand-accent" size={20} />
+          <h1 className="text-xl font-bold text-zinc-100 uppercase tracking-tight">
+            Admin Terminal
+          </h1>
         </div>
         <div className="flex items-center gap-2 opacity-60">
-            <Terminal size={10} className="text-zinc-500" />
-            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+          <Terminal size={10} className="text-zinc-500" />
+          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
             Staff records & contributions
-            </p>
+          </p>
         </div>
       </header>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-            { label: 'Staff', value: data?.summary.total_staff || 0, variant: 'primary' },
-            { label: 'Uploads', value: data?.summary.total_uploads || 0, variant: 'default' },
-            { label: 'Assets', value: data?.summary.character_uploads || 0, variant: 'success' },
-            { label: 'Units', value: data?.summary.pet_uploads || 0, variant: 'warning' },
+          { label: 'Staff', value: data?.summary.total_staff || 0, variant: 'primary' },
+          { label: 'Uploads', value: data?.summary.total_uploads || 0, variant: 'default' },
+          { label: 'Assets', value: data?.summary.character_uploads || 0, variant: 'success' },
+          { label: 'Units', value: data?.summary.pet_uploads || 0, variant: 'warning' },
         ].map((item, i) => (
-            <Card key={i} variant="default" className="p-3.5">
-              <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest block mb-1.5">{item.label}</span>
-              <p className="text-sm font-mono font-bold text-zinc-100 tabular-nums">{formatNumber(item.value)}</p>
-            </Card>
+          <Card key={i} variant="default" className="p-3.5">
+            <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest block mb-1.5">
+              {item.label}
+            </span>
+            <p className="text-sm font-mono font-bold text-zinc-100 tabular-nums">
+              {formatNumber(item.value)}
+            </p>
+          </Card>
         ))}
       </div>
 
       <div className="space-y-4">
-        <h2 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest px-1">Personnel Roster</h2>
+        <h2 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest px-1">
+          Personnel Roster
+        </h2>
 
         <AnimatePresence mode="wait">
-        {error && !data ? (
+          {error && !data ? (
             <div className="py-12">
-                <ErrorState message={error} onAction={() => execute()} />
+              <ErrorState message={error} onAction={() => execute()} />
             </div>
-        ) : loading ? (
+          ) : loading ? (
             <div className="space-y-2">
-                {Array.from({ length: 4 }).map((_, index) => (
-                    <Skeleton key={index} className="h-16 w-full rounded-md" />
-                ))}
+              {Array.from({ length: 4 }).map((_, index) => (
+                <Skeleton key={index} className="h-16 w-full rounded-md" />
+              ))}
             </div>
-        ) : rankedStaff.length > 0 ? (
+          ) : rankedStaff.length > 0 ? (
             <div className="space-y-2">
-            {rankedStaff.map(member => {
+              {rankedStaff.map((member) => {
                 const isOpen = openStaffId === member.id;
 
                 return (
-                <Card key={member.id} variant="default" className={cn(
-                    "p-3.5 transition-all",
-                    isOpen && "border-brand-accent/30"
-                )}>
+                  <Card
+                    key={member.id}
+                    variant="default"
+                    className={cn('p-3.5 transition-all', isOpen && 'border-brand-accent/30')}
+                  >
                     <button
-                        type="button"
-                        onClick={() => {
-                            window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
-                            setOpenStaffId(isOpen ? null : member.id);
-                        }}
-                        className="flex w-full items-center gap-4 text-left"
+                      type="button"
+                      onClick={() => {
+                        window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
+                        setOpenStaffId(isOpen ? null : member.id);
+                      }}
+                      className="flex w-full items-center gap-4 text-left"
                     >
-                        <Avatar
-                            src={member.avatar}
-                            alt={member.display_name}
-                            fallbackText={getInitials(member.display_name)}
-                            className="h-11 w-11 rounded-md border border-white/10 bg-zinc-900"
+                      <Avatar
+                        src={member.avatar}
+                        alt={member.display_name}
+                        fallbackText={getInitials(member.display_name)}
+                        className="h-11 w-11 rounded-md border border-white/10 bg-zinc-900"
+                      />
+                      <div className="min-w-0 flex-1 space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <h2 className="truncate text-[13px] font-bold text-zinc-100 uppercase tracking-tight">
+                            {member.display_name}
+                          </h2>
+                          <Badge variant="primary" size="xs">
+                            {member.role_tag}
+                          </Badge>
+                        </div>
+                        <p className="truncate text-[9px] font-bold text-zinc-600 uppercase tracking-widest">
+                          {[member.username ? `@${member.username}` : '', `ID_${member.id}`]
+                            .filter(Boolean)
+                            .join(' • ')}
+                        </p>
+                      </div>
+                      <div className="shrink-0 text-right pr-2 hidden xs:block">
+                        <p className="text-lg font-mono font-bold text-zinc-100 leading-none">
+                          {formatNumber(member.contributions.total_uploads)}
+                        </p>
+                        <p className="text-[7px] font-bold uppercase tracking-widest text-zinc-700">
+                          UPLOADS
+                        </p>
+                      </div>
+                      <div className="shrink-0">
+                        <ChevronDown
+                          size={16}
+                          className={cn(
+                            'text-zinc-600 transition-transform',
+                            isOpen && 'rotate-180 text-brand-accent',
+                          )}
                         />
-                        <div className="min-w-0 flex-1 space-y-0.5">
-                            <div className="flex items-center gap-2">
-                                <h2 className="truncate text-[13px] font-bold text-zinc-100 uppercase tracking-tight">{member.display_name}</h2>
-                                <Badge variant="primary" size="xs">
-                                    {member.role_tag}
-                                </Badge>
-                            </div>
-                            <p className="truncate text-[9px] font-bold text-zinc-600 uppercase tracking-widest">
-                                {[member.username ? `@${member.username}` : '', `ID_${member.id}`].filter(Boolean).join(' • ')}
-                            </p>
-                        </div>
-                        <div className="shrink-0 text-right pr-2 hidden xs:block">
-                            <p className="text-lg font-mono font-bold text-zinc-100 leading-none">{formatNumber(member.contributions.total_uploads)}</p>
-                            <p className="text-[7px] font-bold uppercase tracking-widest text-zinc-700">UPLOADS</p>
-                        </div>
-                        <div className="shrink-0">
-                            <ChevronDown size={16} className={cn("text-zinc-600 transition-transform", isOpen && "rotate-180 text-brand-accent")} />
-                        </div>
+                      </div>
                     </button>
 
-                    <AnimatePresence>
-                       {isOpen && <StaffDetails member={member} />}
-                    </AnimatePresence>
-                </Card>
+                    <AnimatePresence>{isOpen && <StaffDetails member={member} />}</AnimatePresence>
+                  </Card>
                 );
-            })}
+              })}
             </div>
-        ) : null}
+          ) : null}
         </AnimatePresence>
       </div>
     </div>

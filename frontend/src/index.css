@@ -4,7 +4,7 @@
   /* Colors - Premium Product Palette (90% Professional / 10% Tactical) */
   --color-background: #09090b;
   --color-foreground: #fafafa;
-  
+
   --color-brand-midnight: #09090b;
   --color-brand-deep: #0c0c0e;
   --color-brand-surface: #18181b;
@@ -45,17 +45,33 @@
   --animate-shimmer: shimmer 2.5s linear infinite;
 
   @keyframes shimmer {
-    from { transform: translateX(-100%); }
-    to { transform: translateX(100%); }
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(100%);
+    }
   }
 
   @keyframes in {
-    from { opacity: 0; transform: translateY(4px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
   @keyframes out {
-    from { opacity: 1; transform: translateY(0); }
-    to { opacity: 0; transform: translateY(4px); }
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(4px);
+    }
   }
 }
 
@@ -116,7 +132,7 @@ body {
   overflow: hidden;
   background-color: var(--background);
   color: var(--foreground);
-  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  font-family: "Outfit", "Inter", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overscroll-behavior: none;
@@ -125,10 +141,11 @@ body {
 }
 
 .font-mono {
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
 }
 
-button, a {
+button,
+a {
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
@@ -162,7 +179,7 @@ button, a {
 }
 
 .corner-accent::after {
-  content: '';
+  content: "";
   position: absolute;
   width: 4px;
   height: 4px;
@@ -206,7 +223,7 @@ button, a {
 
 /* Stats Typography */
 .stats-value {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-weight: 600;
   letter-spacing: -0.03em;
 }
@@ -227,14 +244,9 @@ button, a {
 }
 
 .shimmer::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.03),
-    transparent
-  );
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.03), transparent);
   animation: shimmer 2s infinite;
 }
