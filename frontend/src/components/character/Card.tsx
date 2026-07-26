@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import { CheckCircle2, Gem } from 'lucide-react';
 import React, { forwardRef, memo } from 'react';
 import { Character } from '../../context/UserContext';
@@ -11,7 +10,7 @@ interface CardProps {
 }
 
 export const Card = memo(
-  forwardRef<HTMLDivElement, CardProps>(({ character, onClick }, ref) => {
+  forwardRef<HTMLButtonElement, CardProps>(({ character, onClick }, ref) => {
     const handleClick = () => {
       window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
       if (onClick) onClick(character);
@@ -56,17 +55,17 @@ export const Card = memo(
     const rarityVariant = getRarityVariant(rarityLabel);
 
     return (
-      <motion.div
-        ref={ref as any}
-        whileTap={{ scale: 0.98 }}
-        onClick={handleClick}
-        className={cn(
-          'relative rounded-md overflow-hidden aspect-[3/4.2] group cursor-pointer select-none',
-          'bg-zinc-950 border border-white/5 transition-all duration-200',
-          'hover:border-white/10',
-          soldOut && 'border-red-500/10',
-        )}
-      >
+        <button
+          ref={ref}
+          type="button"
+          onClick={handleClick}
+          className={cn(
+            'relative rounded-md overflow-hidden aspect-[3/4.2] group cursor-pointer select-none',
+            'bg-zinc-950 border border-white/5 transition-all duration-200 active:scale-[0.98]',
+            'hover:border-white/10',
+            soldOut && 'border-red-500/10',
+          )}
+        >
         {!imgError ? (
           <img
             src={character.img_url || FALLBACK_IMAGE}
@@ -137,7 +136,7 @@ export const Card = memo(
             )}
           </div>
         </div>
-      </motion.div>
+      </button>
     );
   }),
 );

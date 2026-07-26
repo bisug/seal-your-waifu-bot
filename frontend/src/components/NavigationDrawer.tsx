@@ -1,9 +1,7 @@
-import { AnimatePresence, motion } from 'framer-motion';
 import {
   BadgeCheck,
   BookOpen,
   ChartNoAxesColumnIncreasing,
-  CloudUpload,
   Egg,
   Gamepad2,
   Heart,
@@ -12,14 +10,13 @@ import {
   LogOut,
   PawPrint,
   Repeat2,
-  ShieldCheck,
   Store,
   Terminal,
   Ticket,
   UserPlus,
   X,
 } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { setSessionToken } from '../api/client';
 import { useUser } from '../context/UserContext';
 import { cn } from '../utils';
@@ -81,25 +78,11 @@ export const NavigationDrawer = ({
 }: NavigationDrawerProps) => {
   const { user } = useUser();
   const panelRef = useRef<HTMLDivElement>(null);
-  const staffItems = [
-    ...(user?.is_sudo ? [{ id: 'staff', label: 'Admin Terminal', icon: ShieldCheck }] : []),
-    ...((user?.can_upload ?? user?.is_sudo)
-      ? [{ id: 'upload', label: 'Asset Intake', icon: CloudUpload }]
-      : []),
-  ];
-  const sections =
-    staffItems.length > 0
-      ? [
-          ...SECTIONS,
-          {
-            title: 'SYSTEM',
-            items: staffItems,
-          },
-        ]
-      : SECTIONS;
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
+      setMounted(true);
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
@@ -119,35 +102,42 @@ export const NavigationDrawer = ({
     return () => window.removeEventListener('keydown', onKey);
   }, [isOpen, onClose]);
 
+  useEffect(() => {
+    if (!mounted || isOpen) return;
+    const t = setTimeout(() => setMounted(false), 250);
+    return () => clearTimeout(t);
+  }, [mounted, isOpen]);
+
   const handleItemClick = (id: string) => {
     onNavigate(id);
     onClose();
   };
 
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-md"
-          />
+  if (!mounted) return null;
 
-          <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed top-0 right-0 z-[120] h-full w-[280px] bg-zinc-950 border-l border-white/5 flex flex-col shadow-2xl"
-            ref={panelRef}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Navigation"
-            tabIndex={-1}
-          >
+  return (
+    <>
+      <button
+        type="button"
+        aria-label="Close navigation drawer"
+        onClick={onClose}
+        className={cn(
+          'fixed inset-0 z-[110] bg-black/60 transition-opacity duration-200',
+          isOpen ? 'opacity-100' : 'opacity-0',
+        )}
+      />
+
+      <div
+        className={cn(
+          'fixed top-0 right-0 z-[120] h-full w-[280px] bg-zinc-950 border-l border-white/5 flex flex-col shadow-2xl transition-transform duration-200 ease-out',
+          isOpen ? 'translate-x-0' : 'translate-x-full',
+        )}
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Navigation"
+        tabIndex={-1}
+      >
             {/* Header */}
             <div className="p-6 flex items-center justify-between border-b border-white/[0.04]">
               <div className="flex flex-col">
@@ -172,7 +162,7 @@ export const NavigationDrawer = ({
 
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto px-4 py-6 space-y-8">
-              {sections.map((section) => (
+              {SECTIONS.map((section) => (
                 <div key={section.title} className="space-y-3">
                   <h3 className="px-2 text-[9px] font-bold text-zinc-500 uppercase tracking-widest">
                     {section.title}
@@ -268,9 +258,7 @@ export const NavigationDrawer = ({
                 </div>
               </div>
             </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+          </div>
+    </>
   );
 };
