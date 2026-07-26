@@ -43,10 +43,10 @@ export interface Character {
   staff_discount?: number;
   owned: boolean;
   count: number;
-  stock_limit?: number;
-  sold_count?: number;
-  stock_remaining?: number;
-  sold_out?: boolean;
+  stock_limit?: number | undefined;
+  sold_count?: number | undefined;
+  stock_remaining?: number | undefined;
+  sold_out?: boolean | undefined;
 }
 
 export interface Pet {

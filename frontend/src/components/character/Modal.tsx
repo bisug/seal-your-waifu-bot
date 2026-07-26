@@ -21,6 +21,7 @@ export const Modal = ({ character, onClose, actions }: ModalProps) => {
             document.body.style.overflow = 'hidden';
             return () => { document.body.style.overflow = 'unset'; };
         }
+        return undefined;
     }, [character]);
 
     useEffect(() => {

@@ -217,7 +217,7 @@ export const MyPets = ({ onPetClick }: MyPetsProps) => {
         {currentPet && (
           <section className="space-y-4">
             <h2 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest px-1">Active Synchronization</h2>
-            <ActivePetCard pet={currentPet} onOpen={onPetClick} />
+            <ActivePetCard pet={currentPet} {...(onPetClick ? { onOpen: onPetClick } : {})} />
           </section>
         )}
 

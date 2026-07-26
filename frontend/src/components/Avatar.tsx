@@ -3,10 +3,10 @@ import { User } from 'lucide-react';
 import { cn } from '../utils';
 
 interface AvatarProps {
-  src?: string | null;
-  alt?: string;
-  className?: string;
-  fallbackText?: string;
+  src?: string | null | undefined;
+  alt?: string | undefined;
+  className?: string | undefined;
+  fallbackText?: string | undefined;
 }
 
 export const Avatar = ({ src, alt = "Avatar", className = "", fallbackText }: AvatarProps) => {

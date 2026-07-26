@@ -19,22 +19,22 @@ export const setSessionToken = (token: string | null) => {
 
 interface ApiErrorInit {
   message: string;
-  status?: number;
-  code?: string;
-  requestId?: string;
+  status?: number | undefined;
+  code?: string | undefined;
+  requestId?: string | undefined;
   details?: unknown;
-  retryable?: boolean;
+  retryable?: boolean | undefined;
   cause?: unknown;
 }
 
 interface ApiRequestInit extends RequestInit {
-  timeoutMs?: number;
+  timeoutMs?: number | undefined;
 }
 
 export class ApiError extends Error {
-  status?: number;
+  status?: number | undefined;
   code: string;
-  requestId?: string;
+  requestId?: string | undefined;
   details?: unknown;
   retryable: boolean;
 
@@ -60,8 +60,8 @@ export const getErrorMessage = (error: unknown) => {
 };
 
 interface RefreshSubscriber {
-  resolve: (value: any) => void;
-  reject: (reason?: any) => void;
+  resolve: (value: unknown) => void;
+  reject: (reason?: unknown) => void;
   endpoint: string;
   options: ApiRequestInit;
   retries: number;
