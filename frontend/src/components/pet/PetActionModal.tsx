@@ -44,6 +44,7 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }: PetActionM
             document.body.style.overflow = 'hidden';
             return () => { document.body.style.overflow = 'unset'; };
         }
+        return undefined;
     }, [selectedPet]);
 
     useEffect(() => {

@@ -125,7 +125,7 @@ const normalizeRouteToken = (value?: string | null) => {
     .replace(/^https?:\/\/[^/]+/i, '')
     .replace(/^#/, '')
     .replace(/^[?/]+/, '')
-    .split(/[?&#=]/)[0]
+    .split(/[?&#=]/)[0] ?? ''
     .replace(/^\/+|\/+$/g, '');
 
   const lastSegment = token.split('/').filter(Boolean).pop() || token;

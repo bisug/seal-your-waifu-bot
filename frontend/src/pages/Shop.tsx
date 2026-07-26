@@ -91,7 +91,7 @@ export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
         return {
           ...char,
           owned,
-          stock_remaining: stockRemaining ?? char.stock_remaining,
+          stock_remaining: stockRemaining !== null ? stockRemaining : char.stock_remaining,
           sold_out: soldOut,
         };
       })

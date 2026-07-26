@@ -129,9 +129,9 @@ const SceneCard = ({
             variant === 'warning' && "bg-amber-500/10 border-amber-500/20",
             variant === 'epic' && "bg-purple-500/10 border-purple-500/20"
         )}
-        animate={reduceMotion ? undefined : { y: [0, -8, 0], rotate: [rotate, rotate + 1, rotate] }}
+        {...(reduceMotion ? {} : { animate: { y: [0, -8, 0], rotate: [rotate, rotate + 1, rotate] } })}
         transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-        style={reduceMotion ? { transform: `rotate(${rotate}deg)` } : undefined}
+        {...(reduceMotion ? { style: { transform: `rotate(${rotate}deg)` } } : {})}
       >
         <div className="mb-8 flex items-center justify-between">
             <div className="w-5 h-5 rounded bg-white/5 border border-white/10 flex items-center justify-center">
