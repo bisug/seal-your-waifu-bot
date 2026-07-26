@@ -1,15 +1,25 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useApi } from '../hooks/useApi';
+import {
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  Coins,
+  Gem,
+  PackageOpen,
+  RefreshCw,
+  Sparkles,
+  Store,
+} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card as CharacterCard } from '../components/character/Card';
-import { Skeleton, CardSkeleton } from '../components/ui/Skeleton';
-import { ErrorState } from '../components/ui/ErrorState';
-import { EmptyState } from '../components/ui/EmptyState';
-import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
+import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
-import { AlertCircle, Clock, Coins, Gem, PackageOpen, RefreshCw, Store, Sparkles, CheckCircle2 } from 'lucide-react';
+import { EmptyState } from '../components/ui/EmptyState';
+import { ErrorState } from '../components/ui/ErrorState';
+import { CardSkeleton, Skeleton } from '../components/ui/Skeleton';
 import { Character, useUser } from '../context/UserContext';
-import { formatNumber, cn } from '../utils';
+import { useApi } from '../hooks/useApi';
+import { cn, formatNumber } from '../utils';
 
 interface ShopProps {
   onCharClick: (char: Character) => void;
@@ -56,8 +66,18 @@ const getCountdown = (resetAt: string | undefined, now: number) => {
 
 export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
   const { user, refreshUser } = useUser();
-  const { data: shopData, loading, error, execute: fetchShop } = useApi<Character[]>('/shop/characters');
-  const { data: hubData, loading: hubLoading, error: hubError, execute: fetchHub } = useApi<ShopHub>('/shop/hub');
+  const {
+    data: shopData,
+    loading,
+    error,
+    execute: fetchShop,
+  } = useApi<Character[]>('/shop/characters');
+  const {
+    data: hubData,
+    loading: hubLoading,
+    error: hubError,
+    execute: fetchHub,
+  } = useApi<ShopHub>('/shop/hub');
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -112,7 +132,9 @@ export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
   const summary = useMemo(() => {
     const owned = inventory.filter((char) => char.owned).length;
     const available = inventory.filter((char) => !char.owned && !isSoldOut(char)).length;
-    const affordable = inventory.filter((char) => !char.owned && !isSoldOut(char) && Number(char.zenith_price || 0) <= zenithBalance).length;
+    const affordable = inventory.filter(
+      (char) => !char.owned && !isSoldOut(char) && Number(char.zenith_price || 0) <= zenithBalance,
+    ).length;
     const soldOut = inventory.filter((char) => !char.owned && isSoldOut(char)).length;
 
     return { owned, available, affordable, soldOut };
@@ -124,26 +146,32 @@ export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
     if (triggerRefresh) triggerRefresh();
   };
 
-  if (loading && !shopData) return (
-    <div className="pb-32 pt-6 adaptive-px max-w-5xl mx-auto space-y-8">
-       <div className="flex flex-col gap-2">
+  if (loading && !shopData)
+    return (
+      <div className="pb-32 pt-6 adaptive-px max-w-5xl mx-auto space-y-8">
+        <div className="flex flex-col gap-2">
           <Skeleton className="h-8 w-48 rounded-md" />
           <Skeleton className="h-4 w-64 rounded-md opacity-50" />
-       </div>
-       <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-          {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-20 rounded-md" />)}
-       </div>
-       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
-          {Array.from({ length: 12 }).map((_, i) => <CardSkeleton key={i} />)}
-       </div>
-    </div>
-  );
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Skeleton key={i} className="h-20 rounded-md" />
+          ))}
+        </div>
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <CardSkeleton key={i} />
+          ))}
+        </div>
+      </div>
+    );
 
-  if (error && !shopData) return (
-    <div className="px-5 py-20 max-w-2xl mx-auto">
-      <ErrorState message={error} onAction={handleRefresh} />
-    </div>
-  );
+  if (error && !shopData)
+    return (
+      <div className="px-5 py-20 max-w-2xl mx-auto">
+        <ErrorState message={error} onAction={handleRefresh} />
+      </div>
+    );
 
   return (
     <div className="pb-32 pt-6 max-w-5xl mx-auto adaptive-px space-y-8">
@@ -174,27 +202,53 @@ export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
           {[
             { icon: Coins, label: 'Shards', value: formatNumber(shardBalance), variant: 'warning' },
             { icon: Gem, label: 'Zenith', value: formatNumber(zenithBalance), variant: 'primary' },
-            { icon: Clock, label: 'Reset In', value: getCountdown(hubData?.reset_at, now), variant: 'secondary' },
-            { icon: PackageOpen, label: 'Available', value: `${summary.available}`, variant: 'success' },
-            { icon: CheckCircle2, label: 'Collected', value: `${summary.owned}`, variant: 'secondary' },
+            {
+              icon: Clock,
+              label: 'Reset In',
+              value: getCountdown(hubData?.reset_at, now),
+              variant: 'secondary',
+            },
+            {
+              icon: PackageOpen,
+              label: 'Available',
+              value: `${summary.available}`,
+              variant: 'success',
+            },
+            {
+              icon: CheckCircle2,
+              label: 'Collected',
+              value: `${summary.owned}`,
+              variant: 'secondary',
+            },
           ].map((metric, i) => (
             <Card key={i} variant="default" className="p-3.5">
               <div className="flex items-center gap-2 mb-2">
-                <metric.icon size={11} className={cn(
-                  metric.variant === 'primary' && 'text-brand-accent',
-                  metric.variant === 'success' && 'text-emerald-500',
-                  metric.variant === 'warning' && 'text-amber-500',
-                  metric.variant === 'secondary' && 'text-zinc-600'
-                )} />
-                <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest truncate">{metric.label}</span>
+                <metric.icon
+                  size={11}
+                  className={cn(
+                    metric.variant === 'primary' && 'text-brand-accent',
+                    metric.variant === 'success' && 'text-emerald-500',
+                    metric.variant === 'warning' && 'text-amber-500',
+                    metric.variant === 'secondary' && 'text-zinc-600',
+                  )}
+                />
+                <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest truncate">
+                  {metric.label}
+                </span>
               </div>
-              <p className="text-sm font-mono font-bold text-zinc-100 tabular-nums uppercase truncate">{metric.value}</p>
+              <p className="text-sm font-mono font-bold text-zinc-100 tabular-nums uppercase truncate">
+                {metric.value}
+              </p>
             </Card>
           ))}
         </div>
 
         {(error || hubError) && shopData && (
-          <Badge variant="warning" icon={AlertCircle} className="w-full py-2.5 rounded-md justify-center border-amber-500/10">
+          <Badge
+            variant="warning"
+            icon={AlertCircle}
+            className="w-full py-2.5 rounded-md justify-center border-amber-500/10"
+          >
             CONNECTION UNSTABLE: USING LOCAL CACHE
           </Badge>
         )}
@@ -204,7 +258,9 @@ export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
         <div className="flex items-center justify-between gap-4 px-1">
           <div className="flex items-center gap-2">
             <Sparkles size={14} className="text-brand-accent" />
-            <h2 className="text-[10px] font-bold text-zinc-100 uppercase tracking-widest">Available Characters</h2>
+            <h2 className="text-[10px] font-bold text-zinc-100 uppercase tracking-widest">
+              Available Characters
+            </h2>
           </div>
           <Badge variant="secondary" size="xs">
             {summary.affordable} READY
@@ -221,8 +277,8 @@ export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
           <div className="py-20 border border-dashed border-white/5 rounded-lg bg-zinc-950/50">
             <EmptyState
               icon={Store}
-            title="Nexus Offline"
-            message="No characters available in the current rotation."
+              title="Nexus Offline"
+              message="No characters available in the current rotation."
             />
           </div>
         )}

@@ -29,5 +29,5 @@ export const haptics = {
 
   selection: () => {
     window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
-  }
+  },
 };

@@ -258,10 +258,14 @@ function retryDelayMs(retriesLeft: number) {
 }
 
 function wait(ms: number) {
-  return new Promise(resolve => window.setTimeout(resolve, ms));
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
-export async function apiFetch(endpoint: string, options: ApiRequestInit = {}, retries = 2): Promise<any> {
+export async function apiFetch(
+  endpoint: string,
+  options: ApiRequestInit = {},
+  retries = 2,
+): Promise<any> {
   const url = `${API_BASE}${endpoint}`;
   const method = options.method || 'GET';
   const headers = mergeHeaders(options.headers);
@@ -362,7 +366,12 @@ export async function secureInit(avatarUrl: string | null = null): Promise<strin
 
     return null;
   } catch (error) {
-    const normalized = normalizeFetchError(error, '/secure_init', { method: 'POST' }, requestSignal.didTimeout());
+    const normalized = normalizeFetchError(
+      error,
+      '/secure_init',
+      { method: 'POST' },
+      requestSignal.didTimeout(),
+    );
     console.error('Secure Init Error:', normalized);
     return null;
   } finally {

@@ -1,17 +1,14 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
-import path from 'path'
-import { fileURLToPath } from 'url'
+import tailwindcss from '@tailwindcss/vite';
+import react from '@vitejs/plugin-react';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { defineConfig } from 'vite';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [
-    react(),
-    tailwindcss(),
-  ],
+  plugins: [react(), tailwindcss()],
   build: {
     outDir: 'dist',
     emptyOutDir: true,
@@ -19,7 +16,8 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            if (id.includes('react') && !id.includes('framer-motion') && !id.includes('lucide')) return 'react-vendor';
+            if (id.includes('react') && !id.includes('framer-motion') && !id.includes('lucide'))
+              return 'react-vendor';
             if (id.includes('framer-motion')) return 'motion-vendor';
             if (id.includes('@tanstack/react-query')) return 'query-vendor';
             if (id.includes('lucide-react')) return 'icons-vendor';
@@ -33,4 +31,4 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
-})
+});

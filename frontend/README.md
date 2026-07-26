@@ -28,7 +28,7 @@ Do not set the root directory to `dist`; Cloudflare checks that directory before
 ## Tooling
 
 - Stable TypeScript via `tsc`
-- ESLint flat config with TypeScript, React Hooks, and React Refresh rules
+- Biome for linting and formatting (replaces ESLint)
 - Tailwind CSS v4 through `@tailwindcss/vite`
 
 The production build is copied into `Grabber/static` by the root Dockerfile.

@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { AlertTriangle, RefreshCw, Sparkles } from 'lucide-react';
+import { useEffect } from 'react';
 import { Button } from '../components/ui/Button';
 
 export const ServerError = ({ onRetry }: { onRetry: () => void }) => {
@@ -16,36 +16,42 @@ export const ServerError = ({ onRetry }: { onRetry: () => void }) => {
         className="w-full max-w-sm flex flex-col items-center relative z-10"
       >
         <div className="w-20 h-20 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-8">
-            <AlertTriangle className="text-red-500" size={32} />
+          <AlertTriangle className="text-red-500" size={32} />
         </div>
 
         <div className="space-y-2 mb-10">
-            <h1 className="text-5xl font-bold text-zinc-100 tracking-tight">500</h1>
-            <h2 className="text-lg font-bold text-zinc-100 uppercase tracking-widest">System Failure</h2>
-            <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest">Protocol Error: Core Malfunction</p>
-            <p className="text-xs font-medium text-zinc-500 leading-relaxed max-w-[260px] mx-auto uppercase tracking-widest pt-4">
-               The SEAL network encountered a critical error. Synchronization aborted.
-            </p>
+          <h1 className="text-5xl font-bold text-zinc-100 tracking-tight">500</h1>
+          <h2 className="text-lg font-bold text-zinc-100 uppercase tracking-widest">
+            System Failure
+          </h2>
+          <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest">
+            Protocol Error: Core Malfunction
+          </p>
+          <p className="text-xs font-medium text-zinc-500 leading-relaxed max-w-[260px] mx-auto uppercase tracking-widest pt-4">
+            The SEAL network encountered a critical error. Synchronization aborted.
+          </p>
         </div>
 
         <div className="w-full max-w-[220px]">
-            <Button
-                onClick={() => {
-                    window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
-                    onRetry();
-                }}
-                className="w-full h-14"
-                variant="accent"
-                leftIcon={<RefreshCw size={16} />}
-            >
-                Reboot Session
-            </Button>
+          <Button
+            onClick={() => {
+              window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
+              onRetry();
+            }}
+            className="w-full h-14"
+            variant="accent"
+            leftIcon={<RefreshCw size={16} />}
+          >
+            Reboot Session
+          </Button>
         </div>
       </motion.div>
 
       <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-2 opacity-20">
-         <Sparkles size={10} className="text-red-500" />
-         <span className="text-[7px] font-bold uppercase tracking-widest text-zinc-100">Critical Core Exception</span>
+        <Sparkles size={10} className="text-red-500" />
+        <span className="text-[7px] font-bold uppercase tracking-widest text-zinc-100">
+          Critical Core Exception
+        </span>
       </div>
     </div>
   );

@@ -1,16 +1,5 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useUser } from '../context/UserContext';
-import { apiFetch } from '../api/client';
-import { ProgressBar } from '../components/ui/ProgressBar';
-import { Card as CharacterCard } from '../components/character/Card';
-import { Skeleton, CardSkeleton } from '../components/ui/Skeleton';
-import { EmptyState } from '../components/ui/EmptyState';
-import { ErrorState } from '../components/ui/ErrorState';
-import { Avatar } from '../components/Avatar';
-import { Card } from '../components/ui/Card';
-import { Badge } from '../components/ui/Badge';
-import { Input } from '../components/ui/Input';
 import {
+  Activity,
   BookOpen,
   ChevronDown,
   Coins,
@@ -22,12 +11,22 @@ import {
   Search,
   Ticket,
   Trophy,
-  Activity,
   Zap,
 } from 'lucide-react';
-import { cleanRarityLabel, formatNumber, cn } from '../utils';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { apiFetch } from '../api/client';
+import { Avatar } from '../components/Avatar';
+import { Card as CharacterCard } from '../components/character/Card';
+import { Badge } from '../components/ui/Badge';
+import { Card } from '../components/ui/Card';
+import { EmptyState } from '../components/ui/EmptyState';
+import { ErrorState } from '../components/ui/ErrorState';
+import { Input } from '../components/ui/Input';
+import { ProgressBar } from '../components/ui/ProgressBar';
+import { CardSkeleton, Skeleton } from '../components/ui/Skeleton';
+import { Character, useUser } from '../context/UserContext';
 import { useInfiniteGrid } from '../hooks/useInfiniteGrid';
-import { Character } from '../context/UserContext';
+import { cleanRarityLabel, cn, formatNumber } from '../utils';
 
 interface ProfileProps {
   onCharClick: (character: Character) => void;
@@ -47,12 +46,16 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
     setRarity,
     lastElementRef,
     error,
-    refresh
+    refresh,
   } = useInfiniteGrid<Character>('/harem');
-  
+
   const [availableRarities, setAvailableRarities] = useState<string[]>([]);
   const rarityOptions = useMemo(
-    () => (Array.isArray(availableRarities) ? availableRarities : []).map((value) => ({ value, label: cleanRarityLabel(value) || value })),
+    () =>
+      (Array.isArray(availableRarities) ? availableRarities : []).map((value) => ({
+        value,
+        label: cleanRarityLabel(value) || value,
+      })),
     [availableRarities],
   );
 
@@ -75,22 +78,25 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
     return () => window.clearTimeout(timeoutId);
   }, [focusCollection, userLoading]);
 
-  if (userLoading && (items?.length || 0) === 0) return (
-    <div className="pb-24 pt-6 adaptive-px max-w-5xl mx-auto space-y-6">
-       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+  if (userLoading && (items?.length || 0) === 0)
+    return (
+      <div className="pb-24 pt-6 adaptive-px max-w-5xl mx-auto space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Skeleton className="md:col-span-2 h-40 rounded-lg" />
           <Skeleton className="h-40 rounded-lg" />
-       </div>
-       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {[1,2,3,4].map(i => <Skeleton key={i} className="h-24 rounded-lg" />)}
-       </div>
-       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-24 rounded-lg" />
+          ))}
+        </div>
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
           {Array.from({ length: 12 }).map((_, i) => (
             <CardSkeleton key={`prof-skeleton-${i}`} />
           ))}
-       </div>
-    </div>
-  );
+        </div>
+      </div>
+    );
 
   if (!user) return null;
 
@@ -99,13 +105,14 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
   const passLabel = `${passType.charAt(0).toUpperCase()}${passType.slice(1)} PASS`;
   const collectionOwned = stats?.unique_characters ?? stats?.total_characters ?? 0;
   const collectionTotal = stats?.total_available_characters || Math.max(collectionOwned, 1);
-  const collectionPercent = stats?.collection_percent ?? (
-    collectionTotal > 0 ? Math.round((collectionOwned / collectionTotal) * 1000) / 10 : 0
-  );
+  const collectionPercent =
+    stats?.collection_percent ??
+    (collectionTotal > 0 ? Math.round((collectionOwned / collectionTotal) * 1000) / 10 : 0);
   const rankLabel = stats?.rank ? `#${formatNumber(stats.rank)}` : 'N/A';
-  const percentileLabel = typeof stats?.percentile === 'number' && stats.percentile > 0
-    ? `TOP ${stats.percentile}%`
-    : 'UNRANKED';
+  const percentileLabel =
+    typeof stats?.percentile === 'number' && stats.percentile > 0
+      ? `TOP ${stats.percentile}%`
+      : 'UNRANKED';
   const currentTitle = user.titles?.current || 'OPERATOR';
   const activePet = user.current_pet;
   const usernameLabel = user.username ? `@${user.username}` : `ID ${user.id}`;
@@ -115,7 +122,10 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
       {/* Profile & Registry Summary */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* User Profile Card */}
-        <Card variant="surface" className="md:col-span-2 flex flex-col sm:flex-row items-center gap-6 p-6">
+        <Card
+          variant="surface"
+          className="md:col-span-2 flex flex-col sm:flex-row items-center gap-6 p-6"
+        >
           <div className="relative shrink-0">
             <Avatar
               src={user.avatar}
@@ -123,105 +133,148 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
               className="w-24 h-24 rounded-md border border-white/10 object-cover shadow-lg"
             />
             <div className="absolute -bottom-2 -right-2">
-                <Badge variant="secondary" size="xs" className="bg-zinc-950 border-white/10 shadow-lg px-2 py-1">
-                    LVL {stats?.level || 1}
-                </Badge>
+              <Badge
+                variant="secondary"
+                size="xs"
+                className="bg-zinc-950 border-white/10 shadow-lg px-2 py-1"
+              >
+                LVL {stats?.level || 1}
+              </Badge>
             </div>
           </div>
 
           <div className="flex-1 min-w-0 space-y-3 text-center sm:text-left">
             <div>
-                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 mb-1">
-                    <h1 className="text-xl font-bold text-zinc-100 tracking-tight uppercase truncate">
-                        {user.first_name || 'Operator'}
-                    </h1>
-                    {user.role_tag && (
-                        <Badge variant="primary" size="xs" className="font-bold">
-                            {user.role_tag}
-                        </Badge>
-                    )}
-                </div>
-                <p className="text-[10px] font-mono font-medium text-zinc-500 uppercase tracking-widest">{usernameLabel}</p>
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 mb-1">
+                <h1 className="text-xl font-bold text-zinc-100 tracking-tight uppercase truncate">
+                  {user.first_name || 'Operator'}
+                </h1>
+                {user.role_tag && (
+                  <Badge variant="primary" size="xs" className="font-bold">
+                    {user.role_tag}
+                  </Badge>
+                )}
+              </div>
+              <p className="text-[10px] font-mono font-medium text-zinc-500 uppercase tracking-widest">
+                {usernameLabel}
+              </p>
             </div>
 
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                <Badge variant="epic" size="xs" icon={Crown} className="font-bold">
-                    {currentTitle}
-                </Badge>
-                <Badge variant="secondary" size="xs" icon={Ticket} className="font-bold">
-                    {passLabel}
-                </Badge>
+              <Badge variant="epic" size="xs" icon={Crown} className="font-bold">
+                {currentTitle}
+              </Badge>
+              <Badge variant="secondary" size="xs" icon={Ticket} className="font-bold">
+                {passLabel}
+              </Badge>
             </div>
 
             <div className="pt-2 w-full max-w-[280px] mx-auto sm:mx-0">
-                <ProgressBar
-                    current={stats?.xp_current || 0}
-                    total={Math.max(1, stats?.xp_needed || 1000)}
-                    label="EXPERIENCE"
-                    compact
-                />
+              <ProgressBar
+                current={stats?.xp_current || 0}
+                total={Math.max(1, stats?.xp_needed || 1000)}
+                label="EXPERIENCE"
+                compact
+              />
             </div>
           </div>
         </Card>
 
         {/* Collection Summary Card */}
         <Card variant="surface" className="p-6 flex flex-col justify-between">
-           <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <BookOpen size={14} className="text-zinc-500" />
-                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Archive</span>
-              </div>
-              <Badge variant="secondary" size="xs">Registry</Badge>
-           </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <BookOpen size={14} className="text-zinc-500" />
+              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+                Archive
+              </span>
+            </div>
+            <Badge variant="secondary" size="xs">
+              Registry
+            </Badge>
+          </div>
 
-           <div className="mt-6 space-y-4">
-              <div className="flex items-end justify-between">
-                 <div className="text-3xl font-mono font-bold text-zinc-100 tabular-nums leading-none">
-                    {collectionPercent}<span className="text-sm text-zinc-500 ml-1">%</span>
-                 </div>
-                 <div className="text-right">
-                    <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-1">COLLECTED</div>
-                    <div className="text-sm font-mono font-bold text-zinc-100 tabular-nums">
-                        {formatNumber(collectionOwned)}<span className="mx-1 opacity-20">/</span>{formatNumber(collectionTotal)}
-                    </div>
-                 </div>
+          <div className="mt-6 space-y-4">
+            <div className="flex items-end justify-between">
+              <div className="text-3xl font-mono font-bold text-zinc-100 tabular-nums leading-none">
+                {collectionPercent}
+                <span className="text-sm text-zinc-500 ml-1">%</span>
               </div>
-              <ProgressBar
-                current={collectionOwned}
-                total={collectionTotal}
-                variant="default"
-                compact
-                showValue={false}
-              />
-           </div>
+              <div className="text-right">
+                <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-1">
+                  COLLECTED
+                </div>
+                <div className="text-sm font-mono font-bold text-zinc-100 tabular-nums">
+                  {formatNumber(collectionOwned)}
+                  <span className="mx-1 opacity-20">/</span>
+                  {formatNumber(collectionTotal)}
+                </div>
+              </div>
+            </div>
+            <ProgressBar
+              current={collectionOwned}
+              total={collectionTotal}
+              variant="default"
+              compact
+              showValue={false}
+            />
+          </div>
         </Card>
       </section>
 
       {/* Stats Grid */}
       <section className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { icon: Coins, label: 'Shards', value: formatNumber(stats?.points ?? user.balance ?? 0), variant: 'warning' },
-          { icon: Gem, label: 'Zenith', value: formatNumber(stats?.zenith || 0), variant: 'primary' },
-          { icon: Trophy, label: 'Rank', value: rankLabel, subValue: percentileLabel, variant: 'success' },
-          { icon: Activity, label: 'Streak', value: `${formatNumber(stats?.streak || 0)} DAYS`, variant: 'rare' },
+          {
+            icon: Coins,
+            label: 'Shards',
+            value: formatNumber(stats?.points ?? user.balance ?? 0),
+            variant: 'warning',
+          },
+          {
+            icon: Gem,
+            label: 'Zenith',
+            value: formatNumber(stats?.zenith || 0),
+            variant: 'primary',
+          },
+          {
+            icon: Trophy,
+            label: 'Rank',
+            value: rankLabel,
+            subValue: percentileLabel,
+            variant: 'success',
+          },
+          {
+            icon: Activity,
+            label: 'Streak',
+            value: `${formatNumber(stats?.streak || 0)} DAYS`,
+            variant: 'rare',
+          },
         ].map((stat, i) => (
           <Card key={i} variant="default" className="p-4 group">
             <div className="flex items-center gap-2 mb-3">
-              <stat.icon size={14} className={cn(
-                stat.variant === 'primary' && 'text-brand-accent',
-                stat.variant === 'success' && 'text-emerald-500',
-                stat.variant === 'warning' && 'text-amber-500',
-                stat.variant === 'rare' && 'text-cyan-500',
-              )} />
-              <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">{stat.label}</span>
+              <stat.icon
+                size={14}
+                className={cn(
+                  stat.variant === 'primary' && 'text-brand-accent',
+                  stat.variant === 'success' && 'text-emerald-500',
+                  stat.variant === 'warning' && 'text-amber-500',
+                  stat.variant === 'rare' && 'text-cyan-500',
+                )}
+              />
+              <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">
+                {stat.label}
+              </span>
             </div>
             <div className="flex flex-col">
-               <div className="text-lg font-mono font-bold text-zinc-100 tabular-nums leading-none">
-                 {stat.value}
-               </div>
-               {stat.subValue && (
-                 <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-wider mt-1">{stat.subValue}</span>
-               )}
+              <div className="text-lg font-mono font-bold text-zinc-100 tabular-nums leading-none">
+                {stat.value}
+              </div>
+              {stat.subValue && (
+                <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-wider mt-1">
+                  {stat.subValue}
+                </span>
+              )}
             </div>
           </Card>
         ))}
@@ -229,72 +282,101 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
 
       {/* Sub-Systems Section */}
       <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Card variant="default" className="flex items-center gap-4 p-4 hover:bg-zinc-900 transition-colors cursor-pointer group">
-           <div className="w-10 h-10 rounded bg-zinc-900 border border-white/5 flex items-center justify-center shrink-0">
-              <PawPrint size={18} className="text-zinc-400 group-hover:text-brand-accent transition-colors" />
-           </div>
-           <div className="min-w-0 flex-1">
-              <div className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5">COMPANION</div>
-              <div className="text-xs font-bold text-zinc-100 truncate uppercase tracking-tight">{activePet?.name || 'NONE ACTIVE'}</div>
-           </div>
-           {activePet && (
-              <Badge variant="secondary" size="xs" className="font-mono">LVL {activePet.level || 1}</Badge>
-           )}
+        <Card
+          variant="default"
+          className="flex items-center gap-4 p-4 hover:bg-zinc-900 transition-colors cursor-pointer group"
+        >
+          <div className="w-10 h-10 rounded bg-zinc-900 border border-white/5 flex items-center justify-center shrink-0">
+            <PawPrint
+              size={18}
+              className="text-zinc-400 group-hover:text-brand-accent transition-colors"
+            />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5">
+              COMPANION
+            </div>
+            <div className="text-xs font-bold text-zinc-100 truncate uppercase tracking-tight">
+              {activePet?.name || 'NONE ACTIVE'}
+            </div>
+          </div>
+          {activePet && (
+            <Badge variant="secondary" size="xs" className="font-mono">
+              LVL {activePet.level || 1}
+            </Badge>
+          )}
         </Card>
 
-        <Card variant="default" className="flex items-center gap-4 p-4 hover:bg-zinc-900 transition-colors cursor-pointer group">
-           <div className="w-10 h-10 rounded bg-zinc-900 border border-white/5 flex items-center justify-center shrink-0">
-              <Egg size={18} className="text-zinc-400 group-hover:text-emerald-500 transition-colors" />
-           </div>
-           <div className="min-w-0 flex-1">
-              <div className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5">INCUBATOR</div>
-              <div className="text-xs font-bold text-zinc-100 truncate uppercase tracking-tight">
-                 {stats?.active_incubations || 0} / {stats?.incubation_slots || 1} ACTIVE
-              </div>
-           </div>
-           <div className="flex items-center gap-1.5">
-                <div className="w-1 h-1 rounded-full bg-emerald-500" />
-                <span className="text-[8px] font-bold text-zinc-600 uppercase">SYSTEM_OK</span>
-           </div>
+        <Card
+          variant="default"
+          className="flex items-center gap-4 p-4 hover:bg-zinc-900 transition-colors cursor-pointer group"
+        >
+          <div className="w-10 h-10 rounded bg-zinc-900 border border-white/5 flex items-center justify-center shrink-0">
+            <Egg
+              size={18}
+              className="text-zinc-400 group-hover:text-emerald-500 transition-colors"
+            />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5">
+              INCUBATOR
+            </div>
+            <div className="text-xs font-bold text-zinc-100 truncate uppercase tracking-tight">
+              {stats?.active_incubations || 0} / {stats?.incubation_slots || 1} ACTIVE
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-1 h-1 rounded-full bg-emerald-500" />
+            <span className="text-[8px] font-bold text-zinc-600 uppercase">SYSTEM_OK</span>
+          </div>
         </Card>
       </section>
 
       {/* Collection Explorer Section */}
       <section ref={collectionRef} className="pt-4 space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-1">
-            <div className="space-y-1">
-                <h2 className="text-xl font-bold text-zinc-100 uppercase tracking-tight">Archive Registry</h2>
-                <div className="flex items-center gap-1.5">
-                    <Zap size={10} className="text-brand-accent" />
-                    <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">Synchronized with protocol node</p>
-                </div>
+          <div className="space-y-1">
+            <h2 className="text-xl font-bold text-zinc-100 uppercase tracking-tight">
+              Archive Registry
+            </h2>
+            <div className="flex items-center gap-1.5">
+              <Zap size={10} className="text-brand-accent" />
+              <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">
+                Synchronized with protocol node
+              </p>
             </div>
+          </div>
 
-            <div className="flex flex-wrap items-center gap-3">
-                <div className="w-full sm:w-64">
-                    <Input
-                        icon={Search}
-                        placeholder="Search assets..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="h-10"
-                    />
-                </div>
-                <div className="relative">
-                    <select
-                        aria-label="Filter by rarity"
-                        value={rarity}
-                        onChange={(event) => setRarity(event.target.value)}
-                        className="h-10 pl-3.5 pr-10 bg-zinc-950 border border-white/10 rounded-md text-[10px] font-bold text-zinc-400 uppercase tracking-widest outline-none focus:border-brand-accent appearance-none cursor-pointer hover:bg-zinc-900 transition-all"
-                    >
-                        <option value="">ALL CLASSES</option>
-                        {rarityOptions.map(({ value, label }) => (
-                            <option key={value} value={value}>{label.toUpperCase()}</option>
-                        ))}
-                    </select>
-                    <ChevronDown size={12} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-600 pointer-events-none" />
-                </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="w-full sm:w-64">
+              <Input
+                icon={Search}
+                placeholder="Search assets..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="h-10"
+              />
             </div>
+            <div className="relative">
+              <select
+                aria-label="Filter by rarity"
+                value={rarity}
+                onChange={(event) => setRarity(event.target.value)}
+                className="h-10 pl-3.5 pr-10 bg-zinc-950 border border-white/10 rounded-md text-[10px] font-bold text-zinc-400 uppercase tracking-widest outline-none focus:border-brand-accent appearance-none cursor-pointer hover:bg-zinc-900 transition-all"
+              >
+                <option value="">ALL CLASSES</option>
+                {rarityOptions.map(({ value, label }) => (
+                  <option key={value} value={value}>
+                    {label.toUpperCase()}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                size={12}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-600 pointer-events-none"
+              />
+            </div>
+          </div>
         </div>
 
         {error && (items?.length || 0) === 0 ? (
@@ -303,23 +385,23 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
           </div>
         ) : (items?.length || 0) > 0 || (loading && page > 1) ? (
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-4 px-0.5">
-               {(items || []).map((char, i) => (
-                 <CharacterCard
-                  key={char.id}
-                  ref={i === items.length - 1 ? lastElementRef : null}
-                  character={char}
-                  onClick={onCharClick}
-                 />
-               ))}
-             {loading && page > 1 && Array.from({ length: 6 }).map((_, i) => (
-                <CardSkeleton key={`loading-${i}`} />
-             ))}
+            {(items || []).map((char, i) => (
+              <CharacterCard
+                key={char.id}
+                ref={i === items.length - 1 ? lastElementRef : null}
+                character={char}
+                onClick={onCharClick}
+              />
+            ))}
+            {loading &&
+              page > 1 &&
+              Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={`loading-${i}`} />)}
           </div>
         ) : loading && page === 1 ? (
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-4 px-0.5">
-             {Array.from({ length: 18 }).map((_, i) => (
-                <CardSkeleton key={`loading-new-${i}`} />
-             ))}
+            {Array.from({ length: 18 }).map((_, i) => (
+              <CardSkeleton key={`loading-new-${i}`} />
+            ))}
           </div>
         ) : (
           <div className="py-20 border border-dashed border-white/5 rounded-lg bg-zinc-950/50">
@@ -332,9 +414,9 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
         )}
 
         {loading && (items?.length || 0) > 0 && (
-           <div className="flex justify-center py-12">
-              <Loader2 className="animate-spin text-zinc-700" size={24} />
-           </div>
+          <div className="flex justify-center py-12">
+            <Loader2 className="animate-spin text-zinc-700" size={24} />
+          </div>
         )}
       </section>
     </div>
