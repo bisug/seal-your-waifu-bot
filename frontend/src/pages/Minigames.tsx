@@ -152,11 +152,13 @@ const CipherMatch = ({ session, onComplete, onCancel }: { session: SessionData, 
     }, [session.cards]);
 
     const handleCardClick = (index: number) => {
-        if (failed || cards[index].isFlipped || cards[index].isMatched || flippedIndices.length === 2) return;
+        const clickedCard = cards[index];
+        if (failed || !clickedCard || clickedCard.isFlipped || clickedCard.isMatched || flippedIndices.length === 2) return;
 
         haptics.light();
         const newCards = [...cards];
-        newCards[index].isFlipped = true;
+        const newCard = newCards[index];
+        if (newCard) newCard.isFlipped = true;
         setCards(newCards);
 
         const newFlipped = [...flippedIndices, index];
@@ -166,14 +168,16 @@ const CipherMatch = ({ session, onComplete, onCancel }: { session: SessionData, 
             const nextMoves = moves + 1;
             setMoves(nextMoves);
             const [first, second] = newFlipped;
+            const firstCard = first !== undefined ? cards[first] : undefined;
+            const secondCard = second !== undefined ? cards[second] : undefined;
 
-            if (cards[first].id === cards[second].id) {
+            if (firstCard && secondCard && firstCard.id === secondCard.id) {
                 haptics.notification('success');
                 setTimeout(() => {
                     setCards(prev => {
                         const updated = [...prev];
-                        updated[first].isMatched = true;
-                        updated[second].isMatched = true;
+                        if (first !== undefined && updated[first]) updated[first].isMatched = true;
+                        if (second !== undefined && updated[second]) updated[second].isMatched = true;
                         return updated;
                     });
                     setMatches(m => {
@@ -193,8 +197,8 @@ const CipherMatch = ({ session, onComplete, onCancel }: { session: SessionData, 
                     }
                     setCards(prev => {
                         const updated = [...prev];
-                        updated[first].isFlipped = false;
-                        updated[second].isFlipped = false;
+                        if (first !== undefined && updated[first]) updated[first].isFlipped = false;
+                        if (second !== undefined && updated[second]) updated[second].isFlipped = false;
                         return updated;
                     });
                     setFlippedIndices([]);

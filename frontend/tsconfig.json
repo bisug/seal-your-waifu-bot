@@ -16,6 +16,10 @@
     "jsx": "react-jsx",
     "noImplicitAny": true,
     "useUnknownInCatchVariables": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
     "rootDir": "src"
   },
   "include": ["src"],

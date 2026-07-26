@@ -41,7 +41,8 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
     if (loading) return;
     if (observer.current) observer.current.disconnect();
     observer.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMore && !loading) {
+      const entry = entries[0];
+      if (entry && entry.isIntersecting && hasMore && !loading) {
         setPage(prev => prev + 1);
       }
     });
@@ -61,7 +62,7 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
     }
 
     const currentPage = isNew ? 1 : page;
-    const optionParams = JSON.parse(paramsKey) as Record<string, any>;
+    const optionParams = JSON.parse(paramsKey) as Record<string, string>;
     const queryParams = new URLSearchParams({
       page: currentPage.toString(),
       limit: (options.limit || 24).toString(),
@@ -90,7 +91,7 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
     try {
       const data = await apiFetch(
         `${endpoint}?${queryParams.toString()}`,
-        { signal: searchAbortController.current?.signal }
+        { ...(searchAbortController.current?.signal ? { signal: searchAbortController.current.signal } : {}) }
       );
 
       if (requestId !== requestSeq.current) return;

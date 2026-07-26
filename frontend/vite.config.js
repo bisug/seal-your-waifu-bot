@@ -15,6 +15,18 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') && !id.includes('framer-motion') && !id.includes('lucide')) return 'react-vendor';
+            if (id.includes('framer-motion')) return 'motion-vendor';
+            if (id.includes('@tanstack/react-query')) return 'query-vendor';
+            if (id.includes('lucide-react')) return 'icons-vendor';
+          }
+        },
+      },
+    },
   },
   resolve: {
     alias: {
