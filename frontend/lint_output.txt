@@ -1,0 +1,321 @@
+$ biome lint .
+src\components\character\Card.tsx:60:9 parse ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù expected `)` but instead found `ref`
+  
+    58 Γöé       {/* biome-ignore lint/a11y/useSemanticElements: card with complex layout, not a button */}
+    59 Γöé       <div
+  > 60 Γöé         ref={ref}
+       Γöé         ^^^
+    61 Γöé         onClick={handleClick}
+    62 Γöé         role="button"
+  
+  i Remove ref
+  
+
+src\components\character\Card.tsx:63:20 parse ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù expected `:` but instead found `}`
+  
+    61 Γöé         onClick={handleClick}
+    62 Γöé         role="button"
+  > 63 Γöé         tabIndex={0}
+       Γöé                    ^
+    64 Γöé         onKeyDown={(e) => {
+    65 Γöé           if (e.key === 'Enter' || e.key === ' ') {
+  
+  i Remove }
+  
+
+src\components\character\Card.tsx:64:20 parse ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù Expected a property, a shorthand property, a getter, a setter, or a method but instead found '('.
+  
+    62 Γöé         role="button"
+    63 Γöé         tabIndex={0}
+  > 64 Γöé         onKeyDown={(e) => {
+       Γöé                    ^
+    65 Γöé           if (e.key === 'Enter' || e.key === ' ') {
+    66 Γöé             e.preventDefault();
+  
+  i Expected a property, a shorthand property, a getter, a setter, or a method here.
+  
+    62 Γöé         role="button"
+    63 Γöé         tabIndex={0}
+  > 64 Γöé         onKeyDown={(e) => {
+       Γöé                    ^
+    65 Γöé           if (e.key === 'Enter' || e.key === ' ') {
+    66 Γöé             e.preventDefault();
+  
+
+src\components\character\Card.tsx:64:24 parse ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù Expected a function body but instead found '=>'.
+  
+    62 Γöé         role="button"
+    63 Γöé         tabIndex={0}
+  > 64 Γöé         onKeyDown={(e) => {
+       Γöé                        ^^
+    65 Γöé           if (e.key === 'Enter' || e.key === ' ') {
+    66 Γöé             e.preventDefault();
+  
+  i Expected a function body here.
+  
+    62 Γöé         role="button"
+    63 Γöé         tabIndex={0}
+  > 64 Γöé         onKeyDown={(e) => {
+       Γöé                        ^^
+    65 Γöé           if (e.key === 'Enter' || e.key === ' ') {
+    66 Γöé             e.preventDefault();
+  
+
+src\components\character\Card.tsx:65:11 parse ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù expected `,` but instead found `if`
+  
+    63 Γöé         tabIndex={0}
+    64 Γöé         onKeyDown={(e) => {
+  > 65 Γöé           if (e.key === 'Enter' || e.key === ' ') {
+       Γöé           ^^
+    66 Γöé             e.preventDefault();
+    67 Γöé             handleClick();
+  
+  i Remove if
+  
+
+src\components\character\Card.tsx:65:16 parse ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù expected `,` but instead found `.`
+  
+    63 Γöé         tabIndex={0}
+    64 Γöé         onKeyDown={(e) => {
+  > 65 Γöé           if (e.key === 'Enter' || e.key === ' ') {
+       Γöé                ^
+    66 Γöé             e.preventDefault();
+    67 Γöé             handleClick();
+  
+  i Remove .
+  
+
+src\components\character\Card.tsx:65:17 parse ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù expected `,` but instead found `key`
+  
+    63 Γöé         tabIndex={0}
+    64 Γöé         onKeyDown={(e) => {
+  > 65 Γöé           if (e.key === 'Enter' || e.key === ' ') {
+       Γöé                 ^^^
+    66 Γöé             e.preventDefault();
+    67 Γöé             handleClick();
+  
+  i Remove key
+  
+
+src\components\character\Card.tsx:65:21 parse ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù expected `,` but instead found `===`
+  
+    63 Γöé         tabIndex={0}
+    64 Γöé         onKeyDown={(e) => {
+  > 65 Γöé           if (e.key === 'Enter' || e.key === ' ') {
+       Γöé                     ^^^
+    66 Γöé             e.preventDefault();
+    67 Γöé             handleClick();
+  
+  i Remove ===
+  
+
+src\components\character\Card.tsx:65:36 parse ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù expected `,` but instead found `e`
+  
+    63 Γöé         tabIndex={0}
+    64 Γöé         onKeyDown={(e) => {
+  > 65 Γöé           if (e.key === 'Enter' || e.key === ' ') {
+       Γöé                                    ^
+    66 Γöé             e.preventDefault();
+    67 Γöé             handleClick();
+  
+  i Remove e
+  
+
+src\components\character\Card.tsx:65:37 parse ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù expected `,` but instead found `.`
+  
+    63 Γöé         tabIndex={0}
+    64 Γöé         onKeyDown={(e) => {
+  > 65 Γöé           if (e.key === 'Enter' || e.key === ' ') {
+       Γöé                                     ^
+    66 Γöé             e.preventDefault();
+    67 Γöé             handleClick();
+  
+  i Remove .
+  
+
+src\components\character\Card.tsx:65:38 parse ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù expected `,` but instead found `key`
+  
+    63 Γöé         tabIndex={0}
+    64 Γöé         onKeyDown={(e) => {
+  > 65 Γöé           if (e.key === 'Enter' || e.key === ' ') {
+       Γöé                                      ^^^
+    66 Γöé             e.preventDefault();
+    67 Γöé             handleClick();
+  
+  i Remove key
+  
+
+src\components\character\Card.tsx:65:42 parse ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù expected `,` but instead found `===`
+  
+    63 Γöé         tabIndex={0}
+    64 Γöé         onKeyDown={(e) => {
+  > 65 Γöé           if (e.key === 'Enter' || e.key === ' ') {
+       Γöé                                          ^^^
+    66 Γöé             e.preventDefault();
+    67 Γöé             handleClick();
+  
+  i Remove ===
+  
+
+src\components\character\Card.tsx:70:9 parse ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù expected `,` but instead found `className`
+  
+    68 Γöé           }
+    69 Γöé         }}
+  > 70 Γöé         className={cn(
+       Γöé         ^^^^^^^^^
+    71 Γöé           'relative rounded-md overflow-hidden aspect-[3/4.2] group cursor-pointer select-none',
+    72 Γöé           'bg-zinc-950 border border-white/5 transition-all duration-200 active:scale-[0.98]',
+  
+  i Remove className
+  
+
+src\components\character\Card.tsx:71:11 parse ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù Expected a parameter but instead found ''relative rounded-md overflow-hidden aspect-[3/4.2] group cursor-pointer select-none''.
+  
+    69 Γöé         }}
+    70 Γöé         className={cn(
+  > 71 Γöé           'relative rounded-md overflow-hidden aspect-[3/4.2] group cursor-pointer select-none',
+       Γöé           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    72 Γöé           'bg-zinc-950 border border-white/5 transition-all duration-200 active:scale-[0.98]',
+    73 Γöé           'hover:border-white/10',
+  
+  i Expected a parameter here.
+  
+    69 Γöé         }}
+    70 Γöé         className={cn(
+  > 71 Γöé           'relative rounded-md overflow-hidden aspect-[3/4.2] group cursor-pointer select-none',
+       Γöé           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    72 Γöé           'bg-zinc-950 border border-white/5 transition-all duration-200 active:scale-[0.98]',
+    73 Γöé           'hover:border-white/10',
+  
+
+src\components\character\Card.tsx:71:96 parse ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù expected `:` but instead found `,`
+  
+    69 Γöé         }}
+    70 Γöé         className={cn(
+  > 71 Γöé           'relative rounded-md overflow-hidden aspect-[3/4.2] group cursor-pointer select-none',
+       Γöé                                                                                                ^
+    72 Γöé           'bg-zinc-950 border border-white/5 transition-all duration-200 active:scale-[0.98]',
+    73 Γöé           'hover:border-white/10',
+  
+  i Remove ,
+  
+
+src\components\character\Card.tsx:72:94 parse ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù expected `:` but instead found `,`
+  
+    70 Γöé         className={cn(
+    71 Γöé           'relative rounded-md overflow-hidden aspect-[3/4.2] group cursor-pointer select-none',
+  > 72 Γöé           'bg-zinc-950 border border-white/5 transition-all duration-200 active:scale-[0.98]',
+       Γöé                                                                                              ^
+    73 Γöé           'hover:border-white/10',
+    74 Γöé           soldOut && 'border-red-500/10',
+  
+  i Remove ,
+  
+
+src\components\character\Card.tsx:73:34 parse ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù expected `:` but instead found `,`
+  
+    71 Γöé           'relative rounded-md overflow-hidden aspect-[3/4.2] group cursor-pointer select-none',
+    72 Γöé           'bg-zinc-950 border border-white/5 transition-all duration-200 active:scale-[0.98]',
+  > 73 Γöé           'hover:border-white/10',
+       Γöé                                  ^
+    74 Γöé           soldOut && 'border-red-500/10',
+    75 Γöé         )}
+  
+  i Remove ,
+  
+
+src\components\character\Card.tsx:74:19 parse ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù expected `,` but instead found `&&`
+  
+    72 Γöé           'bg-zinc-950 border border-white/5 transition-all duration-200 active:scale-[0.98]',
+    73 Γöé           'hover:border-white/10',
+  > 74 Γöé           soldOut && 'border-red-500/10',
+       Γöé                   ^^
+    75 Γöé         )}
+    76 Γöé       >
+  
+  i Remove &&
+  
+
+src\components\character\Card.tsx:75:9 parse ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù Expected a property, a shorthand property, a getter, a setter, or a method but instead found ')'.
+  
+    73 Γöé           'hover:border-white/10',
+    74 Γöé           soldOut && 'border-red-500/10',
+  > 75 Γöé         )}
+       Γöé         ^
+    76 Γöé       >
+    77 Γöé         {!imgError ? (
+  
+  i Expected a property, a shorthand property, a getter, a setter, or a method here.
+  
+    73 Γöé           'hover:border-white/10',
+    74 Γöé           soldOut && 'border-red-500/10',
+  > 75 Γöé         )}
+       Γöé         ^
+    76 Γöé       >
+    77 Γöé         {!imgError ? (
+  
+
+src\components\character\Card.tsx:75:10 parse ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù expected `,` but instead found `}`
+  
+    73 Γöé           'hover:border-white/10',
+    74 Γöé           soldOut && 'border-red-500/10',
+  > 75 Γöé         )}
+       Γöé          ^
+    76 Γöé       >
+    77 Γöé         {!imgError ? (
+  
+  i Remove }
+  
+
+The number of diagnostics exceeds the limit allowed. Use --max-diagnostics to increase it.
+Diagnostics not shown: 53.
+Checked 54 files in 752ms. No fixes applied.
+Found 66 errors.
+Found 1 warning.
+Found 6 infos.
+lint ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù Some errors were emitted while running checks.
+  
+
+error: script "lint" exited with code 1

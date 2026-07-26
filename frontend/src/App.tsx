@@ -1,7 +1,4 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { SpeedInsights } from '@vercel/speed-insights/react';
-import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import React, { lazy, ReactNode, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { CharActionModal } from './components/character/CharActionModal';
@@ -328,45 +325,36 @@ const AppContent = () => {
             </div>
           }
         >
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              className="page-transition-wrapper"
-            >
-              {activeTab === 'profile' && (
-                <Profile
-                  onCharClick={setSelectedChar}
-                  focusCollection={
-                    activeRoute.alias === 'harem' || activeRoute.alias === 'collection'
-                  }
-                />
-              )}
-              {activeTab === 'incubation' && <Hatchery />}
-              {activeTab === 'shop' && <Shop onCharClick={setSelectedChar} />}
-              {activeTab === 'exchange' && <Exchange />}
-              {activeTab === 'gallery' && <Gallery onCharClick={setSelectedChar} />}
-              {activeTab === 'pets' && <PetShop onPetClick={setSelectedPet} />}
-              {activeTab === 'referrals' && <Referrals />}
-              {activeTab === 'quests' && <Quests />}
-              {activeTab === 'pass' && <Pass />}
-              {activeTab === 'leaderboard' && <Leaderboard />}
-              {activeTab === 'achievements' && <Achievements />}
-              {activeTab === 'mypets' && <MyPets onPetClick={setSelectedPet} />}
-              {activeTab === 'minigames' && <Minigames />}
-              {activeTab === 'upload' && canViewUpload && <Upload />}
-              {activeTab === 'staff' && canViewStaff && <Staff />}
+          <div key={activeTab} className="page-transition-wrapper">
+            {activeTab === 'profile' && (
+              <Profile
+                onCharClick={setSelectedChar}
+                focusCollection={
+                  activeRoute.alias === 'harem' || activeRoute.alias === 'collection'
+                }
+              />
+            )}
+            {activeTab === 'incubation' && <Hatchery />}
+            {activeTab === 'shop' && <Shop onCharClick={setSelectedChar} />}
+            {activeTab === 'exchange' && <Exchange />}
+            {activeTab === 'gallery' && <Gallery onCharClick={setSelectedChar} />}
+            {activeTab === 'pets' && <PetShop onPetClick={setSelectedPet} />}
+            {activeTab === 'referrals' && <Referrals />}
+            {activeTab === 'quests' && <Quests />}
+            {activeTab === 'pass' && <Pass />}
+            {activeTab === 'leaderboard' && <Leaderboard />}
+            {activeTab === 'achievements' && <Achievements />}
+            {activeTab === 'mypets' && <MyPets onPetClick={setSelectedPet} />}
+            {activeTab === 'minigames' && <Minigames />}
+            {activeTab === 'upload' && canViewUpload && <Upload />}
+            {activeTab === 'staff' && canViewStaff && <Staff />}
 
-              {isBlockedTab ? (
-                <Forbidden onReset={() => handleNavigate('profile')} />
-              ) : !VALID_TABS.includes(activeTab) ? (
-                <NotFound onReset={() => handleNavigate('profile')} />
-              ) : null}
-            </motion.div>
-          </AnimatePresence>
+            {isBlockedTab ? (
+              <Forbidden onReset={() => handleNavigate('profile')} />
+            ) : !VALID_TABS.includes(activeTab) ? (
+              <NotFound onReset={() => handleNavigate('profile')} />
+            ) : null}
+          </div>
         </Suspense>
       </main>
 
@@ -410,17 +398,13 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <ErrorBoundary>
-      <MotionConfig reducedMotion="user">
-        <QueryClientProvider client={queryClient}>
-          <ToastProvider>
-            <UserProvider>
-              <AppContent />
-            </UserProvider>
-          </ToastProvider>
-          <ReactQueryDevtools initialIsOpen={false} />
-        </QueryClientProvider>
-      </MotionConfig>
-      <SpeedInsights />
+      <QueryClientProvider client={queryClient}>
+        <ToastProvider>
+          <UserProvider>
+            <AppContent />
+          </UserProvider>
+        </ToastProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 }

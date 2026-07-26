@@ -1,4 +1,4 @@
-import 'react';
+import { memo } from 'react';
 import { Coins, Gem, Menu, User } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 import { formatNumber } from '../utils';
@@ -8,11 +8,11 @@ interface HeaderProps {
   onMenuClick: () => void;
 }
 
-export const Header = ({ onMenuClick }: HeaderProps) => {
+export const Header = memo(({ onMenuClick }: HeaderProps) => {
   const { user } = useUser();
 
   return (
-    <header className="sticky top-0 z-[100] flex items-center justify-between px-5 bg-zinc-950/80 backdrop-blur-md h-14 shrink-0 select-none border-b border-white/[0.04]">
+    <header className="sticky top-0 z-[100] flex items-center justify-between px-5 bg-zinc-950/95 h-14 shrink-0 select-none border-b border-white/[0.04]">
       {/* Brand Section */}
       <div className="flex items-center gap-3">
         <div className="w-8 h-8 rounded-md bg-zinc-900 border border-white/5 flex items-center justify-center relative overflow-hidden group">
@@ -76,4 +76,4 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
       </div>
     </header>
   );
-};
+});

@@ -89,7 +89,7 @@ export const useApi = <T = any>(
     if (!optionsRef.current.manual) {
       execute();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // biome-ignore lint/correctness/useExhaustiveDependencies: deps is a dynamic array passed by the caller
   }, deps);
 
   return { data, loading, error, execute, setData };
