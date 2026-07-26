@@ -7,5 +7,5 @@
     "allowJs": true,
     "outDir": "./dist-node"
   },
-  "include": ["vite.config.js"]
+  "include": ["rsbuild.config.ts"]
 }
