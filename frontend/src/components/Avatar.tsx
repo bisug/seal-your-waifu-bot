@@ -1,5 +1,5 @@
 import { User } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { cn } from '../utils';
 
 interface AvatarProps {
@@ -9,7 +9,7 @@ interface AvatarProps {
   fallbackText?: string | undefined;
 }
 
-export const Avatar = ({ src, alt = 'Avatar', className = '', fallbackText }: AvatarProps) => {
+export const Avatar = memo(({ src, alt = 'Avatar', className = '', fallbackText }: AvatarProps) => {
   const [error, setError] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
@@ -46,4 +46,4 @@ export const Avatar = ({ src, alt = 'Avatar', className = '', fallbackText }: Av
       )}
     </div>
   );
-};
+});

@@ -1,4 +1,3 @@
-import { AnimatePresence, motion } from 'framer-motion';
 import { Sparkles, Terminal } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { cn } from '../utils';
@@ -41,43 +40,26 @@ export const IntroLoading = () => {
         <div className="relative flex flex-col items-center justify-center gap-8">
           <div className="relative w-24 h-24 flex items-center justify-center">
             {/* Outer Ring */}
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
-              className="absolute inset-0 rounded-full border border-dashed border-brand-accent/20"
-            />
+            <div className="absolute inset-0 rounded-full border border-dashed border-brand-accent/20 animate-[spin_4s_linear_infinite]" />
 
             {/* Middle Ring */}
-            <motion.div
-              animate={{ rotate: -360 }}
-              transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
-              className="absolute inset-2 rounded-full border border-white/5"
-            />
+            <div className="absolute inset-2 rounded-full border border-white/5 animate-[spin_8s_linear_infinite_reverse]" />
 
             {/* Core Brand Symbol */}
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="relative w-12 h-12 bg-zinc-900 rounded-lg border border-white/10 flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.02)]"
-            >
+            <div className="relative w-12 h-12 bg-zinc-900 rounded-lg border border-white/10 flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.02)] animate-[intro-pulse_2s_ease-in-out_infinite]">
               <span className="text-xl font-black text-white tracking-tighter">S</span>
-              <motion.div
-                animate={{
-                  opacity: [0.2, 0.5, 0.2],
-                  scale: [1, 1.1, 1],
-                }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="absolute inset-0 rounded-lg bg-brand-accent/5"
-              />
-            </motion.div>
+              <div className="absolute inset-0 rounded-lg bg-brand-accent/5 animate-[intro-pulse_2s_ease-in-out_infinite]" />
+            </div>
 
             {/* Orbiting particles */}
             {[0, 120, 240].map((angle, i) => (
-              <motion.div
+              <div
                 key={i}
-                animate={{ rotate: 360 }}
-                transition={{ duration: 3 + i, repeat: Infinity, ease: 'linear' }}
                 className="absolute inset-0"
+                style={{
+                  transform: `rotate(${angle}deg)`,
+                  animation: `spin ${3 + i}s linear infinite`,
+                }}
               >
                 <div
                   className="w-1 h-1 bg-brand-accent rounded-full absolute"
@@ -88,7 +70,7 @@ export const IntroLoading = () => {
                     opacity: progress > i * 30 ? 1 : 0.1,
                   }}
                 />
-              </motion.div>
+              </div>
             ))}
           </div>
 
@@ -104,30 +86,24 @@ export const IntroLoading = () => {
         <div className="space-y-6">
           <div className="space-y-3">
             <div className="flex justify-between items-end px-1">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentStep}
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4 }}
-                  className="flex items-center gap-2"
-                >
-                  <Terminal size={10} className="text-brand-accent" />
-                  <span className="text-[9px] font-bold text-zinc-100 tracking-widest uppercase">
-                    {currentStep}
-                  </span>
-                </motion.div>
-              </AnimatePresence>
+              <div
+                key={currentStep}
+                className="flex items-center gap-2 animate-[intro-step_0.3s_ease-out]"
+              >
+                <Terminal size={10} className="text-brand-accent" />
+                <span className="text-[9px] font-bold text-zinc-100 tracking-widest uppercase">
+                  {currentStep}
+                </span>
+              </div>
               <span className="text-[10px] font-mono text-zinc-500 font-bold tabular-nums">
                 {Math.round(progress)}%
               </span>
             </div>
 
             <div className="h-0.5 w-full bg-zinc-900 rounded-full overflow-hidden">
-              <motion.div
-                className="h-full bg-white"
-                animate={{ width: `${progress}%` }}
-                transition={{ ease: 'easeOut', duration: 0.3 }}
+              <div
+                className="h-full bg-white transition-[width] duration-300 ease-out"
+                style={{ width: `${progress}%` }}
               />
             </div>
           </div>

@@ -1,15 +1,10 @@
-import { HTMLMotionProps, motion } from 'framer-motion';
 import React from 'react';
 import { cn } from '../../utils';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'accent' | 'glass';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
-interface ButtonProps
-  extends Omit<
-    React.ButtonHTMLAttributes<HTMLButtonElement>,
-    'onAnimationStart' | 'onDrag' | 'onDragStart' | 'onDragEnd'
-  > {
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   size?: ButtonSize;
   isLoading?: boolean;
@@ -53,9 +48,8 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     return (
-      <motion.button
-        ref={ref as any}
-        whileTap={{ scale: 0.98 }}
+      <button
+        ref={ref}
         disabled={isLoading || disabled}
         className={cn(
           'inline-flex items-center justify-center gap-2.5 transition-all focus:outline-none focus:ring-2 focus:ring-brand-accent/40 disabled:opacity-40 disabled:pointer-events-none whitespace-nowrap overflow-hidden relative',
@@ -63,7 +57,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           sizes[size],
           className,
         )}
-        {...(props as HTMLMotionProps<'button'>)}
+        {...props}
       >
         <div
           className={cn(
@@ -81,7 +75,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent opacity-40" />
           </div>
         )}
-      </motion.button>
+      </button>
     );
   },
 );
