@@ -17,6 +17,7 @@ import asyncio
 import sys
 
 from pymongo import AsyncMongoClient, UpdateOne
+from pymongo.errors import DuplicateKeyError
 
 from config import config
 
@@ -24,22 +25,35 @@ BATCH = 500
 
 
 async def normalize_field(collection, field: str, dry_run: bool) -> int:
-    cursor = collection.find({field: {"$type": "string"}}, {field: 1})
+    # Materialize first: _id fixes delete docs mid-iteration.
+    docs = [doc async for doc in collection.find({field: {"$type": "string"}}, {field: 1})]
     ops = []
     fixed = 0
-    async for doc in cursor:
+    for doc in docs:
         raw = doc.get(field)
         try:
             value = int(raw)
         except (TypeError, ValueError):
             print(f"  ! skipping non-numeric {field}={raw!r} in {doc.get('_id')}")
             continue
-        ops.append(UpdateOne({"_id": doc["_id"]}, {"$set": {field: value}}))
-        fixed += 1
-        if len(ops) >= BATCH:
+        if field == "_id":
+            # _id is immutable: re-insert the doc under the new _id, drop the old one.
             if not dry_run:
+                full = await collection.find_one({"_id": doc["_id"]})
+                if full is None:
+                    continue
+                full["_id"] = value
+                try:
+                    await collection.insert_one(full)
+                except DuplicateKeyError:
+                    print(f"  ! int _id {value} already exists, dropping string duplicate {doc['_id']!r}")
+                await collection.delete_one({"_id": doc["_id"]})
+        else:
+            ops.append(UpdateOne({"_id": doc["_id"]}, {"$set": {field: value}}))
+            if len(ops) >= BATCH and not dry_run:
                 await collection.bulk_write(ops, ordered=False)
-            ops = []
+                ops = []
+        fixed += 1
     if ops and not dry_run:
         await collection.bulk_write(ops, ordered=False)
     return fixed
@@ -70,9 +84,6 @@ async def main() -> None:
         n = await normalize_field(collection, field, args.dry_run)
         print(f"  {collection.name}.{field}: {n} doc(s)")
         total += n
-    n = 0
-    print(f"  message.users key maps: (n/a — BSON requires string keys, runtime already uses them correctly)")
-    total += n
     print(f"Total: {total} doc(s) {'would be' if args.dry_run else ''} normalized.")
     await client.aclose()
 
