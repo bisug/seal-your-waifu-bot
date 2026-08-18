@@ -89,7 +89,18 @@ async def gift_callback(_, query: types.CallbackQuery):
     from Grabber.core.user import remove_char_from_user, add_char_to_user
 
     if await remove_char_from_user(sender_id, str(char_id)):
-        await add_char_to_user(receiver_id, character)
+        try:
+            await add_char_to_user(receiver_id, character)
+        except Exception as e:
+            # Compensate: return the character to the sender so it is never lost.
+            LOGGER.error(f"Gift delivery failed {sender_id} -> {receiver_id} | Char: {char_id}: {e}")
+            try:
+                await add_char_to_user(sender_id, character)
+            except Exception:
+                LOGGER.exception(f"CRITICAL: gift compensation failed, character {char_id} lost from {sender_id}")
+            await query.answer("Gift failed. Your character was returned.", show_alert=True)
+            await delete_session(session_id)
+            return
     else:
         await query.answer("Failed to process gift. Please try again.", show_alert=True)
         await delete_session(session_id)

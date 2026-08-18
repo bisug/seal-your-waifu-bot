@@ -39,6 +39,10 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
   const searchAbortController = useRef<AbortController | null>(null);
   const requestSeq = useRef(0);
   const paramsKey = JSON.stringify(options.params || {});
+  // Read the latest items without making fetchData depend on them; otherwise
+  // every fetch changes fetchData's identity and re-triggers the effects below.
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
 
   const lastElementRef = useCallback(
     (node: HTMLElement | null) => {
@@ -108,7 +112,7 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
         if (isNew) {
           newItems = data.items;
         } else {
-          newItems = [...items, ...data.items];
+          newItems = [...itemsRef.current, ...data.items];
         }
 
         setItems(newItems);
@@ -139,36 +143,39 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
         }
       }
     },
-    [endpoint, page, search, rarity, options.limit, paramsKey, items],
+    [endpoint, page, search, rarity, options.limit, paramsKey],
   );
+
+  const fetchDataRef = useRef(fetchData);
+  fetchDataRef.current = fetchData;
 
   // Initial fetch and search/rarity debounce
   useEffect(() => {
     const timer = setTimeout(() => {
       setPage(1);
-      fetchData(true);
+      fetchDataRef.current(true);
     }, 400);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchData]);
+  }, [search, rarity, endpoint, paramsKey, options.limit]);
 
   // Infinite scroll trigger
   useEffect(() => {
     let mounted = true;
     if (page > 1 && mounted) {
       Promise.resolve().then(() => {
-        if (mounted) fetchData(false);
+        if (mounted) fetchDataRef.current(false);
       });
     }
     return () => {
       mounted = false;
     };
-  }, [page, fetchData]);
+  }, [page]);
 
   const refresh = useCallback(() => {
     setPage(1);
-    fetchData(true, true);
-  }, [fetchData]);
+    fetchDataRef.current(true, true);
+  }, []);
 
   return {
     items,

@@ -3,6 +3,17 @@ import { apiFetch, getErrorMessage } from '../api/client';
 
 const apiCache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL = 1000 * 60 * 5; // 5 minutes
+const MAX_CACHE_ENTRIES = 50;
+
+function writeApiCache(key: string, data: any) {
+  if (apiCache.has(key)) apiCache.delete(key);
+  apiCache.set(key, { data, timestamp: Date.now() });
+  while (apiCache.size > MAX_CACHE_ENTRIES) {
+    const oldest = apiCache.keys().next().value;
+    if (!oldest) break;
+    apiCache.delete(oldest);
+  }
+}
 
 // Shallow array comparison utility
 function shallowEqual(obj1: any, obj2: any) {
@@ -71,7 +82,7 @@ export const useApi = <T = any>(
       try {
         const res = await apiFetch(endpoint, { ...optionsRef.current, ...overrides });
         if (isGet) {
-          apiCache.set(cacheKey, { data: res, timestamp: Date.now() });
+          writeApiCache(cacheKey, res);
         }
         setData(res);
         return res;

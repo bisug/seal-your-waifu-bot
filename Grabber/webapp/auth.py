@@ -208,17 +208,16 @@ async def require_uploader_user(user_id: int = Depends(get_current_user)):
     return user_id
 
 async def get_current_user_data(user_id: int = Depends(get_current_user)):
-    """Dependency to fetch the full user document."""
-    from Grabber.core.utils import get_user_id_query
-    from Grabber.core.user import add_user_set_on_insert, get_user_filter
-    user = await user_collection.find_one(get_user_id_query(user_id))
+    """Dependency to fetch the full user document (Redis-cached read)."""
+    from Grabber.core.user import add_user_set_on_insert, get_user_data, get_user_filter
+    user = await get_user_data(user_id)
     if not user:
         await user_collection.update_one(
             get_user_filter(user_id),
             add_user_set_on_insert({}, user_id),
             upsert=True,
         )
-        user = await user_collection.find_one(get_user_id_query(user_id))
+        user = await get_user_data(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
