@@ -60,6 +60,54 @@ async def _persist_message_increment(chat_id: int, user_id: int, count: int) -> 
     )
 
 
+# In-memory buffer of message increments awaiting MongoDB persistence.
+# Flushed by flush_cache_to_db() every minute and at shutdown, turning one
+# Mongo write per message into one bulk_write per flush interval.
+_pending_increments: Dict[int, Dict[str, Any]] = {}
+
+
+def _record_pending_increment(chat_id: int, user_id: int) -> None:
+    entry = _pending_increments.setdefault(chat_id, {"count": 0, "users": {}})
+    entry["count"] += 1
+    users = entry["users"]
+    users[user_id] = users.get(user_id, 0) + 1
+
+
+async def flush_pending_message_increments() -> int:
+    """Drain the pending increment buffer into MongoDB with a single bulk write."""
+    if not _pending_increments:
+        return 0
+    pending = dict(_pending_increments)
+    _pending_increments.clear()
+
+    from pymongo import UpdateOne
+
+    ops = []
+    for chat_id, entry in pending.items():
+        inc: Dict[str, int] = {"count": entry["count"]}
+        for uid, n in entry["users"].items():
+            inc[f"users.{uid}"] = n
+        ops.append(
+            UpdateOne(
+                {"chat_id": str(chat_id)},
+                {"$inc": inc},
+                upsert=True,
+            )
+        )
+    try:
+        await message_counts_collection.bulk_write(ops, ordered=False)
+    except Exception as e:
+        # Re-queue so the next flush retries instead of losing counts.
+        for chat_id, entry in pending.items():
+            target = _pending_increments.setdefault(chat_id, {"count": 0, "users": {}})
+            target["count"] += entry["count"]
+            for uid, n in entry["users"].items():
+                target["users"][uid] = target["users"].get(uid, 0) + n
+        LOGGER.error(f"Bulk flush of message increments failed ({len(ops)} chats): {e}")
+        return 0
+    return len(ops)
+
+
 async def _increment_message_count_mongo(chat_id: int, user_id: int) -> int:
     await _load_message_count_from_mongo(chat_id)
     updated = await message_counts_collection.find_one_and_update(
@@ -193,25 +241,25 @@ async def increment_message_count(chat_id: int, user_id: int) -> int:
     key = f"msg_count:{chat_id}"
     if _redis:
         try:
-            if not await _redis.exists(key):
+            # Single round-trip: seed-if-missing + increment + TTL refresh.
+            async with _redis.pipeline(transaction=False) as pipe:
+                pipe.set(key, 0, ex=MESSAGE_COUNT_TTL_SECONDS, nx=True)
+                pipe.incr(key)
+                pipe.expire(key, MESSAGE_COUNT_TTL_SECONDS)
+                seeded, count, _ = await pipe.execute()
+            count = int(count)
+            if seeded:
+                # We won the seed race: layer the stored Mongo total on top of
+                # the fresh counter. INCRBY keeps concurrent increments intact.
                 initial_count = await _load_message_count_from_mongo(chat_id)
-                seeded = await _redis.set(
-                    key,
-                    str(initial_count),
-                    ex=MESSAGE_COUNT_TTL_SECONDS,
-                    nx=True,
-                )
-                if seeded:
-                    LOGGER.info(f"Initialized Redis counter for {chat_id} at {initial_count}")
-            count = int(await _redis.incr(key))
-            await _redis.expire(key, MESSAGE_COUNT_TTL_SECONDS)
+                if initial_count > 0:
+                    count = int(await _redis.incrby(key, initial_count))
+                    await _redis.expire(key, MESSAGE_COUNT_TTL_SECONDS)
+                LOGGER.info(f"Initialized Redis counter for {chat_id} at {count}")
         except Exception as e:
             LOGGER.error(f"Redis increment failed for {chat_id}: {e}")
         else:
-            try:
-                await _persist_message_increment(chat_id, user_id, count)
-            except Exception as e:
-                LOGGER.error(f"MongoDB message count persist failed for {chat_id}: {e}")
+            _record_pending_increment(chat_id, user_id)
             return count
     # Fallback to atomic DB-backed tracking.
     return await _increment_message_count_mongo(chat_id, user_id)
@@ -246,21 +294,42 @@ async def get_chat_frequency(chat_id: int) -> int:
             LOGGER.debug(f"Redis frequency cache write failed for {chat_id}: {e}")
     return freq
 async def flush_message_counts_to_db() -> int:
-    """Sync cached Redis message totals to MongoDB once."""
+    """Sync cached Redis message totals to MongoDB once (batched bulk writes)."""
     if not _redis: return 0
+    from pymongo import UpdateOne
     from Grabber.core.cache import _scan_keys
     synced = 0
+    ops = []
+
+    async def write_batch() -> None:
+        nonlocal ops
+        if not ops:
+            return
+        batch, ops = ops, []
+        try:
+            await message_counts_collection.bulk_write(batch, ordered=False)
+        except Exception as e:
+            LOGGER.error(f"Bulk flush of msg_count totals failed ({len(batch)} chats): {e}")
+
     keys = await _scan_keys("msg_count:*")
     for key in keys:
         chat_id_str = key.split(":")[-1]
         count = await _redis.get(key)
-        if count:
-            await message_counts_collection.update_one(
-                {"chat_id": chat_id_str},
-                {"$max": {"count": int(count)}},
-                upsert=True
-            )
-            synced += 1
+        if not count:
+            continue
+        try:
+            count_int = int(count)
+        except (TypeError, ValueError):
+            continue
+        ops.append(UpdateOne(
+            {"chat_id": chat_id_str},
+            {"$max": {"count": count_int}},
+            upsert=True,
+        ))
+        synced += 1
+        if len(ops) >= 500:
+            await write_batch()
+    await write_batch()
     return synced
 
 
@@ -270,6 +339,7 @@ async def flush_cache_to_db():
     while True:
         await asyncio.sleep(60)
         try:
+            await flush_pending_message_increments()
             await flush_message_counts_to_db()
         except Exception as e:
             LOGGER.error(f"Error flushing count cache to DB: {e}")

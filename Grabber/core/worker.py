@@ -30,11 +30,20 @@ async def background_maintenance():
             LOGGER.error(f"Persistence Worker Error: {e}")
         # Wait 6 hours
         await asyncio.sleep(6 * 3600)
+_legacy_egg_empty_runs = 0
+_LEGACY_EGG_SKIP_AFTER = 3
+
+
 async def prune_legacy_eggs():
     """
     Converts legacy string-based eggs (e.g. 'common') into proper dict objects
     to ensure WebApp compatibility.
     """
+    global _legacy_egg_empty_runs
+    # The query is an unindexed collection scan; once the migration is done,
+    # stop paying for it every 6 hours.
+    if _legacy_egg_empty_runs >= _LEGACY_EGG_SKIP_AFTER:
+        return
     cursor = user_collection.find({"eggs": {"$elemMatch": {"$type": "string"}}})
     count = 0
     async for user in cursor:
@@ -61,7 +70,15 @@ async def prune_legacy_eggs():
             await user_collection.update_one(get_user_id_query(uid), {"$set": {"eggs": new_eggs}})
             count += 1
     if count > 0:
+        _legacy_egg_empty_runs = 0
         LOGGER.info(f"Persistence Worker: Pruned legacy eggs for {count} users.")
+    else:
+        _legacy_egg_empty_runs += 1
+        if _legacy_egg_empty_runs >= _LEGACY_EGG_SKIP_AFTER:
+            LOGGER.info(
+                "Persistence Worker: no legacy eggs for %d consecutive runs; disabling scan.",
+                _LEGACY_EGG_SKIP_AFTER,
+            )
 async def verify_top_users_consistency():
     """
     Checks the denormalized char_count against len(characters) for top users
@@ -70,10 +87,21 @@ async def verify_top_users_consistency():
     # Check top 50 by char_count
     # Use {$exists: true} so MongoDB can use the sparse char_count index.
     # find({}).sort() on a sparse index may fall back to a full collection scan.
-    cursor = user_collection.find({"char_count": {"$exists": True}}).sort("char_count", -1).limit(50)
+    # $size computes the real count server-side so huge character arrays are
+    # never transferred to the worker.
+    cursor = user_collection.aggregate([
+        {"$match": {"char_count": {"$exists": True}}},
+        {"$sort": {"char_count": -1}},
+        {"$limit": 50},
+        {"$project": {
+            "id": 1,
+            "char_count": 1,
+            "actual_count": {"$size": {"$ifNull": ["$characters", []]}},
+        }},
+    ])
     fixed = 0
     async for user in cursor:
-        actual_count = len(user.get("characters") or [])
+        actual_count = user.get("actual_count", 0)
         stored_count = user.get("char_count", 0)
         if actual_count != stored_count:
             uid = user["id"]

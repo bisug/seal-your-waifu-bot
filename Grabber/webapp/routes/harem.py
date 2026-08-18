@@ -18,6 +18,25 @@ router = APIRouter()
 RARITY_CACHE_TTL = 300
 _rarity_cache: dict[str, object] = {"expires_at": 0.0, "items": []}
 
+# Short-lived cache for gallery totals: count_documents() with a search filter
+# is a collection scan and runs on every paginated request otherwise.
+GALLERY_COUNT_TTL = 60
+_gallery_count_cache: dict[str, tuple[float, int]] = {}
+
+
+async def _cached_gallery_count(match_query: dict) -> int:
+    import json as _json
+    cache_key = _json.dumps(match_query, sort_keys=True, default=str)
+    now = time.monotonic()
+    hit = _gallery_count_cache.get(cache_key)
+    if hit and now - hit[0] < GALLERY_COUNT_TTL:
+        return hit[1]
+    total = await collection.count_documents(match_query)
+    if len(_gallery_count_cache) > 200:
+        _gallery_count_cache.clear()
+    _gallery_count_cache[cache_key] = (now, total)
+    return total
+
 
 @router.get("/rarities")
 async def get_rarities(user_id: int = Depends(get_current_user)):
@@ -279,7 +298,7 @@ async def get_gallery(
         return await cursor.to_list(length=limit)
 
     total, owner_doc, items = await asyncio.gather(
-        collection.count_documents(match_query),
+        _cached_gallery_count(match_query),
         user_collection.find_one(get_user_id_query(user_id), {"characters.id": 1, "_id": 0}),
         fetch_items(),
     )
