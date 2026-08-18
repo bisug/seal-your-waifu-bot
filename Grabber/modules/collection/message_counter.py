@@ -6,8 +6,8 @@ from pyrogram import enums, errors, filters, types
 from pyrogram.enums import ParseMode
 
 from Grabber import app, config, LOGGER
-from Grabber.core.spawns import (get_active_user_count, get_chat_frequency,
-                                 get_chat_state, get_spawn_order,
+from Grabber.core.spawn_utils import get_target_spawn_frequency
+from Grabber.core.spawns import (get_chat_state,
                                  increment_message_count,
                                  increment_spawn_order, send_character,
                                  track_user_activity)
@@ -80,19 +80,10 @@ async def message_counter_handler(_, message: types.Message):
             SPAWN_LOGGER.info(f"Milestone {r_name} reached at {count} in {chat_id}")
             await send_character(chat_id, r_name)
             return
-    # Standard spawn logic based on chat activity levels
-    active_count = await get_active_user_count(chat_id)
-    if active_count >= 6:
-        base_freq = 40
-    elif active_count >= 3:
-        base_freq = 60
-    else:
-        freq = await get_chat_frequency(chat_id)
-        base_freq = min(freq, 80) if freq is not None else 80
-    # Trigger standard spawn if milestone is reached
-    base_freq_int = max(1, int(base_freq * multiplier))
-    if count % base_freq_int == 0:
-        SPAWN_LOGGER.info(f"Standard spawn triggered in {chat_id} (count={count}, freq={base_freq_int})")
+    # Standard spawn logic — frequency/multiplier resolved by the shared helper
+    target_freq, active_count, _ = await get_target_spawn_frequency(chat_id)
+    if count % target_freq == 0:
+        SPAWN_LOGGER.info(f"Standard spawn triggered in {chat_id} (count={count}, freq={target_freq})")
         # Use different rarity weights if the chat is very active
         if active_count > 10:
             weights_map = ACTIVE_SPAWN_RARITY_WEIGHTS
