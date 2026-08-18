@@ -36,7 +36,6 @@ class Database:
         self.spawns = self.db['active_spawns']
         self.sessions = self.db['active_sessions']
         self.quiz_questions = self.db['quiz_questions']
-        self.gamebot_enabled_groups = self.db['nguess_enabled_groups']
         self.deletion_queue = self.db['deletion_queue']
         self.daily_shop = self.db['daily_shop_inventory']
         self.scraped_characters = self.db['scraped_characters']
@@ -60,7 +59,6 @@ class Database:
             (self.groups,            lambda c: c.create_index("group_id", unique=True)),
             # Previously missing indexes — added for query performance
             (self.user_totals,       lambda c: c.create_index("chat_id")),
-            (self.gamebot_enabled_groups, lambda c: c.create_index("chat_id", unique=True, sparse=True)),
             (self.total_pm_users,    lambda c: c.create_index("_id")),
             # WebApp Specific Indexes
             (self.users,             lambda c: c.create_index("characters.id")),
@@ -156,7 +154,6 @@ sudo_collection = seal_db.sudo_users
 spawns_collection = seal_db.spawns
 sessions_collection = seal_db.sessions
 quiz_questions_collection = seal_db.quiz_questions
-gamebot_enabled_groups_collection = seal_db.gamebot_enabled_groups
 deletion_queue_collection = seal_db.deletion_queue
 daily_shop_collection = seal_db.daily_shop
 scraped_characters_collection = seal_db.scraped_characters

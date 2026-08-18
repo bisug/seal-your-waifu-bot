@@ -128,10 +128,6 @@ def get_resource_snapshot() -> ResourceSnapshot:
     )
 
 
-def snapshot_as_dict() -> dict:
-    return asdict(get_resource_snapshot())
-
-
 def pressure_reason(snapshot: ResourceSnapshot | None = None) -> str | None:
     snapshot = snapshot or get_resource_snapshot()
     if snapshot.hard_limit_mb > 0 and snapshot.rss_mb >= snapshot.hard_limit_mb:

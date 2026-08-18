@@ -144,10 +144,6 @@ def _clean_pet_doc(pet: dict) -> dict:
     return doc
 
 
-def clean_pet_catalog_doc(pet: dict) -> dict:
-    return _clean_pet_doc(pet)
-
-
 def _seed_catalog_by_id() -> dict[str, dict]:
     return {pet["petid"]: _clean_pet_doc(pet) for pet in PET_CATALOG_SEED}
 
@@ -338,19 +334,6 @@ async def list_pet_catalog(include_disabled: bool = False, shop_only: bool = Fal
 
 async def list_shop_pets() -> list[dict]:
     return await list_pet_catalog(shop_only=True)
-
-
-async def get_catalog_pet(ref: Any, include_disabled: bool = False) -> dict | None:
-    if ref is None:
-        return None
-    ref_str = str(ref)
-    ref_id = pet_id_from_name(ref_str)
-    for pet in await list_pet_catalog(include_disabled=include_disabled):
-        if ref_str in {str(pet.get("petid") or ""), str(pet.get("id") or ""), str(pet.get("name") or "")}:
-            return deepcopy(pet)
-        if ref_id and ref_id == str(pet.get("petid") or ""):
-            return deepcopy(pet)
-    return None
 
 
 async def get_shop_pet(ref: Any) -> dict | None:
