@@ -45,35 +45,6 @@ async def normalize_field(collection, field: str, dry_run: bool) -> int:
     return fixed
 
 
-async def normalize_message_count_users(collection, dry_run: bool) -> int:
-    """Rebuild message_counts.users maps whose keys are numeric strings."""
-    fixed = 0
-    ops = []
-    async for doc in collection.find({"users": {"$exists": True}}, {"users": 1}):
-        users = doc.get("users") or {}
-        if not isinstance(users, dict):
-            continue
-        rebuilt = {}
-        changed = False
-        for key, value in users.items():
-            try:
-                rebuilt[int(key)] = value
-            except (TypeError, ValueError):
-                rebuilt[key] = value
-        if list(rebuilt.keys()) != list(users.keys()):
-            changed = True
-        if changed:
-            ops.append(UpdateOne({"_id": doc["_id"]}, {"$set": {"users": rebuilt}}))
-            fixed += 1
-            if len(ops) >= BATCH:
-                if not dry_run:
-                    await collection.bulk_write(ops, ordered=False)
-                ops = []
-    if ops and not dry_run:
-        await collection.bulk_write(ops, ordered=False)
-    return fixed
-
-
 async def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dry-run", action="store_true", help="report without writing")
@@ -99,8 +70,8 @@ async def main() -> None:
         n = await normalize_field(collection, field, args.dry_run)
         print(f"  {collection.name}.{field}: {n} doc(s)")
         total += n
-    n = await normalize_message_count_users(db["message"], args.dry_run)
-    print(f"  message.users key maps: {n} doc(s)")
+    n = 0
+    print(f"  message.users key maps: (n/a — BSON requires string keys, runtime already uses them correctly)")
     total += n
     print(f"Total: {total} doc(s) {'would be' if args.dry_run else ''} normalized.")
     await client.aclose()
