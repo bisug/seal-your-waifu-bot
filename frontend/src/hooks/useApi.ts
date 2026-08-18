@@ -1,31 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useRef } from 'react';
 import { apiFetch, getErrorMessage } from '../api/client';
-
-const apiCache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_TTL = 1000 * 60 * 5; // 5 minutes
-const MAX_CACHE_ENTRIES = 50;
-
-function writeApiCache(key: string, data: any) {
-  if (apiCache.has(key)) apiCache.delete(key);
-  apiCache.set(key, { data, timestamp: Date.now() });
-  while (apiCache.size > MAX_CACHE_ENTRIES) {
-    const oldest = apiCache.keys().next().value;
-    if (!oldest) break;
-    apiCache.delete(oldest);
-  }
-}
-
-// Shallow array comparison utility
-function shallowEqual(obj1: any, obj2: any) {
-  if (obj1 === obj2) return true;
-  const keys1 = Object.keys(obj1 || {});
-  const keys2 = Object.keys(obj2 || {});
-  if (keys1.length !== keys2.length) return false;
-  for (const key of keys1) {
-    if (obj1[key] !== obj2[key]) return false;
-  }
-  return true;
-}
 
 interface UseApiOptions<T> extends RequestInit {
   initialData?: T;
@@ -33,75 +8,55 @@ interface UseApiOptions<T> extends RequestInit {
 }
 
 /**
- * Standardized API Hook
+ * Standardized API Hook — thin wrapper over @tanstack/react-query.
+ * Keeps the legacy { data, loading, error, execute, setData } shape so
+ * existing pages work unchanged; caching and dedup come from react-query.
  */
 export const useApi = <T = any>(
   endpoint: string,
   options: UseApiOptions<T> = {},
   deps: any[] = [],
 ) => {
-  const [data, setData] = useState<T | null>(options.initialData || null);
-  const [loading, setLoading] = useState(!options.manual);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
 
-  const optionsRef = useRef<UseApiOptions<T>>(options);
-  const mountedRef = useRef(false);
-  const [currentOptions, setCurrentOptions] = useState<UseApiOptions<T>>(options);
+  const isGet = !options.method || options.method === 'GET';
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const queryKey = ['api', endpoint, options.body ?? null, ...deps];
 
-  useEffect(() => {
-    if (!shallowEqual(currentOptions, options)) {
-      optionsRef.current = options;
-      // Use setTimeout to move the state update out of the render/effect cycle
-      // to avoid cascading renders warning.
-      setTimeout(() => {
-        setData(options.initialData || null);
-        setCurrentOptions(options);
-      }, 0);
-    }
-  }, [options, currentOptions]);
+  const query = useQuery<T>({
+    queryKey,
+    queryFn: ({ signal }) => apiFetch(endpoint, { ...optionsRef.current, signal }),
+    enabled: !options.manual,
+    ...(options.initialData !== undefined ? { initialData: options.initialData } : {}),
+    // apiFetch already retries idempotent requests internally.
+    retry: false,
+  });
 
   const execute = useCallback(
     async (overrides: RequestInit = {}) => {
-      const isGet = !optionsRef.current.method || optionsRef.current.method === 'GET';
-      const cacheKey = endpoint + JSON.stringify(optionsRef.current.body || {});
-
-      if (isGet && apiCache.has(cacheKey)) {
-        const cached = apiCache.get(cacheKey)!;
-        if (Date.now() - cached.timestamp < CACHE_TTL) {
-          setData(cached.data);
-          setLoading(false);
-          // On first mount we still refetch so a view doesn't open onto
-          // another view's stale cache; later reads may use it directly.
-          if (mountedRef.current) return;
-        }
+      const res = await apiFetch(endpoint, { ...optionsRef.current, ...overrides });
+      if (isGet) {
+        queryClient.setQueryData(queryKey, res);
       }
-      mountedRef.current = true;
-
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await apiFetch(endpoint, { ...optionsRef.current, ...overrides });
-        if (isGet) {
-          writeApiCache(cacheKey, res);
-        }
-        setData(res);
-        return res;
-      } catch (err: any) {
-        setError(getErrorMessage(err));
-        throw err;
-      } finally {
-        setLoading(false);
-      }
+      return res;
     },
-    [endpoint],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [endpoint, isGet, queryClient, ...queryKey],
   );
 
-  useEffect(() => {
-    if (!optionsRef.current.manual) {
-      execute();
-    }
-    // biome-ignore lint/correctness/useExhaustiveDependencies: deps is a dynamic array passed by the caller
-  }, deps);
+  const setData = useCallback(
+    (value: T) => queryClient.setQueryData(queryKey, value),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [queryClient, ...queryKey],
+  );
 
-  return { data, loading, error, execute, setData };
+  return {
+    data: query.data ?? null,
+    loading: query.isPending || query.isFetching,
+    error: query.error ? getErrorMessage(query.error) : null,
+    execute,
+    setData,
+  };
 };
