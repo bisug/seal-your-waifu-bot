@@ -9,8 +9,8 @@ requires-python = ">=3.14"
 
 dependencies = [
     # API Framework
-    "fastapi>=0.139.0",
-    "uvicorn[standard]>=0.51.0",
+    "fastapi>=0.141.1",
+    "uvicorn[standard]>=0.52.3",
 
     # HTTP / Networking
     "httpx>=0.28.1",
@@ -19,22 +19,22 @@ dependencies = [
 
     # Database
     "pymongo>=4.17.0",
-    "redis[hiredis]>=8.0.1",
+    "redis[hiredis]>=8.1.0",
 
     # Telegram
     "kurigram>=2.2.24",
     "tgcrypto>=1.2.5; platform_system == 'Linux'",
 
     # Serialization / Validation
-    "orjson>=3.11.9",
+    "orjson>=3.12.0",
     "pydantic>=2.13.4",
 
     # Utilities
     "psutil>=7.2.2",
-    "python-dotenv>=1.2.2",
+    "python-dotenv>=1.2.3",
 
     # Browser Automation
-    "playwright>=1.61.0",
+    "playwright>=1.62.0",
 
     # Performance
     "uvloop>=0.22.1; platform_system != 'Windows'",
