@@ -1,7 +1,6 @@
 import asyncio
 import html
 import logging
-import re
 from datetime import datetime, timezone
 from functools import wraps
 from pyrogram import enums, errors, filters, types
@@ -45,13 +44,6 @@ def format_currency(amount: int, symbol: str = "⬪") -> str:
         return f"{int(amount):,} {symbol}"
     except (ValueError, TypeError):
         return f"0 {symbol}"
-def md_escape(text: str) -> str:
-    """Escapes special characters for Telegram MarkdownV2."""
-    if not text:
-        return ""
-    # Characters to escape in MarkdownV2: _ * [ ] ( ) ~ ` > # + - = | { } . !
-    escape_chars = r"_*[]()~`>#+-=|{}.!"
-    return re.sub(f"([{re.escape(escape_chars)}])", r"\\\1", text)
 async def check_member_requirement(bot, chat, min_count=50):
     """
     Checks if a chat meets the requirements for GameBot:

@@ -131,14 +131,6 @@ async def get_group_gban(chat_id: int | str):
     return doc
 
 
-async def is_user_gbanned(user_id: int | str) -> bool:
-    return await get_user_gban(user_id) is not None
-
-
-async def is_group_gbanned(chat_id: int | str) -> bool:
-    return await get_group_gban(chat_id) is not None
-
-
 async def invalidate_user_gban(user_id: int | str):
     uid = _normalize_id(user_id)
     if uid is None:

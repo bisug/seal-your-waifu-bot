@@ -1,6 +1,6 @@
 """
 Centralized Redis cache layer. All methods are failsafe (falls back to MongoDB).
-Key prefixes: user, balance, cooldown, lb, session, gamebot_groups.
+Key prefixes: user, balance, cooldown, lb, session.
 """
 import asyncio
 import json
@@ -19,7 +19,6 @@ TTL_LEADERBOARD = 300
 TTL_SESSION     = 1800
 TTL_DAILY       = 86400
 TTL_WEEKLY      = 604800
-TTL_GAMEBOT     = 300
 DEFAULT_REDIS_AUTO_LIMIT_BYTES = 64 * 1024 * 1024
 VOLATILE_CACHE_PATTERNS = ("user:*", "balance:*", "lb:*", "rank:*")
 _last_memory_check = 0.0
@@ -182,9 +181,6 @@ async def is_on_cooldown(domain: str, user_id: int, duration: int) -> tuple[bool
     except Exception as e:
         LOGGER.warning(f"Redis cooldown error [{key}]: {e}")
         return False, 0
-async def reset_cooldown(domain: str, user_id: int):
-    """Force-remove a cooldown (e.g., for owner bypass)."""
-    await rdel(_cooldown_key(domain, user_id))
 def _lb_key(metric: str, limit: int = 10) -> str:
     return f"lb:{metric}:{limit}"
 async def get_cached_leaderboard(metric: str, limit: int = 10) -> Optional[list]:
@@ -427,48 +423,3 @@ async def sync_user_to_redis(user_id: int, user_doc: dict = None):
         await pipe.execute()
     except Exception as e:
         LOGGER.warning(f"Failed to sync user {user_id} to Redis: {e}")
-_GAMEBOT_KEY = "gamebot_groups"
-async def refresh_gamebot_groups_cache(gamebot_enabled_groups_collection) -> set:
-    """Load enabled groups from MongoDB and cache in Redis set."""
-    groups = await gamebot_enabled_groups_collection.find({}, {"chat_id": 1}).to_list(length=1000)
-    ids = {str(g["chat_id"]) for g in groups}
-    if _redis and ids:
-        try:
-            pipe = _redis.pipeline()
-            pipe.delete(_GAMEBOT_KEY)
-            pipe.sadd(_GAMEBOT_KEY, *ids)
-            pipe.expire(_GAMEBOT_KEY, TTL_GAMEBOT)
-            await pipe.execute()
-        except Exception as e:
-            LOGGER.warning(f"Redis gamebot set error: {e}")
-    return ids
-async def is_gamebot_enabled(chat_id: int, gamebot_enabled_groups_collection) -> bool:
-    """Check if a chat has gamebot enabled. Uses Redis set, falls back to MongoDB."""
-    if _redis:
-        try:
-            exists = await _redis.sismember(_GAMEBOT_KEY, str(chat_id))  # type: ignore
-            if exists:
-                return True
-            # Key might be expired — check if key exists at all
-            key_exists = await _redis.exists(_GAMEBOT_KEY)
-            if key_exists:
-                return False  # Key exists but chat not in set → definitely disabled
-        except Exception as e:
-            LOGGER.warning(f"Redis gamebot check error: {e}")
-    # MongoDB fallback
-    result = await gamebot_enabled_groups_collection.find_one({"chat_id": chat_id})
-    return result is not None
-async def add_gamebot_group(chat_id: int):
-    """Add a group to the gamebot enabled set in Redis."""
-    if _redis:
-        try:
-            await _redis.sadd(_GAMEBOT_KEY, str(chat_id))  # type: ignore
-        except Exception as e:
-            LOGGER.warning(f"Redis gamebot add error: {e}")
-async def remove_gamebot_group(chat_id: int):
-    """Remove a group from the gamebot enabled set in Redis."""
-    if _redis:
-        try:
-            await _redis.srem(_GAMEBOT_KEY, str(chat_id))  # type: ignore
-        except Exception as e:
-            LOGGER.warning(f"Redis gamebot remove error: {e}")

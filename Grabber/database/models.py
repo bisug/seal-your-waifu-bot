@@ -43,10 +43,3 @@ class Character(BaseModel):
     img_url: str
     zenith_price: int = 5
     sold_count: int = 0
-
-class UserCharacter(BaseModel):
-    id: str
-    name: str
-    anime: str
-    rarity: str
-    img_url: str
