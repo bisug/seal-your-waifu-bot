@@ -1,189 +1,100 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { ApiError, apiFetch, getErrorMessage } from '../api/client';
-
-const gridCache = new Map<
-  string,
-  { items: any[]; page: number; hasMore: boolean; timestamp: number }
->();
-const CACHE_TTL = 1000 * 60 * 5; // 5 mins
-const MAX_CACHE_ENTRIES = 24;
-
-const writeGridCache = (
-  key: string,
-  value: { items: any[]; page: number; hasMore: boolean; timestamp: number },
-) => {
-  if (gridCache.has(key)) gridCache.delete(key);
-  gridCache.set(key, value);
-  while (gridCache.size > MAX_CACHE_ENTRIES) {
-    const oldest = gridCache.keys().next().value;
-    if (!oldest) break;
-    gridCache.delete(oldest);
-  }
-};
+import {
+  type InfiniteData,
+  useInfiniteQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { apiFetch, getErrorMessage } from '../api/client';
 
 interface InfiniteGridOptions {
   limit?: number;
   params?: Record<string, any>;
 }
 
+interface GridPage<T> {
+  items: T[];
+  total?: number;
+}
+
 export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGridOptions = {}) => {
-  const [items, setItems] = useState<T[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [rarity, setRarity] = useState('');
 
-  const observer = useRef<IntersectionObserver | null>(null);
-  const searchAbortController = useRef<AbortController | null>(null);
-  const requestSeq = useRef(0);
-  const paramsKey = JSON.stringify(options.params || {});
-  // Read the latest items without making fetchData depend on them; otherwise
-  // every fetch changes fetchData's identity and re-triggers the effects below.
-  const itemsRef = useRef(items);
-  itemsRef.current = items;
+  // Debounced copies drive the query key; raw state stays controlled for inputs.
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [debouncedRarity, setDebouncedRarity] = useState('');
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+      setDebouncedRarity(rarity.trim());
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search, rarity]);
+
+  const limit = options.limit || 24;
+  const paramsKey = JSON.stringify(options.params || {});
+
+  const queryKey = ['grid', endpoint, debouncedSearch, debouncedRarity, limit, paramsKey];
+
+  const query = useInfiniteQuery<GridPage<T>, Error, InfiniteData<GridPage<T>>, typeof queryKey, number>({
+    queryKey,
+    initialPageParam: 1,
+    queryFn: ({ pageParam, signal }) => {
+      const queryParams = new URLSearchParams({
+        page: pageParam.toString(),
+        limit: limit.toString(),
+        search: debouncedSearch,
+        rarity: debouncedRarity,
+        ...(JSON.parse(paramsKey) as Record<string, string>),
+      });
+      return apiFetch(`${endpoint}?${queryParams.toString()}`, { signal });
+    },
+    getNextPageParam: (lastPage, allPages, lastPageParam) => {
+      const fetched = lastPage.items?.length ?? 0;
+      if (fetched === 0) return undefined;
+      const total = typeof lastPage.total === 'number' ? lastPage.total : null;
+      const loaded = lastPageParam * limit;
+      const more = total === null ? fetched === limit : loaded < total;
+      return more ? lastPageParam + 1 : undefined;
+    },
+    // apiFetch already retries idempotent requests internally.
+    retry: false,
+  });
+
+  const items = useMemo(
+    () => (query.data ? query.data.pages.flatMap((p) => p.items ?? []) : []),
+    [query.data],
+  );
+
+  const observer = useRef<IntersectionObserver | null>(null);
   const lastElementRef = useCallback(
     (node: HTMLElement | null) => {
-      if (loading) return;
+      if (query.isFetching) return;
       if (observer.current) observer.current.disconnect();
       observer.current = new IntersectionObserver((entries) => {
         const entry = entries[0];
-        if (entry && entry.isIntersecting && hasMore && !loading) {
-          setPage((prev) => prev + 1);
+        if (entry && entry.isIntersecting && query.hasNextPage && !query.isFetching) {
+          query.fetchNextPage();
         }
       });
       if (node) observer.current.observe(node);
     },
-    [loading, hasMore],
+    [query.isFetching, query.hasNextPage, query.fetchNextPage],
   );
-
-  const fetchData = useCallback(
-    async (isNew = false, force = false) => {
-      const requestId = ++requestSeq.current;
-      setLoading(true);
-      setError(null);
-
-      if (isNew) {
-        if (searchAbortController.current) {
-          searchAbortController.current.abort();
-        }
-        searchAbortController.current = new AbortController();
-      }
-
-      const currentPage = isNew ? 1 : page;
-      const optionParams = JSON.parse(paramsKey) as Record<string, string>;
-      const queryParams = new URLSearchParams({
-        page: currentPage.toString(),
-        limit: (options.limit || 24).toString(),
-        search: search.trim(),
-        rarity: rarity.trim(),
-        ...optionParams,
-      });
-
-      const cacheKey = `${endpoint}?${search.trim()}:${rarity.trim()}:${options.limit || 24}:${paramsKey}`;
-
-      if (isNew && !force) {
-        if (gridCache.has(cacheKey)) {
-          const cached = gridCache.get(cacheKey)!;
-          if (Date.now() - cached.timestamp < CACHE_TTL) {
-            if (requestId !== requestSeq.current) return;
-            setItems(cached.items);
-            setPage(cached.page);
-            setHasMore(cached.hasMore);
-            setError(null);
-            setLoading(false);
-            return;
-          }
-        }
-      }
-
-      try {
-        const data = await apiFetch(`${endpoint}?${queryParams.toString()}`, {
-          ...(searchAbortController.current?.signal
-            ? { signal: searchAbortController.current.signal }
-            : {}),
-        });
-
-        if (requestId !== requestSeq.current) return;
-
-        let newItems;
-        if (isNew) {
-          newItems = data.items;
-        } else {
-          newItems = [...itemsRef.current, ...data.items];
-        }
-
-        setItems(newItems);
-        setError(null);
-        const total = typeof data.total === 'number' ? data.total : null;
-        const newHasMore =
-          total === null
-            ? data.items.length === (options.limit || 24)
-            : currentPage * (options.limit || 24) < total;
-        setHasMore(newHasMore);
-
-        // Save to cache
-        writeGridCache(cacheKey, {
-          items: newItems,
-          page: currentPage,
-          hasMore: newHasMore,
-          timestamp: Date.now(),
-        });
-      } catch (err: any) {
-        if (err instanceof ApiError && err.code === 'cancelled') return;
-        if (requestId !== requestSeq.current) return;
-        const message = getErrorMessage(err);
-        setError(message);
-        console.error(`Fetch error for ${endpoint}: ${message}`, err);
-      } finally {
-        if (requestId === requestSeq.current) {
-          setLoading(false);
-        }
-      }
-    },
-    [endpoint, page, search, rarity, options.limit, paramsKey],
-  );
-
-  const fetchDataRef = useRef(fetchData);
-  fetchDataRef.current = fetchData;
-
-  // Initial fetch and search/rarity debounce
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setPage(1);
-      fetchDataRef.current(true);
-    }, 400);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, rarity, endpoint, paramsKey, options.limit]);
-
-  // Infinite scroll trigger
-  useEffect(() => {
-    let mounted = true;
-    if (page > 1 && mounted) {
-      Promise.resolve().then(() => {
-        if (mounted) fetchDataRef.current(false);
-      });
-    }
-    return () => {
-      mounted = false;
-    };
-  }, [page]);
 
   const refresh = useCallback(() => {
-    setPage(1);
-    fetchDataRef.current(true, true);
-  }, []);
+    queryClient.resetQueries({ queryKey });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queryClient, ...queryKey]);
 
   return {
     items,
-    loading,
-    hasMore,
-    error,
-    page,
-    setPage,
+    loading: query.isPending || query.isFetching,
+    hasMore: !!query.hasNextPage,
+    error: query.error ? getErrorMessage(query.error) : null,
+    page: query.data?.pages.length ?? 1,
     search,
     setSearch,
     rarity,
