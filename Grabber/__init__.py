@@ -48,7 +48,6 @@ install_exception_hooks()
 
 from Grabber.client import SealClient
 from Grabber.database import (client, collection, db,
-                              gamebot_enabled_groups_collection,
                               global_group_bans_collection,
                               global_user_bans_collection,
                               group_collection, group_user_totals_collection,
