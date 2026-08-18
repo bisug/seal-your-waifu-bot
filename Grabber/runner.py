@@ -52,9 +52,18 @@ async def _refresh_instance_lock():
         await asyncio.sleep(_INSTANCE_LOCK_TTL // 2)
         try:
             if redis_client:
-                await redis_client.set(
-                    _INSTANCE_LOCK_KEY, str(os.getpid()), ex=_INSTANCE_LOCK_TTL
+                # XX: only extend if we still own the lock. A plain SET would
+                # silently steal a lock another instance acquired after ours
+                # expired (e.g. during a long GC pause), defeating the guard.
+                held = await redis_client.set(
+                    _INSTANCE_LOCK_KEY, str(os.getpid()), ex=_INSTANCE_LOCK_TTL, xx=True
                 )
+                if not held:
+                    LOGGER.critical(
+                        "Single-instance lock lost (expired or taken by another "
+                        "process). This process may now share an MTProto session "
+                        "with another instance."
+                    )
         except Exception:
             pass
 
@@ -64,8 +73,14 @@ async def _release_instance_lock():
     if not redis_client:
         return
     try:
-        if await redis_client.get(_INSTANCE_LOCK_KEY) == str(os.getpid()):
-            await redis_client.delete(_INSTANCE_LOCK_KEY)
+        # Atomic compare-and-delete: only remove the lock if we still own it.
+        await redis_client.eval(
+            "if redis.call('get', KEYS[1]) == ARGV[1] then "
+            "return redis.call('del', KEYS[1]) else return 0 end",
+            1,
+            _INSTANCE_LOCK_KEY,
+            str(os.getpid()),
+        )
     except Exception:
         pass
 
@@ -291,7 +306,8 @@ async def stop_bots():
     await stop_resource_monitor()
     await cancel_background_tasks()
     try:
-        from Grabber.core.spawns import flush_message_counts_to_db
+        from Grabber.core.spawns import flush_message_counts_to_db, flush_pending_message_increments
+        await flush_pending_message_increments()
         await flush_message_counts_to_db()
     except Exception as e:
         LOGGER.warning(f"Failed to flush message counts before shutdown: {e}")

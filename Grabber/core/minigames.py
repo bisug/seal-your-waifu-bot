@@ -82,7 +82,13 @@ async def consume_energy(user_id: int, game_type: Optional[str] = None) -> Any:
     if current_energy == MAX_ENERGY:
         update_fields["$set"] = {"last_energy_recharge": now}
 
-    await user_collection.update_one(get_user_id_query(user_id), update_fields)
+    # Atomic guard: only decrement when energy is still >= 1 so concurrent
+    # start requests cannot double-spend the same point into negative energy.
+    consume_filter = get_user_id_query(user_id)
+    consume_filter["energy"] = {"$gte": 1}
+    result = await user_collection.update_one(consume_filter, update_fields)
+    if result.modified_count == 0:
+        return False
 
     start_data = {"start_time": now.timestamp()}
 
@@ -203,6 +209,10 @@ async def reward_minigame(user_id: int, game_type: str, score: int = 0, session_
     if character_reward:
         from Grabber.core.user import add_char_to_user
         await add_char_to_user(user_id, character_reward)
+
+    # Balance/XP were mutated outside the cached-document path; drop the stale
+    # Redis copy so the WebApp reflects rewards immediately.
+    await invalidate_user_cache(user_id)
 
     return {
         "shards": shards,
