@@ -145,6 +145,7 @@
   /* Premium UI variables */
   --border-subtle: rgba(255, 255, 255, 0.06);
   --accent-glow: 0 0 15px rgba(59, 130, 246, 0.1);
+  --brand-accent-rgb: 59, 130, 246;
 
   /* Safe Area Insets */
   --sat: env(safe-area-inset-top);
@@ -249,7 +250,9 @@ a {
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
+  /* pan-x pan-y: allow nested horizontal scrollers (e.g. Leaderboard tabs)
+     to pan on touch; pan-y alone blocks them. */
+  touch-action: pan-x pan-y;
   overscroll-behavior-y: contain;
   position: relative;
   padding-bottom: calc(84px + var(--sab, 24px));
