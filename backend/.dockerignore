@@ -1,0 +1,15 @@
+# Keep the image slim and prevent local secrets from leaking into it.
+# This file applies when the build context is backend/ (BuildKit reads
+# <context>/.dockerignore).
+Dockerfile
+.dockerignore
+compose.yaml
+*.env
+tests/
+.python-version
+.pytest_cache/
+__pycache__/
+*.py[cod]
+*.session
+*.session-journal
+*.log
