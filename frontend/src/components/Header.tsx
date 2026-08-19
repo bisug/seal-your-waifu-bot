@@ -39,26 +39,26 @@ export const Header = memo(({ onMenuClick }: HeaderProps) => {
       </div>
 
       {/* Stats Section */}
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-2.5 px-3 h-8 rounded-md bg-zinc-900 border border-white/5 transition-colors hover:border-white/10 group">
-          <Coins size={12} className="text-amber-500" />
+      <div className="flex items-center gap-1.5 sm:gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-3 h-8 rounded-md bg-zinc-900 border border-white/5 transition-colors hover:border-white/10 group">
+          <Coins size={12} className="text-amber-500 shrink-0" />
           <div className="flex items-baseline gap-1">
             <span className="text-[11px] font-mono font-bold text-zinc-100 tabular-nums">
               {formatNumber(user?.stats?.points ?? user?.balance ?? 0)}
             </span>
-            <span className="text-[7px] font-bold text-zinc-500 uppercase tracking-wider">
+            <span className="hidden sm:inline text-[7px] font-bold text-zinc-500 uppercase tracking-wider">
               SHARDS
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 px-3 h-8 rounded-md bg-zinc-900 border border-white/5 transition-colors hover:border-white/10 group">
-          <Gem size={12} className="text-brand-accent" />
+        <div className="flex items-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-3 h-8 rounded-md bg-zinc-900 border border-white/5 transition-colors hover:border-white/10 group">
+          <Gem size={12} className="text-brand-accent shrink-0" />
           <div className="flex items-baseline gap-1">
             <span className="text-[11px] font-mono font-bold text-zinc-100 tabular-nums">
               {formatNumber(user?.stats?.zenith || 0)}
             </span>
-            <span className="text-[7px] font-bold text-zinc-500 uppercase tracking-wider">
+            <span className="hidden sm:inline text-[7px] font-bold text-zinc-500 uppercase tracking-wider">
               ZENITH
             </span>
           </div>
@@ -68,7 +68,7 @@ export const Header = memo(({ onMenuClick }: HeaderProps) => {
           variant="ghost"
           size="sm"
           onClick={onMenuClick}
-          className="w-8 h-8 p-0 rounded-md border border-white/5 hover:bg-zinc-900 transition-all"
+          className="w-8 h-8 p-0 rounded-md border border-white/5 hover:bg-zinc-900 transition-all shrink-0"
           aria-label="Open Menu"
         >
           <Menu size={18} />

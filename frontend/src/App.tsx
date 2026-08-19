@@ -10,6 +10,86 @@ import { GachaReveal } from './components/ui/GachaReveal';
 import { ToastProvider } from './components/ui/Toast';
 import { UserProvider, useUser } from './context/UserContext';
 import { Forbidden } from './pages/Forbidden';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import { NotFound } from './pages/NotFound';
 import { Profile } from './pages/Profile';
 import { ServerError } from './pages/ServerError';
@@ -311,7 +391,7 @@ const AppContent = () => {
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-zinc-950">
       <Header onMenuClick={() => setIsMenuOpen(true)} />
 
-      <main className="app-scroller adaptive-px pb-8">
+      <main className="app-scroller">
         <Suspense
           fallback={
             <div className="flex flex-col items-center justify-center h-full gap-4">
