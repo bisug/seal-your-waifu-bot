@@ -2,7 +2,7 @@ services:
   - type: web
     name: seal-bot
     runtime: docker
-    dockerfilePath: ./Dockerfile
+    dockerfilePath: ./backend/Dockerfile
     dockerContext: .
     autoDeploy: true
     healthCheckPath: /healthz
