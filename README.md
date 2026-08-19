@@ -258,7 +258,7 @@ Shutdown cancels background tasks, stops clients, flushes message counts, closes
 | Backend validation | `uv run python -m compileall -q config.py backend scripts` |
 | Frontend lint | `cd frontend && bun run lint` |
 | Frontend type-check | `cd frontend && bun run type-check` |
-| Docker build | `docker build -t seal-bot:ci .` |
+| Docker build | `docker build -t seal-bot:ci backend` |
 
 The backend Docker image no longer bundles the frontend. To serve the Mini App from FastAPI, build the frontend and copy `frontend/dist` into `backend/backend/static` before building the image, or host the frontend separately (see [Static Frontend Hosting](#static-frontend-hosting)).
 
@@ -594,7 +594,7 @@ Redis is used for auth sessions, rate limiting, spawn state, group message count
 Docker:
 
 ```bash
-docker build -f backend/Dockerfile -t seal-bot .
+docker build -t seal-bot backend
 docker run --env-file backend/.env -p 8080:8080 seal-bot
 ```
 

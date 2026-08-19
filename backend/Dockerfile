@@ -12,7 +12,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy project files for dependency resolution
-COPY backend/pyproject.toml backend/uv.lock ./
+# Build context is backend/ (see compose.yaml and platform configs)
+COPY pyproject.toml uv.lock ./
 
 # Install dependencies into a dedicated environment
 # We use --no-install-project because we only want the dependencies in this stage
@@ -40,8 +41,8 @@ RUN useradd -m -u 1000 botuser && \
     chown -R botuser:botuser /app
 
 # Copy application code explicitly to keep the image slim
-# backend/ contains the package (backend/backend), config.py, and scripts/
-COPY --chown=botuser:botuser backend/ /app/
+# The context (backend/) contains the package (backend/), config.py, and scripts/
+COPY --chown=botuser:botuser . /app/
 
 USER botuser
 
