@@ -1,14 +1,4 @@
-# Stage 1: Frontend Builder
-FROM oven/bun:1-alpine AS frontend-builder
-WORKDIR /app/frontend
-# Install dependencies first for better caching
-COPY frontend/package.json frontend/bun.lock ./
-RUN bun install --frozen-lockfile
-# Copy source and build
-COPY frontend/ ./
-RUN bun run build
-
-# Stage 2: Python Builder (for building wheels)
+# Stage 1: Python Builder (for building wheels)
 FROM ghcr.io/astral-sh/uv:python3.14-bookworm-slim AS python-builder
 
 WORKDIR /app
@@ -28,7 +18,7 @@ COPY backend/pyproject.toml backend/uv.lock ./
 # We use --no-install-project because we only want the dependencies in this stage
 RUN uv sync --frozen --no-install-project --no-dev
 
-# Stage 3: Final Production Image
+# Stage 2: Final Production Image
 FROM ghcr.io/astral-sh/uv:python3.14-bookworm-slim
 
 # Set environment variables
@@ -52,10 +42,6 @@ RUN useradd -m -u 1000 botuser && \
 # Copy application code explicitly to keep the image slim
 # backend/ contains the package (backend/backend), config.py, and scripts/
 COPY --chown=botuser:botuser backend/ /app/
-
-# Copy compiled frontend assets from Stage 1 into the backend static folder
-RUN rm -rf /app/backend/static && mkdir -p /app/backend/static
-COPY --from=frontend-builder --chown=botuser:botuser /app/frontend/dist/ /app/backend/static/
 
 USER botuser
 

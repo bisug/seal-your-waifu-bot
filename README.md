@@ -20,7 +20,7 @@ Production Telegram character-collection bot with a secondary game bot, FastAPI 
 | Backend | FastAPI API, Telegram Mini App auth, WebSocket updates, static asset serving | `backend/webapp` |
 | Frontend | React/Vite Telegram Mini App for users and staff | `frontend` |
 | Data | MongoDB persistence and Redis hot-path cache/session storage | `backend/database` |
-| Deploy | Docker image plus Heroku, Render, Railway, VPS, and static frontend guides | `Dockerfile`, `render.yaml`, `railway.json`, `heroku.yml` |
+| Deploy | Docker image plus Heroku, Render, Railway, VPS, and static frontend guides | `backend/Dockerfile`, `render.yaml`, `railway.json`, `heroku.yml` |
 
 ```mermaid
 flowchart LR
@@ -135,7 +135,9 @@ Seal-bot/
 │   ├── .python-version          # Python version for local tooling and CI
 │   ├── sample.env               # Safe environment template
 │   ├── scripts/                 # Maintenance scripts
-│   └── tests/                   # Backend test suite
+│   ├── tests/                   # Backend test suite
+│   ├── compose.yaml             # Docker Compose service
+│   └── Dockerfile               # Multi-stage production image
 ├── frontend/
 │   ├── src/                     # React Mini App source
 │   ├── public/                  # Static frontend assets and SPA redirects
@@ -145,8 +147,9 @@ Seal-bot/
 │   ├── netlify.toml             # Netlify config
 │   └── wrangler.toml            # Cloudflare Pages config
 ├── .github/workflows/ci.yml     # Backend, frontend, and Docker CI
-├── compose.yaml                 # Docker Compose service
-├── Dockerfile                   # Multi-stage production image
+├── heroku.yml                   # Heroku container deploy config
+├── railway.json                 # Railway deploy config
+├── render.yaml                  # Render deploy config
 └── README.md
 ```
 
@@ -158,7 +161,7 @@ Seal-bot/
 | --- | --- |
 | `backend.webapp.main:app` | Unified ASGI app. Starts Telegram bots in FastAPI lifespan, serves API and Mini App. |
 | `python -m backend` | Bot-only process. Starts Telegram bots and idles without FastAPI. |
-| `Dockerfile` | Production image. Builds frontend, installs backend dependencies, serves Uvicorn on `${PORT:-8080}`. |
+| `backend/Dockerfile` | Production image. Builds frontend, installs backend dependencies, serves Uvicorn on `${PORT:-8080}`. |
 
 ### Bot Clients
 
@@ -257,7 +260,7 @@ Shutdown cancels background tasks, stops clients, flushes message counts, closes
 | Frontend type-check | `cd frontend && bun run type-check` |
 | Docker build | `docker build -t seal-bot:ci .` |
 
-The production Docker build copies `frontend/dist` into `backend/static`. For local static serving through FastAPI without Docker, build the frontend and copy `frontend/dist` into `backend/static`.
+The backend Docker image no longer bundles the frontend. To serve the Mini App from FastAPI, build the frontend and copy `frontend/dist` into `backend/backend/static` before building the image, or host the frontend separately (see [Static Frontend Hosting](#static-frontend-hosting)).
 
 ## Bot Features
 
@@ -591,15 +594,15 @@ Redis is used for auth sessions, rate limiting, spawn state, group message count
 Docker:
 
 ```bash
-docker build -t seal-bot .
-docker run --env-file .env -p 8080:8080 seal-bot
+docker build -f backend/Dockerfile -t seal-bot .
+docker run --env-file backend/.env -p 8080:8080 seal-bot
 ```
 
 Compose:
 
 ```bash
-docker compose up -d --build
-docker compose logs -f seal-bot
+docker compose -f backend/compose.yaml up -d --build
+docker compose -f backend/compose.yaml logs -f seal-bot
 ```
 
 Heroku:
@@ -620,9 +623,9 @@ VPS:
 ```bash
 git clone <repo-url> /opt/seal-bot
 cd /opt/seal-bot
-cp sample.env .env
-docker compose up -d --build
-docker compose logs -f seal-bot
+cp backend/sample.env backend/.env
+docker compose -f backend/compose.yaml up -d --build
+docker compose -f backend/compose.yaml logs -f seal-bot
 ```
 
 Proxy HTTPS traffic to `http://127.0.0.1:8080`.
@@ -777,7 +780,7 @@ Provider references:
 | --- | --- |
 | Backend | Checkout, Python from `.python-version`, `uv sync --frozen --no-dev`, compile `config.py`, `backend`, and `scripts`. |
 | Frontend | Checkout, Bun from `frontend/package.json`, frozen install, lint, type-check, build. |
-| Docker image | Builds the root `Dockerfile` after backend and frontend pass. |
+| Docker image | Builds `backend/Dockerfile` after backend and frontend pass. |
 
 The workflow also uses concurrency cancellation, job timeouts, and read-only repository permissions.
 
