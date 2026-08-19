@@ -10,7 +10,6 @@ import { GachaReveal } from './components/ui/GachaReveal';
 import { ToastProvider } from './components/ui/Toast';
 import { UserProvider, useUser } from './context/UserContext';
 import { Forbidden } from './pages/Forbidden';
-import { Landing } from './pages/Landing';
 import { NotFound } from './pages/NotFound';
 import { Profile } from './pages/Profile';
 import { ServerError } from './pages/ServerError';
@@ -300,11 +299,6 @@ const AppContent = () => {
   if (loading) return <IntroLoading />;
 
   if (error || (!loading && !user)) {
-    const hasTelegramInit = Boolean(window.Telegram?.WebApp?.initData);
-    if (!hasTelegramInit && !sessionStorage.getItem('auth_token')) {
-      return <Landing error={error} onRetry={() => window.location.reload()} />;
-    }
-
     return <ServerError onRetry={() => window.location.reload()} />;
   }
 
