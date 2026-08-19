@@ -15,11 +15,11 @@ Production Telegram character-collection bot with a secondary game bot, FastAPI 
 
 | Area | What it does | Main paths |
 | --- | --- | --- |
-| Main bot | Character drops, catching, economy, pets, quests, battle pass, staff tools | `Grabber/modules`, `Grabber/core` |
-| Game bot | Name guessing, quizzes, scramble games, game leaderboards | `Grabber/modules/gamebot` |
-| Backend | FastAPI API, Telegram Mini App auth, WebSocket updates, static asset serving | `Grabber/webapp` |
+| Main bot | Character drops, catching, economy, pets, quests, battle pass, staff tools | `backend/modules`, `backend/core` |
+| Game bot | Name guessing, quizzes, scramble games, game leaderboards | `backend/modules/gamebot` |
+| Backend | FastAPI API, Telegram Mini App auth, WebSocket updates, static asset serving | `backend/webapp` |
 | Frontend | React/Vite Telegram Mini App for users and staff | `frontend` |
-| Data | MongoDB persistence and Redis hot-path cache/session storage | `Grabber/database` |
+| Data | MongoDB persistence and Redis hot-path cache/session storage | `backend/database` |
 | Deploy | Docker image plus Heroku, Render, Railway, VPS, and static frontend guides | `Dockerfile`, `render.yaml`, `railway.json`, `heroku.yml` |
 
 ```mermaid
@@ -56,7 +56,9 @@ flowchart LR
 1. Install backend dependencies:
 
    ```bash
+   cd backend
    uv sync
+   cd ..
    ```
 
 2. Install frontend dependencies:
@@ -64,26 +66,28 @@ flowchart LR
    ```bash
    cd frontend
    bun install
+   cd ..
    ```
 
 3. Create your local environment file:
 
    ```bash
-   cp sample.env .env
+   cp backend/sample.env backend/.env
    ```
 
    Windows PowerShell:
 
    ```powershell
-   Copy-Item sample.env .env
+   Copy-Item backend/sample.env backend/.env
    ```
 
-4. Fill the required values in `.env`.
+4. Fill the required values in `backend/.env`.
 
 5. Run the full backend plus Telegram bots:
 
    ```bash
-   uv run uvicorn Grabber.webapp.main:app --host 0.0.0.0 --port 8000 --workers 1
+   cd backend
+   uv run uvicorn backend.webapp.main:app --host 0.0.0.0 --port 8000 --workers 1
    ```
 
 6. Run the frontend dev server in another terminal:
@@ -114,16 +118,24 @@ Before production:
 
 ```text
 Seal-bot/
-├── Grabber/
-│   ├── __init__.py              # Bot clients, global role state, shared exports
-│   ├── __main__.py              # Bot-only entrypoint: python -m Grabber
-│   ├── client.py                # SealClient, module loading, command sync, send helpers
-│   ├── runner.py                # Startup/shutdown orchestration
-│   ├── core/                    # Cache, sessions, progression, pets, spawns, resources
-│   ├── database/                # MongoDB, Redis, collection exports, indexes
-│   ├── modules/                 # Telegram command handlers
-│   ├── static/                  # Built Mini App assets served by FastAPI
-│   └── webapp/                  # FastAPI app, auth, API routes, WebSockets, schemas
+├── backend/
+│   ├── backend/                 # Python package
+│   │   ├── __init__.py          # Bot clients, global role state, shared exports
+│   │   ├── __main__.py          # Bot-only entrypoint: python -m backend
+│   │   ├── client.py            # SealClient, module loading, command sync, send helpers
+│   │   ├── runner.py            # Startup/shutdown orchestration
+│   │   ├── core/                # Cache, sessions, progression, pets, spawns, resources
+│   │   ├── database/            # MongoDB, Redis, collection exports, indexes
+│   │   ├── modules/             # Telegram command handlers
+│   │   ├── static/              # Built Mini App assets served by FastAPI
+│   │   └── webapp/              # FastAPI app, auth, API routes, WebSockets, schemas
+│   ├── config.py                # Environment-driven runtime configuration
+│   ├── pyproject.toml           # Python dependency manifest
+│   ├── uv.lock                  # Python lockfile
+│   ├── .python-version          # Python version for local tooling and CI
+│   ├── sample.env               # Safe environment template
+│   ├── scripts/                 # Maintenance scripts
+│   └── tests/                   # Backend test suite
 ├── frontend/
 │   ├── src/                     # React Mini App source
 │   ├── public/                  # Static frontend assets and SPA redirects
@@ -132,15 +144,10 @@ Seal-bot/
 │   ├── vercel.json              # Vercel config
 │   ├── netlify.toml             # Netlify config
 │   └── wrangler.toml            # Cloudflare Pages config
-├── scripts/                     # Maintenance scripts
 ├── .github/workflows/ci.yml     # Backend, frontend, and Docker CI
-├── .python-version              # Python version for local tooling and CI
 ├── compose.yaml                 # Docker Compose service
-├── config.py                    # Environment-driven runtime configuration
 ├── Dockerfile                   # Multi-stage production image
-├── pyproject.toml               # Python dependency manifest
-├── sample.env                   # Safe environment template
-└── uv.lock                      # Python lockfile
+└── README.md
 ```
 
 ## Architecture
@@ -149,8 +156,8 @@ Seal-bot/
 
 | Entrypoint | Purpose |
 | --- | --- |
-| `Grabber.webapp.main:app` | Unified ASGI app. Starts Telegram bots in FastAPI lifespan, serves API and Mini App. |
-| `python -m Grabber` | Bot-only process. Starts Telegram bots and idles without FastAPI. |
+| `backend.webapp.main:app` | Unified ASGI app. Starts Telegram bots in FastAPI lifespan, serves API and Mini App. |
+| `python -m backend` | Bot-only process. Starts Telegram bots and idles without FastAPI. |
 | `Dockerfile` | Production image. Builds frontend, installs backend dependencies, serves Uvicorn on `${PORT:-8080}`. |
 
 ### Bot Clients
@@ -163,7 +170,7 @@ Seal-bot/
 
 ### Startup Flow
 
-At startup, `Grabber.runner.start_bots()`:
+At startup, `backend.runner.start_bots()`:
 
 1. Loads DB-backed staff roles.
 2. Verifies MongoDB and Redis.
@@ -178,7 +185,7 @@ Shutdown cancels background tasks, stops clients, flushes message counts, closes
 
 ### Module Loading
 
-`Grabber.modules.__init__` recursively discovers every Python file under `Grabber/modules`, excluding `__init__.py`. Modules either register handlers through decorators such as `@app.on_message(...)` or expose `load_handlers(bot)`.
+`backend.modules.__init__` recursively discovers every Python file under `backend/modules`, excluding `__init__.py`. Modules either register handlers through decorators such as `@app.on_message(...)` or expose `load_handlers(bot)`.
 
 ## Requirements
 
@@ -240,17 +247,17 @@ Shutdown cancels background tasks, stops clients, flushes message counts, closes
 | Task | Command |
 | --- | --- |
 | Install backend deps | `uv sync` |
-| Run backend + bots | `uv run uvicorn Grabber.webapp.main:app --host 0.0.0.0 --port 8000 --workers 1` |
-| Run bots only | `uv run python -m Grabber` |
+| Run backend + bots | `uv run uvicorn backend.webapp.main:app --host 0.0.0.0 --port 8000 --workers 1` |
+| Run bots only | `uv run python -m backend` |
 | Install frontend deps | `cd frontend && bun install` |
 | Run frontend dev server | `cd frontend && bun run dev` |
 | Build frontend | `cd frontend && bun run build` |
-| Backend validation | `uv run python -m compileall -q config.py Grabber scripts` |
+| Backend validation | `uv run python -m compileall -q config.py backend scripts` |
 | Frontend lint | `cd frontend && bun run lint` |
 | Frontend type-check | `cd frontend && bun run type-check` |
 | Docker build | `docker build -t seal-bot:ci .` |
 
-The production Docker build copies `frontend/dist` into `Grabber/static`. For local static serving through FastAPI without Docker, build the frontend and copy `frontend/dist` into `Grabber/static`.
+The production Docker build copies `frontend/dist` into `backend/static`. For local static serving through FastAPI without Docker, build the frontend and copy `frontend/dist` into `backend/static`.
 
 ## Bot Features
 
@@ -416,7 +423,7 @@ Pet upload format:
 
 ### Rarities, Eggs, And Pass
 
-Rarities are configured in `Grabber/modules/collection/rarities.py`. Shop prices, stock limits, payouts, egg tiers, and leaderboard metrics are in `Grabber/core/constants.py`.
+Rarities are configured in `backend/modules/collection/rarities.py`. Shop prices, stock limits, payouts, egg tiers, and leaderboard metrics are in `backend/core/constants.py`.
 
 | Egg tier | Typical pool | Incubation |
 | --- | --- | --- |
@@ -427,7 +434,7 @@ Rarities are configured in `Grabber/modules/collection/rarities.py`. Shop prices
 | Legendary | Exclusive/Eternal/Royal/Mythical | 240 minutes |
 | Celestial | Celestial/Divine/Astral/Prestige | 420 minutes |
 
-Battle pass season config lives in `Grabber/core/pass_config.py`:
+Battle pass season config lives in `backend/core/pass_config.py`:
 
 - Current season: `s1`, `Ascendant Tide`.
 - Max level: `100`.
@@ -768,7 +775,7 @@ Provider references:
 
 | Job | Checks |
 | --- | --- |
-| Backend | Checkout, Python from `.python-version`, `uv sync --frozen --no-dev`, compile `config.py`, `Grabber`, and `scripts`. |
+| Backend | Checkout, Python from `.python-version`, `uv sync --frozen --no-dev`, compile `config.py`, `backend`, and `scripts`. |
 | Frontend | Checkout, Bun from `frontend/package.json`, frozen install, lint, type-check, build. |
 | Docker image | Builds the root `Dockerfile` after backend and frontend pass. |
 
