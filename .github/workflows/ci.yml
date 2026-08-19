@@ -65,4 +65,4 @@ jobs:
       - frontend
     steps:
       - uses: actions/checkout@v6
-      - run: docker build --pull --file backend/Dockerfile --tag seal-bot:ci .
+      - run: docker build --pull --tag seal-bot:ci backend
