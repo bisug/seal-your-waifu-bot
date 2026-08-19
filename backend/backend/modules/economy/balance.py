@@ -8,6 +8,7 @@ from pyrogram.enums import ButtonStyle, ParseMode
 from backend import LOGGER, MAIN_GROUP_ID, OWNER_ID, app, collection
 from backend.core.balance import (check_and_deduct, get_user_balance,
                                   update_user_balance)
+from backend.core.cache import invalidate_user_cache
 from backend.core.sessions import consume_session, create_session, delete_session, get_session
 from backend.core.user import get_user_filter, get_user_id
 from backend.core.utils import handle_errors, html_escape
