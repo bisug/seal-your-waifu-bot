@@ -89,7 +89,7 @@ async def verify_top_users_consistency():
     # find({}).sort() on a sparse index may fall back to a full collection scan.
     # $size computes the real count server-side so huge character arrays are
     # never transferred to the worker.
-    cursor = user_collection.aggregate([
+    cursor = await user_collection.aggregate([
         {"$match": {"char_count": {"$exists": True}}},
         {"$sort": {"char_count": -1}},
         {"$limit": 50},

@@ -31,7 +31,8 @@ async def gamebot_stats_handler(_, message: types.Message):
             }
         },
     ]
-    users = await user_collection.aggregate(pipeline).to_list(length=10)
+    cursor = await user_collection.aggregate(pipeline)
+    users = await cursor.to_list(length=10)
 
     lines = ["<b>GameBot Stats</b>", ""]
     lines.append(f"<b>Name guesses:</b> <code>{int(name_stats.get('total_guesses', 0) or 0):,}</code>")
