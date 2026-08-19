@@ -22,7 +22,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy project files for dependency resolution
-COPY pyproject.toml uv.lock ./
+COPY backend/pyproject.toml backend/uv.lock ./
 
 # Install dependencies into a dedicated environment
 # We use --no-install-project because we only want the dependencies in this stage
@@ -50,13 +50,12 @@ RUN useradd -m -u 1000 botuser && \
     chown -R botuser:botuser /app
 
 # Copy application code explicitly to keep the image slim
-COPY --chown=botuser:botuser Grabber/ /app/Grabber/
-COPY --chown=botuser:botuser config.py /app/
-COPY --chown=botuser:botuser pyproject.toml uv.lock /app/
+# backend/ contains the package (backend/backend), config.py, and scripts/
+COPY --chown=botuser:botuser backend/ /app/
 
-# Copy compiled frontend assets from Stage 1 into the Grabber static folder
-RUN rm -rf /app/Grabber/static && mkdir -p /app/Grabber/static
-COPY --from=frontend-builder --chown=botuser:botuser /app/frontend/dist/ /app/Grabber/static/
+# Copy compiled frontend assets from Stage 1 into the backend static folder
+RUN rm -rf /app/backend/static && mkdir -p /app/backend/static
+COPY --from=frontend-builder --chown=botuser:botuser /app/frontend/dist/ /app/backend/static/
 
 USER botuser
 
@@ -68,4 +67,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD curl -f http://localhost:${PORT:-8080}/healthz || exit 1
 
 # Default runtime command
-CMD ["sh", "-c", "uvicorn Grabber.webapp.main:app --host 0.0.0.0 --port ${PORT:-8080}"]
+CMD ["sh", "-c", "uvicorn backend.webapp.main:app --host 0.0.0.0 --port ${PORT:-8080}"]

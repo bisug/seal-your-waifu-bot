@@ -31,4 +31,4 @@ Do not set the root directory to `dist`; Cloudflare checks that directory before
 - Biome for linting and formatting (replaces ESLint)
 - Tailwind CSS v4 through `@tailwindcss/vite`
 
-The production build is copied into `Grabber/static` by the root Dockerfile.
+The production build is copied into `backend/static` by the root Dockerfile.
