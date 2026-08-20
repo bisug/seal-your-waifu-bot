@@ -6,7 +6,7 @@ import React, {
   useEffect,
   useState,
 } from 'react';
-import { apiFetch, getErrorMessage, secureInit } from '../api/client';
+import { apiFetch, getErrorMessage } from '../api/client';
 
 export interface UserStats {
   level: number;
@@ -135,25 +135,6 @@ interface UserContextType {
 
 export const UserContext = createContext<UserContextType | null>(null);
 
-const waitForTelegramWebApp = (timeoutMs = 3000): Promise<boolean> => {
-  return new Promise((resolve) => {
-    const start = Date.now();
-    const check = () => {
-      const tg = window.Telegram?.WebApp;
-      if (tg && (tg.initData || tg.initDataUnsafe)) {
-        resolve(true);
-        return;
-      }
-      if (Date.now() - start > timeoutMs) {
-        resolve(false);
-        return;
-      }
-      requestAnimationFrame(check);
-    };
-    check();
-  });
-};
-
 const hasAuthBootstrap = () => {
   const telegramInit = Boolean(window.Telegram?.WebApp?.initData);
   if (telegramInit) return true;
@@ -188,42 +169,14 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [refreshUser]);
 
   useEffect(() => {
-    let mounted = true;
+    if (!hasAuthBootstrap()) {
+      setUser(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
 
-    const initAuth = async () => {
-      await waitForTelegramWebApp();
-
-      if (!mounted) return;
-
-      const tg = window.Telegram?.WebApp;
-      const hasInitData = Boolean(tg?.initData);
-      const hasStoredToken = Boolean(sessionStorage.getItem('auth_token'));
-
-      // If we have initData but no stored token, proactively call secureInit
-      // to avoid a 401 round-trip on the first /me request
-      if (hasInitData && !hasStoredToken) {
-        try {
-          await secureInit();
-        } catch {
-          // Ignore errors, will be handled by the 401 flow if needed
-        }
-      }
-
-      if (!hasAuthBootstrap()) {
-        setUser(null);
-        setError(null);
-        setLoading(false);
-        return;
-      }
-
-      refreshUser();
-    };
-
-    initAuth();
-
-    return () => {
-      mounted = false;
-    };
+    refreshUser();
   }, [refreshUser]);
 
   useEffect(() => {
