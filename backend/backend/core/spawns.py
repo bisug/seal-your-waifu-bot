@@ -156,7 +156,7 @@ async def get_chat_state(chat_id: int) -> Dict[str, Any]:
     if _redis:
         try:
             if state:
-                to_cache = {k: (json.dumps(v) if isinstance(v, dict) else str(v)) for k, v in state.items() if k != "_id"}
+                to_cache = {k: (json.dumps(v, default=str) if isinstance(v, dict) else str(v)) for k, v in state.items() if k != "_id"}
                 if to_cache:
                     await _redis.hset(key, mapping=to_cache)
             else:
@@ -188,7 +188,7 @@ async def set_active_spawn(chat_id: int, character: Dict[str, Any], message_id: 
     """Register active spawn in cache and DB."""
     key = f"spawn:state:{chat_id}"
     data = {
-        "last_character": json.dumps(character),
+        "last_character": json.dumps(character, default=str),
         "message_id": str(message_id),
         "first_correct_guess": "None",
         "last_spawn_time": str(time.time())
