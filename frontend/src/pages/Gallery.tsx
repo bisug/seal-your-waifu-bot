@@ -92,12 +92,12 @@ export const Gallery = ({ onCharClick }: GalleryProps) => {
             />
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-4">
-            <div className="sm:w-48 space-y-1.5">
-              <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest pl-1">
-                Rarity Filter
-              </span>
-              <div className="relative group">
+          <div className="space-y-1.5">
+            <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest pl-1">
+              Filter & Sort
+            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative group w-40 sm:w-48">
                 <select
                   aria-label="Filter by rarity"
                   value={rarity}
@@ -116,12 +116,7 @@ export const Gallery = ({ onCharClick }: GalleryProps) => {
                   className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-600 pointer-events-none group-focus-within:text-brand-accent transition-colors"
                 />
               </div>
-            </div>
 
-            <div className="space-y-1.5">
-              <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest pl-1">
-                Sort Logic
-              </span>
               <div className="flex gap-1 p-1 bg-zinc-900 border border-white/10 rounded-md h-10 items-center">
                 {SORT_OPTIONS.map(({ sort: optionSort, order: optionOrder, label, Icon }) => {
                   const active = sort === optionSort && order === optionOrder;
