@@ -151,7 +151,7 @@ async def get_current_user(auth: HTTPAuthorizationCredentials = Security(securit
     if not user_id:
         raise HTTPException(status_code=401, detail="Invalid or expired session")
 
-    # Rate Limiting: 30 req / 60s (sliding window)
+    # Rate Limiting: 60 req / 60s (sliding window)
     now = time.time()
     rate_key = f"rate_limit:{user_id}"
 
@@ -162,9 +162,14 @@ async def get_current_user(auth: HTTPAuthorizationCredentials = Security(securit
                 pipe.zadd(rate_key, {str(now): now})
                 pipe.zcard(rate_key)
                 pipe.expire(rate_key, 60)
-                _, _, count, _ = await asyncio.wait_for(pipe.execute(), timeout=3.0)
+                # Sliding session: refresh auth TTL on activity so active
+                # users are not logged out mid-session. Piggybacks on the
+                # rate-limit pipeline — no extra round trip.
+                pipe.expire(_token_key(token), SESSION_TTL)
+                pipe.expire(f"user_session:{user_id}", SESSION_TTL)
+                _, _, count, _, *_ = await asyncio.wait_for(pipe.execute(), timeout=3.0)
 
-            if count > 30:
+            if count > 60:
                 raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in a minute.")
             return int(user_id)
         except HTTPException:
@@ -175,7 +180,7 @@ async def get_current_user(auth: HTTPAuthorizationCredentials = Security(securit
     # Enforce LRU cleanup to avoid memory leak if Redis falls over or is disabled.
     history = _fallback_rate_limits.get(user_id, [])
     history = [ts for ts in history if now - ts < 60]
-    if len(history) >= 30:
+    if len(history) >= 60:
         _fallback_rate_limits[user_id] = history
         _fallback_rate_limits.move_to_end(user_id)
         raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in a minute.")

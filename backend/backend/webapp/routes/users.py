@@ -33,6 +33,23 @@ from backend.webapp.schemas import UserProfileResponse
 
 router = APIRouter()
 
+# The character catalog size changes rarely (only on uploads), so cache the
+# estimated count instead of hitting Mongo on every /me request.
+_TOTAL_AVAILABLE_TTL = 300
+_total_available_cache: dict[str, object] = {"expires_at": 0.0, "count": 0}
+
+
+async def _cached_total_available_characters() -> int:
+    import time as _time
+    now = _time.monotonic()
+    if now < float(_total_available_cache["expires_at"]) and _total_available_cache["count"]:
+        return int(_total_available_cache["count"])
+    count = await collection.estimated_document_count()
+    _total_available_cache["count"] = count
+    _total_available_cache["expires_at"] = now + _TOTAL_AVAILABLE_TTL
+    return count
+
+
 @router.get("/bot/info")
 async def get_bot_info():
     """Public endpoint to get bot identity for branding."""
@@ -71,7 +88,17 @@ async def get_me(user: dict = Depends(get_current_user_data)):
     user = await ensure_user_pet_state(user_id, user)
 
     user_xp = user.get("xp", 0)
-    rank, total_users, percentile = await get_user_rank_with_fallback(user_id, user_xp)
+
+    # Rank, progress, catalog count and energy are independent of each other —
+    # run them concurrently instead of chaining sequential awaits.
+    rank_result, progress, total_available_characters, energy_result = await asyncio.gather(
+        get_user_rank_with_fallback(user_id, user_xp),
+        get_user_progress(user_id, user_data=user),
+        _cached_total_available_characters(),
+        get_user_energy(user_id, user_data=user),
+    )
+    rank, total_users, percentile = rank_result
+    energy, last_recharge = energy_result
 
     
     raw_achievements = user.get("achievements") or []
@@ -89,8 +116,6 @@ async def get_me(user: dict = Depends(get_current_user_data)):
     current_title_source = user.get("title") or (titles_list[-1] if titles_list else "Rookie")
     current_title = re.sub(r'[^\x00-\x7F]+', '', str(current_title_source or "Rookie")).strip()
     
-    progress = await get_user_progress(user_id, user_data=user)
-    
     characters = user.get("characters") or []
 
     # Calculate total owned copies from the denormalized counter, but track
@@ -103,7 +128,6 @@ async def get_me(user: dict = Depends(get_current_user_data)):
         for char in characters
         if isinstance(char, dict) and char.get("id") is not None
     })
-    total_available_characters = await collection.estimated_document_count()
     collection_percent = (
         round((unique_characters / total_available_characters) * 100, 1)
         if total_available_characters > 0 else 0.0
@@ -114,9 +138,6 @@ async def get_me(user: dict = Depends(get_current_user_data)):
     incubation_slots = get_pass_incubation_slots(user)
     active_incubations = get_incubating_count(eggs)
     role_payload = get_role_payload(user_id)
-
-    # Update and get energy
-    energy, last_recharge = await get_user_energy(user_id, user_data=user)
 
     resp_data = {
         "id": int(user_id),

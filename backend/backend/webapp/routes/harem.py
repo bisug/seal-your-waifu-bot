@@ -1,6 +1,7 @@
 import asyncio
+import json
 import time
-from collections import Counter
+from collections import Counter, OrderedDict
 from typing import List, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
@@ -9,6 +10,7 @@ from backend import LOGGER
 from backend.core.cache import sync_user_to_redis
 from backend.core.character_search import build_character_search_filter
 from backend.modules.economy.sell import get_sell_price
+from backend.core.user import get_user_data
 from backend.core.utils import get_user_id_query, normalize_user_id
 from backend.database import collection, user_collection
 from backend.webapp.auth import get_current_user, get_current_user_data
@@ -21,20 +23,21 @@ _rarity_cache: dict[str, object] = {"expires_at": 0.0, "items": []}
 # Short-lived cache for gallery totals: count_documents() with a search filter
 # is a collection scan and runs on every paginated request otherwise.
 GALLERY_COUNT_TTL = 60
-_gallery_count_cache: dict[str, tuple[float, int]] = {}
+_gallery_count_cache: OrderedDict[str, tuple[float, int]] = OrderedDict()
 
 
 async def _cached_gallery_count(match_query: dict) -> int:
-    import json as _json
-    cache_key = _json.dumps(match_query, sort_keys=True, default=str)
+    cache_key = json.dumps(match_query, sort_keys=True, default=str)
     now = time.monotonic()
     hit = _gallery_count_cache.get(cache_key)
     if hit and now - hit[0] < GALLERY_COUNT_TTL:
+        _gallery_count_cache.move_to_end(cache_key)
         return hit[1]
     total = await collection.count_documents(match_query)
-    if len(_gallery_count_cache) > 200:
-        _gallery_count_cache.clear()
     _gallery_count_cache[cache_key] = (now, total)
+    # LRU eviction instead of clearing the whole cache at the cap.
+    while len(_gallery_count_cache) > 200:
+        _gallery_count_cache.popitem(last=False)
     return total
 
 
@@ -254,10 +257,6 @@ async def get_gallery(
         match_query["rarity"] = rarity.strip()
 
     sort_direction = 1 if order == "asc" else -1
-    if sort == "alphabet":
-        sort_spec = {"_sort_name": sort_direction, "name": sort_direction, "id": 1}
-    else:
-        sort_spec = {"_id_is_numeric": -1, "_numeric_id": sort_direction, "id": sort_direction}
 
     skip = (page - 1) * limit
     projection = {"id": 1, "name": 1, "anime": 1, "rarity": 1, "img_url": 1}
@@ -271,25 +270,13 @@ async def get_gallery(
             ]).skip(skip).limit(limit)
             return await cursor.to_list(length=limit)
 
+        # Numeric sort uses the stored `numeric_id` field (populated by
+        # scripts/add_numeric_id.py and on every new upload) instead of
+        # recomputing regex+convert per document on every page request.
+        # Docs missing the field sort as null until the migration runs.
         pipeline = [
             {"$match": match_query},
-            {"$addFields": {
-                "_id_is_numeric": {
-                    "$regexMatch": {
-                        "input": {"$toString": "$id"},
-                        "regex": "^[0-9]+$"
-                    }
-                },
-                "_numeric_id": {
-                    "$convert": {
-                        "input": "$id",
-                        "to": "int",
-                        "onError": None,
-                        "onNull": None
-                    }
-                },
-            }},
-            {"$sort": sort_spec},
+            {"$sort": {"numeric_id": sort_direction, "id": sort_direction}},
             {"$skip": skip},
             {"$limit": limit},
             {"$project": aggregate_projection},
@@ -297,13 +284,17 @@ async def get_gallery(
         cursor = await collection.aggregate(pipeline)
         return await cursor.to_list(length=limit)
 
-    total, owner_doc, items = await asyncio.gather(
+    async def fetch_owner_ids() -> set:
+        # get_user_data hits the Redis user cache first, avoiding a Mongo
+        # read of the full characters array on every paginated request.
+        owner_doc = await get_user_data(user_id)
+        return set(c.get("id") for c in ((owner_doc or {}).get("characters") or []))
+
+    total, owned_ids, items = await asyncio.gather(
         _cached_gallery_count(match_query),
-        user_collection.find_one(get_user_id_query(user_id), {"characters.id": 1, "_id": 0}),
+        fetch_owner_ids(),
         fetch_items(),
     )
-
-    owned_ids = set(c.get("id") for c in ((owner_doc or {}).get("characters") or []))
 
     for item in items:
         item["_id"] = str(item["_id"])
