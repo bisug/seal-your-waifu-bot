@@ -96,6 +96,23 @@ export const NavigationDrawer = ({
     if (!isOpen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
+      // Trap Tab focus inside the open drawer.
+      if (e.key === 'Tab' && panelRef.current) {
+        const focusables = panelRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        );
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (!first || !last) return;
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
     window.addEventListener('keydown', onKey);
     panelRef.current?.focus();
@@ -109,6 +126,7 @@ export const NavigationDrawer = ({
   }, [mounted, isOpen]);
 
   const handleItemClick = (id: string) => {
+    window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
     onNavigate(id);
     onClose();
   };
@@ -284,7 +302,7 @@ export const NavigationDrawer = ({
                   <span className="text-[10px] font-bold text-zinc-100 uppercase tracking-wider truncate">
                     {user?.role_label || user?.role_tag || 'OPERATOR'}
                   </span>
-                  <span className="text-[7px] font-bold text-zinc-500 uppercase tracking-widest">
+                  <span className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">
                     AUTHORIZED ACCESS
                   </span>
                 </div>

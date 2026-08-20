@@ -8,6 +8,7 @@ import {
   Database,
   Loader2,
   type LucideIcon,
+  RefreshCw,
   Search,
   X,
 } from 'lucide-react';
@@ -68,7 +69,7 @@ export const Gallery = ({ onCharClick }: GalleryProps) => {
       <header className="space-y-6">
         <div className="flex items-center gap-2.5">
           <BookOpen className="text-brand-accent" size={20} />
-          <div className="flex flex-col">
+          <div className="flex flex-col flex-1">
             <h1 className="text-xl font-bold text-zinc-100 uppercase tracking-tight">Archive</h1>
             <div className="flex items-center gap-1.5 opacity-60">
               <Database size={10} className="text-zinc-500" />
@@ -77,6 +78,17 @@ export const Gallery = ({ onCharClick }: GalleryProps) => {
               </p>
             </div>
           </div>
+          <button
+            type="button"
+            aria-label="Refresh archive"
+            onClick={() => {
+              window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
+              refresh();
+            }}
+            className="w-9 h-9 flex items-center justify-center rounded-md bg-zinc-900 border border-white/5 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-all shrink-0"
+          >
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+          </button>
         </div>
 
         <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-end bg-zinc-950 border border-white/5 p-4 rounded-md">
@@ -144,7 +156,7 @@ export const Gallery = ({ onCharClick }: GalleryProps) => {
                         setOrder(optionOrder);
                       }}
                       className={cn(
-                        'p-1.5 rounded transition-all',
+                        'p-2.5 rounded transition-all',
                         active
                           ? 'bg-brand-accent text-white'
                           : 'text-zinc-600 hover:text-zinc-300 hover:bg-white/5',
