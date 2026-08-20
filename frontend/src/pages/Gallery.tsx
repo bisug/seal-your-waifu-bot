@@ -9,6 +9,7 @@ import {
   Loader2,
   type LucideIcon,
   Search,
+  X,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { apiFetch } from '../api/client';
@@ -83,13 +84,25 @@ export const Gallery = ({ onCharClick }: GalleryProps) => {
             <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest pl-1">
               Search Characters
             </span>
-            <Input
-              icon={Search}
-              placeholder="Enter character name..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="h-10"
-            />
+            <div className="relative">
+              <Input
+                icon={Search}
+                placeholder="Enter character name..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className={cn('h-10', search && 'pr-10')}
+              />
+              {search && (
+                <button
+                  type="button"
+                  aria-label="Clear search"
+                  onClick={() => setSearch('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-zinc-500 hover:text-zinc-200 transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="space-y-1.5">
@@ -146,6 +159,12 @@ export const Gallery = ({ onCharClick }: GalleryProps) => {
           </div>
         </div>
       </header>
+
+      {!loading && !error && items.length > 0 && (
+        <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest -mt-4">
+          {items.length} record{items.length === 1 ? '' : 's'} found
+        </p>
+      )}
 
       {error && items.length === 0 ? (
         <div className="py-20">
