@@ -238,9 +238,19 @@ const resolveRouteToken = (value?: string | null): RouteTarget | null => {
 
 const getCandidates = () => {
   const params = new URLSearchParams(window.location.search);
-  const hash = window.location.hash.replace(/^#/, '').split(/[?&]/)[0];
+  const hashParts = window.location.hash.replace(/^#/, '').split(/[?&]/);
+  // Telegram injects its own data into the URL fragment
+  // (#tgWebAppData=...&tgWebAppStartParam=...&tgWebAppVersion=...).
+  // Those are key=value pairs, while our route tokens are plain segments,
+  // so only accept segments without '=' as routes to avoid a false 404.
+  const routeHash = hashParts.find((part) => part && !part.includes('=')) ?? null;
+  const startParamFromHash =
+    hashParts
+      .map((part) => part.split('='))
+      .find(([key]) => key === 'tgWebAppStartParam')?.[1] ?? null;
   return [
-    hash,
+    routeHash,
+    startParamFromHash,
     params.get('tgWebAppStartParam'),
     params.get('startapp'),
     params.get('tab'),
