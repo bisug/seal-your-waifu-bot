@@ -13,6 +13,11 @@ _START_LOCK = None
 # the first for the session.
 _INSTANCE_LOCK_KEY = "sealbot:single_instance_lock"
 _INSTANCE_LOCK_TTL = 60  # seconds; refreshed while running
+# During rolling deploys the old container keeps the lock until it drains
+# (render.yaml maxShutdownDelaySeconds=60). Keep retrying instead of refusing
+# immediately, otherwise the new replica stays down after the old one exits.
+_INSTANCE_LOCK_WAIT_TIMEOUT = 90  # seconds
+_INSTANCE_LOCK_RETRY_INTERVAL = 5  # seconds
 
 
 async def _acquire_instance_lock(status: dict) -> bool:
@@ -26,24 +31,36 @@ async def _acquire_instance_lock(status: dict) -> bool:
             "Run exactly ONE process per deployment."
         )
         return True
-    try:
-        owned = await redis_client.set(
-            _INSTANCE_LOCK_KEY, str(os.getpid()), ex=_INSTANCE_LOCK_TTL, nx=True
-        )
-        if not owned:
+    deadline = asyncio.get_running_loop().time() + _INSTANCE_LOCK_WAIT_TIMEOUT
+    while True:
+        try:
+            owned = await redis_client.set(
+                _INSTANCE_LOCK_KEY, str(os.getpid()), ex=_INSTANCE_LOCK_TTL, nx=True
+            )
+        except Exception as e:
+            LOGGER.warning("Instance lock acquire failed (%s); proceeding without lock.", e)
+            return True
+        if owned:
+            run_background_task(_refresh_instance_lock(), name="instance-lock-refresh")
+            return True
+        owner = None
+        try:
             owner = await redis_client.get(_INSTANCE_LOCK_KEY)
+        except Exception:
+            pass
+        if asyncio.get_running_loop().time() >= deadline:
             LOGGER.critical(
-                "Another instance (pid=%s) already holds the session lock. "
+                "Another instance (pid=%s) still holds the session lock after %ss. "
                 "Refusing to start to avoid MTProto session corruption.",
-                owner,
+                owner, _INSTANCE_LOCK_WAIT_TIMEOUT,
             )
             status["startup"] = "refused:lock_held"
             return False
-        run_background_task(_refresh_instance_lock(), name="instance-lock-refresh")
-        return True
-    except Exception as e:
-        LOGGER.warning("Instance lock acquire failed (%s); proceeding without lock.", e)
-        return True
+        LOGGER.warning(
+            "Session lock held by pid=%s; retrying in %ss (old instance may be draining)...",
+            owner, _INSTANCE_LOCK_RETRY_INTERVAL,
+        )
+        await asyncio.sleep(_INSTANCE_LOCK_RETRY_INTERVAL)
 
 
 async def _refresh_instance_lock():
