@@ -112,6 +112,12 @@ async def add_character_to_db(char_data: dict) -> str:
     for attempt in range(10):
         char_id = str(await get_next_sequence_number('character_id')).zfill(4)
         char_data['id'] = char_id
+        # Stored numeric form of the ID so the gallery can sort by an indexed
+        # field instead of converting per-document at query time.
+        try:
+            char_data['numeric_id'] = int(char_id)
+        except (TypeError, ValueError):
+            char_data.pop('numeric_id', None)
         char_data.pop('_id', None)  # Remove any stale _id from a previous failed attempt
         try:
             await collection.insert_one(char_data)

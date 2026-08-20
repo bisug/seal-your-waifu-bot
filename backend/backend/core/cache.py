@@ -320,6 +320,28 @@ def _zset_key(metric: str) -> str:
         "guesses": "user_guesses_leaderboard"
     }
     return mapping.get(metric, f"user_{metric}_leaderboard")
+
+# Metrics whose ZSET may have drifted from Mongo (e.g. an instant sync
+# failed). The periodic rebuild skips clean metrics to avoid hourly full
+# rebuilds when sync_user_to_redis already keeps the ZSETs fresh.
+_ALL_LB_METRICS = ("level", "harem", "shards", "zenith", "guesses")
+_lb_dirty_metrics: set[str] = set()
+
+
+def mark_leaderboard_dirty(metrics=None):
+    """Flag leaderboard metrics as needing a rebuild from Mongo."""
+    if metrics is None:
+        _lb_dirty_metrics.update(_ALL_LB_METRICS)
+    else:
+        _lb_dirty_metrics.update(metrics)
+
+
+def consume_leaderboard_dirty(metric: str) -> bool:
+    """Return True (and clear the flag) if the metric needs a rebuild."""
+    if metric in _lb_dirty_metrics:
+        _lb_dirty_metrics.discard(metric)
+        return True
+    return False
 async def update_user_rank(user_id: int, score: int, metric: str = "level"):
     """Update user score in the specific metric's ZSET and CAP it for memory."""
     if not _redis: return
@@ -423,3 +445,5 @@ async def sync_user_to_redis(user_id: int, user_doc: dict = None):
         await pipe.execute()
     except Exception as e:
         LOGGER.warning(f"Failed to sync user {user_id} to Redis: {e}")
+        # Instant sync failed — the periodic rebuild must repair the drift.
+        mark_leaderboard_dirty()
