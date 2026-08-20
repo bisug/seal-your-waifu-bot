@@ -101,11 +101,18 @@ async def rarities_handler(_, message: types.Message):
     rarity_counts = {}
     total_characters = 0
 
-    cursor = collection.find({}, {"rarity": 1})
+    # Count per rarity with an indexed $group instead of scanning every
+    # character document. Returns one row per rarity (~25) regardless of
+    # collection size, so this stays fast as the archive grows. The previous
+    # full find() pulled all docs to Python and could exceed socketTimeoutMS.
+    cursor = await collection.aggregate(
+        [{"$group": {"_id": "$rarity", "count": {"$sum": 1}}}]
+    )
     async for doc in cursor:
-        rarity = doc.get("rarity") or "Unknown"
-        rarity_counts[rarity] = rarity_counts.get(rarity, 0) + 1
-        total_characters += 1
+        rarity = doc.get("_id") or "Unknown"
+        count = doc.get("count") or 0
+        rarity_counts[rarity] = rarity_counts.get(rarity, 0) + count
+        total_characters += count
 
     if not rarity_counts:
         return await message.reply_text("<b>No characters found in database.</b>", parse_mode=enums.ParseMode.HTML)
