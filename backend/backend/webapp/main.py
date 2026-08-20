@@ -17,7 +17,12 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from config import config
 import backend.core.sync_handler  # Register global Telegram message sync handlers.
 from backend import LOGGER
-from backend.core.cache import rebuild_leaderboard
+from backend.core.cache import (
+    consume_leaderboard_dirty,
+    get_total_ranked_users,
+    mark_leaderboard_dirty,
+    rebuild_leaderboard,
+)
 from backend.core.logging import (
     configure_event_loop_logging,
     new_request_id,
@@ -35,16 +40,26 @@ from backend.webapp.ws import router as ws_router
 
 
 async def sync_leaderboard_periodic():
-    """Sync Redis ZSETs with MongoDB periodically."""
+    """Sync Redis ZSETs with MongoDB periodically.
+
+    Only rebuilds metrics flagged dirty (e.g. an instant sync failed) or
+    ZSETs that are empty. sync_user_to_redis keeps healthy ZSETs fresh, so
+    unconditional hourly rebuilds were wasted IO.
+    """
     await asyncio.sleep(60) # Delay on startup to allow app to settle
     metrics = ["level", "harem", "shards", "zenith", "guesses"]
     while True:
-        try:
-            for metric in metrics:
+        for metric in metrics:
+            try:
+                dirty = consume_leaderboard_dirty(metric)
+                empty = (await get_total_ranked_users(metric)) == 0
+                if not dirty and not empty:
+                    continue
                 await rebuild_leaderboard(user_collection, metric=metric)
                 await asyncio.sleep(2) # Smooth out IO bursts
-        except Exception as e:
-            LOGGER.exception(f"Error in periodic leaderboard sync: {e}")
+            except Exception as e:
+                LOGGER.exception(f"Error in periodic leaderboard sync [{metric}]: {e}")
+                mark_leaderboard_dirty([metric])  # Retry on the next cycle
         # Sync every hour (3600 seconds)
         await asyncio.sleep(3600)
 

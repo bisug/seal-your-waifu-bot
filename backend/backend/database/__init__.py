@@ -64,6 +64,7 @@ class Database:
             (self.users,             lambda c: c.create_index("characters.id")),
             (self.users,             lambda c: c.create_index([("id", 1), ("characters.id", 1)])),
             (self.anime_characters,  lambda c: c.create_index([("rarity", 1), ("name", 1)])),
+            (self.anime_characters,  lambda c: c.create_index("numeric_id", sparse=True)),
             (self.anime_characters,  lambda c: c.create_index([("added_by_id", 1), ("uploaded_at", -1)], sparse=True)),
             (self.users,             lambda c: c.create_index("char_count", sparse=True)),
             (self.users,             lambda c: c.create_index("xp", sparse=True)),
