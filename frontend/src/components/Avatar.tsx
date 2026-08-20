@@ -16,7 +16,7 @@ export const Avatar = memo(({ src, alt = 'Avatar', className = '', fallbackText 
   useEffect(() => {
     setError(false);
     setLoaded(false);
-  }, []);
+  }, [src]);
 
   return (
     <div

@@ -113,6 +113,27 @@ export const NavigationDrawer = ({
     onClose();
   };
 
+  const [confirmLogout, setConfirmLogout] = useState(false);
+
+  const doLogout = () => {
+    window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
+    onClose();
+    setSessionToken(null);
+    window.location.reload();
+  };
+
+  const handleLogout = () => {
+    window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
+    const native = window.Telegram?.WebApp?.showConfirm;
+    if (native) {
+      native('Log out and clear this session?', (confirmed) => {
+        if (confirmed) doLogout();
+      });
+      return;
+    }
+    setConfirmLogout(true);
+  };
+
   if (!mounted) return null;
 
   return (
@@ -218,17 +239,38 @@ export const NavigationDrawer = ({
                   ACCOUNT
                 </h3>
                 <button
-                  onClick={() => {
-                    window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
-                    onClose();
-                    setSessionToken(null);
-                    window.location.reload();
-                  }}
+                  onClick={handleLogout}
                   className="w-full flex items-center gap-3 px-3 py-2.5 text-red-500 hover:text-red-400 hover:bg-red-500/5 transition-colors rounded-md"
                 >
                   <LogOut size={16} />
                   <span className="text-[11px] font-bold uppercase tracking-wider">Logout</span>
                 </button>
+
+                {confirmLogout && (
+                  <div className="mt-2 p-3 rounded-md bg-red-500/5 border border-red-500/20 space-y-2">
+                    <p className="text-[10px] font-bold text-red-400 uppercase tracking-widest">
+                      Log out and clear this session?
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="accent"
+                        size="sm"
+                        onClick={doLogout}
+                        className="flex-1 h-8 text-[10px]"
+                      >
+                        Confirm
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setConfirmLogout(false)}
+                        className="flex-1 h-8 text-[10px]"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
