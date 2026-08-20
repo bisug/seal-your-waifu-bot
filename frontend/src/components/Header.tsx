@@ -10,7 +10,7 @@ interface HeaderProps {
 }
 
 export const Header = memo(({ onMenuClick }: HeaderProps) => {
-  const { user } = useUser();
+  const { user, loading } = useUser();
 
   return (
     <header className="sticky top-0 z-[100] flex items-center justify-between px-5 bg-zinc-950/95 h-14 shrink-0 select-none border-b border-white/[0.04]">
@@ -44,7 +44,11 @@ export const Header = memo(({ onMenuClick }: HeaderProps) => {
           <Coins size={12} className="text-amber-500 shrink-0" />
           <div className="flex items-baseline gap-1">
             <span className="text-[11px] font-mono font-bold text-zinc-100 tabular-nums">
-              {formatNumber(user?.stats?.points ?? user?.balance ?? 0)}
+              {loading ? (
+                <span className="inline-block w-8 h-3 rounded-sm bg-zinc-800 animate-pulse align-middle" />
+              ) : (
+                formatNumber(user?.stats?.points ?? user?.balance ?? 0)
+              )}
             </span>
             <span className="hidden sm:inline text-[7px] font-bold text-zinc-500 uppercase tracking-wider">
               SHARDS
@@ -56,7 +60,11 @@ export const Header = memo(({ onMenuClick }: HeaderProps) => {
           <Gem size={12} className="text-brand-accent shrink-0" />
           <div className="flex items-baseline gap-1">
             <span className="text-[11px] font-mono font-bold text-zinc-100 tabular-nums">
-              {formatNumber(user?.stats?.zenith || 0)}
+              {loading ? (
+                <span className="inline-block w-8 h-3 rounded-sm bg-zinc-800 animate-pulse align-middle" />
+              ) : (
+                formatNumber(user?.stats?.zenith || 0)
+              )}
             </span>
             <span className="hidden sm:inline text-[7px] font-bold text-zinc-500 uppercase tracking-wider">
               ZENITH

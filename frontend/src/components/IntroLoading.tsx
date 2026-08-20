@@ -16,9 +16,9 @@ export const IntroLoading = () => {
   useEffect(() => {
     const timer = setInterval(() => {
       setProgress((prev) => {
-        if (prev >= 100) return 100;
+        if (prev >= 90) return 90;
         const step = Math.random() * 12 + 8;
-        return Math.min(100, prev + step);
+        return Math.min(90, prev + step);
       });
     }, 150);
 

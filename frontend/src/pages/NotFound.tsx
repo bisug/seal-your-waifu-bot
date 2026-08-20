@@ -22,13 +22,13 @@ export const NotFound = ({ onReset }: { onReset: () => void }) => {
         <div className="space-y-2 mb-10">
           <h1 className="text-5xl font-bold text-zinc-100 tracking-tight">404</h1>
           <h2 className="text-lg font-bold text-zinc-100 uppercase tracking-widest">
-            Access Denied
+            Page Not Found
           </h2>
           <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest">
-            Protocol Error: Page Not Found
+            Protocol Error: Unknown Route
           </p>
           <p className="text-xs font-medium text-zinc-500 leading-relaxed max-w-[260px] mx-auto uppercase tracking-widest pt-4">
-            The requested sector is offline or unauthorized. Return to the terminal.
+            The requested sector does not exist. Return to the terminal.
           </p>
         </div>
 
@@ -42,7 +42,7 @@ export const NotFound = ({ onReset }: { onReset: () => void }) => {
             variant="accent"
             leftIcon={<Home size={16} />}
           >
-            Restore Session
+            Go to Dashboard
           </Button>
 
           <button
