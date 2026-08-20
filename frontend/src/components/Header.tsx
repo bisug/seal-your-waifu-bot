@@ -31,7 +31,7 @@ export const Header = memo(({ onMenuClick }: HeaderProps) => {
           </div>
           <div className="flex items-center gap-1 mt-0.5">
             <div className="w-1 h-1 rounded-full bg-emerald-500" />
-            <span className="text-[7px] font-bold text-zinc-500 uppercase tracking-widest leading-none">
+            <span className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest leading-none">
               READY
             </span>
           </div>
@@ -50,7 +50,7 @@ export const Header = memo(({ onMenuClick }: HeaderProps) => {
                 formatNumber(user?.stats?.points ?? user?.balance ?? 0)
               )}
             </span>
-            <span className="hidden sm:inline text-[7px] font-bold text-zinc-500 uppercase tracking-wider">
+            <span className="hidden sm:inline text-[8px] font-bold text-zinc-500 uppercase tracking-wider">
               SHARDS
             </span>
           </div>
@@ -66,7 +66,7 @@ export const Header = memo(({ onMenuClick }: HeaderProps) => {
                 formatNumber(user?.stats?.zenith || 0)
               )}
             </span>
-            <span className="hidden sm:inline text-[7px] font-bold text-zinc-500 uppercase tracking-wider">
+            <span className="hidden sm:inline text-[8px] font-bold text-zinc-500 uppercase tracking-wider">
               ZENITH
             </span>
           </div>
@@ -76,7 +76,7 @@ export const Header = memo(({ onMenuClick }: HeaderProps) => {
           variant="ghost"
           size="sm"
           onClick={onMenuClick}
-          className="w-8 h-8 p-0 rounded-md border border-white/5 hover:bg-zinc-900 transition-all shrink-0"
+          className="w-9 h-9 p-0 rounded-md border border-white/5 hover:bg-zinc-900 transition-all shrink-0"
           aria-label="Open Menu"
         >
           <Menu size={18} />

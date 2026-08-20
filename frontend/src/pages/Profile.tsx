@@ -8,6 +8,7 @@ import {
   Gem,
   Loader2,
   PawPrint,
+  RefreshCw,
   Search,
   Ticket,
   Trophy,
@@ -348,6 +349,17 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              aria-label="Refresh collection"
+              onClick={() => {
+                window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
+                refresh();
+              }}
+              className="w-10 h-10 flex items-center justify-center rounded-md bg-zinc-950 border border-white/10 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900 transition-all shrink-0"
+            >
+              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+            </button>
             <div className="w-full sm:w-64">
               <Input
                 icon={Search}
