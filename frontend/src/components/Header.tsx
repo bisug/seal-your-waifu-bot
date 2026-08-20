@@ -1,7 +1,8 @@
 import { memo } from 'react';
-import { Coins, Gem, Menu, User } from 'lucide-react';
+import { Coins, Gem, Menu } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 import { formatNumber } from '../utils';
+import { Avatar } from './Avatar';
 import { Button } from './ui/Button';
 
 interface HeaderProps {
@@ -15,13 +16,12 @@ export const Header = memo(({ onMenuClick }: HeaderProps) => {
     <header className="sticky top-0 z-[100] flex items-center justify-between px-5 bg-zinc-950/95 h-14 shrink-0 select-none border-b border-white/[0.04]">
       {/* Brand Section */}
       <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-md bg-zinc-900 border border-white/5 flex items-center justify-center relative overflow-hidden group">
-          <User
-            size={16}
-            className="text-zinc-400 relative z-10 transition-colors group-hover:text-zinc-100"
-          />
-          <div className="absolute inset-0 bg-brand-accent/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-        </div>
+        <Avatar
+          src={user?.avatar}
+          alt={user?.username || 'User avatar'}
+          fallbackText={user?.first_name?.[0] || user?.username?.[0]}
+          className="w-8 h-8 rounded-md border border-white/5"
+        />
         <div className="flex flex-col justify-center">
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] font-black text-zinc-100 tracking-wider uppercase leading-none">
