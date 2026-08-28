@@ -1,0 +1,46 @@
+# Heroku buildpack (heroku/python) entry point.
+#
+# The real project lives in backend/ (backend/pyproject.toml + backend/uv.lock,
+# used by the container deploys via backend/Dockerfile). The Heroku Python
+# buildpack can only detect a Python app from the REPO ROOT, so this thin
+# manifest exists purely so `uv sync --locked --no-default-groups` resolves the
+# production dependencies and a buildpack deploy (`git push heroku main`)
+# works. Container deploys (heroku.yml) ignore this file.
+#
+# NOTE: keep the dependency list below in sync with backend/pyproject.toml.
+
+[project]
+name = "seal-bot"
+version = "0.1.0"
+description = "Telegram character-collection bot (buildpack mirror of backend/)"
+requires-python = ">=3.14"
+dependencies = [
+    # API Framework
+    "fastapi>=0.141.1",
+    "uvicorn[standard]>=0.52.4",
+    # HTTP / Networking
+    "httpx>=0.28.1",
+    "httptools>=0.8.0",
+    "dnspython>=2.8.0",
+    # Database
+    "pymongo>=4.17.0",
+    "redis[hiredis]>=8.1.0",
+    # Telegram
+    "kurigram>=2.2.25",
+    "tgcrypto>=1.2.5; platform_system == 'Linux'",
+    # Serialization / Validation
+    "orjson>=3.12.0",
+    "pydantic>=2.13.4",
+    # Utilities
+    "psutil>=7.2.2",
+    "python-dotenv>=1.2.3",
+    # Browser Automation
+    "playwright>=1.62.0",
+    # Performance
+    "uvloop>=0.22.1; platform_system != 'Windows'",
+]
+
+[tool.uv]
+# Don't try to build/install the root project as a package (the real package
+# lives in backend/); we only need the dependencies installed.
+package = false
