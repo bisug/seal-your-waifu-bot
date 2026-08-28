@@ -1,4 +1,4 @@
-from pyrogram import enums, errors, filters, types
+from pyrogram import enums, filters, types
 from backend import LOGGER, app, client, user_collection
 from backend.core.cache import invalidate_leaderboard_cache, sync_user_to_redis
 from backend.core.sessions import create_session, delete_session, get_session

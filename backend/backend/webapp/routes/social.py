@@ -6,7 +6,7 @@ from backend.database import client, user_collection, sessions_collection
 from backend.webapp.auth import get_current_user, get_current_user_data
 from backend.core.referrals import get_referral_stats as build_referral_stats, normalize_referral_ids
 from backend.core.utils import get_now_utc, get_user_id_query, normalize_user_id
-from backend.webapp.schemas import TradeOffer, MarriageModel, ReferralModel, ReferralStatsModel, BattleStatsModel, CharacterModel
+from backend.webapp.schemas import TradeOffer, MarriageModel, ReferralModel, ReferralStatsModel, BattleStatsModel
 from backend.core.cache import sync_user_to_redis
 import uuid
 

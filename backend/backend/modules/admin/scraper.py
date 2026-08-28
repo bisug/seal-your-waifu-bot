@@ -2,7 +2,6 @@ import asyncio
 import os
 import re
 from pyrogram import enums, errors, filters, types
-from pyrogram.enums import ParseMode
 from pyrogram.errors import FloodWait
 
 from config import config

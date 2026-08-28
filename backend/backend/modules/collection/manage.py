@@ -1,5 +1,5 @@
-from pyrogram import enums, errors, filters, types
-from backend import LOGGER, app
+from pyrogram import enums, filters, types
+from backend import app
 from backend.core.user import get_user_data, remove_char_from_user, update_user
 from backend.core.utils import handle_errors, html_escape
 from backend.database import collection

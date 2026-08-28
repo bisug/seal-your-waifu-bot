@@ -1,15 +1,12 @@
 import asyncio
-import hashlib
-import json
 import re
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import RedirectResponse
 
 from config import config
-from backend import LOGGER
 from backend.core.progression import get_level_from_xp, get_user_progress
 from backend.core.tasks import run_background_task
 from backend.core.user import get_user_rank_with_fallback
@@ -28,7 +25,7 @@ from backend.core.pets import (
     normalize_pet,
     pet_matches,
 )
-from backend.webapp.auth import get_current_user, get_current_user_data, is_sudo_user_id, r
+from backend.webapp.auth import get_current_user, get_current_user_data, is_sudo_user_id
 from backend.webapp.schemas import UserProfileResponse
 
 router = APIRouter()

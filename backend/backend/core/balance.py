@@ -1,4 +1,3 @@
-from typing import Optional
 from backend.core.cache import (get_cached_balance, invalidate_user_cache,
                                 set_cached_balance)
 from backend.core.user import add_user_set_on_insert, get_user_filter

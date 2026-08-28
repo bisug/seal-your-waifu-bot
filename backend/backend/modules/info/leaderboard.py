@@ -1,12 +1,8 @@
-import html
-from pyrogram import enums, errors, filters, types
-from pyrogram.enums import ParseMode
+from pyrogram import enums, filters, types
 
-from config import config
-from backend import (LOGGER, WEB_APP_URL, app, group_user_totals_collection,
+from backend import (LOGGER, app, group_user_totals_collection,
                      user_collection)
 from backend.core.constants import METRIC_ORDER, METRICS
-from backend.core.keyboard import get_webapp_button
 from backend.core.progression import get_level_from_xp
 from backend.core.tasks import run_background_task
 from backend.core.utils import handle_errors, html_escape

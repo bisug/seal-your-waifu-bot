@@ -1,11 +1,10 @@
 import random
-import inspect
 from datetime import datetime, timezone
 from pyrogram import enums, errors, filters, types
 from pymongo import ReturnDocument
 from config import config
-from backend import (LOGGER, OWNER_ID, WEB_APP_URL, app, collection,
-                     sudo_users, user_collection, sudo_filter)
+from backend import (LOGGER, app, collection,
+                     user_collection)
 from backend.core.cache import sync_user_to_redis
 from backend.core.constants import (
     LEVEL_BUY_SHARD_COST,
@@ -20,7 +19,7 @@ from backend.core.user import get_user_filter
 from backend.core.utils import handle_errors, html_escape, reply_media_dynamic
 from backend.database import daily_shop_collection
 from backend.database.models import Character, User
-from backend.modules.collection.rarities import RARITY_MAP, SHOP_RARITY_WEIGHTS
+from backend.modules.collection.rarities import SHOP_RARITY_WEIGHTS
 from backend.modules.progression.achievements import check_achievements
 from backend.modules.progression.quests import update_quest_progress
 async def get_daily_shop_characters():
@@ -48,8 +47,7 @@ async def get_daily_shop_characters():
             {"$match": {"rarity": r, "id": {"$nin": [c["id"] for c in selected_raw]}}},
             {"$sample": {"size": 1}}
         ]
-        cursor_result = collection.aggregate(pipeline)
-        cursor = await cursor_result if inspect.isawaitable(cursor_result) else cursor_result
+        cursor = await collection.aggregate(pipeline)
         res = await cursor.to_list(length=1)
         if res:
             selected_raw.append(res[0])

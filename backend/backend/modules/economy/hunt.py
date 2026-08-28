@@ -3,11 +3,10 @@ import logging
 import random
 import time
 import uuid
-from datetime import datetime, timedelta, timezone
-from pyrogram import enums, errors, filters, types
+from datetime import timedelta, timezone
+from pyrogram import enums, filters, types
 from pyrogram.handlers import CallbackQueryHandler, MessageHandler
-from backend import WEB_APP_URL, collection, user_collection
-from backend.core.cache import invalidate_user_cache
+from backend import user_collection
 from backend.core.cache import is_on_cooldown as redis_cooldown
 from backend.core.cache import sync_user_to_redis
 from backend.core.constants import CORRUPTED_EGG_CHANCE, EGG_TIERS
@@ -27,9 +26,8 @@ from backend.core.pass_config import (
 )
 from backend.core.progression import add_xp
 from backend.core.tasks import run_background_task
-from backend.core.user import add_pet_xp, add_user_set_on_insert, get_user_filter, get_user_id
-from backend.core.utils import get_now_utc, html_escape, reply_media_dynamic
-from backend.modules.collection.rarities import RARITY_MAP
+from backend.core.user import add_pet_xp, add_user_set_on_insert, get_user_filter
+from backend.core.utils import format_currency, get_now_utc, html_escape, reply_media_dynamic
 from backend.modules.progression.achievements import check_achievements
 from backend.core.pets import (
     DEFAULT_PET,
@@ -56,9 +54,6 @@ def load_handlers(bot):
     bot.add_handler(CallbackQueryHandler(egg_hatch_callback, filters.regex(r"^egg_hatch:([^:]+):(\d+):(\d+)$")), group=0)
     bot.add_handler(CallbackQueryHandler(egg_noop_callback, filters.regex(r"^egg_noop$")), group=0)
     LOGGER.info(f"Registered Hunt & Egg handlers for {bot.name}")
-def get_egg_roll(luck_multiplier):
-    """Determine the tier of the egg found based on luck."""
-    return roll_egg_tier(luck_multiplier)
 async def hunt_cmd(bot, message: types.Message):
     """Refactored Hunt Command: High durability, atomic updates."""
     user_id = message.from_user.id if message.from_user else None
@@ -164,7 +159,6 @@ async def hunt_cmd(bot, message: types.Message):
         run_background_task(check_achievements(user_id))
         # 7. Final Response
         found_egg_desc = f"<b>{html_escape(eggs_to_push[0]['name'])}</b> discovered!" if eggs_to_push else ""
-        from backend.core.utils import format_currency
         shards_text = format_currency(shards)
         final_text = (
             f"<b>Hunt Complete, Collector!</b>\n\n"
@@ -355,7 +349,6 @@ async def egg_incubate_callback(_, query: types.CallbackQuery):
 async def egg_hatch_callback(_, query: types.CallbackQuery):
     data = query.data.split(":")
     egg_id, owner_id = data[1], int(data[2])
-    page = int(data[3])
     if query.from_user.id != owner_id:
         return await query.answer("Not your egg!", show_alert=True)
     user = await user_collection.find_one(get_user_filter(owner_id)) or {}

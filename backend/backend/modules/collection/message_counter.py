@@ -1,17 +1,13 @@
 import datetime
 import random
-import time
 import logging
-from pyrogram import enums, errors, filters, types
-from pyrogram.enums import ParseMode
+from pyrogram import filters, types
 
-from backend import app, config, LOGGER
+from backend import app
 from backend.core.spawn_utils import get_target_spawn_frequency
-from backend.core.spawns import (get_chat_state,
-                                 increment_message_count,
+from backend.core.spawns import (increment_message_count,
                                  increment_spawn_order, send_character,
                                  track_user_activity)
-from backend.core.waifu import get_or_load_characters
 from backend.modules.collection.rarities import (
     ACTIVE_SPAWN_RARITY_WEIGHTS,
     SPAWN_RARITY_WEIGHTS,

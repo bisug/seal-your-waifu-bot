@@ -1,16 +1,12 @@
-import asyncio
 import random
 from datetime import datetime, timedelta, timezone
-from pyrogram import enums, errors, filters, types
-from pyrogram.enums import ParseMode
+from pyrogram import enums, filters, types
 
-from config import config
-from backend import WEB_APP_URL, app, user_collection
-from backend.core.keyboard import get_webapp_button
+from backend import app, user_collection
 from backend.core.pass_config import get_active_pass_type
 from backend.core.progression import add_xp, get_progress_bar
 from backend.core.user import add_user_set_on_insert, get_user_filter
-from backend.core.utils import get_user_id_query, handle_errors, html_escape
+from backend.core.utils import get_user_id_query, handle_errors
 
 QUEST_POOL = {
     "catch_master": {
@@ -273,10 +269,8 @@ async def view_quests(_, message: types.Message, edit_message=False):
     if not has_daily: text += "<i>No daily quests active.</i>\n"
     text += "\n"
     text += "<b>Weekly Challenges</b>\n"
-    has_weekly = False
     for qid, qdata in quests.items():
         if qid not in WEEKLY_POOL: continue
-        has_weekly = True
         info = WEEKLY_POOL[qid]
         prog = qdata["progress"]
         targ = info["target"]
@@ -293,10 +287,8 @@ async def view_quests(_, message: types.Message, edit_message=False):
             status = f"<code>{prog}/{targ}</code>"
         text += f"{info['icon']} <b>{info['name']}</b>: {bar} {status}\n"
     text += "\n<b>Pass Missions</b>\n"
-    has_pass = False
     for qid, qdata in quests.items():
         if qid not in PASS_MISSIONS: continue
-        has_pass = True
         info = PASS_MISSIONS[qid]
         prog = qdata["progress"]
         targ = info["target"]

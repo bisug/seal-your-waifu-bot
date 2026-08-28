@@ -1,8 +1,7 @@
 import asyncio
 import random
 from datetime import datetime, timezone
-from pyrogram import enums, errors, filters, types
-from pyrogram.enums import ParseMode
+from pyrogram import enums, filters, types
 from pymongo.errors import DuplicateKeyError
 
 from backend import app, collection, user_collection

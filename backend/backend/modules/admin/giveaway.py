@@ -1,11 +1,9 @@
 import random
 import string
-from pyrogram import enums, errors, filters, types
-from pyrogram.enums import ParseMode
+from pyrogram import enums, filters, types
 
 from config import config
-from backend import (LOGGER, MAIN_GROUP_ID, OWNER_ID, app, collection,
-                     user_collection)
+from backend import (LOGGER, MAIN_GROUP_ID, OWNER_ID, app, collection)
 from backend.core.sessions import create_session, delete_session, get_session
 from backend.core.utils import handle_errors, html_escape, reply_media_dynamic
 from backend.core.user import add_char_to_user

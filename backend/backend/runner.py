@@ -317,7 +317,7 @@ async def stop_bots():
     global IS_STARTED, STARTUP_STATE
     from backend import LOGGER
     from backend.core.resources import stop_resource_monitor
-    from backend.core.tasks import cancel_background_tasks, run_background_task
+    from backend.core.tasks import cancel_background_tasks
     from backend.database import close_connections
 
     await stop_resource_monitor()

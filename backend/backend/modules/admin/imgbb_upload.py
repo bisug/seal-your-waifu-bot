@@ -1,7 +1,5 @@
 import os
-import httpx
-from pyrogram import enums, errors, filters, types
-from pyrogram.enums import ParseMode
+from pyrogram import enums, filters, types
 
 from config import config
 from backend import LOGGER, app
