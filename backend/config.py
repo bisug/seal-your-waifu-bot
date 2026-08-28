@@ -74,7 +74,7 @@ class Config:
     IMGBB_API_KEY = os.getenv("IMGBB_API_KEY", "")
     
     # --- WEBAPP CONFIG ---
-    WEB_APP_URL = os.getenv("WEB_APP_URL", "https://example.com")
+    WEB_APP_URL = os.getenv("WEB_APP_URL", "") # Public HTTPS origin; empty default until set by the host
     MINI_APP_SHORT_NAME = os.getenv("MINI_APP_SHORT_NAME", "app") # The 'Short Name' you set in BotFather
     API_VERSION_PREFIX = os.getenv("API_VERSION_PREFIX", "v1_7b82")
 
