@@ -83,6 +83,17 @@ def _temp_file_path(prefix: str, ext: str) -> str:
     return path
 
 
+def temp_download_dir(prefix: str) -> str:
+    """Absolute temp directory for Telegram downloads.
+
+    Kurigram 2.2.25 (#339) resolves relative download paths against
+    Client.workdir, so the default download dir silently moved from
+    `<argv[0] dir>/downloads` to `backend/downloads` (/app/backend/downloads
+    in Docker). Always pass this absolute path as `file_name=` instead.
+    """
+    return tempfile.mkdtemp(prefix=f"{prefix}_")
+
+
 def _is_blocked_ip(address: str) -> bool | None:
     try:
         ip = ipaddress.ip_address(address)
@@ -256,6 +267,14 @@ def remove_temp_file(temp_path: str | None) -> None:
             os.remove(temp_path)
         except OSError:
             LOGGER.debug("Failed to remove upload temp file: %s", temp_path)
+        # Downloads land in a per-call temp dir (temp_download_dir); drop the
+        # now-empty parent too. rmdir fails harmlessly if not empty.
+        parent = os.path.dirname(temp_path)
+        if parent != tempfile.gettempdir():
+            try:
+                os.rmdir(parent)
+            except OSError:
+                pass
 
 
 async def upload_character_from_path(

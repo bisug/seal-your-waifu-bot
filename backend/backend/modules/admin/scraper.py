@@ -8,6 +8,7 @@ from pyrogram.errors import FloodWait
 from config import config
 from backend import (GALLERY_CHANNEL_ID, LOGGER, OWNER_ID, app, collection,
                     scraped_characters_collection, sudo_users, userbot, sudo_filter)
+from backend.core.uploads import temp_download_dir
 from backend.core.utils import handle_errors, send_media_dynamic
 from backend.core.waifu import (add_character_to_db,
                                 invalidate_character_cache,
@@ -166,7 +167,8 @@ async def scrape_group_command_handler(client, message):
                 try:
                     # Send for Review
                     # We download first to ensure we have a valid file to re-upload to our group
-                    temp_path = await client_to_use.download_media(msg)
+                    # Absolute dir: kurigram 2.2.25 resolves relative paths against workdir.
+                    temp_path = await client_to_use.download_media(msg, file_name=temp_download_dir("scrape") + "/")
                     review_caption = (
                         f"<b>🆕 Scraped Character!</b>\n\n"
                         f"👤 <b>Name:</b> {name}\n"
@@ -198,6 +200,10 @@ async def scrape_group_command_handler(client, message):
                     # Bug #1 fix: always clean up temp file, even on exception
                     if temp_path and os.path.exists(temp_path):
                         os.remove(temp_path)
+                        try:
+                            os.rmdir(os.path.dirname(temp_path))
+                        except OSError:
+                            pass
             if sent_count == 0:
                 await app.send_message_safe(message.chat.id, "✅ Scraping complete. No new characters found.")
             elif sent_count < 100:
@@ -258,10 +264,12 @@ async def approve_scrape_callback(client, query):
     await query.answer("♻️ Re-hosting & Integrating...")
     await app.edit_message_reply_markup_safe(query.message.chat.id, query.message.id, None)
     status_msg = await app.send_message_safe(query.message.chat.id, "📥 Re-hosting to Catbox...")
+    temp_path = None
     try:
         # Bug #3 fix: use the message object directly — supports both photos and documents.
         # Accessing query.message.photo would crash if the scraped item was a document.
-        temp_path = await app.download_media(query.message)
+        # Absolute dir: kurigram 2.2.25 resolves relative paths against workdir.
+        temp_path = await app.download_media(query.message, file_name=temp_download_dir("scrape") + "/")
         final_url = await upload_media_safely(temp_path)
         if not final_url:
             return await app.edit_message_text_safe(status_msg.chat.id, status_msg.id, "❌ Re-hosting failed.")
@@ -294,6 +302,13 @@ async def approve_scrape_callback(client, query):
     except (errors.RPCError, RuntimeError) as e:
         LOGGER.error(f"Approval Error: {e}")
         await app.edit_message_text_safe(status_msg.chat.id, status_msg.id, f"❌ Error: {e}")
+    finally:
+        if temp_path and os.path.exists(temp_path):
+            os.remove(temp_path)
+            try:
+                os.rmdir(os.path.dirname(temp_path))
+            except OSError:
+                pass
 @app.on_callback_query(filters.regex(r"^rsc_dec$"))
 async def decline_scrape_callback(client, query):
     if query.from_user.id not in sudo_users and query.from_user.id != OWNER_ID:

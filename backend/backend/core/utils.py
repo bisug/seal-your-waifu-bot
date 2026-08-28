@@ -7,6 +7,7 @@ from pyrogram import enums, errors, filters, types
 from pyrogram.enums import ParseMode
 from pyrogram.errors import FloodWait
 
+from backend.core.constants import PERMISSION_DENIED_ERRORS
 from backend.database import r as _redis
 
 def get_now_utc() -> datetime:
@@ -170,7 +171,7 @@ def handle_errors(func):
         except errors.SlowmodeWait as e:
             LOGGER.warning(f"SlowmodeWait in {func.__name__}: {e.value}s")
             await notify_handler_error(message, f"Slowmode is active. Try again in {e.value}s.")
-        except (errors.Forbidden, errors.Unauthorized) as e:
+        except PERMISSION_DENIED_ERRORS as e:
             LOGGER.debug(f"Permission error in {func.__name__}: {e}")
         except errors.MessageNotModified:
             pass

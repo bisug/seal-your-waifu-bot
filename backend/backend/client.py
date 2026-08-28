@@ -8,6 +8,7 @@ from pyrogram.errors import FloodWait
 from pyrogram.handlers import MessageHandler
 
 from config import config
+from backend.core.constants import PERMISSION_DENIED_ERRORS
 from backend.core.tasks import run_background_task
 
 LOGGER = logging.getLogger(__name__)
@@ -107,7 +108,7 @@ class SealClient(Client):
                 return await self.send_message_safe(chat_id, text, *args, _retries=1, **kwargs)
             LOGGER.error(f"[{self.name}] Peer resolution failed for {chat_id}: {e}")
             return None
-        except (errors.Forbidden, errors.Unauthorized) as e:
+        except PERMISSION_DENIED_ERRORS as e:
             LOGGER.debug(f"[{self.name}] Permission denied in {chat_id}: {e}")
             return None
         except errors.BadRequest as e:
@@ -148,7 +149,7 @@ class SealClient(Client):
                 await self.resolve_peer_safe(chat_id)
                 return await self.send_media_safe(chat_id, media_url, *args, _retries=1, **kwargs)
             return None
-        except (errors.Forbidden, errors.Unauthorized) as e:
+        except PERMISSION_DENIED_ERRORS as e:
             LOGGER.debug(f"[{self.name}] Permission denied in {chat_id}: {e}")
             return None
         except errors.BadRequest as e:
@@ -177,7 +178,7 @@ class SealClient(Client):
             return await self.edit_message_text_safe(chat_id, message_id, text, *args, _retries=_retries+1, **kwargs)
         except errors.MessageNotModified:
             return None
-        except (errors.Forbidden, errors.Unauthorized) as e:
+        except PERMISSION_DENIED_ERRORS as e:
             LOGGER.debug(f"[{self.name}] Permission denied in {chat_id}: {e}")
             return None
         except errors.BadRequest as e:
@@ -207,7 +208,7 @@ class SealClient(Client):
             return await self.edit_message_caption_safe(chat_id, message_id, caption, *args, _retries=_retries+1, **kwargs)
         except errors.MessageNotModified:
             return None
-        except (errors.Forbidden, errors.Unauthorized) as e:
+        except PERMISSION_DENIED_ERRORS as e:
             LOGGER.debug(f"[{self.name}] Permission denied in {chat_id}: {e}")
             return None
         except errors.BadRequest as e:
@@ -231,7 +232,7 @@ class SealClient(Client):
             return await self.edit_message_reply_markup_safe(chat_id, message_id, reply_markup, *args, _retries=_retries+1, **kwargs)
         except errors.MessageNotModified:
             return None
-        except (errors.Forbidden, errors.Unauthorized) as e:
+        except PERMISSION_DENIED_ERRORS as e:
             LOGGER.debug(f"[{self.name}] Permission denied in {chat_id}: {e}")
             return None
         except errors.BadRequest as e:

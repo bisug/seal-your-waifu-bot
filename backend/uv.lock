@@ -66,7 +66,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.141.1" },
     { name = "httptools", specifier = ">=0.8.0" },
     { name = "httpx", specifier = ">=0.28.1" },
-    { name = "kurigram", specifier = ">=2.2.24" },
+    { name = "kurigram", specifier = ">=2.2.25" },
     { name = "orjson", specifier = ">=3.12.0" },
     { name = "playwright", specifier = ">=1.62.0" },
     { name = "psutil", specifier = ">=7.2.2" },

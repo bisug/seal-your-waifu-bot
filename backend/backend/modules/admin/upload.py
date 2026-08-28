@@ -11,6 +11,7 @@ from backend.core.uploads import (
     download_media_url,
     parse_luck,
     remove_temp_file,
+    temp_download_dir,
     upload_character_from_path,
     upload_pet_from_path,
 )
@@ -71,7 +72,8 @@ async def _materialize_message_media(
 ) -> str:
     if is_reply:
         await status.edit_text("📥 Downloading media from Telegram...")
-        temp_path = await message.reply_to_message.download()
+        # Absolute dir: kurigram 2.2.25 resolves relative paths against workdir.
+        temp_path = await message.reply_to_message.download(file_name=temp_download_dir(temp_prefix) + "/")
         if not temp_path or not os.path.exists(temp_path):
             raise UploadError("Failed to retrieve Telegram media.")
         return temp_path

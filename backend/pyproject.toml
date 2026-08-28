@@ -19,7 +19,7 @@ dependencies = [
     "pymongo>=4.17.0",
     "redis[hiredis]>=8.1.0",
     # Telegram
-    "kurigram>=2.2.24",
+    "kurigram>=2.2.25",
     "tgcrypto>=1.2.5; platform_system == 'Linux'",
     # Serialization / Validation
     "orjson>=3.12.0",

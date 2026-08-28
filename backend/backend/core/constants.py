@@ -1,4 +1,18 @@
 # backend/core/constants.py
+from pyrogram import errors
+
+# Kurigram 2.2.25 (#357) reclassified ChatWriteForbidden from Forbidden/403 to
+# BadRequest/400, and ChatAdminRequired / ChannelPrivate are BadRequest too, so
+# `except (errors.Forbidden, errors.Unauthorized)` no longer covers "we are not
+# allowed to post here". Catch this tuple *before* any `except errors.BadRequest`.
+PERMISSION_DENIED_ERRORS = (
+    errors.Forbidden,
+    errors.Unauthorized,
+    errors.ChatWriteForbidden,
+    errors.ChatAdminRequired,
+    errors.ChannelPrivate,
+)
+
 # Rarity Mappings
 SHOP_RARITY = "🟠 Rare"
 # NOTE: Character liquidation (sell / recycle) now uses the per-rarity
