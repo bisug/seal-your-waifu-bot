@@ -23,7 +23,12 @@ async def main() -> None:
     parser.add_argument("--dry-run", action="store_true", help="report without writing")
     args = parser.parse_args()
 
-    client = AsyncMongoClient(config.MONGO_URL, appname="seal-bot-migrate")
+    client = AsyncMongoClient(
+        config.MONGO_URL,
+        appname="seal-bot-migrate",
+        connectTimeoutMS=10_000,
+        serverSelectionTimeoutMS=10_000,
+    )
     db = client["Character_catchers"]
     characters = db["anime_characterss"]
     users = db["user_collectionsss"]
