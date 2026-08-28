@@ -1,0 +1,110 @@
+{
+  "name": "Seal-Bot",
+  "description": "Production Telegram character-collection bot with a secondary game bot, FastAPI backend, and React Telegram Mini App.",
+  "keywords": ["telegram", "bot", "fastapi", "mongodb", "redis", "mini-app"],
+  "website": "https://t.me/SealYourWaifuBot",
+  "repository": "https://github.com/bisug/seal-your-waifu-bot",
+  "logo": "https://raw.githubusercontent.com/bisug/seal-your-waifu-bot/main/frontend/public/favicon.svg",
+  "stack": "container",
+  "env": {
+    "TOKEN": {
+      "description": "Main Telegram bot token from BotFather.",
+      "required": true
+    },
+    "SUB_TOKEN": {
+      "description": "Secondary GameBot token from BotFather.",
+      "required": true
+    },
+    "API_ID": {
+      "description": "Telegram API ID from my.telegram.org.",
+      "required": true
+    },
+    "API_HASH": {
+      "description": "Telegram API hash from my.telegram.org.",
+      "required": true
+    },
+    "MONGO_URL": {
+      "description": "MongoDB connection string (Atlas).",
+      "required": true
+    },
+    "WEB_APP_URL": {
+      "description": "Public HTTPS origin of the Mini App, e.g. https://<app-name>.herokuapp.com.",
+      "required": true
+    },
+    "OWNER_ID": {
+      "description": "Primary owner Telegram user ID.",
+      "required": true
+    },
+    "REDIS_URL": {
+      "description": "Redis connection string for sessions, rate limits, leaderboards, and hot reads.",
+      "required": false
+    },
+    "SUDO_USERS": {
+      "description": "Comma-separated startup moderator Telegram user IDs.",
+      "required": false
+    },
+    "MAIN_GROUP_ID": {
+      "description": "Main community/group ID used by logs and giveaway notifications.",
+      "required": false
+    },
+    "GALLERY_CHANNEL_ID": {
+      "description": "Channel where uploaded character media is posted or edited.",
+      "required": false
+    },
+    "LOG_GROUP_ID": {
+      "description": "Review/log group for startup reports and update proposals.",
+      "required": false
+    },
+    "SUPPORT_CHAT": {
+      "description": "Support chat username used in buttons and starter checks.",
+      "required": false
+    },
+    "UPDATE_CHAT": {
+      "description": "Update channel username used in buttons and starter checks.",
+      "required": false
+    },
+    "PHOTO_URL": {
+      "description": "Comma-separated fallback/start image URLs.",
+      "required": false
+    },
+    "IMGBB_API_KEY": {
+      "description": "Optional image host key for upload fallback paths.",
+      "required": false
+    },
+    "STRING_SESSION": {
+      "description": "Optional userbot session string for scraper access.",
+      "required": false
+    },
+    "MINI_APP_SHORT_NAME": {
+      "description": "BotFather Mini App short name.",
+      "value": "app",
+      "required": false
+    },
+    "API_VERSION_PREFIX": {
+      "description": "API path prefix.",
+      "value": "v1_7b82",
+      "required": false
+    },
+    "LOG_LEVEL": {
+      "description": "DEBUG, INFO, WARNING, ERROR, or CRITICAL.",
+      "value": "INFO",
+      "required": false
+    },
+    "LOG_FORMAT": {
+      "description": "text or json. Use json for centralized logging.",
+      "value": "json",
+      "required": false
+    },
+    "LOG_FILE_ENABLED": {
+      "description": "Write rotating file logs in addition to stdout. Keep false in containers.",
+      "value": "false",
+      "required": false
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
+    }
+  }
+}
