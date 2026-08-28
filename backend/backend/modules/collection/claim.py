@@ -1,6 +1,7 @@
 import random
 from pyrogram import enums, errors, filters, types
 from pyrogram.errors import FloodWait
+from pymongo.errors import DuplicateKeyError
 from config import config
 from backend import LOGGER, app
 from backend.core.cache import sync_user_to_redis
@@ -115,16 +116,20 @@ async def claim_confirm_handler(_, query: types.CallbackQuery):
     char = session["character"]
     claim_filter = get_user_id_query(user_id)
     claim_filter["claimed_waifu"] = {"$ne": True}
-    claim_result = await user_collection.update_one(
-        claim_filter,
-        add_user_set_on_insert({
-            "$set": {"claimed_waifu": True},
-            "$inc": {"balance": DAILY_SHARD_REWARD, "char_count": 1, "version": 1},
-            "$push": {"characters": char},
-            "$setOnInsert": {"id": user_id}
-        }, user_id, first_name=query.from_user.first_name, username=query.from_user.username),
-        upsert=True
-    )
+    try:
+        claim_result = await user_collection.update_one(
+            claim_filter,
+            add_user_set_on_insert({
+                "$set": {"claimed_waifu": True},
+                "$inc": {"balance": DAILY_SHARD_REWARD, "char_count": 1, "version": 1},
+                "$push": {"characters": char},
+                "$setOnInsert": {"id": user_id}
+            }, user_id, first_name=query.from_user.first_name, username=query.from_user.username),
+            upsert=True
+        )
+    except DuplicateKeyError:
+        # Concurrent claim won the race; the unique id index blocked the insert.
+        return await query.answer("You already claimed your free waifu!", show_alert=True)
     if claim_result.modified_count == 0 and claim_result.upserted_id is None:
         return await query.answer("You already claimed your free waifu!", show_alert=True)
     mention = f'<a href="tg://user?id={query.from_user.id}">{html_escape(query.from_user.first_name)}</a>'

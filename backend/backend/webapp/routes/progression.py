@@ -148,6 +148,18 @@ async def incubate_egg(egg_id: str, user: dict = Depends(get_current_user_data))
     q = get_user_id_query(uid_int)
     # Ensure egg is exactly in 'fresh' state to avoid double incubation
     q["eggs"] = {"$elemMatch": {"id": egg_id, "status": "fresh"}}
+    # Atomic slot guard: the pre-check above reads a stale snapshot, so two
+    # concurrent requests could both pass it. Re-check inside the filter.
+    q["$expr"] = {
+        "$lt": [
+            {"$size": {"$filter": {
+                "input": {"$ifNull": ["$eggs", []]},
+                "as": "e",
+                "cond": {"$eq": ["$$e.status", "incubating"]},
+            }}},
+            slots,
+        ]
+    }
     res = await user_collection.update_one(
         q,
         {

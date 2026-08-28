@@ -68,9 +68,23 @@ async def leaderboard_ws(websocket: WebSocket):
         await websocket.close(code=4001)
         return
 
-    # Subscribe to leaderboard changes in Redis
+    # Subscribe to leaderboard changes in Redis. The subscribe call must be
+    # guarded: if it raises, the pubsub connection and the accepted websocket
+    # would otherwise leak (the teardown finally below only runs after this).
     pubsub = r.pubsub()
-    await pubsub.subscribe("leaderboard_updates")
+    try:
+        await pubsub.subscribe("leaderboard_updates")
+    except Exception:
+        try:
+            await pubsub.aclose()
+        except Exception:
+            pass
+        try:
+            await websocket.send_text(json.dumps({"error": "Realtime updates temporarily unavailable"}))
+            await websocket.close(code=1011)
+        except Exception:
+            pass
+        return
     
     async def listen_redis():
         """Efficiently listen for Redis pub/sub messages."""

@@ -1,6 +1,6 @@
 from pyrogram import enums, errors, filters, types
 from backend import LOGGER, app, user_collection
-from backend.core.sessions import create_session, delete_session, get_session
+from backend.core.sessions import consume_session, create_session, delete_session, get_session
 from backend.core.user import get_user_data, update_user
 from backend.core.utils import handle_errors, html_escape
 
@@ -12,6 +12,9 @@ async def gift_command(_, message: types.Message):
         await message.reply_text("Please reply to the user you want to gift to.", parse_mode=enums.ParseMode.HTML)
         return
     sender_id = message.from_user.id
+    if not message.reply_to_message.from_user:
+        await message.reply_text("Cannot gift to this message (no user attached).")
+        return
     receiver_id = message.reply_to_message.from_user.id
     if sender_id == receiver_id:
         await message.reply_text("You cannot gift yourself!", parse_mode=enums.ParseMode.HTML)
@@ -70,6 +73,11 @@ async def gift_callback(_, query: types.CallbackQuery):
     receiver_id = session["receiver_id"]
     character = session["character"]
     char_id = character["id"]
+    # Atomically claim the session so two concurrent Confirm clicks cannot
+    # both proceed (get_session above is a non-consuming read).
+    if not await consume_session(session_id):
+        await query.answer("Gift already handled.", show_alert=True)
+        return
     sender_db = await get_user_data(sender_id)
     if not sender_db or not sender_db.get("characters"):
         await query.answer("You no longer own this character.", show_alert=True)

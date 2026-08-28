@@ -2,7 +2,7 @@ import asyncio
 import json
 import time as _time
 from collections import OrderedDict
-from urllib.parse import parse_qsl
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
@@ -59,6 +59,7 @@ async def auth(request: Request, _: None = Depends(check_init_rate_limit)):
     
     user_id = None
     new_token = None
+    validated_data = None
 
     if init_data:
         validated_data = validate_init_data(init_data)
@@ -88,16 +89,20 @@ async def auth(request: Request, _: None = Depends(check_init_rate_limit)):
             LOGGER.debug(f"Redis sync check failed: {e}")
 
     if should_sync:
-        # Update Avatar and Name in DB
+        # Update Avatar and Name in DB. Only HMAC-validated initData may feed
+        # profile fields — re-parsing the raw (possibly invalid) initData let
+        # a caller with a valid token spoof first_name/username.
         updates = {}
-        if avatar_url:
-            updates["avatar"] = avatar_url
-            
-        if init_data:
+        if isinstance(avatar_url, str) and len(avatar_url) <= 500:
+            parsed_avatar = urlparse(avatar_url)
+            if parsed_avatar.scheme in ("http", "https") and parsed_avatar.netloc:
+                updates["avatar"] = avatar_url
+
+        if validated_data:
             try:
-                vals = dict(parse_qsl(init_data))
-                if 'user' in vals:
-                    uobj = json.loads(vals['user'])
+                user_json = validated_data.get('user')
+                if user_json:
+                    uobj = json.loads(user_json)
                     if uobj.get('first_name'): 
                         updates['first_name'] = uobj['first_name']
                     if uobj.get('username'): 

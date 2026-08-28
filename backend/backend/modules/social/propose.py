@@ -3,6 +3,7 @@ import random
 from datetime import datetime, timezone
 from pyrogram import enums, errors, filters, types
 from pyrogram.enums import ParseMode
+from pymongo.errors import DuplicateKeyError
 
 from backend import app, collection, user_collection
 from backend.core.balance import update_user_balance
@@ -48,11 +49,15 @@ async def propose_command(_, message: types.Message):
     now_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     # Atomic once-per-day claim: the $ne guard folds the read-then-write into a
     # single conditional update, so concurrent /propose calls can't both grant.
-    claim = await user_collection.update_one(
-        {**get_user_id_query(user_id), "last_propose_date": {"$ne": now_date}},
-        {"$set": {"last_propose_date": now_date}, "$setOnInsert": {"id": user_id}},
-        upsert=True,
-    )
+    try:
+        claim = await user_collection.update_one(
+            {**get_user_id_query(user_id), "last_propose_date": {"$ne": now_date}},
+            {"$set": {"last_propose_date": now_date}, "$setOnInsert": {"id": user_id}},
+            upsert=True,
+        )
+    except DuplicateKeyError:
+        # Concurrent propose won the race; the unique id index blocked the insert.
+        return await message.reply_text("<b>You have already proposed today! Come back tomorrow.</b>", parse_mode=enums.ParseMode.HTML)
     if claim.modified_count == 0 and claim.upserted_id is None:
         return await message.reply_text("<b>You have already proposed today! Come back tomorrow.</b>", parse_mode=enums.ParseMode.HTML)
     start_msg = random.choice(start_messages)
