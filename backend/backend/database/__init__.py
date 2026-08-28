@@ -119,8 +119,13 @@ class Database:
             await result
 
 # Initialize Database
+# Eager construction is required for the module-level collection exports below,
+# but AsyncMongoClient("") raises a ConfigurationError at parse time when
+# MONGO_URL is unset (e.g. CI/tests). Fall back to a lazy localhost client so
+# imports succeed without credentials; runner startup still fails loudly via
+# seal_db.ping() if MongoDB is genuinely unreachable in production.
 try:
-    seal_db = Database(config.MONGO_URL)
+    seal_db = Database(config.MONGO_URL or "mongodb://localhost:27017")
 except Exception as e:
     LOGGER.exception("Failed to initialize MongoDB client")
     raise e
