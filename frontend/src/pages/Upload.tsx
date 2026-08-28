@@ -102,7 +102,12 @@ export const Upload = () => {
 
   const previewSrc = useMemo(() => {
     if (source === 'file') return mediaData || '';
-    return mediaUrl.trim();
+    const url = mediaUrl.trim();
+    // Block dangerous schemes (data:, javascript:, vbscript:) from reaching
+    // img/video src — they are reinterpreted as HTML (XSS via DOM). Only
+    // http(s) or relative URLs are safe to render here.
+    if (url && /^[a-z][a-z0-9+.-]*:/i.test(url) && !/^https?:/i.test(url)) return '';
+    return url;
   }, [mediaData, mediaUrl, source]);
 
   const clearMedia = () => {

@@ -3,6 +3,7 @@ import base64
 import binascii
 import ipaddress
 import os
+import re
 import socket
 import tempfile
 import urllib.parse
@@ -76,8 +77,19 @@ def _safe_extension(raw_ext: str | None, content_type: str | None = None) -> str
     return ext if ext in ALLOWED_EXTENSIONS else ".jpg"
 
 
+def _sanitize_temp_prefix(prefix: str) -> str:
+    """Strip path separators and control chars from a temp prefix.
+
+    Callers pass values derived from message IDs, but a hostile value here
+    would be an arbitrary path component (path-injection). Collapse to a
+    safe alphanumeric token rather than letting it reach the filesystem.
+    """
+    return re.sub(r"[^A-Za-z0-9_.-]+", "_", prefix or "")[:64] or "tmp"
+
+
 def _temp_file_path(prefix: str, ext: str) -> str:
-    handle = tempfile.NamedTemporaryFile(prefix=f"{prefix}_", suffix=ext, delete=False)
+    safe_prefix = _sanitize_temp_prefix(prefix)
+    handle = tempfile.NamedTemporaryFile(prefix=f"{safe_prefix}_", suffix=ext, delete=False)
     path = handle.name
     handle.close()
     return path
@@ -91,7 +103,7 @@ def temp_download_dir(prefix: str) -> str:
     `<argv[0] dir>/downloads` to `backend/downloads` (/app/backend/downloads
     in Docker). Always pass this absolute path as `file_name=` instead.
     """
-    return tempfile.mkdtemp(prefix=f"{prefix}_")
+    return tempfile.mkdtemp(prefix=f"{_sanitize_temp_prefix(prefix)}_")
 
 
 def _is_blocked_ip(address: str) -> bool | None:
@@ -166,6 +178,11 @@ async def download_media_url(media_url: str, *, temp_prefix: str = "upload") -> 
                         if not location:
                             raise UploadError("Media URL redirect is missing a location.")
                         current_url = urllib.parse.urljoin(str(response.url), location)
+                        # Reject scheme/host smuggling at the join point: the
+                        # redirect target is attacker-controlled, so it must
+                        # stay within the http(s) allowlist here, not only after
+                        # re-entering the loop (SSRF via redirect).
+                        _validate_public_media_url(current_url)
                         continue
 
                     parsed = urllib.parse.urlparse(current_url)
