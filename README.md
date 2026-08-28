@@ -2,6 +2,8 @@
 
 Production Telegram character-collection bot with a secondary game bot, FastAPI backend, and React Telegram Mini App.
 
+Repository: https://github.com/bisug/seal-your-waifu-bot
+
 [![Python](https://img.shields.io/badge/Python-3.14%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.136%2B-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev/)
