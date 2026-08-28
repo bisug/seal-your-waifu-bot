@@ -1,0 +1,38 @@
+# Heroku slug ignore list.
+#
+# NOTE: This repo deploys via the container stack (heroku.yml -> backend/Dockerfile),
+# where .slugignore is NOT applied — image size is controlled by backend/.dockerignore
+# instead. This file only takes effect if the app is ever switched to a buildpack
+# (e.g. heroku/python) deployment.
+#
+# Patterns below are relative to the repo root (where Heroku reads this file).
+
+# Frontend is deployed separately (Netlify/Vercel/Cloudflare) — not needed in the slug.
+frontend/
+
+# Documentation and deployment manifests.
+docs/
+README.md
+LICENSE
+render.yaml
+railway.json
+koyeb.yaml
+wrangler.toml
+
+# Backend dev/test artifacts (runtime only needs the package + config).
+backend/tests/
+backend/scripts/
+backend/compose.yaml
+backend/.pytest_cache/
+backend/**/__pycache__/
+backend/**/*.py[cod]
+backend/*.env
+backend/*.session
+backend/*.log
+
+# Editor / OS junk.
+.vscode/
+.idea/
+.claude/
+.git/
+*.md
