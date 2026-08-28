@@ -13,33 +13,9 @@ from backend.database import user_collection
 # (the latter via get_sell_price) so dupe liquidation is consistent and every
 # rarity is covered. High tiers are intentionally far below their shop (Zenith)
 # price to keep Zenith scarce and prevent sell/rebuy arbitrage.
-SELL_PRICES = {
-    "Common": 50,
-    "Medium": 100,
-    "Epic": 150,
-    "Rare": 250,
-    "Legendary": 600,
-    "Cosmic": 1200,
-    "Immortal": 1200,
-    "Exclusive": 2500,
-    "Eternal": 2500,
-    "Limited Edition": 5000,
-    "Mystic": 5000,
-    "Royal": 10000,
-    "Antique": 12000,
-    "Mythical": 12000,
-    "Celestial": 20000,
-    "Divine": 30000,
-    "Astral": 40000,
-    "AMV": 30000,
-    "Prestige": 40000,
-    "Winter": 1500,
-    "Summer": 1500,
-    "Valentine": 2000,
-    "Halloween": 2000,
-    "Luxury": 2500,
-    "Limited": 1800,
-}
+# Values now live in the `rarities` collection (see core/rarities.py); this
+# is the same live dict, keyed by bare name ("Common").
+from backend.core.rarities import SELL_PRICES  # noqa: E402
 
 def normalize_sell_rarity(rarity: str) -> str:
     rarity_text = str(rarity or "Common")

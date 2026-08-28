@@ -23,61 +23,10 @@ SHOP_RARITY = "🟠 Rare"
 SHARDS_PER_ZENITH = 10_000
 LEVEL_BUY_SHARD_COST = SHARDS_PER_ZENITH
 SHOP_LIMIT = 50
-RARITY_PRICES = {
-    "⚪ Common": 1,
-    "🟢 Medium": 2,
-    "🟣 Epic": 2,
-    "🟠 Rare": 5,
-    "🟡 Legendary": 10,
-    "💠 Cosmic": 25,
-    "🧬 Immortal": 25,
-    "💮 Exclusive": 50,
-    "🌌 Eternal": 50,
-    "🔮 Limited Edition": 100,
-    "🔮 Mystic": 100,
-    "🫧 Royal": 250,
-    "💎 Antique": 500,
-    "💎 Mythical": 500,
-    "🎐 Celestial": 1000,
-    "✨ Divine": 1500,
-    "🌠 Astral": 2500,
-    "🎞️ AMV": 1500,
-    "🪽 Prestige": 2500,
-    "❄️ Winter": 50,
-    "☀️ Summer": 50,
-    "💖 Valentine": 100,
-    "🎃 Halloween": 100,
-    "💸 Luxury": 250,
-    "🎏 Limited": 200
-}
-
-RARITY_STOCK_LIMITS = {
-    "⚪ Common": 50,
-    "🟢 Medium": 40,
-    "🟣 Epic": 40,
-    "🟠 Rare": 30,
-    "🟡 Legendary": 20,
-    "💠 Cosmic": 15,
-    "🧬 Immortal": 15,
-    "💮 Exclusive": 10,
-    "🌌 Eternal": 10,
-    "🔮 Limited Edition": 10,
-    "🔮 Mystic": 10,
-    "🫧 Royal": 5,
-    "💎 Antique": 5,
-    "💎 Mythical": 5,
-    "🎐 Celestial": 2,
-    "✨ Divine": 2,
-    "🌠 Astral": 1,
-    "🎞️ AMV": 2,
-    "🪽 Prestige": 1,
-    "❄️ Winter": 10,
-    "☀️ Summer": 10,
-    "💖 Valentine": 10,
-    "🎃 Halloween": 10,
-    "💸 Luxury": 5,
-    "🎏 Limited": 20
-}
+# Per-rarity shop pricing/stock now live in the `rarities` collection
+# (see core/rarities.py). These are the same live dicts, so /rarityset
+# edits apply to the shop immediately.
+from backend.core.rarities import RARITY_PRICES, RARITY_STOCK_LIMITS  # noqa: E402,F401
 # Legacy import compatibility. Battle Pass purchases use Telegram Stars (XTR).
 PASS_PRICES = {
     "premium": 24,
