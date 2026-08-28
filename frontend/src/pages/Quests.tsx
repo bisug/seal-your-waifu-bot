@@ -142,7 +142,7 @@ export const Quests = () => {
       const res = await apiFetch(`/quests/claim/${questId}`, { method: 'POST' });
       addToast(`Mission complete: +${res.reward_shards} Shards`, 'success');
       triggerRefresh();
-      fetchQuests();
+      fetchQuests().catch(() => undefined);
     } catch (err: any) {
       addToast(getErrorMessage(err), 'error');
     } finally {

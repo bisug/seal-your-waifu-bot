@@ -64,7 +64,8 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }: PetActionM
   if (!selectedPet) return null;
 
   const handleSetActive = async () => {
-    const petRef = selectedPet.petid || selectedPet.id || selectedPet.name;
+    // Never fall back to the display name: it is not a valid API identifier.
+    const petRef = selectedPet.petid || selectedPet.id;
     if (!petRef) return;
 
     setActionStage('loading');
@@ -92,7 +93,10 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }: PetActionM
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="absolute inset-0 bg-black/60 backdrop-blur-md"
-          onClick={() => setSelectedPet(null)}
+          onClick={() => {
+            // Don't dismiss mid-request; the POST would keep running.
+            if (actionStage !== 'loading') setSelectedPet(null);
+          }}
         />
 
         <motion.div
@@ -130,6 +134,7 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }: PetActionM
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ duration: 0.6 }}
                 src={imgUrl}
+                referrerPolicy="no-referrer"
                 className="w-full h-full object-cover"
                 alt={selectedPet.name}
               />

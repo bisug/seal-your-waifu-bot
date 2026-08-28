@@ -14,7 +14,7 @@ import {
   Trophy,
   Zap,
 } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiFetch, getErrorMessage } from '../api/client';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
@@ -60,14 +60,18 @@ interface Reward {
 
 // --- Components ---
 
+const ENERGY_RECHARGE_MS = 20 * 60 * 1000; // 20 mins per energy unit
+
 const EnergyDisplay = ({
   energy,
   maxEnergy,
   lastRecharge,
+  onRecharge,
 }: {
   energy: number;
   maxEnergy: number;
   lastRecharge: string | null;
+  onRecharge?: () => void;
 }) => {
   const [timeLeft, setTimeLeft] = useState<string | null>(null);
 
@@ -79,13 +83,13 @@ const EnergyDisplay = ({
 
     const interval = setInterval(() => {
       const last = new Date(lastRecharge).getTime();
-      const now = new Date().getTime();
-      const rechargeInterval = 20 * 60 * 1000; // 20 mins
-      const next = last + rechargeInterval;
-      const diff = next - now;
+      const diff = last + ENERGY_RECHARGE_MS - Date.now();
 
       if (diff <= 0) {
         setTimeLeft('00:00');
+        clearInterval(interval);
+        // Energy should have refilled server-side; resync state.
+        onRecharge?.();
         return;
       }
 
@@ -95,7 +99,7 @@ const EnergyDisplay = ({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [energy, maxEnergy, lastRecharge]);
+  }, [energy, maxEnergy, lastRecharge, onRecharge]);
 
   return (
     <Card className="p-4 bg-zinc-900/50 border-white/[0.04] mb-6 overflow-hidden relative">
@@ -131,7 +135,7 @@ const EnergyDisplay = ({
       <div className="absolute bottom-0 left-0 h-0.5 bg-zinc-800 w-full">
         <motion.div
           initial={{ width: 0 }}
-          animate={{ width: `${(energy / maxEnergy) * 100}%` }}
+          animate={{ width: `${maxEnergy > 0 ? (energy / maxEnergy) * 100 : 0}%` }}
           className="h-full bg-brand-accent shadow-[0_0_10px_rgba(var(--brand-accent-rgb),0.5)]"
         />
       </div>
@@ -166,14 +170,35 @@ const CipherMatch = ({
   const [matches, setMatches] = useState(0);
   const [moves, setMoves] = useState(0);
   const [failed, setFailed] = useState(false);
+  const matchesRef = useRef(0);
+  const timeoutsRef = useRef<number[]>([]);
+
+  // Cancel pending flip timeouts on unmount (e.g. user aborts mid-game) so
+  // they can't fire setState/onComplete after the game is gone.
+  useEffect(() => {
+    return () => {
+      for (const t of timeoutsRef.current) window.clearTimeout(t);
+    };
+  }, []);
 
   useEffect(() => {
     if (!session.cards) return;
     const doubled = [...session.cards, ...session.cards];
-    const shuffled = doubled
-      .sort(() => Math.random() - 0.5)
-      .map((card, index) => ({ ...card, isFlipped: false, isMatched: false, key: index }));
-    setCards(shuffled);
+    // Fisher-Yates: sort(() => random) is not a uniform shuffle.
+    for (let i = doubled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const a = doubled[i];
+      const b = doubled[j];
+      if (a && b) {
+        doubled[i] = b;
+        doubled[j] = a;
+      }
+    }
+    matchesRef.current = 0;
+    setMatches(0);
+    setCards(
+      doubled.map((card, index) => ({ ...card, isFlipped: false, isMatched: false, key: index })),
+    );
   }, [session.cards]);
 
   const handleCardClick = (index: number) => {
@@ -205,36 +230,41 @@ const CipherMatch = ({
 
       if (firstCard && secondCard && firstCard.id === secondCard.id) {
         haptics.notification('success');
-        setTimeout(() => {
-          setCards((prev) => {
-            const updated = [...prev];
-            if (first !== undefined && updated[first]) updated[first].isMatched = true;
-            if (second !== undefined && updated[second]) updated[second].isMatched = true;
-            return updated;
-          });
-          setMatches((m) => {
-            const next = m + 1;
-            if (next === session.cards!.length) {
-              onComplete(next);
+        matchesRef.current += 1;
+        const nextMatches = matchesRef.current;
+        timeoutsRef.current.push(
+          window.setTimeout(() => {
+            setCards((prev) => {
+              const updated = [...prev];
+              if (first !== undefined && updated[first]) updated[first].isMatched = true;
+              if (second !== undefined && updated[second]) updated[second].isMatched = true;
+              return updated;
+            });
+            setMatches(nextMatches);
+            setFlippedIndices([]);
+            // Fire outside the state updater: React may invoke updaters more
+            // than once, which would double-submit the reward.
+            if (nextMatches === session.cards!.length) {
+              onComplete(nextMatches);
             }
-            return next;
-          });
-          setFlippedIndices([]);
-        }, 400);
+          }, 400),
+        );
       } else {
-        setTimeout(() => {
-          if (nextMoves >= MAX_MOVES) {
-            haptics.notification('error');
-            setFailed(true);
-          }
-          setCards((prev) => {
-            const updated = [...prev];
-            if (first !== undefined && updated[first]) updated[first].isFlipped = false;
-            if (second !== undefined && updated[second]) updated[second].isFlipped = false;
-            return updated;
-          });
-          setFlippedIndices([]);
-        }, 800);
+        timeoutsRef.current.push(
+          window.setTimeout(() => {
+            if (nextMoves >= MAX_MOVES) {
+              haptics.notification('error');
+              setFailed(true);
+            }
+            setCards((prev) => {
+              const updated = [...prev];
+              if (first !== undefined && updated[first]) updated[first].isFlipped = false;
+              if (second !== undefined && updated[second]) updated[second].isFlipped = false;
+              return updated;
+            });
+            setFlippedIndices([]);
+          }, 800),
+        );
       }
     }
   };
@@ -383,6 +413,15 @@ const NexusWheel = ({
 }) => {
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
+  const timersRef = useRef<number[]>([]);
+
+  // Clear spin timers on unmount so a late onComplete can't submit after the
+  // game was closed.
+  useEffect(() => {
+    return () => {
+      for (const t of timersRef.current) window.clearTimeout(t);
+    };
+  }, []);
 
   const spin = () => {
     if (isSpinning || session.prize_index === undefined) return;
@@ -399,16 +438,17 @@ const NexusWheel = ({
     setRotation(finalRotation);
 
     // Haptic ticks during spin
-    const tickInterval = setInterval(() => {
+    const tickInterval = window.setInterval(() => {
       haptics.light();
     }, 150);
-    setTimeout(() => clearInterval(tickInterval), 3500);
-
-    setTimeout(() => {
-      setIsSpinning(false);
-      haptics.notification('success');
-      setTimeout(() => onComplete(0), 1000);
-    }, 4500);
+    timersRef.current.push(
+      window.setTimeout(() => window.clearInterval(tickInterval), 3500),
+      window.setTimeout(() => {
+        setIsSpinning(false);
+        haptics.notification('success');
+        timersRef.current.push(window.setTimeout(() => onComplete(0), 1000));
+      }, 4500),
+    );
   };
 
   return (
@@ -694,6 +734,7 @@ export const Minigames = () => {
   const [activeGame, setActiveGame] = useState<'cipher_match' | 'nexus_wheel' | null>(null);
   const [session, setSession] = useState<SessionData | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [starting, setStarting] = useState(false);
   const [rewards, setRewards] = useState<Reward | null>(null);
 
   const fetchState = useCallback(async () => {
@@ -712,11 +753,14 @@ export const Minigames = () => {
   }, [fetchState]);
 
   const handleStartGame = async (game: 'cipher_match' | 'nexus_wheel') => {
+    // Guard against double-taps creating two sessions (double energy deduct).
+    if (starting) return;
     if (!state || state.energy <= 0) {
       addToast('Insufficient energy reserve', 'error');
       return;
     }
 
+    setStarting(true);
     try {
       setIsLoading(true);
       const data = await apiFetch(`/minigames/start/${game}`, { method: 'POST' });
@@ -728,6 +772,7 @@ export const Minigames = () => {
       addToast(getErrorMessage(err), 'error');
     } finally {
       setIsLoading(false);
+      setStarting(false);
     }
   };
 
@@ -776,6 +821,7 @@ export const Minigames = () => {
           energy={state.energy}
           maxEnergy={state.max_energy}
           lastRecharge={state.last_energy_recharge}
+          onRecharge={fetchState}
         />
       )}
 
@@ -791,7 +837,7 @@ export const Minigames = () => {
               onClick={() => handleStartGame('cipher_match')}
               className={cn(
                 'p-5 border-white/[0.04] bg-zinc-900/40 cursor-pointer group transition-all relative overflow-hidden',
-                state?.energy === 0 && 'opacity-50 grayscale pointer-events-none',
+                (state?.energy === 0 || starting) && 'opacity-50 grayscale pointer-events-none',
               )}
             >
               <div className="flex items-center justify-between relative z-10">
@@ -822,7 +868,7 @@ export const Minigames = () => {
               onClick={() => handleStartGame('nexus_wheel')}
               className={cn(
                 'p-5 border-white/[0.04] bg-zinc-900/40 cursor-pointer group transition-all relative overflow-hidden',
-                state?.energy === 0 && 'opacity-50 grayscale pointer-events-none',
+                (state?.energy === 0 || starting) && 'opacity-50 grayscale pointer-events-none',
               )}
             >
               <div className="flex items-center justify-between relative z-10">
@@ -854,7 +900,7 @@ export const Minigames = () => {
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.98 }}
-            className="min-h-[400px] flex flex-col justify-center"
+            className="min-h-[400px] flex flex-col justify-center relative"
           >
             {activeGame === 'cipher_match' && session && (
               <CipherMatch

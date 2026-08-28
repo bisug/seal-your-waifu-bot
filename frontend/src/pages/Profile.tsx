@@ -366,7 +366,12 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
                 </div>
               </div>
               <Badge variant="secondary" size="xs" className="font-mono shrink-0">
-                {String(marriage.married_at).slice(0, 10)}
+                {(() => {
+                  const d = marriage.married_at ? new Date(marriage.married_at) : null;
+                  return d && Number.isFinite(d.getTime())
+                    ? d.toISOString().slice(0, 10)
+                    : 'BONDED';
+                })()}
               </Badge>
             </Card>
           )}
@@ -384,7 +389,7 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
                 </div>
               </div>
               <Badge variant="secondary" size="xs" className="font-mono shrink-0">
-                {battleStats.win_rate.toFixed(0)}% WR
+                {Number(battleStats.win_rate || 0).toFixed(0)}% WR
               </Badge>
             </Card>
           )}

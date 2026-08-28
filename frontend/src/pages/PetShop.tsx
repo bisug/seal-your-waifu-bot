@@ -34,9 +34,10 @@ const PetShopImage = ({ pet, className }: { pet: Pet; className?: string }) => {
   const src = getPetImageSrc(pet);
   const [imageFailed, setImageFailed] = useState(false);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset when image source changes
   useEffect(() => {
     setImageFailed(false);
-  }, []);
+  }, [src]);
 
   return src && !imageFailed ? (
     <img
