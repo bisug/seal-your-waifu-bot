@@ -192,6 +192,7 @@ async def buy_character_api(char_id: str, user_id: int = Depends(get_current_use
             q = get_user_id_query(user_id)
             q["zenith"] = {"$gte": price}
             q["characters.id"] = {"$ne": char_id}
+            from backend.core.rarities import rarity_id_of
             user_update = await user_collection.update_one(
                 q,
                 {
@@ -201,6 +202,7 @@ async def buy_character_api(char_id: str, user_id: int = Depends(get_current_use
                         "name": char_raw["name"],
                         "anime": char_raw["anime"],
                         "rarity": char_raw["rarity"],
+                        "rarity_id": rarity_id_of(char_raw.get("rarity")),
                         "img_url": char_raw["img_url"],
                     }},
                 },

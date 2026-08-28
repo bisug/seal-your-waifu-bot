@@ -51,6 +51,7 @@ class Database:
             (self.users,             lambda c: c.create_index("id", unique=True, sparse=True)),
             (self.anime_characters,  lambda c: c.create_index("id", unique=True, sparse=True)),
             (self.anime_characters,  lambda c: c.create_index("rarity")),
+            (self.anime_characters,  lambda c: c.create_index("rarity_id", sparse=True)),
             (self.anime_characters,  lambda c: c.create_index("name")),
             (self.spawns,            lambda c: c.create_index("chat_id")),
             (self.message_counts,    lambda c: c.create_index("chat_id")),
@@ -94,7 +95,6 @@ class Database:
             (self.pet_catalog,       lambda c: c.create_index("petid", unique=True)),
             (self.pet_catalog,       lambda c: c.create_index([("enabled", 1), ("sort_order", 1)])),
             (self.pet_catalog,       lambda c: c.create_index([("uploaded_by", 1), ("updated_at", -1)], sparse=True)),
-            (self.rarities,          lambda c: c.create_index("num", unique=True)),
         ]
         failed = 0
         for collection, idx_fn in indexes:

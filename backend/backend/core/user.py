@@ -152,6 +152,13 @@ async def add_char_to_user(user_id: int, character: dict):
         if isinstance(character, str):
             LOGGER.error("String passed instead of dict. Operation aborted to save DB integrity.")
             return
+    # Dual-write rarity_id alongside the display label (single source of
+    # truth for renames lives in the rarities collection).
+    if 'rarity_id' not in character:
+        from backend.core.rarities import rarity_id_of
+        rid = rarity_id_of(character.get('rarity'))
+        if rid is not None:
+            character['rarity_id'] = rid
     await user_collection.update_one(
         get_user_filter(user_id),
         add_user_set_on_insert({

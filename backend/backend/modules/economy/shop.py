@@ -330,11 +330,12 @@ async def buy_character(_, query: types.CallbackQuery):
     user_filt = get_user_filter(user_id)
     user_filt["zenith"] = {"$gte": price}
     user_filt["characters.id"] = {"$ne": char_id}
+    from backend.core.rarities import rarity_id_of
     user_update = await user_collection.update_one(
         user_filt,
         {
             "$inc": {"zenith": -price, "char_count": 1, "version": 1},
-            "$push": {"characters": {"id": char.id, "name": char.name, "anime": char.anime, "rarity": char.rarity, "img_url": char.img_url}}
+            "$push": {"characters": {"id": char.id, "name": char.name, "anime": char.anime, "rarity": char.rarity, "rarity_id": rarity_id_of(char.rarity), "img_url": char.img_url}}
         }
     )
     if user_update.modified_count == 0:
