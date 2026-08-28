@@ -1,6 +1,5 @@
 import asyncio
 import random
-import time
 from pyrogram import enums, errors, filters, types
 from backend import LOGGER, app
 from backend.core.balance import (check_and_deduct, get_user_balance,
@@ -70,7 +69,6 @@ def simulate_battle(p1_stats, p2_stats, p1_name, p2_name):
         damage = int(attacker["atk"] * variance * crit_mult)
         defender["hp"] -= damage
         crit_text = " 💥 <b>CRIT!</b>" if is_crit else ""
-        hp_bar = "▓" * int((max(0, defender['hp']) / defender['max_hp']) * 5)
         log.append(f"{a_icon} <b>{a_name}</b> hits for <code>{damage}</code>{crit_text} (HP: {max(0, defender['hp'])})")
         if defender["hp"] <= 0:
             break

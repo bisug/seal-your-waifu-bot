@@ -282,7 +282,7 @@ async def gban_user_handler(_, message: types.Message):
 async def ungban_user_handler(_, message: types.Message):
     try:
         target_id, target_name, _ = await _resolve_user_target(message)
-    except ValueError as exc:
+    except ValueError:
         return await message.reply_text("Usage: <code>/ungban user_id|@username|reply</code>", parse_mode=enums.ParseMode.HTML)
 
     removed = await remove_user_gban(target_id)
@@ -332,7 +332,7 @@ async def gban_group_handler(_, message: types.Message):
 async def ungban_group_handler(_, message: types.Message):
     try:
         chat_id, chat_title, _ = await _resolve_group_target(message, require_target=True)
-    except ValueError as exc:
+    except ValueError:
         return await message.reply_text("Usage: <code>/ungbangroup chat_id|@chat|here</code>", parse_mode=enums.ParseMode.HTML)
 
     removed = await remove_group_gban(chat_id)

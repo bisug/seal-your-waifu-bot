@@ -1,7 +1,6 @@
 import asyncio
 
-from pyrogram import enums, errors, filters, types
-from pyrogram.enums import ButtonStyle, ParseMode
+from pyrogram import enums, filters, types
 
 from backend import app
 from backend.core.cache import sync_user_to_redis
@@ -165,7 +164,6 @@ async def sell_callback_handler(_, query: types.CallbackQuery):
         return
 
     data = query.data.split("_")
-    action = data[1]
     parts = data[2].split(":") if len(data) > 2 else []
     owner_id = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 0
     if owner_id and query.from_user.id != owner_id:

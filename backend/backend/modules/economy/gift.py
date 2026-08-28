@@ -1,7 +1,7 @@
-from pyrogram import enums, errors, filters, types
-from backend import LOGGER, app, user_collection
+from pyrogram import enums, filters, types
+from backend import LOGGER, app
 from backend.core.sessions import consume_session, create_session, delete_session, get_session
-from backend.core.user import get_user_data, update_user
+from backend.core.user import get_user_data
 from backend.core.utils import handle_errors, html_escape
 
 

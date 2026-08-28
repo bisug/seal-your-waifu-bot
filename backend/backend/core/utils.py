@@ -3,12 +3,12 @@ import html
 import logging
 from datetime import datetime, timezone
 from functools import wraps
-from pyrogram import enums, errors, filters, types
-from pyrogram.enums import ParseMode
+from pyrogram import enums, errors, types
 from pyrogram.errors import FloodWait
 
+from config import config
 from backend.core.constants import PERMISSION_DENIED_ERRORS
-from backend.database import r as _redis
+from backend.database import r as _redis, user_collection
 
 def get_now_utc() -> datetime:
     """Returns the current aware UTC datetime."""
@@ -52,8 +52,6 @@ async def check_member_requirement(bot, chat, min_count=50):
     2. Main Bot (BOT_ID) is present in the group.
     Returns (bool, str_reason, current_count).
     """
-    from pyrogram import enums, errors, filters, types
-    from config import config
     if chat.type in [enums.ChatType.PRIVATE, enums.ChatType.BOT]:
         return False, "group_only", 0
     try:
@@ -77,7 +75,6 @@ async def check_member_requirement(bot, chat, min_count=50):
         return False, "membership_check_failed", 0
 async def send_media_dynamic(client, chat_id, media_url, **kwargs):
     """Dynamically sends either a photo or a video based on the URL extension."""
-    from pyrogram import enums, errors, filters, types
     if isinstance(media_url, str) and media_url.endswith(('.mp4', '.webm', '.gif')):
         return await client.send_video(chat_id, video=media_url, **kwargs)
     return await client.send_photo(chat_id, photo=media_url, **kwargs)
@@ -105,8 +102,6 @@ def handle_errors(func):
     @wraps(func)
     async def wrapper(client, message, *args, **kwargs):
         from backend.core.user import get_cached_user
-        from backend.database import user_collection
-        from config import config
 
         # 0. Idempotency: dedupe by (chat_id, message_id) to collapse
         # reconnect/replay re-deliveries of the same update. Skips silent on

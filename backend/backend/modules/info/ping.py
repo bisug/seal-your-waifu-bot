@@ -5,8 +5,7 @@ try:
     import psutil
 except ModuleNotFoundError:
     psutil = None
-from pyrogram import enums, errors, filters, types
-from pyrogram.enums import ParseMode
+from pyrogram import enums, filters, types
 
 from backend import StartTime, app, db
 from backend.core.utils import handle_errors

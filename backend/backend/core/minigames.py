@@ -1,4 +1,3 @@
-import time
 import random
 import json
 from datetime import datetime, timezone, timedelta
@@ -211,7 +210,7 @@ async def reward_minigame(user_id: int, game_type: str, score: int = 0, session_
              return {"error": "No prize determined in session"}
 
         if prize["type"] == "character":
-            character_reward = await get_random_character(["⚪ Common", "🟢 Medium", "� Rare"])
+            character_reward = await get_random_character(["⚪ Common", "🟢 Medium", "🟠 Rare"])
             shards = 100
             xp = 25
         elif prize["type"] == "xp":

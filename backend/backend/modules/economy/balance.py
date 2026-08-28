@@ -1,16 +1,12 @@
-import asyncio
-import random
 import uuid
-from datetime import datetime, timezone
-from pyrogram import enums, errors, filters, types
-from pyrogram.enums import ButtonStyle, ParseMode
+from pyrogram import enums, filters, types
 
-from backend import LOGGER, MAIN_GROUP_ID, OWNER_ID, app, collection
+from backend import LOGGER, app
 from backend.core.balance import (check_and_deduct, get_user_balance,
                                   update_user_balance)
 from backend.core.cache import invalidate_user_cache
 from backend.core.sessions import consume_session, create_session, delete_session, get_session
-from backend.core.user import get_user_filter, get_user_id
+from backend.core.user import get_user_filter
 from backend.core.utils import handle_errors, html_escape
 from backend.database import user_collection
 @app.on_message(filters.command(["balance", "bal"]))
@@ -37,7 +33,6 @@ async def balance_cmd(_, message: types.Message):
 async def pay_cmd(_, message: types.Message):
     """Initiate a Shard payment to another user via reply."""
     sender_id = message.from_user.id
-    sender_name = message.from_user.first_name
     recipient = message.reply_to_message.from_user
     if not recipient:
         return await message.reply_text("<b>Cannot pay this message (no user attached).</b>", parse_mode=enums.ParseMode.HTML)

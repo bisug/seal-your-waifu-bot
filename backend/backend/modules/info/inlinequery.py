@@ -109,9 +109,6 @@ async def gallery_view_callback(_, query: types.CallbackQuery):
         character = await collection.find_one({"id": char_id})
         if not character:
             return await query.answer("Character data not found.", show_alert=True)
-        name = escape(character["name"])
-        anime = escape(character["anime"])
-        rarity = escape(character["rarity"])
         img_url = character["img_url"]
         caption = (
             f"<b>{html_escape_v2(character['name'])}</b>\n"

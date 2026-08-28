@@ -1,7 +1,6 @@
-from pyrogram import enums, errors, filters, types
-from pyrogram.enums import ParseMode
+from pyrogram import enums, filters, types
 
-from backend import LOGGER, OWNER_ID, app, client, sudo_users, user_collection, sudo_filter
+from backend import LOGGER, OWNER_ID, app, client, sudo_users, user_collection
 from backend.core.cache import invalidate_user_cache
 from backend.core.user import add_user_set_on_insert
 from backend.core.utils import get_user_id_query, handle_errors, html_escape

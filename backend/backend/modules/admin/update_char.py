@@ -1,13 +1,12 @@
-import asyncio
 import json
 import os
 import shlex
 import uuid
 from collections import OrderedDict
 import httpx
-from pyrogram import enums, errors, filters, types
+from pyrogram import enums, filters, types
 from config import config
-from backend import GALLERY_CHANNEL_ID, LOGGER, OWNER_ID, app, sudo_users, sudo_filter
+from backend import GALLERY_CHANNEL_ID, LOGGER, app, sudo_filter
 from backend.core.cache import rdel, rget, rset
 from backend.core.utils import handle_errors, html_escape
 from backend.core.waifu import (get_character_by_id, invalidate_character_cache,
