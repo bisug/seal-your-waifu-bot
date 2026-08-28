@@ -686,29 +686,9 @@ Frontend build variables:
 
 Guides: [Vercel](docs/deployment/vercel.md) · [Cloudflare Pages](docs/deployment/cloudflare.md)
 
-#### Vercel
-
-Dashboard settings:
-
-```text
-Root Directory: frontend
-Install Command: bun install --frozen-lockfile
-Build Command: bun run build
-Output Directory: dist
-```
-
-CLI:
-
-```bash
-cd frontend
-bun install --frozen-lockfile
-vercel
-vercel --prod
-```
-
 #### Netlify
 
-Dashboard settings:
+Deploy settings (or use `netlify deploy` from `frontend/`):
 
 ```text
 Base directory: frontend
@@ -716,81 +696,11 @@ Build command: bun run build
 Publish directory: dist
 ```
 
-CLI:
-
-```bash
-cd frontend
-bun install --frozen-lockfile
-bun run build
-netlify login
-netlify init
-netlify deploy --dir=dist
-netlify deploy --prod --dir=dist
-```
-
 `frontend/netlify.toml` and `frontend/public/_redirects` keep direct Mini App routes from returning 404.
-
-#### Cloudflare Pages
-
-This repo is configured as Cloudflare Pages with `frontend/wrangler.toml`. Full guide: [docs/deployment/cloudflare.md](docs/deployment/cloudflare.md).
-
-```text
-Root directory: frontend
-Build command: npm run build
-Deploy command: npx wrangler pages deploy dist --project-name seal-bot-frontend
-Build output directory: dist
-```
-
-Required Cloudflare variables:
-
-```text
-VITE_API_URL=https://your-backend.example.com
-VITE_API_PREFIX=v1_7b82
-CLOUDFLARE_ACCOUNT_ID=<your-cloudflare-account-id>
-```
-
-The selected Build token must have `Account > Cloudflare Pages > Edit` permission for the account that owns the Pages project.
-
-Direct upload:
-
-```bash
-cd frontend
-bun install --frozen-lockfile
-bun run build
-npx wrangler pages deploy dist --project-name seal-bot-frontend
-```
-
-Common Cloudflare mistakes:
-
-| Log text | Fix |
-| --- | --- |
-| `tsc: not found` | Keep `npm run build`; the script installs dependencies before TypeScript and Vite. |
-| `Authentication error [code: 10000]` | Use a Build token with `Account > Cloudflare Pages > Edit`. |
-| `Missing entry-point to Worker script` | Replace `npx wrangler deploy` with `npx wrangler pages deploy dist --project-name seal-bot-frontend`. |
 
 #### Wasmer Edge
 
-Wasmer Edge can host the built React/Vite frontend as a static site. It does not replace the Python backend.
-
-```bash
-cd frontend
-bun install --frozen-lockfile
-bun run build
-wasmer login
-wasmer deploy
-```
-
-Example static package shape:
-
-```toml
-# wasmer.toml
-[package]
-name = "your-username/seal-bot-frontend"
-version = "0.1.0"
-entrypoint = "dist"
-```
-
-After Wasmer returns the app URL, set backend `WEB_APP_URL` to that URL and configure the same URL in BotFather.
+`wasmer deploy` from `frontend/` after `bun install && bun run build`; set backend `WEB_APP_URL` to the returned URL and configure it in BotFather.
 
 Provider references:
 

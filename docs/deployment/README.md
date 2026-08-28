@@ -8,12 +8,6 @@ Deploy options for the Seal-Bot stack:
 - [Vercel](vercel.md) — frontend Mini App hosting
 - [Cloudflare](cloudflare.md) — frontend Mini App hosting (Pages)
 
----
-
-> **Copy & paste**: every code block above and below on GitHub / VS Code has a
-> **copy button** in its top-right corner. Command blocks run as-is; env blocks below
-> are paste-then-fill templates.
-
 ## Two parts, two decisions
 
 The repo is a monorepo with two deployable halves:
@@ -42,12 +36,10 @@ run the backend. See [Vercel](vercel.md) and [Cloudflare](cloudflare.md) for why
 | --- | --- |
 | Vercel | Fast builds, Git-integrated, framework-aware. |
 | Cloudflare Pages | Edge-cached static files, generous free tier. |
-| Netlify | Simple SPA hosting with redirects. |
-| Wasmer Edge | WebAssembly edge static hosting. |
 
-The backend can also serve the built frontend itself (`backend/static`)
-via any of the persistent hosts above — then you do not need a separate
-frontend host at all.
+The backend can also serve the built frontend itself (copy `frontend/dist` into
+`backend/backend/static` before building the image) — then you do not need a
+separate frontend host at all.
 
 ---
 
@@ -87,8 +79,8 @@ Logging (optional, recommended for containers):
 
 ### Copy-ready env template
 
-Paste this into the platform's env editor, then fill each value (one click copies
-it on GitHub / VS Code):
+Paste into the platform's env editor, then fill each value (every fenced block has
+a copy button on GitHub / VS Code):
 
 ```env
 TOKEN=

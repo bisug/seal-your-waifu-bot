@@ -15,15 +15,6 @@ project (the `heroku.yml` in the repo root already points at `backend/Dockerfile
 
 The included `heroku.yml` uses the **container** stack:
 
-```bash
-heroku login
-heroku create your-app-name --stack container
-heroku stack:set container
-```
-
-If you already created the app with the default (buildpack) stack, `heroku stack:set container`
-switches it. Only the container stack uses `heroku.yml`.
-
 ## 2. Set environment variables
 
 Never push a `.env` to Heroku. Set each value with `heroku config:set` (one click copies the whole command):

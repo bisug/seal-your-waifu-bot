@@ -1,11 +1,9 @@
 # Deploying Seal-Bot to Koyeb
 
 Koyeb runs the backend as a Docker service from `koyeb.yaml` (or via CLI/dashboard).
-The frontend is served by the backend out of `backend/static` — no separate host
-needed unless you want one.
-
-Koyeb is a good pair for this repo: it deploys from any Git host or a local Docker
-image, has a free tier, and its regional edge keeps Telegram webhook traffic close.
+The frontend is served by the backend out of `backend/backend/static` — no separate
+host needed unless you want one. It deploys from any Git host or a local Docker
+image and has a free tier.
 
 ## Requirements
 
@@ -66,33 +64,8 @@ koyeb service logs web
 > The `--env` CLI flag is the documented way to set secrets; Koyeb stores env values
 > as secrets at runtime. After the first deploy, prefer the **dashboard → Service →
 > Environment variables** editor for managing them (each entry is stored encrypted).
-
-Dashboard env template for copy-paste (fills the dashboard section; one click copies it):
-
-```env
-TOKEN=
-SUB_TOKEN=
-API_ID=
-API_HASH=
-MONGO_URL=
-REDIS_URL=
-OWNER_ID=
-SUDO_USERS=
-MAIN_GROUP_ID=
-GALLERY_CHANNEL_ID=
-LOG_GROUP_ID=
-SUPPORT_CHAT=
-UPDATE_CHAT=
-PHOTO_URL=
-IMGBB_API_KEY=
-STRING_SESSION=
-WEB_APP_URL=
-MINI_APP_SHORT_NAME=app
-API_VERSION_PREFIX=v1_7b82
-LOG_LEVEL=INFO
-LOG_FORMAT=json
-LOG_FILE_ENABLED=false
-```
+> For the dashboard, copy the paste-ready template from
+> [Env variables in the guide index](README.md#copy-ready-env-template).
 
 To use a local image instead of Git: build with `docker build -t seal-bot backend`,
 push to a registry, and in the dashboard choose **Docker image** as the source with

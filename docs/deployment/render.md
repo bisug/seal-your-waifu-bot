@@ -1,8 +1,8 @@
 # Deploying Seal-Bot to Render
 
 Render runs the backend from the included `render.yaml` Blueprint as a Docker
-service. The frontend is served by the backend out of `backend/static` — no separate
-host needed unless you want one (then see the Vercel or Cloudflare guides).
+service. The frontend is served by the backend out of `backend/backend/static` —
+no separate host needed unless you want one (then see the Vercel or Cloudflare guides).
 
 ## Requirements
 
@@ -33,50 +33,20 @@ Dockerfile path: ./backend/Dockerfile
 
 ## 2. Fill the environment variables
 
-The Blueprint pre-creates the variables listed in `render.yaml`. **Every variable
-with `sync: false` must be filled manually on the service** (Render does not import
-secrets from the Blueprint). Minimum required set:
+The Blueprint pre-creates the variables listed in `render.yaml`, but **every
+variable with `sync: false` must be filled manually on the service** (Render does
+not import secrets from the Blueprint). Copy the template from
+[Env variables in the guide index](README.md#copy-ready-env-template),
+with:
 
-| Variable | Value |
-| --- | --- |
-| `TOKEN` | BotFather token |
-| `SUB_TOKEN` | Secondary bot token |
-| `API_ID`, `API_HASH` | my.telegram.org |
-| `MONGO_URL` | MongoDB connection string |
-| `REDIS_URL` | Redis connection string |
-| `OWNER_ID`, `SUDO_USERS` | Telegram numeric ids |
-| `MAIN_GROUP_ID`, `GALLERY_CHANNEL_ID`, `LOG_GROUP_ID` | Channel ids |
-| `IMGBB_API_KEY` | imgbb key |
-| `WEB_APP_URL` | `https://<your-service>.onrender.com` (or your custom domain) |
-| `API_VERSION_PREFIX` | e.g. `v1_7b82` |
+- `WEB_APP_URL` = `https://<your-service>.onrender.com` (or your custom domain),
+- `API_VERSION_PREFIX` = your prefix, e.g. `v1_7b82`.
 
 `LOG_LEVEL=INFO`, `LOG_FORMAT=json`, `LOG_FILE_ENABLED=false` are already set as
 `value` entries in `render.yaml`.
 
-Render secret env vars come from **Settings → Environment** on the service. Mark
+Render secret env vars live under **Settings → Environment** on the service. Mark
 sensitive ones as *Secret* so they are hidden after save.
-
-Paste-ready template (one click copies it — fill each value in the dashboard):
-
-```env
-TOKEN=
-SUB_TOKEN=
-API_ID=
-API_HASH=
-MONGO_URL=
-REDIS_URL=
-OWNER_ID=
-SUDO_USERS=
-MAIN_GROUP_ID=
-GALLERY_CHANNEL_ID=
-LOG_GROUP_ID=
-IMGBB_API_KEY=
-WEB_APP_URL=
-API_VERSION_PREFIX=
-LOG_LEVEL=INFO
-LOG_FORMAT=json
-LOG_FILE_ENABLED=false
-```
 
 ## 3. Deploy
 
