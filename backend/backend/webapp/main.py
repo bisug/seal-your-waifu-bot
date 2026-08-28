@@ -32,6 +32,7 @@ from backend.core.resources import get_resource_snapshot, pressure_reason
 from backend.core.tasks import run_background_task
 from backend.core.worker import background_maintenance
 from backend.database import r, seal_db, user_collection
+from backend import runner
 from backend.runner import start_bots, stop_bots
 from backend.webapp.api import router as api_router
 from backend.webapp.errors import error_response
@@ -66,7 +67,13 @@ async def sync_leaderboard_periodic():
 async def lifespan(app: FastAPI):
     # Startup
     configure_event_loop_logging()
-    await start_bots()
+    # Do NOT await the bots here: Render's zero-downtime deploy only stops
+    # the old instance after this one passes its health check, but the old
+    # instance holds the single-instance lock until it exits. Blocking the
+    # lifespan on start_bots() deadlocks the deploy and the new container
+    # gives up after the wait timeout. Start the web server immediately and
+    # let the bots start in the background once the lock frees up.
+    bot_task = run_background_task(start_bots(), name="bot-startup")
     sync_task = run_background_task(sync_leaderboard_periodic(), name="leaderboard-sync")
     worker_task = run_background_task(background_maintenance(), name="background-maintenance")
 
@@ -74,9 +81,10 @@ async def lifespan(app: FastAPI):
         yield
     finally:
         # Gracefully cancel background tasks before stopping bots
+        bot_task.cancel()
         sync_task.cancel()
         worker_task.cancel()
-        await asyncio.gather(sync_task, worker_task, return_exceptions=True)
+        await asyncio.gather(bot_task, sync_task, worker_task, return_exceptions=True)
         await stop_bots()
 
 app = FastAPI(
@@ -193,7 +201,7 @@ async def health_check():
 
 @app.get("/readyz")
 async def readiness_check():
-    checks = {"mongo": "ok", "redis": "disabled"}
+    checks = {"mongo": "ok", "redis": "disabled", "bots": runner.STARTUP_STATE}
     status_code = 200
 
     try:
