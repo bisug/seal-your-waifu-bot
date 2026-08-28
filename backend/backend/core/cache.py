@@ -6,9 +6,10 @@ import asyncio
 import json
 import time
 from datetime import timedelta
-from typing import Any, List, Optional
+from typing import Any, Optional
 from config import config
 from backend import LOGGER
+from backend.core.constants import METRICS
 from backend.core.utils import get_now_utc
 from backend.database import r as _redis
 from backend.database import sessions_collection
@@ -287,13 +288,8 @@ async def consume_session(session_id: str) -> Optional[dict]:
     key = _session_key(session_id)
     if _redis:
         try:
-            if hasattr(_redis, "getdel"):
-                raw = await asyncio.wait_for(_redis.getdel(key), timeout=3.0)
-            else:
-                raw = await asyncio.wait_for(_redis.execute_command("GETDEL", key), timeout=3.0)
-            if raw is None:
-                pass
-            else:
+            raw = await asyncio.wait_for(_redis.getdel(key), timeout=3.0)
+            if raw is not None:
                 try:
                     await sessions_collection.delete_one({"_id": key})
                 except Exception as e:
@@ -311,15 +307,10 @@ async def consume_session(session_id: str) -> Optional[dict]:
     })
     return doc.get("data") if doc else None
 def _zset_key(metric: str) -> str:
-    # Map metrics to Redis keys
-    mapping = {
-        "level": "user_xp_leaderboard",
-        "harem": "user_harem_leaderboard",
-        "shards": "user_shards_leaderboard",
-        "zenith": "user_zenith_leaderboard",
-        "guesses": "user_guesses_leaderboard"
-    }
-    return mapping.get(metric, f"user_{metric}_leaderboard")
+    # The "level" metric is keyed by its Mongo field name (xp); all other
+    # metrics use their own name.
+    name = "xp" if metric == "level" else metric
+    return f"user_{name}_leaderboard"
 
 # Metrics whose ZSET may have drifted from Mongo (e.g. an instant sync
 # failed). The periodic rebuild skips clean metrics to avoid hourly full
@@ -379,14 +370,7 @@ async def rebuild_leaderboard(user_collection, metric: str = "level"):
         key = _zset_key(metric)
         temp_key = f"temp:{key}"
         # Metric mapping to Mongo fields
-        mongo_fields = {
-            "level": "xp",
-            "harem": "char_count",
-            "shards": "balance",
-            "zenith": "zenith",
-            "guesses": "guess_count"
-        }
-        field = mongo_fields.get(metric, "xp")
+        field = METRICS.get(metric, METRICS["level"])["field"]
         try:
             LOGGER.info(f"Starting safe {metric} ZSET rebuild from MongoDB...")
             # Clean up any leftover temp key first

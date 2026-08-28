@@ -1,7 +1,5 @@
-import inspect
 from pymongo import AsyncMongoClient
-from pyrogram import enums, errors, filters, types
-from pyrogram.enums import ParseMode
+from pyrogram import enums, filters, types
 from urllib.parse import urlsplit, urlunsplit
 
 from config import config
@@ -42,9 +40,7 @@ async def _copy_collection(source_collection, dest_collection) -> int:
 
 
 async def _close_client(client) -> None:
-    result = client.close()
-    if inspect.isawaitable(result):
-        await result
+    await client.close()
 
 @app.on_message(filters.command("mongobackup") & filters.user(config.OWNER_ID))
 @handle_errors

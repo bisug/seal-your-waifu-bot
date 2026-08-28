@@ -1,7 +1,8 @@
+import random
+
 from pyrogram import enums, errors, filters, types
 from config import config
-from backend import (LOGGER, PHOTO_URL, SUPPORT_CHAT, UPDATE_CHAT, WEB_APP_URL,
-                     app, collection, total_pm_users, user_collection)
+from backend import (LOGGER, PHOTO_URL, SUPPORT_CHAT, UPDATE_CHAT, app, collection, total_pm_users, user_collection)
 from backend.core.cache import (get_total_ranked_users, get_user_rank,
                                 invalidate_user_cache, update_user_rank)
 from backend.core.keyboard import KeyboardBuilder, get_webapp_button
@@ -404,7 +405,6 @@ async def free_spin_handler(_, query: types.CallbackQuery):
         pass
 
 def random_photo():
-    import random
     return random.choice(PHOTO_URL)
 @app.on_message(filters.command("webapp"))
 @handle_errors

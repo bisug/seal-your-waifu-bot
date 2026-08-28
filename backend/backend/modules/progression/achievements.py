@@ -1,5 +1,4 @@
-from pyrogram import enums, errors, filters, types
-from pyrogram.enums import ParseMode
+from pyrogram import enums, filters, types
 
 from backend import LOGGER, app, user_collection
 from backend.core.progression import add_xp

@@ -8,6 +8,10 @@ from backend.core.cache import (get_cached_user, get_total_ranked_users,
                                 set_cached_user, update_user_rank)
 from backend.core.pass_config import CURRENT_PASS_SEASON
 from backend.core.tasks import run_background_task
+# Canonical implementations live in utils; these aliases keep the existing
+# public names used across the codebase.
+from backend.core.utils import get_user_id_query as get_user_filter
+from backend.core.utils import normalize_user_id as get_user_id
 from backend.database import user_collection
 
 
@@ -20,16 +24,6 @@ def _top_level_updated_fields(update_query: dict) -> set[str]:
         for field in changes:
             fields.add(str(field).split(".", 1)[0])
     return fields
-
-
-def get_user_id(user_id: Any) -> int:
-    """Returns the user ID as a concrete integer."""
-    try:
-        if isinstance(user_id, list) and user_id:
-            user_id = user_id[0]
-        return int(user_id)
-    except (ValueError, TypeError):
-        return 0
 
 
 def build_user_set_on_insert(
@@ -107,10 +101,6 @@ async def ensure_user_document(
     await invalidate_user_cache(get_user_id(user_id))
 
 
-def get_user_filter(user_id: Any) -> dict:
-    """Returns a MongoDB filter for both integer and string IDs."""
-    uid = get_user_id(user_id)
-    return {"id": {"$in": [uid, str(uid)]}}
 async def get_user_data(user_id: int) -> Optional[dict]:
     """Fetch user data with Redis cache fallback."""
     cached = await get_cached_user(user_id)

@@ -1,10 +1,9 @@
 import math
 import random
 from collections import Counter
-from typing import Any, Dict, List, Union
+from typing import Union
 from pyrogram import enums, errors, filters, types
-from config import config
-from backend import LOGGER, WEB_APP_URL, app
+from backend import LOGGER, app
 from backend.core.cache import get_total_ranked_users, get_user_rank
 from backend.core.keyboard import KeyboardBuilder, get_paginated_keyboard
 from backend.core.progression import get_user_progress

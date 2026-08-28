@@ -4,7 +4,7 @@ import os
 import time
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI
+from fastapi import FastAPI
 from fastapi import HTTPException
 from fastapi import Request
 from fastapi.exceptions import RequestValidationError
@@ -15,7 +15,6 @@ from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from config import config
-import backend.core.sync_handler  # Register global Telegram message sync handlers.
 from backend import LOGGER
 from backend.core.cache import (
     consume_leaderboard_dirty,

@@ -1,9 +1,8 @@
 import asyncio
 
-from pyrogram import enums, idle
+from pyrogram import idle
 
-import backend.core.sync_handler  # Register global message sync handlers
-from backend import LOGGER, app, game_bot
+from backend import LOGGER
 from backend.core.logging import configure_event_loop_logging
 from backend.runner import start_bots, stop_bots
 

@@ -1,8 +1,7 @@
 import asyncio
 import os
-import random
 import time
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 import httpx
 from config import config
 from backend import LOGGER

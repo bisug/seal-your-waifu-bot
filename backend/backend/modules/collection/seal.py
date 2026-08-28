@@ -1,16 +1,13 @@
 import asyncio
-import datetime
 import random
 import re
 from pyrogram import enums, errors, filters, types
-from pyrogram.enums import ParseMode
 
 from backend import (LOGGER, OWNER_ID, app, group_user_totals_collection,
-                     sudo_users, sudo_filter)
+                     sudo_users)
 from backend.core.progression import add_xp
 from backend.core.spawns import (clear_active_spawn, get_chat_state,
-                                 get_message_count, send_character,
-                                 get_active_user_count, get_chat_frequency)
+                                 get_message_count, send_character)
 from backend.core.tasks import run_background_task
 from backend.core.user import add_char_to_user
 from backend.core.utils import handle_errors, html_escape, reply_media_dynamic

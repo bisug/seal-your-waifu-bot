@@ -1,11 +1,9 @@
 import asyncio
 import importlib
 import logging
-import re
 
-from pyrogram import Client, enums, errors, filters, types
+from pyrogram import Client, errors, types
 from pyrogram.errors import FloodWait
-from pyrogram.handlers import MessageHandler
 
 from config import config
 from backend.core.constants import PERMISSION_DENIED_ERRORS
@@ -144,7 +142,7 @@ class SealClient(Client):
             LOGGER.warning(f"[{self.name}] SlowmodeWait for {chat_id}: {e.value}s")
             await asyncio.sleep(e.value)
             return await self.send_media_safe(chat_id, media_url, *args, _retries=_retries+1, **kwargs)
-        except (errors.PeerIdInvalid, errors.ChannelInvalid) as e:
+        except (errors.PeerIdInvalid, errors.ChannelInvalid):
             if _retries == 0:
                 await self.resolve_peer_safe(chat_id)
                 return await self.send_media_safe(chat_id, media_url, *args, _retries=1, **kwargs)

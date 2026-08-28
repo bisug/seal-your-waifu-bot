@@ -1,10 +1,9 @@
 import random
 from datetime import datetime, timedelta, timezone
-from pyrogram import enums, errors, filters, types
-from pyrogram.enums import ParseMode
+from pyrogram import enums, filters, types
 from pymongo.errors import DuplicateKeyError
 
-from backend import LOGGER, MAIN_GROUP_ID, app
+from backend import MAIN_GROUP_ID, app
 from backend.core.cache import (get_daily_date, get_weekly_date,
                                 invalidate_leaderboard_cache,
                                 invalidate_user_cache, set_daily_date,

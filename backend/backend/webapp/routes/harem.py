@@ -6,14 +6,13 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 
-from backend import LOGGER
 from backend.core.cache import sync_user_to_redis
 from backend.core.character_search import build_character_search_filter
 from backend.modules.economy.sell import get_sell_price
 from backend.core.user import get_user_data
 from backend.core.utils import get_user_id_query, normalize_user_id
 from backend.database import collection, user_collection
-from backend.webapp.auth import get_current_user, get_current_user_data
+from backend.webapp.auth import get_current_user
 from backend.webapp.schemas import PaginatedResponse
 
 router = APIRouter()
@@ -204,8 +203,7 @@ async def recycle_characters(
         raise HTTPException(status_code=400, detail="Harem is empty")
 
     stored_char_count = user.get("char_count", len(owned_chars))
-    original_harem_len = len(owned_chars)
-        
+
     to_recycle_counts = Counter(char_ids)
     
     total_reward = 0

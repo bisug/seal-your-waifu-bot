@@ -4,13 +4,11 @@ import json
 import random
 import time
 from typing import Any, Dict, Optional
-from pyrogram import enums, errors, filters, types
-from pyrogram.enums import ParseMode
+from pyrogram import enums
 from pymongo import ReturnDocument
 
-from backend import LOGGER, app, config
+from backend import LOGGER, app
 from backend.core.cache import rget, rset
-from backend.core.utils import html_escape
 from backend.core.waifu import get_or_load_characters
 from backend.database import message_counts_collection
 from backend.database import r as _redis

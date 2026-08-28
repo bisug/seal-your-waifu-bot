@@ -1,7 +1,6 @@
 import asyncio
 import random
-from pyrogram import enums, errors, filters, types
-from pyrogram.enums import ParseMode
+from pyrogram import enums, filters, types
 
 from backend import app, user_collection
 from backend.core.utils import handle_errors

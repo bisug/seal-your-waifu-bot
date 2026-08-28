@@ -1,14 +1,12 @@
 import html
 import io
-import os
 import textwrap
 import traceback
 from contextlib import redirect_stdout
-from pyrogram import enums, errors, filters, types
-from pyrogram.enums import ParseMode
+from pyrogram import enums, filters, types
 
 from config import config
-from backend import LOGGER, OWNER_ID, app, sudo_users
+from backend import OWNER_ID, app
 from backend.core.utils import handle_errors
 
 namespaces = {}
@@ -57,7 +55,7 @@ async def evaluate_or_execute(_, message: types.Message):
     try:
         with redirect_stdout(stdout):
             func_return = await func()
-    except Exception as e:
+    except Exception:
         value = stdout.getvalue()
         await send_result(f"{value}{traceback.format_exc()}", message)
     else:
