@@ -26,7 +26,7 @@ switches it. Only the container stack uses `heroku.yml`.
 
 ## 2. Set environment variables
 
-Never push a `.env` to Heroku. Set each value with `heroku config:set`:
+Never push a `.env` to Heroku. Set each value with `heroku config:set` (one click copies the whole command):
 
 ```bash
 heroku config:set TOKEN=REDACTED \
