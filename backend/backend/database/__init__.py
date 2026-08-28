@@ -43,6 +43,7 @@ class Database:
         self.global_user_bans = self.db['global_user_bans']
         self.global_group_bans = self.db['global_group_bans']
         self.pet_catalog = self.db['pet_catalog']
+        self.rarities = self.db['rarities']
 
     async def ensure_indexes(self):
         """Create performance indexes for all collections."""
@@ -93,6 +94,7 @@ class Database:
             (self.pet_catalog,       lambda c: c.create_index("petid", unique=True)),
             (self.pet_catalog,       lambda c: c.create_index([("enabled", 1), ("sort_order", 1)])),
             (self.pet_catalog,       lambda c: c.create_index([("uploaded_by", 1), ("updated_at", -1)], sparse=True)),
+            (self.rarities,          lambda c: c.create_index("num", unique=True)),
         ]
         failed = 0
         for collection, idx_fn in indexes:
@@ -136,7 +138,7 @@ try:
             health_check_interval=30,
             retry_on_timeout=True,
         )
-except Exception as e:
+except Exception:
     LOGGER.exception("Failed to initialize Redis client")
     r = None
 
@@ -162,6 +164,7 @@ star_orders_collection = seal_db.star_orders
 global_user_bans_collection = seal_db.global_user_bans
 global_group_bans_collection = seal_db.global_group_bans
 pet_catalog_collection = seal_db.pet_catalog
+rarities_collection = seal_db.rarities
 
 
 async def close_connections():

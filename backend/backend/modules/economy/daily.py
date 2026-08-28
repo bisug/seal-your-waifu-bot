@@ -11,14 +11,9 @@ from backend.core.cache import (get_daily_date, get_weekly_date,
 from backend.core.pass_config import PASS_BENEFITS, get_active_pass_type
 from backend.core.roles import apply_role_bonus
 from backend.core.user import add_user_set_on_insert, get_user_data
+from backend.core.rarities import CLAIM_RARITY_WEIGHTS
 from backend.core.utils import get_user_id_query, handle_errors, html_escape, reply_media_dynamic
 from backend.database import collection, user_collection
-RARITY_WEIGHTS = {
-    '⚪ Common': 60,
-    '🟢 Medium': 30,
-    '🟠 Rare': 9,
-    '🟡 Legendary': 1
-}
 # Rewards for streaks (Coins)
 STREAK_REWARDS = {
     1: 100,
@@ -30,7 +25,7 @@ STREAK_REWARDS = {
     7: 1000  # Big reward for 7 days
 }
 async def get_daily_waifu():
-    rarity = random.choices(list(RARITY_WEIGHTS.keys()), weights=RARITY_WEIGHTS.values(), k=1)[0]
+    rarity = random.choices(list(CLAIM_RARITY_WEIGHTS.keys()), weights=CLAIM_RARITY_WEIGHTS.values(), k=1)[0]
     cursor = await collection.aggregate([{'$match': {'rarity': rarity}}, {'$sample': {'size': 1}}])
     res = await cursor.to_list(length=1)
     return res[0] if res else None

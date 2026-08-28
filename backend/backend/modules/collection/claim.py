@@ -9,19 +9,14 @@ from backend.core.sessions import create_session, get_session
 from backend.core.user import add_user_set_on_insert, get_user_data
 from backend.core.utils import (get_user_id_query, handle_errors, html_escape,
                                 reply_media_dynamic, send_media_dynamic)
+from backend.core.rarities import CLAIM_RARITY_WEIGHTS
 from backend.database import collection, user_collection
 # Fetch requirements from centralized config
 MUST_JOIN = config.SUPPORT_CHAT
 SECOND_JOIN = config.UPDATE_CHAT
 DAILY_SHARD_REWARD = 500
-RARITY_WEIGHTS = {
-    '⚪ Common': 60,
-    '🟢 Medium': 30,
-    '🟠 Rare': 9,
-    '🟡 Legendary': 1
-}
 async def get_weighted_rarity_character():
-    rarity = random.choices(list(RARITY_WEIGHTS.keys()), weights=RARITY_WEIGHTS.values(), k=1)[0]
+    rarity = random.choices(list(CLAIM_RARITY_WEIGHTS.keys()), weights=CLAIM_RARITY_WEIGHTS.values(), k=1)[0]
     cursor = await collection.aggregate([{'$match': {'rarity': rarity}}, {'$sample': {'size': 1}}])
     res = await cursor.to_list(length=1)
     return res[0] if res else None
