@@ -31,4 +31,4 @@ Do not set the root directory to `dist`; Cloudflare checks that directory before
 - Biome for linting and formatting (replaces ESLint)
 - Tailwind CSS v4 through `@tailwindcss/vite`
 
-The production build is copied into `backend/static` by the root Dockerfile.
+To serve the app from FastAPI, copy the build output into `backend/backend/static` before building the image (see the *Development Commands* section of the root README).

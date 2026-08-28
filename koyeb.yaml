@@ -1,0 +1,35 @@
+# Koyeb deployment config for Seal-Bot-V2
+#
+# Docs: docs/deployment/koyeb.md
+# This file mirrors render.yaml: one web service built from backend/Dockerfile.
+#
+# Usage:
+#   koyeb app init seal-bot
+#   koyeb service init web --docker backend/Dockerfile
+#   koyeb service update web --ports 8080:http --routes /:8080 --health-check-path /healthz
+#   koyeb service update web --env TOKEN=... (repeat for every variable below)
+#
+# List of required environment variables (all marked `secret-or-value: false`
+# here; Koyeb always treats env values as secrets at runtime):
+TOKEN:                 # Main bot token from @BotFather
+SUB_TOKEN:             # Secondary game bot token
+API_ID:                # From my.telegram.org
+API_HASH:              # From my.telegram.org
+MONGO_URL:             # MongoDB connection string (Atlas/MongoDB Cloud)
+REDIS_URL:             # Redis connection string (Upstash/Memurai/Scaledrone)
+OWNER_ID:              # Your Telegram user id
+SUDO_USERS:            # Comma-separated Telegram ids
+MAIN_GROUP_ID:         # -100...
+GALLERY_CHANNEL_ID:    # -100...
+LOG_GROUP_ID:          # -100...
+SUPPORT_CHAT:          # Support chat username
+UPDATE_CHAT:           # Update channel username
+PHOTO_URL:             # Public bot photo URL
+IMGBB_API_KEY:         # imgbb API key for uploads
+STRING_SESSION:        # Optional: userbot session string (leave empty)
+WEB_APP_URL:           # https://<your-service>.koyeb.app (public HTTPS URL)
+MINI_APP_SHORT_NAME:   # Short name set in BotFather
+API_VERSION_PREFIX:    # Must match frontend VITE_API_PREFIX
+LOG_LEVEL: INFO
+LOG_FORMAT: json
+LOG_FILE_ENABLED: "false"
