@@ -40,19 +40,19 @@ class Config:
     # (git-ignored, local dev) and platform env vars (production). The old
     # hardcoded defaults were committed to git history and must be rotated.
     # --- BOT IDENTITY ---
-    TOKEN =""
-    SUB_TOKEN =""
+    TOKEN = os.getenv("TOKEN", "")
+    SUB_TOKEN = os.getenv("SUB_TOKEN", "")
     BOT_USERNAME = os.getenv("BOT_USERNAME", "SealYourWaifuBot")  # Fetched automatically at startup
     BOT_ID = None        # Fetched automatically at startup
     BOT_NAME = os.getenv("BOT_NAME", "SEAL YOUR WAIFU")  # Fetched automatically at startup
 
     # --- TELEGRAM API CREDENTIALS ---
     API_ID = int(os.getenv("API_ID", "0") or 0)
-    API_HASH =""
+    API_HASH = os.getenv("API_HASH", "")
 
     # --- DATABASE INFRASTRUCTURE ---
-    MONGO_URL =""
-    REDIS_URL =""
+    MONGO_URL = os.getenv("MONGO_URL", "")
+    REDIS_URL = os.getenv("REDIS_URL", "")
 
     # --- PRIVILEGED USERS ---
     OWNER_ID = int(os.getenv("OWNER_ID", "0") or 0)
@@ -101,6 +101,6 @@ class Config:
     REDIS_MEMORY_LIMIT_MB = _env_int("REDIS_MEMORY_LIMIT_MB", 0)  # 0 = auto from Redis maxmemory
 
     # --- USERBOT CONFIG ---
-    STRING_SESSION =""
+    STRING_SESSION = os.getenv("STRING_SESSION", "")
 
 config = Config()
