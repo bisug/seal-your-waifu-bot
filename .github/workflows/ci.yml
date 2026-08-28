@@ -37,7 +37,9 @@ jobs:
           sudo apt-get install -y --no-install-recommends build-essential libffi-dev libssl-dev
       - run: uv sync --frozen
       - run: uv run python -m compileall -q config.py backend scripts
-      - run: uv run pytest tests/ -q
+      # python -m pytest puts CWD on sys.path so `backend` imports resolve
+      # (project has no build-system, so it is not installed as a package)
+      - run: uv run python -m pytest tests/ -q
 
   frontend:
     name: Frontend
