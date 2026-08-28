@@ -400,6 +400,7 @@ async def rebuild_leaderboard(user_collection, metric: str = "level"):
                 await _redis.delete(temp_key)
                 
             LOGGER.info(f"{metric} ZSET rebuild complete. Synchronized {count} top users.")
+            await publish_leaderboard_update()
         except Exception as e:
             LOGGER.error(f"Failed to rebuild {metric} ZSET: {e}")
             # Failsafe cleanup of temp key
@@ -407,6 +408,24 @@ async def rebuild_leaderboard(user_collection, metric: str = "level"):
                 await _redis.delete(temp_key)
             except Exception:
                 pass
+_lb_publish_throttle = 0.0
+
+async def publish_leaderboard_update():
+    """Notify /ws/leaderboard subscribers that standings changed. Throttled
+    to one broadcast per 15s — sync_user_to_redis fires on every state change
+    and unthrottled publishing would flood subscribers."""
+    global _lb_publish_throttle
+    if not _redis: return
+    now = time.monotonic()
+    if now - _lb_publish_throttle < 15:
+        return
+    _lb_publish_throttle = now
+    try:
+        payload = json.dumps({"type": "leaderboard_update", "ts": int(time.time())})
+        await asyncio.wait_for(_redis.publish("leaderboard_updates", payload), timeout=2.0)
+    except Exception:
+        pass  # Failsafe: realtime is best-effort, never break the write path.
+
 async def sync_user_to_redis(user_id: int, user_doc: dict = None):
     """
     Synchronizes a user's critical metrics (Level, Harem, Balance, Zenith, Guesses) 
@@ -427,6 +446,7 @@ async def sync_user_to_redis(user_id: int, user_doc: dict = None):
         pipe.zadd(_zset_key("guesses"), {uid_str: user_doc.get("guess_count", 0)})
         pipe.delete(f"user:{user_id}", f"balance:{user_id}")
         await pipe.execute()
+        await publish_leaderboard_update()
     except Exception as e:
         LOGGER.warning(f"Failed to sync user {user_id} to Redis: {e}")
         # Instant sync failed — the periodic rebuild must repair the drift.

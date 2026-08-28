@@ -6,10 +6,12 @@ import {
   Crown,
   Egg,
   Gem,
+  Heart,
   Loader2,
   PawPrint,
   RefreshCw,
   Search,
+  Swords,
   Ticket,
   Trophy,
   Zap,
@@ -51,6 +53,18 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
   } = useInfiniteGrid<Character>('/harem');
 
   const [availableRarities, setAvailableRarities] = useState<string[]>([]);
+  const [marriage, setMarriage] = useState<{
+    partner_id: number;
+    partner_name: string;
+    partner_avatar?: string | null;
+    married_at: string;
+  } | null>(null);
+  const [battleStats, setBattleStats] = useState<{
+    total_battles: number;
+    wins: number;
+    losses: number;
+    win_rate: number;
+  } | null>(null);
   const rarityOptions = useMemo(
     () =>
       (Array.isArray(availableRarities) ? availableRarities : []).map((value) => ({
@@ -62,6 +76,8 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
 
   useEffect(() => {
     apiFetch('/rarities').then(setAvailableRarities).catch(console.error);
+    apiFetch('/social/marriage').then(setMarriage).catch(() => setMarriage(null));
+    apiFetch('/battle/stats').then(setBattleStats).catch(() => setBattleStats(null));
   }, []);
 
   useEffect(() => {
@@ -332,6 +348,48 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
           </div>
         </Card>
       </section>
+
+      {/* Bond & Combat Section */}
+      {(marriage || (battleStats && battleStats.total_battles > 0)) && (
+        <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {marriage && (
+            <Card variant="default" className="flex items-center gap-4 p-4">
+              <div className="w-10 h-10 rounded bg-pink-500/10 border border-pink-500/20 flex items-center justify-center shrink-0">
+                <Heart size={18} className="text-pink-500" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5">
+                  BONDED WITH
+                </div>
+                <div className="text-xs font-bold text-zinc-100 truncate uppercase tracking-tight">
+                  {marriage.partner_name}
+                </div>
+              </div>
+              <Badge variant="secondary" size="xs" className="font-mono shrink-0">
+                {String(marriage.married_at).slice(0, 10)}
+              </Badge>
+            </Card>
+          )}
+          {battleStats && battleStats.total_battles > 0 && (
+            <Card variant="default" className="flex items-center gap-4 p-4">
+              <div className="w-10 h-10 rounded bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
+                <Swords size={18} className="text-red-400" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5">
+                  COMBAT RECORD
+                </div>
+                <div className="text-xs font-bold text-zinc-100 uppercase tracking-tight">
+                  {formatNumber(battleStats.wins)}W / {formatNumber(battleStats.losses)}L
+                </div>
+              </div>
+              <Badge variant="secondary" size="xs" className="font-mono shrink-0">
+                {battleStats.win_rate.toFixed(0)}% WR
+              </Badge>
+            </Card>
+          )}
+        </section>
+      )}
 
       {/* Collection Explorer Section */}
       <section ref={collectionRef} className="pt-4 space-y-6">

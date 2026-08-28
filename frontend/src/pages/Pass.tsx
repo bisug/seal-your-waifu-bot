@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { Crown, Gift, Lock, Star, Target, TicketCheck } from 'lucide-react';
+import { Crown, Gift, Lock, Star, Target, TicketCheck, TrendingUp } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { apiFetch, getErrorMessage } from '../api/client';
 import { Badge } from '../components/ui/Badge';
@@ -65,6 +65,7 @@ export const Pass = () => {
   const [claiming, setClaiming] = useState<number | null>(null);
   const [claimingBank, setClaimingBank] = useState(false);
   const [upgrading, setUpgrading] = useState<string | null>(null);
+  const [buyingLevels, setBuyingLevels] = useState(false);
 
   const refreshAll = useCallback(async () => {
     await fetchPassData();
@@ -101,6 +102,31 @@ export const Pass = () => {
     } finally {
       setClaimingBank(false);
     }
+  };
+
+  const handleBuyLevel = async () => {
+    const cost = Number(passData?.level_buy_cost || 0);
+    const tg = window.Telegram?.WebApp;
+    const confirm = tg?.showConfirm;
+    const doBuy = async () => {
+      setBuyingLevels(true);
+      try {
+        await apiFetch('/buy_level?levels=1', { method: 'POST' });
+        addToast('Level purchased.', 'success');
+        await refreshAll();
+      } catch (err: any) {
+        addToast(getErrorMessage(err), 'error');
+      } finally {
+        setBuyingLevels(false);
+      }
+    };
+    if (confirm) {
+      confirm(`Buy 1 level for ${formatNumber(cost)} Shards?`, (ok) => {
+        if (ok) doBuy();
+      });
+      return;
+    }
+    await doBuy();
   };
 
   const handleUpgrade = async (tier: string) => {
@@ -186,6 +212,36 @@ export const Pass = () => {
 
         <ProgressBar current={userLevel} total={maxLevel} label="Clearance Progress" compact />
       </header>
+
+      {userLevel < maxLevel && (
+        <Card
+          variant="default"
+          className="p-4 flex items-center justify-between gap-4"
+        >
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="w-10 h-10 rounded bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center shrink-0">
+              <TrendingUp size={18} className="text-brand-accent" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-[10px] font-bold text-zinc-100 uppercase tracking-widest mb-0.5">
+                BUY LEVEL
+              </h2>
+              <p className="text-[9px] font-mono font-bold text-zinc-500 uppercase">
+                {formatNumber(passData.level_buy_cost || 0)} SHARDS / LVL
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 px-4 shrink-0"
+            isLoading={buyingLevels}
+            onClick={handleBuyLevel}
+          >
+            +1 LVL
+          </Button>
+        </Card>
+      )}
 
       <section className="grid grid-cols-3 gap-3">
         {TIER_ORDER.map((tier) => {
