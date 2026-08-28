@@ -74,13 +74,13 @@ flowchart LR
 3. Create your local environment file:
 
    ```bash
-   cp backend/sample.env backend/.env
+   cp backend/.env.example backend/.env
    ```
 
    Windows PowerShell:
 
    ```powershell
-   Copy-Item backend/sample.env backend/.env
+   Copy-Item backend/.env.example backend/.env
    ```
 
 4. Fill the required values in `backend/.env`.
@@ -105,7 +105,7 @@ flowchart LR
 
 Never commit real bot tokens, Telegram API credentials, MongoDB URLs, Redis URLs, image host keys, or userbot session strings.
 
-Use `sample.env` as the safe template. Store production secrets in the host's secret manager or in a private `.env` file.
+Use `.env.example` as the safe template. Store production secrets in the host's secret manager or in a private `.env` file.
 
 Before production:
 
@@ -135,7 +135,7 @@ Seal-bot/
 │   ├── pyproject.toml           # Python dependency manifest
 │   ├── uv.lock                  # Python lockfile
 │   ├── .python-version          # Python version for local tooling and CI
-│   ├── sample.env               # Safe environment template
+│   ├── .env.example             # Safe environment template
 │   ├── scripts/                 # Maintenance scripts
 │   ├── tests/                   # Backend test suite
 │   ├── compose.yaml             # Docker Compose service
@@ -631,7 +631,7 @@ VPS:
 ```bash
 git clone <repo-url> /opt/seal-bot
 cd /opt/seal-bot
-cp backend/sample.env backend/.env
+cp backend/.env.example backend/.env
 docker compose -f backend/compose.yaml up -d --build
 docker compose -f backend/compose.yaml logs -f seal-bot
 ```
