@@ -10,86 +10,6 @@ import { GachaReveal } from './components/ui/GachaReveal';
 import { ToastProvider } from './components/ui/Toast';
 import { UserProvider, useUser } from './context/UserContext';
 import { Forbidden } from './pages/Forbidden';
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import { NotFound } from './pages/NotFound';
 import { Profile } from './pages/Profile';
 import { ServerError } from './pages/ServerError';
@@ -251,9 +171,8 @@ const getCandidates = () => {
   // so only accept segments without '=' as routes to avoid a false 404.
   const routeHash = hashParts.find((part) => part && !part.includes('=')) ?? null;
   const startParamFromHash =
-    hashParts
-      .map((part) => part.split('='))
-      .find(([key]) => key === 'tgWebAppStartParam')?.[1] ?? null;
+    hashParts.map((part) => part.split('=')).find(([key]) => key === 'tgWebAppStartParam')?.[1] ??
+    null;
   return [
     routeHash,
     startParamFromHash,

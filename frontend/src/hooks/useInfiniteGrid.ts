@@ -1,8 +1,4 @@
-import {
-  type InfiniteData,
-  useInfiniteQuery,
-  useQueryClient,
-} from '@tanstack/react-query';
+import { type InfiniteData, useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { apiFetch, getErrorMessage } from '../api/client';
 
@@ -38,7 +34,13 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
 
   const queryKey = ['grid', endpoint, debouncedSearch, debouncedRarity, limit, paramsKey];
 
-  const query = useInfiniteQuery<GridPage<T>, Error, InfiniteData<GridPage<T>>, typeof queryKey, number>({
+  const query = useInfiniteQuery<
+    GridPage<T>,
+    Error,
+    InfiniteData<GridPage<T>>,
+    typeof queryKey,
+    number
+  >({
     queryKey,
     initialPageParam: 1,
     queryFn: ({ pageParam, signal }) => {
@@ -84,10 +86,9 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
     [query.isFetching, query.hasNextPage, query.fetchNextPage],
   );
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: queryKey values are listed individually
   const refresh = useCallback(() => {
     queryClient.resetQueries({ queryKey });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    // biome-ignore lint/correctness/useExhaustiveDependencies: queryKey spread is intentional
   }, [queryClient, ...queryKey]);
 
   return {

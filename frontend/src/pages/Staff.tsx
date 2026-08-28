@@ -145,7 +145,13 @@ const StaffDetails = ({ member }: { member: StaffMember }) => {
               >
                 <div className="h-9 w-9 shrink-0 overflow-hidden rounded bg-zinc-900 border border-white/10">
                   {item.image ? (
-                    <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      loading="lazy"
+                      referrerPolicy="no-referrer"
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-zinc-800">
                       {item.type === 'pet' ? <PawPrint size={16} /> : <ImageIcon size={16} />}

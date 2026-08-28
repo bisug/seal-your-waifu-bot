@@ -272,6 +272,8 @@ export const Exchange = () => {
             </div>
 
             <button
+              type="button"
+              aria-label="Swap exchange direction"
               onClick={handleSwapMode}
               className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-zinc-500 hover:text-zinc-100 hover:border-white/20 transition-all active:scale-90"
             >
@@ -317,7 +319,8 @@ export const Exchange = () => {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {presetOptions.map(({ label, amount: pAmount }) => {
               const isDisabled =
-                pAmount < minimumInputAmount || (pAmount > maxInputAmount && label !== 'Max');
+                pAmount < minimumInputAmount ||
+                (label === 'Max' ? !canUseMax : pAmount > maxInputAmount);
               const isActive = pAmount === amountNumber;
 
               return (

@@ -27,7 +27,6 @@ export const useApi = <T = any>(
 
   const query = useQuery<T>({
     queryKey,
-    // biome-ignore lint/correctness/useExhaustiveDependencies: options read via ref to avoid refetch loops
     queryFn: ({ signal }) => apiFetch(endpoint, { ...optionsRef.current, signal }),
     enabled: !options.manual,
     ...(options.initialData !== undefined ? { initialData: options.initialData } : {}),
@@ -35,6 +34,8 @@ export const useApi = <T = any>(
     retry: false,
   });
 
+  // queryKey is intentionally expanded below to avoid depending on its recreated array.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: queryKey values are listed individually
   const execute = useCallback(
     async (overrides: RequestInit = {}) => {
       const res = await apiFetch(endpoint, { ...optionsRef.current, ...overrides });
@@ -43,14 +44,12 @@ export const useApi = <T = any>(
       }
       return res;
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [endpoint, isGet, queryClient, ...queryKey],
   );
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: queryKey values are listed individually
   const setData = useCallback(
     (value: T) => queryClient.setQueryData(queryKey, value),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    // biome-ignore lint/correctness/useExhaustiveDependencies: queryKey spread is intentional
     [queryClient, ...queryKey],
   );
 

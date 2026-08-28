@@ -39,9 +39,12 @@ const PetImage = ({
   const src = getPetImageSrc(pet);
   const [imageFailed, setImageFailed] = useState(false);
 
+  // Reset when the src changes: this component instance can be reused for a
+  // different pet on list reorder/switch.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset when image source changes
   useEffect(() => {
     setImageFailed(false);
-  }, []);
+  }, [src]);
 
   return (
     <div className={cn('overflow-hidden bg-zinc-900 relative', className)}>

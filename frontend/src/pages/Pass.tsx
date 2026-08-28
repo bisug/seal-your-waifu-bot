@@ -107,7 +107,6 @@ export const Pass = () => {
   const handleBuyLevel = async () => {
     const cost = Number(passData?.level_buy_cost || 0);
     const tg = window.Telegram?.WebApp;
-    const confirm = tg?.showConfirm;
     const doBuy = async () => {
       setBuyingLevels(true);
       try {
@@ -120,8 +119,10 @@ export const Pass = () => {
         setBuyingLevels(false);
       }
     };
-    if (confirm) {
-      confirm(`Buy 1 level for ${formatNumber(cost)} Shards?`, (ok) => {
+    // Call showConfirm bound to the WebApp object; detaching it can throw
+    // "Illegal invocation" in some WebViews.
+    if (tg?.showConfirm) {
+      tg.showConfirm(`Buy 1 level for ${formatNumber(cost)} Shards?`, (ok) => {
         if (ok) doBuy();
       });
       return;
@@ -139,12 +140,24 @@ export const Pass = () => {
     setUpgrading(tier);
     try {
       const invoice = await apiFetch(`/shop/pass_invoice/${tier}`, { method: 'POST' });
+      let settled = false;
+      const settle = () => {
+        if (settled) return;
+        settled = true;
+        setUpgrading(null);
+      };
+      // Safety net: some clients never fire the invoice callback, which would
+      // otherwise leave the button stuck loading forever.
+      const fallback = window.setTimeout(settle, 120000);
       tg.openInvoice(invoice.invoice_url, async (status: string) => {
+        window.clearTimeout(fallback);
         if (status === 'paid') {
           addToast(`${tier.toUpperCase()} status activated`, 'success');
           window.setTimeout(refreshAll, 1200);
+        } else {
+          addToast('Payment not completed.', 'info');
         }
-        setUpgrading(null);
+        settle();
       });
     } catch (err: any) {
       addToast(getErrorMessage(err), 'error');

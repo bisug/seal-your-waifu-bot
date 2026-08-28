@@ -9,7 +9,7 @@ import {
   Sparkles,
   Store,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Card as CharacterCard } from '../components/character/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
@@ -23,7 +23,6 @@ import { cn, formatNumber } from '../utils';
 
 interface ShopProps {
   onCharClick: (char: Character) => void;
-  triggerRefresh?: () => void;
 }
 
 interface ShopHub {
@@ -64,7 +63,7 @@ const getCountdown = (resetAt: string | undefined, now: number) => {
   return `${hours}h ${minutes}m`;
 };
 
-export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
+export const Shop = ({ onCharClick }: ShopProps) => {
   const { user, refreshUser } = useUser();
   const {
     data: shopData,
@@ -79,11 +78,28 @@ export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
     execute: fetchHub,
   } = useApi<ShopHub>('/shop/hub');
   const [now, setNow] = useState(() => Date.now());
+  const rotatedRef = useRef(false);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  // When the rotation reset time passes, refetch once so users see the new
+  // rotation without a manual refresh.
+  useEffect(() => {
+    if (!hubData?.reset_at) {
+      rotatedRef.current = false;
+      return;
+    }
+    const resetTime = new Date(hubData.reset_at).getTime();
+    if (!Number.isFinite(resetTime)) return;
+    if (now >= resetTime && !rotatedRef.current) {
+      rotatedRef.current = true;
+      fetchShop().catch(() => undefined);
+      fetchHub().catch(() => undefined);
+    }
+  }, [now, hubData?.reset_at, fetchShop, fetchHub]);
 
   useEffect(() => {
     const refreshShop = () => {
@@ -143,7 +159,6 @@ export const Shop = ({ onCharClick, triggerRefresh }: ShopProps) => {
   const handleRefresh = async () => {
     window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
     await Promise.allSettled([fetchShop(), fetchHub(), refreshUser()]);
-    if (triggerRefresh) triggerRefresh();
   };
 
   if (loading && !shopData)
