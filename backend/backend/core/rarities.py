@@ -181,6 +181,18 @@ async def load_rarities() -> int:
             except Exception as e:
                 LOGGER.warning("Rarity seed insert failed (%s); re-fetching.", e)
             docs = await rarities_collection.find({}).to_list(length=1000)
+        else:
+            # Backfill any default rarities missing from the collection
+            # (e.g. a partial seed after an interrupted insert).
+            existing_ids = {d["_id"] for d in docs if isinstance(d["_id"], int)}
+            missing = [d for d in _default_docs() if d["_id"] not in existing_ids]
+            if missing:
+                try:
+                    await rarities_collection.insert_many(missing)
+                    docs.extend(missing)
+                    LOGGER.info("Backfilled %s missing default rarities.", len(missing))
+                except Exception as e:
+                    LOGGER.warning("Rarity backfill insert failed: %s", e)
         _apply_docs(docs)
         LOGGER.info("Loaded %s rarities from database.", len(docs))
         return len(docs)
