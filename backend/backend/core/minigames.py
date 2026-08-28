@@ -92,12 +92,15 @@ async def consume_energy(user_id: int, game_type: Optional[str] = None) -> Any:
     start_data = {"start_time": now.timestamp()}
 
     if game_type == "cipher_match":
-        # Get 8 random characters for the grid
-        cursor = await collection.aggregate([{"$sample": {"size": 8}}])
+        # Get 8 random characters for the grid (only ones with an image)
+        cursor = await collection.aggregate([
+            {"$match": {"img_url": {"$exists": True, "$ne": ""}}},
+            {"$sample": {"size": 8}},
+        ])
         chars = await cursor.to_list(length=8)
         start_data["cards"] = [{
             "id": c["id"],
-            "img_url": c["img_url"],
+            "img_url": c.get("img_url") or "",
             "name": c["name"]
         } for c in chars]
     elif game_type == "nexus_wheel":
@@ -242,7 +245,7 @@ async def reward_minigame(user_id: int, game_type: str, score: int = 0, session_
 async def get_random_character(rarities: list[str]) -> Optional[dict]:
     """Fetches a random character of specified rarities."""
     cursor = await collection.aggregate([
-        {"$match": {"rarity": {"$in": rarities}}},
+        {"$match": {"rarity": {"$in": rarities}, "img_url": {"$exists": True, "$ne": ""}}},
         {"$sample": {"size": 1}}
     ])
     res = await cursor.to_list(length=1)
@@ -254,6 +257,6 @@ async def get_random_character(rarities: list[str]) -> Optional[dict]:
             "name": char["name"],
             "anime": char["anime"],
             "rarity": char["rarity"],
-            "img_url": char["img_url"]
+            "img_url": char.get("img_url") or ""
         }
     return None
