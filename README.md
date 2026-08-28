@@ -755,6 +755,10 @@ curl https://your-backend.example.com/readyz
 | Cloudflare deploy fails | Use the exact Pages settings in [Cloudflare Pages](#cloudflare-pages). |
 | File logs fail in containers | Keep `LOG_FILE_ENABLED=false` or mount a writable log volume. |
 
+## Credits
+
+Special thanks to [MyNameIsShekhar](https://github.com/MyNameIsShekhar) for the original codebase this project is built upon: <https://github.com/MyNameIsShekhar/WAIFU-HUSBANDO-CATCHER.git>
+
 ## License
 
 Licensed under the terms in [LICENSE](LICENSE).
