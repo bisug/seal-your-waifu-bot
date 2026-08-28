@@ -22,7 +22,7 @@ Repository: https://github.com/bisug/seal-your-waifu-bot
 | Backend | FastAPI API, Telegram Mini App auth, WebSocket updates, static asset serving | `backend/webapp` |
 | Frontend | React/Vite Telegram Mini App for users and staff | `frontend` |
 | Data | MongoDB persistence and Redis hot-path cache/session storage | `backend/database` |
-| Deploy | Docker image plus Heroku, Render, Railway, VPS, and static frontend guides | `backend/Dockerfile`, `render.yaml`, `railway.json`, `heroku.yml` |
+| Deploy | Docker image plus Heroku, Render, Railway, Koyeb, VPS, and static frontend guides | `backend/Dockerfile`, `render.yaml`, `railway.json`, `heroku.yml`, `koyeb.yaml`, [`docs/deployment`](docs/deployment/README.md) |
 
 ```mermaid
 flowchart LR
@@ -152,6 +152,8 @@ Seal-bot/
 ├── heroku.yml                   # Heroku container deploy config
 ├── railway.json                 # Railway deploy config
 ├── render.yaml                  # Render deploy config
+├── koyeb.yaml                   # Koyeb deploy config reference
+├── docs/deployment/             # Per-platform deployment guides
 └── README.md
 ```
 
@@ -163,7 +165,7 @@ Seal-bot/
 | --- | --- |
 | `backend.webapp.main:app` | Unified ASGI app. Starts Telegram bots in FastAPI lifespan, serves API and Mini App. |
 | `python -m backend` | Bot-only process. Starts Telegram bots and idles without FastAPI. |
-| `backend/Dockerfile` | Production image. Builds frontend, installs backend dependencies, serves Uvicorn on `${PORT:-8080}`. |
+| `backend/Dockerfile` | Production image. Installs backend dependencies, serves Uvicorn on `${PORT:-8080}`. Frontend is **not** bundled (see below). |
 
 ### Bot Clients
 
@@ -585,13 +587,17 @@ Redis is used for auth sessions, rate limiting, spawn state, group message count
 
 ### Backend Hosting
 
-| Target | Use when | Notes |
-| --- | --- | --- |
-| Docker | Preferred production path | Builds frontend, installs backend, runs non-root Uvicorn service. |
-| Heroku | Container-based app hosting | Uses `heroku.yml` and `Procfile`. |
-| Render | Blueprint-based Docker deploy | Uses `render.yaml`; fill every `sync: false` variable. |
+| Docker | Preferred production path | Builds the backend image; run with Compose or a platform container service. |
+| Heroku | Container-based app hosting | Uses `heroku.yml`; see [guide](docs/deployment/heroku.md). |
+| Render | Blueprint-based Docker deploy | Uses `render.yaml`; fill every `sync: false` variable. See [guide](docs/deployment/render.md). |
 | Railway | Docker deploy with health check | Uses `railway.json`. |
+| Koyeb | Regional edge Docker deploys | Uses `koyeb.yaml`; free tier. See [guide](docs/deployment/koyeb.md). |
 | VPS | Full control | Use Docker Compose plus Caddy/Nginx for HTTPS. |
+
+> Full step-by-step guides for each platform live in [`docs/deployment`](docs/deployment/README.md).
+> The backend must run on a persistent host (it starts Telegram clients, background workers, and DB/Redis connections); Vercel and Cloudflare can only host the static frontend.
+
+To serve the Mini App yourself, build the frontend and copy `frontend/dist` into `backend/backend/static` **before** building the image, or host the frontend separately (see [Static Frontend Hosting](#static-frontend-hosting)).
 
 Docker:
 
@@ -632,6 +638,25 @@ docker compose -f backend/compose.yaml logs -f seal-bot
 
 Proxy HTTPS traffic to `http://127.0.0.1:8080`.
 
+Koyeb (CLI):
+
+```bash
+koyeb login
+koyeb app init seal-bot
+koyeb service init web --docker-file backend/Dockerfile --ports 8080:http --routes /:8080 --health-check-path /healthz
+koyeb service update web --env TOKEN=... --env MONGO_URL=...   # repeat for every required variable
+koyeb service redeploy web
+koyeb service logs web
+```
+
+Full step-by-step guides:
+
+- [Heroku](docs/deployment/heroku.md)
+- [Render](docs/deployment/render.md)
+- [Koyeb](docs/deployment/koyeb.md)
+- [Railway](railway.json)
+- [VPS / Docker Compose](backend/compose.yaml)
+
 ### Static Frontend Hosting
 
 Use Vercel, Netlify, Cloudflare Pages, or Wasmer Edge for frontend-only hosting. The Python backend must still run on a persistent host because it starts Telegram clients, background workers, MongoDB clients, and Redis clients.
@@ -658,6 +683,8 @@ Frontend build variables:
 | Netlify | `frontend` | `bun run build` | `dist` |
 | Cloudflare Pages | `frontend` | `npm run build` | `dist` |
 | Wasmer Edge | `frontend` | `bun run build` | `dist` |
+
+Guides: [Vercel](docs/deployment/vercel.md) · [Cloudflare Pages](docs/deployment/cloudflare.md)
 
 #### Vercel
 
@@ -705,7 +732,7 @@ netlify deploy --prod --dir=dist
 
 #### Cloudflare Pages
 
-This repo is configured as Cloudflare Pages with `frontend/wrangler.toml`.
+This repo is configured as Cloudflare Pages with `frontend/wrangler.toml`. Full guide: [docs/deployment/cloudflare.md](docs/deployment/cloudflare.md).
 
 ```text
 Root directory: frontend
