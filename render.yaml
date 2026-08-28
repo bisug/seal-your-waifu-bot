@@ -3,7 +3,7 @@ services:
     name: seal-bot
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
-    dockerContext: .
+    dockerContext: ./backend
     autoDeploy: true
     healthCheckPath: /healthz
     maxShutdownDelaySeconds: 60
