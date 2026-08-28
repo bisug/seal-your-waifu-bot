@@ -55,6 +55,8 @@ async def deletion_worker():
                     LOGGER.warning(f"SlowmodeWait {e.value}s during deletion in {chat_id}")
                     await asyncio.sleep(e.value)
                     continue  # Skip marking as processed, retry next cycle
+                except errors.MessageIdsEmpty:
+                    pass  # Kurigram 2.2.25: typed replacement for MESSAGE_ID_INVALID — mark as processed
                 except errors.BadRequest as e:
                     if "MESSAGE_ID_INVALID" in str(e) or "CHAT_ID_INVALID" in str(e):
                         pass # Mark as processed

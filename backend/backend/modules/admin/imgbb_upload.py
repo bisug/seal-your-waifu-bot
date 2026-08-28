@@ -5,6 +5,7 @@ from pyrogram.enums import ParseMode
 
 from config import config
 from backend import LOGGER, app
+from backend.core.uploads import temp_download_dir
 from backend.core.utils import handle_errors, reply_media_dynamic
 from backend.core.waifu import upload_media_safely
 IMGBB_API_KEY = config.IMGBB_API_KEY
@@ -17,10 +18,15 @@ async def tgm_cmd(_, message: types.Message) -> None:
         return
     status_msg = await message.reply_text("⏳ <b>Uploading to ImgBB...</b>", parse_mode=enums.ParseMode.HTML)
     try:
-        file_path = await target_msg.download()
+        # Absolute dir: kurigram 2.2.25 resolves relative paths against workdir.
+        file_path = await target_msg.download(file_name=temp_download_dir("tgm") + "/")
         remote_url = await upload_media_safely(file_path)
         if os.path.exists(file_path):
             os.remove(file_path)
+            try:
+                os.rmdir(os.path.dirname(file_path))
+            except OSError:
+                pass
         if remote_url:
             await status_msg.delete()
             await reply_media_dynamic(message, remote_url, caption=f"✅ <b>Media uploaded successfully!</b>\n🔗 <code>{remote_url}</code>", parse_mode=enums.ParseMode.HTML)

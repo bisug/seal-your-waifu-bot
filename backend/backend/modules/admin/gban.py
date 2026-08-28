@@ -1,6 +1,7 @@
 from pyrogram import ContinuePropagation, StopPropagation, enums, errors, filters, types
 
 from backend import LOGGER, app, game_bot, sudo_filter
+from backend.core.constants import PERMISSION_DENIED_ERRORS
 from backend.core.global_bans import (
     add_group_gban,
     add_user_gban,
@@ -160,7 +161,7 @@ async def _leave_banned_chat(client, chat_id: int, *, reason: str | None = None)
             pass
     try:
         await client.leave_chat(chat_id)
-    except (errors.Forbidden, errors.Unauthorized, errors.PeerIdInvalid, errors.ChannelInvalid):
+    except (*PERMISSION_DENIED_ERRORS, errors.PeerIdInvalid, errors.ChannelInvalid):
         pass
     except Exception as exc:
         LOGGER.warning("Failed to leave gbanned chat %s with %s: %s", chat_id, client_name, exc)
