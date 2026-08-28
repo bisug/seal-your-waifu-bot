@@ -67,6 +67,33 @@ koyeb service logs web
 > as secrets at runtime. After the first deploy, prefer the **dashboard → Service →
 > Environment variables** editor for managing them (each entry is stored encrypted).
 
+Dashboard env template for copy-paste (fills the dashboard section; one click copies it):
+
+```env
+TOKEN=
+SUB_TOKEN=
+API_ID=
+API_HASH=
+MONGO_URL=
+REDIS_URL=
+OWNER_ID=
+SUDO_USERS=
+MAIN_GROUP_ID=
+GALLERY_CHANNEL_ID=
+LOG_GROUP_ID=
+SUPPORT_CHAT=
+UPDATE_CHAT=
+PHOTO_URL=
+IMGBB_API_KEY=
+STRING_SESSION=
+WEB_APP_URL=
+MINI_APP_SHORT_NAME=app
+API_VERSION_PREFIX=v1_7b82
+LOG_LEVEL=INFO
+LOG_FORMAT=json
+LOG_FILE_ENABLED=false
+```
+
 To use a local image instead of Git: build with `docker build -t seal-bot backend`,
 push to a registry, and in the dashboard choose **Docker image** as the source with
 `registry.hub.docker.com/<user>/seal-bot:latest`.

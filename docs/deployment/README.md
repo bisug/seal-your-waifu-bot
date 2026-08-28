@@ -10,6 +10,10 @@ Deploy options for the Seal-Bot stack:
 
 ---
 
+> **Copy & paste**: every code block above and below on GitHub / VS Code has a
+> **copy button** in its top-right corner. Command blocks run as-is; env blocks below
+> are paste-then-fill templates.
+
 ## Two parts, two decisions
 
 The repo is a monorepo with two deployable halves:
@@ -80,6 +84,36 @@ Logging (optional, recommended for containers):
 > **One rule everywhere:** run exactly **one** web worker per bot token.
 > Multiple workers start duplicate Telegram clients. Every platform guide
 > below enforces `--workers 1`.
+
+### Copy-ready env template
+
+Paste this into the platform's env editor, then fill each value (one click copies
+it on GitHub / VS Code):
+
+```env
+TOKEN=
+SUB_TOKEN=
+API_ID=
+API_HASH=
+MONGO_URL=
+REDIS_URL=
+OWNER_ID=
+SUDO_USERS=
+MAIN_GROUP_ID=
+GALLERY_CHANNEL_ID=
+LOG_GROUP_ID=
+SUPPORT_CHAT=
+UPDATE_CHAT=
+PHOTO_URL=
+IMGBB_API_KEY=
+STRING_SESSION=
+WEB_APP_URL=
+MINI_APP_SHORT_NAME=app
+API_VERSION_PREFIX=v1_7b82
+LOG_LEVEL=INFO
+LOG_FORMAT=json
+LOG_FILE_ENABLED=false
+```
 
 ---
 

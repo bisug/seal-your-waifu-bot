@@ -56,6 +56,28 @@ secrets from the Blueprint). Minimum required set:
 Render secret env vars come from **Settings → Environment** on the service. Mark
 sensitive ones as *Secret* so they are hidden after save.
 
+Paste-ready template (one click copies it — fill each value in the dashboard):
+
+```env
+TOKEN=
+SUB_TOKEN=
+API_ID=
+API_HASH=
+MONGO_URL=
+REDIS_URL=
+OWNER_ID=
+SUDO_USERS=
+MAIN_GROUP_ID=
+GALLERY_CHANNEL_ID=
+LOG_GROUP_ID=
+IMGBB_API_KEY=
+WEB_APP_URL=
+API_VERSION_PREFIX=
+LOG_LEVEL=INFO
+LOG_FORMAT=json
+LOG_FILE_ENABLED=false
+```
+
 ## 3. Deploy
 
 Click **Apply** on the Blueprint, or use
