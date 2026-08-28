@@ -36,24 +36,27 @@ def _env_float(name: str, default: float) -> float:
         return default
 
 class Config:
+    # SECURITY: no secret defaults here. Credentials live in backend/.env
+    # (git-ignored, local dev) and platform env vars (production). The old
+    # hardcoded defaults were committed to git history and must be rotated.
     # --- BOT IDENTITY ---
-    TOKEN = os.getenv("TOKEN", "7888451649:AAFsl_vtOiN7dDvE-bLx32WJ-Gof-oc1zA0")
-    SUB_TOKEN = os.getenv("SUB_TOKEN", "8785400009:AAG6gvkM-BH8Jq7NCKzVczNRUPrkm3O9-Y4")
+    TOKEN = os.getenv("TOKEN", "")
+    SUB_TOKEN = os.getenv("SUB_TOKEN", "")
     BOT_USERNAME = os.getenv("BOT_USERNAME", "SealYourWaifuBot")  # Fetched automatically at startup
     BOT_ID = None        # Fetched automatically at startup
     BOT_NAME = os.getenv("BOT_NAME", "SEAL YOUR WAIFU")  # Fetched automatically at startup
 
     # --- TELEGRAM API CREDENTIALS ---
-    API_ID = int(os.getenv("API_ID", "20098819"))
-    API_HASH = os.getenv("API_HASH", "2545d49cea8894d513726649b1bd5a1f")
+    API_ID = int(os.getenv("API_ID", "0") or 0)
+    API_HASH = os.getenv("API_HASH", "")
 
     # --- DATABASE INFRASTRUCTURE ---
-    MONGO_URL = os.getenv("MONGO_URL", "mongodb+srv://sumiloo:gurasnani@cluster0.nb0umdm.mongodb.net/?retryWrites=true&w=majority")
-    REDIS_URL = os.getenv("REDIS_URL", "rediss://default:AVNS_3H0cohKfeMSPJAn2TeO@sealbot-friendclub-35f1.k.aivencloud.com:28970")
+    MONGO_URL = os.getenv("MONGO_URL", "")
+    REDIS_URL = os.getenv("REDIS_URL", "")
 
     # --- PRIVILEGED USERS ---
-    OWNER_ID = int(os.getenv("OWNER_ID", "7804972365"))
-    SUDO_USERS = [int(i.strip()) for i in os.getenv("SUDO_USERS", "7717913705, 6574393060, 6388703157, 6858372924").split(",") if i.strip().isdigit()]
+    OWNER_ID = int(os.getenv("OWNER_ID", "0") or 0)
+    SUDO_USERS = [int(i.strip()) for i in os.getenv("SUDO_USERS", "").split(",") if i.strip().isdigit()]
 
     # --- CHANNEL & GROUP IDS ---
     MAIN_GROUP_ID = int(os.getenv("MAIN_GROUP_ID", "-1002429397912"))
@@ -68,7 +71,7 @@ class Config:
     PHOTO_URL = os.getenv("PHOTO_URL", "https://files.catbox.moe/2hsawz.jpg").split(",")
 
     # --- EXTERNAL INTEGRATIONS ---
-    IMGBB_API_KEY = os.getenv("IMGBB_API_KEY", "21786e21eb0369339a3c2a2d9c561190")
+    IMGBB_API_KEY = os.getenv("IMGBB_API_KEY", "")
     
     # --- WEBAPP CONFIG ---
     WEB_APP_URL = os.getenv("WEB_APP_URL", "https://dear-project-seal-64ed7a272fd6.herokuapp.com")
@@ -98,6 +101,6 @@ class Config:
     REDIS_MEMORY_LIMIT_MB = _env_int("REDIS_MEMORY_LIMIT_MB", 0)  # 0 = auto from Redis maxmemory
 
     # --- USERBOT CONFIG ---
-    STRING_SESSION = os.getenv("STRING_SESSION", "BQEyrwMApp5yi6-jKRCfwSBL2tVRNfSgDCGYMh61lWDKQnYwkDIQc6xaKuavcM_jCv0RYUEq1ye_hwpx5Mw-jRlDLGROn8eZ3RFQniaMALDiGnwsRWD82ReJsXV-zPsFlcf7nT60bis0bALIBAbKeR8gBcnba5q9tgmWXd11sSRmvQy9zgXJ7K8PM4Zvi_9sCOSuyQhd6R_NicLWTW3dIMUbwznCrWi8-FZA21kxD3YfitVEHyR_C4LUhkYPlP8iqkQzrxbIDwVZ8Zr-3gsw38u40PT1RqqjDyhIr8wl1KX4Pt3QUqAAttyiq5e5BaT2WLc7ga4Sxb_NwJqBKlNU0vRUnYHxegAAAAHXQT_PAA")
+    STRING_SESSION = os.getenv("STRING_SESSION", "")
 
 config = Config()

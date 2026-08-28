@@ -24,7 +24,8 @@ def calculate_stats(pet_data):
             "atk": 10,
             "spd": 10,
             "luck": 0.05,
-            "level": 1
+            "level": 1,
+            "max_hp": 100
         }
     level = pet_data.get("level", 1)
     base_hp = pet_data.get("hp", 150)
@@ -97,6 +98,8 @@ async def battle_challenge_handler(_, message: types.Message):
         return await message.reply_text("⚠️ Challenge someone by replying to their message!", parse_mode=enums.ParseMode.HTML)
     attacker = message.from_user
     defender = message.reply_to_message.from_user
+    if not defender:
+        return await message.reply_text("⚠️ Cannot challenge this message (no user attached).", parse_mode=enums.ParseMode.HTML)
     if attacker.id == defender.id:
         return await message.reply_text("⚠️ You can't fight yourself!", parse_mode=enums.ParseMode.HTML)
     # Redis-based cooldown (survives restarts)
@@ -142,6 +145,7 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
         return await query.answer("❌ You are not the challenged person!", show_alert=True)
     bet = battle_info["bet"]
     attacker_id, defender_id = battle_info["attacker"], battle_info["defender"]
+    pot_paid = False  # set once the winner has been credited
     if not await check_and_deduct(attacker_id, bet):
         try:
             await query.message.edit_text("❌ Attacker no longer has enough balance.", parse_mode=enums.ParseMode.HTML)
@@ -183,6 +187,7 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
         tax = int(total_pot * 0.10)
         winnings = total_pot - tax
         await update_user_balance(winner_id, winnings)
+        pot_paid = True
         await add_xp(winner_id, 30, "battle_win")
         await update_quest_progress(winner_id, "battle_veteran", 1)
         await update_quest_progress(winner_id, "weekly_battle", 1)
@@ -197,9 +202,21 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
         )
         await query.message.edit_text(result_text, parse_mode=enums.ParseMode.HTML)
 
-    except errors.RPCError as e:
+    except Exception as e:
+        # Both bets were already deducted. Any failure before the payout
+        # (deleted account, Telegram RPCError, DB hiccup) must refund the pot
+        # — previously the shards vanished with the exception. If the payout
+        # already landed (pot_paid), refunding would double-pay the winner.
         LOGGER.error(f"Battle Error: {e}")
+        refund_note = ""
+        if not pot_paid:
+            try:
+                await update_user_balance(attacker_id, bet)
+                await update_user_balance(defender_id, bet)
+                refund_note = " Both bets were refunded."
+            except Exception as refund_err:
+                LOGGER.exception(f"CRITICAL: battle refund failed for {attacker_id}/{defender_id}: {refund_err}")
         try:
-            await query.message.reply_text("❌ A technical error occurred during battle.", parse_mode=enums.ParseMode.HTML)
+            await query.message.reply_text(f"❌ A technical error occurred during battle.{refund_note}", parse_mode=enums.ParseMode.HTML)
         except:
             pass

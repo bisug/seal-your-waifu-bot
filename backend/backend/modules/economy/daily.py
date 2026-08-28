@@ -2,6 +2,7 @@ import random
 from datetime import datetime, timedelta, timezone
 from pyrogram import enums, errors, filters, types
 from pyrogram.enums import ParseMode
+from pymongo.errors import DuplicateKeyError
 
 from backend import LOGGER, MAIN_GROUP_ID, app
 from backend.core.cache import (get_daily_date, get_weekly_date,
@@ -71,7 +72,9 @@ async def daily_command_handler(_, message: types.Message):
     base_coins = reward_coins
     reward_coins = int(base_coins * multiplier * reward_mult)
     bonus_coins = reward_coins - base_coins
-    pass_bonus_text = f"\n<b>Pass Bonus:</b> +{bonus_coins} ⬪" if multiplier > 1.0 else ""
+    # Outside the main group reward_mult=0.6 can pull the total below base
+    # even with a pass — never show a negative "bonus".
+    pass_bonus_text = f"\n<b>Pass Bonus:</b> +{bonus_coins} ⬪" if multiplier > 1.0 and bonus_coins > 0 else ""
     reward_coins, staff_bonus = apply_role_bonus(user_id, reward_coins, "daily_bonus_percent")
     staff_bonus_text = f"\n<b>Staff Bonus:</b> +{staff_bonus} ⬪" if staff_bonus else ""
     # Give Rewards
@@ -80,16 +83,20 @@ async def daily_command_handler(_, message: types.Message):
         return await message.reply_text("No characters available currently.", parse_mode=enums.ParseMode.HTML)
     claim_filter = get_user_id_query(user_id)
     claim_filter["last_daily_date"] = {"$ne": now_date}
-    claim_result = await user_collection.update_one(
-        claim_filter,
-        add_user_set_on_insert({
-            "$set": {"last_daily_date": now_date, "daily_streak": streak},
-            "$inc": {"balance": reward_coins, "char_count": 1, "version": 1},
-            "$push": {"characters": char},
-            "$setOnInsert": {"id": user_id}
-        }, user_id, first_name=message.from_user.first_name, username=message.from_user.username),
-        upsert=True
-    )
+    try:
+        claim_result = await user_collection.update_one(
+            claim_filter,
+            add_user_set_on_insert({
+                "$set": {"last_daily_date": now_date, "daily_streak": streak},
+                "$inc": {"balance": reward_coins, "char_count": 1, "version": 1},
+                "$push": {"characters": char},
+                "$setOnInsert": {"id": user_id}
+            }, user_id, first_name=message.from_user.first_name, username=message.from_user.username),
+            upsert=True
+        )
+    except DuplicateKeyError:
+        # Concurrent claim won the race; the unique id index blocked the insert.
+        return await message.reply_text("You've already claimed your daily reward today!", parse_mode=enums.ParseMode.HTML)
     if claim_result.modified_count == 0 and claim_result.upserted_id is None:
         return await message.reply_text("You've already claimed your daily reward today!", parse_mode=enums.ParseMode.HTML)
     # Update Redis caches
@@ -137,7 +144,7 @@ async def weekly_command_handler(_, message: types.Message):
     reward_coins = int(base_coins * multiplier * reward_mult)
     xp_reward = int(500 * PASS_BENEFITS[pass_type]["xp_multiplier"])
     bonus_coins = reward_coins - base_coins
-    pass_bonus_text = f"\n(+{bonus_coins} Pass Bonus)" if multiplier > 1.0 else ""
+    pass_bonus_text = f"\n(+{bonus_coins} Pass Bonus)" if multiplier > 1.0 and bonus_coins > 0 else ""
     reward_coins, staff_coin_bonus = apply_role_bonus(user_id, reward_coins, "weekly_bonus_percent")
     xp_reward, staff_xp_bonus = apply_role_bonus(user_id, xp_reward, "weekly_xp_bonus_percent")
     staff_coin_text = f"\n(+{staff_coin_bonus:,} Staff Bonus)" if staff_coin_bonus else ""
@@ -147,15 +154,19 @@ async def weekly_command_handler(_, message: types.Message):
         {"last_weekly_date": {"$exists": False}},
         {"last_weekly_date": {"$lte": (now - timedelta(days=7)).strftime("%Y-%m-%d")}}
     ]
-    weekly_result = await user_collection.update_one(
-        weekly_filter,
-        add_user_set_on_insert({
-            "$set": {"last_weekly_date": now_str},
-            "$inc": {"balance": reward_coins, "version": 1},
-            "$setOnInsert": {"id": user_id}
-        }, user_id, first_name=message.from_user.first_name, username=message.from_user.username),
-        upsert=True
-    )
+    try:
+        weekly_result = await user_collection.update_one(
+            weekly_filter,
+            add_user_set_on_insert({
+                "$set": {"last_weekly_date": now_str},
+                "$inc": {"balance": reward_coins, "version": 1},
+                "$setOnInsert": {"id": user_id}
+            }, user_id, first_name=message.from_user.first_name, username=message.from_user.username),
+            upsert=True
+        )
+    except DuplicateKeyError:
+        # Concurrent claim won the race; the unique id index blocked the insert.
+        return await message.reply_text("You have already claimed this weekly reward.", parse_mode=enums.ParseMode.HTML)
     if weekly_result.modified_count == 0 and weekly_result.upserted_id is None:
         return await message.reply_text("You have already claimed this weekly reward.", parse_mode=enums.ParseMode.HTML)
     await set_weekly_date(user_id, now_str)

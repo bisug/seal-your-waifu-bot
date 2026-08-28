@@ -203,8 +203,12 @@ async def _ensure_egg_document(user_id: int, eggs: list, page: int) -> dict:
     if hatch_time:
         egg["hatch_time"] = hatch_time
 
+    # Guard the positional write: if the eggs array shifted between the read
+    # and this write (a concurrent hatch $pull), eggs.{page} now points at a
+    # different egg. Only upgrade an entry that still has no id, so we never
+    # clobber a real egg's state.
     await user_collection.update_one(
-        get_user_filter(user_id),
+        {**get_user_filter(user_id), f"eggs.{page}.id": {"$exists": False}},
         {"$set": {f"eggs.{page}": egg}}
     )
     return egg
@@ -320,6 +324,19 @@ async def egg_incubate_callback(_, query: types.CallbackQuery):
     ready_time = get_now_utc() + timedelta(minutes=wait_min)
     incubate_filter = get_user_filter(owner_id)
     incubate_filter["eggs"] = {"$elemMatch": {"id": egg_id, "status": "fresh"}}
+    # Atomic slot guard: the pre-check above reads a stale snapshot, so two
+    # concurrent incubations could both pass it. Re-check inside the filter —
+    # only proceed while the incubating count is still below the slot limit.
+    incubate_filter["$expr"] = {
+        "$lt": [
+            {"$size": {"$filter": {
+                "input": {"$ifNull": ["$eggs", []]},
+                "as": "e",
+                "cond": {"$eq": ["$$e.status", "incubating"]},
+            }}},
+            slots,
+        ]
+    }
     result = await user_collection.update_one(
         incubate_filter,
         {"$set": {

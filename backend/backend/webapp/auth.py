@@ -151,6 +151,19 @@ async def get_current_user(auth: HTTPAuthorizationCredentials = Security(securit
     if not user_id:
         raise HTTPException(status_code=401, detail="Invalid or expired session")
 
+    # Globally banned users must not get a WebApp bypass: the bot enforces
+    # gbans on every message, but this auth path never checked before.
+    try:
+        from backend.core.global_bans import get_user_gban
+        if await get_user_gban(user_id):
+            raise HTTPException(status_code=403, detail="Access denied.")
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Fail-open on lookup errors so a Mongo/Redis hiccup doesn't lock
+        # every user out; the bot-side gban enforcement still applies.
+        LOGGER.warning(f"gban check failed for {user_id}: {e}")
+
     # Rate Limiting: 60 req / 60s (sliding window)
     now = time.time()
     rate_key = f"rate_limit:{user_id}"

@@ -75,6 +75,11 @@ async def sell_character_from_user(user_id: int, char_id: str):
             return None
 
         char = chars[idx_to_remove]
+        # Lock guard lives in the shared seller so BOTH the bot callback and
+        # the WebApp routes honor /lock (previously only /sell checked).
+        if str(char.get("id")) in (user.get("locked") or []):
+            return None
+
         price = get_sell_price(char.get("rarity", "Common"), user_id)
         new_chars = chars[:idx_to_remove] + chars[idx_to_remove + 1:]
         current_version = user.get("version", 0)
@@ -145,19 +150,28 @@ async def sell_handler(_, message: types.Message):
     )
 @app.on_callback_query(filters.regex(r"^sell_"))
 async def sell_callback_handler(_, query: types.CallbackQuery):
-    data = query.data.split("_")
-    action = data[1]
-    # Handle both sell_c_{id}:{user_id} and sell_a:{user_id}
-    parts = data[2].split(":") if len(data) > 2 else []
-    if action == "a":
-        owner_id = int(data[2].split(":")[1]) if ":" in data[2] else 0 # Fallback for old buttons
-    else:
-        owner_id = int(parts[1]) if len(parts) > 1 else 0
-    if owner_id and query.from_user.id != owner_id:
-        return await query.answer("This is not your menu!", show_alert=True)
-    if action == "a":
+    # Cancel buttons are "sell_a:{user_id}" (one underscore segment), confirms
+    # are "sell_c_{char_id}:{user_id}". Handle the cancel shape first — the
+    # old split("_") parser produced action="a:123" and crashed on parts[0].
+    tail = query.data.split("_", 1)[1]
+    if tail.startswith("a:"):
+        try:
+            owner_id = int(tail.split(":", 1)[1])
+        except (IndexError, ValueError):
+            owner_id = 0
+        if owner_id and query.from_user.id != owner_id:
+            return await query.answer("This is not your menu!", show_alert=True)
         await query.message.edit_text("<b>Selling cancelled.</b>", parse_mode=enums.ParseMode.HTML)
         return
+
+    data = query.data.split("_")
+    action = data[1]
+    parts = data[2].split(":") if len(data) > 2 else []
+    owner_id = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 0
+    if owner_id and query.from_user.id != owner_id:
+        return await query.answer("This is not your menu!", show_alert=True)
+    if not parts:
+        return await query.answer("Invalid sell request.", show_alert=True)
     char_id = parts[0]
     user_id = query.from_user.id
     user = await get_user_data(user_id)
@@ -166,6 +180,8 @@ async def sell_callback_handler(_, query: types.CallbackQuery):
     char = next((c for c in user['characters'] if str(c.get('id')) == char_id), None)
     if not char:
         return await query.answer("You don't own this character anymore.", show_alert=True)
+    if str(char_id) in (user.get('locked') or []):
+        return await query.answer("🔒 This character is locked. Unlock it first.", show_alert=True)
     rarity = char.get('rarity', '⚪ Common')
     price = get_sell_price(rarity, user_id)
     current_shards = user.get('balance', 0)
