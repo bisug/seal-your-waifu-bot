@@ -75,7 +75,7 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.2.3" },
     { name = "redis", extras = ["hiredis"], specifier = ">=8.1.0" },
     { name = "tgcrypto", marker = "sys_platform == 'linux'", specifier = ">=1.2.5" },
-    { name = "uvicorn", extras = ["standard"], specifier = ">=0.52.3" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.52.4" },
     { name = "uvloop", marker = "sys_platform != 'win32'", specifier = ">=0.22.1" },
 ]
 
