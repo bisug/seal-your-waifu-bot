@@ -10,7 +10,7 @@ requires-python = ">=3.14"
 dependencies = [
     # API Framework
     "fastapi>=0.141.1",
-    "uvicorn[standard]>=0.52.3",
+    "uvicorn[standard]>=0.52.4",
     # HTTP / Networking
     "httpx>=0.28.1",
     "httptools>=0.8.0",
