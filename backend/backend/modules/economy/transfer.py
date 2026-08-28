@@ -19,6 +19,9 @@ async def transfer_collection_command(_, message: types.Message):
         )
         return
     sender_id = message.from_user.id
+    if not message.reply_to_message.from_user:
+        await message.reply_text("<b>Cannot transfer to this message (no user attached).</b>", parse_mode=enums.ParseMode.HTML)
+        return
     receiver_id = message.reply_to_message.from_user.id
     if sender_id == receiver_id:
         await message.reply_text("You cannot transfer your collection to yourself!", parse_mode=enums.ParseMode.HTML)

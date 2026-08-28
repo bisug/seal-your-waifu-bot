@@ -148,10 +148,13 @@ async def recycle_preview(
     owned_chars = user.get("characters", [])
     current_counts = Counter(c["id"] for c in owned_chars)
 
+    locked = set(user.get("locked") or [])
     total_reward = 0
     char_map = {c["id"]: c for c in owned_chars}
 
     for rid in char_ids:
+        if str(rid) in locked:
+            raise HTTPException(status_code=400, detail=f"Character ID {rid} is locked. Unlock it before recycling.")
         if current_counts.get(rid, 0) > 0:
             char = char_map.get(rid)
             if char:
@@ -177,6 +180,9 @@ async def sell_character_api(
     char = next((c for c in user.get("characters", []) if c["id"] == char_id), None)
     if not char:
         raise HTTPException(status_code=404, detail="Character not found in harem")
+
+    if str(char_id) in (user.get("locked") or []):
+        raise HTTPException(status_code=400, detail="This character is locked. Unlock it before selling.")
 
     sale = await sell_character_from_user(user_id, char_id)
     if not sale:
@@ -204,6 +210,11 @@ async def recycle_characters(
     
     total_reward = 0
     current_counts = Counter(c["id"] for c in owned_chars)
+
+    locked = set(user.get("locked") or [])
+    for rid in to_recycle_counts:
+        if str(rid) in locked:
+            raise HTTPException(status_code=400, detail=f"Character ID {rid} is locked. Unlock it before recycling.")
     
     for rid, rcount in to_recycle_counts.items():
         if current_counts[rid] < rcount:

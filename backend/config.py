@@ -36,6 +36,9 @@ def _env_float(name: str, default: float) -> float:
         return default
 
 class Config:
+    # SECURITY: no secret defaults here. Credentials live in backend/.env
+    # (git-ignored, local dev) and platform env vars (production). The old
+    # hardcoded defaults were committed to git history and must be rotated.
     # --- BOT IDENTITY ---
     TOKEN =""
     SUB_TOKEN =""
@@ -44,7 +47,7 @@ class Config:
     BOT_NAME = os.getenv("BOT_NAME", "SEAL YOUR WAIFU")  # Fetched automatically at startup
 
     # --- TELEGRAM API CREDENTIALS ---
-    API_ID = int(os.getenv("API_ID", "20098819"))
+    API_ID = int(os.getenv("API_ID", "0") or 0)
     API_HASH =""
 
     # --- DATABASE INFRASTRUCTURE ---
@@ -52,8 +55,8 @@ class Config:
     REDIS_URL =""
 
     # --- PRIVILEGED USERS ---
-    OWNER_ID = int(os.getenv("OWNER_ID", "7804972365"))
-    SUDO_USERS = [int(i.strip()) for i in os.getenv("SUDO_USERS", "7717913705, 6574393060, 6388703157, 6858372924").split(",") if i.strip().isdigit()]
+    OWNER_ID = int(os.getenv("OWNER_ID", "0") or 0)
+    SUDO_USERS = [int(i.strip()) for i in os.getenv("SUDO_USERS", "").split(",") if i.strip().isdigit()]
 
     # --- CHANNEL & GROUP IDS ---
     MAIN_GROUP_ID = int(os.getenv("MAIN_GROUP_ID", "-1002429397912"))
@@ -68,7 +71,7 @@ class Config:
     PHOTO_URL = os.getenv("PHOTO_URL", "https://files.catbox.moe/2hsawz.jpg").split(",")
 
     # --- EXTERNAL INTEGRATIONS ---
-    IMGBB_API_KEY = os.getenv("IMGBB_API_KEY", "REDACTED_API_HASH")
+    IMGBB_API_KEY = os.getenv("IMGBB_API_KEY", "")
     
     # --- WEBAPP CONFIG ---
     WEB_APP_URL = os.getenv("WEB_APP_URL", "https://example.com")

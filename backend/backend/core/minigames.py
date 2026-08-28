@@ -136,7 +136,20 @@ async def consume_energy(user_id: int, game_type: Optional[str] = None) -> Any:
 
     if game_type and r:
         session_key = f"minigame_session:{user_id}:{game_type}"
-        await r.set(session_key, json.dumps(start_data), ex=300) # 5 min session
+        try:
+            await r.set(session_key, json.dumps(start_data), ex=300) # 5 min session
+        except Exception as e:
+            # Energy was already decremented atomically above. If the session
+            # write fails the user would spend energy with no game — refund it.
+            LOGGER.warning(f"Minigame session write failed for {user_id}: {e}")
+            try:
+                await user_collection.update_one(
+                    get_user_id_query(user_id),
+                    {"$inc": {"energy": 1}}
+                )
+            except Exception:
+                LOGGER.exception(f"Energy refund failed for {user_id}")
+            return False
 
     await invalidate_user_cache(user_id)
     return start_data if game_type else True
@@ -144,7 +157,10 @@ async def consume_energy(user_id: int, game_type: Optional[str] = None) -> Any:
 async def validate_session(user_id: int, game_type: str) -> Optional[dict]:
     """Returns session data if valid, or None if no session."""
     if not r:
-        return {"start_time": get_now_utc().timestamp() - 10} # Fallback if no redis
+        # Sessions live only in Redis. Fabricating a session here (the old
+        # fallback) let anyone submit rewards without starting a game or
+        # spending energy whenever Redis was down. Refuse instead.
+        return None
 
     session_key = f"minigame_session:{user_id}:{game_type}"
     session_data_str = await r.get(session_key)
@@ -167,6 +183,10 @@ async def reward_minigame(user_id: int, game_type: str, score: int = 0, session_
     character_reward = None
 
     if game_type == "cipher_match":
+        # Anti-cheat: score is client-supplied. Clamp to the real maximum
+        # (8 pairs) so a forged score cannot mint unbounded shards/XP.
+        score = max(0, min(int(score or 0), 8))
+
         # Anti-cheat: 8 pairs matched in less than 5 seconds is highly suspicious
         if score >= 8 and time_taken < 5.0:
              LOGGER.warning(f"User {user_id} suspicious Cipher Match: {score} pairs in {time_taken}s")
@@ -191,7 +211,7 @@ async def reward_minigame(user_id: int, game_type: str, score: int = 0, session_
              return {"error": "No prize determined in session"}
 
         if prize["type"] == "character":
-            character_reward = await get_random_character(["⚪ Common", "🟢 Medium", "🟡 Rare"])
+            character_reward = await get_random_character(["⚪ Common", "🟢 Medium", "� Rare"])
             shards = 100
             xp = 25
         elif prize["type"] == "xp":

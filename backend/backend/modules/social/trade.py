@@ -12,6 +12,8 @@ async def trade_handler(_, message: types.Message):
     if not message.reply_to_message:
         return await message.reply_text("Reply to a user to trade!", parse_mode=enums.ParseMode.HTML)
     sender_id = message.from_user.id
+    if not message.reply_to_message.from_user:
+        return await message.reply_text("Cannot trade with this message (no user attached).", parse_mode=enums.ParseMode.HTML)
     receiver_id = message.reply_to_message.from_user.id
     if sender_id == receiver_id:
         return await message.reply_text("No self-trading!", parse_mode=enums.ParseMode.HTML)

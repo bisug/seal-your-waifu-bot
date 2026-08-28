@@ -1,6 +1,6 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Body
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from backend.webapp.auth import get_current_user
 from backend.core.minigames import get_user_energy, consume_energy, reward_minigame, validate_session, MAX_ENERGY
@@ -9,7 +9,9 @@ router = APIRouter()
 
 class GameSubmitRequest(BaseModel):
     game_type: str
-    score: int = 0
+    # cipher_match max is 8 pairs; the schema bound is the first anti-cheat
+    # layer (reward_minigame clamps again server-side).
+    score: int = Field(default=0, ge=0, le=8)
 
 @router.get("/minigames/state")
 async def get_minigames_state(user_id: int = Depends(get_current_user)):

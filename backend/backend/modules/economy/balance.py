@@ -39,6 +39,8 @@ async def pay_cmd(_, message: types.Message):
     sender_id = message.from_user.id
     sender_name = message.from_user.first_name
     recipient = message.reply_to_message.from_user
+    if not recipient:
+        return await message.reply_text("<b>Cannot pay this message (no user attached).</b>", parse_mode=enums.ParseMode.HTML)
     recipient_id = recipient.id
     if recipient_id == sender_id:
         return await message.reply_text("<b>You cannot pay yourself.</b>", parse_mode=enums.ParseMode.HTML)
@@ -104,7 +106,17 @@ async def pay_callback_handler(_, query: types.CallbackQuery):
     recipient_id = int(payment_info["recipient"])
     amount = int(payment_info["amount"])
     if await check_and_deduct(sender_id, amount):
-        await update_user_balance(recipient_id, amount)
+        try:
+            await update_user_balance(recipient_id, amount)
+        except Exception as e:
+            # Sender was already debited — refund so a failed credit never
+            # destroys shards.
+            LOGGER.error(f"Payment credit failed {sender_id} -> {recipient_id}: {e}")
+            try:
+                await update_user_balance(sender_id, amount)
+            except Exception:
+                LOGGER.exception(f"CRITICAL: payment refund failed for {sender_id}")
+            return await query.answer("Payment failed. Your Shards were returned.", show_alert=True)
         try:
             recipient = await app.get_users(recipient_id)
             mention = f'<a href="tg://user?id={recipient.id}">{html_escape(recipient.first_name)}</a>'
