@@ -6,6 +6,7 @@ from pymongo.errors import DuplicateKeyError
 
 from backend import app, collection, user_collection
 from backend.core.balance import update_user_balance
+from backend.core.rarities import CLAIM_RARITY_WEIGHTS
 from backend.core.user import add_char_to_user
 from backend.core.utils import (get_user_id_query, handle_errors,
                                 html_escape, reply_media_dynamic)
@@ -30,14 +31,8 @@ rejection_images = [
     "https://te.legra.ph/file/e4e1ba60b4e79359bf9e7.png",
     "https://te.legra.ph/file/81d011398da3a6f49fa7f.png"
 ]
-RARITY_WEIGHTS = {
-    '⚪ Common': 60,
-    '🟢 Medium': 30,
-    '🟠 Rare': 9,
-    '🟡 Legendary': 1
-}
 async def get_random_waifu():
-    rarity = random.choices(list(RARITY_WEIGHTS.keys()), weights=RARITY_WEIGHTS.values(), k=1)[0]
+    rarity = random.choices(list(CLAIM_RARITY_WEIGHTS.keys()), weights=CLAIM_RARITY_WEIGHTS.values(), k=1)[0]
     cursor = await collection.aggregate([{'$match': {'rarity': rarity}}, {'$sample': {'size': 1}}])
     res = await cursor.to_list(length=1)
     return res[0] if res else None

@@ -164,6 +164,10 @@ async def _bootstrap_infrastructure(status: dict):
     await seal_db.ensure_indexes()
     status["indexes"] = "ensured"
 
+    from backend.core.rarities import load_rarities
+    rarity_count = await load_rarities()
+    status["rarities"] = f"loaded:{rarity_count}"
+
     from backend.core.pets import seed_pet_catalog
     await seed_pet_catalog()
     status["pet_catalog"] = "seeded"
@@ -243,6 +247,7 @@ async def start_bots():
             "mongo": "pending",
             "redis": "pending",
             "indexes": "pending",
+            "rarities": "pending",
             "pet_catalog": "pending",
             "main_bot": {"state": "pending"},
             "game_bot": {"state": "pending"},
