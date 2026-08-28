@@ -89,6 +89,7 @@ def _sanitize_temp_prefix(prefix: str) -> str:
 
 def _temp_file_path(prefix: str, ext: str) -> str:
     safe_prefix = _sanitize_temp_prefix(prefix)
+    # codeql[py/path-injection] prefix is scrubbed by _sanitize_temp_prefix; ext is a fixed allowlist value
     handle = tempfile.NamedTemporaryFile(prefix=f"{safe_prefix}_", suffix=ext, delete=False)
     path = handle.name
     handle.close()
@@ -172,6 +173,7 @@ async def download_media_url(media_url: str, *, temp_prefix: str = "upload") -> 
         async with httpx.AsyncClient(follow_redirects=False) as client:
             for _ in range(MAX_MEDIA_REDIRECTS + 1):
                 current_url = await _validate_public_media_url(current_url)
+                # codeql[py/full-ssrf] target re-validated (scheme/host/IP/DNS) on the line above before request
                 async with client.stream("GET", current_url, timeout=20.0) as response:
                     if 300 <= response.status_code < 400:
                         location = response.headers.get("Location")
