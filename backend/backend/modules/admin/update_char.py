@@ -81,6 +81,7 @@ async def update_waifu_handler(_, message: types.Message):
                 if r_num not in RARITY_MAP:
                     raise ValueError
                 updates['rarity'] = RARITY_MAP[r_num]
+                updates['rarity_id'] = r_num
             except ValueError:
                 return await message.reply_text(f"❌ Invalid rarity number. Map: {get_rarity_help()}")
         elif key in ("url", "img_url"):

@@ -108,9 +108,16 @@ async def add_character_to_db(char_data: dict) -> str:
     or race conditions during concurrent approvals.
     """
     from pymongo.errors import DuplicateKeyError
+    from backend.core.rarities import rarity_id_of
     for attempt in range(10):
         char_id = str(await get_next_sequence_number('character_id')).zfill(4)
         char_data['id'] = char_id
+        # Dual-write the rarity_id alongside the display label so the
+        # rarity table stays the single source of truth for renames.
+        if 'rarity_id' not in char_data:
+            rid = rarity_id_of(char_data.get('rarity'))
+            if rid is not None:
+                char_data['rarity_id'] = rid
         # Stored numeric form of the ID so the gallery can sort by an indexed
         # field instead of converting per-document at query time.
         try:

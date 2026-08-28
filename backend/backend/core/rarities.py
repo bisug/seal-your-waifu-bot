@@ -1,9 +1,14 @@
 """DB-backed rarity configuration.
 
-Canonical store is the `rarities` collection (one doc per rarity,
-_id = full label such as "🟠 Rare"). load_rarities() reads the docs into
-module-level dicts at startup; refresh_rarities() reloads them IN PLACE so
-every module that imported a dict sees edits without re-importing.
+Canonical store is the `rarities` collection: one doc per rarity,
+_id = rarity_id (int), with separate `emoji` and `name` fields. The display
+label ("🟠 Rare") is composed as f"{emoji} {name}". Characters and harem
+entries carry `rarity_id`; the label is derived, so renaming/re-emojying a
+rarity is a one-doc edit plus a label propagation pass.
+
+load_rarities() reads the docs into module-level dicts at startup;
+refresh_rarities() reloads them IN PLACE so every module that imported a
+dict sees edits without re-importing.
 
 The hardcoded defaults below seed an empty collection on first startup and
 act as the fallback when MongoDB is unreachable.
@@ -13,44 +18,47 @@ import logging
 
 LOGGER = logging.getLogger(__name__)
 
-# (num, label, spawn_weight, active_spawn_weight, shop_weight, claim_weight,
-#  shop_price, stock_limit, sell_price)
+# (rarity_id, emoji, name, spawn_weight, active_spawn_weight, shop_weight,
+#  claim_weight, shop_price, stock_limit, sell_price)
 _DEFAULT_RARITIES = [
-    (1, "⚪ Common", 360, 280, 25, 60, 1, 50, 50),
-    (2, "🟢 Medium", 240, 220, 20, 30, 2, 40, 100),
-    (3, "🟠 Rare", 110, 130, 15, 9, 5, 30, 250),
-    (4, "🟡 Legendary", 50, 70, 10, 1, 10, 20, 600),
-    (5, "💠 Cosmic", 25, 35, 8, 0, 25, 15, 1200),
-    (6, "💮 Exclusive", 4, 6, 6, 0, 50, 10, 2500),
-    (7, "🔮 Limited Edition", 2, 3, 5, 0, 100, 10, 5000),
-    (8, "🫧 Royal", 1, 2, 4, 0, 250, 5, 10000),
-    (9, "💎 Antique", 1, 2, 3, 0, 500, 5, 12000),
-    (10, "🎐 Celestial", 1, 1, 2, 0, 1000, 2, 20000),
-    (11, "🎞️ AMV", 1, 1, 2, 0, 1500, 2, 30000),
-    (12, "🪽 Prestige", 1, 1, 1, 0, 2500, 1, 40000),
-    (13, "❄️ Winter", 12, 15, 6, 0, 50, 10, 1500),
-    (14, "☀️ Summer", 12, 15, 6, 0, 50, 10, 1500),
-    (15, "💖 Valentine", 5, 8, 5, 0, 100, 10, 2000),
-    (16, "🎃 Halloween", 5, 8, 5, 0, 100, 10, 2000),
-    (17, "💸 Luxury", 8, 12, 4, 0, 250, 5, 2500),
-    (18, "🎏 Limited", 18, 25, 10, 0, 200, 20, 1800),
-    (19, "🟣 Epic", 120, 140, 20, 0, 2, 40, 150),
-    (20, "🧬 Immortal", 25, 35, 8, 0, 25, 15, 1200),
-    (21, "🌌 Eternal", 3, 4, 6, 0, 50, 10, 2500),
-    (22, "🔮 Mystic", 2, 3, 5, 0, 100, 10, 5000),
-    (23, "💎 Mythical", 1, 2, 3, 0, 500, 5, 12000),
-    (24, "✨ Divine", 1, 1, 2, 0, 1500, 2, 30000),
-    (25, "🌠 Astral", 1, 1, 1, 0, 2500, 1, 40000),
+    (1, "⚪", "Common", 360, 280, 25, 60, 1, 50, 50),
+    (2, "🟢", "Medium", 240, 220, 20, 30, 2, 40, 100),
+    (3, "🟠", "Rare", 110, 130, 15, 9, 5, 30, 250),
+    (4, "🟡", "Legendary", 50, 70, 10, 1, 10, 20, 600),
+    (5, "💠", "Cosmic", 25, 35, 8, 0, 25, 15, 1200),
+    (6, "💮", "Exclusive", 4, 6, 6, 0, 50, 10, 2500),
+    (7, "🔮", "Limited Edition", 2, 3, 5, 0, 100, 10, 5000),
+    (8, "🫧", "Royal", 1, 2, 4, 0, 250, 5, 10000),
+    (9, "💎", "Antique", 1, 2, 3, 0, 500, 5, 12000),
+    (10, "🎐", "Celestial", 1, 1, 2, 0, 1000, 2, 20000),
+    (11, "🎞️", "AMV", 1, 1, 2, 0, 1500, 2, 30000),
+    (12, "🪽", "Prestige", 1, 1, 1, 0, 2500, 1, 40000),
+    (13, "❄️", "Winter", 12, 15, 6, 0, 50, 10, 1500),
+    (14, "☀️", "Summer", 12, 15, 6, 0, 50, 10, 1500),
+    (15, "💖", "Valentine", 5, 8, 5, 0, 100, 10, 2000),
+    (16, "🎃", "Halloween", 5, 8, 5, 0, 100, 10, 2000),
+    (17, "💸", "Luxury", 8, 12, 4, 0, 250, 5, 2500),
+    (18, "🎏", "Limited", 18, 25, 10, 0, 200, 20, 1800),
+    (19, "🟣", "Epic", 120, 140, 20, 0, 2, 40, 150),
+    (20, "🧬", "Immortal", 25, 35, 8, 0, 25, 15, 1200),
+    (21, "🌌", "Eternal", 3, 4, 6, 0, 50, 10, 2500),
+    (22, "🔮", "Mystic", 2, 3, 5, 0, 100, 10, 5000),
+    (23, "💎", "Mythical", 1, 2, 3, 0, 500, 5, 12000),
+    (24, "✨", "Divine", 1, 1, 2, 0, 1500, 2, 30000),
+    (25, "🌠", "Astral", 1, 1, 1, 0, 2500, 1, 40000),
 ]
 
-EDITABLE_FIELDS = {
+NUMERIC_FIELDS = {
     "spawn_weight", "active_spawn_weight", "shop_weight", "claim_weight",
     "shop_price", "stock_limit", "sell_price",
 }
+TEXT_FIELDS = {"emoji", "name"}
+EDITABLE_FIELDS = NUMERIC_FIELDS | TEXT_FIELDS
 
 # Live config dicts. Mutated in place (clear + update) by _apply_docs() so
 # every module that imported them observes refreshes without re-importing.
-RARITY_MAP: dict[int, str] = {}
+RARITY_MAP: dict[int, str] = {}          # rarity_id -> composed label
+RARITY_IDS: dict[str, int] = {}          # composed label -> rarity_id
 SPAWN_RARITY_WEIGHTS: dict[str, int] = {}
 ACTIVE_SPAWN_RARITY_WEIGHTS: dict[str, int] = {}
 SHOP_RARITY_WEIGHTS: dict[str, int] = {}
@@ -62,33 +70,59 @@ SELL_PRICES: dict[str, int] = {}  # keyed by bare name ("Common")
 _RARITY_DOCS: list[dict] = []
 
 
+def compose_label(emoji: str, name: str) -> str:
+    return f"{emoji} {name}".strip() if emoji else str(name)
+
+
 def bare_name(label: str) -> str:
     """'🟢 Medium' -> 'Medium'."""
     return label.split(" ", 1)[1] if " " in label else label
 
 
+def rarity_id_of(rarity: str | int | None) -> int | None:
+    """Resolve a rarity_id from an id, full label, or bare name."""
+    if isinstance(rarity, int):
+        return rarity if rarity in RARITY_MAP else None
+    if not rarity:
+        return None
+    text = str(rarity).strip()
+    if text in RARITY_IDS:
+        return RARITY_IDS[text]
+    for label, rid in RARITY_IDS.items():
+        if text.lower() == bare_name(label).lower():
+            return rid
+    return None
+
+
+def label_of(rarity_id: int | None) -> str | None:
+    return RARITY_MAP.get(rarity_id)
+
+
 def _default_docs() -> list[dict]:
     return [
         {
-            "_id": label, "num": num,
+            "_id": rid, "emoji": emoji, "name": name,
             "spawn_weight": spawn, "active_spawn_weight": active,
             "shop_weight": shop, "claim_weight": claim,
             "shop_price": price, "stock_limit": stock, "sell_price": sell,
         }
-        for num, label, spawn, active, shop, claim, price, stock, sell in _DEFAULT_RARITIES
+        for rid, emoji, name, spawn, active, shop, claim, price, stock, sell in _DEFAULT_RARITIES
     ]
 
 
 def _apply_docs(docs: list[dict]) -> None:
     global _RARITY_DOCS
-    docs = sorted(docs, key=lambda d: d.get("num", 10**9))
-    for target in (RARITY_MAP, SPAWN_RARITY_WEIGHTS, ACTIVE_SPAWN_RARITY_WEIGHTS,
-                   SHOP_RARITY_WEIGHTS, CLAIM_RARITY_WEIGHTS, RARITY_PRICES,
+    docs = sorted(docs, key=lambda d: d.get("_id", 10**9))
+    for target in (RARITY_MAP, RARITY_IDS, SPAWN_RARITY_WEIGHTS,
+                   ACTIVE_SPAWN_RARITY_WEIGHTS, SHOP_RARITY_WEIGHTS,
+                   CLAIM_RARITY_WEIGHTS, RARITY_PRICES,
                    RARITY_STOCK_LIMITS, SELL_PRICES):
         target.clear()
     for doc in docs:
-        label = doc["_id"]
-        RARITY_MAP[int(doc.get("num", 0))] = label
+        rid = int(doc["_id"])
+        label = compose_label(doc.get("emoji", ""), doc.get("name", ""))
+        RARITY_MAP[rid] = label
+        RARITY_IDS[label] = rid
         SPAWN_RARITY_WEIGHTS[label] = int(doc.get("spawn_weight", 0))
         ACTIVE_SPAWN_RARITY_WEIGHTS[label] = int(doc.get("active_spawn_weight", 0))
         SHOP_RARITY_WEIGHTS[label] = int(doc.get("shop_weight", 0))
@@ -97,12 +131,12 @@ def _apply_docs(docs: list[dict]) -> None:
             CLAIM_RARITY_WEIGHTS[label] = claim
         RARITY_PRICES[label] = int(doc.get("shop_price", 5))
         RARITY_STOCK_LIMITS[label] = int(doc.get("stock_limit", 10))
-        SELL_PRICES[bare_name(label)] = int(doc.get("sell_price", 50))
+        SELL_PRICES[doc.get("name") or bare_name(label)] = int(doc.get("sell_price", 50))
     _RARITY_DOCS = docs
 
 
 def get_rarity_docs() -> list[dict]:
-    """Snapshot of the currently loaded rarity docs, sorted by num."""
+    """Snapshot of the currently loaded rarity docs, sorted by rarity_id."""
     return [dict(d) for d in _RARITY_DOCS]
 
 
@@ -111,11 +145,36 @@ def get_rarity_docs() -> list[dict]:
 _apply_docs(_default_docs())
 
 
+async def _migrate_label_keyed_docs(docs: list[dict]) -> list[dict]:
+    """One-time migration from the first schema (_id = full label string,
+    `num` field) to the rarity_id schema (_id = int, emoji + name fields)."""
+    from backend.database import rarities_collection
+    migrated = []
+    for doc in docs:
+        label = doc["_id"]
+        emoji, name = (label.split(" ", 1) + [""])[:2] if " " in label else ("", label)
+        new_doc = {
+            "_id": int(doc.get("num", 0)),
+            "emoji": emoji,
+            "name": name,
+        }
+        for field in NUMERIC_FIELDS:
+            new_doc[field] = int(doc.get(field, 0))
+        migrated.append(new_doc)
+    old_ids = [doc["_id"] for doc in docs]
+    await rarities_collection.delete_many({"_id": {"$in": old_ids}})
+    await rarities_collection.insert_many(migrated)
+    LOGGER.info("Migrated %s rarity docs to rarity_id schema.", len(migrated))
+    return migrated
+
+
 async def load_rarities() -> int:
     """Load rarities from DB, seeding from defaults on first startup."""
     from backend.database import rarities_collection
     try:
         docs = await rarities_collection.find({}).to_list(length=1000)
+        if docs and any(isinstance(d["_id"], str) for d in docs):
+            docs = await _migrate_label_keyed_docs(docs)
         if not docs:
             try:
                 await rarities_collection.insert_many(_default_docs())
@@ -138,26 +197,27 @@ async def refresh_rarities() -> int:
     return len(docs)
 
 
-async def set_rarity_field(label: str, field: str, value: int) -> bool:
+async def set_rarity_field(rarity_id: int, field: str, value) -> bool:
     """Update one field of a rarity doc and refresh the live dicts."""
     if field not in EDITABLE_FIELDS:
         raise ValueError(f"Unknown rarity field: {field}")
     from backend.database import rarities_collection
-    result = await rarities_collection.update_one({"_id": label}, {"$set": {field: value}})
+    result = await rarities_collection.update_one({"_id": rarity_id}, {"$set": {field: value}})
     if result.modified_count:
         await refresh_rarities()
     return bool(result.modified_count)
 
 
-async def add_rarity(num: int, label: str) -> str | None:
+async def add_rarity(rarity_id: int, emoji: str, name: str) -> str | None:
     """Add a new rarity. Returns an error message, or None on success."""
-    if num in RARITY_MAP:
-        return f"Rarity number {num} already exists ({RARITY_MAP[num]})."
-    if label in SPAWN_RARITY_WEIGHTS:
+    if rarity_id in RARITY_MAP:
+        return f"Rarity id {rarity_id} already exists ({RARITY_MAP[rarity_id]})."
+    label = compose_label(emoji, name)
+    if label in RARITY_IDS:
         return f"Rarity {label} already exists."
     from backend.database import rarities_collection
     doc = {
-        "_id": label, "num": num,
+        "_id": rarity_id, "emoji": emoji, "name": name,
         # Weights start at 0: the rarity stays out of every pool until an
         # admin configures it via /rarityset.
         "spawn_weight": 0, "active_spawn_weight": 0,
@@ -170,3 +230,36 @@ async def add_rarity(num: int, label: str) -> str | None:
         return f"Insert failed: {e}"
     await refresh_rarities()
     return None
+
+
+async def rename_rarity(rarity_id: int, emoji: str, name: str) -> tuple[str, str] | None:
+    """Rename/re-emoji a rarity and propagate the composed label to every
+    stored copy (character docs + user harem entries). Returns
+    (old_label, new_label), or None if the rarity does not exist."""
+    from backend.database import collection, rarities_collection, user_collection
+    old_label = RARITY_MAP.get(rarity_id)
+    if old_label is None:
+        return None
+    new_label = compose_label(emoji, name)
+    await rarities_collection.update_one(
+        {"_id": rarity_id}, {"$set": {"emoji": emoji, "name": name}}
+    )
+    await refresh_rarities()
+    if new_label != old_label:
+        # Propagate so existing read sites (which display the stored label)
+        # stay consistent without touching ~30 call sites.
+        await collection.update_many(
+            {"rarity": old_label},
+            {"$set": {"rarity": new_label, "rarity_id": rarity_id}},
+        )
+        await user_collection.update_many(
+            {"characters.rarity": old_label},
+            {"$set": {"characters.$[c].rarity": new_label, "characters.$[c].rarity_id": rarity_id}},
+            array_filters=[{"c.rarity": old_label}],
+        )
+        try:
+            from backend.core.waifu import invalidate_character_cache
+            invalidate_character_cache()
+        except Exception:
+            pass
+    return old_label, new_label
