@@ -1,5 +1,6 @@
 import asyncio
 import os
+import uuid
 
 from backend import app, game_bot, userbot
 
@@ -13,10 +14,13 @@ _START_LOCK = None
 # the first for the session.
 _INSTANCE_LOCK_KEY = "sealbot:single_instance_lock"
 _INSTANCE_LOCK_TTL = 60  # seconds; refreshed while running
+# Lock value must be unique per process, not just per pid: containers both
+# run uvicorn as pid 7, so a bare pid cannot distinguish owner from impostor.
+_INSTANCE_ID = f"{os.getpid()}-{uuid.uuid4().hex[:8]}"
 # During rolling deploys the old container keeps the lock until it drains
-# (render.yaml maxShutdownDelaySeconds=60). Keep retrying instead of refusing
-# immediately, otherwise the new replica stays down after the old one exits.
-_INSTANCE_LOCK_WAIT_TIMEOUT = 90  # seconds
+# (render.yaml maxShutdownDelaySeconds=60) and a killed instance's lock can
+# linger up to one more TTL (60s). Worst case ~120s, so wait clearly longer.
+_INSTANCE_LOCK_WAIT_TIMEOUT = 180  # seconds
 _INSTANCE_LOCK_RETRY_INTERVAL = 5  # seconds
 
 
@@ -35,7 +39,7 @@ async def _acquire_instance_lock(status: dict) -> bool:
     while True:
         try:
             owned = await redis_client.set(
-                _INSTANCE_LOCK_KEY, str(os.getpid()), ex=_INSTANCE_LOCK_TTL, nx=True
+                _INSTANCE_LOCK_KEY, _INSTANCE_ID, ex=_INSTANCE_LOCK_TTL, nx=True
             )
         except Exception as e:
             LOGGER.warning("Instance lock acquire failed (%s); proceeding without lock.", e)
@@ -50,14 +54,14 @@ async def _acquire_instance_lock(status: dict) -> bool:
             pass
         if asyncio.get_running_loop().time() >= deadline:
             LOGGER.critical(
-                "Another instance (pid=%s) still holds the session lock after %ss. "
+                "Another instance (%s) still holds the session lock after %ss. "
                 "Refusing to start to avoid MTProto session corruption.",
                 owner, _INSTANCE_LOCK_WAIT_TIMEOUT,
             )
             status["startup"] = "refused:lock_held"
             return False
         LOGGER.warning(
-            "Session lock held by pid=%s; retrying in %ss (old instance may be draining)...",
+            "Session lock held by %s; retrying in %ss (old instance may be draining)...",
             owner, _INSTANCE_LOCK_RETRY_INTERVAL,
         )
         await asyncio.sleep(_INSTANCE_LOCK_RETRY_INTERVAL)
@@ -73,7 +77,7 @@ async def _refresh_instance_lock():
                 # silently steal a lock another instance acquired after ours
                 # expired (e.g. during a long GC pause), defeating the guard.
                 held = await redis_client.set(
-                    _INSTANCE_LOCK_KEY, str(os.getpid()), ex=_INSTANCE_LOCK_TTL, xx=True
+                    _INSTANCE_LOCK_KEY, _INSTANCE_ID, ex=_INSTANCE_LOCK_TTL, xx=True
                 )
                 if not held:
                     LOGGER.critical(
@@ -81,6 +85,7 @@ async def _refresh_instance_lock():
                         "process). This process may now share an MTProto session "
                         "with another instance."
                     )
+                    return
         except Exception:
             pass
 
@@ -96,7 +101,7 @@ async def _release_instance_lock():
             "return redis.call('del', KEYS[1]) else return 0 end",
             1,
             _INSTANCE_LOCK_KEY,
-            str(os.getpid()),
+            _INSTANCE_ID,
         )
     except Exception:
         pass
@@ -248,7 +253,15 @@ async def start_bots():
         if not await _acquire_instance_lock(status):
             IS_STARTED = False
             STARTUP_STATE = "refused"
-            return
+            # Hard-exit instead of serving: start_bots() runs as a background
+            # task, so a mere exception would leave a zombie web-only container
+            # that passes health checks while the bot is dead. Dying lets the
+            # platform restart us once the stale lock has expired.
+            LOGGER.critical(
+                "Single-instance lock is held by another process; refusing to "
+                "start. Exiting so the platform restarts this container."
+            )
+            os._exit(1)
 
         try:
             try:
