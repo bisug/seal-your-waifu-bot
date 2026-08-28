@@ -1,5 +1,6 @@
-import { memo } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { Coins, Gem, Menu } from 'lucide-react';
+import { apiFetch } from '../api/client';
 import { useUser } from '../context/UserContext';
 import { formatNumber } from '../utils';
 import { Avatar } from './Avatar';
@@ -11,6 +12,15 @@ interface HeaderProps {
 
 export const Header = memo(({ onMenuClick }: HeaderProps) => {
   const { user, loading } = useUser();
+  const [botName, setBotName] = useState<string | null>(null);
+
+  useEffect(() => {
+    apiFetch('/bot/info')
+      .then((info) => {
+        if (info?.name) setBotName(String(info.name));
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <header className="sticky top-0 z-[100] flex items-center justify-between px-5 bg-zinc-950/95 h-14 shrink-0 select-none border-b border-white/[0.04]">
@@ -24,8 +34,8 @@ export const Header = memo(({ onMenuClick }: HeaderProps) => {
         />
         <div className="flex flex-col justify-center">
           <div className="flex items-center gap-1.5">
-            <span className="text-[10px] font-black text-zinc-100 tracking-wider uppercase leading-none">
-              SEAL
+            <span className="text-[10px] font-black text-zinc-100 tracking-wider uppercase leading-none truncate max-w-[120px]">
+              {botName || 'SEAL'}
             </span>
             <span className="text-[8px] font-mono text-zinc-500 uppercase">V2.4</span>
           </div>

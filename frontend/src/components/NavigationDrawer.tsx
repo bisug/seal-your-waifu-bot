@@ -1,4 +1,5 @@
 import {
+  ArrowLeftRight,
   BadgeCheck,
   BookOpen,
   ChartNoAxesColumnIncreasing,
@@ -62,6 +63,7 @@ const SECTIONS: NavSection[] = [
   {
     title: 'SOCIAL',
     items: [
+      { id: 'trading', label: 'Trading', icon: ArrowLeftRight },
       { id: 'referrals', label: 'Recruit', icon: UserPlus },
       { id: 'quests', label: 'Tasks', icon: ListChecks },
       { id: 'pass', label: 'Season Pass', icon: Ticket },

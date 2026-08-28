@@ -135,6 +135,41 @@ async def get_harem(
 
     return {"total": total, "page": page, "items": paginated}
 
+@router.get("/harem/{target_id}", response_model=PaginatedResponse)
+async def get_public_harem(
+    target_id: int,
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=50),
+    user_id: int = Depends(get_current_user),
+):
+    """View another user's collection. Used for trade negotiation — the
+    trade offer API requires the receiver's character id, which cannot be
+    known without browsing their harem first. Returns public character
+    fields only (no user metadata)."""
+    target = await user_collection.find_one(get_user_id_query(target_id))
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    seen: dict[str, dict] = {}
+    for char in target.get("characters", []):
+        cid = char.get("id")
+        if not cid or cid in seen:
+            continue
+        seen[cid] = {
+            "id": cid,
+            "name": char.get("name", "Unknown"),
+            "anime": char.get("anime", ""),
+            "rarity": char.get("rarity", ""),
+            "img_url": char.get("img_url", ""),
+            "count": 1,
+            "owned": False,
+        }
+
+    items = sorted(seen.values(), key=lambda c: (c["rarity"], c["name"]))
+    total = len(items)
+    start = (page - 1) * limit
+    return {"total": total, "page": page, "items": items[start:start + limit]}
+
 @router.post("/recycle/preview")
 async def recycle_preview(
     char_ids: List[str] = Body(...),

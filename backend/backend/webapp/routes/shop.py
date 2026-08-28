@@ -256,28 +256,6 @@ async def buy_pet_api(pet_ref: str, user_id: int = Depends(get_current_user)):
         return {"status": "success"}
     raise HTTPException(status_code=400, detail=str(result).replace("❌ ", "").replace("🔒 ", "").replace("<b>", "").replace("</b>", ""))
 
-@router.get("/shop/battlepass")
-async def get_battlepass_shop(user_id: int = Depends(get_current_user)):
-    progress = await get_user_progress(user_id)
-    current_tier = progress["pass_type"]
-    return {
-        "prices": PASS_STAR_PRICES,
-        "currency": "XTR",
-        "current_tier": current_tier,
-        "level": progress["level"],
-        "upgrade_prices": {
-            tier: calculate_pass_upgrade_price(current_tier, tier)
-            for tier in ("premium", "elite")
-        },
-        "benefits": PASS_BENEFITS,
-        "tiers": PASS_TIER_META,
-    }
-
-@router.post("/shop/upgrade_pass/{tier}")
-async def upgrade_pass_api(tier: str, user_id: int = Depends(get_current_user)):
-    raise HTTPException(status_code=410, detail="Battle Pass upgrades now use Telegram Stars.")
-
-
 @router.post("/shop/pass_invoice/{tier}")
 async def create_pass_invoice_api(tier: str, user_id: int = Depends(get_current_user)):
     try:
@@ -315,6 +293,7 @@ async def get_pass_data(user: dict = Depends(get_current_user_data)):
             tier: calculate_pass_upgrade_price(pass_type, tier)
             for tier in ("premium", "elite")
         },
+        "level_buy_cost": LEVEL_BUY_SHARD_COST,
         "benefits": PASS_BENEFITS,
         "tiers": PASS_TIER_META,
     }

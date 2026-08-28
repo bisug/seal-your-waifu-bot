@@ -13,6 +13,7 @@ export const Avatar = memo(({ src, alt = 'Avatar', className = '', fallbackText 
   const [error, setError] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset load state when src changes
   useEffect(() => {
     setError(false);
     setLoaded(false);

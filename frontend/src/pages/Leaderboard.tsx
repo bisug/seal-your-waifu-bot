@@ -9,7 +9,7 @@ import {
   TrendingUp,
   Trophy,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Avatar } from '../components/Avatar';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -62,6 +62,60 @@ export const Leaderboard = () => {
     setVisible(50);
   }, []);
 
+  // Realtime updates: the backend publishes to a Redis channel whenever a
+  // leaderboard ZSET changes; /ws/leaderboard relays those events here.
+  const fetchRef = useRef(fetchLeaderboard);
+  fetchRef.current = fetchLeaderboard;
+  const [live, setLive] = useState(false);
+
+  useEffect(() => {
+    const token = sessionStorage.getItem('auth_token');
+    if (!token) return;
+
+    const apiBase = import.meta.env.VITE_API_URL
+      ? `${import.meta.env.VITE_API_URL}/api/${import.meta.env.VITE_API_PREFIX ?? 'v1_7b82'}`
+      : `/api/${import.meta.env.VITE_API_PREFIX ?? 'v1_7b82'}`;
+    const wsUrl = `${apiBase.replace(/^http/, 'ws')}/ws/leaderboard`;
+
+    let ws: WebSocket | null = null;
+    let closedByUs = false;
+    let reconnectTimer: number | undefined;
+
+    const connect = () => {
+      try {
+        ws = new WebSocket(wsUrl, [`seal-token.${token}`]);
+      } catch {
+        return;
+      }
+      ws.onopen = () => setLive(true);
+      ws.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          if (payload?.type === 'leaderboard_update') {
+            fetchRef.current();
+          }
+        } catch {
+          // ignore non-JSON frames (pings)
+        }
+      };
+      ws.onclose = () => {
+        setLive(false);
+        if (!closedByUs) {
+          reconnectTimer = window.setTimeout(connect, 10000);
+        }
+      };
+      ws.onerror = () => ws?.close();
+    };
+
+    connect();
+
+    return () => {
+      closedByUs = true;
+      if (reconnectTimer) window.clearTimeout(reconnectTimer);
+      ws?.close();
+    };
+  }, []);
+
   const METRICS = [
     { id: 'harem', label: 'Archive', icon: BookOpen },
     { id: 'shards', label: 'Shards', icon: Coins },
@@ -83,6 +137,13 @@ export const Leaderboard = () => {
           <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
             Global personnel standings
           </p>
+          <span
+            className={cn(
+              'w-1.5 h-1.5 rounded-full',
+              live ? 'bg-emerald-500' : 'bg-zinc-700',
+            )}
+            title={live ? 'Live updates connected' : 'Live updates offline'}
+          />
         </div>
       </header>
 

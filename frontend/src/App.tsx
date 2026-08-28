@@ -113,6 +113,7 @@ const Exchange = lazy(() => import('./pages/Exchange').then((m) => ({ default: m
 const Upload = lazy(() => import('./pages/Upload').then((m) => ({ default: m.Upload })));
 const Staff = lazy(() => import('./pages/Staff').then((m) => ({ default: m.Staff })));
 const Minigames = lazy(() => import('./pages/Minigames').then((m) => ({ default: m.Minigames })));
+const Trading = lazy(() => import('./pages/Trading').then((m) => ({ default: m.Trading })));
 
 const VALID_TABS = [
   'profile',
@@ -130,6 +131,7 @@ const VALID_TABS = [
   'upload',
   'staff',
   'minigames',
+  'trading',
 ];
 const TAB_ALIASES: Record<string, string> = {
   profile: 'profile',
@@ -199,6 +201,10 @@ const TAB_ALIASES: Record<string, string> = {
   minigames: 'minigames',
   games: 'minigames',
   nexus_games: 'minigames',
+  trading: 'trading',
+  trade: 'trading',
+  trades: 'trading',
+  swap: 'trading',
 };
 
 interface RouteTarget {
@@ -430,6 +436,7 @@ const AppContent = () => {
             {activeTab === 'achievements' && <Achievements />}
             {activeTab === 'mypets' && <MyPets onPetClick={setSelectedPet} />}
             {activeTab === 'minigames' && <Minigames />}
+            {activeTab === 'trading' && <Trading />}
             {activeTab === 'upload' && canViewUpload && <Upload />}
             {activeTab === 'staff' && canViewStaff && <Staff />}
 

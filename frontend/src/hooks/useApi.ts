@@ -27,6 +27,7 @@ export const useApi = <T = any>(
 
   const query = useQuery<T>({
     queryKey,
+    // biome-ignore lint/correctness/useExhaustiveDependencies: options read via ref to avoid refetch loops
     queryFn: ({ signal }) => apiFetch(endpoint, { ...optionsRef.current, signal }),
     enabled: !options.manual,
     ...(options.initialData !== undefined ? { initialData: options.initialData } : {}),
@@ -49,6 +50,7 @@ export const useApi = <T = any>(
   const setData = useCallback(
     (value: T) => queryClient.setQueryData(queryKey, value),
     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // biome-ignore lint/correctness/useExhaustiveDependencies: queryKey spread is intentional
     [queryClient, ...queryKey],
   );
 

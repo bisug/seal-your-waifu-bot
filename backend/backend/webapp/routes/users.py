@@ -319,18 +319,3 @@ async def get_leaderboard(
         response_data.append(processed)
         
     return response_data
-
-@router.get("/stats")
-async def get_stats(user: dict = Depends(get_current_user_data)):
-    user_id = normalize_user_id(user["id"])
-    user_xp = user.get("xp", 0)
-    rank, total_users, percentile = await get_user_rank_with_fallback(user_id, user_xp)
-
-    
-    return {
-        "rank": rank,
-        "percentile": round(percentile, 2),
-        "total_games": user.get("total_games", 0),
-        "win_rate": user.get("win_rate", 0),
-        "total_captured": user.get("char_count") or len(user.get("characters", []))
-    }

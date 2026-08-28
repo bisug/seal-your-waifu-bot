@@ -87,6 +87,7 @@ export const useInfiniteGrid = <T = any>(endpoint: string, options: InfiniteGrid
   const refresh = useCallback(() => {
     queryClient.resetQueries({ queryKey });
     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // biome-ignore lint/correctness/useExhaustiveDependencies: queryKey spread is intentional
   }, [queryClient, ...queryKey]);
 
   return {

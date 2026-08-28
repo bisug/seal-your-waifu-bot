@@ -31,7 +31,7 @@ interface ApiRequestInit extends RequestInit {
   timeoutMs?: number | undefined;
 }
 
-export class ApiError extends Error {
+class ApiError extends Error {
   status?: number | undefined;
   code: string;
   requestId?: string | undefined;
@@ -333,7 +333,7 @@ export async function apiFetch(
   }
 }
 
-export async function secureInit(avatarUrl: string | null = null): Promise<string | null> {
+async function secureInit(avatarUrl: string | null = null): Promise<string | null> {
   const tg = getTg();
   const initData = tg?.initData;
   const storedToken = sessionStorage.getItem('auth_token');
