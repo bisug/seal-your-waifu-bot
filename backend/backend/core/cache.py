@@ -56,7 +56,6 @@ async def rset(key: str, value: str, ttl: int):
     if not _redis:
         return
     try:
-        # Check memory before setting large key or frequently
         await check_memory_and_purge()
         await asyncio.wait_for(_redis.setex(key, ttl, value), timeout=3.0)
     except asyncio.TimeoutError:
@@ -75,7 +74,7 @@ async def _scan_keys(pattern: str) -> list:
         LOGGER.warning(f"Redis SCAN error [{pattern}]: {e}")
     return keys
 async def check_memory_and_purge():
-    """Smart memory management: Purges old keys if memory exceeds limit."""
+    """Purge volatile keys when Redis memory exceeds the limit (rate-limited to 1/min)."""
     if not _redis: return
     global _last_memory_check
     now = time.monotonic()

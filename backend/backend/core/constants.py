@@ -1,10 +1,8 @@
 # backend/core/constants.py
 from pyrogram import errors
 
-# Kurigram 2.2.25 (#357) reclassified ChatWriteForbidden from Forbidden/403 to
-# BadRequest/400, and ChatAdminRequired / ChannelPrivate are BadRequest too, so
-# `except (errors.Forbidden, errors.Unauthorized)` no longer covers "we are not
-# allowed to post here". Catch this tuple *before* any `except errors.BadRequest`.
+# Kurigram 2.2.25 (#357): ChatWriteForbidden et al. are BadRequest now.
+# Catch this tuple *before* any `except errors.BadRequest`.
 PERMISSION_DENIED_ERRORS = (
     errors.Forbidden,
     errors.Unauthorized,
@@ -15,19 +13,13 @@ PERMISSION_DENIED_ERRORS = (
 
 # Rarity Mappings
 SHOP_RARITY = "🟠 Rare"
-# NOTE: Character liquidation (sell / recycle) now uses the per-rarity
-# SELL_PRICES table via get_sell_price(). The old PAYOUTS table credited
-# Zenith by mistake (a single Common dupe paid 10 Zenith == 100,000
-# Shards), which made the Zenith sink trivially farmable. Removed.
 # Shop Settings
 SHARDS_PER_ZENITH = 10_000
 LEVEL_BUY_SHARD_COST = SHARDS_PER_ZENITH
 SHOP_LIMIT = 50
-# Per-rarity shop pricing/stock now live in the `rarities` collection
-# (see core/rarities.py). These are the same live dicts, so /rarityset
-# edits apply to the shop immediately.
+# Per-rarity pricing/stock live in the `rarities` collection (core/rarities.py).
 from backend.core.rarities import RARITY_PRICES, RARITY_STOCK_LIMITS  # noqa: E402,F401
-# Legacy import compatibility. Battle Pass purchases use Telegram Stars (XTR).
+# Battle Pass purchases use Telegram Stars (XTR).
 PASS_PRICES = {
     "premium": 24,
     "elite": 49

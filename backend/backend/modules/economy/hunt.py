@@ -44,11 +44,8 @@ def load_handlers(bot):
     """Explicitly register handlers to the bot instance. Resolves multi-bot ghosting."""
     if bot.name != "MainBot":
         return
-    # Hunt command
     bot.add_handler(MessageHandler(hunt_cmd, filters.command("hunt")), group=0)
-    # Eggs/Inventory command
     bot.add_handler(MessageHandler(eggs_cmd, filters.command(["eggs", "hatch"])), group=0)
-    # Callbacks
     bot.add_handler(CallbackQueryHandler(egg_page_callback, filters.regex(r"^egg_page:(\d+):(\d+)$")), group=0)
     bot.add_handler(CallbackQueryHandler(egg_incubate_callback, filters.regex(r"^egg_incubate:([^:]+):(\d+):(\d+)$")), group=0)
     bot.add_handler(CallbackQueryHandler(egg_hatch_callback, filters.regex(r"^egg_hatch:([^:]+):(\d+):(\d+)$")), group=0)
@@ -60,7 +57,6 @@ async def hunt_cmd(bot, message: types.Message):
     if not user_id: return
     LOGGER.info(f"HUNT_START: User {user_id} via {bot.name}")
     try:
-        # 1. Fetch User and Active Pet
         user = await asyncio.wait_for(user_collection.find_one(get_user_filter(user_id)), timeout=5.0) or {}
         user = await ensure_user_pet_state(user_id, user)
         pets = [normalize_pet(p) for p in user.get("pets", [DEFAULT_PET])]
@@ -76,17 +72,14 @@ async def hunt_cmd(bot, message: types.Message):
         luck = pet.get("luck", 0.1) * aff_multiplier
         base_cd = 50 if ability == "Speedster" else 60
         cooldown_duration = int(base_cd / aff_multiplier)
-        # 2. Cooldown Check (Safe Fail-Open)
         try:
             on_cd, seconds_left = await asyncio.wait_for(redis_cooldown("hunt", user_id, cooldown_duration), timeout=2.5)
             if on_cd:
                 return await message.reply_text(f"Please wait <b>{seconds_left}s</b> before hunting again.", parse_mode=enums.ParseMode.HTML)
         except asyncio.TimeoutError:
             LOGGER.warning(f"Cooldown check timed out for {user_id}. Proceeding as fail-safe.")
-        # 3. Execution Phase
         msg = await message.reply_text(f"<b>{html_escape(pet['name'])}</b> is going hunting...", parse_mode=enums.ParseMode.HTML)
         await asyncio.sleep(2)
-        # Calculate Shards
         shards = random.randint(100, 300)
         bonus_text = ""
         pass_type = get_active_pass_type(user)
@@ -102,12 +95,10 @@ async def hunt_cmd(bot, message: types.Message):
         if ability == "Scavenger" and random.random() < scavenger_chance:
             shards *= 2
             bonus_text += "\n<b>Double Shards!</b> (Scavenger)"
-        # Calculate XP
         xp_gain = random.randint(10, 20)
         luck_modifier = 1.0 + (0.05 * aff_multiplier)
         if ability == "Beginner's Luck":
             xp_gain = int(xp_gain * luck_modifier)
-        # 4. Loot Determination
         eggs_to_push = []
         base_drop_chance = min(80, 15 * (1 + luck) * pass_benefits["egg_drop_multiplier"])
         hoarder_chance = 0.05 * aff_multiplier
@@ -142,7 +133,6 @@ async def hunt_cmd(bot, message: types.Message):
                 bonus_text += f"\n<b>Bonus Egg Found!</b> ({bonus_source})"
             if pass_type != "free":
                 bonus_text += f"\n<b>{pass_type.capitalize()} Egg Luck:</b> improved drop and tier roll"
-        # 5. Atomic Update
         update_op = {"$inc": {"balance": shards}}
         if eggs_to_push:
             update_op["$push"] = {"eggs": {"$each": eggs_to_push}}
@@ -151,13 +141,11 @@ async def hunt_cmd(bot, message: types.Message):
             add_user_set_on_insert(update_op, user_id),
             upsert=True
         ), timeout=5.0)
-        # 6. Side Effects
         run_background_task(add_pet_xp(user_id, get_pet_key(pet), xp_gain))
         if eggs_to_push:
             run_background_task(update_quest_progress(user_id, "egg_hunter", len(eggs_to_push)))
         run_background_task(sync_user_to_redis(user_id))
         run_background_task(check_achievements(user_id))
-        # 7. Final Response
         found_egg_desc = f"<b>{html_escape(eggs_to_push[0]['name'])}</b> discovered!" if eggs_to_push else ""
         shards_text = format_currency(shards)
         final_text = (
@@ -219,7 +207,6 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
         return await message_or_query.reply_text(text, parse_mode=enums.ParseMode.HTML)
     page = page % len(eggs)
     egg = await _ensure_egg_document(user_id, eggs, page)
-    # Handle legacy/numeric tiers
     raw_tier = egg.get("tier", "common")
     tier_key, tier_info = get_egg_tier_info(raw_tier)
     status = egg.get("status", "fresh")
@@ -241,7 +228,6 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
     elif status == "incubating":
         hatch_time = egg.get("hatch_time")
         if hatch_time:
-            # Ensure hatch_time is aware
             if hatch_time.tzinfo is None:
                 hatch_time = hatch_time.replace(tzinfo=timezone.utc)
             now = get_now_utc()
@@ -308,7 +294,6 @@ async def egg_incubate_callback(_, query: types.CallbackQuery):
     slots = get_pass_incubation_slots(user)
     if active_incubations >= slots:
         return await query.answer(f"All incubators are busy ({active_incubations}/{slots}).", show_alert=True)
-    # Calculate incubation time
     pets = [normalize_pet(p) for p in user.get("pets", [DEFAULT_PET])]
     active_pet = find_pet(pets, user.get("current_pet")) or {}
     raw_tier = egg.get("tier", "common") if isinstance(egg, dict) else egg
@@ -384,12 +369,10 @@ async def process_egg_hatch(user_id: int, egg: dict) -> tuple[bool, any]:
         user = await user_collection.find_one(get_user_filter(user_id)) or {}
         pass_type = get_active_pass_type(user)
         pass_benefits = PASS_BENEFITS[pass_type]
-        # Handle corruption explosion
         corruption_explosion_chance = 0.3 * (1 - pass_benefits.get("corruption_resistance", 0))
         if egg.get("is_corrupted", False) and random.random() < corruption_explosion_chance:
             await user_collection.update_one(get_user_filter(user_id), {"$pull": {"eggs": {"id": egg["id"]}}})
             return False, "💥 <b>The egg exploded!</b>\nIt was corrupted..."
-        # Pick character
         tier_key, tier_info = get_egg_tier_info(egg.get("tier", "common"))
         from backend.core.waifu import get_or_load_characters
         chars = []
@@ -400,7 +383,6 @@ async def process_egg_hatch(user_id: int, egg: dict) -> tuple[bool, any]:
         if not chars:
             return False, "Egg was empty! No matching characters are available right now."
         character = random.choice(chars)
-        # Atomic: Pull Egg, Push Char
         hatch_filter = get_user_filter(user_id)
         hatch_filter["eggs.id"] = egg["id"]
         result = await user_collection.update_one(
@@ -415,8 +397,6 @@ async def process_egg_hatch(user_id: int, egg: dict) -> tuple[bool, any]:
             return False, "This egg has already hatched!"
         hatch_xp = 15 + (int(tier_info.get("rank", 0)) * 5)
         await add_xp(user_id, hatch_xp, "egg_hatch")
-
-        # Track Quests and Achievements
         run_background_task(update_quest_progress(user_id, "egg_hatcher", 1))
         run_background_task(update_quest_progress(user_id, "weekly_hatcher", 1))
         run_background_task(update_quest_progress(user_id, "pass_hatcher", 1))

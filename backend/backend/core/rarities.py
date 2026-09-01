@@ -2,16 +2,10 @@
 
 Canonical store is the `rarities` collection: one doc per rarity,
 _id = rarity_id (int), with separate `emoji` and `name` fields. The display
-label ("🟠 Rare") is composed as f"{emoji} {name}". Characters and harem
-entries carry `rarity_id`; the label is derived, so renaming/re-emojying a
-rarity is a one-doc edit plus a label propagation pass.
-
-load_rarities() reads the docs into module-level dicts at startup;
-refresh_rarities() reloads them IN PLACE so every module that imported a
-dict sees edits without re-importing.
-
-The hardcoded defaults below seed an empty collection on first startup and
-act as the fallback when MongoDB is unreachable.
+label ("🟠 Rare") is composed as f"{emoji} {name}". load_rarities() reads
+the docs into module-level dicts at startup; refresh_rarities() reloads them
+IN PLACE so every importer sees edits without re-importing. The hardcoded
+defaults below seed an empty collection and act as the offline fallback.
 """
 
 import logging
@@ -21,14 +15,8 @@ LOGGER = logging.getLogger(__name__)
 
 # (rarity_id, emoji, name, spawn_weight, active_spawn_weight, shop_weight,
 #  claim_weight, shop_price, stock_limit, sell_price, milestone)
-# Shop prices (Zenith) follow a strict ladder keyed to spawn frequency and
-# stock limit: every strictly-rarer spawn band costs more, ceiling 100⧫
-# (~3 months of active play at ~1⧫/day income). Guarded by
-# test_default_shop_price_ladder_is_balanced().
-# 2026-09-01 consolidation: Antique merged into Mythical, Luxury into
-# Exclusive, Limited into Limited Edition (ids 9/17/18 retired — see
-# scripts/merge_rarity.py). AMV renamed to Cinematic, Mystic to Arcane.
-# New tiers: Radiant (mid-high), Eclipse (high), Seraph (top, below Astral).
+# Price ladder: strictly-rarer spawn bands cost strictly more, ceiling 100⧫
+# (guarded by test_default_shop_price_ladder_is_balanced).
 _DEFAULT_RARITIES = [
     (1, "⚪", "Common", 360, 280, 25, 60, 1, 50, 50, 150),
     (2, "🟢", "Medium", 240, 220, 20, 30, 2, 40, 100, 350),
@@ -64,8 +52,7 @@ NUMERIC_FIELDS = {
 TEXT_FIELDS = {"emoji", "name"}
 EDITABLE_FIELDS = NUMERIC_FIELDS | TEXT_FIELDS
 
-# Live config dicts. Mutated in place (clear + update) by _apply_docs() so
-# every module that imported them observes refreshes without re-importing.
+# Live config dicts, mutated in place by _apply_docs() so importers see refreshes.
 RARITY_MAP: dict[int, str] = {}          # rarity_id -> composed label
 RARITY_IDS: dict[str, int] = {}          # composed label -> rarity_id
 SPAWN_RARITY_WEIGHTS: dict[str, int] = {}
@@ -77,8 +64,7 @@ RARITY_STOCK_LIMITS: dict[str, int] = {}
 SELL_PRICES: dict[str, int] = {}  # keyed by bare name ("Common")
 MILESTONE_THRESHOLDS: dict[int, int] = {}  # rarity_id -> message-count milestone
 
-# O(1) lookup caches for rarity_id_of(): composed label and lowercase bare
-# name -> rarity_id. Rebuilt by _apply_docs() alongside the live dicts.
+# O(1) lookup caches for rarity_id_of(), rebuilt by _apply_docs().
 _LABEL_LOOKUP: dict[str, int] = {}
 _BARE_LOOKUP: dict[str, int] = {}
 
@@ -112,13 +98,8 @@ def label_of(rarity_id: int | None) -> str | None:
 
 
 def weighted_pick(weights_map: dict[str, int]) -> str | None:
-    """Pick one key from a label->weight map.
-
-    Single implementation for every weighted rarity roll (spawns, shop,
-    claim/daily/propose). Returns None when the map is empty or every
-    weight is 0 — random.choices() raises on all-zero weights, and an
-    admin zeroing out a whole pool via /rarityset shouldn't crash handlers.
-    """
+    """Pick one key from a label->weight map. None on empty/all-zero weights
+    (random.choices raises on all-zero; /rarityset can zero a whole pool)."""
     if not weights_map:
         return None
     keys = list(weights_map.keys())
@@ -177,8 +158,7 @@ def get_rarity_docs() -> list[dict]:
     return [dict(d) for d in _RARITY_DOCS]
 
 
-# Import-time fallback so no handler ever sees empty tables; replaced by
-# load_rarities() once MongoDB is reachable.
+# Import-time fallback; replaced by load_rarities() once MongoDB is reachable.
 _apply_docs(_default_docs())
 
 
@@ -219,8 +199,7 @@ async def load_rarities() -> int:
                 LOGGER.warning("Rarity seed insert failed (%s); re-fetching.", e)
             docs = await rarities_collection.find({}).to_list(length=1000)
         else:
-            # Backfill any default rarities missing from the collection
-            # (e.g. a partial seed after an interrupted insert).
+            # Backfill defaults missing from the collection (partial seed).
             existing_ids = {d["_id"] for d in docs if isinstance(d["_id"], int)}
             missing = [d for d in _default_docs() if d["_id"] not in existing_ids]
             if missing:
@@ -230,9 +209,7 @@ async def load_rarities() -> int:
                     LOGGER.info("Backfilled %s missing default rarities.", len(missing))
                 except Exception as e:
                     LOGGER.warning("Rarity backfill insert failed: %s", e)
-            # Backfill the `milestone` field on docs from before it moved
-            # into the collection (message-count thresholds used to be
-            # hardcoded in message_counter.py).
+            # Backfill `milestone` on docs from before the field was DB-backed.
             defaults_by_id = {d["_id"]: d for d in _default_docs()}
             for doc in docs:
                 if isinstance(doc.get("_id"), int) and "milestone" not in doc:
@@ -282,8 +259,7 @@ async def add_rarity(rarity_id: int, emoji: str, name: str) -> str | None:
     from backend.database import rarities_collection
     doc = {
         "_id": rarity_id, "emoji": emoji, "name": name,
-        # Weights start at 0: the rarity stays out of every pool until an
-        # admin configures it via /rarityset.
+        # Weights start at 0: out of every pool until /rarityset configures it.
         "spawn_weight": 0, "active_spawn_weight": 0,
         "shop_weight": 0, "claim_weight": 0,
         "shop_price": 5, "stock_limit": 10, "sell_price": 50,
@@ -310,8 +286,7 @@ async def rename_rarity(rarity_id: int, emoji: str, name: str) -> tuple[str, str
     )
     await refresh_rarities()
     if new_label != old_label:
-        # Propagate so existing read sites (which display the stored label)
-        # stay consistent without touching ~30 call sites.
+        # Propagate the label to stored copies so read sites stay consistent.
         await collection.update_many(
             {"rarity": old_label},
             {"$set": {"rarity": new_label, "rarity_id": rarity_id}},

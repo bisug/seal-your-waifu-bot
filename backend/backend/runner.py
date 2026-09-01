@@ -9,17 +9,12 @@ STARTUP_STATE = "stopped"
 _START_LOCK = None
 
 # Single-instance guard: MTProto sessions corrupt if two processes drive
-# the same bot token / STRING_SESSION concurrently. Acquire a Redis-held
-# lock at startup so a second replica refuses to start instead of fighting
-# the first for the session.
+# the same token concurrently. Redis-held lock; a second replica refuses to start.
 _INSTANCE_LOCK_KEY = "sealbot:single_instance_lock"
 _INSTANCE_LOCK_TTL = 60  # seconds; refreshed while running
-# Lock value must be unique per process, not just per pid: containers both
-# run uvicorn as pid 7, so a bare pid cannot distinguish owner from impostor.
+# Unique per process, not per pid: containers both run uvicorn as pid 7.
 _INSTANCE_ID = f"{os.getpid()}-{uuid.uuid4().hex[:8]}"
-# During rolling deploys the old container keeps the lock until it drains
-# (render.yaml maxShutdownDelaySeconds=60) and a killed instance's lock can
-# linger up to one more TTL (60s). Worst case ~120s, so wait clearly longer.
+# Rolling deploys: old container holds the lock up to 60s drain + 60s TTL.
 _INSTANCE_LOCK_WAIT_TIMEOUT = 180  # seconds
 _INSTANCE_LOCK_RETRY_INTERVAL = 5  # seconds
 
@@ -73,9 +68,7 @@ async def _refresh_instance_lock():
         await asyncio.sleep(_INSTANCE_LOCK_TTL // 2)
         try:
             if redis_client:
-                # XX: only extend if we still own the lock. A plain SET would
-                # silently steal a lock another instance acquired after ours
-                # expired (e.g. during a long GC pause), defeating the guard.
+                # XX: extend only while we still own the lock.
                 held = await redis_client.set(
                     _INSTANCE_LOCK_KEY, _INSTANCE_ID, ex=_INSTANCE_LOCK_TTL, xx=True
                 )
@@ -95,7 +88,7 @@ async def _release_instance_lock():
     if not redis_client:
         return
     try:
-        # Atomic compare-and-delete: only remove the lock if we still own it.
+        # Compare-and-delete: only remove the lock if we still own it.
         await redis_client.eval(
             "if redis.call('get', KEYS[1]) == ARGV[1] then "
             "return redis.call('del', KEYS[1]) else return 0 end",
@@ -258,10 +251,8 @@ async def start_bots():
         if not await _acquire_instance_lock(status):
             IS_STARTED = False
             STARTUP_STATE = "refused"
-            # Hard-exit instead of serving: start_bots() runs as a background
-            # task, so a mere exception would leave a zombie web-only container
-            # that passes health checks while the bot is dead. Dying lets the
-            # platform restart us once the stale lock has expired.
+            # Hard-exit: a mere exception would leave a zombie web-only
+            # container passing health checks while the bot is dead.
             LOGGER.critical(
                 "Single-instance lock is held by another process; refusing to "
                 "start. Exiting so the platform restarts this container."

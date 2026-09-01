@@ -28,7 +28,6 @@ async def get_user_energy(user_id: int, user_data: Optional[dict] = None) -> Tup
         return MAX_ENERGY, None
 
     if last_recharge is None:
-        # Initialize if missing
         await user_collection.update_one(
             get_user_id_query(user_id),
             {"$set": {"energy": MAX_ENERGY, "last_energy_recharge": now}}
@@ -40,7 +39,6 @@ async def get_user_energy(user_id: int, user_data: Optional[dict] = None) -> Tup
         if last_recharge_dt.tzinfo is None:
             last_recharge_dt = last_recharge_dt.replace(tzinfo=timezone.utc)
     else:
-        # Fallback for unexpected types
         last_recharge_dt = now
 
     diff = now - last_recharge_dt
@@ -49,7 +47,6 @@ async def get_user_energy(user_id: int, user_data: Optional[dict] = None) -> Tup
 
     if energy_gained > 0:
         new_energy = min(MAX_ENERGY, current_energy + energy_gained)
-        # Advance last_recharge by the number of full recharge intervals consumed
         new_recharge_time = last_recharge_dt + timedelta(minutes=energy_gained * RECHARGE_MINUTES)
 
         if new_energy == MAX_ENERGY:
@@ -81,8 +78,7 @@ async def consume_energy(user_id: int, game_type: Optional[str] = None) -> Any:
     if current_energy == MAX_ENERGY:
         update_fields["$set"] = {"last_energy_recharge": now}
 
-    # Atomic guard: only decrement when energy is still >= 1 so concurrent
-    # start requests cannot double-spend the same point into negative energy.
+    # Atomic guard: concurrent starts cannot double-spend into negative energy.
     consume_filter = get_user_id_query(user_id)
     consume_filter["energy"] = {"$gte": 1}
     result = await user_collection.update_one(consume_filter, update_fields)
@@ -92,7 +88,6 @@ async def consume_energy(user_id: int, game_type: Optional[str] = None) -> Any:
     start_data = {"start_time": now.timestamp()}
 
     if game_type == "cipher_match":
-        # Get 8 random characters for the grid (only ones with an image)
         cursor = await collection.aggregate([
             {"$match": {"img_url": {"$exists": True, "$ne": ""}}},
             {"$sample": {"size": 8}},
@@ -106,21 +101,21 @@ async def consume_energy(user_id: int, game_type: Optional[str] = None) -> Any:
     elif game_type == "nexus_wheel":
         # Pre-roll the reward based on wheel sectors
         roll = random.random()
-        if roll < 0.05: # 5% Character
+        if roll < 0.05:
             index = 3
-        elif roll < 0.15: # 10% 500 Shards
+        elif roll < 0.15:
             index = 5
-        elif roll < 0.30: # 15% 200 Shards
+        elif roll < 0.30:
             index = 2
-        elif roll < 0.45: # 15% 150 Shards
+        elif roll < 0.45:
             index = 4
-        elif roll < 0.60: # 15% 100 Shards
+        elif roll < 0.60:
             index = 1
-        elif roll < 0.75: # 15% 80 Shards
+        elif roll < 0.75:
             index = 6
-        elif roll < 0.90: # 15% 50 Shards
+        elif roll < 0.90:
             index = 0
-        else: # 10% XP Boost
+        else:
             index = 7
 
         prizes = [
@@ -179,17 +174,15 @@ async def reward_minigame(user_id: int, game_type: str, score: int = 0, session_
 
     time_taken = get_now_utc().timestamp() - session_data.get("start_time", 0)
 
-    # Basic rewards
     shards = 0
     xp = 0
     character_reward = None
 
     if game_type == "cipher_match":
-        # Anti-cheat: score is client-supplied. Clamp to the real maximum
-        # (8 pairs) so a forged score cannot mint unbounded shards/XP.
+        # Anti-cheat: score is client-supplied; clamp to the real max (8 pairs).
         score = max(0, min(int(score or 0), 8))
 
-        # Anti-cheat: 8 pairs matched in less than 5 seconds is highly suspicious
+        # Anti-cheat: 8 pairs in <5s is highly suspicious
         if score >= 8 and time_taken < 5.0:
              LOGGER.warning(f"User {user_id} suspicious Cipher Match: {score} pairs in {time_taken}s")
              return {"error": "Suspicious activity detected"}
@@ -197,12 +190,10 @@ async def reward_minigame(user_id: int, game_type: str, score: int = 0, session_
         if score < 4:
             return {"error": "Mission failed: Insufficient data collected"}
 
-        # Score is pairs matched (max 8)
         base_shards = score * 25
         shards = base_shards + random.randint(20, 100)
         xp = score * 5 + random.randint(5, 15)
 
-        # Bonus for speed
         if score == 8 and time_taken < 25:
             shards += 100
             xp += 30
@@ -232,8 +223,7 @@ async def reward_minigame(user_id: int, game_type: str, score: int = 0, session_
         from backend.core.user import add_char_to_user
         await add_char_to_user(user_id, character_reward)
 
-    # Balance/XP were mutated outside the cached-document path; drop the stale
-    # Redis copy so the WebApp reflects rewards immediately.
+    # Drop the stale Redis copy so the WebApp reflects rewards immediately.
     await invalidate_user_cache(user_id)
 
     return {
@@ -251,7 +241,6 @@ async def get_random_character(rarities: list[str]) -> Optional[dict]:
     res = await cursor.to_list(length=1)
     if res:
         char = res[0]
-        # Clean up character dict for harem storage
         return {
             "id": char["id"],
             "name": char["name"],

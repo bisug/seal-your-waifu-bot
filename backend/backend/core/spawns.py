@@ -16,10 +16,10 @@ from backend.database import spawns_collection, user_totals_collection
 
 MESSAGE_COUNT_TTL_SECONDS = 86400
 
-# Golden Hour: boosted spawn rates between 20:00 and 22:59 UTC.
+# Golden Hour: boosted spawn rates 20:00-22:59 UTC.
 GOLDEN_HOUR_START_UTC = 20
 GOLDEN_HOUR_END_UTC = 22
-# An unclaimed spawn is never replaced while younger than this.
+# Unclaimed spawns are never replaced while younger than this.
 ACTIVE_SPAWN_GRACE_SECONDS = 300
 
 
@@ -60,9 +60,7 @@ async def _load_message_count_from_mongo(chat_id: int) -> int:
     return count
 
 
-# In-memory buffer of message increments awaiting MongoDB persistence.
-# Flushed by flush_cache_to_db() every minute and at shutdown, turning one
-# Mongo write per message into one bulk_write per flush interval.
+# Pending increments, bulk-flushed to Mongo every minute.
 _pending_increments: Dict[int, Dict[str, Any]] = {}
 
 
@@ -97,7 +95,7 @@ async def flush_pending_message_increments() -> int:
     try:
         await message_counts_collection.bulk_write(ops, ordered=False)
     except Exception as e:
-        # Re-queue so the next flush retries instead of losing counts.
+        # Re-queue for the next flush instead of losing counts.
         for chat_id, entry in pending.items():
             target = _pending_increments.setdefault(chat_id, {"count": 0, "users": {}})
             target["count"] += entry["count"]
@@ -133,7 +131,6 @@ async def get_chat_state(chat_id: int) -> Dict[str, Any]:
             if state:
                 parsed_state = {}
                 for k, v in state.items():
-                    # Handle basic types
                     if v == "None": parsed_state[k] = None
                     elif v == "True": parsed_state[k] = True
                     elif v == "False": parsed_state[k] = False
@@ -151,7 +148,6 @@ async def get_chat_state(chat_id: int) -> Dict[str, Any]:
                 return parsed_state
         except Exception as e:
             LOGGER.warning(f"Redis get_chat_state error: {e}")
-    # Fallback to MongoDB
     state = await spawns_collection.find_one({"chat_id": chat_id})
     if _redis:
         try:
@@ -169,14 +165,12 @@ async def track_user_activity(chat_id: int, user_id: int):
     if not _redis: return
     key = f"spawn:active_users:{chat_id}"
     try:
-        # Single round-trip: mark activity + refresh the 10m TTL.
         async with _redis.pipeline(transaction=False) as pipe:
             pipe.zadd(key, {str(user_id): time.time()})
-            pipe.expire(key, 600) # 10m TTL
+            pipe.expire(key, 600)
             await pipe.execute()
     except Exception as e: LOGGER.debug(f"Non-critical error (suppressed): {e}")
-# Active-user counts change slowly; cache briefly so the per-message spawn
-# check doesn't hit Redis on every message.
+# 30s cache so the per-message spawn check skips Redis.
 _active_count_cache: Dict[int, tuple[float, int]] = {}
 ACTIVE_COUNT_CACHE_TTL_SECONDS = 30.0
 
@@ -190,7 +184,6 @@ async def get_active_user_count(chat_id: int) -> int:
         return cached[1]
     key = f"spawn:active_users:{chat_id}"
     try:
-        # Single round-trip: prune users older than 10 mins, then count.
         async with _redis.pipeline(transaction=False) as pipe:
             pipe.zremrangebyscore(key, "-inf", time.time() - 600)
             pipe.zcard(key)
@@ -217,7 +210,6 @@ async def set_active_spawn(chat_id: int, character: Dict[str, Any], message_id: 
                 pipe.expire(key, 3600)
                 await pipe.execute()
         except Exception as e: LOGGER.debug(f"Redis operation bypassed: {e}")
-    # Still write to MongoDB for absolute safety (active spawns are high-value)
     mongo_data = {
         "last_character": character,
         "message_id": message_id,
@@ -253,7 +245,6 @@ async def get_message_count(chat_id: int) -> int:
     key = f"msg_count:{chat_id}"
     val = await rget(key)
     if val is not None: return int(val)
-    # Fallback/Init from Mongo
     count = await _load_message_count_from_mongo(chat_id)
     await rset(key, str(count), ttl=MESSAGE_COUNT_TTL_SECONDS) # 24h TTL for memory safety
     return count
@@ -262,7 +253,6 @@ async def increment_message_count(chat_id: int, user_id: int) -> int:
     key = f"msg_count:{chat_id}"
     if _redis:
         try:
-            # Single round-trip: seed-if-missing + increment + TTL refresh.
             async with _redis.pipeline(transaction=False) as pipe:
                 pipe.set(key, 0, ex=MESSAGE_COUNT_TTL_SECONDS, nx=True)
                 pipe.incr(key)
@@ -270,8 +260,7 @@ async def increment_message_count(chat_id: int, user_id: int) -> int:
                 seeded, count, _ = await pipe.execute()
             count = int(count)
             if seeded:
-                # We won the seed race: layer the stored Mongo total on top of
-                # the fresh counter. INCRBY keeps concurrent increments intact.
+                # Won the seed race: layer the stored Mongo total on top.
                 initial_count = await _load_message_count_from_mongo(chat_id)
                 if initial_count > 0:
                     count = int(await _redis.incrby(key, initial_count))
@@ -282,10 +271,8 @@ async def increment_message_count(chat_id: int, user_id: int) -> int:
         else:
             _record_pending_increment(chat_id, user_id)
             return count
-    # Fallback to atomic DB-backed tracking.
     return await _increment_message_count_mongo(chat_id, user_id)
-# Per-chat spawn frequency changes only via manual DB edits; a short
-# in-process cache keeps the per-message spawn check off Redis/Mongo.
+# 5 min in-process cache; frequency only changes via manual DB edits.
 _chat_freq_cache: Dict[int, tuple[float, int]] = {}
 CHAT_FREQ_CACHE_TTL_SECONDS = 300.0
 
@@ -333,7 +320,6 @@ async def flush_message_counts_to_db() -> int:
             LOGGER.error(f"Bulk flush of msg_count totals failed ({len(batch)} chats): {e}")
 
     keys = await _scan_keys("msg_count:*")
-    # MGET in chunks: one round-trip per 100 keys instead of one per key.
     for i in range(0, len(keys), 100):
         chunk = keys[i : i + 100]
         try:
@@ -405,7 +391,6 @@ async def send_character(chat_id: int, rarity: str, *, force: bool = False):
         f"{golden_text}"
     )
     try:
-        # Use the safe wrapper to handle FloodWait automatically with exponential backoff
         msg = await app.send_media_safe(
             chat_id,
             media_url=character['img_url'],
@@ -416,7 +401,6 @@ async def send_character(chat_id: int, rarity: str, *, force: bool = False):
         if not msg:
             LOGGER.warning(f"send_character: failed to send spawn to {chat_id} (FloodWait or peer error)")
             return
-        # Register the spawn as active in the persistent state
         await set_active_spawn(chat_id, character, msg.id)
     except Exception as e:
         LOGGER.error(f"Error sending character: {e}")

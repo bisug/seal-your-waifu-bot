@@ -32,9 +32,8 @@ async def get_daily_waifu():
 @app.on_message(filters.command("daily"))
 @handle_errors
 async def daily_command_handler(_, message: types.Message):
-    # Full reward in the main group; a reduced rate elsewhere (other groups
-    # or private chat) so web-app / private users still earn passively
-    # without removing the incentive to gather in the main group.
+    # Full reward in the main group; 0.6x elsewhere so private/web-app
+    # users still earn passively.
     in_main = message.chat.id == MAIN_GROUP_ID
     reward_mult = 1.0 if in_main else 0.6
     pm_note = "" if in_main else "\n\n<i>Tip: claim /daily in the main group for full rewards!</i>"
@@ -42,13 +41,11 @@ async def daily_command_handler(_, message: types.Message):
     user = await get_user_data(user_id)
     user = user or {}
     now_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    # Check Redis first, fall back to DB
     last_claim_date = await get_daily_date(user_id)
     if last_claim_date is None:
         last_claim_date = user.get('last_daily_date')
     if last_claim_date == now_date:
         return await message.reply_text("You've already claimed your daily reward today!", parse_mode=enums.ParseMode.HTML)
-    # Calculate Streak
     streak = user.get('daily_streak', 0)
     yesterday_date = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d")
     if last_claim_date == yesterday_date:
@@ -60,18 +57,15 @@ async def daily_command_handler(_, message: types.Message):
         streak = 1  # Reset for next cycle
     reward_streak = min(streak, 7)
     reward_coins = STREAK_REWARDS.get(reward_streak, 100)
-    # Add Pass bonus
     pass_type = get_active_pass_type(user)
     multiplier = PASS_BENEFITS[pass_type]["daily_multiplier"]
     base_coins = reward_coins
     reward_coins = int(base_coins * multiplier * reward_mult)
     bonus_coins = reward_coins - base_coins
-    # Outside the main group reward_mult=0.6 can pull the total below base
-    # even with a pass — never show a negative "bonus".
+    # reward_mult=0.6 outside the main group can make the bonus negative.
     pass_bonus_text = f"\n<b>Pass Bonus:</b> +{bonus_coins} ⬪" if multiplier > 1.0 and bonus_coins > 0 else ""
     reward_coins, staff_bonus = apply_role_bonus(user_id, reward_coins, "daily_bonus_percent")
     staff_bonus_text = f"\n<b>Staff Bonus:</b> +{staff_bonus} ⬪" if staff_bonus else ""
-    # Give Rewards
     char = await get_daily_waifu()
     if not char:
         return await message.reply_text("No characters available currently.", parse_mode=enums.ParseMode.HTML)
@@ -93,7 +87,6 @@ async def daily_command_handler(_, message: types.Message):
         return await message.reply_text("You've already claimed your daily reward today!", parse_mode=enums.ParseMode.HTML)
     if claim_result.modified_count == 0 and claim_result.upserted_id is None:
         return await message.reply_text("You've already claimed your daily reward today!", parse_mode=enums.ParseMode.HTML)
-    # Update Redis caches
     await set_daily_date(user_id, now_date)
     await invalidate_user_cache(user_id)
     await invalidate_leaderboard_cache()
@@ -110,9 +103,7 @@ async def daily_command_handler(_, message: types.Message):
 @app.on_message(filters.command("weekly"))
 @handle_errors
 async def weekly_command_handler(_, message: types.Message):
-    # Full reward in the main group; a reduced rate elsewhere so
-    # web-app / private users still earn passively without removing
-    # the incentive to gather in the main group.
+    # Full reward in the main group; 0.6x elsewhere (see /daily).
     in_main = message.chat.id == MAIN_GROUP_ID
     reward_mult = 1.0 if in_main else 0.6
     pm_note = "" if in_main else "\n\n<i>Tip: claim /weekly in the main group for full rewards!</i>"
@@ -121,7 +112,6 @@ async def weekly_command_handler(_, message: types.Message):
     user = user or {}
     now = datetime.now(timezone.utc)
     now_str = now.strftime("%Y-%m-%d")
-    # Check Redis first
     last_weekly_cached = await get_weekly_date(user_id)
     last_weekly = last_weekly_cached or user.get('last_weekly_date')
     if last_weekly:
@@ -129,9 +119,6 @@ async def weekly_command_handler(_, message: types.Message):
         days_diff = (now - last_date).days
         if days_diff < 7:
             return await message.reply_text(f"You can claim your weekly reward again in {7 - days_diff} days.", parse_mode=enums.ParseMode.HTML)
-    # Weekly Rewards: 2000 Coins + 1 Rare Character (guaranteed?)
-    # or just random better loot.
-    # Let's give 2000 coins + 500 XP
     pass_type = get_active_pass_type(user)
     multiplier = PASS_BENEFITS[pass_type]["weekly_multiplier"]
     base_coins = 2000
@@ -167,7 +154,6 @@ async def weekly_command_handler(_, message: types.Message):
     await invalidate_user_cache(user_id)
     await invalidate_leaderboard_cache()
     await sync_user_to_redis(user_id)
-    # Also give XP
     from backend.core.progression import add_xp
     await add_xp(user_id, xp_reward, "weekly_claim")
     await message.reply_text(
