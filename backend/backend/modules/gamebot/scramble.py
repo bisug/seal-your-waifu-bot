@@ -3,16 +3,22 @@ import random
 import time
 import unicodedata
 from datetime import timedelta
+
 from pyrogram import enums, filters, types
 
-from backend import LOGGER, collection, game_bot, sessions_collection
+from backend.client import game_bot
+from backend.core.logging import get_logger
 from backend.core.tasks import run_background_task
 from backend.core.utils import get_now_utc, html_escape
+from backend.database import collection, sessions_collection
 from backend.modules.gamebot.common import (
     award_gamebot_shards,
     ensure_gamebot_ready,
     ensure_registered_user,
 )
+
+LOGGER = get_logger(__name__)
+
 # Game settings
 TIMEOUT = 60  # 1 minute
 SCRAMBLE_SESSION_TTL = timedelta(seconds=TIMEOUT + 30)

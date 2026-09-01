@@ -1,8 +1,13 @@
 from pyrogram import enums, filters, types
 
-from backend import OWNER_ID, app, sudo_users, user_collection, sudo_filter
+from backend import sudo_filter
+from backend.client import app
+from backend.core.roles import sudo_users
 from backend.core.user import add_user_set_on_insert
 from backend.core.utils import handle_errors, html_escape
+from backend.database import user_collection
+from config import config
+
 
 async def get_target_user(message: types.Message):
     if message.reply_to_message:
@@ -73,7 +78,7 @@ async def take_coin_handler(_, message: types.Message):
     )
 @app.on_callback_query(filters.regex(r"^admin_coin_"))
 async def admin_coin_callback(_, query: types.CallbackQuery):
-    if query.from_user.id not in sudo_users and query.from_user.id != OWNER_ID:
+    if query.from_user.id not in sudo_users and query.from_user.id != config.OWNER_ID:
         return await query.answer("❌ This is not for you!", show_alert=True)
     data = query.data.split("_")
     action = data[2]

@@ -1,6 +1,7 @@
 from pyrogram import ContinuePropagation, StopPropagation, enums, errors, filters, types
 
-from backend import LOGGER, app, game_bot, sudo_filter
+from backend import sudo_filter
+from backend.client import app, game_bot
 from backend.core.constants import PERMISSION_DENIED_ERRORS
 from backend.core.global_bans import (
     add_group_gban,
@@ -10,6 +11,7 @@ from backend.core.global_bans import (
     remove_group_gban,
     remove_user_gban,
 )
+from backend.core.logging import get_logger
 from backend.core.roles import moderator
 from backend.core.utils import get_now_utc, handle_errors, html_escape
 from backend.database import (
@@ -17,6 +19,8 @@ from backend.database import (
     global_user_bans_collection,
     group_collection,
 )
+
+LOGGER = get_logger(__name__)
 
 DEFAULT_REASON = "No reason provided."
 MAX_REASON_LEN = 300

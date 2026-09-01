@@ -1,7 +1,12 @@
 from pyrogram import enums, filters, types
 
-from backend import LOGGER, OWNER_ID, app, collection, user_collection
+from backend.client import app
+from backend.core.logging import get_logger
 from backend.core.utils import handle_errors, html_escape, reply_media_dynamic
+from backend.database import collection, user_collection
+from config import config
+
+LOGGER = get_logger(__name__)
 
 @app.on_message(filters.command("check"))
 @handle_errors
@@ -28,7 +33,7 @@ async def check_character(_, message: types.Message) -> None:
     except Exception as e:
         LOGGER.error(f"Error in check_character: {e}")
         await message.reply_text(f'Error: {str(e)}')
-@app.on_message(filters.command("give") & filters.user(OWNER_ID))
+@app.on_message(filters.command("give") & filters.user(config.OWNER_ID))
 @handle_errors
 async def give_cmd(_, message: types.Message) -> None:
     user_id = message.from_user.id

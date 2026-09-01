@@ -1,12 +1,14 @@
 import random
 from datetime import datetime, timedelta, timezone
+
 from pyrogram import enums, filters, types
 
-from backend import app, user_collection
+from backend.client import app
 from backend.core.pass_config import get_active_pass_type
 from backend.core.progression import add_xp, get_progress_bar
 from backend.core.user import add_user_set_on_insert, get_user_filter
 from backend.core.utils import get_user_id_query, handle_errors
+from backend.database import user_collection
 
 QUEST_POOL = {
     "catch_master": {

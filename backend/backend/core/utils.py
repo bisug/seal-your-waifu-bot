@@ -3,12 +3,15 @@ import html
 import logging
 from datetime import datetime, timezone
 from functools import wraps
+
 from pyrogram import enums, errors, types
 from pyrogram.errors import FloodWait
 
-from config import config
 from backend.core.constants import PERMISSION_DENIED_ERRORS
-from backend.database import r as _redis, user_collection
+from backend.database import r as _redis
+from backend.database import user_collection
+from config import config
+
 
 def get_now_utc() -> datetime:
     """Returns the current aware UTC datetime."""

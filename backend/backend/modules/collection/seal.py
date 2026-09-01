@@ -1,19 +1,29 @@
 import asyncio
 import random
 import re
+
 from pyrogram import enums, errors, filters, types
 
-from backend import (LOGGER, OWNER_ID, app, group_user_totals_collection,
-                     sudo_users)
+from backend.client import app
+from backend.core.logging import get_logger
 from backend.core.progression import add_xp
-from backend.core.spawns import (clear_active_spawn, get_chat_state,
-                                 get_message_count, send_character)
+from backend.core.rarities import SPAWN_RARITY_WEIGHTS, weighted_pick
+from backend.core.roles import sudo_users
+from backend.core.spawns import (
+    clear_active_spawn,
+    get_chat_state,
+    get_message_count,
+    send_character,
+)
 from backend.core.tasks import run_background_task
 from backend.core.user import add_char_to_user
 from backend.core.utils import handle_errors, html_escape, reply_media_dynamic
-from backend.core.rarities import SPAWN_RARITY_WEIGHTS, weighted_pick
+from backend.database import group_user_totals_collection
 from backend.modules.progression.achievements import check_achievements
 from backend.modules.progression.quests import update_quest_progress
+from config import config
+
+LOGGER = get_logger(__name__)
 @app.on_message(filters.command("seal") & filters.group)
 @handle_errors
 async def seal_handler(_, message: types.Message):
@@ -118,7 +128,7 @@ async def messagecount_handler(_, message: types.Message):
 @handle_errors
 async def cnow_handler(_, message: types.Message):
     """Force a character spawn (Owner/Sudo only)."""
-    if not message.from_user or (message.from_user.id not in sudo_users and message.from_user.id != OWNER_ID):
+    if not message.from_user or (message.from_user.id not in sudo_users and message.from_user.id != config.OWNER_ID):
         return # Ignore non-owners
     selected_rarity = weighted_pick(SPAWN_RARITY_WEIGHTS)
     if selected_rarity:

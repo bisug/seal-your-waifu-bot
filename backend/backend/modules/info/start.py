@@ -1,16 +1,24 @@
 import random
 
 from pyrogram import enums, errors, filters, types
-from config import config
-from backend import (LOGGER, PHOTO_URL, SUPPORT_CHAT, UPDATE_CHAT, app, collection, total_pm_users, user_collection)
-from backend.core.cache import (get_total_ranked_users, get_user_rank,
-                                invalidate_user_cache, update_user_rank)
+
+from backend.client import app
 from backend.core.keyboard import KeyboardBuilder, get_webapp_button
+from backend.core.leaderboard import (
+    get_total_ranked_users,
+    get_user_rank,
+    invalidate_user_cache,
+    update_user_rank,
+)
+from backend.core.logging import get_logger
 from backend.core.progression import get_user_progress
 from backend.core.referrals import claim_referral_bonus, parse_referral_payload
-from backend.core.user import (add_user_set_on_insert, ensure_user_document,
-                               get_user_filter)
+from backend.core.user import add_user_set_on_insert, ensure_user_document, get_user_filter
 from backend.core.utils import handle_errors, html_escape, reply_media_dynamic
+from backend.database import collection, total_pm_users, user_collection
+from config import config
+
+LOGGER = get_logger(__name__)
 LOGGER.info("Loading Start module...")
 START_TEXT_NEW = """
 <b>{bot_name}</b>
@@ -136,8 +144,8 @@ async def render_start_message(user_id: int, first_name: str, is_private: bool, 
     if webapp_btn:
         builder.add_row(webapp_btn)
     builder.add_row(
-        types.InlineKeyboardButton("Support", url=f"https://t.me/{SUPPORT_CHAT}"),
-        types.InlineKeyboardButton("Updates", url=f"https://t.me/{UPDATE_CHAT}")
+        types.InlineKeyboardButton("Support", url=f"https://t.me/{config.SUPPORT_CHAT}"),
+        types.InlineKeyboardButton("Updates", url=f"https://t.me/{config.UPDATE_CHAT}")
     )
     if is_private and (not existing_user or not existing_user.get("free_spin_claimed")):
         builder.add_row(
@@ -405,7 +413,7 @@ async def free_spin_handler(_, query: types.CallbackQuery):
         pass
 
 def random_photo():
-    return random.choice(PHOTO_URL)
+    return random.choice(config.PHOTO_URL)
 @app.on_message(filters.command("webapp"))
 @handle_errors
 async def webapp_command(_, message):

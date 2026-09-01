@@ -6,17 +6,13 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import RedirectResponse
 
-from config import config
-from backend.core.progression import get_level_from_xp, get_user_progress
-from backend.core.tasks import run_background_task
-from backend.core.user import get_user_rank_with_fallback
-from backend.core.utils import get_user_id_query, normalize_user_id
-from backend.core.minigames import get_user_energy
-from backend.database import collection, user_collection
 from backend.core.eggs import get_egg_tier_info, get_incubating_count, get_incubation_wait_minutes
-from backend.core.pass_config import apply_pass_incubation_bonus, get_active_pass_type, get_pass_incubation_slots
-from backend.modules.progression.achievements import ACHIEVEMENTS
-from backend.core.roles import get_role_payload
+from backend.core.minigames import get_user_energy
+from backend.core.pass_config import (
+    apply_pass_incubation_bonus,
+    get_active_pass_type,
+    get_pass_incubation_slots,
+)
 from backend.core.pets import (
     DEFAULT_PET,
     ensure_user_pet_state,
@@ -25,8 +21,16 @@ from backend.core.pets import (
     normalize_pet,
     pet_matches,
 )
+from backend.core.progression import get_level_from_xp, get_user_progress
+from backend.core.roles import get_role_payload
+from backend.core.tasks import run_background_task
+from backend.core.user import get_user_rank_with_fallback
+from backend.core.utils import get_user_id_query, normalize_user_id
+from backend.database import collection, user_collection
+from backend.modules.progression.achievements import ACHIEVEMENTS
 from backend.webapp.auth import get_current_user, get_current_user_data, is_sudo_user_id
 from backend.webapp.schemas import UserProfileResponse
+from config import config
 
 router = APIRouter()
 

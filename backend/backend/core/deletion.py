@@ -1,9 +1,14 @@
 import asyncio
 import time
+
 from pyrogram import errors
 from pyrogram.errors import FloodWait
-from backend import LOGGER, app, game_bot
+
+from backend.client import app, game_bot
+from backend.core.logging import get_logger
 from backend.database import deletion_queue_collection
+
+LOGGER = get_logger(__name__)
 async def schedule_deletion(chat_id: int, message_id: int, delay: int = 300, bot_name: str = "MainBot"):
     """
     Saves a message to the persistent deletion queue in MongoDB.

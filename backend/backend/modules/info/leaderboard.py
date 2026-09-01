@@ -1,11 +1,14 @@
 from pyrogram import enums, filters, types
 
-from backend import (LOGGER, app, group_user_totals_collection,
-                     user_collection)
+from backend.client import app
 from backend.core.constants import METRIC_ORDER, METRICS
+from backend.core.logging import get_logger
 from backend.core.progression import get_level_from_xp
 from backend.core.tasks import run_background_task
 from backend.core.utils import handle_errors, html_escape
+from backend.database import group_user_totals_collection, user_collection
+
+LOGGER = get_logger(__name__)
 
 
 # METRIC_ORDER and METRICS have been moved to backend.core.constants for centralization.
@@ -121,9 +124,9 @@ async def _resolve_missing_names(users: list) -> list:
     return users
 
 async def get_top_users(metric: str, limit: int = 10):
-    from backend.core.cache import (_zset_key, get_cached_leaderboard, r,
-                                    set_cached_leaderboard)
-    from backend.database import user_collection
+    from backend.core.cache import get_cached_leaderboard, set_cached_leaderboard
+    from backend.core.leaderboard import _zset_key
+    from backend.database import r, user_collection
     # 1. Try to get fully populated list from string cache
     cached = await get_cached_leaderboard(metric, limit)
     if cached:
@@ -186,13 +189,13 @@ async def get_top_users(metric: str, limit: int = 10):
     results = await _resolve_missing_names(results)
     # 3. Trigger background rebuild if ZSET was empty
     if r:
-        from backend.core.cache import rebuild_leaderboard
+        from backend.core.leaderboard import rebuild_leaderboard
         run_background_task(rebuild_leaderboard(user_collection, metric=metric))
 
     return results
 def build_leaderboard_text(metric: str, users: list):
     info = METRICS[metric]
-    text = f"<b>Global Leaderboard</b>\n"
+    text = "<b>Global Leaderboard</b>\n"
     text += f"<b>Category:</b> {info['label']}\n"
     text += "━━━━━━━━━━━━━━━━━━━━━\n\n"
     if not users:

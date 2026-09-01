@@ -1,7 +1,6 @@
 import re
 from typing import Iterable
 
-
 DEFAULT_CHARACTER_SEARCH_FIELDS = ("id", "name", "anime")
 MAX_SEARCH_TERMS = 6
 

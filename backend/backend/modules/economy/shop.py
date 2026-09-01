@@ -1,11 +1,10 @@
 import random
 from datetime import datetime, timezone
-from pyrogram import enums, errors, filters, types
+
 from pymongo import ReturnDocument
-from config import config
-from backend import (LOGGER, app, collection,
-                     user_collection)
-from backend.core.cache import sync_user_to_redis
+from pyrogram import enums, errors, filters, types
+
+from backend.client import app
 from backend.core.constants import (
     LEVEL_BUY_SHARD_COST,
     RARITY_PRICES,
@@ -14,14 +13,19 @@ from backend.core.constants import (
     SHOP_LIMIT,
 )
 from backend.core.keyboard import KeyboardBuilder, get_webapp_button
+from backend.core.leaderboard import sync_user_to_redis
+from backend.core.logging import get_logger
 from backend.core.sessions import create_session, get_session
 from backend.core.user import get_user_filter
 from backend.core.utils import handle_errors, html_escape, reply_media_dynamic
-from backend.database import daily_shop_collection
+from backend.database import collection, daily_shop_collection, user_collection
 from backend.database.models import Character, User
 from backend.modules.collection.rarities import SHOP_RARITY_WEIGHTS
 from backend.modules.progression.achievements import check_achievements
 from backend.modules.progression.quests import update_quest_progress
+from config import config
+
+LOGGER = get_logger(__name__)
 async def get_daily_shop_characters():
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     # 1. Check persistent daily storage

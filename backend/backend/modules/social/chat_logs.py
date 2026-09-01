@@ -1,7 +1,8 @@
 from pyrogram import filters, types
 
-from backend import app, db
+from backend.client import app
 from backend.core.utils import handle_errors
+from backend.database import db
 
 group_collection = db['total_groups']
 async def send_log(chat_id: str, message: str):

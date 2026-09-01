@@ -5,7 +5,7 @@ from urllib.parse import urlparse, urlunparse
 from fastapi import APIRouter, Depends, HTTPException, Path
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from backend import LOGGER
+from backend.core.logging import get_logger
 from backend.core.roles import format_upload_reward, get_role_payload, grant_upload_reward
 from backend.core.uploads import (
     ALLOWED_EXTENSIONS,
@@ -18,11 +18,13 @@ from backend.core.uploads import (
     upload_character_from_path,
     upload_pet_from_path,
 )
-from backend.core.waifu import invalidate_character_cache
 from backend.core.utils import get_user_id_query
+from backend.core.waifu import invalidate_character_cache
 from backend.database import collection, user_collection
 from backend.modules.collection.rarities import RARITY_MAP
 from backend.webapp.auth import require_sudo_user, require_uploader_user
+
+LOGGER = get_logger(__name__)
 
 router = APIRouter()
 

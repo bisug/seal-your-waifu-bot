@@ -1,18 +1,25 @@
 import asyncio
 from datetime import datetime, timezone
 from typing import Any, Optional, Tuple
-from backend import LOGGER
-from backend.core.cache import (get_cached_user, get_total_ranked_users,
-                                get_user_rank, invalidate_user_cache,
-                                rebuild_leaderboard, rget, rset,
-                                set_cached_user, update_user_rank)
+
+from backend.core.cache import get_cached_user, invalidate_user_cache, rget, rset, set_cached_user
+from backend.core.leaderboard import (
+    get_total_ranked_users,
+    get_user_rank,
+    rebuild_leaderboard,
+    update_user_rank,
+)
+from backend.core.logging import get_logger
 from backend.core.pass_config import CURRENT_PASS_SEASON
 from backend.core.tasks import run_background_task
+
 # Canonical implementations live in utils; these aliases keep the existing
 # public names used across the codebase.
 from backend.core.utils import get_user_id_query as get_user_filter
 from backend.core.utils import normalize_user_id as get_user_id
 from backend.database import user_collection
+
+LOGGER = get_logger(__name__)
 
 
 def _top_level_updated_fields(update_query: dict) -> set[str]:

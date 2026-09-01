@@ -1,9 +1,10 @@
 from pyrogram import enums, filters, types
 
-from backend import app
-from backend.core.cache import invalidate_user_cache, sync_user_to_redis
+from backend.client import app
+from backend.core.cache import invalidate_user_cache
 from backend.core.constants import SHARDS_PER_ZENITH
 from backend.core.keyboard import get_webapp_button
+from backend.core.leaderboard import sync_user_to_redis
 from backend.core.user import get_user_filter
 from backend.core.utils import handle_errors
 from backend.database import user_collection

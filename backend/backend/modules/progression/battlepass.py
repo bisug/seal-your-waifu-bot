@@ -1,8 +1,7 @@
 from pyrogram import enums, filters, types
 from pyrogram.handlers import MessageHandler, PreCheckoutQueryHandler
 
-from config import config
-from backend import app
+from backend.client import app
 from backend.core.keyboard import get_webapp_button
 from backend.core.pass_config import (
     MAX_PASS_LEVEL,
@@ -21,6 +20,7 @@ from backend.core.pass_payments import (
 from backend.core.progression import get_progress_bar, get_user_progress
 from backend.core.utils import handle_errors
 from backend.database import user_collection
+from config import config
 
 
 def _reward_text(track: dict, tier: str) -> str:

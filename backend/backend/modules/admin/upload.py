@@ -4,7 +4,9 @@ import shlex
 from pyrogram import enums, filters, types
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-from backend import GALLERY_CHANNEL_ID, LOGGER, app, sudo_filter, uploader_filter
+from backend import sudo_filter, uploader_filter
+from backend.client import app
+from backend.core.logging import get_logger
 from backend.core.roles import format_upload_reward, grant_upload_reward
 from backend.core.uploads import (
     UploadError,
@@ -18,6 +20,9 @@ from backend.core.uploads import (
 from backend.core.utils import handle_errors, html_escape
 from backend.database import collection
 from backend.modules.collection.rarities import RARITY_MAP
+from config import config
+
+LOGGER = get_logger(__name__)
 
 
 def get_rarity_help():
@@ -282,7 +287,7 @@ async def delete_callback_handler(_, query: types.CallbackQuery):
             msg_id = character.get("message_id")
             if msg_id:
                 try:
-                    await app.delete_messages(GALLERY_CHANNEL_ID, msg_id)
+                    await app.delete_messages(config.GALLERY_CHANNEL_ID, msg_id)
                 except Exception as e:
                     LOGGER.debug(f"Failed to delete gallery message {msg_id}: {e}")
             from backend.core.waifu import invalidate_character_cache

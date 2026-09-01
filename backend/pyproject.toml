@@ -38,3 +38,18 @@ dev = [
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
 ]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+select = [
+    "F",   # Pyflakes: unused imports/vars, redefinitions
+    "E4",  # pycodestyle subset: imports, blank lines
+    "I",   # isort: import ordering
+]
+ignore = [
+    "E402",  # module-level import not at top (late imports are deliberate failsafes)
+    "E741",  # ambiguous variable names like `l` (kept for short loops)
+]

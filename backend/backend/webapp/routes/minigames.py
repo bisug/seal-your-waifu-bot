@@ -1,8 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from backend.core.minigames import (
+    MAX_ENERGY,
+    consume_energy,
+    get_user_energy,
+    reward_minigame,
+    validate_session,
+)
 from backend.webapp.auth import get_current_user
-from backend.core.minigames import get_user_energy, consume_energy, reward_minigame, validate_session, MAX_ENERGY
 
 router = APIRouter()
 

@@ -6,12 +6,12 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 
-from backend.core.cache import sync_user_to_redis
 from backend.core.character_search import build_character_search_filter
-from backend.modules.economy.sell import get_sell_price
+from backend.core.leaderboard import sync_user_to_redis
 from backend.core.user import get_user_data
 from backend.core.utils import get_user_id_query, normalize_user_id
 from backend.database import collection, user_collection
+from backend.modules.economy.sell import get_sell_price
 from backend.webapp.auth import get_current_user
 from backend.webapp.schemas import PaginatedResponse
 

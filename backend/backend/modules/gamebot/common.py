@@ -1,11 +1,13 @@
 from pymongo import ReturnDocument
 from pyrogram import types
 
-from config import config
-from backend import game_bot, sessions_collection, user_collection
-from backend.core.cache import get_cached_user, sync_user_to_redis
+from backend.client import game_bot
+from backend.core.cache import get_cached_user
+from backend.core.leaderboard import sync_user_to_redis
 from backend.core.user import add_user_set_on_insert, get_user_filter
 from backend.core.utils import check_member_requirement, html_escape
+from backend.database import sessions_collection, user_collection
+from config import config
 
 
 async def send_requirement_failure(message: types.Message, reason: str, count: int = 0):
@@ -18,11 +20,10 @@ async def send_requirement_failure(message: types.Message, reason: str, count: i
             f"Current count: <code>{count}</code>"
         )
     else:
-        from backend import BOT_NAME, BOT_USERNAME
 
         text = (
             f"🚫 <b>Main Bot Missing:</b> GameBot operations require the presence of "
-            f"<b>{BOT_NAME}</b> (@{BOT_USERNAME}) in this sector.\n\n"
+            f"<b>{config.BOT_NAME}</b> (@{config.BOT_USERNAME}) in this sector.\n\n"
             "<i>Please add the Main Bot to authorize games!</i>"
         )
     await game_bot.send_message_safe(message.chat.id, text, auto_delete=300)

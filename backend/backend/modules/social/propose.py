@@ -1,16 +1,17 @@
 import asyncio
 import random
 from datetime import datetime, timezone
-from pyrogram import enums, filters, types
-from pymongo.errors import DuplicateKeyError
 
-from backend import app, user_collection
+from pymongo.errors import DuplicateKeyError
+from pyrogram import enums, filters, types
+
+from backend.client import app
 from backend.core.balance import update_user_balance
 from backend.core.rarities import CLAIM_RARITY_WEIGHTS, weighted_pick
 from backend.core.user import add_char_to_user
-from backend.core.utils import (get_user_id_query, handle_errors,
-                                html_escape, reply_media_dynamic)
+from backend.core.utils import get_user_id_query, handle_errors, html_escape, reply_media_dynamic
 from backend.core.waifu import sample_character_by_rarity
+from backend.database import user_collection
 
 start_messages = [
     "Finally the time has come",

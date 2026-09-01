@@ -1,12 +1,18 @@
 import hashlib
 from collections import OrderedDict
-from pyrogram import enums, errors, filters, types
 
+from pyrogram import enums, errors, filters, types
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-from backend import LOGGER, app, collection
+
+from backend.client import app
 from backend.core.cache import rget, rset
 from backend.core.character_search import build_character_search_filter
-from backend.core.utils import handle_errors, html_escape as escape
+from backend.core.logging import get_logger
+from backend.core.utils import handle_errors
+from backend.core.utils import html_escape as escape
+from backend.database import collection
+
+LOGGER = get_logger(__name__)
 # --- PAGINATION HELPERS ---
 _MAX_SEARCH_FALLBACK = 1000
 _search_fallback: OrderedDict[str, str] = OrderedDict()

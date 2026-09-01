@@ -3,8 +3,6 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from backend import LOGGER
-from backend.core.cache import sync_user_to_redis
 from backend.core.constants import (
     LEVEL_BUY_SHARD_COST,
     RARITY_PRICES,
@@ -13,6 +11,8 @@ from backend.core.constants import (
     SHOP_LIMIT,
 )
 from backend.core.eggs import get_egg_tier_info, normalize_egg_tier
+from backend.core.leaderboard import sync_user_to_redis
+from backend.core.logging import get_logger
 from backend.core.pass_config import (
     CURRENT_PASS_SEASON,
     MAX_PASS_LEVEL,
@@ -30,13 +30,15 @@ from backend.core.pass_config import (
     get_pass_rank,
 )
 from backend.core.pass_payments import PassPaymentError, create_pass_invoice
+from backend.core.pets import ensure_user_pet_state, get_pet_key, list_shop_pets, normalize_pet
 from backend.core.progression import get_user_progress
 from backend.core.roles import apply_role_discount
 from backend.core.utils import get_user_id_query, normalize_user_id
 from backend.database import client, collection, user_collection
 from backend.modules.economy.shop import get_daily_shop_characters
-from backend.core.pets import ensure_user_pet_state, get_pet_key, list_shop_pets, normalize_pet
 from backend.webapp.auth import get_current_user, get_current_user_data
+
+LOGGER = get_logger(__name__)
 
 router = APIRouter()
 EXCHANGE_RATE_SHARDS_PER_ZENITH = SHARDS_PER_ZENITH
@@ -454,7 +456,7 @@ async def api_buy_level(levels: int = Query(1, ge=1, le=50), user_id: int = Depe
             )
 
     if new_xp is not None:
-        from backend.core.cache import update_user_rank
+        from backend.core.leaderboard import update_user_rank
 
         try:
             await update_user_rank(user_id, new_xp)

@@ -1,8 +1,14 @@
 from html import escape
+
 from pyrogram import enums, errors, filters, types
-from backend import LOGGER, app, collection, user_collection
+
+from backend.client import app
 from backend.core.character_search import build_character_search_filter
+from backend.core.logging import get_logger
 from backend.core.utils import html_escape as html_escape_v2
+from backend.database import collection, user_collection
+
+LOGGER = get_logger(__name__)
 RESULTS_PER_PAGE = 50
 @app.on_inline_query()
 async def inline_query_handler(_, query: types.InlineQuery) -> None:

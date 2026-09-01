@@ -1,9 +1,13 @@
 from pyrogram import enums, filters, types
 
-from backend import LOGGER, app, user_collection
+from backend.client import app
+from backend.core.logging import get_logger
 from backend.core.progression import add_xp
 from backend.core.user import get_user_filter
 from backend.core.utils import handle_errors, html_escape
+from backend.database import user_collection
+
+LOGGER = get_logger(__name__)
 ACHIEVEMENTS = {
     "collector_10": {
         "name": "Novice Collector",

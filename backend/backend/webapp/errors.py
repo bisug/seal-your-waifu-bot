@@ -6,7 +6,6 @@ from fastapi import Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
-
 _DEFAULT_CODES = {
     400: "bad_request",
     401: "unauthorized",

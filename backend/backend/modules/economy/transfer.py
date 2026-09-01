@@ -1,9 +1,15 @@
 from pyrogram import enums, filters, types
-from backend import LOGGER, app, client, user_collection
-from backend.core.cache import invalidate_leaderboard_cache, sync_user_to_redis
+
+from backend.client import app
+from backend.core.cache import invalidate_leaderboard_cache
+from backend.core.leaderboard import sync_user_to_redis
+from backend.core.logging import get_logger
 from backend.core.sessions import create_session, delete_session, get_session
 from backend.core.user import add_user_set_on_insert, get_user_data, get_user_filter
 from backend.core.utils import handle_errors, html_escape
+from backend.database import client, user_collection
+
+LOGGER = get_logger(__name__)
 
 
 @app.on_message(filters.command(["transfer", "tranafer"]))

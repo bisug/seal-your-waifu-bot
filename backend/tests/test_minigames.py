@@ -1,8 +1,10 @@
-import pytest
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, patch
 
-from backend.core.minigames import get_user_energy, consume_energy
+import pytest
+
+from backend.core.minigames import consume_energy, get_user_energy
+
 
 @pytest.mark.asyncio
 async def test_energy_recharge():

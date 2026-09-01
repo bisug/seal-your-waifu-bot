@@ -72,6 +72,11 @@ DEFAULT_PERKS = {
 
 MANAGED_ROLES = {MODERATOR_ROLE, UPLOADER_ROLE}
 
+# Live sudo state, mutated at runtime by runner._load_sudo_users() and
+# /promote//demote (modules/admin/sudo.py). Seeded from config.SUDO_USERS.
+sudo_users = list(config.SUDO_USERS)
+sudo_roles = {int(user_id): MODERATOR_ROLE for user_id in sudo_users}
+
 
 def normalize_role(role: Any) -> str | None:
     value = str(role or "").strip().lower()
@@ -99,12 +104,6 @@ def get_user_role(user_id: int | str | None) -> str | None:
         return None
     if uid == config.OWNER_ID:
         return OWNER_ROLE
-
-    try:
-        from backend import sudo_roles, sudo_users
-    except Exception:
-        sudo_roles = {}
-        sudo_users = config.SUDO_USERS
 
     role = normalize_role(sudo_roles.get(uid))
     if role:

@@ -1,9 +1,11 @@
-from pyrogram import filters, types, enums
-from backend import app
-from backend.database import user_collection
+from pyrogram import enums, filters, types
+
+from backend.client import app
 from backend.core.user import add_user_set_on_insert
-from backend.core.utils import get_user_id_query, normalize_user_id, handle_errors
+from backend.core.utils import get_user_id_query, handle_errors, normalize_user_id
+from backend.database import user_collection
 from backend.modules.collection.rarities import RARITY_MAP
+
 
 @app.on_message(filters.command("hmode"))
 @handle_errors

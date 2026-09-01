@@ -4,15 +4,18 @@ import json
 import random
 import time
 from typing import Any, Dict, Optional
-from pyrogram import enums
-from pymongo import ReturnDocument
 
-from backend import LOGGER, app
+from pymongo import ReturnDocument
+from pyrogram import enums
+
+from backend.client import app
 from backend.core.cache import rget, rset
+from backend.core.logging import get_logger
 from backend.core.waifu import get_or_load_characters
-from backend.database import message_counts_collection
+from backend.database import message_counts_collection, spawns_collection, user_totals_collection
 from backend.database import r as _redis
-from backend.database import spawns_collection, user_totals_collection
+
+LOGGER = get_logger(__name__)
 
 MESSAGE_COUNT_TTL_SECONDS = 86400
 
@@ -305,6 +308,7 @@ async def flush_message_counts_to_db() -> int:
     """Sync cached Redis message totals to MongoDB once (batched bulk writes)."""
     if not _redis: return 0
     from pymongo import UpdateOne
+
     from backend.core.cache import _scan_keys
     synced = 0
     ops = []

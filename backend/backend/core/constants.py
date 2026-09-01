@@ -19,6 +19,7 @@ LEVEL_BUY_SHARD_COST = SHARDS_PER_ZENITH
 SHOP_LIMIT = 50
 # Per-rarity pricing/stock live in the `rarities` collection (core/rarities.py).
 from backend.core.rarities import RARITY_PRICES, RARITY_STOCK_LIMITS  # noqa: E402,F401
+
 # Battle Pass purchases use Telegram Stars (XTR).
 PASS_PRICES = {
     "premium": 24,

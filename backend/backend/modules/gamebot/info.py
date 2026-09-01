@@ -1,7 +1,9 @@
 from pyrogram import enums, filters, types
 
+from backend.client import game_bot
 from config import config
-from backend import game_bot
+
+
 @game_bot.on_message(filters.command(["start", "help"]))
 async def gamebot_start_handler(_, message: types.Message):
     """Dedicated /start and /help handler for GameBot."""

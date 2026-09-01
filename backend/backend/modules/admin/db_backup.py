@@ -1,10 +1,14 @@
-from pymongo import AsyncMongoClient
-from pyrogram import enums, filters, types
 from urllib.parse import urlsplit, urlunsplit
 
-from config import config
-from backend import LOGGER, app
+from pymongo import AsyncMongoClient
+from pyrogram import enums, filters, types
+
+from backend.client import app
+from backend.core.logging import get_logger
 from backend.core.utils import handle_errors, html_escape
+from config import config
+
+LOGGER = get_logger(__name__)
 
 BACKUP_BATCH_SIZE = 500
 

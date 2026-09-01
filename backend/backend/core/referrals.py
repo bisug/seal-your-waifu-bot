@@ -3,13 +3,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from backend import LOGGER, user_collection
 from backend.core.cache import invalidate_user_cache
+from backend.core.logging import get_logger
 from backend.core.pets import copy_default_pet, get_pet_key
 from backend.core.progression import add_xp
 from backend.core.user import get_user_filter, get_user_id
 from backend.core.utils import get_now_utc
+from backend.database import user_collection
 from backend.modules.progression.achievements import check_achievements
+
+LOGGER = get_logger(__name__)
 
 REFERRER_REWARD_SHARDS = 500
 REFERRER_REWARD_XP = 50

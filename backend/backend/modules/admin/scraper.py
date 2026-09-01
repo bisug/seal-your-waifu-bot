@@ -1,18 +1,22 @@
 import asyncio
 import os
 import re
+
 from pyrogram import enums, errors, filters, types
 from pyrogram.errors import FloodWait
 
-from config import config
-from backend import (GALLERY_CHANNEL_ID, LOGGER, OWNER_ID, app, collection,
-                    scraped_characters_collection, sudo_users, userbot, sudo_filter)
+from backend import sudo_filter
+from backend.client import app, userbot
+from backend.core.logging import get_logger
+from backend.core.roles import sudo_users
 from backend.core.uploads import temp_download_dir
 from backend.core.utils import handle_errors, send_media_dynamic
-from backend.core.waifu import (add_character_to_db,
-                                invalidate_character_cache,
-                                upload_media_safely)
+from backend.core.waifu import add_character_to_db, invalidate_character_cache, upload_media_safely
+from backend.database import collection, scraped_characters_collection
 from backend.modules.collection.rarities import RARITY_MAP
+from config import config
+
+LOGGER = get_logger(__name__)
 LOG_GROUP_ID = config.LOG_GROUP_ID
 scraping_tasks = {}
 pending_characters = set()
@@ -209,7 +213,7 @@ async def stop_scrape_handler(client, message):
         await app.send_message_safe(message.chat.id, "ℹ️ No active scraper task.")
 @app.on_callback_query(filters.regex(r"^rsc_app:(\d+)$"))
 async def approve_scrape_callback(client, query):
-    if query.from_user.id not in sudo_users and query.from_user.id != OWNER_ID:
+    if query.from_user.id not in sudo_users and query.from_user.id != config.OWNER_ID:
         return await query.answer("❌ Admin only.")
     rarity_num = int(query.data.split(":")[1])
     # Strip HTML tags first so the regex matches clean text
@@ -256,7 +260,7 @@ async def approve_scrape_callback(client, query):
             f"<b>Rarity:</b> {rarity_text}\n"
             f"<i>Approved by Admin</i>"
         )
-        sent_msg = await send_media_dynamic(app, chat_id=GALLERY_CHANNEL_ID, media_url=final_url,
+        sent_msg = await send_media_dynamic(app, chat_id=config.GALLERY_CHANNEL_ID, media_url=final_url,
             caption=channel_caption,
             parse_mode=enums.ParseMode.HTML
         )
@@ -284,7 +288,7 @@ async def approve_scrape_callback(client, query):
                 pass
 @app.on_callback_query(filters.regex(r"^rsc_dec$"))
 async def decline_scrape_callback(client, query):
-    if query.from_user.id not in sudo_users and query.from_user.id != OWNER_ID:
+    if query.from_user.id not in sudo_users and query.from_user.id != config.OWNER_ID:
         return await query.answer("❌ Admin only.")
     caption = query.message.caption or ""
     # Strip HTML tags first, else the regex captures HTML as part of the name.

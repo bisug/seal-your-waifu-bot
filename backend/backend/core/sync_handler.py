@@ -1,10 +1,12 @@
 import logging
+
 from pyrogram import ContinuePropagation, filters
 
-from backend import app, game_bot
+from backend.client import app, game_bot
 from backend.core.cache import rget, rset
 from backend.core.tasks import run_background_task
 from backend.database import user_collection
+
 LOGGER = logging.getLogger(__name__)
 
 async def sync_user_data(message):

@@ -5,8 +5,9 @@
 2. validate_session must return None (not a fabricated session) when Redis
    is unavailable, otherwise rewards are grantable without starting a game.
 """
-import pytest
 from unittest.mock import AsyncMock, patch
+
+import pytest
 
 from backend.core import minigames
 

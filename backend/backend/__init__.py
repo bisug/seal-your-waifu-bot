@@ -1,7 +1,14 @@
-"""Seal Bot package root: client instances, shared constants, and filters.
+"""Seal Bot package root.
 
-Import order matters: the kurigram geo patch must run before any client
-starts, and logging before anything else logs.
+Only bootstrap-level wiring lives here: the kurigram geo patch, logging
+setup, and the sudo/uploader custom filters. Everything else has a real
+home — import it from there:
+
+- clients (app, game_bot, userbot)  -> backend.client
+- DB collections                    -> backend.database
+- sudo state (sudo_users/roles)     -> backend.core.roles
+- chat IDs, URLs, identity          -> config
+- loggers                          -> backend.core.logging (get_logger)
 """
 import time
 
@@ -30,7 +37,7 @@ def _inline_query_parse_no_geo(bot_client, inline_query, users):
         chat_type = enums.ChatType.CHANNEL
     return types.InlineQuery(
         id=str(inline_query.query_id),
-        from_user=types.User._parse(client, users[inline_query.user_id]),
+        from_user=types.User._parse(bot_client, users[inline_query.user_id]),
         query=inline_query.query,
         offset=inline_query.offset,
         chat_type=chat_type,
@@ -41,59 +48,13 @@ def _inline_query_parse_no_geo(bot_client, inline_query, users):
 
 types.InlineQuery._parse = _inline_query_parse_no_geo
 
-from config import config
-from backend.core.logging import get_logger, install_exception_hooks, setup_logging
+from backend.core.logging import install_exception_hooks, setup_logging
 
 setup_logging()
 install_exception_hooks()
 
-from backend.client import SealClient
-
-# Re-exports consumed by ~60 modules via `from backend import ...`.
-# DB collections live in backend.database; these aliases keep old import
-# paths working. Do not remove without grepping `from backend import` first.
-from backend.database import (  # noqa: F401
-    client,
-    collection,
-    db,
-    global_group_bans_collection,
-    global_user_bans_collection,
-    group_collection,
-    group_user_totals_collection,
-    message_counts_collection,
-    pet_catalog_collection,
-    quiz_questions_collection,
-    scraped_characters_collection,
-    sessions_collection,
-    spawns_collection,
-    sudo_collection,
-    total_pm_users,
-    user_collection,
-    user_totals_collection,
-)
-
+# Process start time, used by /ping uptime.
 StartTime = time.time()
-
-LOGGER = get_logger(__name__)
-
-OWNER_ID = config.OWNER_ID
-sudo_users = config.SUDO_USERS
-sudo_roles = {int(user_id): "moderator" for user_id in sudo_users}
-MAIN_GROUP_ID = config.MAIN_GROUP_ID
-TOKEN = config.TOKEN
-PHOTO_URL = config.PHOTO_URL
-SUPPORT_CHAT = config.SUPPORT_CHAT
-UPDATE_CHAT = config.UPDATE_CHAT
-BOT_USERNAME = config.BOT_USERNAME
-GAME_BOT_USERNAME = None
-BOT_ID = None
-BOT_NAME = None
-GALLERY_CHANNEL_ID = config.GALLERY_CHANNEL_ID
-WEB_APP_URL = config.WEB_APP_URL
-
-app = SealClient(name="MainBot", bot_token=config.TOKEN)
-game_bot = SealClient(name="GameBot", bot_token=config.SUB_TOKEN)
-userbot = SealClient(name="UserBot", session_string=config.STRING_SESSION) if config.STRING_SESSION else None
 
 
 def _sudo_check(_, __, message):

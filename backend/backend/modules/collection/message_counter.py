@@ -1,7 +1,9 @@
 import logging
 import random
+
 from pyrogram import filters, types
-from backend import app
+
+from backend.client import app
 from backend.core.rarities import (
     ACTIVE_SPAWN_RARITY_WEIGHTS,
     MILESTONE_THRESHOLDS,
@@ -10,10 +12,13 @@ from backend.core.rarities import (
     weighted_pick,
 )
 from backend.core.spawn_utils import get_target_spawn_frequency
-from backend.core.spawns import (increment_message_count,
-                                 is_golden_hour,
-                                 send_character,
-                                 track_user_activity)
+from backend.core.spawns import (
+    increment_message_count,
+    is_golden_hour,
+    send_character,
+    track_user_activity,
+)
+
 # Use a specific logger for spawn tracking
 SPAWN_LOGGER = logging.getLogger("backend.spawns")
 RANDOM_ROYAL_SPAWN_CHANCE = 0.0002

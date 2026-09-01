@@ -1,15 +1,18 @@
 import os
 import platform
 import time
+
 try:
     import psutil
 except ModuleNotFoundError:
     psutil = None
 from pyrogram import enums, filters, types
 
-from backend import StartTime, app, db
+from backend import StartTime
+from backend.client import app
 from backend.core.utils import handle_errors
-from backend.database import collection, group_collection, user_collection
+from backend.database import collection, db, group_collection, user_collection
+
 
 def get_readable_time(seconds: int) -> str:
     count = 0

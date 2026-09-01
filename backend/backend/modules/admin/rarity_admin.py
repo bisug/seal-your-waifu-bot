@@ -2,7 +2,8 @@ import uuid
 
 from pyrogram import enums, filters, types
 
-from backend import app, sudo_filter
+from backend import sudo_filter
+from backend.client import app
 from backend.core.rarities import (
     EDITABLE_FIELDS,
     NUMERIC_FIELDS,

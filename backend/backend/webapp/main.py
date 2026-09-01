@@ -4,9 +4,7 @@ import os
 import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
-from fastapi import HTTPException
-from fastapi import Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -14,9 +12,8 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from config import config
-from backend import LOGGER
-from backend.core.cache import (
+from backend import runner
+from backend.core.leaderboard import (
     consume_leaderboard_dirty,
     get_total_ranked_users,
     mark_leaderboard_dirty,
@@ -24,6 +21,7 @@ from backend.core.cache import (
 )
 from backend.core.logging import (
     configure_event_loop_logging,
+    get_logger,
     new_request_id,
     reset_request_id,
     set_request_id,
@@ -32,11 +30,13 @@ from backend.core.resources import get_resource_snapshot, pressure_reason
 from backend.core.tasks import run_background_task
 from backend.core.worker import background_maintenance
 from backend.database import r, seal_db, user_collection
-from backend import runner
 from backend.runner import start_bots, stop_bots
 from backend.webapp.api import router as api_router
 from backend.webapp.errors import error_response
 from backend.webapp.ws import router as ws_router
+from config import config
+
+LOGGER = get_logger(__name__)
 
 
 async def sync_leaderboard_periodic():

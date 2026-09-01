@@ -1,16 +1,25 @@
+from pymongo.errors import DuplicateKeyError
 from pyrogram import enums, errors, filters, types
 from pyrogram.errors import FloodWait
-from pymongo.errors import DuplicateKeyError
-from config import config
-from backend import LOGGER, app
-from backend.core.cache import sync_user_to_redis
+
+from backend.client import app
+from backend.core.leaderboard import sync_user_to_redis
+from backend.core.logging import get_logger
+from backend.core.rarities import CLAIM_RARITY_WEIGHTS, weighted_pick
 from backend.core.sessions import create_session, get_session
 from backend.core.user import add_user_set_on_insert, get_user_data
-from backend.core.utils import (get_user_id_query, handle_errors, html_escape,
-                                reply_media_dynamic, send_media_dynamic)
-from backend.core.rarities import CLAIM_RARITY_WEIGHTS, weighted_pick
+from backend.core.utils import (
+    get_user_id_query,
+    handle_errors,
+    html_escape,
+    reply_media_dynamic,
+    send_media_dynamic,
+)
 from backend.core.waifu import sample_character_by_rarity
 from backend.database import user_collection
+from config import config
+
+LOGGER = get_logger(__name__)
 # Fetch requirements from centralized config
 MUST_JOIN = config.SUPPORT_CHAT
 SECOND_JOIN = config.UPDATE_CHAT

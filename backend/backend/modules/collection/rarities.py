@@ -14,7 +14,7 @@ Backward-compat re-exports (same live dicts as core/rarities.py, so
 
 from pyrogram import enums, filters, types
 
-from backend import app
+from backend.client import app
 from backend.core.rarities import (
     ACTIVE_SPAWN_RARITY_WEIGHTS,
     RARITY_IDS,

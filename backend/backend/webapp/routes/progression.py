@@ -2,16 +2,14 @@ from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from backend.core.cache import invalidate_user_cache, sync_user_to_redis
+from backend.core.cache import invalidate_user_cache
 from backend.core.eggs import get_incubating_count, get_incubation_wait_minutes
+from backend.core.leaderboard import sync_user_to_redis
 from backend.core.pass_config import (
     apply_pass_incubation_bonus,
     get_active_pass_type,
     get_pass_incubation_slots,
 )
-from backend.core.utils import (get_now_utc, get_user_id_query,
-                                normalize_user_id)
-from backend.database import user_collection
 from backend.core.pets import (
     DEFAULT_PET,
     ensure_user_pet_state,
@@ -19,8 +17,15 @@ from backend.core.pets import (
     get_pet_key,
     normalize_pet,
 )
-from backend.modules.progression.quests import (PASS_MISSIONS, QUEST_POOL, WEEKLY_POOL,
-                                                add_xp, get_user_quests)
+from backend.core.utils import get_now_utc, get_user_id_query, normalize_user_id
+from backend.database import user_collection
+from backend.modules.progression.quests import (
+    PASS_MISSIONS,
+    QUEST_POOL,
+    WEEKLY_POOL,
+    add_xp,
+    get_user_quests,
+)
 from backend.webapp.auth import get_current_user, get_current_user_data
 from backend.webapp.schemas import QuestsResponse
 

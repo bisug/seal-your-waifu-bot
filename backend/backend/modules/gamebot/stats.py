@@ -1,7 +1,8 @@
 from pyrogram import enums, filters, types
 
-from backend import game_bot, sessions_collection, user_collection
+from backend.client import game_bot
 from backend.core.utils import html_escape
+from backend.database import sessions_collection, user_collection
 
 
 @game_bot.on_message(filters.command(["top", "stats"]))

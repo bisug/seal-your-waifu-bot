@@ -4,31 +4,27 @@ import random
 import time
 import uuid
 from datetime import timedelta, timezone
+
 from pyrogram import enums, filters, types
 from pyrogram.handlers import CallbackQueryHandler, MessageHandler
-from backend import user_collection
+
 from backend.core.cache import is_on_cooldown as redis_cooldown
-from backend.core.cache import sync_user_to_redis
 from backend.core.constants import CORRUPTED_EGG_CHANCE, EGG_TIERS
 from backend.core.eggs import (
-    get_incubating_count,
     get_egg_tier_info,
+    get_incubating_count,
     get_incubation_wait_minutes,
     normalize_egg_tier,
     roll_egg_tier,
 )
 from backend.core.keyboard import get_webapp_button
+from backend.core.leaderboard import sync_user_to_redis
 from backend.core.pass_config import (
     PASS_BENEFITS,
     apply_pass_incubation_bonus,
     get_active_pass_type,
     get_pass_incubation_slots,
 )
-from backend.core.progression import add_xp
-from backend.core.tasks import run_background_task
-from backend.core.user import add_pet_xp, add_user_set_on_insert, get_user_filter
-from backend.core.utils import format_currency, get_now_utc, html_escape, reply_media_dynamic
-from backend.modules.progression.achievements import check_achievements
 from backend.core.pets import (
     DEFAULT_PET,
     ensure_user_pet_state,
@@ -37,7 +33,14 @@ from backend.core.pets import (
     get_pet_key,
     normalize_pet,
 )
+from backend.core.progression import add_xp
+from backend.core.tasks import run_background_task
+from backend.core.user import add_pet_xp, add_user_set_on_insert, get_user_filter
+from backend.core.utils import format_currency, get_now_utc, html_escape, reply_media_dynamic
+from backend.database import user_collection
+from backend.modules.progression.achievements import check_achievements
 from backend.modules.progression.quests import update_quest_progress
+
 # Configuration
 LOGGER = logging.getLogger(__name__)
 def load_handlers(bot):

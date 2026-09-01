@@ -3,16 +3,21 @@ import os
 import shlex
 import uuid
 from collections import OrderedDict
+
 import httpx
 from pyrogram import enums, filters, types
-from config import config
-from backend import GALLERY_CHANNEL_ID, LOGGER, app, sudo_filter
+
+from backend import sudo_filter
+from backend.client import app
 from backend.core.cache import rdel, rget, rset
+from backend.core.logging import get_logger
 from backend.core.utils import handle_errors, html_escape
-from backend.core.waifu import (get_character_by_id, invalidate_character_cache,
-                                upload_media_safely)
+from backend.core.waifu import get_character_by_id, invalidate_character_cache, upload_media_safely
 from backend.database import collection
 from backend.modules.collection.rarities import RARITY_MAP
+from config import config
+
+LOGGER = get_logger(__name__)
 LOG_GROUP_ID = config.LOG_GROUP_ID
 _MAX_PENDING_UPDATES = 1000
 _pending_updates: OrderedDict[str, dict] = OrderedDict()
@@ -186,7 +191,7 @@ async def update_callback_handler(_, query: types.CallbackQuery):
                     # Change media and caption
                     media_type = "video" if updates['img_url'].endswith(('.mp4', '.webm', '.gif')) else "photo"
                     await app.edit_message_media(
-                        chat_id=GALLERY_CHANNEL_ID,
+                        chat_id=config.GALLERY_CHANNEL_ID,
                         message_id=msg_id,
                         media=types.InputMedia(
                             media=updates['img_url'],
@@ -198,7 +203,7 @@ async def update_callback_handler(_, query: types.CallbackQuery):
                 else:
                     # Just caption
                     await app.edit_message_caption(
-                        chat_id=GALLERY_CHANNEL_ID,
+                        chat_id=config.GALLERY_CHANNEL_ID,
                         message_id=msg_id,
                         caption=new_caption,
                         parse_mode=enums.ParseMode.HTML

@@ -1,5 +1,6 @@
 import math
-from backend import LOGGER
+
+from backend.core.logging import get_logger
 from backend.core.pass_config import (
     CURRENT_PASS_SEASON,
     MAX_PASS_LEVEL,
@@ -12,6 +13,8 @@ from backend.core.pass_config import (
 )
 from backend.core.user import add_user_set_on_insert, get_user_filter
 from backend.database import user_collection
+
+LOGGER = get_logger(__name__)
 LEVEL_CAP = MAX_PASS_LEVEL
 LEVEL_REWARDS = {
     5: {"free": 1000, "premium": 3000, "elite": 5000},
@@ -76,7 +79,7 @@ async def add_xp(
     new_xp = user.get("xp", 0)
     # Sync with Redis Ranking Cache
     if sync_rank:
-        from backend.core.cache import update_user_rank
+        from backend.core.leaderboard import update_user_rank
         await update_user_rank(user_id, new_xp)
     old_xp = new_xp - amount
     old_level = get_level_from_xp(old_xp)

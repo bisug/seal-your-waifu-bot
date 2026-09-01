@@ -1,5 +1,5 @@
-import logging
 import inspect
+import logging
 
 import redis.asyncio as redis
 from pymongo import AsyncMongoClient

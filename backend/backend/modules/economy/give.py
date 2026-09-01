@@ -1,11 +1,17 @@
 from pyrogram import enums, filters, types
 
-from backend import LOGGER, OWNER_ID, app, client, sudo_users, user_collection
+from backend.client import app
 from backend.core.cache import invalidate_user_cache
+from backend.core.logging import get_logger
+from backend.core.roles import sudo_users
 from backend.core.user import add_user_set_on_insert
 from backend.core.utils import get_user_id_query, handle_errors, html_escape
+from backend.database import client, user_collection
 from backend.modules.progression.achievements import check_achievements
 from backend.modules.progression.quests import update_quest_progress
+from config import config
+
+LOGGER = get_logger(__name__)
 @app.on_message(filters.command("givebalance"))
 @handle_errors
 async def give_balance(_, message: types.Message):
@@ -24,7 +30,7 @@ async def give_balance(_, message: types.Message):
     except (IndexError, ValueError):
         await message.reply_text("Usage: <code>/givebalance &lt;amount&gt;</code> (Reply to user)", parse_mode=enums.ParseMode.HTML)
         return
-    if sender_id in sudo_users or sender_id == OWNER_ID:
+    if sender_id in sudo_users or sender_id == config.OWNER_ID:
         await user_collection.update_one(
             get_user_id_query(recipient_id),
             add_user_set_on_insert(
@@ -75,7 +81,7 @@ async def give_balance(_, message: types.Message):
 @handle_errors
 async def take_balance(_, message: types.Message):
     sender_id = message.from_user.id
-    if sender_id not in sudo_users and sender_id != OWNER_ID:
+    if sender_id not in sudo_users and sender_id != config.OWNER_ID:
         await message.reply_text("You are not authorized to take balance.")
         return
     if not message.reply_to_message:

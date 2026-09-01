@@ -1,8 +1,11 @@
 import re
+
 from pyrogram import enums, errors, filters, types
-from backend import app
+
+from backend.client import app
 from backend.core.user import get_user_data, update_user
-from backend.core.utils import html_escape, reply_media_dynamic, handle_errors
+from backend.core.utils import handle_errors, html_escape, reply_media_dynamic
+
 
 @app.on_message(filters.command(["fav", "sfav"]))
 @handle_errors

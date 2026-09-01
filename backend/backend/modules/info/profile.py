@@ -1,14 +1,19 @@
 import random
+
 from pyrogram import enums, filters, types
 
-from backend import LOGGER, PHOTO_URL, app
+from backend.client import app
 from backend.core.eggs import get_incubating_count
+from backend.core.logging import get_logger
 from backend.core.pass_config import get_pass_incubation_slots
 from backend.core.progression import get_progress_bar, get_user_progress
 from backend.core.roles import get_role_payload
 from backend.core.user import get_active_pet, get_user_data, get_user_rank_with_fallback
 from backend.core.utils import handle_errors, html_escape, reply_media_dynamic
 from backend.database import collection
+from config import config
+
+LOGGER = get_logger(__name__)
 RARITY_ICONS = {
     'Common': '◌', 'Medium': '○', 'Rare': '◙',
     'Legendary': '◎', 'Cosmic': '◉', 'Exclusive': '◈',
@@ -119,7 +124,7 @@ async def profile_handler(_, message: types.Message):
         builder.add_row(webapp_btn)
     reply_markup = builder.build()
     try:
-        pic = random.choice(PHOTO_URL)
+        pic = random.choice(config.PHOTO_URL)
         await reply_media_dynamic(message, pic,
             caption=profile_text,
             reply_markup=reply_markup,

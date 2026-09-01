@@ -1,14 +1,17 @@
 import uuid
+
 from pyrogram import enums, filters, types
 
-from backend import LOGGER, app
-from backend.core.balance import (check_and_deduct, get_user_balance,
-                                  update_user_balance)
+from backend.client import app
+from backend.core.balance import check_and_deduct, get_user_balance, update_user_balance
 from backend.core.cache import invalidate_user_cache
+from backend.core.logging import get_logger
 from backend.core.sessions import consume_session, create_session, delete_session, get_session
 from backend.core.user import get_user_filter
 from backend.core.utils import handle_errors, html_escape
 from backend.database import user_collection
+
+LOGGER = get_logger(__name__)
 @app.on_message(filters.command(["balance", "bal"]))
 @handle_errors
 async def balance_cmd(_, message: types.Message):

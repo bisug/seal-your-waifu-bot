@@ -1,13 +1,18 @@
 import random
 import string
+
 from pyrogram import enums, filters, types
 
-from config import config
-from backend import (LOGGER, MAIN_GROUP_ID, OWNER_ID, app, collection)
+from backend.client import app
+from backend.core.leaderboard import sync_user_to_redis
+from backend.core.logging import get_logger
 from backend.core.sessions import create_session, delete_session, get_session
-from backend.core.utils import handle_errors, html_escape, reply_media_dynamic
 from backend.core.user import add_char_to_user
-from backend.core.cache import sync_user_to_redis
+from backend.core.utils import handle_errors, html_escape, reply_media_dynamic
+from backend.database import collection
+from config import config
+
+LOGGER = get_logger(__name__)
 def generate_random_code():
     return ''.join(random.choices(string.ascii_lowercase + string.digits, k=5))
 async def process_core_claim(client, user, code: str):
@@ -44,11 +49,11 @@ async def process_core_claim(client, user, code: str):
         f"Remaining quantity: {new_quantity}"
     )
     try:
-        await client.send_message(chat_id=MAIN_GROUP_ID, text=log_text, parse_mode=enums.ParseMode.HTML)
+        await client.send_message(chat_id=config.MAIN_GROUP_ID, text=log_text, parse_mode=enums.ParseMode.HTML)
     except Exception as e:
         LOGGER.error(f"Log sending failed in giveaway: {e}")
     return True, waifu
-@app.on_message(filters.command("waifugen") & filters.user(OWNER_ID))
+@app.on_message(filters.command("waifugen") & filters.user(config.OWNER_ID))
 @handle_errors
 async def waifugen(_, message: types.Message):
     if len(message.command) != 3:
@@ -90,7 +95,7 @@ async def waifugen(_, message: types.Message):
         f"Copies: {quantity}"
     )
     try:
-        await app.send_message(chat_id=MAIN_GROUP_ID, text=log_text, parse_mode=enums.ParseMode.HTML)
+        await app.send_message(chat_id=config.MAIN_GROUP_ID, text=log_text, parse_mode=enums.ParseMode.HTML)
     except Exception as e:
         LOGGER.error(f"Log sending failed: {e}")
 @app.on_message(filters.command(["reedem", "redeem", "claimwaifu"]))
@@ -111,7 +116,7 @@ async def redeem_waifu(_, message: types.Message):
         f"ID: <code>{waifu['id']}</code>\n"
     )
     await reply_media_dynamic(message, waifu['img_url'], caption=response_text, parse_mode=enums.ParseMode.HTML)
-@app.on_message(filters.command("drop") & filters.user(OWNER_ID))
+@app.on_message(filters.command("drop") & filters.user(config.OWNER_ID))
 @handle_errors
 async def drop_waifu(_, message: types.Message):
     """Summons a waifu directly into chat for users to claim via inline button."""
@@ -153,10 +158,10 @@ async def process_drop_claim(client, query: types.CallbackQuery):
     details = await get_session(f"gen_{code}")
     if not details:
         # Fully claimed
-        await query.answer(f"🎉 You got the last one!", show_alert=True)
+        await query.answer("🎉 You got the last one!", show_alert=True)
         try:
             await query.message.edit_reply_markup(types.InlineKeyboardMarkup([
-                [types.InlineKeyboardButton(f"✅ Fully Claimed", callback_data="dead_btn")]
+                [types.InlineKeyboardButton("✅ Fully Claimed", callback_data="dead_btn")]
             ]))
         except Exception:
             pass

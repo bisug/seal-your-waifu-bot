@@ -1,13 +1,15 @@
-import random
 import json
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Dict, Any, Tuple
+import random
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, Optional, Tuple
 
-from backend import LOGGER
-from backend.database import user_collection, collection, r
-from backend.core.utils import get_now_utc, get_user_id_query
 from backend.core.cache import invalidate_user_cache
+from backend.core.logging import get_logger
 from backend.core.progression import add_xp
+from backend.core.utils import get_now_utc, get_user_id_query
+from backend.database import collection, r, user_collection
+
+LOGGER = get_logger(__name__)
 
 MAX_ENERGY = 5
 RECHARGE_MINUTES = 20

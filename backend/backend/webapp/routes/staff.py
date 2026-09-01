@@ -5,7 +5,6 @@ from typing import Any
 
 from fastapi import APIRouter, Depends
 
-from config import config
 from backend.core.progression import get_level_from_xp
 from backend.core.roles import (
     MODERATOR_ROLE,
@@ -18,6 +17,7 @@ from backend.core.roles import (
 from backend.core.utils import normalize_user_id
 from backend.database import collection, pet_catalog_collection, sudo_collection, user_collection
 from backend.webapp.auth import require_sudo_user
+from config import config
 
 router = APIRouter()
 

@@ -12,8 +12,8 @@ from urllib.parse import parse_qsl
 from fastapi import Depends, HTTPException, Security
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from config import config
 from backend.database import r, sessions_collection, user_collection
+from config import config
 
 security = HTTPBearer()
 LOGGER = logging.getLogger(__name__)

@@ -2,18 +2,25 @@ import math
 
 from pyrogram import enums, filters, types
 
-from backend import LOGGER, OWNER_ID, app, sudo_roles, sudo_users, sudo_filter
+from backend import sudo_filter
+from backend.client import app
+from backend.core.logging import get_logger
 from backend.core.roles import (
     MANAGED_ROLES,
     MODERATOR_ROLE,
-    ROLE_ORDER,
     ROLE_META,
+    ROLE_ORDER,
     format_role_benefits,
     format_upload_reward,
     normalize_role,
+    sudo_roles,
+    sudo_users,
 )
 from backend.core.utils import handle_errors, html_escape
 from backend.database import sudo_collection
+from config import config
+
+LOGGER = get_logger(__name__)
 
 SUDO_PAGE_SIZE = 6
 
@@ -42,8 +49,8 @@ async def _remove_sudo_role(target_id: int):
 
 
 async def _get_sudo_records() -> list[dict]:
-    records = [{"user_id": OWNER_ID, "role": "owner", "is_owner": True}]
-    seen = {OWNER_ID}
+    records = [{"user_id": config.OWNER_ID, "role": "owner", "is_owner": True}]
+    seen = {config.OWNER_ID}
     cursor = sudo_collection.find({})
     sudos = await cursor.to_list(length=None)
     for sudo in sudos:
@@ -120,7 +127,7 @@ async def _build_sudo_list_page(viewer_id: int, page: int = 0):
 
 
 async def _build_sudo_detail(viewer_id: int, page: int, target_id: int):
-    if target_id == OWNER_ID:
+    if target_id == config.OWNER_ID:
         role = "owner"
         is_owner = True
     else:
@@ -144,7 +151,7 @@ async def _build_sudo_detail(viewer_id: int, page: int, target_id: int):
         f"{_role_line(role)}"
     )
     keyboard = []
-    if viewer_id == OWNER_ID and not is_owner:
+    if viewer_id == config.OWNER_ID and not is_owner:
         keyboard.append([
             types.InlineKeyboardButton("Set Moderator", callback_data=f"sudo_role:{viewer_id}:{page}:{target_id}:moderator"),
             types.InlineKeyboardButton("Set Uploader", callback_data=f"sudo_role:{viewer_id}:{page}:{target_id}:uploader"),
@@ -169,7 +176,7 @@ def _resolve_addsudo_target(message: types.Message) -> tuple[int | None, str | N
     return None, None
 
 
-@app.on_message(filters.command(["addsudo", "setsudo", "setrole"]) & filters.user(OWNER_ID))
+@app.on_message(filters.command(["addsudo", "setsudo", "setrole"]) & filters.user(config.OWNER_ID))
 @handle_errors
 async def addsudo_handler(_, message: types.Message):
     target_id, role_arg = _resolve_addsudo_target(message)
@@ -181,8 +188,8 @@ async def addsudo_handler(_, message: types.Message):
             parse_mode=enums.ParseMode.HTML,
         )
     try:
-        if target_id == OWNER_ID:
-            return await message.reply_text("Owner role is configured with OWNER_ID.", parse_mode=enums.ParseMode.HTML)
+        if target_id == config.OWNER_ID:
+            return await message.reply_text("Owner role is configured with config.OWNER_ID.", parse_mode=enums.ParseMode.HTML)
 
         if not role_arg:
             keyboard = types.InlineKeyboardMarkup([
@@ -221,10 +228,10 @@ async def addsudo_handler(_, message: types.Message):
         LOGGER.info(f"Sudo role set: {target_id} -> {role} by {message.from_user.id}")
     except Exception as e:
         LOGGER.error(f"Error adding sudo: {e}")
-        await message.reply_text(f"❌ <b>Database Error:</b> Failed to add user.", parse_mode=enums.ParseMode.HTML)
+        await message.reply_text("❌ <b>Database Error:</b> Failed to add user.", parse_mode=enums.ParseMode.HTML)
 
 
-@app.on_message(filters.command("rmsudo") & filters.user(OWNER_ID))
+@app.on_message(filters.command("rmsudo") & filters.user(config.OWNER_ID))
 @handle_errors
 async def rmsudo_handler(_, message: types.Message):
     if len(message.command) < 2 or not message.command[1].isdigit():
@@ -238,7 +245,7 @@ async def rmsudo_handler(_, message: types.Message):
             await message.reply_text("❌ User not found in sudo list.", parse_mode=enums.ParseMode.HTML)
     except Exception as e:
         LOGGER.error(f"Error removing sudo: {e}")
-        await message.reply_text(f"❌ <b>Database Error:</b> Failed to remove user.", parse_mode=enums.ParseMode.HTML)
+        await message.reply_text("❌ <b>Database Error:</b> Failed to remove user.", parse_mode=enums.ParseMode.HTML)
 
 
 @app.on_message(filters.command("sudolist") & sudo_filter)
@@ -278,10 +285,10 @@ async def sudo_role_callback(_, query: types.CallbackQuery):
     page = int(page)
     if not _viewer_allowed(query, viewer_id):
         return await query.answer("This menu is not for you.", show_alert=True)
-    if query.from_user.id != OWNER_ID:
+    if query.from_user.id != config.OWNER_ID:
         return await query.answer("Only the owner can change sudo roles.", show_alert=True)
-    if target_id == OWNER_ID:
-        return await query.answer("Owner role is configured with OWNER_ID.", show_alert=True)
+    if target_id == config.OWNER_ID:
+        return await query.answer("Owner role is configured with config.OWNER_ID.", show_alert=True)
     role = normalize_role(role)
     if role not in MANAGED_ROLES:
         return await query.answer("Invalid role.", show_alert=True)
@@ -300,9 +307,9 @@ async def sudo_remove_callback(_, query: types.CallbackQuery):
     page = int(page)
     if not _viewer_allowed(query, viewer_id):
         return await query.answer("This menu is not for you.", show_alert=True)
-    if query.from_user.id != OWNER_ID:
+    if query.from_user.id != config.OWNER_ID:
         return await query.answer("Only the owner can remove sudo roles.", show_alert=True)
-    if target_id == OWNER_ID:
+    if target_id == config.OWNER_ID:
         return await query.answer("Owner cannot be removed.", show_alert=True)
 
     res = await _remove_sudo_role(target_id)

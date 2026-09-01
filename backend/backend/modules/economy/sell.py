@@ -2,12 +2,8 @@ import asyncio
 
 from pyrogram import enums, filters, types
 
-from backend import app
-from backend.core.cache import sync_user_to_redis
-from backend.core.roles import apply_role_bonus
-from backend.core.user import get_user_data
-from backend.core.utils import get_user_id_query, handle_errors, html_escape
-from backend.database import user_collection
+from backend.client import app
+from backend.core.leaderboard import sync_user_to_redis
 
 # Per-rarity liquidation value in SHARDS. Used by BOTH /sell and /recycle
 # (the latter via get_sell_price) so dupe liquidation is consistent and every
@@ -16,6 +12,11 @@ from backend.database import user_collection
 # Values now live in the `rarities` collection (see core/rarities.py); this
 # is the same live dict, keyed by bare name ("Common").
 from backend.core.rarities import SELL_PRICES  # noqa: E402
+from backend.core.roles import apply_role_bonus
+from backend.core.user import get_user_data
+from backend.core.utils import get_user_id_query, handle_errors, html_escape
+from backend.database import user_collection
+
 
 def normalize_sell_rarity(rarity: str) -> str:
     rarity_text = str(rarity or "Common")

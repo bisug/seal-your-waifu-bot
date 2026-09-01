@@ -14,7 +14,8 @@ import httpx
 from pyrogram import enums
 from pyrogram.errors import FloodWait
 
-from backend import GALLERY_CHANNEL_ID, LOGGER, app
+from backend.client import app
+from backend.core.logging import get_logger
 from backend.core.pets import get_pet_key, pet_id_from_name, upsert_catalog_pet
 from backend.core.utils import html_escape, send_media_dynamic
 from backend.core.waifu import (
@@ -23,6 +24,9 @@ from backend.core.waifu import (
     upload_media_safely,
 )
 from backend.modules.collection.rarities import RARITY_MAP
+from config import config
+
+LOGGER = get_logger(__name__)
 
 MAX_UPLOAD_SIZE = 10 * 1024 * 1024
 ALLOWED_MEDIA_SCHEMES = {"http", "https"}
@@ -325,7 +329,7 @@ async def upload_character_from_path(
     try:
         sent_msg = await send_media_dynamic(
             client=app,
-            chat_id=GALLERY_CHANNEL_ID,
+            chat_id=config.GALLERY_CHANNEL_ID,
             media_url=final_url,
             caption=caption,
             parse_mode=enums.ParseMode.HTML,
@@ -335,7 +339,7 @@ async def upload_character_from_path(
         await asyncio.sleep(exc.value + 2)
         sent_msg = await send_media_dynamic(
             client=app,
-            chat_id=GALLERY_CHANNEL_ID,
+            chat_id=config.GALLERY_CHANNEL_ID,
             media_url=final_url,
             caption=caption,
             parse_mode=enums.ParseMode.HTML,

@@ -1,11 +1,17 @@
 import uuid
+
 from pyrogram import enums, errors, filters, types
-from backend import LOGGER, app, client
+
+from backend.client import app
 from backend.core.cache import invalidate_user_cache
+from backend.core.logging import get_logger
 from backend.core.sessions import create_session, delete_session, get_session
 from backend.core.user import get_user_data
 from backend.core.utils import get_user_id_query, handle_errors, html_escape
+from backend.database import client
 from backend.modules.progression.quests import update_quest_progress
+
+LOGGER = get_logger(__name__)
 @app.on_message(filters.command("trade") & filters.group)
 @handle_errors
 async def trade_handler(_, message: types.Message):

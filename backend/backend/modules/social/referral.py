@@ -1,10 +1,12 @@
 from pyrogram import enums, filters, types
 
-from config import config
-from backend import app, user_collection
+from backend.client import app
 from backend.core.referrals import get_referral_stats
 from backend.core.user import get_user_filter
 from backend.core.utils import handle_errors
+from backend.database import user_collection
+from config import config
+
 
 @app.on_message(filters.command("referrals"))
 @handle_errors

@@ -1,9 +1,13 @@
 import asyncio
+
+from backend.core.cache import _redis
 from backend.core.eggs import get_egg_tier_info
-from backend import LOGGER
-from backend.core.cache import _redis, sync_user_to_redis
+from backend.core.leaderboard import sync_user_to_redis
+from backend.core.logging import get_logger
 from backend.core.utils import get_now_utc, get_user_id_query
 from backend.database import user_collection
+
+LOGGER = get_logger(__name__)
 async def background_maintenance():
     """
     Main loop for background maintenance tasks.

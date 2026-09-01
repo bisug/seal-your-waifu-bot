@@ -1,16 +1,20 @@
 import asyncio
 import random
+
 from pyrogram import enums, errors, filters, types
-from backend import LOGGER, app
-from backend.core.balance import (check_and_deduct, get_user_balance,
-                                  update_user_balance)
+
+from backend.client import app
+from backend.core.balance import check_and_deduct, get_user_balance, update_user_balance
 from backend.core.cache import is_on_cooldown as redis_cooldown
+from backend.core.logging import get_logger
 from backend.core.progression import add_xp
 from backend.core.sessions import consume_session, create_session, get_session
 from backend.core.user import get_active_pet
 from backend.core.utils import handle_errors, html_escape
 from backend.modules.progression.achievements import check_achievements
 from backend.modules.progression.quests import update_quest_progress
+
+LOGGER = get_logger(__name__)
 def calculate_stats(pet_data):
     """
     Calculate derived combat stats from pet base stats and level.
@@ -79,7 +83,7 @@ def simulate_battle(p1_stats, p2_stats, p1_name, p2_name):
         turn += 1
     winner = a_idx if attacker["hp"] > 0 else d_idx
     if turn > max_turns:
-        log.append(f"\n⚠️ <b>Time Limit Reached!</b> Draw decided by HP.")
+        log.append("\n⚠️ <b>Time Limit Reached!</b> Draw decided by HP.")
         if p1_stats["hp"] > p2_stats["hp"]:
             winner = 1
         else:

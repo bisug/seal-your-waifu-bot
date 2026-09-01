@@ -6,10 +6,12 @@ from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from backend import LOGGER
+from backend.core.logging import get_logger
 from backend.core.user import add_user_set_on_insert, get_user_filter
 from backend.database import user_collection
 from backend.webapp.auth import create_session, get_user_id_from_token, r, validate_init_data
+
+LOGGER = get_logger(__name__)
 
 router = APIRouter()
 

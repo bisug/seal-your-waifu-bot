@@ -2,9 +2,10 @@ import asyncio
 
 from pyrogram import idle
 
-from backend import LOGGER
-from backend.core.logging import configure_event_loop_logging
+from backend.core.logging import configure_event_loop_logging, get_logger
 from backend.runner import start_bots, stop_bots
+
+LOGGER = get_logger(__name__)
 
 
 async def main():

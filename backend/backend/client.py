@@ -5,9 +5,9 @@ import logging
 from pyrogram import Client, errors, types
 from pyrogram.errors import FloodWait
 
-from config import config
 from backend.core.constants import PERMISSION_DENIED_ERRORS
 from backend.core.tasks import run_background_task
+from config import config
 
 LOGGER = logging.getLogger(__name__)
 
@@ -272,8 +272,6 @@ class SealClient(Client):
         self._load_modules()
         await super().start(*args, **kwargs)
 
-        import backend
-
         # Configure bot identity and store in config
         me = await self.get_me()
         self.username = me.username
@@ -284,12 +282,8 @@ class SealClient(Client):
             config.BOT_USERNAME = me.username
             config.BOT_ID = me.id
             config.BOT_NAME = me.first_name
-
-            backend.BOT_USERNAME = me.username
-            backend.BOT_ID = me.id
-            backend.BOT_NAME = me.first_name
         else:
-            backend.GAME_BOT_USERNAME = me.username
+            config.GAME_BOT_USERNAME = me.username
 
         # Sync bot commands with Telegram
         if self.name != "UserBot":
@@ -413,3 +407,10 @@ class SealClient(Client):
     async def stop(self, *args):
         await super().stop()
         LOGGER.info(f"{self.name} stopped.")
+
+
+# Client instances: the single MainBot/GameBot/UserBot objects shared app-wide.
+# Import these from backend.client, never from the package root.
+app = SealClient(name="MainBot", bot_token=config.TOKEN)
+game_bot = SealClient(name="GameBot", bot_token=config.SUB_TOKEN)
+userbot = SealClient(name="UserBot", session_string=config.STRING_SESSION) if config.STRING_SESSION else None

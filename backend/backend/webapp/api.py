@@ -2,13 +2,13 @@ from fastapi import APIRouter
 
 from .routes.auth import router as auth_router
 from .routes.harem import router as harem_router
+from .routes.minigames import router as minigames_router
 from .routes.progression import router as progression_router
 from .routes.shop import router as shop_router
+from .routes.social import router as social_router
 from .routes.staff import router as staff_router
 from .routes.upload import router as upload_router
 from .routes.users import router as users_router
-from .routes.social import router as social_router
-from .routes.minigames import router as minigames_router
 
 # Create Master Router
 router = APIRouter()

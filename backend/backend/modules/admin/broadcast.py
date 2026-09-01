@@ -1,9 +1,15 @@
 import asyncio
+
 from pyrogram import enums, errors, filters, types
 from pyrogram.errors import FloodWait
-from backend import LOGGER, OWNER_ID, app
+
+from backend.client import app
+from backend.core.logging import get_logger
 from backend.core.utils import handle_errors
 from backend.database import group_collection, total_pm_users
+from config import config
+
+LOGGER = get_logger(__name__)
 # Rate limiter: max 25 concurrent sends at any time, with a short yield between
 # each acquire to space out the API calls and stay safely under Telegram's limits.
 _BROADCAST_SEM = asyncio.Semaphore(5)
@@ -28,7 +34,7 @@ async def _safe_forward(msg, target_id: int, max_retries: int = 3):
                 LOGGER.error(f"Broadcast error sending to {target_id}: {e}")
                 return False
         return False
-@app.on_message(filters.command("broadcast") & filters.user(OWNER_ID))
+@app.on_message(filters.command("broadcast") & filters.user(config.OWNER_ID))
 @handle_errors
 async def broadcast_handler(_, message: types.Message):
     if not message.reply_to_message:

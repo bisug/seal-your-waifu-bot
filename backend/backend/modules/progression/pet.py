@@ -1,11 +1,13 @@
 import time
+
 from pyrogram import enums, errors, filters, types
-from backend import LOGGER, user_collection
-from backend.core.cache import invalidate_user_cache, is_on_cooldown as redis_cooldown, sync_user_to_redis
-from backend.core.keyboard import KeyboardBuilder, get_webapp_button
 from pyrogram.handlers import CallbackQueryHandler, MessageHandler
-from backend.core.user import add_pet_xp, get_user_filter
-from backend.core.utils import html_escape, reply_media_dynamic
+
+from backend.core.cache import invalidate_user_cache
+from backend.core.cache import is_on_cooldown as redis_cooldown
+from backend.core.keyboard import KeyboardBuilder, get_webapp_button
+from backend.core.leaderboard import sync_user_to_redis
+from backend.core.logging import get_logger
 from backend.core.pets import (
     DEFAULT_PET,
     ensure_user_pet_state,
@@ -18,6 +20,13 @@ from backend.core.pets import (
     pet_for_storage,
     pet_matches,
 )
+from backend.core.user import add_pet_xp, get_user_filter
+from backend.core.utils import html_escape, reply_media_dynamic
+from backend.database import user_collection
+
+LOGGER = get_logger(__name__)
+
+
 async def send_petshop_page(message_or_query_obj, page: int, user_id: int):
     from backend.core.progression import get_user_progress
     shop_pets = await list_shop_pets()

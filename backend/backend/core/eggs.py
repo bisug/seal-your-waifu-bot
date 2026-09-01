@@ -3,7 +3,6 @@ import random
 from backend.core.constants import EGG_TIERS
 from backend.core.pets import get_caregiver_incubation_minutes
 
-
 EGG_TIER_ORDER = ("common", "gold", "void", "rare", "legendary", "celestial")
 
 TIER_MAP = {

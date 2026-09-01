@@ -2,7 +2,11 @@ import asyncio
 import os
 import uuid
 
-from backend import app, game_bot, userbot
+from backend.client import app, game_bot, userbot
+from backend.core.logging import get_logger
+from backend.core.roles import sudo_roles, sudo_users
+
+LOGGER = get_logger(__name__)
 
 IS_STARTED = False
 STARTUP_STATE = "stopped"
@@ -21,7 +25,6 @@ _INSTANCE_LOCK_RETRY_INTERVAL = 5  # seconds
 
 async def _acquire_instance_lock(status: dict) -> bool:
     """Try to own the single-instance lock. Returns True if we may start."""
-    from backend import LOGGER
     from backend.core.tasks import run_background_task
     from backend.database import r as redis_client
     if not redis_client:
@@ -108,7 +111,6 @@ def _get_start_lock():
 
 
 async def _load_sudo_users(status: dict):
-    from backend import LOGGER, sudo_roles, sudo_users
     from backend.core.roles import MODERATOR_ROLE, normalize_role
     from backend.database import sudo_collection
 
@@ -135,7 +137,6 @@ async def _load_sudo_users(status: dict):
 
 
 async def _bootstrap_infrastructure(status: dict):
-    from backend import LOGGER
     from backend.database import r as redis_client
     from backend.database import seal_db
 
@@ -191,9 +192,8 @@ def _bot_status(bot, *, state: str) -> dict:
 
 
 async def _notify_startup(status: dict):
-    from config import config
-    from backend import LOGGER
     from backend.core.startup import send_startup_report
+    from config import config
 
     if not getattr(app, "is_connected", False):
         return
@@ -205,7 +205,6 @@ async def _notify_startup(status: dict):
 
 
 async def _stop_started_bots(started_bots):
-    from backend import LOGGER
 
     for bot in reversed(started_bots):
         try:
@@ -230,7 +229,6 @@ async def start_bots():
         if IS_STARTED:
             return
 
-        from backend import LOGGER
 
         STARTUP_STATE = "starting"
         started_bots = []
@@ -278,7 +276,12 @@ async def start_bots():
             status["game_bot"] = _bot_status(game_bot, state="started")
 
             if userbot:
-                from pyrogram.errors import AuthKeyInvalid, AuthKeyDuplicated, AuthKeyUnregistered, Unauthorized
+                from pyrogram.errors import (
+                    AuthKeyDuplicated,
+                    AuthKeyInvalid,
+                    AuthKeyUnregistered,
+                    Unauthorized,
+                )
                 try:
                     await userbot.start()
                     started_bots.append(userbot)
@@ -324,7 +327,6 @@ async def start_bots():
 
 async def stop_bots():
     global IS_STARTED, STARTUP_STATE
-    from backend import LOGGER
     from backend.core.resources import stop_resource_monitor
     from backend.core.tasks import cancel_background_tasks
     from backend.database import close_connections

@@ -3,8 +3,11 @@ import json
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
+from backend.core.logging import get_logger
 from backend.database import r
 from backend.webapp.auth import get_user_id_from_token
+
+LOGGER = get_logger(__name__)
 
 router = APIRouter()
 WS_AUTH_TIMEOUT_SECONDS = 5.0
@@ -130,10 +133,8 @@ async def leaderboard_ws(websocket: WebSocket):
             await pubsub.unsubscribe("leaderboard_updates")
             await pubsub.aclose()
         except Exception as e:
-            from backend import LOGGER
             LOGGER.debug(f"Pubsub teardown error: {e}")
         try:
             await websocket.close()
         except Exception as e:
-            from backend import LOGGER
             LOGGER.debug(f"Websocket close error: {e}")

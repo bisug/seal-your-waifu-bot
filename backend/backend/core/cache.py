@@ -1,18 +1,28 @@
-"""
-Centralized Redis cache layer. All methods are failsafe (falls back to MongoDB).
-Key prefixes: user, balance, cooldown, lb, session.
+"""Centralized Redis cache layer. All methods are failsafe (fall back to MongoDB).
+Key prefixes: user, balance, cooldown, lb.
+Sessions live in backend.core.sessions; leaderboard ZSETs in backend.core.leaderboard.
 """
 import asyncio
 import json
 import time
-from datetime import timedelta
 from typing import Any, Optional
-from config import config
-from backend import LOGGER
-from backend.core.constants import METRICS
-from backend.core.utils import get_now_utc
+
+# Back-compat re-exports: these moved to their own modules.
+from backend.core.leaderboard import (  # noqa: F401
+    consume_leaderboard_dirty,
+    get_total_ranked_users,
+    get_user_rank,
+    mark_leaderboard_dirty,
+    publish_leaderboard_update,
+    rebuild_leaderboard,
+    sync_user_to_redis,
+    update_user_rank,
+)
+from backend.core.logging import get_logger
 from backend.database import r as _redis
-from backend.database import sessions_collection
+from config import config
+
+LOGGER = get_logger(__name__)
 r = _redis
 # TTL settings (seconds)
 TTL_USER        = 60
@@ -218,235 +228,3 @@ async def invalidate_leaderboard_cache(metric: str = None):
     else:
         keys = await _scan_keys("lb:*")
         if keys: await rdel(*keys)
-# --- SESSION MANAGEMENT (BOT) ---
-def _session_key(session_id: str) -> str:
-    return f"session:{session_id}"
-
-
-async def _store_session_mongo(key: str, data: dict, ttl: int):
-    await sessions_collection.update_one(
-        {"_id": key},
-        {
-            "$set": {
-                "data": data,
-                "expires_at_dt": get_now_utc() + timedelta(seconds=ttl),
-            }
-        },
-        upsert=True,
-    )
-
-
-async def create_session(
-    session_id: str,
-    data: dict,
-    ttl: int = TTL_SESSION,
-    *,
-    expire_after: int | None = None,
-):
-    """Create a temporary session for multi-step bot flows."""
-    if expire_after is not None:
-        ttl = expire_after
-    key = _session_key(session_id)
-    redis_written = False
-    if _redis:
-        try:
-            await asyncio.wait_for(
-                _redis.setex(key, ttl, json.dumps(data, default=str)),
-                timeout=3.0,
-            )
-            redis_written = True
-        except Exception as e:
-            LOGGER.warning(f"Redis session SET error [{key}], using Mongo fallback: {e}")
-    try:
-        await _store_session_mongo(key, data, ttl)
-    except Exception as e:
-        if redis_written:
-            LOGGER.warning(f"Mongo session fallback write failed [{key}]; Redis session is active: {e}")
-            return
-        raise
-async def get_session(session_id: str) -> Optional[dict]:
-    key = _session_key(session_id)
-    if _redis:
-        data = await rget_json(key)
-        if data is not None:
-            return data
-    doc = await sessions_collection.find_one({
-        "_id": key,
-        "$or": [
-            {"expires_at_dt": {"$exists": False}},
-            {"expires_at_dt": {"$gt": get_now_utc()}},
-        ],
-    })
-    return doc.get("data") if doc else None
-async def delete_session(session_id: str):
-    key = _session_key(session_id)
-    await rdel(key)
-    await sessions_collection.delete_one({"_id": key})
-async def consume_session(session_id: str) -> Optional[dict]:
-    """Atomically fetch and delete a bot session so callbacks cannot be replayed."""
-    key = _session_key(session_id)
-    if _redis:
-        try:
-            raw = await asyncio.wait_for(_redis.getdel(key), timeout=3.0)
-            if raw is not None:
-                try:
-                    await sessions_collection.delete_one({"_id": key})
-                except Exception as e:
-                    LOGGER.warning(f"Mongo session cleanup failed after Redis consume [{key}]: {e}")
-                return json.loads(raw)
-        except Exception as e:
-            LOGGER.warning(f"Redis GETDEL error [{key}]: {e}")
-
-    doc = await sessions_collection.find_one_and_delete({
-        "_id": key,
-        "$or": [
-            {"expires_at_dt": {"$exists": False}},
-            {"expires_at_dt": {"$gt": get_now_utc()}},
-        ],
-    })
-    return doc.get("data") if doc else None
-def _zset_key(metric: str) -> str:
-    # The "level" metric is keyed by its Mongo field name (xp); all other
-    # metrics use their own name.
-    name = "xp" if metric == "level" else metric
-    return f"user_{name}_leaderboard"
-
-# Metrics whose ZSET may have drifted from Mongo (e.g. an instant sync
-# failed). The periodic rebuild skips clean metrics to avoid hourly full
-# rebuilds when sync_user_to_redis already keeps the ZSETs fresh.
-_ALL_LB_METRICS = ("level", "harem", "shards", "zenith", "guesses")
-_lb_dirty_metrics: set[str] = set()
-
-
-def mark_leaderboard_dirty(metrics=None):
-    """Flag leaderboard metrics as needing a rebuild from Mongo."""
-    if metrics is None:
-        _lb_dirty_metrics.update(_ALL_LB_METRICS)
-    else:
-        _lb_dirty_metrics.update(metrics)
-
-
-def consume_leaderboard_dirty(metric: str) -> bool:
-    """Return True (and clear the flag) if the metric needs a rebuild."""
-    if metric in _lb_dirty_metrics:
-        _lb_dirty_metrics.discard(metric)
-        return True
-    return False
-async def update_user_rank(user_id: int, score: int, metric: str = "level"):
-    """Update user score in the specific metric's ZSET and CAP it for memory."""
-    if not _redis: return
-    key = _zset_key(metric)
-    try:
-        await _redis.zadd(key, {str(user_id): score})
-        # Only keep the top 1000 in the fast cache to stay within 30MB
-        await _redis.zremrangebyrank(key, 0, -1001)
-    except Exception as e:
-        LOGGER.warning(f"Redis ZSET update error [{metric}]: {e}")
-async def get_user_rank(user_id: int, metric: str = "level") -> Optional[int]:
-    """Get 1-based rank from metric ZSET. Returns None on miss."""
-    if not _redis: return None
-    key = _zset_key(metric)
-    try:
-        rank = await _redis.zrevrank(key, str(user_id))
-        return (rank + 1) if rank is not None else None
-    except Exception:
-        return None
-async def get_total_ranked_users(metric: str = "level") -> int:
-    if not _redis: return 0
-    key = _zset_key(metric)
-    try: return await _redis.zcard(key)
-    except Exception: return 0
-# Create the lock at module level — no lazy init, no global mutation needed.
-# asyncio.Lock() is safe to instantiate at module level in Python 3.10+.
-_rebuild_lock = asyncio.Lock()
-async def rebuild_leaderboard(user_collection, metric: str = "level"):
-    """
-    Cold-rebuild a specific Redis ZSET from MongoDB with memory safety.
-    Uses an atomic Rename-Swap pattern to prevent empty leaderboard states.
-    """
-    async with _rebuild_lock:
-        if not _redis: return
-        key = _zset_key(metric)
-        temp_key = f"temp:{key}"
-        # Metric mapping to Mongo fields
-        field = METRICS.get(metric, METRICS["level"])["field"]
-        try:
-            LOGGER.info(f"Starting safe {metric} ZSET rebuild from MongoDB...")
-            # Clean up any leftover temp key first
-            await _redis.delete(temp_key)
-            # Get Top 1,000 users by specific field descending
-            cursor = user_collection.find({field: {"$gt": 0}}, {"id": 1, field: 1}).sort(field, -1).limit(1000)
-            batch = {}
-            count = 0
-            async for user in cursor:
-                uid = str(user.get("id"))
-                score = user.get(field, 0)
-                if uid and score:
-                    batch[uid] = score
-                    count += 1
-                if len(batch) >= 100:
-                    await _redis.zadd(temp_key, batch)
-                    batch = {}
-            if batch:
-                await _redis.zadd(temp_key, batch)
-            
-            # If we populated entries, atomically rename temp_key to key.
-            if count > 0:
-                await _redis.rename(temp_key, key)
-            else:
-                # If no users had scores, clear the leaderboard
-                await _redis.delete(key)
-                await _redis.delete(temp_key)
-                
-            LOGGER.info(f"{metric} ZSET rebuild complete. Synchronized {count} top users.")
-            await publish_leaderboard_update()
-        except Exception as e:
-            LOGGER.error(f"Failed to rebuild {metric} ZSET: {e}")
-            # Failsafe cleanup of temp key
-            try:
-                await _redis.delete(temp_key)
-            except Exception:
-                pass
-_lb_publish_throttle = 0.0
-
-async def publish_leaderboard_update():
-    """Notify /ws/leaderboard subscribers that standings changed. Throttled
-    to one broadcast per 15s — sync_user_to_redis fires on every state change
-    and unthrottled publishing would flood subscribers."""
-    global _lb_publish_throttle
-    if not _redis: return
-    now = time.monotonic()
-    if now - _lb_publish_throttle < 15:
-        return
-    _lb_publish_throttle = now
-    try:
-        payload = json.dumps({"type": "leaderboard_update", "ts": int(time.time())})
-        await asyncio.wait_for(_redis.publish("leaderboard_updates", payload), timeout=2.0)
-    except Exception:
-        pass  # Failsafe: realtime is best-effort, never break the write path.
-
-async def sync_user_to_redis(user_id: int, user_doc: dict = None):
-    """
-    Synchronizes a user's critical metrics (Level, Harem, Balance, Zenith, Guesses) 
-    to Redis ZSETs instantly. Used after major state changes to prevent drift.
-    """
-    if not _redis: return
-    if not user_doc:
-        from backend.database import user_collection
-        user_doc = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
-    if not user_doc: return
-    uid_str = str(user_id)
-    try:
-        pipe = _redis.pipeline()
-        pipe.zadd(_zset_key("level"),   {uid_str: user_doc.get("xp", 0)})
-        pipe.zadd(_zset_key("harem"),   {uid_str: user_doc.get("char_count", 0)})
-        pipe.zadd(_zset_key("shards"),  {uid_str: user_doc.get("balance", 0)})
-        pipe.zadd(_zset_key("zenith"),  {uid_str: user_doc.get("zenith", 0)})
-        pipe.zadd(_zset_key("guesses"), {uid_str: user_doc.get("guess_count", 0)})
-        pipe.delete(f"user:{user_id}", f"balance:{user_id}")
-        await pipe.execute()
-        await publish_leaderboard_update()
-    except Exception as e:
-        LOGGER.warning(f"Failed to sync user {user_id} to Redis: {e}")
-        # Instant sync failed — the periodic rebuild must repair the drift.
-        mark_leaderboard_dirty()

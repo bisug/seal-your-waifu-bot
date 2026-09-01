@@ -1,7 +1,8 @@
 from pyrogram import enums, types
 
 from config import config
-from backend import BOT_USERNAME, WEB_APP_URL
+
+
 def make_button(
     text: str,
     callback_data: str = None,
@@ -40,7 +41,7 @@ class KeyboardBuilder:
         return types.InlineKeyboardMarkup(self.keyboard)
 def get_webapp_button(is_private: bool = True, path: str = None) -> types.InlineKeyboardButton:
     """Returns a standardized direct WebApp button, integrated for all chat types."""
-    url = f"{WEB_APP_URL}{path}" if path else WEB_APP_URL
+    url = f"{config.WEB_APP_URL}{path}" if path else config.WEB_APP_URL
     if is_private:
         # Using web_app integrated button for the smoothest experience in DMs
         return make_button(
@@ -54,7 +55,7 @@ def get_webapp_button(is_private: bool = True, path: str = None) -> types.Inline
         # Note: YOU MUST SET THIS UP IN @BotFather (Mini App -> Edit Short Name)
         # Default name is 'app' unless changed in config.py
         app_name = getattr(config, "MINI_APP_SHORT_NAME", "app")
-        bot_usr = config.BOT_USERNAME or BOT_USERNAME
+        bot_usr = config.BOT_USERNAME
         if bot_usr:
             # Format: https://t.me/bot_username/app_short_name?startapp=optional_path
             app_link = f"https://t.me/{bot_usr}/{app_name}"

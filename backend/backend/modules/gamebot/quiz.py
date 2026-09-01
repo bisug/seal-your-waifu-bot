@@ -2,13 +2,18 @@ import html
 import random
 import uuid
 from datetime import timedelta, timezone
+
 import httpx
 from pymongo import ReturnDocument
 from pyrogram import enums, filters, types
 
-from backend import LOGGER, game_bot, quiz_questions_collection, sessions_collection
+from backend.client import game_bot
+from backend.core.logging import get_logger
 from backend.core.utils import get_now_utc, html_escape
+from backend.database import quiz_questions_collection, sessions_collection
 from backend.modules.gamebot.common import award_gamebot_shards, ensure_gamebot_ready
+
+LOGGER = get_logger(__name__)
 QUIZ_API_URL = "https://opentdb.com/api.php?amount=1&category=31"
 QUIZ_REWARD = 250
 QUIZ_TTL = timedelta(seconds=30)

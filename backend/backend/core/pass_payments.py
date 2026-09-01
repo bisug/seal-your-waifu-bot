@@ -4,9 +4,8 @@ from typing import Any
 
 import httpx
 
-from config import config
-from backend import LOGGER
-from backend.core.cache import sync_user_to_redis
+from backend.core.leaderboard import sync_user_to_redis
+from backend.core.logging import get_logger
 from backend.core.pass_config import (
     CURRENT_PASS_SEASON,
     PASS_SEASON_NAME,
@@ -18,6 +17,9 @@ from backend.core.pass_config import (
 )
 from backend.core.user import get_user_filter
 from backend.database import star_orders_collection, user_collection
+from config import config
+
+LOGGER = get_logger(__name__)
 
 PAYMENT_CURRENCY = "XTR"
 PASS_ORDER_TTL = timedelta(minutes=45)

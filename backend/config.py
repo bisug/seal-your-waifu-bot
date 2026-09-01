@@ -45,6 +45,7 @@ class Config:
     BOT_USERNAME = os.getenv("BOT_USERNAME", "SealYourWaifuBot")  # Fetched automatically at startup
     BOT_ID = None        # Fetched automatically at startup
     BOT_NAME = os.getenv("BOT_NAME", "SEAL YOUR WAIFU")  # Fetched automatically at startup
+    GAME_BOT_USERNAME = None  # Fetched automatically at startup
 
     # --- TELEGRAM API CREDENTIALS ---
     API_ID = int(os.getenv("API_ID", "0") or 0)

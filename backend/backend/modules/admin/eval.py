@@ -3,14 +3,15 @@ import io
 import textwrap
 import traceback
 from contextlib import redirect_stdout
+
 from pyrogram import enums, filters, types
 
-from config import config
-from backend import OWNER_ID, app
+from backend.client import app
 from backend.core.utils import handle_errors
+from config import config
 
 namespaces = {}
-AUTHORIZED_USERS = [OWNER_ID]
+AUTHORIZED_USERS = [config.OWNER_ID]
 def namespace_of(chat_id, message):
     if chat_id not in namespaces:
         namespaces[chat_id] = {

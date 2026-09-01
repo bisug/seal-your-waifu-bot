@@ -1,15 +1,19 @@
-from datetime import timedelta
 import re
+from datetime import timedelta
+
 from pymongo import ReturnDocument
 from pyrogram import filters, types
-from backend import collection, game_bot, sessions_collection
+
+from backend.client import game_bot
 from backend.core.tasks import run_background_task
 from backend.core.utils import get_now_utc, html_escape
+from backend.database import collection, sessions_collection
 from backend.modules.gamebot.common import (
     award_gamebot_shards,
     ensure_gamebot_ready,
     ensure_registered_user,
 )
+
 # Local cache is no longer used for character data to ensure persistence
 # Active sessions are stored in sessions_collection with ID: "nguess:{chat_id}"
 NGUESS_TTL = timedelta(minutes=5)
@@ -168,8 +172,8 @@ async def nguess_check_handler(_, message: types.Message):
         )
 
         # Track Quests and Achievements
-        from backend.modules.progression.quests import update_quest_progress
         from backend.modules.progression.achievements import check_achievements
+        from backend.modules.progression.quests import update_quest_progress
         run_background_task(update_quest_progress(message.from_user.id, "guesser", 1))
         run_background_task(update_quest_progress(message.from_user.id, "weekly_guesser", 1))
         run_background_task(check_achievements(message.from_user.id))

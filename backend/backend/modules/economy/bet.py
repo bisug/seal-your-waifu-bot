@@ -1,10 +1,13 @@
 import asyncio
 import random
+
 from pyrogram import enums, filters, types
 
-from backend import app, user_collection
-from backend.core.utils import handle_errors
+from backend.client import app
 from backend.core.cache import invalidate_user_cache
+from backend.core.utils import handle_errors
+from backend.database import user_collection
+
 CURRENCY_SYMBOL = "⬪"
 @app.on_message(filters.command("bet"))
 @handle_errors
@@ -12,9 +15,9 @@ async def bet_cmd(_, message: types.Message):
     user_id = message.from_user.id
     if len(message.command) < 3:
         await message.reply_text(
-            f"<b>Invalid Usage!</b>\n"
-            f"Format: <code>/bet &lt;amount&gt; &lt;h/t&gt;</code>\n"
-            f"Example: <code>/bet 500 h</code>",
+            "<b>Invalid Usage!</b>\n"
+            "Format: <code>/bet &lt;amount&gt; &lt;h/t&gt;</code>\n"
+            "Example: <code>/bet 500 h</code>",
             parse_mode=enums.ParseMode.HTML
         )
         return
@@ -33,16 +36,16 @@ async def bet_cmd(_, message: types.Message):
     user_data = await user_collection.find_one({'id': {'$in': [user_id, str(user_id)]}}, projection={'balance': 1})
     if not user_data:
         await message.reply_text(
-            f"<b>You don't have an account yet!</b>\n"
-            f"Use <code>/bonus</code> to claim free Shards & start betting!",
+            "<b>You don't have an account yet!</b>\n"
+            "Use <code>/bonus</code> to claim free Shards & start betting!",
             parse_mode=enums.ParseMode.HTML
         )
         return
     balance_amount = user_data.get('balance', 0)
     if balance_amount == 0:
         await message.reply_text(
-            f"<b>You're out of Shards!</b>\n"
-            f"Use <code>/bonus</code> to claim free Shards & try again!",
+            "<b>You're out of Shards!</b>\n"
+            "Use <code>/bonus</code> to claim free Shards & try again!",
             parse_mode=enums.ParseMode.HTML
         )
         return

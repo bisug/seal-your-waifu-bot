@@ -2,14 +2,18 @@ import math
 import random
 from collections import Counter
 from typing import Union
+
 from pyrogram import enums, errors, filters, types
-from backend import LOGGER, app
-from backend.core.cache import get_total_ranked_users, get_user_rank
+
+from backend.client import app
 from backend.core.keyboard import KeyboardBuilder, get_paginated_keyboard
+from backend.core.leaderboard import get_total_ranked_users, get_user_rank
+from backend.core.logging import get_logger
 from backend.core.progression import get_user_progress
-from backend.core.utils import get_user_id_query, normalize_user_id
+from backend.core.utils import get_user_id_query, normalize_user_id, reply_media_dynamic
 from backend.core.utils import html_escape as escape
-from backend.core.utils import reply_media_dynamic
+
+LOGGER = get_logger(__name__)
 FORMATS = [
     "<b>{rarity}</b>\n└ {name} (<code>{id}</code>) ×{count}",
     "<code>{id}</code> - {name} [<b>{rarity}</b>] ×{count}",

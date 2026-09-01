@@ -1,14 +1,23 @@
+import uuid
 from datetime import timedelta
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Body
+
+from fastapi import APIRouter, Body, Depends, HTTPException
 from pymongo import ReturnDocument
-from backend.database import client, user_collection, sessions_collection
-from backend.webapp.auth import get_current_user, get_current_user_data
-from backend.core.referrals import get_referral_stats as build_referral_stats, normalize_referral_ids
+
+from backend.core.leaderboard import sync_user_to_redis
+from backend.core.referrals import get_referral_stats as build_referral_stats
+from backend.core.referrals import normalize_referral_ids
 from backend.core.utils import get_now_utc, get_user_id_query, normalize_user_id
-from backend.webapp.schemas import TradeOffer, MarriageModel, ReferralModel, ReferralStatsModel, BattleStatsModel
-from backend.core.cache import sync_user_to_redis
-import uuid
+from backend.database import client, sessions_collection, user_collection
+from backend.webapp.auth import get_current_user, get_current_user_data
+from backend.webapp.schemas import (
+    BattleStatsModel,
+    MarriageModel,
+    ReferralModel,
+    ReferralStatsModel,
+    TradeOffer,
+)
 
 router = APIRouter()
 TRADE_OFFER_TTL = timedelta(hours=24)

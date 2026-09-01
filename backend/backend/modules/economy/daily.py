@@ -1,19 +1,27 @@
 from datetime import datetime, timedelta, timezone
-from pyrogram import enums, filters, types
-from pymongo.errors import DuplicateKeyError
 
-from backend import MAIN_GROUP_ID, app
-from backend.core.cache import (get_daily_date, get_weekly_date,
-                                invalidate_leaderboard_cache,
-                                invalidate_user_cache, set_daily_date,
-                                set_weekly_date, sync_user_to_redis)
+from pymongo.errors import DuplicateKeyError
+from pyrogram import enums, filters, types
+
+from backend.client import app
+from backend.core.cache import (
+    get_daily_date,
+    get_weekly_date,
+    invalidate_leaderboard_cache,
+    invalidate_user_cache,
+    set_daily_date,
+    set_weekly_date,
+    sync_user_to_redis,
+)
 from backend.core.pass_config import PASS_BENEFITS, get_active_pass_type
+from backend.core.rarities import CLAIM_RARITY_WEIGHTS, weighted_pick
 from backend.core.roles import apply_role_bonus
 from backend.core.user import add_user_set_on_insert, get_user_data
-from backend.core.rarities import CLAIM_RARITY_WEIGHTS, weighted_pick
 from backend.core.utils import get_user_id_query, handle_errors, html_escape, reply_media_dynamic
 from backend.core.waifu import sample_character_by_rarity
 from backend.database import user_collection
+from config import config
+
 # Rewards for streaks (Coins)
 STREAK_REWARDS = {
     1: 100,
@@ -34,7 +42,7 @@ async def get_daily_waifu():
 async def daily_command_handler(_, message: types.Message):
     # Full reward in the main group; 0.6x elsewhere so private/web-app
     # users still earn passively.
-    in_main = message.chat.id == MAIN_GROUP_ID
+    in_main = message.chat.id == config.MAIN_GROUP_ID
     reward_mult = 1.0 if in_main else 0.6
     pm_note = "" if in_main else "\n\n<i>Tip: claim /daily in the main group for full rewards!</i>"
     user_id = message.from_user.id
@@ -104,7 +112,7 @@ async def daily_command_handler(_, message: types.Message):
 @handle_errors
 async def weekly_command_handler(_, message: types.Message):
     # Full reward in the main group; 0.6x elsewhere (see /daily).
-    in_main = message.chat.id == MAIN_GROUP_ID
+    in_main = message.chat.id == config.MAIN_GROUP_ID
     reward_mult = 1.0 if in_main else 0.6
     pm_note = "" if in_main else "\n\n<i>Tip: claim /weekly in the main group for full rewards!</i>"
     user_id = message.from_user.id

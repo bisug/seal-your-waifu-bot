@@ -11,8 +11,8 @@ from pathlib import Path
 
 import psutil
 
-from config import config
 from backend.core.tasks import get_background_task_stats, run_background_task
+from config import config
 
 LOGGER = logging.getLogger(__name__)
 

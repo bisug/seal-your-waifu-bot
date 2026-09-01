@@ -1,8 +1,12 @@
 from pyrogram import enums, filters, types
-from backend import LOGGER, app
+
+from backend.client import app
+from backend.core.logging import get_logger
 from backend.core.sessions import consume_session, create_session, delete_session, get_session
 from backend.core.user import get_user_data
 from backend.core.utils import handle_errors, html_escape
+
+LOGGER = get_logger(__name__)
 
 
 @app.on_message(filters.command("gift"))
@@ -94,7 +98,7 @@ async def gift_callback(_, query: types.CallbackQuery):
         await delete_session(session_id)
         return
     # Atomic removal of exactly one instance
-    from backend.core.user import remove_char_from_user, add_char_to_user
+    from backend.core.user import add_char_to_user, remove_char_from_user
 
     if await remove_char_from_user(sender_id, str(char_id)):
         try:

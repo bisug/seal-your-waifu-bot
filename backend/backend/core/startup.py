@@ -2,12 +2,15 @@ import asyncio
 import logging
 import platform
 import sys
+
 import pyrogram
 from pyrogram import Client, enums, errors
-from config import config
+
 from backend.core.utils import get_now_utc, html_escape
 from backend.database import collection
 from backend.database import r as _redis
+from config import config
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -99,7 +102,7 @@ async def send_startup_report(
             LOGGER.warning(f"MongoDB health check failed: {db_err}")
         now = get_now_utc().strftime("%Y-%m-%d %H:%M:%S")
         startup_lines = _format_startup_status(startup_status)
-        status_block = f"\n" + "\n".join(startup_lines) if startup_lines else ""
+        status_block = "\n" + "\n".join(startup_lines) if startup_lines else ""
         startup_state = (startup_status or {}).get("startup", "operational")
         status_label = "OPERATIONAL" if startup_state == "operational" else f"DEGRADED · {_status_text(startup_state).upper()}"
         # Clean, modern report without decorative lines

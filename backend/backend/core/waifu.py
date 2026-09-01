@@ -3,10 +3,14 @@ import os
 import random
 import time
 from typing import Dict, Optional
+
 import httpx
-from config import config
-from backend import LOGGER
+
+from backend.core.logging import get_logger
 from backend.database import collection, db
+from config import config
+
+LOGGER = get_logger(__name__)
 IMGBB_API_KEY = config.IMGBB_API_KEY
 def _read_file_sync(file_path: str) -> bytes:
     with open(file_path, 'rb') as f:
@@ -109,6 +113,7 @@ async def add_character_to_db(char_data: dict) -> str:
     or race conditions during concurrent approvals.
     """
     from pymongo.errors import DuplicateKeyError
+
     from backend.core.rarities import rarity_id_of
     for attempt in range(10):
         char_id = str(await get_next_sequence_number('character_id')).zfill(4)
