@@ -1,73 +1,93 @@
+"""Character counts by rarity.
+
+Reads one row per rarity from an indexed $group aggregation (never scans
+all character docs to Python), sorts by the canonical rarity_id order from
+the `rarities` collection, and shows each tier's share of the archive.
+
+Backward-compat re-exports (same live dicts as core/rarities.py, so
+/rarityset edits apply everywhere without re-imports):
+    RARITY_MAP          — admin/scraper, admin/update_char, admin/upload,
+                          collection/hmode, core/uploads, webapp upload route
+    SHOP_RARITY_WEIGHTS — economy/shop
+    RARITY_WEIGHTS / ACTIVE_RARITY_WEIGHTS — legacy aliases
+"""
+
 from pyrogram import enums, filters, types
 
 from backend import app
 from backend.core.rarities import (
     ACTIVE_SPAWN_RARITY_WEIGHTS,
-    RARITY_MAP,
+    RARITY_IDS,
+    RARITY_MAP,  # noqa: F401  (re-exported; see module docstring)
     SHOP_RARITY_WEIGHTS,  # noqa: F401  (re-exported for economy/shop.py)
     SPAWN_RARITY_WEIGHTS,
 )
 from backend.core.utils import handle_errors, html_escape
 from backend.database import collection
 
-# Rarity config now lives in the `rarities` collection (see core/rarities.py).
-# The names below are re-exported for backward compatibility; they are the
-# same live dicts, so edits via /rarityset apply everywhere.
 RARITY_WEIGHTS = SPAWN_RARITY_WEIGHTS
 ACTIVE_RARITY_WEIGHTS = ACTIVE_SPAWN_RARITY_WEIGHTS
-@app.on_message(filters.command(["rarities", "rarity", "rlist"]))
-@handle_errors
-async def rarities_handler(_, message: types.Message):
-    rarity_counts = {}
-    total_characters = 0
 
-    # Count per rarity with an indexed $group instead of scanning every
-    # character document. Returns one row per rarity (~25) regardless of
-    # collection size, so this stays fast as the archive grows. The previous
-    # full find() pulled all docs to Python and could exceed socketTimeoutMS.
+# Telegram hard-caps a message at 4096 chars; stay under with headroom.
+_MAX_CHUNK = 3500
+
+
+async def _counts_by_rarity() -> dict[str, int]:
+    """One row per rarity via server-side $group on the rarity index."""
     cursor = await collection.aggregate(
         [{"$group": {"_id": "$rarity", "count": {"$sum": 1}}}]
     )
-    async for doc in cursor:
-        rarity = doc.get("_id") or "Unknown"
-        count = doc.get("count") or 0
-        rarity_counts[rarity] = rarity_counts.get(rarity, 0) + count
-        total_characters += count
+    rows = await cursor.to_list(length=200)
+    counts: dict[str, int] = {}
+    for row in rows:
+        label = row.get("_id") or "Unknown"
+        counts[str(label)] = counts.get(label, 0) + int(row.get("count") or 0)
+    return counts
 
-    if not rarity_counts:
-        return await message.reply_text("<b>No characters found in database.</b>", parse_mode=enums.ParseMode.HTML)
 
+def _sort_key(label: str) -> tuple[int, str]:
+    """Known rarities sort by rarity_id; unknown labels sink to the end."""
+    return (RARITY_IDS.get(label, 10**9), label)
+
+
+def _build_lines(counts: dict[str, int]) -> list[str]:
+    total = sum(counts.values())
     lines = ["<b>Character Counts by Rarity:</b>", ""]
+    for label in sorted(counts, key=_sort_key):
+        count = counts[label]
+        share = (count / total * 100) if total else 0
+        lines.append(
+            f"{html_escape(label)}: <code>{count:,}</code> <i>({share:.1f}%)</i>"
+        )
+    lines.extend(["", f"<b>Total Characters:</b> <code>{total:,}</code>"])
+    return lines
 
-    # We display based on what's in the database, but prioritized by RARITY_MAP order if possible
-    displayed_rarities = set()
 
-    # 1. Show standard rarities first
-    for i in sorted(RARITY_MAP.keys()):
-        rarity_name = RARITY_MAP[i]
-        if rarity_name in rarity_counts:
-            count = rarity_counts[rarity_name]
-            lines.append(f"{html_escape(rarity_name)}: <code>{count}</code>")
-            displayed_rarities.add(rarity_name)
-
-    # 2. Show any remaining rarities found in DB
-    remaining = False
-    for r_name, count in rarity_counts.items():
-        if r_name not in displayed_rarities:
-            if not remaining:
-                lines.extend(["", "<b>Other Rarities:</b>"])
-                remaining = True
-            lines.append(f"{html_escape(str(r_name))}: <code>{count}</code>")
-
-    lines.extend(["", f"<b>Total Characters:</b> <code>{total_characters}</code>"])
-
-    chunk = ""
+def _split_chunks(lines: list[str]) -> list[str]:
+    """Pack lines into as few messages as Telegram's 4096 limit allows."""
+    chunks: list[str] = []
+    current = ""
     for line in lines:
-        next_chunk = f"{chunk}\n{line}" if chunk else line
-        if len(next_chunk) > 3500:
-            await message.reply_text(chunk, parse_mode=enums.ParseMode.HTML)
-            chunk = line
+        candidate = f"{current}\n{line}" if current else line
+        if len(candidate) > _MAX_CHUNK:
+            if current:
+                chunks.append(current)
+            current = line
         else:
-            chunk = next_chunk
-    if chunk:
+            current = candidate
+    if current:
+        chunks.append(current)
+    return chunks
+
+
+@app.on_message(filters.command(["rarities", "rarity", "rlist"]))
+@handle_errors
+async def rarities_handler(_, message: types.Message):
+    counts = await _counts_by_rarity()
+    if not counts:
+        return await message.reply_text(
+            "<b>No characters found in database.</b>",
+            parse_mode=enums.ParseMode.HTML,
+        )
+    for chunk in _split_chunks(_build_lines(counts)):
         await message.reply_text(chunk, parse_mode=enums.ParseMode.HTML)
