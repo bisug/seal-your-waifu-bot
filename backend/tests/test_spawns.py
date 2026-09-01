@@ -105,6 +105,42 @@ def test_milestones_survive_rarity_rename():
         cr._apply_docs(original_docs)
 
 
+def test_milestones_are_db_backed():
+    # Milestone thresholds must come from the rarities collection docs
+    # (editable via /rarityset), not a hardcoded table in message_counter.
+    from backend.core import rarities as cr
+
+    original_docs = cr.get_rarity_docs()
+    try:
+        edited = [dict(d) for d in original_docs]
+        for d in edited:
+            if d["_id"] == 8:  # Royal
+                d["milestone"] = 1234
+            if d["_id"] == 25:  # Astral
+                d["milestone"] = 0  # zero removes the rarity from milestones
+        cr._apply_docs(edited)
+        rebuilt = message_counter._build_milestones()
+        thresholds = dict((label, t) for label, t in rebuilt)
+        assert thresholds[cr.RARITY_MAP[8]] == 1234
+        assert cr.RARITY_MAP[25] not in thresholds
+    finally:
+        cr._apply_docs(original_docs)
+
+
+def test_rarity_id_of_lookups():
+    # O(1) lookup paths: full label, bare name (case-insensitive), int id,
+    # and misses return None instead of raising.
+    from backend.core.rarities import rarity_id_of
+
+    assert rarity_id_of("🫧 Royal") == 8
+    assert rarity_id_of("royal") == 8
+    assert rarity_id_of("ROYAL") == 8
+    assert rarity_id_of(8) == 8
+    assert rarity_id_of("No Such Rarity") is None
+    assert rarity_id_of(None) is None
+    assert rarity_id_of(999) is None
+
+
 def test_weighted_pick_rejects_all_zero_pool():
     # random.choices raises on all-zero weights; weighted_pick must return None.
     from backend.core.rarities import weighted_pick

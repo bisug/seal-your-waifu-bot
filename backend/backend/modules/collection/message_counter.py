@@ -4,6 +4,8 @@ from pyrogram import filters, types
 from backend import app
 from backend.core.rarities import (
     ACTIVE_SPAWN_RARITY_WEIGHTS,
+    MILESTONE_THRESHOLDS,
+    RARITY_MAP,
     SPAWN_RARITY_WEIGHTS,
     weighted_pick,
 )
@@ -15,38 +17,17 @@ from backend.core.spawns import (increment_message_count,
 # Use a specific logger for spawn tracking
 SPAWN_LOGGER = logging.getLogger("backend.spawns")
 RANDOM_ROYAL_SPAWN_CHANCE = 0.0002
-# Milestone thresholds keyed by rarity_id, resolved to labels at import.
-# rarity_id survives /rarityrename (labels don't), so a rename can no longer
-# silently orphan a milestone. Golden Hour halves thresholds (2x faster).
-_RARITY_MILESTONE_THRESHOLDS = {
-    25: 10000,  # 🌠 Astral
-    12: 9000,   # 🪽 Prestige
-    24: 8500,   # ✨ Divine
-    11: 8000,   # 🎞️ AMV
-    10: 7500,   # 🎐 Celestial
-    23: 7000,   # 💎 Mythical
-    9: 6500,    # 💎 Antique
-    8: 6000,    # 🫧 Royal
-    22: 5500,   # 🔮 Mystic
-    7: 5000,    # 🔮 Limited Edition
-    21: 4500,   # 🌌 Eternal
-    6: 4000,    # 💮 Exclusive
-    20: 3500,   # 🧬 Immortal
-    5: 3200,    # 💠 Cosmic
-    4: 2000,    # 🟡 Legendary
-    3: 1200,    # 🟠 Rare
-    19: 700,    # 🟣 Epic
-    2: 350,     # 🟢 Medium
-    1: 150,     # ⚪ Common
-}
-from backend.core.rarities import RARITY_MAP
+# Milestone thresholds live in the `rarities` collection (per-doc `milestone`
+# field, editable via /rarityset). Keyed by rarity_id, resolved to labels at
+# import — rarity_id survives /rarityrename, so a rename can't orphan a
+# milestone. Golden Hour halves thresholds (milestones reached 2x faster).
 
 
 def _build_milestones() -> tuple:
     """(label, threshold) pairs for configured rarities, highest threshold first."""
     pairs = [
         (RARITY_MAP[rid], threshold)
-        for rid, threshold in _RARITY_MILESTONE_THRESHOLDS.items()
+        for rid, threshold in MILESTONE_THRESHOLDS.items()
         if rid in RARITY_MAP
     ]
     return tuple(sorted(pairs, key=lambda p: -p[1]))
