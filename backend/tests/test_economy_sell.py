@@ -8,18 +8,17 @@ Guards two historically broken behaviours:
    made the Zenith sink trivially farmable. Recycle now reuses the
    same Shards table as /sell via get_sell_price().
 """
-import pytest
-
 from backend.modules.economy.sell import get_sell_price, normalize_sell_rarity
 
 # Rarity strings exactly as stored in the DB (emoji-prefixed).
 ALL_RARITIES = [
     "⚪ Common", "🟢 Medium", "🟣 Epic", "🟠 Rare", "🟡 Legendary",
     "💠 Cosmic", "🧬 Immortal", "💮 Exclusive", "🌌 Eternal",
-    "🔮 Limited Edition", "🔮 Mystic", "🫧 Royal", "💎 Antique",
-    "💎 Mythical", "🎐 Celestial", "✨ Divine", "🌠 Astral",
-    "🎞️ AMV", "🪽 Prestige", "❄️ Winter", "☀️ Summer",
-    "💖 Valentine", "🎃 Halloween", "💸 Luxury", "🎏 Limited",
+    "🔮 Limited Edition", "🌀 Arcane", "🫧 Royal", "💎 Mythical",
+    "🎐 Celestial", "✨ Divine", "🌠 Astral", "🎞️ Cinematic",
+    "🪽 Prestige", "❄️ Winter", "☀️ Summer",
+    "💖 Valentine", "🎃 Halloween", "🌟 Radiant", "🌑 Eclipse",
+    "😇 Seraph",
 ]
 
 

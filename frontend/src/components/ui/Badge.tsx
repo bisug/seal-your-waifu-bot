@@ -10,7 +10,8 @@ type BadgeVariant =
   | 'danger'
   | 'premium'
   | 'rare'
-  | 'epic';
+  | 'epic'
+  | 'mythic';
 type BadgeSize = 'xs' | 'sm';
 
 interface BadgeProps {
@@ -38,6 +39,7 @@ export const Badge = ({
     premium: 'bg-amber-400/10 text-amber-400 border-amber-400/20',
     rare: 'bg-cyan-500/10 text-cyan-500 border-cyan-500/20',
     epic: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
+    mythic: 'bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/30',
   };
 
   const sizes: Record<BadgeSize, string> = {

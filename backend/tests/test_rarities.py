@@ -15,9 +15,10 @@ def test_apply_docs_refreshes_in_place():
 
     # Simulate an admin edit: Astral sell price doubled, plus a new rarity.
     edited = [dict(d) for d in original_docs]
-    edited[-1]["sell_price"] = 80000
+    astral = next(d for d in edited if d["name"] == "Astral")
+    astral["sell_price"] = 80000
     edited.append({
-        "_id": 26, "emoji": "🌸", "name": "Sakura",
+        "_id": 99, "emoji": "🌸", "name": "Sakura",
         "spawn_weight": 0, "active_spawn_weight": 0,
         "shop_weight": 0, "claim_weight": 0,
         "shop_price": 5, "stock_limit": 10, "sell_price": 77,
@@ -26,8 +27,8 @@ def test_apply_docs_refreshes_in_place():
 
     # Same dict objects must reflect the edit — no re-import needed.
     assert rarity_map is cr.RARITY_MAP
-    assert rarity_map[26] == "🌸 Sakura"
-    assert cr.RARITY_IDS["🌸 Sakura"] == 26
+    assert rarity_map[99] == "🌸 Sakura"
+    assert cr.RARITY_IDS["🌸 Sakura"] == 99
     assert sell_prices["Astral"] == 80000
     assert sell_prices["Sakura"] == 77
     # Zero claim_weight stays out of the claim pool.

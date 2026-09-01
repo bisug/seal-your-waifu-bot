@@ -64,6 +64,16 @@ export const Modal = ({ character, onClose, actions }: ModalProps) => {
     if (r.includes('rare')) return 'rare';
     if (r.includes('epic')) return 'epic';
     if (r.includes('legendary') || r.includes('limited')) return 'premium';
+    if (
+      r.includes('mythical') ||
+      r.includes('celestial') ||
+      r.includes('divine') ||
+      r.includes('astral') ||
+      r.includes('prestige') ||
+      r.includes('cinematic') ||
+      r.includes('seraph')
+    )
+      return 'mythic';
     return 'primary';
   };
 

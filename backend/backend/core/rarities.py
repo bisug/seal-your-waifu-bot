@@ -25,6 +25,10 @@ LOGGER = logging.getLogger(__name__)
 # stock limit: every strictly-rarer spawn band costs more, ceiling 100⧫
 # (~3 months of active play at ~1⧫/day income). Guarded by
 # test_default_shop_price_ladder_is_balanced().
+# 2026-09-01 consolidation: Antique merged into Mythical, Luxury into
+# Exclusive, Limited into Limited Edition (ids 9/17/18 retired — see
+# scripts/merge_rarity.py). AMV renamed to Cinematic, Mystic to Arcane.
+# New tiers: Radiant (mid-high), Eclipse (high), Seraph (top, below Astral).
 _DEFAULT_RARITIES = [
     (1, "⚪", "Common", 360, 280, 25, 60, 1, 50, 50, 150),
     (2, "🟢", "Medium", 240, 220, 20, 30, 2, 40, 100, 350),
@@ -34,23 +38,23 @@ _DEFAULT_RARITIES = [
     (6, "💮", "Exclusive", 4, 6, 6, 0, 30, 10, 2500, 4000),
     (7, "🔮", "Limited Edition", 2, 3, 5, 0, 45, 10, 5000, 5000),
     (8, "🫧", "Royal", 1, 2, 4, 0, 60, 5, 10000, 6000),
-    (9, "💎", "Antique", 1, 2, 3, 0, 60, 5, 12000, 6500),
     (10, "🎐", "Celestial", 1, 1, 2, 0, 80, 2, 20000, 7500),
-    (11, "🎞️", "AMV", 1, 1, 2, 0, 80, 2, 30000, 8000),
+    (11, "🎞️", "Cinematic", 1, 1, 2, 0, 80, 2, 30000, 8000),
     (12, "🪽", "Prestige", 1, 1, 1, 0, 100, 1, 40000, 9000),
     (13, "❄️", "Winter", 12, 15, 6, 0, 15, 10, 1500, 0),
     (14, "☀️", "Summer", 12, 15, 6, 0, 15, 10, 1500, 0),
     (15, "💖", "Valentine", 5, 8, 5, 0, 25, 10, 2000, 0),
     (16, "🎃", "Halloween", 5, 8, 5, 0, 25, 10, 2000, 0),
-    (17, "💸", "Luxury", 8, 12, 4, 0, 20, 5, 2500, 0),
-    (18, "🎏", "Limited", 18, 25, 10, 0, 12, 20, 1800, 0),
     (19, "🟣", "Epic", 120, 140, 20, 0, 3, 40, 150, 700),
     (20, "🧬", "Immortal", 25, 35, 8, 0, 10, 15, 1200, 3500),
     (21, "🌌", "Eternal", 3, 4, 6, 0, 35, 10, 2500, 4500),
-    (22, "🔮", "Mystic", 2, 3, 5, 0, 45, 10, 5000, 5500),
+    (22, "🌀", "Arcane", 2, 3, 5, 0, 45, 10, 5000, 5500),
     (23, "💎", "Mythical", 1, 2, 3, 0, 60, 5, 12000, 7000),
     (24, "✨", "Divine", 1, 1, 2, 0, 80, 2, 30000, 8500),
     (25, "🌠", "Astral", 1, 1, 1, 0, 100, 1, 40000, 10000),
+    (26, "🌟", "Radiant", 8, 12, 5, 0, 20, 10, 2000, 2500),
+    (27, "🌑", "Eclipse", 2, 3, 4, 0, 50, 8, 8000, 6000),
+    (28, "😇", "Seraph", 1, 1, 1, 0, 90, 1, 35000, 9500),
 ]
 
 NUMERIC_FIELDS = {

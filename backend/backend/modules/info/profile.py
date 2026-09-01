@@ -12,8 +12,9 @@ from backend.database import collection
 RARITY_ICONS = {
     'Common': '◌', 'Medium': '○', 'Rare': '◙',
     'Legendary': '◎', 'Cosmic': '◉', 'Exclusive': '◈',
-    'Limited Edition': '▣', 'Royal': '◆', 'Antique': '◇',
-    'Celestial': '✦', 'AMV': '▰', 'Prestige': '✧',
+    'Limited Edition': '▣', 'Royal': '◆', 'Mythical': '◇',
+    'Celestial': '✦', 'Cinematic': '▰', 'Prestige': '✧',
+    'Radiant': '✶', 'Eclipse': '◐', 'Seraph': '❉',
 }
 
 
