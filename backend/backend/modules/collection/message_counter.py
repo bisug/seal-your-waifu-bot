@@ -1,12 +1,12 @@
-import datetime
-import random
 import logging
+import random
 from pyrogram import filters, types
 
 from backend import app
 from backend.core.spawn_utils import get_target_spawn_frequency
 from backend.core.spawns import (increment_message_count,
-                                 increment_spawn_order, send_character,
+                                 is_golden_hour,
+                                 send_character,
                                  track_user_activity)
 from backend.modules.collection.rarities import (
     ACTIVE_SPAWN_RARITY_WEIGHTS,
@@ -36,6 +36,20 @@ special_rarity_thresholds = {
     "🟢 Medium": 350,
     "⚪ Common": 150,
 }
+# Precomputed (rarity, threshold) pairs — avoids rebuilding the list on every
+# message. Golden Hour halves thresholds (milestones reached 2x faster).
+_MILESTONES = tuple(special_rarity_thresholds.items())
+_MILESTONES_GOLDEN = tuple(
+    (name, max(1, threshold // 2)) for name, threshold in _MILESTONES
+)
+
+
+def _pick_spawn_rarity(active_count: int) -> str:
+    """Weighted rarity pick; very active chats use the active-weights table."""
+    weights_map = ACTIVE_SPAWN_RARITY_WEIGHTS if active_count > 10 else SPAWN_RARITY_WEIGHTS
+    rarities = list(weights_map.keys())
+    weights = list(weights_map.values())
+    return random.choices(rarities, weights=weights, k=1)[0]
 @app.on_message(filters.group & filters.text & ~filters.bot, group=1)
 async def message_counter_handler(_, message: types.Message):
     """
@@ -64,15 +78,10 @@ async def message_counter_handler(_, message: types.Message):
         SPAWN_LOGGER.info(f"Triggering RANDOM Royal spawn in {chat_id}")
         await send_character(chat_id, "🫧 Royal")
         return
-    # Check for "Golden Hour" (boosted spawn rates)
-    now = datetime.datetime.now(datetime.timezone.utc)
-    multiplier = 1.0
-    if 20 <= now.hour <= 22:
-        multiplier = 0.5 # Milestones reached twice as fast
-    # Check for special rarity milestones
-    for r_name, threshold in special_rarity_thresholds.items():
-        threshold_int = int(threshold * multiplier)
-        if threshold_int > 0 and count % threshold_int == 0:
+    # Check for special rarity milestones (Golden Hour halves thresholds)
+    milestones = _MILESTONES_GOLDEN if is_golden_hour() else _MILESTONES
+    for r_name, threshold in milestones:
+        if threshold > 0 and count % threshold == 0:
             SPAWN_LOGGER.info(f"Milestone {r_name} reached at {count} in {chat_id}")
             await send_character(chat_id, r_name)
             return
@@ -80,13 +89,4 @@ async def message_counter_handler(_, message: types.Message):
     target_freq, active_count, _ = await get_target_spawn_frequency(chat_id)
     if count % target_freq == 0:
         SPAWN_LOGGER.info(f"Standard spawn triggered in {chat_id} (count={count}, freq={target_freq})")
-        # Use different rarity weights if the chat is very active
-        if active_count > 10:
-            weights_map = ACTIVE_SPAWN_RARITY_WEIGHTS
-        else:
-            weights_map = SPAWN_RARITY_WEIGHTS
-        rarities = list(weights_map.keys())
-        weights = list(weights_map.values())
-        selected_rarity = random.choices(rarities, weights=weights, k=1)[0]
-        await send_character(chat_id, selected_rarity)
-        await increment_spawn_order(chat_id)
+        await send_character(chat_id, _pick_spawn_rarity(active_count))

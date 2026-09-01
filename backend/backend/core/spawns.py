@@ -16,6 +16,19 @@ from backend.database import spawns_collection, user_totals_collection
 
 MESSAGE_COUNT_TTL_SECONDS = 86400
 
+# Golden Hour: boosted spawn rates between 20:00 and 22:59 UTC.
+GOLDEN_HOUR_START_UTC = 20
+GOLDEN_HOUR_END_UTC = 22
+# An unclaimed spawn is never replaced while younger than this.
+ACTIVE_SPAWN_GRACE_SECONDS = 300
+
+
+def is_golden_hour(now: Optional[datetime.datetime] = None) -> bool:
+    """True during Golden Hour (20:00-22:59 UTC), when spawns are 2x faster."""
+    if now is None:
+        now = datetime.datetime.now(datetime.timezone.utc)
+    return GOLDEN_HOUR_START_UTC <= now.hour <= GOLDEN_HOUR_END_UTC
+
 
 def _message_count_from_doc(doc: Optional[Dict[str, Any]]) -> int:
     if not doc:
@@ -45,17 +58,6 @@ async def _load_message_count_from_mongo(chat_id: int) -> int:
             {"$max": {"count": count}},
         )
     return count
-
-
-async def _persist_message_increment(chat_id: int, user_id: int, count: int) -> None:
-    await message_counts_collection.update_one(
-        {"chat_id": str(chat_id)},
-        {
-            "$max": {"count": int(count)},
-            "$inc": {f"users.{user_id}": 1},
-        },
-        upsert=True,
-    )
 
 
 # In-memory buffer of message increments awaiting MongoDB persistence.
@@ -138,7 +140,7 @@ async def get_chat_state(chat_id: int) -> Dict[str, Any]:
                     elif k == "last_character":
                         try: parsed_state[k] = json.loads(v)
                         except: parsed_state[k] = v
-                    elif k in ["message_id", "spawn_order"]:
+                    elif k == "message_id":
                         try: parsed_state[k] = int(v)
                         except: parsed_state[k] = v
                     elif k == "last_spawn_time":
@@ -167,18 +169,35 @@ async def track_user_activity(chat_id: int, user_id: int):
     if not _redis: return
     key = f"spawn:active_users:{chat_id}"
     try:
-        await _redis.zadd(key, {str(user_id): time.time()})
-        await _redis.expire(key, 600) # 10m TTL
+        # Single round-trip: mark activity + refresh the 10m TTL.
+        async with _redis.pipeline(transaction=False) as pipe:
+            pipe.zadd(key, {str(user_id): time.time()})
+            pipe.expire(key, 600) # 10m TTL
+            await pipe.execute()
     except Exception as e: LOGGER.debug(f"Non-critical error (suppressed): {e}")
+# Active-user counts change slowly; cache briefly so the per-message spawn
+# check doesn't hit Redis on every message.
+_active_count_cache: Dict[int, tuple[float, int]] = {}
+ACTIVE_COUNT_CACHE_TTL_SECONDS = 30.0
+
+
 async def get_active_user_count(chat_id: int) -> int:
-    """Get count of users active in last 10m."""
+    """Get count of users active in last 10m (cached for 30s per chat)."""
     if not _redis: return 1 # Default
+    now = time.monotonic()
+    cached = _active_count_cache.get(chat_id)
+    if cached and cached[0] > now:
+        return cached[1]
     key = f"spawn:active_users:{chat_id}"
     try:
-        now = time.time()
-        # Remove users older than 10 mins
-        await _redis.zremrangebyscore(key, "-inf", now - 600)
-        return await _redis.zcard(key)
+        # Single round-trip: prune users older than 10 mins, then count.
+        async with _redis.pipeline(transaction=False) as pipe:
+            pipe.zremrangebyscore(key, "-inf", time.time() - 600)
+            pipe.zcard(key)
+            _, count = await pipe.execute()
+        count = int(count)
+        _active_count_cache[chat_id] = (now + ACTIVE_COUNT_CACHE_TTL_SECONDS, count)
+        return count
     except Exception as e:
         LOGGER.debug(f"Non-critical error: {e}")
         return 1
@@ -193,8 +212,10 @@ async def set_active_spawn(chat_id: int, character: Dict[str, Any], message_id: 
     }
     if _redis:
         try:
-            await _redis.hset(key, mapping=data)
-            await _redis.expire(key, 3600)
+            async with _redis.pipeline(transaction=False) as pipe:
+                pipe.hset(key, mapping=data)
+                pipe.expire(key, 3600)
+                await pipe.execute()
         except Exception as e: LOGGER.debug(f"Redis operation bypassed: {e}")
     # Still write to MongoDB for absolute safety (active spawns are high-value)
     mongo_data = {
@@ -221,8 +242,10 @@ async def clear_active_spawn(chat_id: int, user_id: int) -> bool:
         if _redis:
             try:
                 key = f"spawn:state:{chat_id}"
-                await _redis.hset(key, "first_correct_guess", str(user_id))
-                await _redis.hdel(key, "last_character", "message_id")
+                async with _redis.pipeline(transaction=False) as pipe:
+                    pipe.hset(key, "first_correct_guess", str(user_id))
+                    pipe.hdel(key, "last_character", "message_id")
+                    await pipe.execute()
             except Exception as e: LOGGER.debug(f"Persistence error: {e}")
         return True
     return False
@@ -261,35 +284,35 @@ async def increment_message_count(chat_id: int, user_id: int) -> int:
             return count
     # Fallback to atomic DB-backed tracking.
     return await _increment_message_count_mongo(chat_id, user_id)
-async def get_spawn_order(chat_id: int) -> int:
-    state = await get_chat_state(chat_id)
-    return int(state.get("spawn_order", 0))
-async def increment_spawn_order(chat_id: int):
-    key = f"spawn:state:{chat_id}"
-    if _redis:
-        try:
-            await _redis.hincrby(key, "spawn_order", 1)
-            return
-        except Exception as e: LOGGER.debug(f"Redis operation bypassed: {e}")
-    # Fallback
-    state = await get_chat_state(chat_id)
-    new_order = int(state.get("spawn_order", 0)) + 1
-    await spawns_collection.update_one({"chat_id": chat_id}, {"$set": {"spawn_order": new_order}}, upsert=True)
+# Per-chat spawn frequency changes only via manual DB edits; a short
+# in-process cache keeps the per-message spawn check off Redis/Mongo.
+_chat_freq_cache: Dict[int, tuple[float, int]] = {}
+CHAT_FREQ_CACHE_TTL_SECONDS = 300.0
+
+
 async def get_chat_frequency(chat_id: int) -> int:
+    """Configured spawn frequency for a chat (in-process cache, 5 min TTL)."""
+    now = time.monotonic()
+    cached = _chat_freq_cache.get(chat_id)
+    if cached and cached[0] > now:
+        return cached[1]
     key = f"spawn:state:{chat_id}"
+    freq = None
     if _redis:
         try:
             freq = await asyncio.wait_for(_redis.hget(key, "_cached_frequency"), timeout=3.0)
-            if freq: return int(freq)
+            freq = int(freq) if freq else None
         except Exception as e:
             LOGGER.debug(f"Redis frequency cache read failed for {chat_id}: {e}")
-    doc = await user_totals_collection.find_one({"chat_id": {"$in": [chat_id, str(chat_id)]}}, projection={"message_frequency": 1})
-    freq = int(doc["message_frequency"]) if doc and doc.get("message_frequency") else 100
-    if _redis:
-        try:
-            await asyncio.wait_for(_redis.hset(key, "_cached_frequency", str(freq)), timeout=3.0)
-        except Exception as e:
-            LOGGER.debug(f"Redis frequency cache write failed for {chat_id}: {e}")
+    if freq is None:
+        doc = await user_totals_collection.find_one({"chat_id": {"$in": [chat_id, str(chat_id)]}}, projection={"message_frequency": 1})
+        freq = int(doc["message_frequency"]) if doc and doc.get("message_frequency") else 100
+        if _redis:
+            try:
+                await asyncio.wait_for(_redis.hset(key, "_cached_frequency", str(freq)), timeout=3.0)
+            except Exception as e:
+                LOGGER.debug(f"Redis frequency cache write failed for {chat_id}: {e}")
+    _chat_freq_cache[chat_id] = (now + CHAT_FREQ_CACHE_TTL_SECONDS, freq)
     return freq
 async def flush_message_counts_to_db() -> int:
     """Sync cached Redis message totals to MongoDB once (batched bulk writes)."""
@@ -310,21 +333,27 @@ async def flush_message_counts_to_db() -> int:
             LOGGER.error(f"Bulk flush of msg_count totals failed ({len(batch)} chats): {e}")
 
     keys = await _scan_keys("msg_count:*")
-    for key in keys:
-        chat_id_str = key.split(":")[-1]
-        count = await _redis.get(key)
-        if not count:
-            continue
+    # MGET in chunks: one round-trip per 100 keys instead of one per key.
+    for i in range(0, len(keys), 100):
+        chunk = keys[i : i + 100]
         try:
-            count_int = int(count)
-        except (TypeError, ValueError):
+            values = await _redis.mget(*chunk)
+        except Exception as e:
+            LOGGER.error(f"MGET of msg_count keys failed ({len(chunk)} keys): {e}")
             continue
-        ops.append(UpdateOne(
-            {"chat_id": chat_id_str},
-            {"$max": {"count": count_int}},
-            upsert=True,
-        ))
-        synced += 1
+        for key, count in zip(chunk, values):
+            if not count:
+                continue
+            try:
+                count_int = int(count)
+            except (TypeError, ValueError):
+                continue
+            ops.append(UpdateOne(
+                {"chat_id": key.split(":")[-1]},
+                {"$max": {"count": count_int}},
+                upsert=True,
+            ))
+            synced += 1
         if len(ops) >= 500:
             await write_batch()
     await write_batch()
@@ -341,19 +370,34 @@ async def flush_cache_to_db():
             await flush_message_counts_to_db()
         except Exception as e:
             LOGGER.error(f"Error flushing count cache to DB: {e}")
-async def send_character(chat_id: int, rarity: str):
+async def has_recent_unclaimed_spawn(chat_id: int, *, max_age_seconds: float = ACTIVE_SPAWN_GRACE_SECONDS) -> bool:
+    """True while an unclaimed spawn is younger than the grace window."""
+    state = await get_chat_state(chat_id)
+    if not state.get("last_character"):
+        return False
+    try:
+        age = time.time() - float(state.get("last_spawn_time"))
+    except (TypeError, ValueError):
+        # Character present but timestamp missing/corrupt: treat as fresh.
+        return True
+    return age < max_age_seconds
+
+
+async def send_character(chat_id: int, rarity: str, *, force: bool = False):
     """
     Select and send a character of the given rarity to a chat.
+    Automatic spawns are skipped while a recent spawn is still unclaimed
+    (so it isn't silently replaced); pass force=True to override (/cnow).
     Handles photo sending, caption generation, and royal spawn notifications.
     """
+    if not force and await has_recent_unclaimed_spawn(chat_id):
+        LOGGER.debug(f"Spawn of {rarity} skipped in {chat_id}: previous spawn still unclaimed")
+        return
     chars = await get_or_load_characters(rarity)
     if not chars:
         return
     character = random.choice(chars)
-    now = datetime.datetime.now(datetime.timezone.utc)
-    golden_text = ""
-    if 20 <= now.hour <= 22:
-        golden_text = "\n🌟 <b>Golden Hour is Active!</b>"
+    golden_text = "\n🌟 <b>Golden Hour is Active!</b>" if is_golden_hour() else ""
     caption = (
         "🪽 <b>A new character appeared!</b>\n"
         "🦋 Use /seal name to collect them!\n"

@@ -124,7 +124,7 @@ async def cnow_handler(_, message: types.Message):
     rarities = list(weights_map.keys())
     weights = list(weights_map.values())
     selected_rarity = random.choices(rarities, weights=weights, k=1)[0]
-    await send_character(message.chat.id, selected_rarity)
+    await send_character(message.chat.id, selected_rarity, force=True)
 @app.on_message(filters.command("search"))
 @handle_errors
 async def search_waifu(_, message: types.Message):
