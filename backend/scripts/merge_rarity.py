@@ -85,11 +85,14 @@ async def main() -> None:
         )
 
     # 2. Renames: same treatment via the canonical label propagation.
+    # The rarities-doc rename must run even when zero characters carry the
+    # old label (the update_many calls are no-ops on zero matches) — gating
+    # on counts left doc 11 stuck as "AMV" after the 2026-09-01 run.
     for rid, (old_label, new_label) in RENAMES.items():
         char_count = await count(client, CHARACTERS, {"rarity": old_label})
         harem_count = await count(client, USERS, {"characters.rarity": old_label})
         print(f"rename {old_label} -> {new_label} (id {rid}): {char_count} char doc(s), {harem_count} user(s)")
-        if args.dry_run or not (char_count or harem_count):
+        if args.dry_run:
             continue
         await rarities.update_one({"_id": rid}, {"$set": {"emoji": new_label.split(" ", 1)[0], "name": new_label.split(" ", 1)[1]}})
         await characters.update_many({"rarity": old_label}, {"$set": {"rarity": new_label, "rarity_id": rid}})
