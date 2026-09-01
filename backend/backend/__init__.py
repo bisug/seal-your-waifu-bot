@@ -1,10 +1,11 @@
-import asyncio
-import importlib
-import re
+"""Seal Bot package root: client instances, shared constants, and filters.
+
+Import order matters: the kurigram geo patch must run before any client
+starts, and logging before anything else logs.
+"""
 import time
 
-from pyrogram import Client, enums, errors, filters, raw, types
-from pyrogram.handlers import MessageHandler
+from pyrogram import enums, filters, raw, types
 
 # Strip geo from inline queries. kurigram 2.2.24 still builds
 # types.Location(..., client=client) in InlineQuery._parse, but Location.__init__
@@ -14,7 +15,7 @@ _orig_inline_parse = types.InlineQuery._parse
 
 
 @staticmethod
-def _inline_query_parse_no_geo(client, inline_query, users):
+def _inline_query_parse_no_geo(bot_client, inline_query, users):
     peer_type = inline_query.peer_type
     chat_type = None
     if isinstance(peer_type, raw.types.InlineQueryPeerTypeSameBotPM):
@@ -34,7 +35,7 @@ def _inline_query_parse_no_geo(client, inline_query, users):
         offset=inline_query.offset,
         chat_type=chat_type,
         location=None,
-        client=client,
+        client=bot_client,
     )
 
 
@@ -47,16 +48,29 @@ setup_logging()
 install_exception_hooks()
 
 from backend.client import SealClient
-from backend.database import (client, collection, db,
-                              global_group_bans_collection,
-                              global_user_bans_collection,
-                              group_collection, group_user_totals_collection,
-                              message_counts_collection, pet_catalog_collection,
-                              quiz_questions_collection,
-                              scraped_characters_collection, sessions_collection,
-                              spawns_collection, sudo_collection,
-                              total_pm_users, user_collection,
-                              user_totals_collection)
+
+# Re-exports consumed by ~60 modules via `from backend import ...`.
+# DB collections live in backend.database; these aliases keep old import
+# paths working. Do not remove without grepping `from backend import` first.
+from backend.database import (  # noqa: F401
+    client,
+    collection,
+    db,
+    global_group_bans_collection,
+    global_user_bans_collection,
+    group_collection,
+    group_user_totals_collection,
+    message_counts_collection,
+    pet_catalog_collection,
+    quiz_questions_collection,
+    scraped_characters_collection,
+    sessions_collection,
+    spawns_collection,
+    sudo_collection,
+    total_pm_users,
+    user_collection,
+    user_totals_collection,
+)
 
 StartTime = time.time()
 
@@ -76,18 +90,13 @@ BOT_ID = None
 BOT_NAME = None
 GALLERY_CHANNEL_ID = config.GALLERY_CHANNEL_ID
 WEB_APP_URL = config.WEB_APP_URL
-WEB_APP_URL = config.WEB_APP_URL
-
 
 app = SealClient(name="MainBot", bot_token=config.TOKEN)
 game_bot = SealClient(name="GameBot", bot_token=config.SUB_TOKEN)
 userbot = SealClient(name="UserBot", session_string=config.STRING_SESSION) if config.STRING_SESSION else None
 
-# For backward compatibility and modularity
-backend = app
-nguess_bot = game_bot
 
-def _sudo_check(flt, client, message):
+def _sudo_check(_, __, message):
     if not message.from_user:
         return False
     from backend.core.roles import moderator
@@ -97,7 +106,7 @@ def _sudo_check(flt, client, message):
 sudo_filter = filters.create(_sudo_check)
 
 
-def _uploader_check(flt, client, message):
+def _uploader_check(_, __, message):
     if not message.from_user:
         return False
     from backend.core.roles import can_upload
