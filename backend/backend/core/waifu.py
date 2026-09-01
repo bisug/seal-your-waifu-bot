@@ -1,5 +1,6 @@
 import asyncio
 import os
+import random
 import time
 from typing import Dict, Optional
 import httpx
@@ -180,3 +181,17 @@ def invalidate_character_cache(rarity: str = None):
     else:
         _cache_timestamps.clear()
         characters_by_rarity.clear()
+
+
+async def sample_character_by_rarity(rarity: str) -> Optional[dict]:
+    """Pick one random character of a rarity, reusing the per-rarity cache.
+
+    Shared by /claim, /daily and /propose. Each of those used to run its own
+    $sample aggregation on every call; now they hit the same 1h cache the
+    spawn path uses, so a rarity's docs are read from Mongo at most once
+    per hour instead of once per claim.
+    """
+    chars = await get_or_load_characters(rarity)
+    if not chars:
+        return None
+    return random.choice(chars)

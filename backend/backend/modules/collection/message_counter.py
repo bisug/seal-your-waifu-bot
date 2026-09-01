@@ -1,55 +1,67 @@
 import logging
 import random
 from pyrogram import filters, types
-
 from backend import app
+from backend.core.rarities import (
+    ACTIVE_SPAWN_RARITY_WEIGHTS,
+    SPAWN_RARITY_WEIGHTS,
+    weighted_pick,
+)
 from backend.core.spawn_utils import get_target_spawn_frequency
 from backend.core.spawns import (increment_message_count,
                                  is_golden_hour,
                                  send_character,
                                  track_user_activity)
-from backend.modules.collection.rarities import (
-    ACTIVE_SPAWN_RARITY_WEIGHTS,
-    SPAWN_RARITY_WEIGHTS,
-)
 # Use a specific logger for spawn tracking
 SPAWN_LOGGER = logging.getLogger("backend.spawns")
 RANDOM_ROYAL_SPAWN_CHANCE = 0.0002
-special_rarity_thresholds = {
-    "🌠 Astral": 10000,
-    "🪽 Prestige": 9000,
-    "✨ Divine": 8500,
-    "🎞️ AMV": 8000,
-    "🎐 Celestial": 7500,
-    "💎 Mythical": 7000,
-    "💎 Antique": 6500,
-    "🫧 Royal": 6000,
-    "🔮 Mystic": 5500,
-    "🔮 Limited Edition": 5000,
-    "🌌 Eternal": 4500,
-    "💮 Exclusive": 4000,
-    "🧬 Immortal": 3500,
-    "💠 Cosmic": 3200,
-    "🟡 Legendary": 2000,
-    "🟠 Rare": 1200,
-    "🟣 Epic": 700,
-    "🟢 Medium": 350,
-    "⚪ Common": 150,
+# Milestone thresholds keyed by rarity_id, resolved to labels at import.
+# rarity_id survives /rarityrename (labels don't), so a rename can no longer
+# silently orphan a milestone. Golden Hour halves thresholds (2x faster).
+_RARITY_MILESTONE_THRESHOLDS = {
+    25: 10000,  # 🌠 Astral
+    12: 9000,   # 🪽 Prestige
+    24: 8500,   # ✨ Divine
+    11: 8000,   # 🎞️ AMV
+    10: 7500,   # 🎐 Celestial
+    23: 7000,   # 💎 Mythical
+    9: 6500,    # 💎 Antique
+    8: 6000,    # 🫧 Royal
+    22: 5500,   # 🔮 Mystic
+    7: 5000,    # 🔮 Limited Edition
+    21: 4500,   # 🌌 Eternal
+    6: 4000,    # 💮 Exclusive
+    20: 3500,   # 🧬 Immortal
+    5: 3200,    # 💠 Cosmic
+    4: 2000,    # 🟡 Legendary
+    3: 1200,    # 🟠 Rare
+    19: 700,    # 🟣 Epic
+    2: 350,     # 🟢 Medium
+    1: 150,     # ⚪ Common
 }
-# Precomputed (rarity, threshold) pairs — avoids rebuilding the list on every
-# message. Golden Hour halves thresholds (milestones reached 2x faster).
-_MILESTONES = tuple(special_rarity_thresholds.items())
+from backend.core.rarities import RARITY_MAP
+
+
+def _build_milestones() -> tuple:
+    """(label, threshold) pairs for configured rarities, highest threshold first."""
+    pairs = [
+        (RARITY_MAP[rid], threshold)
+        for rid, threshold in _RARITY_MILESTONE_THRESHOLDS.items()
+        if rid in RARITY_MAP
+    ]
+    return tuple(sorted(pairs, key=lambda p: -p[1]))
+
+
+_MILESTONES = _build_milestones()
 _MILESTONES_GOLDEN = tuple(
-    (name, max(1, threshold // 2)) for name, threshold in _MILESTONES
+    (label, max(1, threshold // 2)) for label, threshold in _MILESTONES
 )
 
 
-def _pick_spawn_rarity(active_count: int) -> str:
+def _pick_spawn_rarity(active_count: int) -> str | None:
     """Weighted rarity pick; very active chats use the active-weights table."""
     weights_map = ACTIVE_SPAWN_RARITY_WEIGHTS if active_count > 10 else SPAWN_RARITY_WEIGHTS
-    rarities = list(weights_map.keys())
-    weights = list(weights_map.values())
-    return random.choices(rarities, weights=weights, k=1)[0]
+    return weighted_pick(weights_map)
 @app.on_message(filters.group & filters.text & ~filters.bot, group=1)
 async def message_counter_handler(_, message: types.Message):
     """
@@ -89,4 +101,6 @@ async def message_counter_handler(_, message: types.Message):
     target_freq, active_count, _ = await get_target_spawn_frequency(chat_id)
     if count % target_freq == 0:
         SPAWN_LOGGER.info(f"Standard spawn triggered in {chat_id} (count={count}, freq={target_freq})")
-        await send_character(chat_id, _pick_spawn_rarity(active_count))
+        selected_rarity = _pick_spawn_rarity(active_count)
+        if selected_rarity:
+            await send_character(chat_id, selected_rarity)

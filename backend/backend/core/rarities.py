@@ -15,6 +15,7 @@ act as the fallback when MongoDB is unreachable.
 """
 
 import logging
+import random
 
 LOGGER = logging.getLogger(__name__)
 
@@ -96,6 +97,23 @@ def rarity_id_of(rarity: str | int | None) -> int | None:
 
 def label_of(rarity_id: int | None) -> str | None:
     return RARITY_MAP.get(rarity_id)
+
+
+def weighted_pick(weights_map: dict[str, int]) -> str | None:
+    """Pick one key from a label->weight map.
+
+    Single implementation for every weighted rarity roll (spawns, shop,
+    claim/daily/propose). Returns None when the map is empty or every
+    weight is 0 — random.choices() raises on all-zero weights, and an
+    admin zeroing out a whole pool via /rarityset shouldn't crash handlers.
+    """
+    if not weights_map:
+        return None
+    keys = list(weights_map.keys())
+    weights = list(weights_map.values())
+    if not any(weights):
+        return None
+    return random.choices(keys, weights=weights, k=1)[0]
 
 
 def _default_docs() -> list[dict]:

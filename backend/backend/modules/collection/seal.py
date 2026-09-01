@@ -11,7 +11,7 @@ from backend.core.spawns import (clear_active_spawn, get_chat_state,
 from backend.core.tasks import run_background_task
 from backend.core.user import add_char_to_user
 from backend.core.utils import handle_errors, html_escape, reply_media_dynamic
-from backend.modules.collection.rarities import SPAWN_RARITY_WEIGHTS
+from backend.core.rarities import SPAWN_RARITY_WEIGHTS, weighted_pick
 from backend.modules.progression.achievements import check_achievements
 from backend.modules.progression.quests import update_quest_progress
 @app.on_message(filters.command("seal") & filters.group)
@@ -120,11 +120,9 @@ async def cnow_handler(_, message: types.Message):
     """Force a character spawn (Owner/Sudo only)."""
     if not message.from_user or (message.from_user.id not in sudo_users and message.from_user.id != OWNER_ID):
         return # Ignore non-owners
-    weights_map = SPAWN_RARITY_WEIGHTS
-    rarities = list(weights_map.keys())
-    weights = list(weights_map.values())
-    selected_rarity = random.choices(rarities, weights=weights, k=1)[0]
-    await send_character(message.chat.id, selected_rarity, force=True)
+    selected_rarity = weighted_pick(SPAWN_RARITY_WEIGHTS)
+    if selected_rarity:
+        await send_character(message.chat.id, selected_rarity, force=True)
 @app.on_message(filters.command("search"))
 @handle_errors
 async def search_waifu(_, message: types.Message):

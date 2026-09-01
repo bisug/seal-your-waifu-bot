@@ -87,3 +87,28 @@ def test_golden_milestones_are_half():
     ):
         assert name == gname
         assert golden == max(1, normal // 2)
+
+
+def test_milestones_survive_rarity_rename():
+    # Milestones are keyed by rarity_id, so a rename must not orphan them.
+    from backend.core import rarities as cr
+
+    original_docs = cr.get_rarity_docs()
+    try:
+        cr._apply_docs([dict(d, name=d["name"] + " X") for d in original_docs])
+        rebuilt = message_counter._build_milestones()
+        assert len(rebuilt) == len(message_counter._MILESTONES)
+        # Every rarity_id still resolves to a (renamed) label with its threshold.
+        by_threshold = sorted(rebuilt, key=lambda p: -p[1])
+        assert by_threshold[0][1] == 10000  # Astral keeps its threshold
+    finally:
+        cr._apply_docs(original_docs)
+
+
+def test_weighted_pick_rejects_all_zero_pool():
+    # random.choices raises on all-zero weights; weighted_pick must return None.
+    from backend.core.rarities import weighted_pick
+
+    assert weighted_pick({}) is None
+    assert weighted_pick({"⚪ Common": 0, "🟢 Medium": 0}) is None
+    assert weighted_pick({"⚪ Common": 1}) == "⚪ Common"

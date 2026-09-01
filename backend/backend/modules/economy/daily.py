@@ -1,4 +1,3 @@
-import random
 from datetime import datetime, timedelta, timezone
 from pyrogram import enums, filters, types
 from pymongo.errors import DuplicateKeyError
@@ -11,9 +10,10 @@ from backend.core.cache import (get_daily_date, get_weekly_date,
 from backend.core.pass_config import PASS_BENEFITS, get_active_pass_type
 from backend.core.roles import apply_role_bonus
 from backend.core.user import add_user_set_on_insert, get_user_data
-from backend.core.rarities import CLAIM_RARITY_WEIGHTS
+from backend.core.rarities import CLAIM_RARITY_WEIGHTS, weighted_pick
 from backend.core.utils import get_user_id_query, handle_errors, html_escape, reply_media_dynamic
-from backend.database import collection, user_collection
+from backend.core.waifu import sample_character_by_rarity
+from backend.database import user_collection
 # Rewards for streaks (Coins)
 STREAK_REWARDS = {
     1: 100,
@@ -25,10 +25,10 @@ STREAK_REWARDS = {
     7: 1000  # Big reward for 7 days
 }
 async def get_daily_waifu():
-    rarity = random.choices(list(CLAIM_RARITY_WEIGHTS.keys()), weights=CLAIM_RARITY_WEIGHTS.values(), k=1)[0]
-    cursor = await collection.aggregate([{'$match': {'rarity': rarity}}, {'$sample': {'size': 1}}])
-    res = await cursor.to_list(length=1)
-    return res[0] if res else None
+    rarity = weighted_pick(CLAIM_RARITY_WEIGHTS)
+    if rarity is None:
+        return None
+    return await sample_character_by_rarity(rarity)
 @app.on_message(filters.command("daily"))
 @handle_errors
 async def daily_command_handler(_, message: types.Message):
