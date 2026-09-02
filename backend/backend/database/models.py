@@ -18,12 +18,8 @@ class User(BaseModel):
     # Weekly
     last_weekly_date: Optional[str] = None
 
-    # Hunting
-    last_hunt_date: Optional[str] = None
-
     # Progression
     xp: int = 0
-    level: int = 0
     claimed_levels: List[int] = Field(default_factory=list)
     pass_claims: dict = Field(default_factory=dict)
     pass_bank_by_season: dict = Field(default_factory=dict)

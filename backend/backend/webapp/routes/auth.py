@@ -57,8 +57,7 @@ async def auth(request: Request, _: None = Depends(check_init_rate_limit)):
     data = await request.json()
     init_data = data.get("initData")
     token_provided = data.get("token")
-    avatar_url = data.get("avatar")
-    
+
     user_id = None
     new_token = None
     validated_data = None
@@ -91,24 +90,28 @@ async def auth(request: Request, _: None = Depends(check_init_rate_limit)):
             LOGGER.debug(f"Redis sync check failed: {e}")
 
     if should_sync:
-        # Update Avatar and Name in DB. Only HMAC-validated initData may feed
-        # profile fields — re-parsing the raw (possibly invalid) initData let
-        # a caller with a valid token spoof first_name/username.
+        # Update profile fields in DB. Only HMAC-validated initData may feed
+        # name/avatar — the client-supplied avatar param was removed because any
+        # bearer of a valid token could spoof an arbitrary URL into it.
         updates = {}
-        if isinstance(avatar_url, str) and len(avatar_url) <= 500:
-            parsed_avatar = urlparse(avatar_url)
-            if parsed_avatar.scheme in ("http", "https") and parsed_avatar.netloc:
-                updates["avatar"] = avatar_url
-
         if validated_data:
             try:
                 user_json = validated_data.get('user')
                 if user_json:
                     uobj = json.loads(user_json)
-                    if uobj.get('first_name'): 
+                    if uobj.get('first_name'):
                         updates['first_name'] = uobj['first_name']
-                    if uobj.get('username'): 
+                    if uobj.get('last_name'):
+                        updates['last_name'] = uobj['last_name']
+                    if uobj.get('username'):
                         updates['username'] = uobj['username']
+                    # Telegram signs photo_url inside initData (present when the
+                    # webapp is opened from a keyboard/inline button).
+                    photo_url = uobj.get('photo_url')
+                    if isinstance(photo_url, str) and len(photo_url) <= 500:
+                        parsed_photo = urlparse(photo_url)
+                        if parsed_photo.scheme in ("http", "https") and parsed_photo.netloc:
+                            updates["avatar"] = photo_url
             except Exception as e:
                 LOGGER.debug(f"InitData payload unparseable: {e}")
                 
@@ -124,6 +127,7 @@ async def auth(request: Request, _: None = Depends(check_init_rate_limit)):
                 user_update,
                 user_id_int,
                 first_name=updates.get("first_name"),
+                last_name=updates.get("last_name"),
                 username=updates.get("username"),
             )
             await user_collection.update_one(

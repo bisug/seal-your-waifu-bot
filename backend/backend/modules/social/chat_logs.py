@@ -5,8 +5,7 @@ from backend.core.utils import handle_errors
 from backend.database import db
 
 group_collection = db['total_groups']
-async def send_log(chat_id: str, message: str):
-    pass
+
 @app.on_message(filters.new_chat_members)
 @handle_errors
 async def on_new_chat_members(_, message: types.Message):

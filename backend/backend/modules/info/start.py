@@ -290,11 +290,13 @@ async def start_handler(_, message: types.Message):
     await ensure_user_document(
         user_id,
         first_name=first_name_clean,
+        last_name=message.from_user.last_name,
         username=message.from_user.username,
     )
+    # Broadcast list only needs the id; names live on the user document.
     await total_pm_users.update_one(
         {"_id": user_id},
-        {"$set": {"first_name": first_name_clean, "username": message.from_user.username}},
+        {"$setOnInsert": {"_id": user_id}},
         upsert=True
     )
     if len(message.command) > 1:
@@ -397,6 +399,7 @@ async def free_spin_handler(_, query: types.CallbackQuery):
             },
             user_id,
             first_name=query.from_user.first_name,
+            last_name=query.from_user.last_name,
             username=query.from_user.username,
         ),
         upsert=True,

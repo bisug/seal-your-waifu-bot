@@ -37,6 +37,7 @@ async def give_balance(_, message: types.Message):
                 {'$inc': {'balance': amount}, '$setOnInsert': {'id': recipient_id}},
                 recipient_id,
                 first_name=recipient.first_name,
+                last_name=recipient.last_name,
                 username=recipient.username,
             ),
             upsert=True
@@ -63,6 +64,7 @@ async def give_balance(_, message: types.Message):
                         {'$inc': {'balance': amount, 'version': 1}, '$setOnInsert': {'id': recipient_id}},
                         recipient_id,
                         first_name=recipient.first_name,
+                        last_name=recipient.last_name,
                         username=recipient.username,
                     ),
                     upsert=True,

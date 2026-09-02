@@ -128,7 +128,7 @@ async def claim_confirm_handler(_, query: types.CallbackQuery):
                 "$inc": {"balance": DAILY_SHARD_REWARD, "char_count": 1, "version": 1},
                 "$push": {"characters": char},
                 "$setOnInsert": {"id": user_id}
-            }, user_id, first_name=query.from_user.first_name, username=query.from_user.username),
+            }, user_id, first_name=query.from_user.first_name, last_name=query.from_user.last_name, username=query.from_user.username),
             upsert=True
         )
     except DuplicateKeyError:

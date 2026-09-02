@@ -98,6 +98,7 @@ export interface Egg {
 export interface User {
   id: number;
   first_name: string;
+  last_name?: string | null;
   username: string;
   avatar: string;
   is_sudo?: boolean;

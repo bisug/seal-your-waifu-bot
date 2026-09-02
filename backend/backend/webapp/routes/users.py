@@ -263,6 +263,7 @@ async def get_me(user: dict = Depends(get_current_user_data)):
     resp_data = {
         "id": int(user_id),
         "first_name": (user.get("first_name") or "User"),
+        "last_name": user.get("last_name"),
         "username": user.get("username"),
         "avatar": user.get("avatar"),
         "is_sudo": is_sudo_user_id(user_id),

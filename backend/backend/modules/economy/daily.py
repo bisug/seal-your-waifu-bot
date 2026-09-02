@@ -87,7 +87,7 @@ async def daily_command_handler(_, message: types.Message):
                 "$inc": {"balance": reward_coins, "char_count": 1, "version": 1},
                 "$push": {"characters": char},
                 "$setOnInsert": {"id": user_id}
-            }, user_id, first_name=message.from_user.first_name, username=message.from_user.username),
+            }, user_id, first_name=message.from_user.first_name, last_name=message.from_user.last_name, username=message.from_user.username),
             upsert=True
         )
     except DuplicateKeyError:
@@ -150,7 +150,7 @@ async def weekly_command_handler(_, message: types.Message):
                 "$set": {"last_weekly_date": now_str},
                 "$inc": {"balance": reward_coins, "version": 1},
                 "$setOnInsert": {"id": user_id}
-            }, user_id, first_name=message.from_user.first_name, username=message.from_user.username),
+            }, user_id, first_name=message.from_user.first_name, last_name=message.from_user.last_name, username=message.from_user.username),
             upsert=True
         )
     except DuplicateKeyError:

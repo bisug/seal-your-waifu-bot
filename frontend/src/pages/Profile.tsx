@@ -164,7 +164,7 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
             <div>
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 mb-1">
                 <h1 className="text-xl font-bold text-zinc-100 tracking-tight uppercase truncate">
-                  {user.first_name || 'Operator'}
+                  {[user.first_name, user.last_name].filter(Boolean).join(' ') || 'Operator'}
                 </h1>
                 {user.role_tag && (
                   <Badge variant="primary" size="xs" className="font-bold">

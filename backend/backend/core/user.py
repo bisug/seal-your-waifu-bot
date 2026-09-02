@@ -37,6 +37,7 @@ def build_user_set_on_insert(
     user_id: Any,
     *,
     first_name: str | None = None,
+    last_name: str | None = None,
     username: str | None = None,
 ) -> dict:
     """Build canonical fields for newly-created user documents."""
@@ -57,6 +58,8 @@ def build_user_set_on_insert(
         "claimed_levels": [],
         "season": CURRENT_PASS_SEASON,
     }
+    if last_name:
+        data["last_name"] = last_name
     if username:
         data["username"] = username
     return data
@@ -67,6 +70,7 @@ def add_user_set_on_insert(
     user_id: Any,
     *,
     first_name: str | None = None,
+    last_name: str | None = None,
     username: str | None = None,
 ) -> dict:
     """
@@ -76,6 +80,7 @@ def add_user_set_on_insert(
     defaults = build_user_set_on_insert(
         user_id,
         first_name=first_name,
+        last_name=last_name,
         username=username,
     )
     for field in _top_level_updated_fields(update_query):
@@ -92,6 +97,7 @@ async def ensure_user_document(
     user_id: Any,
     *,
     first_name: str | None = None,
+    last_name: str | None = None,
     username: str | None = None,
 ) -> None:
     """Create the canonical user document if it does not exist, and refresh profile fields."""
@@ -99,11 +105,13 @@ async def ensure_user_document(
     profile_updates = {}
     if first_name:
         profile_updates["first_name"] = first_name
+    if last_name:
+        profile_updates["last_name"] = last_name
     if username:
         profile_updates["username"] = username
     if profile_updates:
         updates["$set"] = profile_updates
-    add_user_set_on_insert(updates, user_id, first_name=first_name, username=username)
+    add_user_set_on_insert(updates, user_id, first_name=first_name, last_name=last_name, username=username)
     await user_collection.update_one(get_user_filter(user_id), updates, upsert=True)
     await invalidate_user_cache(get_user_id(user_id))
 

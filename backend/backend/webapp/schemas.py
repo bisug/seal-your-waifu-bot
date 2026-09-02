@@ -71,6 +71,7 @@ class TitlesModel(BaseModel):
 class UserProfileResponse(BaseModel):
     id: int
     first_name: str = "User"
+    last_name: Optional[str] = None
     username: Optional[str] = None
     avatar: Optional[str] = None
     is_sudo: bool = False

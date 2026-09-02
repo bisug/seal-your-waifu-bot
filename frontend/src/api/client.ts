@@ -333,7 +333,7 @@ export async function apiFetch(
   }
 }
 
-async function secureInit(avatarUrl: string | null = null): Promise<string | null> {
+async function secureInit(): Promise<string | null> {
   const tg = getTg();
   const initData = tg?.initData;
   const storedToken = sessionStorage.getItem('auth_token');
@@ -341,7 +341,6 @@ async function secureInit(avatarUrl: string | null = null): Promise<string | nul
   const payload = {
     initData: initData || null,
     token: storedToken || null,
-    avatar: avatarUrl,
   };
 
   const requestSignal = createRequestSignal();
