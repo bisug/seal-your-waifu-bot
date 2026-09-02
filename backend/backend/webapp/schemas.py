@@ -56,6 +56,8 @@ class EggModel(BaseModel):
     base_wait_min: Optional[int] = None
     wait_min: Optional[int] = None
     incubation_pass_type: Optional[str] = None
+    sell_price: Optional[int] = None
+    purify_price: Optional[int] = None
 
 class AchievementModel(BaseModel):
     id: str

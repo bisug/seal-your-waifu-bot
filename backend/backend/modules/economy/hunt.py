@@ -11,9 +11,12 @@ from pyrogram.handlers import CallbackQueryHandler, MessageHandler
 from backend.core.cache import is_on_cooldown as redis_cooldown
 from backend.core.constants import CORRUPTED_EGG_CHANCE, EGG_TIERS
 from backend.core.eggs import (
+    get_egg_purify_price,
+    get_egg_sell_price,
     get_egg_tier_info,
     get_incubating_count,
     get_incubation_wait_minutes,
+    get_next_egg_tier,
     normalize_egg_tier,
     roll_egg_tier,
 )
@@ -52,6 +55,9 @@ def load_handlers(bot):
     bot.add_handler(CallbackQueryHandler(egg_page_callback, filters.regex(r"^egg_page:(\d+):(\d+)$")), group=0)
     bot.add_handler(CallbackQueryHandler(egg_incubate_callback, filters.regex(r"^egg_incubate:([^:]+):(\d+):(\d+)$")), group=0)
     bot.add_handler(CallbackQueryHandler(egg_hatch_callback, filters.regex(r"^egg_hatch:([^:]+):(\d+):(\d+)$")), group=0)
+    bot.add_handler(CallbackQueryHandler(egg_sell_callback, filters.regex(r"^egg_sell:([^:]+):(\d+):(\d+)$")), group=0)
+    bot.add_handler(CallbackQueryHandler(egg_purify_callback, filters.regex(r"^egg_purify:([^:]+):(\d+):(\d+)$")), group=0)
+    bot.add_handler(CallbackQueryHandler(egg_fuse_callback, filters.regex(r"^egg_fuse:([a-z]+):(\d+):(\d+)$")), group=0)
     bot.add_handler(CallbackQueryHandler(egg_noop_callback, filters.regex(r"^egg_noop$")), group=0)
     LOGGER.info(f"Registered Hunt & Egg handlers for {bot.name}")
 def _pet_hunt_context(user: dict) -> dict:
@@ -124,7 +130,7 @@ def _roll_hunt_rewards(ctx: dict, user: dict) -> tuple[int, int, list, str]:
             bonus_tier_data = EGG_TIERS.get(bonus_tier, EGG_TIERS["common"])
             extra_egg = egg_data.copy()
             extra_egg.update({
-                "id": f"egg_bonus_{int(time.time() * 1000)}",
+                "id": f"egg_bonus_{int(time.time() * 1000)}_{random.randint(100, 999)}",
                 "tier": bonus_tier,
                 "name": bonus_tier_data["name"],
                 "is_corrupted": random.uniform(0, 100) <= corruption_chance
@@ -234,7 +240,9 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
     tier_key, tier_info = get_egg_tier_info(raw_tier)
     status = egg.get("status", "fresh")
     action_button = None
+    extra_buttons = []
     status_display = ""
+    corrupted_display = "\n<b>⚠️ Corrupted:</b> 30% explosion risk at hatch!" if egg.get("is_corrupted") else ""
     if status == "fresh":
         pets = [normalize_pet(p) for p in user.get("pets", [DEFAULT_PET])]
         active_pet = find_pet(pets, user.get("current_pet"))
@@ -248,6 +256,11 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
             f"<b>Incubators:</b> {active_incubations}/{slots}"
         )
         action_button = types.InlineKeyboardButton("Start Incubation", callback_data=f"egg_incubate:{egg['id']}:{user_id}:{page}")
+        sell_price = get_egg_sell_price(tier_key)
+        extra_buttons.append(types.InlineKeyboardButton(f"Sell ({sell_price:,} ⬪)", callback_data=f"egg_sell:{egg['id']}:{user_id}:{page}"))
+        if egg.get("is_corrupted"):
+            purify_price = get_egg_purify_price(tier_key)
+            extra_buttons.append(types.InlineKeyboardButton(f"Purify ({purify_price:,} ⬪)", callback_data=f"egg_purify:{egg['id']}:{user_id}:{page}"))
     elif status == "incubating":
         hatch_time = egg.get("hatch_time")
         if hatch_time:
@@ -265,7 +278,7 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
     text = (
         f"<b>Collector Stash</b>\n\n"
         f"<b>{html_escape(egg.get('name', tier_info['name']))}</b>\n"
-        f"{status_display}\n\n"
+        f"{status_display}{corrupted_display}\n\n"
         f"<i>Egg {page + 1} of {len(eggs)}</i>"
     )
     buttons = []
@@ -277,6 +290,8 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
         ])
     if action_button:
         buttons.append([action_button])
+    if extra_buttons:
+        buttons.append(extra_buttons)
     if isinstance(message_or_query, types.CallbackQuery):
         is_private = message_or_query.message.chat.type == enums.ChatType.PRIVATE
     else:
@@ -430,5 +445,139 @@ async def process_egg_hatch(user_id: int, egg: dict) -> tuple[bool, any]:
     except Exception as e:
         LOGGER.error(f"process_egg_hatch error: {e}")
         return False, f"Error: {str(e)}"
+
+
+async def process_egg_sell(user_id: int, egg_id: str) -> tuple[bool, str, int]:
+    """Sell a fresh egg for Shards. Returns (success, message, price)."""
+    user = await user_collection.find_one(get_user_filter(user_id)) or {}
+    egg = next((e for e in user.get("eggs", []) if isinstance(e, dict) and e.get("id") == egg_id), None)
+    if not egg:
+        return False, "Egg not found!", 0
+    if egg.get("status", "fresh") != "fresh":
+        return False, "Only fresh eggs can be sold.", 0
+    price = get_egg_sell_price(egg.get("tier", "common"))
+    # Atomic guard: only sells while the egg is still fresh, so a concurrent
+    # incubation wins one of the two races, never both.
+    result = await user_collection.update_one(
+        {**get_user_filter(user_id), "eggs.id": egg_id, "eggs.$.status": "fresh"},
+        {"$pull": {"eggs": {"id": egg_id}}, "$inc": {"balance": price}}
+    )
+    if result.modified_count == 0:
+        return False, "This egg was already handled.", 0
+    run_background_task(sync_user_to_redis(user_id))
+    return True, f"Sold for <b>{price:,} ⬪</b>!", price
+
+
+async def process_egg_purify(user_id: int, egg_id: str) -> tuple[bool, str]:
+    """Cleanse a corrupted egg by paying Shards. Returns (success, message)."""
+    user = await user_collection.find_one(get_user_filter(user_id)) or {}
+    egg = next((e for e in user.get("eggs", []) if isinstance(e, dict) and e.get("id") == egg_id), None)
+    if not egg:
+        return False, "Egg not found!"
+    if not egg.get("is_corrupted", False):
+        return False, "This egg is not corrupted."
+    price = get_egg_purify_price(egg.get("tier", "common"))
+    balance = user.get("balance", 0)
+    if balance < price:
+        return False, f"Purification costs <b>{price:,} ⬪</b>. You have {balance:,} ⬪."
+    # Atomic guard: deducts only while the egg is still corrupted and the
+    # balance still covers the cost — no double-spend under concurrent taps.
+    result = await user_collection.update_one(
+        {**get_user_filter(user_id), "eggs.id": egg_id, "eggs.$.is_corrupted": True, "balance": {"$gte": price}},
+        {"$set": {"eggs.$.is_corrupted": False}, "$inc": {"balance": -price}}
+    )
+    if result.modified_count == 0:
+        return False, "This egg was already handled."
+    run_background_task(sync_user_to_redis(user_id))
+    return True, f"Purified for <b>{price:,} ⬪</b>! Safe to incubate."
+
+
+async def process_egg_fusion(user_id: int, raw_tier) -> tuple[bool, str]:
+    """Fuse 3 fresh eggs of a tier into 1 egg of the next tier. Returns (success, message)."""
+    tier_key, tier_info = get_egg_tier_info(raw_tier)
+    next_tier = get_next_egg_tier(tier_key)
+    if not next_tier:
+        return False, "Celestial eggs are already the highest tier!"
+    next_info = EGG_TIERS[next_tier]
+    user = await user_collection.find_one(get_user_filter(user_id)) or {}
+    fuse_ids = [
+        e["id"] for e in user.get("eggs", [])
+        if isinstance(e, dict) and e.get("id")
+        and e.get("tier") == tier_key and e.get("status", "fresh") == "fresh"
+    ][:3]
+    if len(fuse_ids) < 3:
+        return False, f"You need <b>3 fresh {tier_info['name']}s</b> to fuse (you have {len(fuse_ids)})."
+    new_egg = {
+        "id": f"egg_{uuid.uuid4().hex[:12]}",
+        "tier": next_tier,
+        "name": next_info["name"],
+        "obtained_at": get_now_utc(),
+        "status": "fresh",
+        "is_corrupted": False
+    }
+    # Atomic guard: re-check inside the filter that all 3 chosen eggs are still
+    # present and fresh — a concurrent incubation of one of them fails the
+    # whole update instead of consuming a partial set.
+    result = await user_collection.update_one(
+        {
+            **get_user_filter(user_id),
+            "$expr": {"$eq": [{
+                "$size": {"$filter": {
+                    "input": {"$ifNull": ["$eggs", []]},
+                    "as": "e",
+                    "cond": {"$and": [
+                        {"$in": ["$$e.id", fuse_ids]},
+                        {"$eq": [{"$ifNull": ["$$e.status", "fresh"]}, "fresh"]},
+                    ]},
+                }},
+            }, 3]},
+        },
+        {
+            "$pull": {"eggs": {"id": {"$in": fuse_ids}}},
+            "$push": {"eggs": new_egg}
+        }
+    )
+    if result.modified_count == 0:
+        return False, "Not enough fresh eggs (they may have started incubating)."
+    run_background_task(sync_user_to_redis(user_id))
+    return True, f"Fused 3× {tier_info['name']} into a <b>{next_info['name']}</b>!"
+
+
+async def egg_sell_callback(_, query: types.CallbackQuery):
+    data = query.data.split(":")
+    egg_id, owner_id = data[1], int(data[2])
+    page = int(data[3])
+    if query.from_user.id != owner_id:
+        return await query.answer("Not your egg!", show_alert=True)
+    success, msg, _ = await process_egg_sell(owner_id, egg_id)
+    await query.answer(msg, show_alert=not success)
+    if success:
+        await show_egg_page(query, page, owner_id)
+
+
+async def egg_purify_callback(_, query: types.CallbackQuery):
+    data = query.data.split(":")
+    egg_id, owner_id = data[1], int(data[2])
+    page = int(data[3])
+    if query.from_user.id != owner_id:
+        return await query.answer("Not your egg!", show_alert=True)
+    success, msg = await process_egg_purify(owner_id, egg_id)
+    await query.answer(msg, show_alert=not success)
+    if success:
+        await show_egg_page(query, page, owner_id)
+
+
+async def egg_fuse_callback(_, query: types.CallbackQuery):
+    data = query.data.split(":")
+    tier, owner_id = data[1], int(data[2])
+    page = int(data[3])
+    if query.from_user.id != owner_id:
+        return await query.answer("Not your eggs!", show_alert=True)
+    success, msg = await process_egg_fusion(owner_id, tier)
+    await query.answer(msg, show_alert=not success)
+    if success:
+        await show_egg_page(query, page, owner_id)
+
+
 async def egg_noop_callback(_, query: types.CallbackQuery):
     await query.answer()

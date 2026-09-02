@@ -228,3 +228,36 @@ async def hatch_egg(egg_id: str, user: dict = Depends(get_current_user_data)):
             "img_url": character["img_url"]
         }
     }
+
+@router.post("/eggs/sell/{egg_id}")
+async def sell_egg(egg_id: str, user: dict = Depends(get_current_user_data)):
+    from backend.modules.economy.hunt import process_egg_sell
+
+    uid_int = normalize_user_id(user["id"])
+    success, msg, price = await process_egg_sell(uid_int, egg_id)
+    if not success:
+        raise HTTPException(status_code=400, detail=msg.replace("<b>", "").replace("</b>", ""))
+    await invalidate_user_cache(uid_int)
+    return {"status": "success", "price": price, "message": msg.replace("<b>", "").replace("</b>", "")}
+
+@router.post("/eggs/purify/{egg_id}")
+async def purify_egg(egg_id: str, user: dict = Depends(get_current_user_data)):
+    from backend.modules.economy.hunt import process_egg_purify
+
+    uid_int = normalize_user_id(user["id"])
+    success, msg = await process_egg_purify(uid_int, egg_id)
+    if not success:
+        raise HTTPException(status_code=400, detail=msg.replace("<b>", "").replace("</b>", ""))
+    await invalidate_user_cache(uid_int)
+    return {"status": "success", "message": msg.replace("<b>", "").replace("</b>", "")}
+
+@router.post("/eggs/fuse/{tier}")
+async def fuse_eggs(tier: str, user: dict = Depends(get_current_user_data)):
+    from backend.modules.economy.hunt import process_egg_fusion
+
+    uid_int = normalize_user_id(user["id"])
+    success, msg = await process_egg_fusion(uid_int, tier)
+    if not success:
+        raise HTTPException(status_code=400, detail=msg.replace("<b>", "").replace("</b>", ""))
+    await invalidate_user_cache(uid_int)
+    return {"status": "success", "message": msg.replace("<b>", "").replace("</b>", "")}

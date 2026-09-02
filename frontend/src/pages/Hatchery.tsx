@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { Activity, ArrowRight, CheckCircle2, Egg, Target, Timer, Zap } from 'lucide-react';
+import { Activity, ArrowRight, CheckCircle2, Egg, Flame, Sparkles, Target, Timer, Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { apiFetch, getErrorMessage } from '../api/client';
 import { Badge } from '../components/ui/Badge';
@@ -52,6 +52,45 @@ export const Hatchery = () => {
     try {
       await apiFetch(`/eggs/incubate/${eggId}`, { method: 'POST' });
       addToast('Incubation started.', 'success');
+      triggerRefresh();
+    } catch (err: any) {
+      addToast(getErrorMessage(err), 'error');
+    } finally {
+      setActionId(null);
+    }
+  };
+
+  const handleSell = async (eggId: string) => {
+    setActionId(eggId);
+    try {
+      const result = await apiFetch(`/eggs/sell/${eggId}`, { method: 'POST' });
+      addToast(result?.message || 'Egg sold.', 'success');
+      triggerRefresh();
+    } catch (err: any) {
+      addToast(getErrorMessage(err), 'error');
+    } finally {
+      setActionId(null);
+    }
+  };
+
+  const handlePurify = async (eggId: string) => {
+    setActionId(eggId);
+    try {
+      const result = await apiFetch(`/eggs/purify/${eggId}`, { method: 'POST' });
+      addToast(result?.message || 'Egg purified.', 'success');
+      triggerRefresh();
+    } catch (err: any) {
+      addToast(getErrorMessage(err), 'error');
+    } finally {
+      setActionId(null);
+    }
+  };
+
+  const handleFuse = async (tier: string) => {
+    setActionId(`fuse_${tier}`);
+    try {
+      const result = await apiFetch(`/eggs/fuse/${tier}`, { method: 'POST' });
+      addToast(result?.message || 'Eggs fused.', 'success');
       triggerRefresh();
     } catch (err: any) {
       addToast(getErrorMessage(err), 'error');
@@ -150,22 +189,51 @@ export const Hatchery = () => {
                     BOOSTED
                   </Badge>
                 )}
+                {egg.is_corrupted && (
+                  <Badge variant="danger" icon={Flame} size="xs" className="font-bold">
+                    CORRUPTED
+                  </Badge>
+                )}
               </div>
             </div>
           </div>
 
-          <div className="shrink-0 ml-4">
+          <div className="shrink-0 ml-4 flex items-center gap-2">
             {egg.isFresh && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleIncubate(egg.id)}
-                isLoading={actionId === egg.id}
-                disabled={!hasEggId || activeIncubations >= incubationSlots}
-                className="h-9 px-4"
-              >
-                Start <ArrowRight size={14} className="ml-1.5" />
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleIncubate(egg.id)}
+                  isLoading={actionId === egg.id}
+                  disabled={!hasEggId || activeIncubations >= incubationSlots}
+                  className="h-9 px-4"
+                >
+                  Start <ArrowRight size={14} className="ml-1.5" />
+                </Button>
+                {egg.is_corrupted && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePurify(egg.id)}
+                    isLoading={actionId === egg.id}
+                    disabled={!hasEggId}
+                    className="h-9 px-4 border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                  >
+                    Purify <Sparkles size={14} className="ml-1.5" />
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleSell(egg.id)}
+                  isLoading={actionId === egg.id}
+                  disabled={!hasEggId}
+                  className="h-9 px-4 text-zinc-400 hover:text-zinc-200"
+                >
+                  Sell {egg.sell_price ? `${egg.sell_price.toLocaleString()}⬪` : ''}
+                </Button>
+              </>
             )}
 
             {egg.isIncubating && !egg.isReady && (
@@ -192,6 +260,11 @@ export const Hatchery = () => {
       </motion.div>
     );
   };
+
+  const fuseGroups = ['common', 'gold', 'void', 'rare', 'legendary'].map((tier) => {
+    const count = freshEggs.filter((egg) => egg.tier === tier).length;
+    return { tier, count, canFuse: count >= 3 };
+  }).filter((g) => g.count > 0);
 
   const renderSection = (title: string, sectionEggs: any[]) =>
     sectionEggs.length > 0 ? (
@@ -243,6 +316,39 @@ export const Hatchery = () => {
           </Card>
         ))}
       </section>
+
+      {fuseGroups.length > 0 && (
+        <section className="space-y-3">
+          <div className="flex items-center gap-2 px-1">
+            <h2 className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">
+              Fusion — 3× same tier → 1× next tier
+            </h2>
+            <div className="h-px flex-1 bg-white/[0.03]" />
+          </div>
+          <div className="space-y-2">
+            {fuseGroups.map((g) => (
+              <Card key={g.tier} variant="default" className="p-3.5 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Flame size={16} className={g.canFuse ? 'text-brand-accent' : 'text-zinc-600'} />
+                  <p className="text-xs font-bold text-zinc-200 uppercase tracking-tight">
+                    {g.tier} <span className="text-zinc-500 font-mono">({g.count}/3)</span>
+                  </p>
+                </div>
+                <Button
+                  variant="accent"
+                  size="sm"
+                  onClick={() => handleFuse(g.tier)}
+                  isLoading={actionId === `fuse_${g.tier}` && actionId.startsWith('fuse_')}
+                  disabled={!g.canFuse}
+                  className="h-8 px-4"
+                >
+                  Fuse
+                </Button>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
 
       {eggs.length > 0 ? (
         <div className="space-y-8">

@@ -6,7 +6,13 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import RedirectResponse
 
-from backend.core.eggs import get_egg_tier_info, get_incubating_count, get_incubation_wait_minutes
+from backend.core.eggs import (
+    get_egg_purify_price,
+    get_egg_sell_price,
+    get_egg_tier_info,
+    get_incubating_count,
+    get_incubation_wait_minutes,
+)
 from backend.core.minigames import get_user_energy
 from backend.core.pass_config import (
     apply_pass_incubation_bonus,
@@ -216,6 +222,8 @@ def _process_eggs(user: dict, active_pet: dict, pass_type) -> tuple[list, bool]:
             "base_wait_min": int(egg.get("incubation_base_minutes") or base_wait_min),
             "wait_min": int(egg.get("incubation_minutes") or wait_min),
             "incubation_pass_type": egg.get("incubation_pass_type") or pass_type,
+            "sell_price": get_egg_sell_price(tier_key),
+            "purify_price": get_egg_purify_price(tier_key),
         })
     return processed, migration_needed
 
