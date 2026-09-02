@@ -1,5 +1,4 @@
 import asyncio
-import datetime
 import json
 import random
 import time
@@ -19,18 +18,8 @@ LOGGER = get_logger(__name__)
 
 MESSAGE_COUNT_TTL_SECONDS = 86400
 
-# Golden Hour: boosted spawn rates 20:00-22:59 UTC.
-GOLDEN_HOUR_START_UTC = 20
-GOLDEN_HOUR_END_UTC = 22
 # Unclaimed spawns are never replaced while younger than this.
 ACTIVE_SPAWN_GRACE_SECONDS = 300
-
-
-def is_golden_hour(now: Optional[datetime.datetime] = None) -> bool:
-    """True during Golden Hour (20:00-22:59 UTC), when spawns are 2x faster."""
-    if now is None:
-        now = datetime.datetime.now(datetime.timezone.utc)
-    return GOLDEN_HOUR_START_UTC <= now.hour <= GOLDEN_HOUR_END_UTC
 
 
 def _message_count_from_doc(doc: Optional[Dict[str, Any]]) -> int:
@@ -411,12 +400,10 @@ async def send_character(chat_id: int, rarity: str, *, force: bool = False):
     if not chars:
         return
     character = random.choice(chars)
-    golden_text = "\n🌟 <b>Golden Hour is Active!</b>" if is_golden_hour() else ""
     caption = (
         "🪽 <b>A new character appeared!</b>\n"
         "🦋 Use /seal name to collect them!\n"
         "👑 Rarity is secret until caught!"
-        f"{golden_text}"
     )
     try:
         msg = await app.send_media_safe(

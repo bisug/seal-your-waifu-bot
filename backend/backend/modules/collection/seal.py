@@ -112,7 +112,7 @@ async def messagecount_handler(_, message: types.Message):
     from backend.core.spawn_utils import get_target_spawn_frequency
     chat_id = message.chat.id
     count = await get_message_count(chat_id)
-    target_freq, active_count, multiplier = await get_target_spawn_frequency(chat_id)
+    target_freq, active_count = await get_target_spawn_frequency(chat_id)
     remaining = target_freq - (count % target_freq)
     response = (
         f"📊 <b>Chat Activity Status</b>\n\n"
@@ -121,8 +121,6 @@ async def messagecount_handler(_, message: types.Message):
         f"🔹 <b>Spawn Frequency:</b> Every <code>{target_freq}</code> msgs\n"
         f"⏳ <b>Next Spawn In:</b> <code>{remaining}</code> messages"
     )
-    if multiplier < 1.0:
-        response += "\n\n🌟 <b>Golden Hour is active! Spawns are 2x faster.</b>"
     await message.reply_text(response, parse_mode=enums.ParseMode.HTML)
 @app.on_message(filters.command("cnow") & filters.group)
 @handle_errors

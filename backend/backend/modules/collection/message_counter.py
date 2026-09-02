@@ -14,7 +14,6 @@ from backend.core.rarities import (
 from backend.core.spawn_utils import get_target_spawn_frequency
 from backend.core.spawns import (
     increment_message_count,
-    is_golden_hour,
     send_character,
     track_user_activity,
 )
@@ -25,7 +24,7 @@ RANDOM_ROYAL_SPAWN_CHANCE = 0.0002
 # Milestone thresholds live in the `rarities` collection (per-doc `milestone`
 # field, editable via /rarityset). Keyed by rarity_id, resolved to labels at
 # import — rarity_id survives /rarityrename, so a rename can't orphan a
-# milestone. Golden Hour halves thresholds (milestones reached 2x faster).
+# milestone.
 
 
 def _build_milestones() -> tuple:
@@ -39,9 +38,6 @@ def _build_milestones() -> tuple:
 
 
 _MILESTONES = _build_milestones()
-_MILESTONES_GOLDEN = tuple(
-    (label, max(1, threshold // 2)) for label, threshold in _MILESTONES
-)
 
 
 def _pick_spawn_rarity(active_count: int) -> str | None:
@@ -76,15 +72,15 @@ async def message_counter_handler(_, message: types.Message):
         SPAWN_LOGGER.info(f"Triggering RANDOM Royal spawn in {chat_id}")
         await send_character(chat_id, "🫧 Royal")
         return
-    # Check for special rarity milestones (Golden Hour halves thresholds)
-    milestones = _MILESTONES_GOLDEN if is_golden_hour() else _MILESTONES
+    # Check for special rarity milestones
+    milestones = _MILESTONES
     for r_name, threshold in milestones:
         if threshold > 0 and count % threshold == 0:
             SPAWN_LOGGER.info(f"Milestone {r_name} reached at {count} in {chat_id}")
             await send_character(chat_id, r_name)
             return
-    # Standard spawn logic — frequency/multiplier resolved by the shared helper
-    target_freq, active_count, _ = await get_target_spawn_frequency(chat_id)
+    # Standard spawn logic — frequency resolved by the shared helper
+    target_freq, active_count = await get_target_spawn_frequency(chat_id)
     if count % target_freq == 0:
         SPAWN_LOGGER.info(f"Standard spawn triggered in {chat_id} (count={count}, freq={target_freq})")
         selected_rarity = _pick_spawn_rarity(active_count)

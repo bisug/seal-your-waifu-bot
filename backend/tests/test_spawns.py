@@ -3,10 +3,6 @@
 1. send_character must skip automatic spawns while a recent spawn is still
    unclaimed (previously a new spawn silently replaced the old character,
    making it uncatchable), but force=True (/cnow) must bypass the guard.
-2. is_golden_hour must match the 20:00-22:59 UTC window used by the
-   frequency multiplier and milestone thresholds.
-3. Golden-hour milestone thresholds must be exactly half the normal ones
-   (min 1), so milestones are reached 2x faster during Golden Hour.
 """
 import asyncio
 from unittest.mock import AsyncMock, patch
@@ -69,24 +65,6 @@ async def test_send_character_allows_after_grace_expiry():
 
     assert sent.is_set()  # Stale spawn (5+ min unclaimed) gets replaced
 
-
-def test_golden_hour_window():
-    import datetime
-
-    make = lambda h: datetime.datetime(2026, 9, 1, h, 0, tzinfo=datetime.timezone.utc)
-    assert spawns.is_golden_hour(make(20)) is True
-    assert spawns.is_golden_hour(make(22)) is True
-    assert spawns.is_golden_hour(make(23)) is False
-    assert spawns.is_golden_hour(make(19)) is False
-    assert spawns.is_golden_hour(make(3)) is False
-
-
-def test_golden_milestones_are_half():
-    for (name, normal), (gname, golden) in zip(
-        message_counter._MILESTONES, message_counter._MILESTONES_GOLDEN
-    ):
-        assert name == gname
-        assert golden == max(1, normal // 2)
 
 
 def test_milestones_survive_rarity_rename():
