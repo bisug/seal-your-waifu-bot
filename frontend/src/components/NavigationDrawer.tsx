@@ -11,10 +11,12 @@ import {
   LogOut,
   PawPrint,
   Repeat2,
+  Satellite,
   Store,
   Terminal,
   Ticket,
   UserPlus,
+  Users,
   X,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -70,6 +72,11 @@ const SECTIONS: NavSection[] = [
       { id: 'leaderboard', label: 'Rankings', icon: ChartNoAxesColumnIncreasing },
     ],
   },
+];
+
+const ADMIN_ITEMS: NavItem[] = [
+  { id: 'upload', label: 'Registry Feed', icon: Satellite },
+  { id: 'staff', label: 'Crew Manifest', icon: Users },
 ];
 
 export const NavigationDrawer = ({
@@ -132,6 +139,22 @@ export const NavigationDrawer = ({
     onNavigate(id);
     onClose();
   };
+
+  const canUpload = Boolean(user?.can_upload ?? user?.is_sudo);
+  const canStaff = Boolean(user?.is_sudo);
+  const sections: NavSection[] = [
+    ...SECTIONS,
+    ...(canUpload || canStaff
+      ? [
+          {
+            title: 'COMMAND',
+            items: ADMIN_ITEMS.filter((item) =>
+              item.id === 'upload' ? canUpload : canStaff,
+            ),
+          },
+        ]
+      : []),
+  ];
 
   const [confirmLogout, setConfirmLogout] = useState(false);
 
@@ -203,7 +226,7 @@ export const NavigationDrawer = ({
 
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto px-4 py-6 space-y-8">
-              {SECTIONS.map((section) => (
+              {sections.map((section) => (
                 <div key={section.title} className="space-y-3">
                   <h3 className="px-2 text-[9px] font-bold text-zinc-500 uppercase tracking-widest">
                     {section.title}
