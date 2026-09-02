@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Heroku buildpack post-compile hook (heroku/python).
+#
+# Builds the React Mini App and copies it where FastAPI serves static files
+# (backend/backend/static — see webapp/main.py). Runs AFTER the Python
+# buildpack's compile step, inside the build dir.
+#
+# Container deploys (heroku.yml -> backend/Dockerfile) never run this file;
+# they bundle the frontend separately or host it on Netlify/Vercel.
+set -euo pipefail
+
+echo "-----> Building frontend with bun"
+
+# Install bun to /tmp so the toolchain never lands in the slug.
+export BUN_INSTALL="/tmp/bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
+curl -fsSL https://bun.sh/install | bash
+
+cd frontend
+bun install --frozen-lockfile
+bun run build
+cd ..
+
+# FastAPI mounts backend/backend/static (gitignored — created at build time).
+rm -rf backend/backend/static
+cp -r frontend/dist backend/backend/static
+
+# Keep the slug slim: drop the frontend toolchain output and sources.
+# A fresh build happens on every deploy, so nothing here is needed at runtime.
+rm -rf frontend
+
+echo "-----> Frontend build installed to backend/backend/static"
