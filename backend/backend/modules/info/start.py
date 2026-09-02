@@ -3,11 +3,11 @@ import random
 from pyrogram import enums, errors, filters, types
 
 from backend.client import app
+from backend.core.cache import invalidate_user_cache
 from backend.core.keyboard import KeyboardBuilder, get_webapp_button
 from backend.core.leaderboard import (
     get_total_ranked_users,
     get_user_rank,
-    invalidate_user_cache,
     update_user_rank,
 )
 from backend.core.logging import get_logger
