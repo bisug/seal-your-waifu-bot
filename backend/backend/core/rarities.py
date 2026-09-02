@@ -14,40 +14,40 @@ import random
 LOGGER = logging.getLogger(__name__)
 
 # (rarity_id, emoji, name, spawn_weight, active_spawn_weight, shop_weight,
-#  claim_weight, shop_price, stock_limit, sell_price, milestone)
+#  claim_weight, shop_price, stock_limit, sell_price)
 # Price ladder: strictly-rarer spawn bands cost strictly more, ceiling 100⧫
 # (guarded by test_default_shop_price_ladder_is_balanced).
 _DEFAULT_RARITIES = [
-    (1, "⚪", "Common", 360, 280, 25, 60, 1, 50, 50, 150),
-    (2, "🟢", "Medium", 240, 220, 20, 30, 2, 40, 100, 350),
-    (3, "🟠", "Rare", 110, 130, 15, 9, 4, 30, 250, 1200),
-    (4, "🟡", "Legendary", 50, 70, 10, 1, 6, 20, 600, 2000),
-    (5, "💠", "Cosmic", 25, 35, 8, 0, 10, 15, 1200, 3200),
-    (6, "💮", "Exclusive", 4, 6, 6, 0, 30, 10, 2500, 4000),
-    (7, "🔮", "Limited Edition", 2, 3, 5, 0, 45, 10, 5000, 5000),
-    (8, "🫧", "Royal", 1, 2, 4, 0, 60, 5, 10000, 6000),
-    (10, "🎐", "Celestial", 1, 1, 2, 0, 80, 2, 20000, 7500),
-    (11, "🎞️", "Cinematic", 1, 1, 2, 0, 80, 2, 30000, 8000),
-    (12, "🪽", "Prestige", 1, 1, 1, 0, 100, 1, 40000, 9000),
-    (13, "❄️", "Winter", 12, 15, 6, 0, 15, 10, 1500, 0),
-    (14, "☀️", "Summer", 12, 15, 6, 0, 15, 10, 1500, 0),
-    (15, "💖", "Valentine", 5, 8, 5, 0, 25, 10, 2000, 0),
-    (16, "🎃", "Halloween", 5, 8, 5, 0, 25, 10, 2000, 0),
-    (19, "🟣", "Epic", 120, 140, 20, 0, 3, 40, 150, 700),
-    (20, "🧬", "Immortal", 25, 35, 8, 0, 10, 15, 1200, 3500),
-    (21, "🌌", "Eternal", 3, 4, 6, 0, 35, 10, 2500, 4500),
-    (22, "🌀", "Arcane", 2, 3, 5, 0, 45, 10, 5000, 5500),
-    (23, "💎", "Mythical", 1, 2, 3, 0, 60, 5, 12000, 7000),
-    (24, "✨", "Divine", 1, 1, 2, 0, 80, 2, 30000, 8500),
-    (25, "🌠", "Astral", 1, 1, 1, 0, 100, 1, 40000, 10000),
-    (26, "🌟", "Radiant", 8, 12, 5, 0, 20, 10, 2000, 2500),
-    (27, "🌑", "Eclipse", 2, 3, 4, 0, 50, 8, 8000, 6000),
-    (28, "😇", "Seraph", 1, 1, 1, 0, 90, 1, 35000, 9500),
+    (1, "⚪", "Common", 360, 280, 25, 60, 1, 50, 50),
+    (2, "🟢", "Medium", 240, 220, 20, 30, 2, 40, 100),
+    (3, "🟠", "Rare", 110, 130, 15, 9, 4, 30, 250),
+    (4, "🟡", "Legendary", 50, 70, 10, 1, 6, 20, 600),
+    (5, "💠", "Cosmic", 25, 35, 8, 0, 10, 15, 1200),
+    (6, "💮", "Exclusive", 4, 6, 6, 0, 30, 10, 2500),
+    (7, "🔮", "Limited Edition", 2, 3, 5, 0, 45, 10, 5000),
+    (8, "🫧", "Royal", 1, 2, 4, 0, 60, 5, 10000),
+    (10, "🎐", "Celestial", 1, 1, 2, 0, 80, 2, 20000),
+    (11, "🎞️", "Cinematic", 1, 1, 2, 0, 80, 2, 30000),
+    (12, "🪽", "Prestige", 1, 1, 1, 0, 100, 1, 40000),
+    (13, "❄️", "Winter", 12, 15, 6, 0, 15, 10, 1500),
+    (14, "☀️", "Summer", 12, 15, 6, 0, 15, 10, 1500),
+    (15, "💖", "Valentine", 5, 8, 5, 0, 25, 10, 2000),
+    (16, "🎃", "Halloween", 5, 8, 5, 0, 25, 10, 2000),
+    (19, "🟣", "Epic", 120, 140, 20, 0, 3, 40, 150),
+    (20, "🧬", "Immortal", 25, 35, 8, 0, 10, 15, 1200),
+    (21, "🌌", "Eternal", 3, 4, 6, 0, 35, 10, 2500),
+    (22, "🌀", "Arcane", 2, 3, 5, 0, 45, 10, 5000),
+    (23, "💎", "Mythical", 1, 2, 3, 0, 60, 5, 12000),
+    (24, "✨", "Divine", 1, 1, 2, 0, 80, 2, 30000),
+    (25, "🌠", "Astral", 1, 1, 1, 0, 100, 1, 40000),
+    (26, "🌟", "Radiant", 8, 12, 5, 0, 20, 10, 2000),
+    (27, "🌑", "Eclipse", 2, 3, 4, 0, 50, 8, 8000),
+    (28, "😇", "Seraph", 1, 1, 1, 0, 90, 1, 35000),
 ]
 
 NUMERIC_FIELDS = {
     "spawn_weight", "active_spawn_weight", "shop_weight", "claim_weight",
-    "shop_price", "stock_limit", "sell_price", "milestone",
+    "shop_price", "stock_limit", "sell_price",
 }
 TEXT_FIELDS = {"emoji", "name"}
 EDITABLE_FIELDS = NUMERIC_FIELDS | TEXT_FIELDS
@@ -62,7 +62,6 @@ CLAIM_RARITY_WEIGHTS: dict[str, int] = {}
 RARITY_PRICES: dict[str, int] = {}
 RARITY_STOCK_LIMITS: dict[str, int] = {}
 SELL_PRICES: dict[str, int] = {}  # keyed by bare name ("Common")
-MILESTONE_THRESHOLDS: dict[int, int] = {}  # rarity_id -> message-count milestone
 
 # O(1) lookup caches for rarity_id_of(), rebuilt by _apply_docs().
 _LABEL_LOOKUP: dict[str, int] = {}
@@ -121,9 +120,8 @@ def _default_docs() -> list[dict]:
             "spawn_weight": spawn, "active_spawn_weight": active,
             "shop_weight": shop, "claim_weight": claim,
             "shop_price": price, "stock_limit": stock, "sell_price": sell,
-            "milestone": milestone,
         }
-        for rid, emoji, name, spawn, active, shop, claim, price, stock, sell, milestone in _DEFAULT_RARITIES
+        for rid, emoji, name, spawn, active, shop, claim, price, stock, sell in _DEFAULT_RARITIES
     ]
 
 
@@ -134,7 +132,7 @@ def _apply_docs(docs: list[dict]) -> None:
                    ACTIVE_SPAWN_RARITY_WEIGHTS, SHOP_RARITY_WEIGHTS,
                    CLAIM_RARITY_WEIGHTS, RARITY_PRICES,
                    RARITY_STOCK_LIMITS, SELL_PRICES,
-                   MILESTONE_THRESHOLDS, _LABEL_LOOKUP, _BARE_LOOKUP):
+                   _LABEL_LOOKUP, _BARE_LOOKUP):
         target.clear()
     for doc in docs:
         rid = int(doc["_id"])
@@ -143,9 +141,6 @@ def _apply_docs(docs: list[dict]) -> None:
         RARITY_IDS[label] = rid
         _LABEL_LOOKUP[label] = rid
         _BARE_LOOKUP[bare_name(label).lower()] = rid
-        milestone = int(doc.get("milestone", 0) or 0)
-        if milestone > 0:
-            MILESTONE_THRESHOLDS[rid] = milestone
         SPAWN_RARITY_WEIGHTS[label] = int(doc.get("spawn_weight", 0))
         ACTIVE_SPAWN_RARITY_WEIGHTS[label] = int(doc.get("active_spawn_weight", 0))
         SHOP_RARITY_WEIGHTS[label] = int(doc.get("shop_weight", 0))
@@ -214,24 +209,6 @@ async def _backfill_missing_defaults(rarities_collection, docs: list) -> list:
     return docs
 
 
-async def _backfill_milestones(rarities_collection, docs: list) -> None:
-    """Persist the `milestone` field on docs from before it was DB-backed."""
-    defaults_by_id = {d["_id"]: d for d in _default_docs()}
-    for doc in docs:
-        if not isinstance(doc.get("_id"), int) or "milestone" in doc:
-            continue
-        default_milestone = defaults_by_id.get(doc["_id"], {}).get("milestone", 0)
-        if not default_milestone:
-            continue
-        doc["milestone"] = default_milestone
-        try:
-            await rarities_collection.update_one(
-                {"_id": doc["_id"]}, {"$set": {"milestone": default_milestone}}
-            )
-        except Exception as e:
-            LOGGER.warning("Milestone backfill failed for %s: %s", doc["_id"], e)
-
-
 async def load_rarities() -> int:
     """Load rarities from DB, seeding from defaults on first startup."""
     from backend.database import rarities_collection
@@ -244,8 +221,6 @@ async def load_rarities() -> int:
         else:
             # Backfill defaults missing from the collection (partial seed).
             docs = await _backfill_missing_defaults(rarities_collection, docs)
-            # Backfill `milestone` on docs from before the field was DB-backed.
-            await _backfill_milestones(rarities_collection, docs)
         _apply_docs(docs)
         LOGGER.info("Loaded %s rarities from database.", len(docs))
         return len(docs)

@@ -67,44 +67,6 @@ async def test_send_character_allows_after_grace_expiry():
 
 
 
-def test_milestones_survive_rarity_rename():
-    # Milestones are keyed by rarity_id, so a rename must not orphan them.
-    from backend.core import rarities as cr
-
-    original_docs = cr.get_rarity_docs()
-    try:
-        cr._apply_docs([dict(d, name=d["name"] + " X") for d in original_docs])
-        rebuilt = message_counter._build_milestones()
-        assert len(rebuilt) == len(message_counter._MILESTONES)
-        # Every rarity_id still resolves to a (renamed) label with its threshold.
-        by_threshold = sorted(rebuilt, key=lambda p: -p[1])
-        assert by_threshold[0][1] == 10000  # Astral keeps its threshold
-    finally:
-        cr._apply_docs(original_docs)
-
-
-def test_milestones_are_db_backed():
-    # Milestone thresholds must come from the rarities collection docs
-    # (editable via /rarityset), not a hardcoded table in message_counter.
-    from backend.core import rarities as cr
-
-    original_docs = cr.get_rarity_docs()
-    try:
-        edited = [dict(d) for d in original_docs]
-        for d in edited:
-            if d["_id"] == 8:  # Royal
-                d["milestone"] = 1234
-            if d["_id"] == 25:  # Astral
-                d["milestone"] = 0  # zero removes the rarity from milestones
-        cr._apply_docs(edited)
-        rebuilt = message_counter._build_milestones()
-        thresholds = dict((label, t) for label, t in rebuilt)
-        assert thresholds[cr.RARITY_MAP[8]] == 1234
-        assert cr.RARITY_MAP[25] not in thresholds
-    finally:
-        cr._apply_docs(original_docs)
-
-
 def test_rarity_id_of_lookups():
     # O(1) lookup paths: full label, bare name (case-insensitive), int id,
     # and misses return None instead of raising.

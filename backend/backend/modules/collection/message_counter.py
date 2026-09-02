@@ -6,8 +6,6 @@ from pyrogram import filters, types
 from backend.client import app
 from backend.core.rarities import (
     ACTIVE_SPAWN_RARITY_WEIGHTS,
-    MILESTONE_THRESHOLDS,
-    RARITY_MAP,
     SPAWN_RARITY_WEIGHTS,
     weighted_pick,
 )
@@ -21,23 +19,6 @@ from backend.core.spawns import (
 # Use a specific logger for spawn tracking
 SPAWN_LOGGER = logging.getLogger("backend.spawns")
 RANDOM_ROYAL_SPAWN_CHANCE = 0.0002
-# Milestone thresholds live in the `rarities` collection (per-doc `milestone`
-# field, editable via /rarityset). Keyed by rarity_id, resolved to labels at
-# import — rarity_id survives /rarityrename, so a rename can't orphan a
-# milestone.
-
-
-def _build_milestones() -> tuple:
-    """(label, threshold) pairs for configured rarities, highest threshold first."""
-    pairs = [
-        (RARITY_MAP[rid], threshold)
-        for rid, threshold in MILESTONE_THRESHOLDS.items()
-        if rid in RARITY_MAP
-    ]
-    return tuple(sorted(pairs, key=lambda p: -p[1]))
-
-
-_MILESTONES = _build_milestones()
 
 
 def _pick_spawn_rarity(active_count: int) -> str | None:
@@ -72,13 +53,6 @@ async def message_counter_handler(_, message: types.Message):
         SPAWN_LOGGER.info(f"Triggering RANDOM Royal spawn in {chat_id}")
         await send_character(chat_id, "🫧 Royal")
         return
-    # Check for special rarity milestones
-    milestones = _MILESTONES
-    for r_name, threshold in milestones:
-        if threshold > 0 and count % threshold == 0:
-            SPAWN_LOGGER.info(f"Milestone {r_name} reached at {count} in {chat_id}")
-            await send_character(chat_id, r_name)
-            return
     # Standard spawn logic — frequency resolved by the shared helper
     target_freq, active_count = await get_target_spawn_frequency(chat_id)
     if count % target_freq == 0:
