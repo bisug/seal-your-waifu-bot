@@ -3,6 +3,7 @@ import os
 import shlex
 import uuid
 from collections import OrderedDict
+from typing import Optional
 
 import httpx
 from pyrogram import enums, filters, types
@@ -46,6 +47,40 @@ def get_rarity_help():
     )
 @app.on_message(filters.command("update") & sudo_filter)
 @handle_errors
+async def _parse_update_args(cmd_args: list[str], message: types.Message) -> Optional[dict]:
+    """Parse key="value" args into an updates dict; replies with the error and returns None on bad input."""
+    updates = {}
+    for arg in cmd_args:
+        if "=" not in arg:
+            continue
+        key, val = arg.split("=", 1)
+        key = key.lower().strip()
+        val = val.strip()
+        if key == "name":
+            updates['name'] = val.title()
+        elif key == "anime":
+            updates['anime'] = val.title()
+        elif key == "rarity":
+            try:
+                r_num = int(val)
+                if r_num not in RARITY_MAP:
+                    raise ValueError
+                updates['rarity'] = RARITY_MAP[r_num]
+                updates['rarity_id'] = r_num
+            except ValueError:
+                await message.reply_text(f"❌ Invalid rarity number. Map: {get_rarity_help()}")
+                return None
+        elif key in ("url", "img_url"):
+            if not (val.startswith("http://") or val.startswith("https://")):
+                await message.reply_text("❌ Invalid URL scheme.")
+                return None
+            updates['img_url'] = val
+    if not updates:
+        await message.reply_text("❌ No valid fields to update provided.")
+        return None
+    return updates
+
+
 async def update_waifu_handler(_, message: types.Message):
     """
     Parses /update <id> field="value" ...
@@ -68,33 +103,9 @@ async def update_waifu_handler(_, message: types.Message):
     character = await get_character_by_id(char_id)
     if not character:
         return await message.reply_text("❌ Character not found.")
-    updates = {}
-    remaining_args = cmd_args[1:]
-    for arg in remaining_args:
-        if "=" not in arg:
-            continue
-        key, val = arg.split("=", 1)
-        key = key.lower().strip()
-        val = val.strip()
-        if key == "name":
-            updates['name'] = val.title()
-        elif key == "anime":
-            updates['anime'] = val.title()
-        elif key == "rarity":
-            try:
-                r_num = int(val)
-                if r_num not in RARITY_MAP:
-                    raise ValueError
-                updates['rarity'] = RARITY_MAP[r_num]
-                updates['rarity_id'] = r_num
-            except ValueError:
-                return await message.reply_text(f"❌ Invalid rarity number. Map: {get_rarity_help()}")
-        elif key in ("url", "img_url"):
-            if not (val.startswith("http://") or val.startswith("https://")):
-                 return await message.reply_text("❌ Invalid URL scheme.")
-            updates['img_url'] = val
-    if not updates:
-        return await message.reply_text("❌ No valid fields to update provided.")
+    updates = await _parse_update_args(cmd_args[1:], message)
+    if updates is None:
+        return
     # 2. Prepare Proposal
     proposal_id = str(uuid.uuid4())[:8]
     proposal_data = {

@@ -54,6 +54,89 @@ def load_handlers(bot):
     bot.add_handler(CallbackQueryHandler(egg_hatch_callback, filters.regex(r"^egg_hatch:([^:]+):(\d+):(\d+)$")), group=0)
     bot.add_handler(CallbackQueryHandler(egg_noop_callback, filters.regex(r"^egg_noop$")), group=0)
     LOGGER.info(f"Registered Hunt & Egg handlers for {bot.name}")
+def _pet_hunt_context(user: dict) -> dict:
+    """Resolve the active pet into hunt modifiers (multiplier, luck, cooldown, ability)."""
+    pets = [normalize_pet(p) for p in user.get("pets", [DEFAULT_PET])]
+    current_pet_name = user.get("current_pet", DEFAULT_PET["petid"])
+    pet = find_pet(pets, current_pet_name) or DEFAULT_PET
+    affection = get_effective_affection(pet)
+    aff_multiplier = 1.2 if affection >= 80 else (0.8 if affection <= 20 else 1.0)
+    ability = pet.get("ability", "None")
+    luck = pet.get("luck", 0.1) * aff_multiplier
+    base_cd = 50 if ability == "Speedster" else 60
+    return {
+        "pet": pet,
+        "aff_multiplier": aff_multiplier,
+        "ability": ability,
+        "luck": luck,
+        "cooldown_duration": int(base_cd / aff_multiplier),
+    }
+
+
+def _roll_hunt_rewards(ctx: dict, user: dict) -> tuple[int, int, list, str]:
+    """(shards, xp_gain, eggs_to_push, bonus_text) for one hunt, pet/pass applied."""
+    ability = ctx["ability"]
+    aff_multiplier, luck = ctx["aff_multiplier"], ctx["luck"]
+
+    shards = random.randint(100, 300)
+    bonus_text = ""
+    pass_type = get_active_pass_type(user)
+    pass_benefits = PASS_BENEFITS[pass_type]
+    hunt_multiplier = pass_benefits["hunt_multiplier"]
+    if pass_type == "elite":
+        shards = int(shards * hunt_multiplier)
+        bonus_text += "\n<b>+75% Elite Shards!</b>"
+    elif pass_type == "premium":
+        shards = int(shards * hunt_multiplier)
+        bonus_text += "\n<b>+35% Premium Shards!</b>"
+
+    scavenger_chance = 0.2 * aff_multiplier
+    if ability == "Scavenger" and random.random() < scavenger_chance:
+        shards *= 2
+        bonus_text += "\n<b>Double Shards!</b> (Scavenger)"
+
+    xp_gain = random.randint(10, 20)
+    luck_modifier = 1.0 + (0.05 * aff_multiplier)
+    if ability == "Beginner's Luck":
+        xp_gain = int(xp_gain * luck_modifier)
+
+    eggs_to_push = []
+    base_drop_chance = min(80, 15 * (1 + luck) * pass_benefits["egg_drop_multiplier"])
+    hoarder_chance = 0.05 * aff_multiplier
+    pass_bonus_drop = random.random() < pass_benefits.get("bonus_egg_chance", 0)
+    hoarder_drop = ability == "Hoarder" and random.random() < hoarder_chance
+    extra_drop = hoarder_drop or pass_bonus_drop
+    if random.uniform(0, 100) <= base_drop_chance or extra_drop:
+        tier_key = roll_egg_tier(luck, pass_benefits["egg_quality_bonus"])
+        tier_data = EGG_TIERS.get(tier_key, EGG_TIERS["common"])
+        corruption_chance = CORRUPTED_EGG_CHANCE * (1 - pass_benefits.get("corruption_resistance", 0))
+        egg_data = {
+            "id": f"egg_{int(time.time() * 1000)}_{random.randint(100, 999)}",
+            "tier": tier_key,
+            "name": tier_data["name"],
+            "obtained_at": get_now_utc(),
+            "status": "fresh",
+            "is_corrupted": random.uniform(0, 100) <= corruption_chance
+        }
+        eggs_to_push.append(egg_data)
+        if extra_drop:
+            bonus_tier = roll_egg_tier(luck * 0.5, pass_benefits["egg_quality_bonus"] * 0.5)
+            bonus_tier_data = EGG_TIERS.get(bonus_tier, EGG_TIERS["common"])
+            extra_egg = egg_data.copy()
+            extra_egg.update({
+                "id": f"egg_bonus_{int(time.time() * 1000)}",
+                "tier": bonus_tier,
+                "name": bonus_tier_data["name"],
+                "is_corrupted": random.uniform(0, 100) <= corruption_chance
+            })
+            eggs_to_push.append(extra_egg)
+            bonus_source = "Hoarder" if hoarder_drop else pass_type.capitalize()
+            bonus_text += f"\n<b>Bonus Egg Found!</b> ({bonus_source})"
+        if pass_type != "free":
+            bonus_text += f"\n<b>{pass_type.capitalize()} Egg Luck:</b> improved drop and tier roll"
+    return shards, xp_gain, eggs_to_push, bonus_text
+
+
 async def hunt_cmd(bot, message: types.Message):
     """Refactored Hunt Command: High durability, atomic updates."""
     user_id = message.from_user.id if message.from_user else None
@@ -62,80 +145,17 @@ async def hunt_cmd(bot, message: types.Message):
     try:
         user = await asyncio.wait_for(user_collection.find_one(get_user_filter(user_id)), timeout=5.0) or {}
         user = await ensure_user_pet_state(user_id, user)
-        pets = [normalize_pet(p) for p in user.get("pets", [DEFAULT_PET])]
-        current_pet_name = user.get("current_pet", DEFAULT_PET["petid"])
-        pet = find_pet(pets, current_pet_name) or DEFAULT_PET
-        affection = get_effective_affection(pet)
-        aff_multiplier = 1.0
-        if affection >= 80:
-            aff_multiplier = 1.2
-        elif affection <= 20:
-            aff_multiplier = 0.8
-        ability = pet.get("ability", "None")
-        luck = pet.get("luck", 0.1) * aff_multiplier
-        base_cd = 50 if ability == "Speedster" else 60
-        cooldown_duration = int(base_cd / aff_multiplier)
+        ctx = _pet_hunt_context(user)
+        pet = ctx["pet"]
         try:
-            on_cd, seconds_left = await asyncio.wait_for(redis_cooldown("hunt", user_id, cooldown_duration), timeout=2.5)
+            on_cd, seconds_left = await asyncio.wait_for(redis_cooldown("hunt", user_id, ctx["cooldown_duration"]), timeout=2.5)
             if on_cd:
                 return await message.reply_text(f"Please wait <b>{seconds_left}s</b> before hunting again.", parse_mode=enums.ParseMode.HTML)
         except asyncio.TimeoutError:
             LOGGER.warning(f"Cooldown check timed out for {user_id}. Proceeding as fail-safe.")
         msg = await message.reply_text(f"<b>{html_escape(pet['name'])}</b> is going hunting...", parse_mode=enums.ParseMode.HTML)
         await asyncio.sleep(2)
-        shards = random.randint(100, 300)
-        bonus_text = ""
-        pass_type = get_active_pass_type(user)
-        pass_benefits = PASS_BENEFITS[pass_type]
-        hunt_multiplier = pass_benefits["hunt_multiplier"]
-        if pass_type == "elite":
-            shards = int(shards * hunt_multiplier)
-            bonus_text += "\n<b>+75% Elite Shards!</b>"
-        elif pass_type == "premium":
-            shards = int(shards * hunt_multiplier)
-            bonus_text += "\n<b>+35% Premium Shards!</b>"
-        scavenger_chance = 0.2 * aff_multiplier
-        if ability == "Scavenger" and random.random() < scavenger_chance:
-            shards *= 2
-            bonus_text += "\n<b>Double Shards!</b> (Scavenger)"
-        xp_gain = random.randint(10, 20)
-        luck_modifier = 1.0 + (0.05 * aff_multiplier)
-        if ability == "Beginner's Luck":
-            xp_gain = int(xp_gain * luck_modifier)
-        eggs_to_push = []
-        base_drop_chance = min(80, 15 * (1 + luck) * pass_benefits["egg_drop_multiplier"])
-        hoarder_chance = 0.05 * aff_multiplier
-        pass_bonus_drop = random.random() < pass_benefits.get("bonus_egg_chance", 0)
-        hoarder_drop = ability == "Hoarder" and random.random() < hoarder_chance
-        extra_drop = hoarder_drop or pass_bonus_drop
-        if random.uniform(0, 100) <= base_drop_chance or extra_drop:
-            tier_key = roll_egg_tier(luck, pass_benefits["egg_quality_bonus"])
-            tier_data = EGG_TIERS.get(tier_key, EGG_TIERS["common"])
-            corruption_chance = CORRUPTED_EGG_CHANCE * (1 - pass_benefits.get("corruption_resistance", 0))
-            egg_data = {
-                "id": f"egg_{int(time.time() * 1000)}_{random.randint(100, 999)}",
-                "tier": tier_key,
-                "name": tier_data["name"],
-                "obtained_at": get_now_utc(),
-                "status": "fresh",
-                "is_corrupted": random.uniform(0, 100) <= corruption_chance
-            }
-            eggs_to_push.append(egg_data)
-            if extra_drop:
-                bonus_tier = roll_egg_tier(luck * 0.5, pass_benefits["egg_quality_bonus"] * 0.5)
-                bonus_tier_data = EGG_TIERS.get(bonus_tier, EGG_TIERS["common"])
-                extra_egg = egg_data.copy()
-                extra_egg.update({
-                    "id": f"egg_bonus_{int(time.time() * 1000)}",
-                    "tier": bonus_tier,
-                    "name": bonus_tier_data["name"],
-                    "is_corrupted": random.uniform(0, 100) <= corruption_chance
-                })
-                eggs_to_push.append(extra_egg)
-                bonus_source = "Hoarder" if hoarder_drop else pass_type.capitalize()
-                bonus_text += f"\n<b>Bonus Egg Found!</b> ({bonus_source})"
-            if pass_type != "free":
-                bonus_text += f"\n<b>{pass_type.capitalize()} Egg Luck:</b> improved drop and tier roll"
+        shards, xp_gain, eggs_to_push, bonus_text = _roll_hunt_rewards(ctx, user)
         update_op = {"$inc": {"balance": shards}}
         if eggs_to_push:
             update_op["$push"] = {"eggs": {"$each": eggs_to_push}}

@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pyrogram import enums, filters, types
 
 from backend.client import app
@@ -123,9 +125,53 @@ async def _resolve_missing_names(users: list) -> list:
         LOGGER.warning(f"_resolve_missing_names: Telegram API fallback failed: {e}")
     return users
 
+async def _fetch_top_from_zset(metric: str, limit: int) -> Optional[list]:
+    """Fetch top users from the Redis ZSET, hydrated with Mongo profiles. None if unavailable."""
+    from backend.core.cache import set_cached_leaderboard
+    from backend.core.leaderboard import _zset_key
+    from backend.database import r, user_collection
+
+    if not r:
+        return None
+    try:
+        uids = await r.zrevrange(_zset_key(metric), 0, limit - 1, withscores=True)
+        if not uids:
+            return None
+        # Filter out any None/corrupt entries before casting to int
+        valid_uids = [(uid, score) for uid, score in uids if uid is not None]
+        # Convert back to list of dicts. We need names and avatars, so we fetch from Mongo in ONE batch.
+        user_ids = []
+        for uid, _ in valid_uids:
+            user_ids.extend(_user_id_variants(uid))
+        mongo_users = await user_collection.find({"id": {"$in": user_ids}}).to_list(length=len(user_ids))
+        # Re-sort to match ZSET order and add the score
+        user_map = {}
+        for user in mongo_users:
+            for variant in _user_id_variants(user.get("id")):
+                user_map[str(variant)] = user
+        results = []
+        for uid, score in valid_uids:
+            u = None
+            for variant in _user_id_variants(uid):
+                u = user_map.get(str(variant))
+                if u:
+                    break
+            if u:
+                row = {**u, METRICS[metric]["field"]: int(score)}
+                results.append(row)
+        if results:
+            results = await _hydrate_leaderboard_profiles(results, metric)
+            results = await _resolve_missing_names(results)
+            await set_cached_leaderboard(metric, results, limit)
+        return results
+    except Exception as e:
+        LOGGER.warning(f"Redis ZSET leaderboard fetch failed for {metric}: {e}")
+        return None
+
+
 async def get_top_users(metric: str, limit: int = 10):
     from backend.core.cache import get_cached_leaderboard, set_cached_leaderboard
-    from backend.core.leaderboard import _zset_key
+    from backend.core.leaderboard import rebuild_leaderboard
     from backend.database import r, user_collection
     # 1. Try to get fully populated list from string cache
     cached = await get_cached_leaderboard(metric, limit)
@@ -134,42 +180,11 @@ async def get_top_users(metric: str, limit: int = 10):
         cached = await _resolve_missing_names(cached)
         await set_cached_leaderboard(metric, cached, limit)
         return cached
-    key = _zset_key(metric)
-    if r:
-        try:
-            # 2. Try to get Top N from Redis ZSET
-            uids = await r.zrevrange(key, 0, limit - 1, withscores=True)
-            if uids:
-                # Filter out any None/corrupt entries before casting to int
-                valid_uids = [(uid, score) for uid, score in uids if uid is not None]
-                # Convert back to list of dicts. We need names and avatars, so we fetch from Mongo in ONE batch.
-                user_ids = []
-                for uid, _ in valid_uids:
-                    user_ids.extend(_user_id_variants(uid))
-                mongo_users = await user_collection.find({"id": {"$in": user_ids}}).to_list(length=len(user_ids))
-                # Re-sort to match ZSET order and add the score
-                user_map = {}
-                for user in mongo_users:
-                    for variant in _user_id_variants(user.get("id")):
-                        user_map[str(variant)] = user
-                results = []
-                for uid, score in valid_uids:
-                    u = None
-                    for variant in _user_id_variants(uid):
-                        u = user_map.get(str(variant))
-                        if u:
-                            break
-                    if u:
-                        row = {**u, METRICS[metric]["field"]: int(score)}
-                        results.append(row)
-                if results:
-                    results = await _hydrate_leaderboard_profiles(results, metric)
-                    results = await _resolve_missing_names(results)
-                    await set_cached_leaderboard(metric, results, limit)
-                return results
-        except Exception as e:
-            LOGGER.warning(f"Redis ZSET leaderboard fetch failed for {metric}: {e}")
-    # 2. Fallback to MongoDB aggregation if Redis fails or ZSET is empty
+    # 2. Try to get Top N from Redis ZSET
+    results = await _fetch_top_from_zset(metric, limit)
+    if results is not None:
+        return results
+    # 3. Fallback to MongoDB aggregation if Redis fails or ZSET is empty
     field = METRICS[metric]["field"]
     pipeline = [
         {"$project": {
@@ -187,9 +202,8 @@ async def get_top_users(metric: str, limit: int = 10):
     cursor = await user_collection.aggregate(pipeline)
     results = await cursor.to_list(length=limit)
     results = await _resolve_missing_names(results)
-    # 3. Trigger background rebuild if ZSET was empty
+    # 4. Trigger background rebuild if ZSET was empty
     if r:
-        from backend.core.leaderboard import rebuild_leaderboard
         run_background_task(rebuild_leaderboard(user_collection, metric=metric))
 
     return results

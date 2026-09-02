@@ -29,6 +29,7 @@ from config import config
 LOGGER = get_logger(__name__)
 
 MAX_UPLOAD_SIZE = 10 * 1024 * 1024
+MAX_LUCK = 0.35  # 35% — upper bound for custom character luck
 ALLOWED_MEDIA_SCHEMES = {"http", "https"}
 ALLOWED_MEDIA_PORTS = {80, 443}
 MAX_MEDIA_REDIRECTS = 3
@@ -69,7 +70,7 @@ def parse_luck(value: float | int | str) -> float:
         raise UploadError("Luck must be a number such as 0.12 or 12%.") from exc
     if luck > 1:
         luck = luck / 100
-    if luck < 0 or luck > 0.35:
+    if luck < 0 or luck > MAX_LUCK:
         raise UploadError("Luck must be between 0 and 35%.")
     return round(luck, 3)
 

@@ -74,125 +74,120 @@ async def nguess_start_handler(_, message: types.Message):
         return
     # If a game is active, we just proceed to start a new one (per user request: "send next instead")
     await start_nguess_game(chat_id)
+def _open_session_filter(chat_id: int, now) -> dict:
+    """Mongo filter for an unexpired, unwon nguess session in this chat."""
+    return {
+        "_id": f"nguess:{chat_id}",
+        "$or": [
+            {"expires_at_dt": {"$exists": False}},
+            {"expires_at_dt": {"$gt": now}},
+        ],
+        "winner_id": {"$in": [None]},
+    }
+
+
+def _claim_filter(chat_id: int, now, char: dict) -> dict:
+    """Atomic claim filter: session open AND still unwon AND same character."""
+    claim = _open_session_filter(chat_id, now)
+    if char.get("id") is not None:
+        claim["char.id"] = char.get("id")
+    else:
+        claim["char.name"] = char.get("name")
+    return claim
+
+
+async def _try_claim(message: types.Message, chat_id: int, now, char: dict):
+    """Atomically mark the session won by this user. Returns updated doc or None."""
+    return await sessions_collection.find_one_and_update(
+        _claim_filter(chat_id, now, char),
+        {
+            "$set": {
+                "winner_id": message.from_user.id,
+                "answered_at_dt": now,
+            },
+            "$addToSet": {"players": message.from_user.id},
+        },
+        return_document=ReturnDocument.AFTER,
+    )
+
+
+async def _milestone_bonus() -> tuple[int, str, int]:
+    """(bonus, milestone text, total global guesses) after incrementing the counter."""
+    stats = await sessions_collection.find_one_and_update(
+        {"id": "nguess_global_stats"},
+        {"$inc": {"total_guesses": 1}},
+        upsert=True,
+        return_document=ReturnDocument.AFTER,
+    )
+    total_guesses = stats.get("total_guesses", 1)
+    if total_guesses % 100 == 0:
+        bonus = NAME_GUESS_ELITE_MILESTONE_BONUS
+        text = f"\n\n<b>ELITE MILESTONE ACHIEVED</b>\nYou are the 100th guesser! Granted {bonus:,} bonus Shards."
+    elif total_guesses % 100 == 50:
+        bonus = NAME_GUESS_MID_MILESTONE_BONUS
+        text = f"\n\n<b>MILESTONE REACHED</b>\nYou are the 50th guesser! Granted {bonus:,} bonus Shards."
+    else:
+        return 0, "", total_guesses
+    return bonus, text, total_guesses
+
+
 @game_bot.on_message(filters.text & filters.group & ~filters.command(["nguess", "top", "ctop"]), group=10)
 async def nguess_check_handler(_, message: types.Message):
     if not message.from_user or not message.text or message.text.startswith("/"):
         return
     chat_id = message.chat.id
     now = get_now_utc()
-    session = await sessions_collection.find_one(
-        {
-            "_id": f"nguess:{chat_id}",
-            "$or": [
-                {"expires_at_dt": {"$exists": False}},
-                {"expires_at_dt": {"$gt": now}},
-            ],
-            "$and": [
-                {
-                    "$or": [
-                        {"winner_id": {"$exists": False}},
-                        {"winner_id": None},
-                    ]
-                }
-            ],
-        }
-    )
+    session = await sessions_collection.find_one(_open_session_filter(chat_id, now))
     if not session:
         return
     guess = message.text.lower().strip()
     char = session["char"]
-    name_variants = get_name_variants(char['name'])
-    if guess in name_variants:
-        # Check registration before rewarding
-        if not await ensure_registered_user(message.from_user, chat_id):
-            return
-
-        claim_filter = {
-            "_id": f"nguess:{chat_id}",
-            "$or": [
-                {"expires_at_dt": {"$exists": False}},
-                {"expires_at_dt": {"$gt": now}},
-            ],
-            "$and": [
-                {
-                    "$or": [
-                        {"winner_id": {"$exists": False}},
-                        {"winner_id": None},
-                    ]
-                }
-            ],
-        }
-        if char.get("id") is not None:
-            claim_filter["char.id"] = char.get("id")
-        else:
-            claim_filter["char.name"] = char.get("name")
-
-        claimed = await sessions_collection.find_one_and_update(
-            claim_filter,
-            {
-                "$set": {
-                    "winner_id": message.from_user.id,
-                    "answered_at_dt": now,
-                },
-                "$addToSet": {"players": message.from_user.id},
-            },
-            return_document=ReturnDocument.AFTER,
-        )
-        if not claimed:
-            return
-
-        # Correct guess!
-        player_count = len(claimed.get("players", []))
-        reward = min(
-            NAME_GUESS_BASE_REWARD + (player_count - 1) * NAME_GUESS_PLAYER_BONUS,
-            NAME_GUESS_MAX_REWARD,
-        )
-        # Increment global counter
-        stats = await sessions_collection.find_one_and_update(
-            {"id": "nguess_global_stats"},
-            {"$inc": {"total_guesses": 1}},
-            upsert=True,
-            return_document=ReturnDocument.AFTER
-        )
-        total_guesses = stats.get("total_guesses", 1)
-        bonus = 0
-        milestone_text = ""
-        if total_guesses % 100 == 0:
-            bonus = NAME_GUESS_ELITE_MILESTONE_BONUS
-            milestone_text = f"\n\n<b>ELITE MILESTONE ACHIEVED</b>\nYou are the 100th guesser! Granted {bonus:,} bonus Shards."
-        elif total_guesses % 100 == 50:
-            bonus = NAME_GUESS_MID_MILESTONE_BONUS
-            milestone_text = f"\n\n<b>MILESTONE REACHED</b>\nYou are the 50th guesser! Granted {bonus:,} bonus Shards."
-        total_reward = reward + bonus
-        await award_gamebot_shards(
-            message.from_user,
-            total_reward,
-            extra_inc={"guess_count": 1},
-            game_key="name_guess",
-        )
-
-        # Track Quests and Achievements
-        from backend.modules.progression.achievements import check_achievements
-        from backend.modules.progression.quests import update_quest_progress
-        run_background_task(update_quest_progress(message.from_user.id, "guesser", 1))
-        run_background_task(update_quest_progress(message.from_user.id, "weekly_guesser", 1))
-        run_background_task(check_achievements(message.from_user.id))
-
-        # Delete session
-        await sessions_collection.delete_one({"_id": f"nguess:{chat_id}", "winner_id": message.from_user.id})
-        display_progress = total_guesses % 100 if total_guesses % 100 != 0 else 100
-        mention = f'<a href="tg://user?id={message.from_user.id}">{html_escape(message.from_user.first_name)}</a>'
-        target_name = html_escape(char['name'])
-        success_msg = (
-            f"✅ {mention} identified <b>{target_name}</b>!\n"
-            f"💰 <b>Bounty:</b> +{reward} Shards\n"
-            f"🔥 <b>Progress:</b> {display_progress}/100{milestone_text}"
-        )
-        await game_bot.send_message_safe(chat_id, text=success_msg, auto_delete=300)
-        # Recursive start
-        await start_nguess_game(chat_id)
-    else:
+    if guess not in get_name_variants(char['name']):
+        # Wrong guess — just record the player and wait for another attempt.
         await sessions_collection.update_one(
             {"_id": f"nguess:{chat_id}"},
             {"$addToSet": {"players": message.from_user.id}},
         )
+        return
+
+    # Correct guess — claim, reward, announce, restart.
+    if not await ensure_registered_user(message.from_user, chat_id):
+        return
+    claimed = await _try_claim(message, chat_id, now, char)
+    if not claimed:
+        return
+
+    player_count = len(claimed.get("players", []))
+    reward = min(
+        NAME_GUESS_BASE_REWARD + (player_count - 1) * NAME_GUESS_PLAYER_BONUS,
+        NAME_GUESS_MAX_REWARD,
+    )
+    bonus, milestone_text, total_guesses = await _milestone_bonus()
+    total_reward = reward + bonus
+    await award_gamebot_shards(
+        message.from_user,
+        total_reward,
+        extra_inc={"guess_count": 1},
+        game_key="name_guess",
+    )
+
+    # Track Quests and Achievements
+    from backend.modules.progression.achievements import check_achievements
+    from backend.modules.progression.quests import update_quest_progress
+    run_background_task(update_quest_progress(message.from_user.id, "guesser", 1))
+    run_background_task(update_quest_progress(message.from_user.id, "weekly_guesser", 1))
+    run_background_task(check_achievements(message.from_user.id))
+
+    # Delete session
+    await sessions_collection.delete_one({"_id": f"nguess:{chat_id}", "winner_id": message.from_user.id})
+    display_progress = total_guesses % 100 if total_guesses % 100 != 0 else 100
+    mention = f'<a href="tg://user?id={message.from_user.id}">{html_escape(message.from_user.first_name)}</a>'
+    target_name = html_escape(char['name'])
+    success_msg = (
+        f"✅ {mention} identified <b>{target_name}</b>!\n"
+        f"💰 <b>Bounty:</b> +{reward} Shards\n"
+        f"🔥 <b>Progress:</b> {display_progress}/100{milestone_text}"
+    )
+    await game_bot.send_message_safe(chat_id, text=success_msg, auto_delete=300)
+    # Recursive start
+    await start_nguess_game(chat_id)

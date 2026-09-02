@@ -73,6 +73,7 @@ def build_character_search_filter(
     field_prefix: str = "",
     fields: Iterable[str] | None = None,
 ) -> dict | None:
+    """Build a case-insensitive Mongo filter for the query, or None if empty."""
     text = (query or "").strip()
     if not text:
         return None

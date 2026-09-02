@@ -182,6 +182,103 @@ async def render_start_message(user_id: int, first_name: str, is_private: bool, 
             bot_name=config.BOT_NAME
         )
     return text, markup
+async def _handle_locate_param(message: types.Message, param: str) -> bool:
+    """Deep link locate_{id}: show the character card. Returns True if handled."""
+    try:
+        char_id = param.split("_")[1]
+        character = await collection.find_one({'id': char_id})
+        if character:
+            response_message = (
+                f"<b>Character Name:</b> {html_escape(character['name'])}\n"
+                f"<b>Anime:</b> {html_escape(character['anime'])}\n"
+                f"<b>Rarity:</b> {html_escape(character['rarity'])}\n"
+                f"<b>Character ID:</b> <code>{character['id']}</code>\n"
+            )
+            await reply_media_dynamic(message, character['img_url'],
+                caption=response_message,
+                parse_mode=enums.ParseMode.HTML
+            )
+        else:
+            await message.reply_text("❌ Character not found.", parse_mode=enums.ParseMode.HTML)
+        return True
+    except Exception as e:
+        LOGGER.error(f"Locate Error: {e}")
+        return False
+
+
+async def _handle_claim_param(message: types.Message, param: str) -> bool:
+    """Deep link claim_{code}: redeem a giveaway character. Returns True if handled."""
+    try:
+        code = param.split("_")[1]
+        from backend.modules.admin.giveaway import process_core_claim
+        success, result = await process_core_claim(app, message.from_user, code)
+        if not success:
+            await message.reply_text(result, parse_mode=enums.ParseMode.HTML)
+        else:
+            waifu = result
+            response_text = (
+                f'🎉 Congratulations <a href="tg://user?id={message.from_user.id}">{html_escape(message.from_user.first_name)}</a>!\n'
+                f"You claimed a <b>{html_escape(waifu['rarity'])}</b> character!\n\n"
+                f"Name: {html_escape(waifu['name'])}\n"
+                f"Anime: {html_escape(waifu['anime'])}\n"
+                f"ID: <code>{waifu['id']}</code>\n"
+            )
+            await reply_media_dynamic(message, waifu['img_url'], caption=response_text, parse_mode=enums.ParseMode.HTML)
+        return True
+    except Exception as e:
+        LOGGER.error(f"Claim Error: {e}")
+        return False
+
+
+async def _handle_referral_param(message: types.Message, param: str, *, is_new_user: bool) -> bool:
+    """Deep link ref_{id}: apply referral bonus and notify both sides. True if handled."""
+    user_id = message.from_user.id
+    first_name_clean = message.from_user.first_name
+    referral_result = await claim_referral_bonus(
+        user_id=user_id,
+        referrer_id=parse_referral_payload(param),
+        is_new_user=is_new_user,
+        first_name=first_name_clean,
+        username=message.from_user.username,
+    )
+    if referral_result.applied:
+        try:
+            await app.send_message(
+                referral_result.referrer_id,
+                (
+                    f'🎉 <b>New Referral!</b>\n\n'
+                    f'<a href="tg://user?id={message.from_user.id}">{html_escape(first_name_clean)}</a> '
+                    f"joined using your link.\n"
+                    f"+{referral_result.referrer_reward_shards:,} ⬪ | "
+                    f"+{referral_result.referrer_reward_xp:,} XP"
+                ),
+                parse_mode=enums.ParseMode.HTML
+            )
+        except Exception:
+            pass
+        await message.reply_text(
+            (
+                "🎁 <b>Welcome Bonus!</b>\n"
+                f"You received <b>{referral_result.referred_reward_shards:,} ⬪</b> "
+                f"and a <b>Level {referral_result.referred_pet_level} Pet</b> "
+                "for using a referral link! 🚀"
+            ),
+            parse_mode=enums.ParseMode.HTML,
+        )
+    return True
+
+
+async def _handle_deep_link(message: types.Message, param: str, *, is_new_user: bool) -> bool:
+    """Dispatch a /start deep-link payload. Returns True when the payload was consumed."""
+    if param.startswith("locate_"):
+        return await _handle_locate_param(message, param)
+    if param.startswith("claim_"):
+        return await _handle_claim_param(message, param)
+    if param.startswith("ref_"):
+        return await _handle_referral_param(message, param, is_new_user=is_new_user)
+    return False
+
+
 @app.on_message(filters.command("start"))
 @handle_errors
 async def start_handler(_, message: types.Message):
@@ -201,82 +298,7 @@ async def start_handler(_, message: types.Message):
         upsert=True
     )
     if len(message.command) > 1:
-        param = message.command[1]
-        if param.startswith("locate_"):
-            try:
-                char_id = param.split("_")[1]
-                character = await collection.find_one({'id': char_id})
-                if character:
-                    response_message = (
-                        f"<b>Character Name:</b> {html_escape(character['name'])}\n"
-                        f"<b>Anime:</b> {html_escape(character['anime'])}\n"
-                        f"<b>Rarity:</b> {html_escape(character['rarity'])}\n"
-                        f"<b>Character ID:</b> <code>{character['id']}</code>\n"
-                    )
-                    await reply_media_dynamic(message, character['img_url'],
-                        caption=response_message,
-                        parse_mode=enums.ParseMode.HTML
-                    )
-                    return
-                else:
-                    await message.reply_text("❌ Character not found.", parse_mode=enums.ParseMode.HTML)
-                    return
-            except Exception as e:
-                LOGGER.error(f"Locate Error: {e}")
-                pass
-        elif param.startswith("claim_"):
-            try:
-                code = param.split("_")[1]
-                from backend.modules.admin.giveaway import process_core_claim
-                success, result = await process_core_claim(app, message.from_user, code)
-                if not success:
-                    await message.reply_text(result, parse_mode=enums.ParseMode.HTML)
-                else:
-                    waifu = result
-                    response_text = (
-                        f'🎉 Congratulations <a href="tg://user?id={message.from_user.id}">{html_escape(message.from_user.first_name)}</a>!\n'
-                        f"You claimed a <b>{html_escape(waifu['rarity'])}</b> character!\n\n"
-                        f"Name: {html_escape(waifu['name'])}\n"
-                        f"Anime: {html_escape(waifu['anime'])}\n"
-                        f"ID: <code>{waifu['id']}</code>\n"
-                    )
-                    await reply_media_dynamic(message, waifu['img_url'], caption=response_text, parse_mode=enums.ParseMode.HTML)
-                return
-            except Exception as e:
-                LOGGER.error(f"Claim Error: {e}")
-                pass
-        elif param.startswith("ref_"):
-            referral_result = await claim_referral_bonus(
-                user_id=user_id,
-                referrer_id=parse_referral_payload(param),
-                is_new_user=is_new_user,
-                first_name=first_name_clean,
-                username=message.from_user.username,
-            )
-            if referral_result.applied:
-                try:
-                    await app.send_message(
-                        referral_result.referrer_id,
-                        (
-                            f'🎉 <b>New Referral!</b>\n\n'
-                            f'<a href="tg://user?id={message.from_user.id}">{html_escape(first_name_clean)}</a> '
-                            f"joined using your link.\n"
-                            f"+{referral_result.referrer_reward_shards:,} ⬪ | "
-                            f"+{referral_result.referrer_reward_xp:,} XP"
-                        ),
-                        parse_mode=enums.ParseMode.HTML
-                    )
-                except Exception:
-                    pass
-                await message.reply_text(
-                    (
-                        "🎁 <b>Welcome Bonus!</b>\n"
-                        f"You received <b>{referral_result.referred_reward_shards:,} ⬪</b> "
-                        f"and a <b>Level {referral_result.referred_pet_level} Pet</b> "
-                        "for using a referral link! 🚀"
-                    ),
-                    parse_mode=enums.ParseMode.HTML,
-                )
+        await _handle_deep_link(message, message.command[1], is_new_user=is_new_user)
     is_private = message.chat.type == enums.ChatType.PRIVATE
     # Refresh user state after referral DB logic just in case
     if is_new_user:

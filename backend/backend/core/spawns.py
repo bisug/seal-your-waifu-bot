@@ -125,6 +125,55 @@ async def _increment_message_count_mongo(chat_id: int, user_id: int) -> int:
     return count
 
 
+def _parse_redis_state(state: Dict[bytes, Any]) -> Dict[str, Any]:
+    """Convert a raw Redis hash into typed chat-state values."""
+    parsed_state = {}
+    for k, v in state.items():
+        if v == "None":
+            parsed_state[k] = None
+        elif v == "True":
+            parsed_state[k] = True
+        elif v == "False":
+            parsed_state[k] = False
+        elif k == "last_character":
+            try:
+                parsed_state[k] = json.loads(v)
+            except (ValueError, TypeError):
+                parsed_state[k] = v
+        elif k == "message_id":
+            try:
+                parsed_state[k] = int(v)
+            except (ValueError, TypeError):
+                parsed_state[k] = v
+        elif k == "last_spawn_time":
+            try:
+                parsed_state[k] = float(v)
+            except (ValueError, TypeError):
+                parsed_state[k] = time.time()  # Guard against malformed time
+        else:
+            parsed_state[k] = v
+    return parsed_state
+
+async def _write_state_to_redis(key: str, state: Dict[str, Any]) -> None:
+    """Cache a Mongo chat-state doc (or its absence) in Redis with a 1h TTL."""
+    if not _redis:
+        return
+    try:
+        if state:
+            to_cache = {
+                k: (json.dumps(v, default=str) if isinstance(v, dict) else str(v))
+                for k, v in state.items()
+                if k != "_id"
+            }
+            if to_cache:
+                await _redis.hset(key, mapping=to_cache)
+        else:
+            await _redis.hset(key, mapping={"_no_state": "1"})
+        await _redis.expire(key, 3600)
+    except Exception as e:
+        LOGGER.debug(f"Persistence error: {e}")
+
+
 async def get_chat_state(chat_id: int) -> Dict[str, Any]:
     """Retrieve chat state from Redis with MongoDB fallback."""
     key = f"spawn:state:{chat_id}"
@@ -132,36 +181,11 @@ async def get_chat_state(chat_id: int) -> Dict[str, Any]:
         try:
             state = await _redis.hgetall(key)
             if state:
-                parsed_state = {}
-                for k, v in state.items():
-                    if v == "None": parsed_state[k] = None
-                    elif v == "True": parsed_state[k] = True
-                    elif v == "False": parsed_state[k] = False
-                    elif k == "last_character":
-                        try: parsed_state[k] = json.loads(v)
-                        except: parsed_state[k] = v
-                    elif k == "message_id":
-                        try: parsed_state[k] = int(v)
-                        except: parsed_state[k] = v
-                    elif k == "last_spawn_time":
-                        try: parsed_state[k] = float(v)
-                        except Exception: parsed_state[k] = time.time() # Guard against malformed time
-                    else:
-                        parsed_state[k] = v
-                return parsed_state
+                return _parse_redis_state(state)
         except Exception as e:
             LOGGER.warning(f"Redis get_chat_state error: {e}")
     state = await spawns_collection.find_one({"chat_id": chat_id})
-    if _redis:
-        try:
-            if state:
-                to_cache = {k: (json.dumps(v, default=str) if isinstance(v, dict) else str(v)) for k, v in state.items() if k != "_id"}
-                if to_cache:
-                    await _redis.hset(key, mapping=to_cache)
-            else:
-                await _redis.hset(key, mapping={"_no_state": "1"})
-            await _redis.expire(key, 3600)
-        except Exception as e: LOGGER.debug(f"Persistence error: {e}")
+    await _write_state_to_redis(key, state)
     return state or {}
 async def track_user_activity(chat_id: int, user_id: int):
     """Track active users using a Redis Sorted Set (ZSET)."""

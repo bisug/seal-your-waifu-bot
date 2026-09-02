@@ -200,6 +200,7 @@ def setup_logging(*, force: bool = False) -> logging.Logger:
 
 
 def get_logger(name: str) -> logging.Logger:
+    """Return a namespaced logger, initializing root logging config on first use."""
     if not _CONFIGURED:
         setup_logging()
     return logging.getLogger(name)

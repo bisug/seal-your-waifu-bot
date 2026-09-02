@@ -54,6 +54,7 @@ async def ensure_registered_user(user: types.User, chat_id: int) -> bool:
 
 
 async def ensure_gamebot_ready(message: types.Message, *, require_registered: bool = True) -> bool:
+    """Gate for gamebot handlers: chat member count + user registration checks."""
     if not message.from_user:
         return False
 
@@ -74,6 +75,7 @@ async def award_gamebot_shards(
     extra_inc: dict | None = None,
     game_key: str | None = None,
 ) -> dict:
+    """Credit shards and a win to a gamebot player, optionally tracking the game source."""
     inc = {"balance": int(amount), "gamebot_earned": int(amount), "gamebot_wins": 1, "version": 1}
     if extra_inc:
         inc.update({key: int(value) for key, value in extra_inc.items()})

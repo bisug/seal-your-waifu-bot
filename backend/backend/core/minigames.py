@@ -63,6 +63,79 @@ async def get_user_energy(user_id: int, user_data: Optional[dict] = None) -> Tup
 
     return current_energy, last_recharge_dt
 
+WHEEL_PRIZES = [
+    {"type": "shards", "amount": 50, "label": "50 Shards"},
+    {"type": "shards", "amount": 100, "label": "100 Shards"},
+    {"type": "shards", "amount": 200, "label": "200 Shards"},
+    {"type": "character", "label": "Character"},
+    {"type": "shards", "amount": 150, "label": "150 Shards"},
+    {"type": "shards", "amount": 500, "label": "500 Shards"},
+    {"type": "shards", "amount": 80, "label": "80 Shards"},
+    {"type": "xp", "amount": 0, "label": "XP Boost"},
+]
+
+
+def _roll_wheel_index() -> int:
+    """Pre-roll the wheel sector from weighted probabilities."""
+    roll = random.random()
+    if roll < 0.05:
+        return 3
+    if roll < 0.15:
+        return 5
+    if roll < 0.30:
+        return 2
+    if roll < 0.45:
+        return 4
+    if roll < 0.60:
+        return 1
+    if roll < 0.75:
+        return 6
+    if roll < 0.90:
+        return 0
+    return 7
+
+
+async def _build_start_data(game_type: Optional[str]) -> dict:
+    """Build the per-game session payload (start time plus game-specific data)."""
+    start_data = {"start_time": get_now_utc().timestamp()}
+    if game_type == "cipher_match":
+        cursor = await collection.aggregate([
+            {"$match": {"img_url": {"$exists": True, "$ne": ""}}},
+            {"$sample": {"size": 8}},
+        ])
+        chars = await cursor.to_list(length=8)
+        start_data["cards"] = [{
+            "id": c["id"],
+            "img_url": c.get("img_url") or "",
+            "name": c["name"]
+        } for c in chars]
+    elif game_type == "nexus_wheel":
+        index = _roll_wheel_index()
+        start_data["prize"] = WHEEL_PRIZES[index]
+        start_data["prize_index"] = index
+    return start_data
+
+
+async def _write_session_with_refund(user_id: int, game_type: str, start_data: dict) -> bool:
+    """Persist the session to Redis; refund energy and return False on failure."""
+    session_key = f"minigame_session:{user_id}:{game_type}"
+    try:
+        await r.set(session_key, json.dumps(start_data), ex=300)  # 5 min session
+        return True
+    except Exception as e:
+        # Energy was already decremented atomically above. If the session
+        # write fails the user would spend energy with no game — refund it.
+        LOGGER.warning(f"Minigame session write failed for {user_id}: {e}")
+        try:
+            await user_collection.update_one(
+                get_user_id_query(user_id),
+                {"$inc": {"energy": 1}}
+            )
+        except Exception:
+            LOGGER.exception(f"Energy refund failed for {user_id}")
+        return False
+
+
 async def consume_energy(user_id: int, game_type: Optional[str] = None) -> Any:
     """Consumes 1 energy point if available. Optionally starts a session and returns start data."""
     user_data = await user_collection.find_one(get_user_id_query(user_id))
@@ -87,67 +160,9 @@ async def consume_energy(user_id: int, game_type: Optional[str] = None) -> Any:
     if result.modified_count == 0:
         return False
 
-    start_data = {"start_time": now.timestamp()}
-
-    if game_type == "cipher_match":
-        cursor = await collection.aggregate([
-            {"$match": {"img_url": {"$exists": True, "$ne": ""}}},
-            {"$sample": {"size": 8}},
-        ])
-        chars = await cursor.to_list(length=8)
-        start_data["cards"] = [{
-            "id": c["id"],
-            "img_url": c.get("img_url") or "",
-            "name": c["name"]
-        } for c in chars]
-    elif game_type == "nexus_wheel":
-        # Pre-roll the reward based on wheel sectors
-        roll = random.random()
-        if roll < 0.05:
-            index = 3
-        elif roll < 0.15:
-            index = 5
-        elif roll < 0.30:
-            index = 2
-        elif roll < 0.45:
-            index = 4
-        elif roll < 0.60:
-            index = 1
-        elif roll < 0.75:
-            index = 6
-        elif roll < 0.90:
-            index = 0
-        else:
-            index = 7
-
-        prizes = [
-            {"type": "shards", "amount": 50, "label": "50 Shards"},
-            {"type": "shards", "amount": 100, "label": "100 Shards"},
-            {"type": "shards", "amount": 200, "label": "200 Shards"},
-            {"type": "character", "label": "Character"},
-            {"type": "shards", "amount": 150, "label": "150 Shards"},
-            {"type": "shards", "amount": 500, "label": "500 Shards"},
-            {"type": "shards", "amount": 80, "label": "80 Shards"},
-            {"type": "xp", "amount": 0, "label": "XP Boost"}
-        ]
-        start_data["prize"] = prizes[index]
-        start_data["prize_index"] = index
-
-    if game_type and r:
-        session_key = f"minigame_session:{user_id}:{game_type}"
-        try:
-            await r.set(session_key, json.dumps(start_data), ex=300) # 5 min session
-        except Exception as e:
-            # Energy was already decremented atomically above. If the session
-            # write fails the user would spend energy with no game — refund it.
-            LOGGER.warning(f"Minigame session write failed for {user_id}: {e}")
-            try:
-                await user_collection.update_one(
-                    get_user_id_query(user_id),
-                    {"$inc": {"energy": 1}}
-                )
-            except Exception:
-                LOGGER.exception(f"Energy refund failed for {user_id}")
+    if game_type:
+        start_data = await _build_start_data(game_type)
+        if r and not await _write_session_with_refund(user_id, game_type, start_data):
             return False
 
     await invalidate_user_cache(user_id)

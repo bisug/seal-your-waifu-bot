@@ -228,31 +228,30 @@ async def validate_pass_precheckout(pre_checkout_query) -> tuple[bool, str | Non
     return True, None
 
 
-async def fulfill_pass_payment(user_id: int, successful_payment) -> dict[str, Any]:
-    parsed = parse_pass_payload(getattr(successful_payment, "invoice_payload", None))
-    if not parsed:
-        return {"status": "ignored", "reason": "unknown_payload"}
-
+async def _validate_pass_order(parsed: dict, user_id: int, successful_payment) -> dict | None:
+    """Return the stored order doc if it matches the payment, else None (with reason logged)."""
     amount = int(getattr(successful_payment, "total_amount", 0))
     currency = getattr(successful_payment, "currency", None)
-    charge_id = getattr(successful_payment, "telegram_payment_charge_id", None)
-    provider_charge_id = getattr(successful_payment, "provider_payment_charge_id", None)
 
     order = await star_orders_collection.find_one({"order_id": parsed["order_id"]})
     if not order:
         LOGGER.warning("Stars payment received for missing pass order payload=%s", successful_payment.invoice_payload)
-        return {"status": "ignored", "reason": "missing_order"}
-
+        return None
     if order.get("status") == "fulfilled":
-        return {"status": "already_fulfilled", "tier": order.get("tier")}
-
+        return None
     if int(order.get("user_id", 0)) != int(user_id):
         LOGGER.warning("Stars payment user mismatch for order %s", order.get("order_id"))
-        return {"status": "ignored", "reason": "user_mismatch"}
+        return None
     if order.get("currency") != currency or int(order.get("amount", 0)) != amount:
         LOGGER.warning("Stars payment amount/currency mismatch for order %s", order.get("order_id"))
-        return {"status": "ignored", "reason": "amount_mismatch"}
+        return None
+    return order
 
+
+async def _claim_order_for_fulfillment(order: dict, successful_payment) -> bool:
+    """Atomically move the order pending -> fulfilling so only one worker proceeds."""
+    charge_id = getattr(successful_payment, "telegram_payment_charge_id", None)
+    provider_charge_id = getattr(successful_payment, "provider_payment_charge_id", None)
     payment_fields = {
         "status": "fulfilling",
         "paid_at": _now(),
@@ -266,58 +265,86 @@ async def fulfill_pass_payment(user_id: int, successful_payment) -> dict[str, An
         {"order_id": order["order_id"], "status": {"$in": ["pending", "precheckout", "paid"]}},
         {"$set": payment_fields},
     )
-    if claim.modified_count == 0:
-        return {"status": "already_processing", "tier": order.get("tier")}
+    return claim.modified_count > 0
 
+
+async def _activate_pass_tier(user_id: int, order: dict, amount: int, currency, charge_id) -> bool:
+    """Grant the purchased tier if it outranks the user's current one. True if activated."""
     tier = normalize_pass_tier(order["tier"])
     user = await user_collection.find_one(get_user_filter(user_id)) or {}
     current_tier = get_active_pass_type(user)
-    activated = get_pass_rank(current_tier) < get_pass_rank(tier)
+    if get_pass_rank(current_tier) >= get_pass_rank(tier):
+        return False
+
     now = _now()
     lock_field = _payment_lock_field()
-
-    if activated:
-        target_rank = get_pass_rank(tier)
-        lower_tiers = [candidate for candidate in PASS_TIERS if get_pass_rank(candidate) < target_rank]
-        activation_filter = get_user_filter(user_id)
-        activation_filter["$or"] = [
-            {f"pass_entitlements.{CURRENT_PASS_SEASON}.tier": {"$in": lower_tiers}},
-            {f"pass_entitlements.{CURRENT_PASS_SEASON}.tier": {"$exists": False}, "pass_type": {"$in": lower_tiers}},
-            {f"pass_entitlements.{CURRENT_PASS_SEASON}.tier": {"$exists": False}, "pass_type": {"$exists": False}},
-        ]
-        activation_result = await user_collection.update_one(
-            activation_filter,
-            {
-                "$set": {
-                    "pass_type": tier,
-                    "season": CURRENT_PASS_SEASON,
-                    f"pass_entitlements.{CURRENT_PASS_SEASON}": {
-                        "tier": tier,
-                        "source": "telegram_stars",
-                        "order_id": order["order_id"],
-                        "amount": amount,
-                        "currency": currency,
-                        "rank": target_rank,
-                        "activated_at": now,
-                    },
+    target_rank = get_pass_rank(tier)
+    lower_tiers = [candidate for candidate in PASS_TIERS if get_pass_rank(candidate) < target_rank]
+    activation_filter = get_user_filter(user_id)
+    activation_filter["$or"] = [
+        {f"pass_entitlements.{CURRENT_PASS_SEASON}.tier": {"$in": lower_tiers}},
+        {f"pass_entitlements.{CURRENT_PASS_SEASON}.tier": {"$exists": False}, "pass_type": {"$in": lower_tiers}},
+        {f"pass_entitlements.{CURRENT_PASS_SEASON}.tier": {"$exists": False}, "pass_type": {"$exists": False}},
+    ]
+    activation_result = await user_collection.update_one(
+        activation_filter,
+        {
+            "$set": {
+                "pass_type": tier,
+                "season": CURRENT_PASS_SEASON,
+                f"pass_entitlements.{CURRENT_PASS_SEASON}": {
+                    "tier": tier,
+                    "source": "telegram_stars",
+                    "order_id": order["order_id"],
+                    "amount": amount,
+                    "currency": currency,
+                    "rank": target_rank,
+                    "activated_at": now,
                 },
-                "$push": {
-                    "pass_purchases": {
-                        "order_id": order["order_id"],
-                        "tier": tier,
-                        "season_id": CURRENT_PASS_SEASON,
-                        "amount": amount,
-                        "currency": currency,
-                        "telegram_payment_charge_id": charge_id,
-                        "created_at": now,
-                    }
-                },
-                "$unset": {lock_field: ""},
             },
-        )
-        activated = activation_result.modified_count > 0
-        if activated:
-            await sync_user_to_redis(user_id)
+            "$push": {
+                "pass_purchases": {
+                    "order_id": order["order_id"],
+                    "tier": tier,
+                    "season_id": CURRENT_PASS_SEASON,
+                    "amount": amount,
+                    "currency": currency,
+                    "telegram_payment_charge_id": charge_id,
+                    "created_at": now,
+                }
+            },
+            "$unset": {lock_field: ""},
+        },
+    )
+    activated = activation_result.modified_count > 0
+    if activated:
+        await sync_user_to_redis(user_id)
+    return activated
+
+
+async def fulfill_pass_payment(user_id: int, successful_payment) -> dict[str, Any]:
+    parsed = parse_pass_payload(getattr(successful_payment, "invoice_payload", None))
+    if not parsed:
+        return {"status": "ignored", "reason": "unknown_payload"}
+
+    amount = int(getattr(successful_payment, "total_amount", 0))
+    currency = getattr(successful_payment, "currency", None)
+    charge_id = getattr(successful_payment, "telegram_payment_charge_id", None)
+
+    order = await _validate_pass_order(parsed, user_id, successful_payment)
+    if not order:
+        # Distinguish already-fulfilled (idempotent replay) from real mismatches.
+        stored = await star_orders_collection.find_one({"order_id": parsed["order_id"]})
+        if stored and stored.get("status") == "fulfilled":
+            return {"status": "already_fulfilled", "tier": stored.get("tier")}
+        return {"status": "ignored", "reason": "order_mismatch"}
+
+    if not await _claim_order_for_fulfillment(order, successful_payment):
+        return {"status": "already_processing", "tier": order.get("tier")}
+
+    tier = normalize_pass_tier(order["tier"])
+    lock_field = _payment_lock_field()
+    activated = await _activate_pass_tier(user_id, order, amount, currency, charge_id)
 
     await user_collection.update_one(get_user_filter(user_id), {"$unset": {lock_field: ""}})
 

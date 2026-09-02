@@ -203,6 +203,7 @@ async def invalidate_user_cache(user_id: int):
     if not _redis: return
     await rdel(f"user:{user_id}", f"balance:{user_id}")
 async def get_cached_user(user_id: int) -> Optional[dict]:
+    """Fetch a user doc from Redis cache, or None on miss/failure."""
     return await rget_json(f"user:{user_id}")
 async def set_cached_user(user_id: int, user_data: dict):
     await rset_json(f"user:{user_id}", user_data, TTL_USER)

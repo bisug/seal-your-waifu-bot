@@ -67,6 +67,77 @@ async def transfer_collection_command(_, message: types.Message):
         ]
     ])
     await message.reply_text(caption, reply_markup=markup, parse_mode=enums.ParseMode.HTML)
+async def _show_final_confirmation(query: types.CallbackQuery, session: dict, session_id: str):
+    """Render the step-2/2 double-confirm prompt for a full collection transfer."""
+    receiver_id = session["receiver_id"]
+    char_count = session["char_count"]
+    session["step"] = 2
+    await create_session(session_id, session)
+    receiver_user = await app.get_users(receiver_id)
+    receiver_name = receiver_user.first_name if receiver_user else f"ID: {receiver_id}"
+    caption = (
+        f"<b>FINAL CONFIRMATION: STEP 2/2</b>\n\n"
+        f"<b>ARE YOU ABSOLUTELY SURE?</b>\n\n"
+        f"Target: <b>{html_escape(receiver_name)}</b>\n"
+        f"Amount: <b>{char_count} characters</b>\n\n"
+        f"<b>THIS ACTION CANNOT BE UNDONE.</b>\n"
+        f"Clicking 'Confirm' will empty your collection completely."
+    )
+    markup = types.InlineKeyboardMarkup([
+        [
+            types.InlineKeyboardButton("YES, MERGE COLLECTIONS", callback_data=f"transfer_confirm:{session_id}"),
+            types.InlineKeyboardButton("CANCEL", callback_data=f"transfer_cancel:{session_id}")
+        ]
+    ])
+    await query.message.edit_text(caption, reply_markup=markup, parse_mode=enums.ParseMode.HTML)
+    await query.answer("Final step.")
+
+
+async def _execute_transfer(sender_id: int, receiver_id: int) -> int:
+    """Atomically move ALL sender characters to receiver. Returns count moved.
+
+    Raises ValueError on race/empty-collection so the caller can show a clean error.
+    """
+    num_chars = 0
+    async with client.start_session() as mongo_session:
+        async with await mongo_session.start_transaction():
+            sender_data = await user_collection.find_one(get_user_filter(sender_id), session=mongo_session)
+            if not sender_data or not sender_data.get("characters"):
+                raise ValueError("You no longer have any characters.")
+
+            characters_to_move = list(sender_data["characters"])
+            num_chars = len(characters_to_move)
+            sender_version = sender_data.get("version")
+
+            await user_collection.update_one(
+                get_user_filter(receiver_id),
+                add_user_set_on_insert({
+                    "$push": {"characters": {"$each": characters_to_move}},
+                    "$inc": {"char_count": num_chars, "version": 1},
+                    "$setOnInsert": {"id": int(receiver_id)}
+                }, receiver_id),
+                upsert=True,
+                session=mongo_session
+            )
+
+            sender_filter = get_user_filter(sender_id)
+            if sender_version is None:
+                sender_filter["version"] = {"$exists": False}
+            else:
+                sender_filter["version"] = sender_version
+            sender_update = await user_collection.update_one(
+                sender_filter,
+                {
+                    "$set": {"characters": [], "char_count": 0},
+                    "$inc": {"version": 1}
+                },
+                session=mongo_session
+            )
+            if sender_update.modified_count == 0:
+                raise ValueError("Sender collection changed during transfer.")
+    return num_chars
+
+
 @app.on_callback_query(filters.regex(r"^transfer_(next|confirm|cancel):(.+)"))
 async def transfer_callback(_, query: types.CallbackQuery):
     action, session_id = query.data.split(":", 1)
@@ -85,30 +156,7 @@ async def transfer_callback(_, query: types.CallbackQuery):
         await query.answer("Cancelled.")
         return
     if action == "transfer_next":
-        # Double confirm step
-        receiver_id = session["receiver_id"]
-        char_count = session["char_count"]
-        # Update session step
-        session["step"] = 2
-        await create_session(session_id, session)
-        receiver_user = await app.get_users(receiver_id)
-        receiver_name = receiver_user.first_name if receiver_user else f"ID: {receiver_id}"
-        caption = (
-            f"<b>FINAL CONFIRMATION: STEP 2/2</b>\n\n"
-            f"<b>ARE YOU ABSOLUTELY SURE?</b>\n\n"
-            f"Target: <b>{html_escape(receiver_name)}</b>\n"
-            f"Amount: <b>{char_count} characters</b>\n\n"
-            f"<b>THIS ACTION CANNOT BE UNDONE.</b>\n"
-            f"Clicking 'Confirm' will empty your collection completely."
-        )
-        markup = types.InlineKeyboardMarkup([
-            [
-                types.InlineKeyboardButton("YES, MERGE COLLECTIONS", callback_data=f"transfer_confirm:{session_id}"),
-                types.InlineKeyboardButton("CANCEL", callback_data=f"transfer_cancel:{session_id}")
-            ]
-        ])
-        await query.message.edit_text(caption, reply_markup=markup, parse_mode=enums.ParseMode.HTML)
-        await query.answer("Final step.")
+        await _show_final_confirmation(query, session, session_id)
         return
     if action == "transfer_confirm":
         # Check if we reached step 2
@@ -118,44 +166,8 @@ async def transfer_callback(_, query: types.CallbackQuery):
         await delete_session(session_id)
         # Proceed with Transfer
         receiver_id = session["receiver_id"]
-        num_chars = 0
         try:
-            async with client.start_session() as mongo_session:
-                async with await mongo_session.start_transaction():
-                    sender_data = await user_collection.find_one(get_user_filter(sender_id), session=mongo_session)
-                    if not sender_data or not sender_data.get("characters"):
-                        raise ValueError("You no longer have any characters.")
-
-                    characters_to_move = list(sender_data["characters"])
-                    num_chars = len(characters_to_move)
-                    sender_version = sender_data.get("version")
-
-                    await user_collection.update_one(
-                        get_user_filter(receiver_id),
-                        add_user_set_on_insert({
-                            "$push": {"characters": {"$each": characters_to_move}},
-                            "$inc": {"char_count": num_chars, "version": 1},
-                            "$setOnInsert": {"id": int(receiver_id)}
-                        }, receiver_id),
-                        upsert=True,
-                        session=mongo_session
-                    )
-
-                    sender_filter = get_user_filter(sender_id)
-                    if sender_version is None:
-                        sender_filter["version"] = {"$exists": False}
-                    else:
-                        sender_filter["version"] = sender_version
-                    sender_update = await user_collection.update_one(
-                        sender_filter,
-                        {
-                            "$set": {"characters": [], "char_count": 0},
-                            "$inc": {"version": 1}
-                        },
-                        session=mongo_session
-                    )
-                    if sender_update.modified_count == 0:
-                        raise ValueError("Sender collection changed during transfer.")
+            num_chars = await _execute_transfer(sender_id, receiver_id)
 
             # Notify success
             receiver_user = await app.get_users(receiver_id)

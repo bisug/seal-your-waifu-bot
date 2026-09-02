@@ -83,6 +83,143 @@ async def get_achievements_list(user_id: int = Depends(get_current_user)):
 
     return all_achievements
 
+def _enrich_achievements(raw_ids: list) -> list:
+    """Map raw achievement ids to their catalog entries (id, name, icon)."""
+    return [
+        {
+            "id": ach_id,
+            "name": ACHIEVEMENTS[ach_id]["name"],
+            "icon": ACHIEVEMENTS[ach_id].get("symbol", "✦"),
+        }
+        for ach_id in raw_ids
+        if ach_id in ACHIEVEMENTS
+    ]
+
+
+def _clean_titles(user: dict) -> tuple[str, list[str]]:
+    """Strip non-ASCII from titles; default to Rookie when absent."""
+    titles_list = user.get("titles") or ["Rookie"]
+    clean = [re.sub(r'[^\x00-\x7F]+', '', str(t or "").strip()) for t in titles_list]
+    source = user.get("title") or (titles_list[-1] if titles_list else "Rookie")
+    current = re.sub(r'[^\x00-\x7F]+', '', str(source or "Rookie")).strip()
+    return current, clean
+
+
+def _collection_stats(user: dict, total_available: int) -> tuple[int, int, float]:
+    """(total copies, unique characters, completion percent) from the user doc."""
+    characters = user.get("characters") or []
+    total = user.get("char_count")
+    if total is None:
+        total = len(characters)
+    unique = len({
+        str(char.get("id"))
+        for char in characters
+        if isinstance(char, dict) and char.get("id") is not None
+    })
+    percent = (
+        round((unique / total_available) * 100, 1)
+        if total_available > 0 else 0.0
+    )
+    return total, unique, percent
+
+
+def _format_pets(user: dict) -> tuple[list, dict | None, dict]:
+    """(formatted pets, current pet payload, active pet doc) for the /me response."""
+    user_pets = [normalize_pet(p) for p in user.get("pets", [DEFAULT_PET])]
+    current_pet_name = user.get("current_pet", DEFAULT_PET["petid"])
+
+    formatted = []
+    current_payload = None
+    for p in user_pets:
+        eff_affection = get_effective_affection(p)
+        if eff_affection >= 80:
+            mood = "🥰 Happy"
+        elif eff_affection <= 20:
+            mood = "😢 Sad"
+        else:
+            mood = "😐 Neutral"
+
+        p_data = {
+            "id": get_pet_key(p),
+            "petid": get_pet_key(p),
+            "name": p["name"],
+            "level": p.get("level", 1),
+            "xp": p.get("xp", 0),
+            "xp_needed": p.get("level", 1) * 100,
+            "hp": p.get("hp", 100),
+            "atk": p.get("atk", 10),
+            "spd": p.get("spd", 10),
+            "luck": p.get("luck", 0.1),
+            "ability": p.get("ability", "None"),
+            "desc": p.get("desc", ""),
+            "img": p.get("img", ""),
+            "affection": eff_affection,
+            "mood": mood,
+            "is_active": pet_matches(p, current_pet_name),
+        }
+        formatted.append(p_data)
+        if p_data["is_active"]:
+            current_payload = p_data
+
+    active_pet = next(
+        (pet for pet in user_pets if pet_matches(pet, current_pet_name)),
+        user_pets[0] if user_pets else DEFAULT_PET,
+    )
+    return formatted, current_payload, active_pet
+
+
+def _process_eggs(user: dict, active_pet: dict, pass_type) -> tuple[list, bool]:
+    """Normalize egg docs for the response; flag legacy string eggs for migration."""
+    eggs = user.get("eggs", [])
+    processed = []
+    migration_needed = False
+    for egg in eggs:
+        if isinstance(egg, str):
+            migration_needed = True
+            tier_key, tier_info = get_egg_tier_info(egg)
+            base_wait_min = get_incubation_wait_minutes(tier_key, active_pet)
+            wait_min = apply_pass_incubation_bonus(base_wait_min, user)
+            processed.append({
+                "id": f"mig_{str(uuid.uuid4())[:12]}",
+                "tier": tier_key,
+                "name": tier_info["name"],
+                "status": "fresh",
+                "is_corrupted": False,
+                "hatch_time": None,
+                "remaining_mins": 0,
+                "base_wait_min": base_wait_min,
+                "wait_min": wait_min,
+            })
+            continue
+
+        tier_key, tier_info = get_egg_tier_info(egg.get("tier", "common"))
+        base_wait_min = get_incubation_wait_minutes(tier_key, active_pet)
+        wait_min = apply_pass_incubation_bonus(base_wait_min, user)
+        h_time = egg.get("hatch_time")
+        rem_mins = 0
+        if h_time and isinstance(h_time, datetime):
+            if h_time.tzinfo is None:
+                h_time = h_time.replace(tzinfo=timezone.utc)
+            now = datetime.now(timezone.utc)
+            if now < h_time:
+                rem_mins = int((h_time - now).total_seconds() / 60)
+            h_time = h_time.isoformat()
+
+        processed.append({
+            "id": egg.get("id"),
+            "tier": tier_key,
+            "name": egg.get("name") or tier_info["name"],
+            "status": egg.get("status", "fresh"),
+            "is_corrupted": egg.get("is_corrupted", False),
+            "hatch_time": h_time,
+            "remaining_mins": rem_mins,
+            "base_wait_min": int(egg.get("incubation_base_minutes") or base_wait_min),
+            "wait_min": int(egg.get("incubation_minutes") or wait_min),
+            "incubation_pass_type": egg.get("incubation_pass_type") or pass_type,
+        })
+    return processed, migration_needed
+
+
 @router.get("/me", response_model=UserProfileResponse)
 async def get_me(user: dict = Depends(get_current_user_data)):
     user_id = normalize_user_id(user["id"])
@@ -102,36 +239,11 @@ async def get_me(user: dict = Depends(get_current_user_data)):
     energy, last_recharge = energy_result
 
     
-    raw_achievements = user.get("achievements") or []
-    enriched_achievements = []
-    for ach_id in raw_achievements:
-        if ach_id in ACHIEVEMENTS:
-            enriched_achievements.append({
-                "id": ach_id,
-                "name": ACHIEVEMENTS[ach_id]["name"],
-                "icon": ACHIEVEMENTS[ach_id].get("symbol", "✦")
-            })
-
-    titles_list = user.get("titles") or ["Rookie"]
-    clean_titles = [re.sub(r'[^\x00-\x7F]+', '', str(t or "")).strip() for t in titles_list]
-    current_title_source = user.get("title") or (titles_list[-1] if titles_list else "Rookie")
-    current_title = re.sub(r'[^\x00-\x7F]+', '', str(current_title_source or "Rookie")).strip()
+    enriched_achievements = _enrich_achievements(user.get("achievements") or [])
+    current_title, clean_titles = _clean_titles(user)
     
-    characters = user.get("characters") or []
-
-    # Calculate total owned copies from the denormalized counter, but track
-    # unique character completion separately so duplicates do not inflate it.
-    total_characters = user.get("char_count")
-    if total_characters is None:
-        total_characters = len(characters)
-    unique_characters = len({
-        str(char.get("id"))
-        for char in characters
-        if isinstance(char, dict) and char.get("id") is not None
-    })
-    collection_percent = (
-        round((unique_characters / total_available_characters) * 100, 1)
-        if total_available_characters > 0 else 0.0
+    total_characters, unique_characters, collection_percent = _collection_stats(
+        user, total_available_characters
     )
     
     eggs = user.get("eggs", [])
@@ -180,100 +292,14 @@ async def get_me(user: dict = Depends(get_current_user_data)):
         "eggs": []
     }
 
-    # Handle Pets
-    user_pets = [normalize_pet(p) for p in user.get("pets", [DEFAULT_PET])]
-    current_pet_name = user.get("current_pet", DEFAULT_PET["petid"])
-    
-    formatted_pets = []
-    for p in user_pets:
-        eff_affection = get_effective_affection(p)
-        if eff_affection >= 80:
-            mood = "🥰 Happy"
-        elif eff_affection <= 20:
-            mood = "😢 Sad"
-        else:
-            mood = "😐 Neutral"
-            
-        p_data = {
-            "id": get_pet_key(p),
-            "petid": get_pet_key(p),
-            "name": p["name"],
-            "level": p.get("level", 1),
-            "xp": p.get("xp", 0),
-            "xp_needed": p.get("level", 1) * 100,
-            "hp": p.get("hp", 100),
-            "atk": p.get("atk", 10),
-            "spd": p.get("spd", 10),
-            "luck": p.get("luck", 0.1),
-            "ability": p.get("ability", "None"),
-            "desc": p.get("desc", ""),
-            "img": p.get("img", ""),
-            "affection": eff_affection,
-            "mood": mood,
-            "is_active": pet_matches(p, current_pet_name)
-        }
-        formatted_pets.append(p_data)
-        if p_data["is_active"]:
-            resp_data["current_pet"] = p_data
-
+    formatted_pets, current_pet_payload, active_pet_for_eggs = _format_pets(user)
     resp_data["pets"] = formatted_pets
-    active_pet_for_eggs = next(
-        (pet for pet in user_pets if pet_matches(pet, current_pet_name)),
-        user_pets[0] if user_pets else DEFAULT_PET,
-    )
+    resp_data["current_pet"] = current_pet_payload
 
-    # Handle Eggs
-    processed_eggs = []
-    migration_needed = False
-    for idx, egg in enumerate(eggs):
-        if isinstance(egg, str):
-            migration_needed = True
-            tier_key, tier_info = get_egg_tier_info(egg)
-            base_wait_min = get_incubation_wait_minutes(tier_key, active_pet_for_eggs)
-            wait_min = apply_pass_incubation_bonus(base_wait_min, user)
-            stable_id = str(uuid.uuid4())[:12]
-            processed_eggs.append({
-                "id": f"mig_{stable_id}",
-                "tier": tier_key,
-                "name": tier_info["name"],
-                "status": "fresh",
-                "is_corrupted": False,
-                "hatch_time": None,
-                "remaining_mins": 0,
-                "base_wait_min": base_wait_min,
-                "wait_min": wait_min
-            })
-            continue
-
-        tier_key, tier_info = get_egg_tier_info(egg.get("tier", "common"))
-        base_wait_min = get_incubation_wait_minutes(tier_key, active_pet_for_eggs)
-        wait_min = apply_pass_incubation_bonus(base_wait_min, user)
-        h_time = egg.get("hatch_time")
-        rem_mins = 0
-        if h_time and isinstance(h_time, datetime):
-            if h_time.tzinfo is None:
-                h_time = h_time.replace(tzinfo=timezone.utc)
-            now = datetime.now(timezone.utc)
-            if now < h_time:
-                rem_mins = int((h_time - now).total_seconds() / 60)
-            h_time = h_time.isoformat()
-        
-        processed_eggs.append({
-            "id": egg.get("id"),
-            "tier": tier_key,
-            "name": egg.get("name") or tier_info["name"],
-            "status": egg.get("status", "fresh"),
-            "is_corrupted": egg.get("is_corrupted", False),
-            "hatch_time": h_time,
-            "remaining_mins": rem_mins,
-            "base_wait_min": int(egg.get("incubation_base_minutes") or base_wait_min),
-            "wait_min": int(egg.get("incubation_minutes") or wait_min),
-            "incubation_pass_type": egg.get("incubation_pass_type") or pass_type
-        })
+    processed_eggs, migration_needed = _process_eggs(user, active_pet_for_eggs, pass_type)
     resp_data["eggs"] = processed_eggs
     
     if migration_needed:
-        from backend.core.utils import get_user_id_query
         derived_fields = {"remaining_mins", "wait_min", "base_wait_min"}
         db_eggs = [{k: v for k, v in e.items() if k not in derived_fields} for e in processed_eggs]
         run_background_task(user_collection.update_one(

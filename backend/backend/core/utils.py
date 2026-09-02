@@ -97,6 +97,46 @@ async def notify_handler_error(update, text: str = "This command failed. Please 
     except Exception as e:
         LOGGER.debug(f"Could not send handler error notice: {e}")
 
+async def _is_duplicate_update(message) -> bool:
+    """True if this (chat_id, message_id) was already processed (replay guard)."""
+    try:
+        _src = message if isinstance(message, types.Message) else getattr(message, "message", None)
+        if _src is not None and _src.chat is not None and _redis is not None:
+            _dedup_key = f"dedup:{_src.chat.id}:{_src.id}"
+            return not await _redis.set(_dedup_key, "1", ex=60, nx=True)
+    except Exception:
+        pass
+    return False
+
+
+def _is_start_like_message(message) -> bool:
+    """True for /start commands or the entry-point callback buttons."""
+    if isinstance(message, types.Message):
+        text = message.text or message.caption or ""
+        return text.startswith("/start")
+    if isinstance(message, types.CallbackQuery):
+        return bool(message.data and message.data.startswith(("st:", "help:", "free_spin")))
+    return False
+
+
+async def _deny_unregistered(message, user) -> None:
+    """Tell an unregistered user to /start the bot in DM first."""
+    markup = types.InlineKeyboardMarkup([[
+        types.InlineKeyboardButton("🚀 Start Bot in DM", url=f"https://t.me/{config.BOT_USERNAME}?start=true")
+    ]])
+    text = f"❌ <b>Access Denied</b>\n\n<a href='tg://user?id={user.id}'>{html_escape(user.first_name)}</a>, you must start the bot in private messages first before playing!"
+    if hasattr(message, "reply_text"):
+        try:
+            await message.reply_text(text, reply_markup=markup, parse_mode=enums.ParseMode.HTML)
+        except Exception:
+            pass
+    elif hasattr(message, "answer"):
+        try:
+            await message.answer("You must start the bot in PM first!", show_alert=True)
+        except Exception:
+            pass
+
+
 def handle_errors(func):
     """
     Decorator to handle common Pyrogram errors in command handlers,
@@ -109,14 +149,8 @@ def handle_errors(func):
         # 0. Idempotency: dedupe by (chat_id, message_id) to collapse
         # reconnect/replay re-deliveries of the same update. Skips silent on
         # any error or when Redis is unavailable (failsafe: allow).
-        try:
-            _src = message if isinstance(message, types.Message) else getattr(message, "message", None)
-            if _src is not None and _src.chat is not None and _redis is not None:
-                _dedup_key = f"dedup:{_src.chat.id}:{_src.id}"
-                if not await _redis.set(_dedup_key, "1", ex=60, nx=True):
-                    return
-        except Exception:
-            pass
+        if await _is_duplicate_update(message):
+            return
 
         # 1. Registration Check
         user = getattr(message, "from_user", None)
@@ -124,36 +158,14 @@ def handle_errors(func):
             from backend.core.roles import is_staff
 
             is_sudo = is_staff(user.id)
-
-            is_start = False
-            if isinstance(message, types.Message):
-                text = message.text or message.caption or ""
-                if text.startswith("/start"):
-                    is_start = True
-            elif isinstance(message, types.CallbackQuery):
-                if message.data and message.data.startswith(("st:", "help:", "free_spin")):
-                    is_start = True
-
+            is_start = _is_start_like_message(message)
             if not is_start and not is_sudo:
                 cached = await get_cached_user(user.id)
                 if not cached:
                     db_user = await user_collection.find_one({"id": {"$in": [user.id, str(user.id)]}})
                     if not db_user:
-                        markup = types.InlineKeyboardMarkup([[
-                            types.InlineKeyboardButton("🚀 Start Bot in DM", url=f"https://t.me/{config.BOT_USERNAME}?start=true")
-                        ]])
-                        text = f"❌ <b>Access Denied</b>\n\n<a href='tg://user?id={user.id}'>{html_escape(user.first_name)}</a>, you must start the bot in private messages first before playing!"
-                        if hasattr(message, "reply_text"):
-                            try:
-                                await message.reply_text(text, reply_markup=markup, parse_mode=enums.ParseMode.HTML)
-                            except Exception:
-                                pass
-                        elif hasattr(message, "answer"):
-                            try:
-                                await message.answer("You must start the bot in PM first!", show_alert=True)
-                            except Exception:
-                                pass
-                        return # Stop execution!
+                        await _deny_unregistered(message, user)
+                        return  # Stop execution!
 
         # 2. Proceed with handler inside try-except
         try:

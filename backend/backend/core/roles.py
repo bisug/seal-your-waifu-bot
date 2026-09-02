@@ -79,6 +79,7 @@ sudo_roles = {int(user_id): MODERATOR_ROLE for user_id in sudo_users}
 
 
 def normalize_role(role: Any) -> str | None:
+    """Map a role alias (mod/sudo/admin/upload) to its canonical role name."""
     value = str(role or "").strip().lower()
     aliases = {
         "mod": MODERATOR_ROLE,
@@ -194,6 +195,7 @@ def format_role_benefits(perks: dict | None) -> list[str]:
 
 
 def get_role_payload(user_id: int | str | None) -> dict:
+    """Full role descriptor for a user: labels, flags, perks, and benefits."""
     role = get_user_role(user_id)
     if not role:
         return {
@@ -226,6 +228,7 @@ def get_role_payload(user_id: int | str | None) -> dict:
 
 
 def format_upload_reward(reward: dict | None) -> str:
+    """Human-readable '+X Shards and +Y Zenith' string for an upload reward."""
     if not reward:
         return ""
     parts = []

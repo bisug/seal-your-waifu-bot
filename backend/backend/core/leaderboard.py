@@ -68,6 +68,7 @@ async def get_user_rank(user_id: int, metric: str = "level") -> Optional[int]:
 
 
 async def get_total_ranked_users(metric: str = "level") -> int:
+    """Count of users tracked in a metric's Redis ZSET (0 if Redis is down)."""
     if not _redis: return 0
     key = _zset_key(metric)
     try: return await _redis.zcard(key)

@@ -11,6 +11,10 @@ LOGGER = logging.getLogger(__name__)
 
 DEFAULT_PETID = "fluffy_fox"
 
+MAX_AFFECTION = 100
+AFFECTION_DECAY_PER_DAY = 5
+XP_PER_LEVEL = 100
+
 
 PET_ID_ALIASES = {
     "Fluffy Fox 🦊": "fluffy_fox",
@@ -155,6 +159,7 @@ def pet_id_from_name(name: str | None) -> str | None:
 
 
 def get_pet_key(pet: dict | None) -> str | None:
+    """Extract a pet's canonical id from any dict shape (petid/id/name)."""
     if not isinstance(pet, dict):
         return None
     return str(
@@ -193,6 +198,7 @@ def copy_default_pet() -> dict:
 
 
 def normalize_pet(pet: dict | None, template: dict | None = None) -> dict:
+    """Merge an ownership record with its catalog template into a full pet doc."""
     ownership = pet if isinstance(pet, dict) else {}
     petid = get_pet_key(ownership) or DEFAULT_PETID
     has_catalog_fields = any(key in ownership for key in ("name", "img", "hp", "atk", "spd", "luck", "ability"))
@@ -207,9 +213,9 @@ def normalize_pet(pet: dict | None, template: dict | None = None) -> dict:
     normalized["id"] = catalog["petid"]
     normalized["level"] = max(1, int(ownership.get("level") or 1))
     normalized["xp"] = max(0, int(ownership.get("xp") or 0))
-    normalized["xp_needed"] = normalized["level"] * 100
+    normalized["xp_needed"] = normalized["level"] * XP_PER_LEVEL
     normalized["owned"] = bool(ownership.get("owned", True))
-    normalized["affection"] = max(0, min(100, int(ownership.get("affection", 50) or 0)))
+    normalized["affection"] = max(0, min(MAX_AFFECTION, int(ownership.get("affection", 50) or 0)))
     normalized["last_interacted"] = float(ownership.get("last_interacted") or 0)
     return normalized
 
@@ -220,7 +226,7 @@ def pet_for_storage(pet: dict) -> dict:
         "petid": petid,
         "level": max(1, int(pet.get("level") or 1)),
         "xp": max(0, int(pet.get("xp") or 0)),
-        "affection": max(0, min(100, int(pet.get("affection", 50) or 0))),
+        "affection": max(0, min(MAX_AFFECTION, int(pet.get("affection", 50) or 0))),
         "last_interacted": float(pet.get("last_interacted") or 0),
     }
 
@@ -241,6 +247,7 @@ def pet_matches(pet: dict | None, ref: Any) -> bool:
 
 
 def find_pet(pets: list[dict], ref: Any) -> dict | None:
+    """Return the first pet matching ref (petid, id, or name), else None."""
     return next((pet for pet in pets if pet_matches(pet, ref)), None)
 
 
@@ -249,13 +256,14 @@ def find_pet_index(pets: list[dict], ref: Any) -> int:
 
 
 def get_effective_affection(pet: dict) -> int:
+    """Affection clamped to 0-100, reduced by daily decay since last interaction."""
     base_affection = pet.get("affection", 50)
     last_interacted = pet.get("last_interacted", 0)
     if last_interacted == 0:
-        return max(0, min(100, int(base_affection or 0)))
+        return max(0, min(MAX_AFFECTION, int(base_affection or 0)))
     days_passed = (time.time() - float(last_interacted or 0)) / 86400.0
-    decay = int(days_passed * 5)
-    return max(0, min(100, int(base_affection or 0) - decay))
+    decay = int(days_passed * AFFECTION_DECAY_PER_DAY)
+    return max(0, min(MAX_AFFECTION, int(base_affection or 0) - decay))
 
 
 def get_caregiver_incubation_minutes(wait_min: int, active_pet: dict | None) -> int:
@@ -381,6 +389,7 @@ async def _normalize_user_pets(raw_pets: list) -> tuple[list[dict], list[dict]]:
 
 
 async def ensure_user_pet_state(user_id: int, user: dict | None = None) -> dict:
+    """Normalize a user's pets array in DB, guaranteeing a valid current pet. Returns enriched pets."""
     from backend.core.cache import invalidate_user_cache
     from backend.core.user import add_user_set_on_insert, get_user_filter
     from backend.database import user_collection

@@ -70,6 +70,7 @@ async def create_session(
 
 
 async def get_session(session_id: str) -> Optional[dict]:
+    """Fetch a live session's data from Redis, falling back to Mongo."""
     key = _session_key(session_id)
     if _redis:
         data = await rget_json(key)
@@ -86,6 +87,7 @@ async def get_session(session_id: str) -> Optional[dict]:
 
 
 async def delete_session(session_id: str):
+    """Remove a session from both Redis and Mongo."""
     key = _session_key(session_id)
     await rdel(key)
     await sessions_collection.delete_one({"_id": key})

@@ -88,32 +88,60 @@ async def add_xp(
     if new_level > old_level:
         await check_and_grant_rewards(user_id, old_level, new_level, user, session=session)
     return new_xp
-async def check_and_grant_rewards(user_id: int, old_level: int, new_level: int, user_data: dict = None, *, session=None):
+def _fallback_level_reward(level: int, pass_type: str) -> int:
+    """Scaling for levels beyond the defined PASS_TRACKS table."""
+    if pass_type == "free":
+        return 100 + (level * 2)
+    if pass_type == "premium":
+        return 300 + (level * 4)
+    return 500 + (level * 6)
+
+
+def _compute_pass_rewards(
+    pass_type: str, old_level: int, new_level: int, claimed_levels: set
+) -> tuple[list, int, list, int, dict]:
     """
-    Iterate through newly reached levels and grant corresponding rewards
-    based on the user's Battle Pass type. Also tracks Pass Bank for free users.
+    Compute rewards for levels in (old_level, new_level] not yet claimed.
+    Returns (newly_claimed, coins_earned, eggs_awarded, bank_shards, bank_eggs).
+    Unowned-tier rewards are banked instead of granted.
     """
-    if user_data is None:
-        user = await user_collection.find_one(get_user_filter(user_id), session=session)
-    else:
-        user = user_data
-    pass_type = get_active_pass_type(user)
-    claimed_levels = set(get_pass_claimed_levels(user))
     import uuid
+
     total_coins_earned = 0
     eggs_awarded = []
     newly_claimed = []  # Tracks only levels claimed in this call (for $addToSet)
     bank_shards = 0
-    bank_eggs = {} # tier: count
+    bank_eggs = {}  # tier: count
+
     def add_egg(tier):
         eggs_awarded.append({
             "id": str(uuid.uuid4()),
             "tier": str(tier),
             "status": "fresh"
         })
+
     def bank_egg(tier):
         tier_str = str(tier)
         bank_eggs[tier_str] = bank_eggs.get(tier_str, 0) + 1
+
+    def apply_reward(reward: dict, extra_amount: int = 0, *, bank: bool = False):
+        nonlocal total_coins_earned, bank_shards
+        if reward["type"] == "shards":
+            if bank:
+                bank_shards += reward["amount"]
+            else:
+                total_coins_earned += reward["amount"]
+        elif reward["type"] == "egg":
+            if bank:
+                bank_egg(reward["tier"])
+            else:
+                add_egg(reward["tier"])
+        if extra_amount:
+            if bank:
+                bank_shards += extra_amount
+            else:
+                total_coins_earned += extra_amount
+
     for level in range(old_level + 1, new_level + 1):
         if level in claimed_levels:
             continue
@@ -127,26 +155,8 @@ async def check_and_grant_rewards(user_id: int, old_level: int, new_level: int, 
         track = PASS_TRACKS.get(level)
         if not track:
             # Fallback scaling for level > 100
-            reward = 100 + (level * 2) if pass_type == "free" else 300 + (level * 4) if pass_type == "premium" else 500 + (level * 6)
-            total_coins_earned += reward
+            total_coins_earned += _fallback_level_reward(level, pass_type)
             continue
-        def apply_reward(reward: dict, extra_amount: int = 0, *, bank: bool = False):
-            nonlocal total_coins_earned, bank_shards
-            if reward["type"] == "shards":
-                if bank:
-                    bank_shards += reward["amount"]
-                else:
-                    total_coins_earned += reward["amount"]
-            elif reward["type"] == "egg":
-                if bank:
-                    bank_egg(reward["tier"])
-                else:
-                    add_egg(reward["tier"])
-            if extra_amount:
-                if bank:
-                    bank_shards += extra_amount
-                else:
-                    total_coins_earned += extra_amount
 
         apply_reward(track["free"])
 
@@ -161,6 +171,24 @@ async def check_and_grant_rewards(user_id: int, old_level: int, new_level: int, 
             apply_reward(track["elite"], elite_extra)
         else:
             apply_reward(track["elite"], elite_extra, bank=True)
+
+    return newly_claimed, total_coins_earned, eggs_awarded, bank_shards, bank_eggs
+
+
+async def check_and_grant_rewards(user_id: int, old_level: int, new_level: int, user_data: dict = None, *, session=None):
+    """
+    Iterate through newly reached levels and grant corresponding rewards
+    based on the user's Battle Pass type. Also tracks Pass Bank for free users.
+    """
+    if user_data is None:
+        user = await user_collection.find_one(get_user_filter(user_id), session=session)
+    else:
+        user = user_data
+    pass_type = get_active_pass_type(user)
+    claimed_levels = set(get_pass_claimed_levels(user))
+    newly_claimed, total_coins_earned, eggs_awarded, bank_shards, bank_eggs = _compute_pass_rewards(
+        pass_type, old_level, new_level, claimed_levels
+    )
     # Perform DB Updates
     updates = {}
     # Use $addToSet instead of $set so concurrent grants don't overwrite each other

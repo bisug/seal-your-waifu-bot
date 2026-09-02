@@ -70,6 +70,11 @@ _BARE_LOOKUP: dict[str, int] = {}
 
 _RARITY_DOCS: list[dict] = []
 
+# Max docs fetched per read; there are ~10 rarities so this is headroom.
+_FETCH_LIMIT = 1000
+# Sort key for docs missing an _id — pushes them to the end.
+_UNSORTED_SENTINEL = 10**9
+
 
 def compose_label(emoji: str, name: str) -> str:
     return f"{emoji} {name}".strip() if emoji else str(name)
@@ -124,7 +129,7 @@ def _default_docs() -> list[dict]:
 
 def _apply_docs(docs: list[dict]) -> None:
     global _RARITY_DOCS
-    docs = sorted(docs, key=lambda d: d.get("_id", 10**9))
+    docs = sorted(docs, key=lambda d: d.get("_id", _UNSORTED_SENTINEL))
     for target in (RARITY_MAP, RARITY_IDS, SPAWN_RARITY_WEIGHTS,
                    ACTIVE_SPAWN_RARITY_WEIGHTS, SHOP_RARITY_WEIGHTS,
                    CLAIM_RARITY_WEIGHTS, RARITY_PRICES,
@@ -185,43 +190,62 @@ async def _migrate_label_keyed_docs(docs: list[dict]) -> list[dict]:
     return migrated
 
 
+async def _seed_defaults_if_empty(rarities_collection) -> list:
+    """Insert default docs on an empty collection, then re-fetch."""
+    try:
+        await rarities_collection.insert_many(_default_docs())
+    except Exception as e:
+        LOGGER.warning("Rarity seed insert failed (%s); re-fetching.", e)
+    return await rarities_collection.find({}).to_list(length=_FETCH_LIMIT)
+
+
+async def _backfill_missing_defaults(rarities_collection, docs: list) -> list:
+    """Insert any default docs missing from a partially-seeded collection."""
+    existing_ids = {d["_id"] for d in docs if isinstance(d["_id"], int)}
+    missing = [d for d in _default_docs() if d["_id"] not in existing_ids]
+    if not missing:
+        return docs
+    try:
+        await rarities_collection.insert_many(missing)
+        docs.extend(missing)
+        LOGGER.info("Backfilled %s missing default rarities.", len(missing))
+    except Exception as e:
+        LOGGER.warning("Rarity backfill insert failed: %s", e)
+    return docs
+
+
+async def _backfill_milestones(rarities_collection, docs: list) -> None:
+    """Persist the `milestone` field on docs from before it was DB-backed."""
+    defaults_by_id = {d["_id"]: d for d in _default_docs()}
+    for doc in docs:
+        if not isinstance(doc.get("_id"), int) or "milestone" in doc:
+            continue
+        default_milestone = defaults_by_id.get(doc["_id"], {}).get("milestone", 0)
+        if not default_milestone:
+            continue
+        doc["milestone"] = default_milestone
+        try:
+            await rarities_collection.update_one(
+                {"_id": doc["_id"]}, {"$set": {"milestone": default_milestone}}
+            )
+        except Exception as e:
+            LOGGER.warning("Milestone backfill failed for %s: %s", doc["_id"], e)
+
+
 async def load_rarities() -> int:
     """Load rarities from DB, seeding from defaults on first startup."""
     from backend.database import rarities_collection
     try:
-        docs = await rarities_collection.find({}).to_list(length=1000)
+        docs = await rarities_collection.find({}).to_list(length=_FETCH_LIMIT)
         if docs and any(isinstance(d["_id"], str) for d in docs):
             docs = await _migrate_label_keyed_docs(docs)
         if not docs:
-            try:
-                await rarities_collection.insert_many(_default_docs())
-            except Exception as e:
-                LOGGER.warning("Rarity seed insert failed (%s); re-fetching.", e)
-            docs = await rarities_collection.find({}).to_list(length=1000)
+            docs = await _seed_defaults_if_empty(rarities_collection)
         else:
             # Backfill defaults missing from the collection (partial seed).
-            existing_ids = {d["_id"] for d in docs if isinstance(d["_id"], int)}
-            missing = [d for d in _default_docs() if d["_id"] not in existing_ids]
-            if missing:
-                try:
-                    await rarities_collection.insert_many(missing)
-                    docs.extend(missing)
-                    LOGGER.info("Backfilled %s missing default rarities.", len(missing))
-                except Exception as e:
-                    LOGGER.warning("Rarity backfill insert failed: %s", e)
+            docs = await _backfill_missing_defaults(rarities_collection, docs)
             # Backfill `milestone` on docs from before the field was DB-backed.
-            defaults_by_id = {d["_id"]: d for d in _default_docs()}
-            for doc in docs:
-                if isinstance(doc.get("_id"), int) and "milestone" not in doc:
-                    default_milestone = defaults_by_id.get(doc["_id"], {}).get("milestone", 0)
-                    if default_milestone:
-                        doc["milestone"] = default_milestone
-                        try:
-                            await rarities_collection.update_one(
-                                {"_id": doc["_id"]}, {"$set": {"milestone": default_milestone}}
-                            )
-                        except Exception as e:
-                            LOGGER.warning("Milestone backfill failed for %s: %s", doc["_id"], e)
+            await _backfill_milestones(rarities_collection, docs)
         _apply_docs(docs)
         LOGGER.info("Loaded %s rarities from database.", len(docs))
         return len(docs)
@@ -233,7 +257,7 @@ async def load_rarities() -> int:
 async def refresh_rarities() -> int:
     """Re-read the collection into the live dicts. Returns doc count."""
     from backend.database import rarities_collection
-    docs = await rarities_collection.find({}).to_list(length=1000)
+    docs = await rarities_collection.find({}).to_list(length=_FETCH_LIMIT)
     _apply_docs(docs)
     return len(docs)
 

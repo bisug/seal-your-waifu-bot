@@ -21,11 +21,13 @@ def normalize_egg_tier(raw_tier) -> str:
 
 
 def get_egg_tier_info(raw_tier) -> tuple[str, dict]:
+    """Normalized tier name plus its metadata dict."""
     tier = normalize_egg_tier(raw_tier)
     return tier, EGG_TIERS[tier]
 
 
 def get_incubation_wait_minutes(raw_tier, active_pet: dict | None = None) -> int:
+    """Incubation minutes for a tier, reduced by a Caregiver pet if active."""
     _, tier_info = get_egg_tier_info(raw_tier)
     return get_caregiver_incubation_minutes(tier_info["wait_min"], active_pet)
 
@@ -52,4 +54,5 @@ def roll_egg_tier(luck_multiplier: float = 0.0, quality_bonus: float = 0.0) -> s
 
 
 def get_incubating_count(eggs: list) -> int:
+    """Count of eggs in the user's list currently incubating."""
     return sum(1 for egg in eggs if isinstance(egg, dict) and egg.get("status") == "incubating")

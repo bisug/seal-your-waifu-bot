@@ -32,6 +32,75 @@ async def harem_view_btn_handler(_, query: types.CallbackQuery):
         return await query.answer("❌ This is not your profile!", show_alert=True)
     await query.answer()
     await show_harem(query, owner_id, 0)
+def _group_and_sort(all_chars: list, favorites: list) -> tuple[Counter, list]:
+    """(id -> copy count, unique chars sorted fav-first then anime then name)."""
+    char_counts = Counter(c.get('id') for c in all_chars)
+    # Performance: Group characters BEFORE sorting for large collection speedup
+    unique_chars_map = {}
+    for char in all_chars:
+        cid = char.get('id')
+        if cid and cid not in unique_chars_map:
+            unique_chars_map[cid] = char
+    unique_chars = sorted(
+        unique_chars_map.values(),
+        key=lambda x: (str(x.get('id')) not in favorites, x.get('anime', ''), x.get('name', ''))
+    )
+    return char_counts, unique_chars
+
+
+def _render_page(unique_chars: list, char_counts: Counter, page: int, per_page: int,
+                 char_format: str, favorites: list) -> str:
+    """Render one page of the harem listing, grouped by anime headers."""
+    start_idx = page * per_page
+    current_slice = unique_chars[start_idx : start_idx + per_page]
+    last_anime = ""
+    text = ""
+    for char in current_slice:
+        anime = char.get('anime', 'Mixed')
+        char_id = str(char.get('id', 'N/A'))
+
+        if anime != last_anime:
+            text += f"<b>{escape(anime)}</b>\n"
+            last_anime = anime
+
+        is_fav = char_id in favorites
+        fav_icon = " ⭐" if is_fav else ""
+
+        text += char_format.format(
+            anime=anime,
+            rarity=char.get('rarity', 'Common'),
+            id=char_id,
+            name=f"{escape(char.get('name', 'Unknown'))}{fav_icon}",
+            count=char_counts.get(char_id, 1)
+        ) + "\n\n"
+    return text
+
+
+async def _send_harem(message_obj, harem_text: str, markup, all_chars: list):
+    """Edit (callback) or send (command) the harem view, with a random cover pic."""
+    try:
+        pic = random.choice(all_chars).get('img_url')
+    except Exception:
+        pic = None
+    if isinstance(message_obj, types.CallbackQuery):
+        if pic:
+            await message_obj.edit_message_media(
+                media=types.InputMediaPhoto(media=pic, caption=harem_text, parse_mode=enums.ParseMode.HTML),
+                reply_markup=markup
+            )
+        else:
+            await message_obj.edit_message_text(text=harem_text, reply_markup=markup, parse_mode=enums.ParseMode.HTML)
+    else:
+        if pic:
+            await reply_media_dynamic(message_obj, pic,
+                caption=harem_text,
+                reply_markup=markup,
+                parse_mode=enums.ParseMode.HTML
+            )
+        else:
+            await message_obj.reply_text(harem_text, reply_markup=markup, parse_mode=enums.ParseMode.HTML)
+
+
 async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], user_id: int, page: int):
     try:
         from backend.database import user_collection
@@ -55,20 +124,8 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
                 return await message_obj.answer(text, show_alert=True)
             return await message_obj.reply_text(text, parse_mode=enums.ParseMode.HTML)
 
-        char_counts = Counter(c.get('id') for c in all_chars)
-        # Performance: Group characters BEFORE sorting for large collection speedup
-        unique_chars_map = {}
-        for char in all_chars:
-            cid = char.get('id')
-            if cid and cid not in unique_chars_map:
-                unique_chars_map[cid] = char
         favorites = user.get('favorites', [])
-        
-        # Sort characters: Favorites first, then by Anime, then by Name
-        unique_chars = sorted(
-            unique_chars_map.values(),
-            key=lambda x: (str(x.get('id')) not in favorites, x.get('anime', ''), x.get('name', ''))
-        )
+        char_counts, unique_chars = _group_and_sort(all_chars, favorites)
 
         per_page = 7
         total_pages = math.ceil(len(unique_chars) / per_page)
@@ -91,27 +148,7 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
             "━━━━━━━━━━━━━━━━━━━━━\n\n"
         )
         
-        start_idx = page * per_page
-        current_slice = unique_chars[start_idx : start_idx + per_page]
-        last_anime = ""
-        for char in current_slice:
-            anime = char.get('anime', 'Mixed')
-            char_id = str(char.get('id', 'N/A'))
-            
-            if anime != last_anime:
-                harem_text += f"<b>{escape(anime)}</b>\n"
-                last_anime = anime
-                
-            is_fav = char_id in favorites
-            fav_icon = " ⭐" if is_fav else ""
-            
-            harem_text += char_format.format(
-                anime=anime,
-                rarity=char.get('rarity', 'Common'),
-                id=char_id,
-                name=f"{escape(char.get('name', 'Unknown'))}{fav_icon}",
-                count=char_counts.get(char_id, 1)
-            ) + "\n\n"
+        harem_text += _render_page(unique_chars, char_counts, page, per_page, char_format, favorites)
         harem_text += f"<i>Page {page + 1} of {total_pages}</i>"
         is_private = (message_obj.message if isinstance(message_obj, types.CallbackQuery) else message_obj).chat.type == enums.ChatType.PRIVATE
         markup = get_paginated_keyboard(page, total_pages, "h", uid_int, is_private, webapp_path="#harem")
@@ -119,27 +156,7 @@ async def show_harem(message_obj: Union[types.Message, types.CallbackQuery], use
         builder.keyboard = markup.inline_keyboard.copy()
         builder.add_row(types.InlineKeyboardButton("Search Collection", switch_inline_query_current_chat=f"collection.{uid_int} "))
         markup = builder.build()
-        try:
-            pic = random.choice(all_chars).get('img_url')
-        except Exception:
-            pic = None
-        if isinstance(message_obj, types.CallbackQuery):
-            if pic:
-                 await message_obj.edit_message_media(
-                    media=types.InputMediaPhoto(media=pic, caption=harem_text, parse_mode=enums.ParseMode.HTML),
-                    reply_markup=markup
-                )
-            else:
-                await message_obj.edit_message_text(text=harem_text, reply_markup=markup, parse_mode=enums.ParseMode.HTML)
-        else:
-            if pic:
-                await reply_media_dynamic(message_obj, pic,
-                    caption=harem_text,
-                    reply_markup=markup,
-                    parse_mode=enums.ParseMode.HTML
-                )
-            else:
-                 await message_obj.reply_text(harem_text, reply_markup=markup, parse_mode=enums.ParseMode.HTML)
+        await _send_harem(message_obj, harem_text, markup, all_chars)
     except errors.MessageNotModified:
         pass
     except Exception as e:

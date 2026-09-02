@@ -9,6 +9,11 @@ while new purchases are stored under pass_entitlements.<season_id>.
 CURRENT_PASS_SEASON = "s1"
 PASS_SEASON_NAME = "Ascendant Tide"
 MAX_PASS_LEVEL = 100
+# Milestone levels with special (egg) rewards on the pass track.
+PASS_MILESTONE_LEVELS = [5, 10, 20, 25, 30, 40, 50, 60, 75, 80, 90, 100]
+MID_PASS_MILESTONES = {25, 75}
+HALFWAY_LEVEL = 50
+FINAL_PASS_LEVEL = 100
 
 PASS_TIERS = ("free", "premium", "elite")
 PASS_TIER_RANK = {tier: rank for rank, tier in enumerate(PASS_TIERS)}
@@ -90,10 +95,12 @@ def normalize_pass_tier(tier: str | None) -> str:
 
 
 def get_pass_rank(tier: str | None) -> int:
+    """Numeric rank of a tier (free=0 < premium=1 < elite=2) for comparisons."""
     return PASS_TIER_RANK[normalize_pass_tier(tier)]
 
 
 def get_active_pass_type(user: dict | None) -> str:
+    """Resolve the user's effective pass tier for the current season (legacy-aware)."""
     if not user:
         return "free"
 
@@ -136,6 +143,7 @@ def get_pass_bank(user: dict | None) -> dict:
 
 
 def calculate_pass_upgrade_price(current_tier: str | None, target_tier: str) -> int | None:
+    """Stars price to upgrade between tiers (credit for the current one), or None if not an upgrade."""
     current_tier = normalize_pass_tier(current_tier)
     target_tier = normalize_pass_tier(target_tier)
     if target_tier == "free":
@@ -149,12 +157,14 @@ def calculate_pass_upgrade_price(current_tier: str | None, target_tier: str) -> 
 
 
 def apply_pass_incubation_bonus(minutes: int, user: dict | None) -> int:
+    """Scale egg incubation minutes by the user's tier multiplier (lower is faster)."""
     tier = get_active_pass_type(user)
     multiplier = PASS_BENEFITS[tier]["incubation_multiplier"]
     return max(1, int(minutes * multiplier))
 
 
 def get_pass_incubation_slots(user: dict | None) -> int:
+    """Number of simultaneous egg incubators the user's tier allows."""
     tier = get_active_pass_type(user)
     return int(PASS_BENEFITS[tier].get("incubation_slots", 1))
 
@@ -196,7 +206,7 @@ def _milestone_track(level: int) -> dict:
             "elite_extra_amount": 5_000 + level * 70,
         })
 
-    if level in {25, 75}:
+    if level in MID_PASS_MILESTONES:
         track.update({
             "free": _egg(2),
             "premium": _egg(3),
@@ -205,7 +215,7 @@ def _milestone_track(level: int) -> dict:
             "elite_extra_amount": 15_000 + level * 120,
         })
 
-    if level == 50:
+    if level == HALFWAY_LEVEL:
         track.update({
             "free": _egg(3),
             "premium": _egg(4),
@@ -214,7 +224,7 @@ def _milestone_track(level: int) -> dict:
             "elite_extra_amount": 40_000,
         })
 
-    if level == 100:
+    if level == FINAL_PASS_LEVEL:
         track.update({
             "free": _egg(4),
             "premium": _egg(5),
@@ -228,4 +238,4 @@ def _milestone_track(level: int) -> dict:
 
 PASS_TRACKS = {level: _milestone_track(level) for level in range(1, MAX_PASS_LEVEL + 1)}
 
-PASS_MILESTONES = [5, 10, 20, 25, 30, 40, 50, 60, 75, 80, 90, 100]
+PASS_MILESTONES = PASS_MILESTONE_LEVELS

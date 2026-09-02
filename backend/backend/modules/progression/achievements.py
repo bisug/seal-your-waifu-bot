@@ -101,6 +101,7 @@ ACHIEVEMENTS = {
     }
 }
 async def check_achievements(user_id: int):
+    """Evaluate all achievement conditions for a user and unlock newly earned ones."""
     user = await user_collection.find_one({"id": user_id})
     if not user: return
     user_achievements = set(user.get("achievements", []))
