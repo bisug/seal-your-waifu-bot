@@ -17,6 +17,7 @@ from backend.core.tasks import run_background_task
 # public names used across the codebase.
 from backend.core.utils import get_user_id_query as get_user_filter
 from backend.core.utils import normalize_user_id as get_user_id
+from backend.database import r as _redis
 from backend.database import user_collection
 
 LOGGER = get_logger(__name__)
@@ -182,9 +183,19 @@ async def add_char_to_user(user_id: int, character: dict):
         }, user_id),
         upsert=True
     )
-    # Sync with Redis Harem Leaderboard
-    user_doc = await user_collection.find_one(get_user_filter(user_id), {"char_count": 1})
-    new_count = user_doc["char_count"] if user_doc else 1
+    # Sync with Redis Harem Leaderboard — the cached count is one behind after
+    # the push, so increment it locally instead of re-reading the doc from
+    # Mongo (saves a round trip on every catch).
+    if _redis is not None:
+        try:
+            new_count = await _redis.hincrby(f"user:{user_id}", "char_count", 1)
+        except Exception:
+            new_count = None
+    else:
+        new_count = None
+    if new_count is None:
+        user_doc = await user_collection.find_one(get_user_filter(user_id), {"char_count": 1})
+        new_count = user_doc["char_count"] if user_doc else 1
     await update_user_rank(user_id, new_count, metric="harem")
     await invalidate_user_cache(user_id)
 async def remove_char_from_user(user_id: int, char_id: str) -> bool:

@@ -76,27 +76,32 @@ async def seal_handler(_, message: types.Message):
             except errors.RPCError as e:
                 LOGGER.debug(f"Reaction task handled: {e}")
         run_background_task(send_reactions())
-        await add_char_to_user(user_id, character)
-        await group_user_totals_collection.update_one(
-            {"group_id": chat_id, "user_id": user_id},
-            {"$inc": {"count": 1}},
-            upsert=True
-        )
-        # Run independent post-catch operations concurrently (3 sequential DB writes → 1 parallel wait)
-        await asyncio.gather(
-            add_xp(user_id, 10, "character_catch"),
-            update_quest_progress(user_id, "catch_master", 1),
-            update_quest_progress(user_id, "weekly_catch", 1),
-            update_quest_progress(user_id, "pass_collector", 1),
-        )
-        # check_achievements reads XP/character state, so it runs after the gather above
-        await check_achievements(user_id)
-        spawn_msg_id = state.get("message_id")
-        if spawn_msg_id:
-            try:
-                await app.delete_messages(chat_id, spawn_msg_id)
-            except errors.RPCError:
-                pass
+        # Everything below is post-claim bookkeeping — none of it blocks the
+        # catch confirmation. Reply first, then flush writes in the background
+        # so the user sees the catch in one Telegram round trip.
+        async def post_catch_writes():
+            await add_char_to_user(user_id, character)
+            await group_user_totals_collection.update_one(
+                {"group_id": chat_id, "user_id": user_id},
+                {"$inc": {"count": 1}},
+                upsert=True
+            )
+            # Run independent post-catch operations concurrently (3 sequential DB writes → 1 parallel wait)
+            await asyncio.gather(
+                add_xp(user_id, 10, "character_catch"),
+                update_quest_progress(user_id, "catch_master", 1),
+                update_quest_progress(user_id, "weekly_catch", 1),
+                update_quest_progress(user_id, "pass_collector", 1),
+            )
+            # check_achievements reads XP/character state, so it runs after the gather above
+            await check_achievements(user_id)
+            spawn_msg_id = state.get("message_id")
+            if spawn_msg_id:
+                try:
+                    await app.delete_messages(chat_id, spawn_msg_id)
+                except errors.RPCError:
+                    pass
+        run_background_task(post_catch_writes())
         caption = (
             f"<b><a href=\"tg://user?id={message.from_user.id}\">{html_escape(message.from_user.first_name)}</a> caught the character!</b>\n\n"
             f"<b>Name:</b> {html_escape(character['name'])}\n"

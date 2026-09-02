@@ -10,6 +10,7 @@ from pyrogram import enums
 from backend.client import app
 from backend.core.cache import rget, rset
 from backend.core.logging import get_logger
+from backend.core.tasks import run_background_task
 from backend.core.waifu import get_or_load_characters
 from backend.database import message_counts_collection, spawns_collection, user_totals_collection
 from backend.database import r as _redis
@@ -232,7 +233,11 @@ async def set_active_spawn(chat_id: int, character: Dict[str, Any], message_id: 
         "first_correct_guess": None,
         "last_spawn_time": time.time()
     }
-    await spawns_collection.update_one({"chat_id": chat_id}, {"$set": mongo_data}, upsert=True)
+    # Mongo is only the fallback store (/seal reads Redis first); deferring
+    # this write takes the Mongo round trip off the spawn-critical path.
+    run_background_task(
+        spawns_collection.update_one({"chat_id": chat_id}, {"$set": mongo_data}, upsert=True)
+    )
 async def clear_active_spawn(chat_id: int, user_id: int) -> bool:
     """Clear active spawn if guess is correct."""
     result = await spawns_collection.update_one(
@@ -442,27 +447,38 @@ async def send_character(chat_id: int, rarity: str, *, force: bool = False):
     if not force and await has_recent_unclaimed_spawn(chat_id):
         LOGGER.debug(f"Spawn of {rarity} skipped in {chat_id}: previous spawn still unclaimed")
         return
-    chars = await get_or_load_characters(rarity)
-    if not chars:
-        return
-    character = _pick_excluding(chars, await _get_recent_spawn_ids(chat_id))
-    caption = (
-        "🪽 <b>A new character appeared!</b>\n"
-        "🦋 Use /seal name to collect them!\n"
-        "👑 Rarity is secret until caught!"
-    )
+    # Overlap the two independent lookups (recent-spawn exclusion list and
+    # the rarity pool) with the guard check above, so the pre-send latency
+    # is one round trip instead of three sequential ones.
+    recent_task = asyncio.create_task(_get_recent_spawn_ids(chat_id))
+    chars_task = asyncio.create_task(get_or_load_characters(rarity))
     try:
-        msg = await app.send_media_safe(
-            chat_id,
-            media_url=character['img_url'],
-            caption=caption,
-            parse_mode=enums.ParseMode.HTML,
-            has_spoiler=True
-        )
-        if not msg:
-            LOGGER.warning(f"send_character: failed to send spawn to {chat_id} (FloodWait or peer error)")
+        chars = await chars_task
+        if not chars:
             return
-        await set_active_spawn(chat_id, character, msg.id)
-        await _record_recent_spawn(chat_id, str(character.get("id")))
-    except Exception as e:
-        LOGGER.error(f"Error sending character: {e}")
+        character = _pick_excluding(chars, await recent_task)
+        caption = (
+            "🪽 <b>A new character appeared!</b>\n"
+            "🦋 Use /seal name to collect them!\n"
+            "👑 Rarity is secret until caught!"
+        )
+        try:
+            msg = await app.send_media_safe(
+                chat_id,
+                media_url=character['img_url'],
+                caption=caption,
+                parse_mode=enums.ParseMode.HTML,
+                has_spoiler=True
+            )
+            if not msg:
+                LOGGER.warning(f"send_character: failed to send spawn to {chat_id} (FloodWait or peer error)")
+                return
+            await set_active_spawn(chat_id, character, msg.id)
+            # Variety bookkeeping is not spawn-critical — keep it off the path.
+            run_background_task(_record_recent_spawn(chat_id, str(character.get("id"))))
+        except Exception as e:
+            LOGGER.error(f"Error sending character: {e}")
+    finally:
+        for task in (recent_task, chars_task):
+            if not task.done():
+                task.cancel()

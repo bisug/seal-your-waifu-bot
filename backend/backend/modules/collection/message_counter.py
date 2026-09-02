@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import random
 
@@ -41,10 +42,12 @@ async def message_counter_handler(_, message: types.Message):
         return
     chat_id = chat.id
     user_id = message.from_user.id
-    # Track activity to determine chat "busyness"
-    await track_user_activity(chat_id, user_id)
-    # Increment and get the current message count for this chat
-    count = await increment_message_count(chat_id, user_id)
+    # Activity tracking and message counting hit different Redis keys — run
+    # both pipelines concurrently so two round trips cost one wall-clock hop.
+    _, count = await asyncio.gather(
+        track_user_activity(chat_id, user_id),
+        increment_message_count(chat_id, user_id),
+    )
     # Debug logging for every 10th message to avoid spam but show activity
     if count % 10 == 0:
         SPAWN_LOGGER.info(f"Chat {chat_id} reached {count} messages.")
