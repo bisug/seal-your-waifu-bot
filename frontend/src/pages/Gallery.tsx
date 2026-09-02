@@ -74,7 +74,7 @@ export const Gallery = ({ onCharClick }: GalleryProps) => {
             <div className="flex items-center gap-1.5 opacity-60">
               <Database size={10} className="text-zinc-500" />
               <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
-                Centralized personnel records
+                Every character you've Collected
               </p>
             </div>
           </div>
@@ -205,7 +205,7 @@ export const Gallery = ({ onCharClick }: GalleryProps) => {
           <EmptyState
             icon={Search}
             title="Archive Mismatch"
-            message="No records found in the current sector."
+            message="Nothing here yet — hatch some eggs first."
           />
         </div>
       )}

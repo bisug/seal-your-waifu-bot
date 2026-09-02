@@ -3,11 +3,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { cn } from '../utils';
 
 const loadingSteps = [
-  'INITIALIZING',
-  'SYNCING NEXUS',
-  'SECURING LINK',
-  'MAPPING UNITS',
-  'AUTHORIZING',
+  'LOADING',
+  'CONNECTING',
+  'FETCHING PROFILE',
+  'LOADING PETS',
+  'ALMOST THERE',
 ];
 
 export const IntroLoading = () => {
@@ -77,7 +77,7 @@ export const IntroLoading = () => {
           <div className="flex flex-col items-center gap-1">
             <span className="text-2xl font-black text-white tracking-[0.2em] uppercase">SEAL</span>
             <span className="text-[8px] font-bold text-zinc-600 tracking-[0.4em] uppercase">
-              Nexus Protocol
+              Waifu Collector
             </span>
           </div>
         </div>
@@ -112,7 +112,7 @@ export const IntroLoading = () => {
             <div className="flex items-center gap-1.5">
               <Sparkles size={8} className="text-zinc-600" />
               <span className="text-[7px] font-bold text-zinc-600 uppercase tracking-widest">
-                Authorized Access
+                Signed in via Telegram
               </span>
             </div>
             <div className="flex items-center gap-1.5">

@@ -401,12 +401,12 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-1">
           <div className="space-y-1">
             <h2 className="text-xl font-bold text-zinc-100 uppercase tracking-tight">
-              Archive Registry
+              Your collection
             </h2>
             <div className="flex items-center gap-1.5">
               <Zap size={10} className="text-brand-accent" />
               <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">
-                Synchronized with protocol node
+                Every waifu you've collected
               </p>
             </div>
           </div>
@@ -426,7 +426,7 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
             <div className="w-full sm:w-64">
               <Input
                 icon={Search}
-                placeholder="Search assets..."
+                placeholder="Search characters..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="h-10"
@@ -439,7 +439,7 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
                 onChange={(event) => setRarity(event.target.value)}
                 className="h-10 pl-3.5 pr-10 bg-zinc-950 border border-white/10 rounded-md text-[10px] font-bold text-zinc-400 uppercase tracking-widest outline-none focus:border-brand-accent appearance-none cursor-pointer hover:bg-zinc-900 transition-all"
               >
-                <option value="">ALL CLASSES</option>
+                <option value="">ALL RARITIES</option>
                 {rarityOptions.map(({ value, label }) => (
                   <option key={value} value={value}>
                     {label.toUpperCase()}
@@ -482,8 +482,8 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
           <div className="py-20 border border-dashed border-white/5 rounded-lg bg-zinc-950/50">
             <EmptyState
               icon={BookOpen}
-              title="Registry Empty"
-              message="No units registered in the current sector."
+              title="Nothing here yet"
+              message="Hatch some eggs to start your collection."
             />
           </div>
         )}

@@ -272,7 +272,7 @@ export const Trading = () => {
           <h1 className="text-xl font-bold text-zinc-100 uppercase tracking-tight">Trading</h1>
         </div>
         <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest opacity-60">
-          Peer-to-peer character exchange
+          Swap characters with other players
         </p>
       </header>
 
@@ -339,7 +339,7 @@ export const Trading = () => {
                   title={tab === 'inbox' ? 'No incoming offers' : 'No sent offers'}
                   message={
                     tab === 'inbox'
-                      ? 'When another operator proposes a trade it lands here.'
+                      ? 'Trade offers from other players will appear here.'
                       : 'Propose a trade from the New Trade tab.'
                   }
                 />
@@ -356,7 +356,7 @@ export const Trading = () => {
           >
             <Card variant="surface" className="p-4 space-y-3">
               <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">
-                1 · Target operator ID
+                1 · Player's Telegram ID
               </p>
               <div className="flex gap-2">
                 <Input
@@ -385,7 +385,7 @@ export const Trading = () => {
               )}
               {targetName && (
                 <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">
-                  {targetName} · {formatNumber(targetChars.length)} units found
+                  {targetName} · {formatNumber(targetChars.length)} characters found
                 </p>
               )}
             </Card>

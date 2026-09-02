@@ -24,7 +24,7 @@ interface ReferralStats {
   referrer_reward_shards: number;
   referrer_reward_xp: number;
   referred_reward_shards: number;
-  referred_pet_level: number;
+  referred_reward_pet: string;
 }
 
 export const Referrals = () => {
@@ -43,7 +43,7 @@ export const Referrals = () => {
   const referrerRewardShards = stats?.referrer_reward_shards ?? 500;
   const referrerRewardXp = stats?.referrer_reward_xp ?? 50;
   const referredRewardShards = stats?.referred_reward_shards ?? 1500;
-  const referredPetLevel = stats?.referred_pet_level ?? 10;
+  const referredRewardPet = stats?.referred_reward_pet ?? 'blaze_fang';
 
   const copyToClipboard = async () => {
     if (!referralLink) return;
@@ -58,7 +58,7 @@ export const Referrals = () => {
 
   const shareReferral = () => {
     if (!referralLink) return;
-    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent('Join me on PROTOCOL and secure your welcome assets.')}`;
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent('Join me on SEAL — hatch and collect anime waifus. Starter perks for new collectors.')}`;
     window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
     if (window.Telegram?.WebApp?.openTelegramLink) {
       window.Telegram.WebApp.openTelegramLink(shareUrl);
@@ -87,7 +87,7 @@ export const Referrals = () => {
           <h1 className="text-xl font-bold text-zinc-100 uppercase tracking-tight">Recruitment</h1>
         </div>
         <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest opacity-60">
-          Network expansion protocol
+          Invite friends, earn Shards
         </p>
       </header>
 
@@ -128,7 +128,7 @@ export const Referrals = () => {
           <Card variant="default" className="p-4">
             <div className="flex items-center justify-between mb-3">
               <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">
-                Active Syncs
+                Friends joined
               </span>
               <UserPlus size={14} className="text-zinc-500" />
             </div>
@@ -165,7 +165,7 @@ export const Referrals = () => {
             </div>
             <div>
               <p className="text-[8px] font-bold text-brand-accent uppercase tracking-widest mb-0.5">
-                OPERATOR BONUS
+                YOU GET
               </p>
               <p className="text-xs font-bold text-zinc-100 uppercase">
                 {formatNumber(referrerRewardShards)} Shards + {formatNumber(referrerRewardXp)} XP
@@ -178,10 +178,10 @@ export const Referrals = () => {
             </div>
             <div>
               <p className="text-[8px] font-bold text-emerald-500 uppercase tracking-widest mb-0.5">
-                RECRUIT PACKAGE
+                THEY GET
               </p>
               <p className="text-xs font-bold text-zinc-100 uppercase">
-                {formatNumber(referredRewardShards)} Shards + Pet LVL {referredPetLevel}
+                {formatNumber(referredRewardShards)} Shards + {referredRewardPet.replace(/_/g, ' ')} pet
               </p>
             </div>
           </Card>
@@ -191,10 +191,10 @@ export const Referrals = () => {
       <section className="space-y-4">
         <div className="flex items-center justify-between px-1">
           <h2 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">
-            Network Log
+            Invited friends
           </h2>
           <Badge variant="secondary" size="xs">
-            {referrals?.length || 0} UNITS
+            {referrals?.length || 0} joined
           </Badge>
         </div>
 
@@ -202,7 +202,7 @@ export const Referrals = () => {
           {error ? (
             <div className="py-12">
               <ErrorState
-                message="History synchronization failed."
+                message="Could not load your invite history."
                 onAction={() => window.location.reload()}
               />
             </div>

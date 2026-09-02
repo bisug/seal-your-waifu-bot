@@ -201,12 +201,12 @@ export const Upload = () => {
       <header className="space-y-1">
         <div className="flex items-center gap-2.5">
           <UploadCloud className="text-brand-accent" size={20} />
-          <h1 className="text-xl font-bold text-zinc-100 uppercase tracking-tight">Intake</h1>
+          <h1 className="text-xl font-bold text-zinc-100 uppercase tracking-tight">Upload</h1>
         </div>
         <div className="flex items-center gap-2 opacity-60">
           <ShieldCheck size={10} className="text-zinc-500" />
           <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
-            Asset ingestion & registry
+            Add new characters and pets to the game
           </p>
         </div>
       </header>
@@ -237,7 +237,7 @@ export const Upload = () => {
       <form onSubmit={handleSubmit} className="space-y-6">
         <section className="space-y-4">
           <h2 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest px-1">
-            Media
+            Image
           </h2>
           <Card variant="surface" className="p-5 space-y-5">
             <div className="grid grid-cols-2 gap-1 p-1 bg-zinc-950 rounded-md border border-white/5">
@@ -317,7 +317,7 @@ export const Upload = () => {
 
         <section className="space-y-4">
           <h2 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest px-1">
-            Asset Metadata
+            Character details
           </h2>
           <Card variant="surface" className="p-5 space-y-6">
             {mode === 'character' ? (
@@ -333,7 +333,7 @@ export const Upload = () => {
                         setCharacter((prev) => ({ ...prev, name: event.target.value }))
                       }
                       required
-                      placeholder="Asset name..."
+                      placeholder="Character name..."
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -389,7 +389,7 @@ export const Upload = () => {
                         setPet((prev) => ({ ...prev, name: event.target.value }))
                       }
                       required
-                      placeholder="Unit name..."
+                      placeholder="Pet name..."
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -464,7 +464,7 @@ export const Upload = () => {
                     value={pet.desc}
                     onChange={(event) => setPet((prev) => ({ ...prev, desc: event.target.value }))}
                     rows={3}
-                    placeholder="Unit details..."
+                    placeholder="Pet details..."
                     className="w-full rounded-md bg-zinc-950 border border-white/10 px-3.5 py-2.5 text-[11px] font-medium text-zinc-100 outline-none focus:border-brand-accent transition-all resize-none"
                   />
                 </div>

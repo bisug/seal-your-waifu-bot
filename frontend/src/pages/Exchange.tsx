@@ -187,7 +187,7 @@ export const Exchange = () => {
               <h1 className="text-xl font-bold text-zinc-100 uppercase tracking-tight">Currency</h1>
             </div>
             <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest opacity-60">
-              Currency conversion nexus
+              Currency exchange
             </p>
           </div>
 

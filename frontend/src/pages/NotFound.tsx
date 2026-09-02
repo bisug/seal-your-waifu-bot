@@ -25,10 +25,10 @@ export const NotFound = ({ onReset }: { onReset: () => void }) => {
             Page Not Found
           </h2>
           <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest">
-            Protocol Error: Unknown Route
+            This page doesn't exist
           </p>
           <p className="text-xs font-medium text-zinc-500 leading-relaxed max-w-[260px] mx-auto uppercase tracking-widest pt-4">
-            The requested sector does not exist. Return to the terminal.
+            The link may be old or mistyped.
           </p>
         </div>
 

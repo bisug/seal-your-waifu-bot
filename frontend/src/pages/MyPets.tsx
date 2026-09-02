@@ -124,7 +124,7 @@ const ActivePetCard = ({
             </Badge>
           </div>
           <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-widest leading-relaxed line-clamp-2">
-            {pet.desc || pet.ability || 'System support companion'}
+            {pet.desc || pet.ability || 'Loyal companion'}
           </p>
         </div>
 
@@ -152,7 +152,7 @@ const ActivePetCard = ({
         <ProgressBar
           current={pet.xp || 0}
           total={Math.max(1, pet.xp_needed || 100)}
-          label="Bond synchronization"
+          label="XP to next level"
           compact
         />
 
@@ -271,7 +271,7 @@ export const MyPets = ({ onPetClick }: MyPetsProps) => {
               </h1>
             </div>
             <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest opacity-60">
-              System support asset database
+              Your pets, their levels and bonds
             </p>
           </div>
 
@@ -291,7 +291,7 @@ export const MyPets = ({ onPetClick }: MyPetsProps) => {
         {currentPet && (
           <section className="space-y-4">
             <h2 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest px-1">
-              Active Synchronization
+              Active pet
             </h2>
             <ActivePetCard
               pet={currentPet}
@@ -306,7 +306,7 @@ export const MyPets = ({ onPetClick }: MyPetsProps) => {
         <section className="space-y-4">
           <div className="flex items-center justify-between px-1">
             <h2 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">
-              Personnel Storage
+              All pets
             </h2>
             <p className="text-[9px] font-bold text-zinc-700 uppercase tracking-widest">
               Sorted by level
@@ -400,7 +400,7 @@ export const MyPets = ({ onPetClick }: MyPetsProps) => {
                   <PawPrint size={24} />
                 </div>
                 <p className="text-[9px] font-bold text-zinc-700 uppercase tracking-widest">
-                  No companions secured
+                  No pets yet — visit the Breeder
                 </p>
               </div>
             )}

@@ -198,7 +198,7 @@ export const Shop = ({ onCharClick }: ShopProps) => {
               <h1 className="text-xl font-bold text-zinc-100 uppercase tracking-tight">Market</h1>
             </div>
             <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-relaxed">
-              Global unit rotation active. Nexus synchronization online.
+              Characters rotate daily — stock resets with the timer
             </p>
           </div>
 

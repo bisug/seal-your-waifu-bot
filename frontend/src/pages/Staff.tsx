@@ -111,10 +111,10 @@ const StaffDetails = ({ member }: { member: StaffMember }) => {
         {[
           {
             icon: ImageIcon,
-            label: 'Assets',
+            label: 'Characters',
             value: formatNumber(member.contributions.character_uploads),
           },
-          { icon: PawPrint, label: 'Units', value: formatNumber(member.contributions.pet_uploads) },
+          { icon: PawPrint, label: 'Pets', value: formatNumber(member.contributions.pet_uploads) },
           { icon: Gem, label: 'Zenith', value: formatNumber(member.stats.zenith) },
           { icon: Coins, label: 'Shards', value: formatNumber(member.stats.balance) },
         ].map((stat, i) => (
@@ -164,7 +164,7 @@ const StaffDetails = ({ member }: { member: StaffMember }) => {
                       {item.name}
                     </p>
                     <Badge variant="secondary" size="xs" className="px-1 py-0 opacity-60">
-                      {item.type === 'pet' ? 'UNIT' : 'ASSET'}
+                      {item.type === 'pet' ? 'PET' : 'CHARACTER'}
                     </Badge>
                   </div>
                   <p className="truncate text-[9px] font-medium text-zinc-600 uppercase tracking-widest mt-0.5">
@@ -212,13 +212,13 @@ export const Staff = () => {
         <div className="flex items-center gap-2.5">
           <ShieldCheck className="text-brand-accent" size={20} />
           <h1 className="text-xl font-bold text-zinc-100 uppercase tracking-tight">
-            Admin Terminal
+            Staff Panel
           </h1>
         </div>
         <div className="flex items-center gap-2 opacity-60">
           <Terminal size={10} className="text-zinc-500" />
           <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
-            Staff records & contributions
+            Who built the game you're playing
           </p>
         </div>
       </header>
@@ -227,8 +227,8 @@ export const Staff = () => {
         {[
           { label: 'Staff', value: data?.summary.total_staff || 0, variant: 'primary' },
           { label: 'Uploads', value: data?.summary.total_uploads || 0, variant: 'default' },
-          { label: 'Assets', value: data?.summary.character_uploads || 0, variant: 'success' },
-          { label: 'Units', value: data?.summary.pet_uploads || 0, variant: 'warning' },
+          { label: 'Characters', value: data?.summary.character_uploads || 0, variant: 'success' },
+          { label: 'Pets', value: data?.summary.pet_uploads || 0, variant: 'warning' },
         ].map((item, i) => (
           <Card key={i} variant="default" className="p-3.5">
             <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest block mb-1.5">
@@ -243,7 +243,7 @@ export const Staff = () => {
 
       <div className="space-y-4">
         <h2 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest px-1">
-          Personnel Roster
+          The team
         </h2>
 
         <AnimatePresence mode="wait">

@@ -305,14 +305,14 @@ export const NavigationDrawer = ({
                     {user?.role_label || user?.role_tag || 'OPERATOR'}
                   </span>
                   <span className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">
-                    AUTHORIZED ACCESS
+                    Signed in
                   </span>
                 </div>
               </div>
 
               <div className="flex items-center justify-between px-1">
                 <div className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">
-                  SYSTEM_STATUS
+                  Server status
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-1 h-1 rounded-full bg-emerald-500" />

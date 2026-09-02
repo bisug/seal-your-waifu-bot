@@ -110,7 +110,7 @@ const EnergyDisplay = ({
           </div>
           <div>
             <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5">
-              Energy Reserve
+              Energy
             </h4>
             <div className="flex items-end gap-1.5">
               <span className="text-xl font-mono font-bold text-zinc-100">{energy}</span>
@@ -121,7 +121,7 @@ const EnergyDisplay = ({
         {timeLeft && (
           <div className="text-right">
             <h4 className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest mb-1">
-              Next Unit
+              Refills in
             </h4>
             <div className="flex items-center gap-1.5 text-zinc-400 font-mono text-sm">
               <Timer size={12} className="text-zinc-600" />
@@ -558,7 +558,7 @@ const NexusWheel = ({
           className="w-full h-14 bg-zinc-100 text-zinc-950 font-bold uppercase tracking-[0.2em] text-[10px] rounded-xl relative overflow-hidden group shadow-[0_0_20px_rgba(255,255,255,0.1)]"
         >
           <span className="relative z-10">
-            {isSpinning ? 'Synchronizing...' : 'Initiate Sequence'}
+            {isSpinning ? 'Spinning...' : 'Spin the Wheel'}
           </span>
           {!isSpinning && (
             <motion.div
@@ -570,7 +570,7 @@ const NexusWheel = ({
           )}
         </Button>
         <p className="text-[7px] text-zinc-600 font-bold uppercase tracking-widest">
-          Authorized use only • Personnel class B+
+          One spin per energy • Prizes rotate weekly
         </p>
       </div>
     </div>
@@ -623,10 +623,10 @@ const RewardModal = ({ rewards, onClose }: { rewards: Reward; onClose: () => voi
 
             <div className="text-center space-y-2">
               <h3 className="text-xl font-bold text-white uppercase tracking-[0.3em]">
-                Encrypted Asset
+                Mystery Prize
               </h3>
               <p className="text-[9px] text-zinc-500 uppercase tracking-widest">
-                Awaiting manual decryption
+                Tap to reveal what you won
               </p>
             </div>
 
@@ -637,7 +637,7 @@ const RewardModal = ({ rewards, onClose }: { rewards: Reward; onClose: () => voi
               }}
               className="w-64 bg-white text-black font-bold uppercase tracking-widest text-[10px] py-4 rounded-xl"
             >
-              Decryption Sequence
+              Reveal Prize
             </Button>
           </motion.div>
         ) : (
@@ -655,7 +655,7 @@ const RewardModal = ({ rewards, onClose }: { rewards: Reward; onClose: () => voi
                   </div>
                 </div>
                 <h3 className="text-xl font-bold text-zinc-100 uppercase tracking-wider">
-                  Mission Success
+                  You won!
                 </h3>
                 <p className="text-[10px] text-zinc-500 uppercase tracking-[0.2em]">
                   Operational rewards allocated

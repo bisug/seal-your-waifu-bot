@@ -135,7 +135,7 @@ export const Modal = ({ character, onClose, actions }: ModalProps) => {
               </Badge>
               {character.owned && (
                 <Badge variant="success" size="sm">
-                  SECURED
+                  OWNED
                 </Badge>
               )}
             </div>
@@ -147,7 +147,7 @@ export const Modal = ({ character, onClose, actions }: ModalProps) => {
               <div className="flex items-center gap-1.5">
                 <Target size={11} className="text-zinc-500" />
                 <span className="text-[9px] font-mono font-bold uppercase text-zinc-500 tracking-widest">
-                  UNIT_ID: #{characterId}
+                  ID: #{characterId}
                 </span>
               </div>
               <h2 className="text-2xl font-bold text-zinc-100 uppercase tracking-tight">
@@ -166,7 +166,7 @@ export const Modal = ({ character, onClose, actions }: ModalProps) => {
                 {
                   icon: ShieldCheck,
                   label: 'STATUS',
-                  value: character.owned ? 'SECURED' : 'PENDING',
+                  value: character.owned ? 'OWNED' : 'NOT OWNED',
                   variant: character.owned ? 'success' : 'secondary',
                 },
                 {

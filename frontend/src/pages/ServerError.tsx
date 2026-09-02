@@ -25,10 +25,10 @@ export const ServerError = ({ onRetry }: { onRetry: () => void }) => {
             System Failure
           </h2>
           <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest">
-            Protocol Error: Core Malfunction
+            Something broke on our end
           </p>
           <p className="text-xs font-medium text-zinc-500 leading-relaxed max-w-[260px] mx-auto uppercase tracking-widest pt-4">
-            The SEAL network encountered a critical error. Synchronization aborted.
+            The SEAL server hit an error. Try again in a moment.
           </p>
         </div>
 
@@ -42,7 +42,7 @@ export const ServerError = ({ onRetry }: { onRetry: () => void }) => {
             variant="accent"
             leftIcon={<RefreshCw size={16} />}
           >
-            Reboot Session
+            Try Again
           </Button>
         </div>
       </motion.div>

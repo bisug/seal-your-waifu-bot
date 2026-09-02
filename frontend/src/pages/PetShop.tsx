@@ -72,14 +72,14 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
     const petRef = getPetRef(pet);
 
     window.Telegram?.WebApp?.showConfirm(
-      `Acquire ${pet.name.toUpperCase()}?`,
+      `Buy ${pet.name.toUpperCase()}?`,
       async (confirmed) => {
         if (confirmed) {
           setBuying(petRef);
           window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
           try {
             await apiFetch(`/shop/buy/pet/${encodeURIComponent(petRef)}`, { method: 'POST' });
-            addToast(`${pet.name} acquired.`, 'success');
+            addToast(`${pet.name} adopted.`, 'success');
             triggerRefresh();
           } catch (err: any) {
             addToast(getErrorMessage(err), 'error');
@@ -126,7 +126,7 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
         <div className="flex items-center gap-2 opacity-60">
           <ShieldCheck size={10} className="text-zinc-500" />
           <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
-            Companion acquisition terminal
+            Adopt a hunting companion
           </p>
         </div>
       </header>
@@ -189,7 +189,7 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
                         {pet.name}
                       </h2>
                       <p className="text-[10px] font-bold text-brand-accent uppercase tracking-widest truncate">
-                        {pet.ability || 'AUTHORIZED_SYSTEM_PERK'}
+                        {pet.ability || 'No ability'}
                       </p>
                     </div>
 
@@ -229,13 +229,13 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
                             disabled={!canAfford}
                             className="w-full sm:w-auto px-8 h-10"
                           >
-                            {canAfford ? 'Acquire' : 'Insufficient'}
+                            {canAfford ? 'Adopt' : 'Too expensive'}
                           </Button>
                         )}
 
                         {isOwned && (
                           <Badge variant="success" className="py-2 px-6">
-                            SECURED
+                            OWNED
                           </Badge>
                         )}
 

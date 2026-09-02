@@ -135,7 +135,7 @@ export const Leaderboard = () => {
         <div className="flex items-center gap-2 opacity-60">
           <ShieldCheck size={10} className="text-zinc-500" />
           <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
-            Global personnel standings
+            Top collectors across the game
           </p>
           <span
             className={cn(

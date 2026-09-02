@@ -25,10 +25,10 @@ export const Forbidden = ({ onReset }: { onReset: () => void }) => {
             Access Denied
           </h2>
           <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">
-            Protocol Error: Unauthorized Clearance
+            Staff only
           </p>
           <p className="text-xs font-medium text-zinc-500 leading-relaxed max-w-[260px] mx-auto uppercase tracking-widest pt-4">
-            Your credentials do not grant access to this classified sector.
+            This area is limited to the SEAL team.
           </p>
         </div>
 
@@ -50,7 +50,7 @@ export const Forbidden = ({ onReset }: { onReset: () => void }) => {
             className="w-full flex items-center justify-center gap-2 py-3 text-[10px] font-bold text-zinc-600 uppercase tracking-widest hover:text-zinc-200 transition-colors"
           >
             <ArrowLeft size={12} />
-            <span>Abort Access</span>
+            <span>Go Back</span>
           </button>
         </div>
       </motion.div>

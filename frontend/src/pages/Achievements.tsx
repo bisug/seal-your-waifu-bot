@@ -83,7 +83,7 @@ export const Achievements = () => {
             <div className="flex items-center gap-1.5 opacity-60">
               <Target size={10} className="text-zinc-500" />
               <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
-                Operational achievements
+                Bragging rights you've earned
               </p>
             </div>
           </div>
@@ -108,7 +108,7 @@ export const Achievements = () => {
           <Card variant="default" className="p-4 flex flex-col justify-between">
             <div className="flex items-center justify-between mb-4">
               <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">
-                Clearance
+                Rank
               </span>
               <ShieldCheck size={14} className="text-emerald-500" />
             </div>
@@ -118,10 +118,10 @@ export const Achievements = () => {
               </div>
               <div className="flex flex-col">
                 <span className="text-[10px] font-bold text-zinc-100 uppercase tracking-wider">
-                  PROTO_v2.4
+                  Collector
                 </span>
                 <span className="text-[8px] font-bold text-emerald-500 uppercase tracking-widest">
-                  AUTHORIZED ACCESS
+                  Keep hatching
                 </span>
               </div>
             </div>

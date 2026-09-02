@@ -289,7 +289,7 @@ export const Hatchery = () => {
         <div className="flex items-center gap-2 opacity-60">
           <Activity size={10} className="text-zinc-500" />
           <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
-            Asset extraction terminal
+            Hatch, fuse and sell your eggs
           </p>
         </div>
       </header>
@@ -352,9 +352,9 @@ export const Hatchery = () => {
 
       {eggs.length > 0 ? (
         <div className="space-y-8">
-          {renderSection('READY FOR EXTRACTION', readyEggs)}
+          {renderSection('READY TO HATCH', readyEggs)}
           {renderSection('IN PROGRESS', incubatingEggs)}
-          {renderSection('AVAILABLE CONTAINERS', freshEggs)}
+          {renderSection('NOT INCUBATED', freshEggs)}
           {renderSection('OTHER', otherEggs)}
         </div>
       ) : (
@@ -364,10 +364,10 @@ export const Hatchery = () => {
           </div>
           <div className="space-y-1 px-6">
             <p className="text-zinc-300 font-bold uppercase tracking-widest text-sm">
-              No assets detected
+              No eggs yet
             </p>
             <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-widest max-w-[200px] mx-auto leading-relaxed">
-              Acquire biological containers from the market to start incubation.
+              Go hunt with your pet to find eggs.
             </p>
           </div>
         </div>

@@ -79,7 +79,7 @@ export const Pass = () => {
       const res = await apiFetch(`/claim_level/${level}`, { method: 'POST' });
       if (res.status === 'success' || res.status === 'already_claimed') {
         addToast(
-          res.status === 'already_claimed' ? 'Reward already claimed' : `Level ${level} secured`,
+          res.status === 'already_claimed' ? 'Reward already claimed' : `Level ${level} claimed`,
           'success',
         );
         await refreshAll();
@@ -212,7 +212,7 @@ export const Pass = () => {
               </h1>
             </div>
             <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest opacity-60">
-              Strategic progression log
+              Level up, unlock rewards
             </p>
           </div>
           <div className="px-4 py-2 bg-zinc-900 border border-white/5 rounded-md text-center">
@@ -223,7 +223,7 @@ export const Pass = () => {
           </div>
         </div>
 
-        <ProgressBar current={userLevel} total={maxLevel} label="Clearance Progress" compact />
+        <ProgressBar current={userLevel} total={maxLevel} label="Season progress" compact />
       </header>
 
       {userLevel < maxLevel && (
@@ -303,7 +303,7 @@ export const Pass = () => {
                 {nextTier.toUpperCase()} UPGRADE
               </h2>
               <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-relaxed max-w-[220px]">
-                {passData.tiers?.[nextTier]?.summary || 'Unlock premium assets and bonus yields.'}
+                {passData.tiers?.[nextTier]?.summary || 'Better hunt yields, more egg drops, faster incubation.'}
               </p>
             </div>
             <div className="text-right">
@@ -320,12 +320,12 @@ export const Pass = () => {
             <div className="grid grid-cols-2 gap-3">
               {[
                 {
-                  label: 'Credit Yield',
+                  label: 'Hunt Shards',
                   value: percentBonus(nextBenefits.hunt_multiplier),
                   color: 'text-amber-500',
                 },
                 {
-                  label: 'Drop Luck',
+                  label: 'Egg Drops',
                   value: percentBonus(nextBenefits.egg_drop_multiplier),
                   color: 'text-brand-accent',
                 },
@@ -399,7 +399,7 @@ export const Pass = () => {
             Pipeline Log
           </h2>
           <Badge variant="secondary" size="xs">
-            {claimedLevels.length} / {maxLevel} SECURED
+            {claimedLevels.length} / {maxLevel} CLAIMED
           </Badge>
         </div>
 
@@ -442,7 +442,7 @@ export const Pass = () => {
                           <div className="flex items-center gap-2">
                             {isClaimed ? (
                               <Badge variant="success" size="xs">
-                                Secured
+                                Claimed
                               </Badge>
                             ) : isReached ? (
                               <Badge variant="primary" size="xs">

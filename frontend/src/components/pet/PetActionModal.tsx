@@ -165,7 +165,7 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }: PetActionM
               <div className="flex items-center gap-1.5">
                 <Target size={11} className="text-zinc-500" />
                 <span className="text-[9px] font-mono font-bold uppercase text-zinc-500 tracking-widest">
-                  UNIT_ID: {String(selectedPet.petid || selectedPet.id || 'TEMP').toUpperCase()}
+                  PET ID: {String(selectedPet.petid || selectedPet.id || 'TEMP').toUpperCase()}
                 </span>
               </div>
               <h2 className="text-2xl font-bold text-zinc-100 uppercase tracking-tight">
