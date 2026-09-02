@@ -386,6 +386,52 @@ async def has_recent_unclaimed_spawn(chat_id: int, *, max_age_seconds: float = A
     return age < max_age_seconds
 
 
+# How many recent spawns per chat to exclude from the next pick. Small enough
+# to stay cheap, large enough that a chat never sees the same face twice in a
+# row (unless the rarity pool is tiny).
+RECENT_SPAWN_HISTORY = 10
+RECENT_SPAWN_TTL_SECONDS = 86400
+
+
+async def _get_recent_spawn_ids(chat_id: int) -> list:
+    """Character ids spawned in this chat recently (Redis list, newest first)."""
+    if not _redis:
+        return []
+    try:
+        ids = await _redis.lrange(f"spawn:recent:{chat_id}", 0, -1)
+        return [i.decode() if isinstance(i, bytes) else str(i) for i in ids]
+    except Exception as e:
+        LOGGER.debug(f"Recent-spawn read failed for {chat_id}: {e}")
+        return []
+
+
+async def _record_recent_spawn(chat_id: int, char_id: str) -> None:
+    """Push a spawned character id onto the chat's recent list (capped)."""
+    if not _redis:
+        return
+    try:
+        key = f"spawn:recent:{chat_id}"
+        async with _redis.pipeline(transaction=False) as pipe:
+            pipe.lpush(key, char_id)
+            pipe.ltrim(key, 0, RECENT_SPAWN_HISTORY - 1)
+            pipe.expire(key, RECENT_SPAWN_TTL_SECONDS)
+            await pipe.execute()
+    except Exception as e:
+        LOGGER.debug(f"Recent-spawn write failed for {chat_id}: {e}")
+
+
+def _pick_excluding(chars: list, recent_ids: list) -> dict:
+    """random.choice over chars, skipping ids spawned recently in this chat.
+
+    Falls back to the full pool when the exclusion would leave nothing
+    (tiny rarity pools) — variety is best-effort, never a failed spawn.
+    """
+    if not recent_ids:
+        return random.choice(chars)
+    fresh = [c for c in chars if str(c.get("id")) not in recent_ids]
+    return random.choice(fresh or chars)
+
+
 async def send_character(chat_id: int, rarity: str, *, force: bool = False):
     """
     Select and send a character of the given rarity to a chat.
@@ -399,7 +445,7 @@ async def send_character(chat_id: int, rarity: str, *, force: bool = False):
     chars = await get_or_load_characters(rarity)
     if not chars:
         return
-    character = random.choice(chars)
+    character = _pick_excluding(chars, await _get_recent_spawn_ids(chat_id))
     caption = (
         "🪽 <b>A new character appeared!</b>\n"
         "🦋 Use /seal name to collect them!\n"
@@ -417,5 +463,6 @@ async def send_character(chat_id: int, rarity: str, *, force: bool = False):
             LOGGER.warning(f"send_character: failed to send spawn to {chat_id} (FloodWait or peer error)")
             return
         await set_active_spawn(chat_id, character, msg.id)
+        await _record_recent_spawn(chat_id, str(character.get("id")))
     except Exception as e:
         LOGGER.error(f"Error sending character: {e}")
