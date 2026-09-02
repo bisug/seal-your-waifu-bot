@@ -7,8 +7,10 @@
 #
 # Patterns below are relative to the repo root (where Heroku reads this file).
 
-# Frontend is deployed separately (Netlify/Vercel/Cloudflare) — not needed in the slug.
-frontend/
+# NOTE: frontend/ is NOT ignored — bin/post_compile builds it into
+# backend/backend/static and then deletes the sources. Ignoring it here
+# would strip the sources before the hook can run (slugignore applies
+# before the buildpack compiles).
 
 # Documentation and deployment manifests.
 docs/
