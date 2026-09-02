@@ -278,6 +278,75 @@ def get_caregiver_incubation_minutes(wait_min: int, active_pet: dict | None) -> 
     return max(1, int(wait_min * (0.5 / aff_multiplier)))
 
 
+def get_pet_luck(pet: dict | None) -> float:
+    """Effective hunt luck: base luck scaled by level and affection mood.
+
+    Level adds +2% per level above 1 (capped at +50%), affection applies the
+    same 1.2x/0.8x mood multiplier used across the pet system.
+    """
+    if not isinstance(pet, dict):
+        return 0.08
+    base = max(0.0, float(pet.get("luck") or 0.08))
+    level = max(1, int(pet.get("level") or 1))
+    level_bonus = min(0.5, (level - 1) * 0.02)
+    affection = get_effective_affection(pet)
+    aff_multiplier = 1.2 if affection >= 80 else (0.8 if affection <= 20 else 1.0)
+    return round(base * aff_multiplier + level_bonus, 3)
+
+
+async def perform_pet_care(user_id: int, action: str) -> tuple[bool, str, dict | None]:
+    """Shared feed/train logic for bot commands and webapp routes.
+
+    Returns (success, message, updated_pet). Applies affection decay first so
+    the reward is computed from the pet's real current state, then writes with
+    an atomic positional guard (petid must still match at that index).
+    """
+    from backend.core.cache import invalidate_user_cache
+    from backend.core.user import add_pet_xp, get_user_filter
+    from backend.database import user_collection
+
+    if action not in ("feed", "train"):
+        return False, "Unknown action.", None
+    user = await ensure_user_pet_state(user_id)
+    pets = [normalize_pet(p) for p in user.get("pets", [])]
+    pet_index = find_pet_index(pets, user.get("current_pet"))
+    if pet_index == -1:
+        return False, "No active pet found.", None
+    pet = pets[pet_index]
+    pet_name = pet["name"]
+
+    affection_gain = 15 if action == "feed" else 10
+    xp_gain = 5 if action == "train" else 0
+    current_affection = get_effective_affection(pet)
+    new_affection = min(MAX_AFFECTION, current_affection + affection_gain)
+
+    # Positional guard: if the pets array shifted (a concurrent purchase or
+    # normalization), pets.{index}.petid no longer matches and the write fails
+    # cleanly instead of buffing the wrong pet.
+    care_filter = get_user_filter(user_id)
+    care_filter[f"pets.{pet_index}.petid"] = get_pet_key(pet)
+    result = await user_collection.update_one(
+        care_filter,
+        {"$set": {
+            f"pets.{pet_index}.affection": new_affection,
+            f"pets.{pet_index}.last_interacted": time.time(),
+        }}
+    )
+    if result.modified_count == 0:
+        return False, "Pet state changed, please retry.", None
+    await invalidate_user_cache(user_id)
+    if xp_gain:
+        await add_pet_xp(user_id, get_pet_key(pet), xp_gain)
+
+    icon = "🍱" if action == "feed" else "⚔️"
+    label = "fed" if action == "feed" else "trained"
+    msg = f"{icon} You {label} <b>{pet_name}</b>! Affection: {current_affection} ➜ <b>{new_affection}/{MAX_AFFECTION}</b>"
+    if xp_gain:
+        msg += f" | +{xp_gain} XP"
+    updated = dict(pet, affection=new_affection)
+    return True, msg, updated
+
+
 async def seed_pet_catalog() -> None:
     from backend.database import pet_catalog_collection
 

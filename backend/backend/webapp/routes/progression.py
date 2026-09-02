@@ -16,6 +16,7 @@ from backend.core.pets import (
     find_pet,
     get_pet_key,
     normalize_pet,
+    perform_pet_care,
 )
 from backend.core.utils import get_now_utc, get_user_id_query, normalize_user_id
 from backend.database import user_collection
@@ -121,6 +122,32 @@ async def set_active_pet(pet_ref: str, user: dict = Depends(get_current_user_dat
     )
     await invalidate_user_cache(uid_int)
     return {"status": "success", "pet": pet_key}
+
+@router.post("/pets/feed")
+async def feed_pet(user: dict = Depends(get_current_user_data)):
+    from backend.core.cache import is_on_cooldown as redis_cooldown
+
+    uid_int = normalize_user_id(user["id"])
+    on_cd, secs = await redis_cooldown("feed_pet", uid_int, 900)
+    if on_cd:
+        raise HTTPException(status_code=429, detail=f"Pet is full. Try again in {int(secs / 60)}m {secs % 60}s.")
+    success, msg, pet = await perform_pet_care(uid_int, "feed")
+    if not success:
+        raise HTTPException(status_code=400, detail=msg.replace("<b>", "").replace("</b>", ""))
+    return {"status": "success", "message": msg.replace("<b>", "").replace("</b>", ""), "pet": pet}
+
+@router.post("/pets/train")
+async def train_pet(user: dict = Depends(get_current_user_data)):
+    from backend.core.cache import is_on_cooldown as redis_cooldown
+
+    uid_int = normalize_user_id(user["id"])
+    on_cd, secs = await redis_cooldown("train_pet", uid_int, 1800)
+    if on_cd:
+        raise HTTPException(status_code=429, detail=f"Pet is tired. Try again in {int(secs / 60)}m {secs % 60}s.")
+    success, msg, pet = await perform_pet_care(uid_int, "train")
+    if not success:
+        raise HTTPException(status_code=400, detail=msg.replace("<b>", "").replace("</b>", ""))
+    return {"status": "success", "message": msg.replace("<b>", "").replace("</b>", ""), "pet": pet}
 
 @router.post("/eggs/incubate/{egg_id}")
 async def incubate_egg(egg_id: str, user: dict = Depends(get_current_user_data)):

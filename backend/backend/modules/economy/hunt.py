@@ -34,6 +34,7 @@ from backend.core.pets import (
     find_pet,
     get_effective_affection,
     get_pet_key,
+    get_pet_luck,
     normalize_pet,
 )
 from backend.core.progression import add_xp
@@ -68,7 +69,8 @@ def _pet_hunt_context(user: dict) -> dict:
     affection = get_effective_affection(pet)
     aff_multiplier = 1.2 if affection >= 80 else (0.8 if affection <= 20 else 1.0)
     ability = pet.get("ability", "None")
-    luck = pet.get("luck", 0.1) * aff_multiplier
+    # Level-scaled luck: pet levels now actually matter for hunts.
+    luck = get_pet_luck(pet)
     base_cd = 50 if ability == "Speedster" else 60
     return {
         "pet": pet,

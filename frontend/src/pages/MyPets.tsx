@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { Heart, PawPrint, RefreshCw, Sparkles, Swords, Wind } from 'lucide-react';
+import { Beef, Dumbbell, Heart, PawPrint, RefreshCw, Sparkles, Swords, Wind } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { apiFetch, getErrorMessage } from '../api/client';
 import { Badge } from '../components/ui/Badge';
@@ -88,7 +88,19 @@ const InlineStat = ({
   </div>
 );
 
-const ActivePetCard = ({ pet, onOpen }: { pet: Pet; onOpen?: (pet: Pet) => void }) => (
+const ActivePetCard = ({
+  pet,
+  onOpen,
+  onFeed,
+  onTrain,
+  careBusy,
+}: {
+  pet: Pet;
+  onOpen?: (pet: Pet) => void;
+  onFeed?: () => void;
+  onTrain?: () => void;
+  careBusy?: 'feed' | 'train' | null;
+}) => (
   <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
     <Card
       variant="surface"
@@ -143,6 +155,29 @@ const ActivePetCard = ({ pet, onOpen }: { pet: Pet; onOpen?: (pet: Pet) => void 
           label="Bond synchronization"
           compact
         />
+
+        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={onFeed}
+            isLoading={careBusy === 'feed'}
+            disabled={careBusy !== null}
+            className="h-8 px-4"
+          >
+            <Beef size={13} className="mr-1.5" /> Feed
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={onTrain}
+            isLoading={careBusy === 'train'}
+            disabled={careBusy !== null}
+            className="h-8 px-4"
+          >
+            <Dumbbell size={13} className="mr-1.5" /> Train
+          </Button>
+        </div>
       </div>
     </Card>
   </motion.div>
@@ -153,6 +188,22 @@ export const MyPets = ({ onPetClick }: MyPetsProps) => {
   const { addToast } = useToast();
   const [switching, setSwitching] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [careBusy, setCareBusy] = useState<'feed' | 'train' | null>(null);
+
+  const handleCare = async (action: 'feed' | 'train') => {
+    if (careBusy) return;
+    setCareBusy(action);
+    window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
+    try {
+      const result = await apiFetch(`/pets/${action}`, { method: 'POST' });
+      addToast(result?.message || 'Done.', 'success');
+      await refreshUser();
+    } catch (err: any) {
+      addToast(getErrorMessage(err), 'error');
+    } finally {
+      setCareBusy(null);
+    }
+  };
 
   const pets = useMemo(() => user?.pets || [], [user?.pets]);
   const currentPet = useMemo(() => {
@@ -242,7 +293,13 @@ export const MyPets = ({ onPetClick }: MyPetsProps) => {
             <h2 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest px-1">
               Active Synchronization
             </h2>
-            <ActivePetCard pet={currentPet} {...(onPetClick ? { onOpen: onPetClick } : {})} />
+            <ActivePetCard
+              pet={currentPet}
+              {...(onPetClick ? { onOpen: onPetClick } : {})}
+              onFeed={() => handleCare('feed')}
+              onTrain={() => handleCare('train')}
+              careBusy={careBusy}
+            />
           </section>
         )}
 

@@ -5,7 +5,7 @@ from typing import Any
 
 from backend.core.cache import invalidate_user_cache
 from backend.core.logging import get_logger
-from backend.core.pets import copy_default_pet, get_pet_key
+from backend.core.pets import get_pet_key, get_pet_template
 from backend.core.progression import add_xp
 from backend.core.user import get_user_filter, get_user_id
 from backend.core.utils import get_now_utc
@@ -17,7 +17,7 @@ LOGGER = get_logger(__name__)
 REFERRER_REWARD_SHARDS = 500
 REFERRER_REWARD_XP = 50
 REFERRED_REWARD_SHARDS = 1_500
-REFERRED_PET_LEVEL = 10
+REFERRED_REWARD_PET = "blaze_fang"
 MAX_REFERRAL_EVENTS = 100
 
 
@@ -35,7 +35,7 @@ class ReferralClaimResult:
     referrer_reward_shards: int = REFERRER_REWARD_SHARDS
     referrer_reward_xp: int = REFERRER_REWARD_XP
     referred_reward_shards: int = REFERRED_REWARD_SHARDS
-    referred_pet_level: int = REFERRED_PET_LEVEL
+    referred_reward_pet: str = REFERRED_REWARD_PET
 
     @property
     def applied(self) -> bool:
@@ -72,7 +72,7 @@ def get_referral_stats(user: dict | None) -> dict[str, int]:
             "referrer_reward_shards": REFERRER_REWARD_SHARDS,
             "referrer_reward_xp": REFERRER_REWARD_XP,
             "referred_reward_shards": REFERRED_REWARD_SHARDS,
-            "referred_pet_level": REFERRED_PET_LEVEL,
+            "referred_reward_pet": REFERRED_REWARD_PET,
         }
 
     tracked_count = len(normalize_referral_ids(user.get("referrals", [])))
@@ -89,7 +89,7 @@ def get_referral_stats(user: dict | None) -> dict[str, int]:
         "referrer_reward_shards": REFERRER_REWARD_SHARDS,
         "referrer_reward_xp": REFERRER_REWARD_XP,
         "referred_reward_shards": REFERRED_REWARD_SHARDS,
-        "referred_pet_level": REFERRED_PET_LEVEL,
+        "referred_reward_pet": REFERRED_REWARD_PET,
     }
 
 
@@ -119,8 +119,16 @@ async def claim_referral_bonus(
         return ReferralClaimResult("missing_referrer", normalized_referrer_id)
 
     now = get_now_utc()
-    upgraded_pet = copy_default_pet()
-    upgraded_pet["level"] = REFERRED_PET_LEVEL
+    # Referral reward pet: Blaze Fang (a real shop pet worth 2 ⧫) instead of
+    # a leveled starter fox, which felt like a downgrade as a reward.
+    reward_pet = get_pet_template("blaze_fang")
+    reward_pet_doc = {
+        "petid": get_pet_key(reward_pet),
+        "level": 1,
+        "xp": 0,
+        "affection": 50,
+        "last_interacted": 0,
+    }
 
     claim_filter = get_user_filter(referred_id)
     claim_filter["referred_by"] = {"$exists": False}
@@ -128,12 +136,12 @@ async def claim_referral_bonus(
         claim_filter,
         {
             "$set": {
-                "pets": [upgraded_pet],
-                "current_pet": get_pet_key(upgraded_pet),
+                "pets": [reward_pet_doc],
+                "current_pet": get_pet_key(reward_pet),
                 "referred_by": normalized_referrer_id,
                 "referral_reward": {
                     "shards": REFERRED_REWARD_SHARDS,
-                    "pet_level": REFERRED_PET_LEVEL,
+                    "pet": get_pet_key(reward_pet),
                 },
                 "referral_rewarded_at": now,
             },

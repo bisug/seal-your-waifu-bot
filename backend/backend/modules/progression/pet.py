@@ -1,5 +1,3 @@
-import time
-
 from pyrogram import enums, errors, filters, types
 from pyrogram.handlers import CallbackQueryHandler, MessageHandler
 
@@ -11,16 +9,16 @@ from backend.core.logging import get_logger
 from backend.core.pets import (
     DEFAULT_PET,
     ensure_user_pet_state,
-    find_pet_index,
     get_effective_affection,
     get_pet_key,
     get_shop_pet,
     list_shop_pets,
     normalize_pet,
+    perform_pet_care,
     pet_for_storage,
     pet_matches,
 )
-from backend.core.user import add_pet_xp, get_user_filter
+from backend.core.user import get_user_filter
 from backend.core.utils import html_escape, reply_media_dynamic
 from backend.database import user_collection
 
@@ -301,65 +299,15 @@ async def feed_pet_cmd(_, message: types.Message):
     on_cd, secs = await redis_cooldown("feed_pet", user_id, 900) # 15 minutes
     if on_cd:
         return await message.reply_text(f"🍱 <b>Your pet is full!</b>\nTry feeding again in <b>{int(secs/60)}m {secs%60}s</b>.", parse_mode=enums.ParseMode.HTML)
-    user = await ensure_user_pet_state(user_id)
-    pets = [normalize_pet(p) for p in user.get("pets", [])]
-    active_pet_name = user.get("current_pet")
-    pet_index = find_pet_index(pets, active_pet_name)
-    if pet_index == -1:
-        pet_list_str = ", ".join([p["name"] for p in pets])
-        return await message.reply_text(f"❌ <b>Active Pet Error:</b> '{active_pet_name}' not found.\nAvailable: {pet_list_str}")
-    pet = pets[pet_index]
-    pet_name = pet["name"]
-    current_affection = get_effective_affection(pet)
-    new_affection = min(100, current_affection + 15)
-    await user_collection.update_one(
-        get_user_filter(user_id),
-        {"$set": {
-            f"pets.{pet_index}.affection": new_affection,
-            f"pets.{pet_index}.last_interacted": time.time()
-        }}
-    )
-    await invalidate_user_cache(user_id)
-    caption = (
-        f"🍱 <b>Meal Time!</b>\n\n"
-        f"You fed <b>{pet_name}</b> with some delicious snacks!\n"
-        f"Affection: <code>{current_affection}</code> ➜ <b>{new_affection}/100</b> ❤️"
-    )
-    await message.reply_text(caption, parse_mode=enums.ParseMode.HTML)
+    success, msg, _ = await perform_pet_care(user_id, "feed")
+    await message.reply_text(msg, parse_mode=enums.ParseMode.HTML)
 async def train_pet_cmd(_, message: types.Message):
     user_id = message.from_user.id
     on_cd, secs = await redis_cooldown("train_pet", user_id, 1800) # 30 minutes
     if on_cd:
         return await message.reply_text(f"⚔️ <b>Your pet is tired!</b>\nTry training again in <b>{int(secs/60)}m {secs%60}s</b>.", parse_mode=enums.ParseMode.HTML)
-    user = await ensure_user_pet_state(user_id)
-    pets = [normalize_pet(p) for p in user.get("pets", [])]
-    active_pet_name = user.get("current_pet")
-    pet_index = find_pet_index(pets, active_pet_name)
-    if pet_index == -1:
-        pet_list_str = ", ".join([p["name"] for p in pets])
-        return await message.reply_text(f"❌ <b>Active Pet Error:</b> '{active_pet_name}' not found.\nAvailable: {pet_list_str}")
-    pet = pets[pet_index]
-    pet_name = pet["name"]
-    current_affection = get_effective_affection(pet)
-    new_affection = min(100, current_affection + 10)
-    # Update affection
-    await user_collection.update_one(
-        get_user_filter(user_id),
-        {"$set": {
-            f"pets.{pet_index}.affection": new_affection,
-            f"pets.{pet_index}.last_interacted": time.time()
-        }}
-    )
-    await invalidate_user_cache(user_id)
-    # Add XP
-    await add_pet_xp(user_id, get_pet_key(pet), 5)
-    caption = (
-        f"⚔️ <b>Training Session!</b>\n\n"
-        f"<b>{pet_name}</b> worked hard and improved its skills!\n"
-        f"Affection: <b>{new_affection}/100</b> ❤️\n"
-        f"XP Gained: <b>+5</b> ✨"
-    )
-    await message.reply_text(caption, parse_mode=enums.ParseMode.HTML)
+    success, msg, _ = await perform_pet_care(user_id, "train")
+    await message.reply_text(msg, parse_mode=enums.ParseMode.HTML)
 def load_handlers(bot):
     """Explicitly register pet handlers. Resolves multi-bot ghosting."""
     if bot.name != "MainBot":
