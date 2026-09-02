@@ -5,7 +5,7 @@ import {
   ChartNoAxesColumnIncreasing,
   Coins,
   Gem,
-  ShieldCheck,
+  Radio,
   TrendingUp,
   Trophy,
 } from 'lucide-react';
@@ -133,7 +133,7 @@ export const Leaderboard = () => {
           <h1 className="text-xl font-bold text-zinc-100 uppercase tracking-tight">Rankings</h1>
         </div>
         <div className="flex items-center gap-2 opacity-60">
-          <ShieldCheck size={10} className="text-zinc-500" />
+          <Radio size={10} className="text-zinc-500" />
           <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
             Top collectors across the game
           </p>

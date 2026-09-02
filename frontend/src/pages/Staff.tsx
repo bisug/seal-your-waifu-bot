@@ -6,8 +6,8 @@ import {
   History,
   Image as ImageIcon,
   PawPrint,
-  ShieldCheck,
   Terminal,
+  Users,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Avatar } from '../components/Avatar';
@@ -210,7 +210,7 @@ export const Staff = () => {
     <div className="pb-32 pt-6 max-w-4xl mx-auto adaptive-px space-y-8">
       <header className="space-y-1">
         <div className="flex items-center gap-2.5">
-          <ShieldCheck className="text-brand-accent" size={20} />
+          <Users className="text-brand-accent" size={20} />
           <h1 className="text-xl font-bold text-zinc-100 uppercase tracking-tight">
             Staff Panel
           </h1>

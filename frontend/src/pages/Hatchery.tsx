@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { Activity, ArrowRight, CheckCircle2, Egg, Flame, Sparkles, Target, Timer, Zap } from 'lucide-react';
+import { Activity, ArrowRight, CheckCircle2, Droplets, Egg, Flame, Target, Timer, Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { apiFetch, getErrorMessage } from '../api/client';
 import { Badge } from '../components/ui/Badge';
@@ -220,7 +220,7 @@ export const Hatchery = () => {
                     disabled={!hasEggId}
                     className="h-9 px-4 border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
                   >
-                    Purify <Sparkles size={14} className="ml-1.5" />
+                    Purify <Droplets size={14} className="ml-1.5" />
                   </Button>
                 )}
                 <Button

@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { Gem, Info, Package, ShieldCheck, Sparkles, Target, X } from 'lucide-react';
+import { Gem, Info, Package, ShieldCheck, Target, Terminal, X } from 'lucide-react';
 import { type ReactNode, useEffect, useRef } from 'react';
 import { Character } from '../../context/UserContext';
 import { cn, formatNumber } from '../../utils';
@@ -231,7 +231,7 @@ export const Modal = ({ character, onClose, actions }: ModalProps) => {
             )}
 
             <div className="flex items-center justify-center gap-2 py-0 opacity-20">
-              <Sparkles size={10} className="text-brand-accent" />
+              <Terminal size={10} className="text-brand-accent" />
               <span className="text-[8px] font-bold uppercase text-zinc-100 tracking-widest">
                 End of Data
               </span>

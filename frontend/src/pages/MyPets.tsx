@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { Beef, Dumbbell, Heart, PawPrint, RefreshCw, Sparkles, Swords, Wind } from 'lucide-react';
+import { Beef, Clover, Dumbbell, Heart, PawPrint, RefreshCw, Swords, Wind } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { apiFetch, getErrorMessage } from '../api/client';
 import { Badge } from '../components/ui/Badge';
@@ -133,7 +133,7 @@ const ActivePetCard = ({
           <InlineStat icon={Swords} label="Strike" value={pet.atk ?? 0} color="text-red-500" />
           <InlineStat icon={Wind} label="Velocity" value={pet.spd ?? 0} color="text-brand-accent" />
           <InlineStat
-            icon={Sparkles}
+            icon={Clover}
             label="Luck"
             value={`${Math.round(Number(pet.luck || 0) * 100)}%`}
             color="text-amber-500"
@@ -372,7 +372,7 @@ export const MyPets = ({ onPetClick }: MyPetsProps) => {
                         />
                         <InlineStat icon={Wind} label="SPD" value={pet.spd ?? 0} />
                         <InlineStat
-                          icon={Sparkles}
+                          icon={Clover}
                           label="LCK"
                           value={`${Math.round(Number(pet.luck || 0) * 100)}%`}
                         />

@@ -1,10 +1,10 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import {
+  Clover,
   Heart,
   History,
   PawPrint,
   ShieldCheck,
-  Sparkles,
   Swords,
   Target,
   TrendingUp,
@@ -172,7 +172,7 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }: PetActionM
                 {selectedPet.name}
               </h2>
               <div className="flex items-center gap-1.5">
-                <Sparkles size={12} className="text-brand-accent" />
+                <Zap size={12} className="text-brand-accent" />
                 <p className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest leading-none">
                   {selectedPet.ability || 'SYSTEM_SUPPORT_PERK'}
                 </p>
@@ -208,7 +208,7 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }: PetActionM
                   color: 'text-brand-accent',
                 },
                 {
-                  icon: Sparkles,
+                  icon: Clover,
                   label: 'Luck',
                   value: `${Math.round(Number(selectedPet.luck || 0) * 100)}%`,
                   color: 'text-amber-500',

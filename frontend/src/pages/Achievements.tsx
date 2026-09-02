@@ -6,7 +6,7 @@ import {
   CheckCircle2,
   Loader2,
   Lock,
-  ShieldCheck,
+  Medal,
   Target,
   Trophy,
 } from 'lucide-react';
@@ -110,7 +110,7 @@ export const Achievements = () => {
               <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">
                 Rank
               </span>
-              <ShieldCheck size={14} className="text-emerald-500" />
+              <Medal size={14} className="text-emerald-500" />
             </div>
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded bg-brand-accent/10 flex items-center justify-center shrink-0">

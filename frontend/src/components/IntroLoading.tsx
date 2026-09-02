@@ -1,4 +1,4 @@
-import { Sparkles, Terminal } from 'lucide-react';
+import { Fingerprint, Terminal } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { cn } from '../utils';
 
@@ -110,7 +110,7 @@ export const IntroLoading = () => {
 
           <div className="flex items-center justify-between px-1">
             <div className="flex items-center gap-1.5">
-              <Sparkles size={8} className="text-zinc-600" />
+              <Fingerprint size={8} className="text-zinc-600" />
               <span className="text-[7px] font-bold text-zinc-600 uppercase tracking-widest">
                 Signed in via Telegram
               </span>

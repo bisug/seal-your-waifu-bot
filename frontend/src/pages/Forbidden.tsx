@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { ArrowLeft, Home, Lock, Sparkles } from 'lucide-react';
+import { ArrowLeft, Home, Lock, Terminal } from 'lucide-react';
 import { useEffect } from 'react';
 import { Button } from '../components/ui/Button';
 
@@ -56,7 +56,7 @@ export const Forbidden = ({ onReset }: { onReset: () => void }) => {
       </motion.div>
 
       <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-2 opacity-20">
-        <Sparkles size={10} className="text-amber-500" />
+        <Terminal size={10} className="text-amber-500" />
         <span className="text-[7px] font-bold uppercase tracking-widest text-zinc-100">
           Security Breach Blocked
         </span>

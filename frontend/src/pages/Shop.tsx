@@ -1,12 +1,12 @@
 import {
   AlertCircle,
+  Boxes,
   CheckCircle2,
   Clock,
   Coins,
   Gem,
   PackageOpen,
   RefreshCw,
-  Sparkles,
   Store,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -272,7 +272,7 @@ export const Shop = ({ onCharClick }: ShopProps) => {
       <section className="space-y-6">
         <div className="flex items-center justify-between gap-4 px-1">
           <div className="flex items-center gap-2">
-            <Sparkles size={14} className="text-brand-accent" />
+            <Boxes size={14} className="text-brand-accent" />
             <h2 className="text-[10px] font-bold text-zinc-100 uppercase tracking-widest">
               Available Characters
             </h2>

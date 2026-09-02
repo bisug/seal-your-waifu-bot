@@ -5,7 +5,7 @@ import {
   Image as ImageIcon,
   Link as LinkIcon,
   PawPrint,
-  ShieldCheck,
+  Terminal,
   UploadCloud,
 } from 'lucide-react';
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react';
@@ -204,7 +204,7 @@ export const Upload = () => {
           <h1 className="text-xl font-bold text-zinc-100 uppercase tracking-tight">Upload</h1>
         </div>
         <div className="flex items-center gap-2 opacity-60">
-          <ShieldCheck size={10} className="text-zinc-500" />
+          <Terminal size={10} className="text-zinc-500" />
           <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
             Add new characters and pets to the game
           </p>

@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { ShieldCheck, Sparkles, Zap } from 'lucide-react';
+import { ShieldCheck, Terminal, Zap } from 'lucide-react';
 import { useEffect } from 'react';
 import { Character } from '../../context/UserContext';
 import { Badge } from './Badge';
@@ -95,7 +95,7 @@ export const GachaReveal = ({ character, onClose }: GachaRevealProps) => {
             transition={{ delay: 0.8 }}
             className="mt-8 flex items-center gap-4"
           >
-            <Sparkles size={16} className="text-brand-accent" />
+            <Terminal size={16} className="text-brand-accent" />
           </motion.div>
         </motion.div>
       </div>

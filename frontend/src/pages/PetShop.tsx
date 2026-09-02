@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bone, CheckCircle2, Gem, Lock, PawPrint, ShieldCheck } from 'lucide-react';
+import { Bone, CheckCircle2, Gem, Lock, PawPrint } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { apiFetch, getErrorMessage } from '../api/client';
 import { Badge } from '../components/ui/Badge';
@@ -124,7 +124,7 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
           <h1 className="text-xl font-bold text-zinc-100 uppercase tracking-tight">Breeder</h1>
         </div>
         <div className="flex items-center gap-2 opacity-60">
-          <ShieldCheck size={10} className="text-zinc-500" />
+          <PawPrint size={10} className="text-zinc-500" />
           <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
             Adopt a hunting companion
           </p>
