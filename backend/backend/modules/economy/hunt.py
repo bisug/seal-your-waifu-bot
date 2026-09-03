@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import random
-import time
 import uuid
 from datetime import timedelta, timezone
 
@@ -91,12 +90,10 @@ def _roll_hunt_rewards(ctx: dict, user: dict) -> tuple[int, int, list, str]:
     pass_type = get_active_pass_type(user)
     pass_benefits = PASS_BENEFITS[pass_type]
     hunt_multiplier = pass_benefits["hunt_multiplier"]
-    if pass_type == "elite":
+    if hunt_multiplier > 1.0:
+        pct = int((hunt_multiplier - 1.0) * 100)
         shards = int(shards * hunt_multiplier)
-        bonus_text += "\n<b>+75% Elite Shards!</b>"
-    elif pass_type == "premium":
-        shards = int(shards * hunt_multiplier)
-        bonus_text += "\n<b>+35% Premium Shards!</b>"
+        bonus_text += f"\n<b>+{pct}% {pass_type.capitalize()} Shards!</b>"
 
     scavenger_chance = 0.2 * aff_multiplier
     if ability == "Scavenger" and random.random() < scavenger_chance:
@@ -104,9 +101,9 @@ def _roll_hunt_rewards(ctx: dict, user: dict) -> tuple[int, int, list, str]:
         bonus_text += "\n<b>Double Shards!</b> (Scavenger)"
 
     xp_gain = random.randint(10, 20)
-    luck_modifier = 1.0 + (0.05 * aff_multiplier)
     if ability == "Beginner's Luck":
-        xp_gain = int(xp_gain * luck_modifier)
+        # Luck-scaled XP: the ability name finally matches its math.
+        xp_gain = int(xp_gain * (1.0 + 0.5 * luck))
 
     eggs_to_push = []
     base_drop_chance = min(80, 15 * (1 + luck) * pass_benefits["egg_drop_multiplier"])
@@ -119,7 +116,7 @@ def _roll_hunt_rewards(ctx: dict, user: dict) -> tuple[int, int, list, str]:
         tier_data = EGG_TIERS.get(tier_key, EGG_TIERS["common"])
         corruption_chance = CORRUPTED_EGG_CHANCE * (1 - pass_benefits.get("corruption_resistance", 0))
         egg_data = {
-            "id": f"egg_{int(time.time() * 1000)}_{random.randint(100, 999)}",
+            "id": f"egg_{uuid.uuid4().hex[:12]}",
             "tier": tier_key,
             "name": tier_data["name"],
             "obtained_at": get_now_utc(),
@@ -128,11 +125,13 @@ def _roll_hunt_rewards(ctx: dict, user: dict) -> tuple[int, int, list, str]:
         }
         eggs_to_push.append(egg_data)
         if extra_drop:
-            bonus_tier = roll_egg_tier(luck * 0.5, pass_benefits["egg_quality_bonus"] * 0.5)
+            # Bonus egg rolls at FULL luck — a bonus find should never be
+            # strictly worse than the egg that triggered it.
+            bonus_tier = roll_egg_tier(luck, pass_benefits["egg_quality_bonus"])
             bonus_tier_data = EGG_TIERS.get(bonus_tier, EGG_TIERS["common"])
             extra_egg = egg_data.copy()
             extra_egg.update({
-                "id": f"egg_bonus_{int(time.time() * 1000)}_{random.randint(100, 999)}",
+                "id": f"egg_{uuid.uuid4().hex[:12]}",
                 "tier": bonus_tier,
                 "name": bonus_tier_data["name"],
                 "is_corrupted": random.uniform(0, 100) <= corruption_chance
