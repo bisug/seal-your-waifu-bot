@@ -156,7 +156,7 @@ export const Exchange = () => {
 
   if (loading && !data)
     return (
-      <div className="pb-32 pt-6 adaptive-px max-w-2xl mx-auto space-y-8">
+      <div className="pt-6 adaptive-px max-w-2xl mx-auto space-y-8">
         <div className="flex flex-col gap-1.5">
           <Skeleton className="h-8 w-40 rounded-md" />
           <Skeleton className="h-4 w-56 rounded-md opacity-50" />
@@ -172,13 +172,13 @@ export const Exchange = () => {
 
   if (error && !data)
     return (
-      <div className="pb-32 pt-6 max-w-2xl mx-auto adaptive-px">
+      <div className="pt-6 max-w-2xl mx-auto adaptive-px">
         <ErrorState message={error} onAction={handleRefresh} />
       </div>
     );
 
   return (
-    <div className="pb-32 pt-6 max-w-2xl mx-auto adaptive-px space-y-8">
+    <div className="pt-6 max-w-2xl mx-auto adaptive-px space-y-8">
       <header className="space-y-6">
         <div className="flex items-start justify-between gap-6">
           <div className="space-y-1">

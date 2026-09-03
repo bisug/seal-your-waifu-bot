@@ -69,7 +69,7 @@ export const Referrals = () => {
 
   if (loading && !referrals?.length)
     return (
-      <div className="pb-32 pt-6 adaptive-px max-w-2xl mx-auto space-y-8">
+      <div className="pt-6 adaptive-px max-w-2xl mx-auto space-y-8">
         <Skeleton className="h-40 w-full rounded-md" />
         <div className="grid grid-cols-2 gap-4">
           <Skeleton className="h-20 rounded-md" />
@@ -80,7 +80,7 @@ export const Referrals = () => {
     );
 
   return (
-    <div className="pb-32 pt-6 max-w-2xl mx-auto adaptive-px space-y-8 select-none">
+    <div className="pt-6 max-w-2xl mx-auto adaptive-px space-y-8 select-none">
       <header className="space-y-1">
         <div className="flex items-center gap-2.5">
           <UserPlus className="text-brand-accent" size={20} />

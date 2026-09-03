@@ -126,7 +126,7 @@ export const Leaderboard = () => {
   const activeMetric = METRICS.find((m) => m.id === metric);
 
   return (
-    <div className="pb-32 pt-6 max-w-2xl mx-auto adaptive-px space-y-8">
+    <div className="pt-6 max-w-2xl mx-auto adaptive-px space-y-8">
       <header className="space-y-1">
         <div className="flex items-center gap-2.5">
           <Trophy className="text-amber-500" size={20} />

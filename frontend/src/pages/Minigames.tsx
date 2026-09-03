@@ -1,5 +1,5 @@
 import { AnimatePresence, m } from 'framer-motion';
-import { Brain, ChevronRight, Loader2, Target } from 'lucide-react';
+import { Brain, ChevronRight, Gamepad2, Loader2, Target } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { apiFetch, getErrorMessage } from '../api/client';
 import { CipherMatch } from '../components/minigames/CipherMatch';
@@ -94,12 +94,15 @@ export const Minigames = () => {
   }
 
   return (
-    <div className="adaptive-px pb-20 pt-4">
-      <header className="mb-8">
-        <h2 className="text-2xl font-bold text-zinc-100 uppercase tracking-tight mb-1">
-          Nexus Games
-        </h2>
-        <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.2em]">
+    <div className="adaptive-px pt-6">
+      <header className="mb-8 space-y-1">
+        <div className="flex items-center gap-2.5">
+          <Gamepad2 className="text-brand-accent" size={20} />
+          <h1 className="text-xl font-bold text-zinc-100 uppercase tracking-tight">
+            Nexus Games
+          </h1>
+        </div>
+        <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest opacity-60">
           Operational training & testing
         </p>
       </header>

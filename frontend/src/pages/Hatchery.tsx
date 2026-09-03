@@ -280,7 +280,7 @@ export const Hatchery = () => {
     ) : null;
 
   return (
-    <div className="pb-32 pt-6 max-w-2xl mx-auto adaptive-px space-y-8">
+    <div className="pt-6 max-w-2xl mx-auto adaptive-px space-y-8">
       <header className="space-y-1">
         <div className="flex items-center gap-2.5">
           <Egg className="text-brand-accent" size={20} />

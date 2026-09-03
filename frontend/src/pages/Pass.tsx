@@ -167,14 +167,14 @@ export const Pass = () => {
 
   if (error && !passData)
     return (
-      <div className="pb-32 pt-6 adaptive-px max-w-2xl mx-auto">
+      <div className="pt-6 adaptive-px max-w-2xl mx-auto">
         <ErrorState message={error} onAction={fetchPassData} />
       </div>
     );
 
   if (passLoading || !passData)
     return (
-      <div className="pb-32 pt-6 adaptive-px max-w-2xl mx-auto space-y-8">
+      <div className="pt-6 adaptive-px max-w-2xl mx-auto space-y-8">
         <div className="flex justify-between items-center">
           <Skeleton className="h-10 w-48 rounded-md" />
           <Skeleton className="h-10 w-16 rounded-md" />
@@ -201,7 +201,7 @@ export const Pass = () => {
   const nextBenefits = nextTier ? passData.benefits?.[nextTier] : null;
 
   return (
-    <div className="pb-32 pt-6 max-w-2xl mx-auto adaptive-px space-y-8 select-none">
+    <div className="pt-6 max-w-2xl mx-auto adaptive-px space-y-8 select-none">
       <header className="space-y-6">
         <div className="flex items-center justify-between gap-6">
           <div className="space-y-1">

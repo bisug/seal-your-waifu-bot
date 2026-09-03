@@ -93,7 +93,7 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
 
   if (loading && !shopData)
     return (
-      <div className="pb-32 pt-6 adaptive-px max-w-2xl mx-auto space-y-8">
+      <div className="pt-6 adaptive-px max-w-2xl mx-auto space-y-8">
         <div className="flex flex-col gap-1.5">
           <Skeleton className="h-8 w-40 rounded-md" />
           <Skeleton className="h-4 w-56 rounded-md opacity-50" />
@@ -106,7 +106,7 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
 
   if (error && !shopData)
     return (
-      <div className="px-5 py-20 max-w-2xl mx-auto">
+      <div className="pt-6 max-w-2xl mx-auto adaptive-px">
         <ErrorState message={error} onAction={fetchPets} />
       </div>
     );
@@ -117,7 +117,7 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
   const zenithBalance = user?.stats?.zenith ?? user?.zenith ?? 0;
 
   return (
-    <div className="pb-32 pt-6 max-w-3xl mx-auto adaptive-px space-y-8 select-none">
+    <div className="pt-6 max-w-3xl mx-auto adaptive-px space-y-8 select-none">
       <header className="space-y-1">
         <div className="flex items-center gap-2.5">
           <Bone className="text-brand-accent" size={20} />

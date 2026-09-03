@@ -152,7 +152,7 @@ export const Shop = ({ onCharClick }: ShopProps) => {
 
   if (loading && !shopData)
     return (
-      <div className="pb-32 pt-6 adaptive-px max-w-5xl mx-auto space-y-8">
+      <div className="pt-6 adaptive-px max-w-5xl mx-auto space-y-8">
         <div className="flex flex-col gap-2">
           <Skeleton className="h-8 w-48 rounded-md" />
           <Skeleton className="h-4 w-64 rounded-md opacity-50" />
@@ -172,13 +172,13 @@ export const Shop = ({ onCharClick }: ShopProps) => {
 
   if (error && !shopData)
     return (
-      <div className="px-5 py-20 max-w-2xl mx-auto">
+      <div className="pt-6 max-w-2xl mx-auto adaptive-px">
         <ErrorState message={error} onAction={handleRefresh} />
       </div>
     );
 
   return (
-    <div className="pb-32 pt-6 max-w-5xl mx-auto adaptive-px space-y-8">
+    <div className="pt-6 max-w-5xl mx-auto adaptive-px space-y-8">
       <header className="space-y-6">
         <div className="flex items-start justify-between gap-6">
           <div className="space-y-1">

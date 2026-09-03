@@ -265,7 +265,7 @@ export const Trading = () => {
   ];
 
   return (
-    <div className="pb-32 pt-6 max-w-2xl mx-auto adaptive-px space-y-6">
+    <div className="pt-6 max-w-2xl mx-auto adaptive-px space-y-6">
       <header className="space-y-1">
         <div className="flex items-center gap-2.5">
           <ArrowLeftRight className="text-brand-accent" size={20} />
@@ -395,7 +395,7 @@ export const Trading = () => {
                 <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">
                   2 · Pick their character
                 </p>
-                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-64 overflow-y-auto app-scroller">
+                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-64 overflow-y-auto">
                   {targetChars.map((char) => (
                     <CharThumb
                       key={char.id}
@@ -420,7 +420,7 @@ export const Trading = () => {
                     ))}
                   </div>
                 ) : myChars.length > 0 ? (
-                  <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-64 overflow-y-auto app-scroller">
+                  <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-64 overflow-y-auto">
                     {myChars.map((char) => (
                       <CharThumb
                         key={char.id}

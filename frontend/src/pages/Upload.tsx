@@ -197,7 +197,7 @@ export const Upload = () => {
   };
 
   return (
-    <div className="pb-32 pt-6 max-w-3xl mx-auto adaptive-px space-y-8 select-none">
+    <div className="pt-6 max-w-3xl mx-auto adaptive-px space-y-8 select-none">
       <header className="space-y-1">
         <div className="flex items-center gap-2.5">
           <UploadCloud className="text-brand-accent" size={20} />

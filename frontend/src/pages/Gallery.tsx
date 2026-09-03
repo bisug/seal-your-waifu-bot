@@ -62,7 +62,7 @@ export const Gallery = ({ onCharClick }: GalleryProps) => {
   }, [rarityData]);
 
   return (
-    <div className="pb-32 pt-6 max-w-5xl mx-auto adaptive-px space-y-8 select-none">
+    <div className="pt-6 max-w-5xl mx-auto adaptive-px space-y-8 select-none">
       <header className="space-y-6">
         <div className="flex items-center gap-2.5">
           <BookOpen className="text-brand-accent" size={20} />

@@ -260,7 +260,7 @@ export const MyPets = ({ onPetClick }: MyPetsProps) => {
   if (!user) return null;
 
   return (
-    <div className="pb-32 pt-6 max-w-5xl mx-auto adaptive-px space-y-10 select-none">
+    <div className="pt-6 max-w-5xl mx-auto adaptive-px space-y-10 select-none">
       <header className="space-y-6">
         <div className="flex items-start justify-between gap-6">
           <div className="space-y-1">

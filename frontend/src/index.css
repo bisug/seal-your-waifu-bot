@@ -264,7 +264,9 @@ a {
   touch-action: pan-x pan-y;
   overscroll-behavior-y: contain;
   position: relative;
-  padding-bottom: calc(84px + var(--sab, 24px));
+  /* Bottom breathing room + safe-area inset. Pages no longer stack pb-32 on
+     top of this — the old 84px reserved a bottom nav bar that doesn't exist. */
+  padding-bottom: calc(24px + var(--sab, 24px));
 }
 
 .safe-bottom {

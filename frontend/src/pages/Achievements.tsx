@@ -37,7 +37,7 @@ export const Achievements = () => {
 
   if (loading && !achievements)
     return (
-      <div className="pb-32 pt-6 adaptive-px max-w-2xl mx-auto space-y-8">
+      <div className="pt-6 adaptive-px max-w-2xl mx-auto space-y-8">
         <div className="flex items-center gap-3">
           <Skeleton className="w-10 h-10 rounded-md" />
           <div className="space-y-1.5">
@@ -59,7 +59,7 @@ export const Achievements = () => {
 
   if (error && !achievements)
     return (
-      <div className="pb-32 pt-6 adaptive-px max-w-2xl mx-auto">
+      <div className="pt-6 adaptive-px max-w-2xl mx-auto">
         <ErrorState message={error} onAction={fetchAchievements} />
       </div>
     );
@@ -74,7 +74,7 @@ export const Achievements = () => {
   const progressPercent = totalCount > 0 ? Math.round((unlockedCount / totalCount) * 100) : 0;
 
   return (
-    <div className="pb-32 pt-6 max-w-2xl mx-auto adaptive-px space-y-8 select-none">
+    <div className="pt-6 max-w-2xl mx-auto adaptive-px space-y-8 select-none">
       <header className="space-y-6">
         <div className="flex items-center gap-2.5">
           <BadgeCheck className="text-brand-accent" size={20} />

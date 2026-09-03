@@ -97,7 +97,7 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
 
   if (userLoading && (items?.length || 0) === 0)
     return (
-      <div className="pb-24 pt-6 adaptive-px max-w-5xl mx-auto space-y-6">
+      <div className="pt-6 adaptive-px max-w-5xl mx-auto space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Skeleton className="md:col-span-2 h-40 rounded-lg" />
           <Skeleton className="h-40 rounded-lg" />
@@ -135,7 +135,7 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
   const usernameLabel = user.username ? `@${user.username}` : `ID ${user.id}`;
 
   return (
-    <div className="pb-32 pt-6 max-w-5xl mx-auto adaptive-px space-y-6">
+    <div className="pt-6 max-w-5xl mx-auto adaptive-px space-y-6">
       {/* Profile & Registry Summary */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* User Profile Card */}

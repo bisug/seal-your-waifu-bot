@@ -152,7 +152,7 @@ export const Quests = () => {
 
   if (loading && !questsData)
     return (
-      <div className="pb-32 pt-6 adaptive-px max-w-2xl mx-auto space-y-6">
+      <div className="pt-6 adaptive-px max-w-2xl mx-auto space-y-6">
         <Skeleton className="h-8 w-40 rounded-md" />
         <Skeleton className="h-4 w-60 rounded-md opacity-50 mb-6" />
         {Array.from({ length: 3 }).map((_, i) => (
@@ -163,7 +163,7 @@ export const Quests = () => {
 
   if (error && !questsData)
     return (
-      <div className="px-5 pb-32 pt-6 max-w-2xl mx-auto">
+      <div className="pt-6 max-w-2xl mx-auto adaptive-px">
         <ErrorState message={error} onAction={fetchQuests} />
       </div>
     );
@@ -195,7 +195,7 @@ export const Quests = () => {
   );
 
   return (
-    <div className="pb-32 pt-6 max-w-2xl mx-auto adaptive-px space-y-10">
+    <div className="pt-6 max-w-2xl mx-auto adaptive-px space-y-10">
       <header className="space-y-1">
         <div className="flex items-center gap-2.5">
           <ClipboardList className="text-brand-accent" size={20} />
