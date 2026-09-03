@@ -474,18 +474,21 @@ async def free_spin_handler(_, query: types.CallbackQuery):
     if existing_user and existing_user.get("free_spin_claimed"):
         await query.answer("You have already used your free spin!", show_alert=True)
         return
-        
-    cursor = await collection.aggregate([{"$sample": {"size": 1}}])
-    chars = await cursor.to_list(length=1)
-    
-    if not chars:
+
+    # Claim-weighted rarity roll (same pool as /claim and /daily) instead of
+    # an unweighted $sample over the whole catalog, which could hand a new
+    # player a top-tier character for free.
+    waifu = None
+    rarity = weighted_pick(CLAIM_RARITY_WEIGHTS)
+    if rarity:
+        waifu = await sample_character_by_rarity(rarity)
+    if not waifu:
         await query.answer("No characters available in the bot yet.", show_alert=True)
         return
-        
-    waifu = chars[0]
+
     waifu_data = waifu.copy()
     waifu_data.pop('_id', None)
-    
+
     claim_filter = get_user_filter(user_id)
     claim_filter["free_spin_claimed"] = {"$ne": True}
     claim_result = await user_collection.update_one(

@@ -20,7 +20,16 @@ async def give_balance(_, message: types.Message):
         await message.reply_text("Please reply to a user to give balance.")
         return
     recipient = message.reply_to_message.from_user
+    if not recipient:
+        await message.reply_text("Cannot give balance to this message (no user attached).")
+        return
+    if recipient.is_bot:
+        await message.reply_text("You cannot give balance to a bot!")
+        return
     recipient_id = recipient.id
+    if sender_id == recipient_id:
+        await message.reply_text("You cannot give balance to yourself!")
+        return
     try:
         if len(message.command) < 2:
             raise ValueError

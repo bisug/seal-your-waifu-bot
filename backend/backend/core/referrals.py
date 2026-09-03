@@ -18,7 +18,11 @@ REFERRER_REWARD_SHARDS = 500
 REFERRER_REWARD_XP = 50
 REFERRED_REWARD_SHARDS = 1_500
 REFERRED_REWARD_PET = "blaze_fang"
+REFERRED_REWARD_PET_LEVEL = 1
 MAX_REFERRAL_EVENTS = 100
+# ponytail: lifetime cap on referrer payouts; alt-account farms stop earning
+# here. Raise (or move to config) if legit viral growth outgrows it.
+MAX_REFERRAL_PAYOUTS = 50
 
 
 def _safe_int(value: Any, default: int = 0) -> int:
@@ -36,6 +40,7 @@ class ReferralClaimResult:
     referrer_reward_xp: int = REFERRER_REWARD_XP
     referred_reward_shards: int = REFERRED_REWARD_SHARDS
     referred_reward_pet: str = REFERRED_REWARD_PET
+    referred_pet_level: int = REFERRED_REWARD_PET_LEVEL
 
     @property
     def applied(self) -> bool:
@@ -73,6 +78,7 @@ def get_referral_stats(user: dict | None) -> dict[str, int]:
             "referrer_reward_xp": REFERRER_REWARD_XP,
             "referred_reward_shards": REFERRED_REWARD_SHARDS,
             "referred_reward_pet": REFERRED_REWARD_PET,
+            "referred_pet_level": REFERRED_REWARD_PET_LEVEL,
         }
 
     tracked_count = len(normalize_referral_ids(user.get("referrals", [])))
@@ -90,6 +96,7 @@ def get_referral_stats(user: dict | None) -> dict[str, int]:
         "referrer_reward_xp": REFERRER_REWARD_XP,
         "referred_reward_shards": REFERRED_REWARD_SHARDS,
         "referred_reward_pet": REFERRED_REWARD_PET,
+        "referred_pet_level": REFERRED_REWARD_PET_LEVEL,
     }
 
 
@@ -113,10 +120,14 @@ async def claim_referral_bonus(
 
     referrer = await user_collection.find_one(
         get_user_filter(normalized_referrer_id),
-        {"id": 1},
+        {"id": 1, "referrals_count": 1},
     )
     if not referrer:
         return ReferralClaimResult("missing_referrer", normalized_referrer_id)
+    # Anti-sybil: cap lifetime paid referrals per referrer. $lt alone does not
+    # match missing fields, so $or with $exists False keeps legacy docs eligible.
+    if _safe_int(referrer.get("referrals_count")) >= MAX_REFERRAL_PAYOUTS:
+        return ReferralClaimResult("referrer_capped", normalized_referrer_id)
 
     now = get_now_utc()
     # Referral reward pet: Blaze Fang (a real shop pet worth 2 ⧫) instead of
@@ -163,7 +174,14 @@ async def claim_referral_bonus(
         "created_at": now,
     }
     referrer_result = await user_collection.update_one(
-        get_user_filter(normalized_referrer_id),
+        {
+            **get_user_filter(normalized_referrer_id),
+            # Atomic payout cap: only pay while below the lifetime limit.
+            "$or": [
+                {"referrals_count": {"$lt": MAX_REFERRAL_PAYOUTS}},
+                {"referrals_count": {"$exists": False}},
+            ],
+        },
         {
             "$inc": {
                 "balance": REFERRER_REWARD_SHARDS,
@@ -182,8 +200,12 @@ async def claim_referral_bonus(
         upsert=False,
     )
     if referrer_result.matched_count == 0:
+        # Either the referrer vanished or they hit the payout cap between the
+        # pre-check and this atomic update. The referred user keeps their
+        # welcome bonus either way; only the referrer payout is skipped.
         LOGGER.warning(
-            "Referral claim for %s accepted, but referrer %s disappeared before payout.",
+            "Referral claim for %s accepted, but referrer %s payout skipped "
+            "(missing or at cap).",
             referred_id,
             normalized_referrer_id,
         )
