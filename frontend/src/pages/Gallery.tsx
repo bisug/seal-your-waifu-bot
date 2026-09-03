@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { apiFetch } from '../api/client';
+import { useApi } from '../hooks/useApi';
 import { Card as CharacterCard } from '../components/character/Card';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ErrorState } from '../components/ui/ErrorState';
@@ -55,9 +56,11 @@ export const Gallery = ({ onCharClick }: GalleryProps) => {
     [availableRarities],
   );
 
+  const { data: rarityData } = useApi<string[]>('/rarities');
+
   useEffect(() => {
-    apiFetch('/rarities').then(setAvailableRarities).catch(console.error);
-  }, []);
+    if (rarityData) setAvailableRarities(rarityData);
+  }, [rarityData]);
 
   return (
     <div className="pb-32 pt-6 max-w-5xl mx-auto adaptive-px space-y-8 select-none">

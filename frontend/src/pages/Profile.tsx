@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { apiFetch } from '../api/client';
+import { useApi } from '../hooks/useApi';
 import { Avatar } from '../components/Avatar';
 import { Card as CharacterCard } from '../components/character/Card';
 import { Badge } from '../components/ui/Badge';
@@ -74,8 +75,12 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
     [availableRarities],
   );
 
+  const { data: rarityData } = useApi<string[]>('/rarities');
+
   useEffect(() => {
-    apiFetch('/rarities').then(setAvailableRarities).catch(console.error);
+    if (rarityData) setAvailableRarities(rarityData);
+  }, [rarityData]);
+  useEffect(() => {
     apiFetch('/social/marriage').then(setMarriage).catch(() => setMarriage(null));
     apiFetch('/battle/stats').then(setBattleStats).catch(() => setBattleStats(null));
   }, []);
