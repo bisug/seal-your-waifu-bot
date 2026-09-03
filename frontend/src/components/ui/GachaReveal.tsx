@@ -1,7 +1,8 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { ShieldCheck, Terminal, Zap } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Character } from '../../context/UserContext';
+import { FALLBACK_IMAGE } from '../../utils';
 import { Badge } from './Badge';
 import { Button } from './Button';
 
@@ -11,7 +12,10 @@ interface GachaRevealProps {
 }
 
 export const GachaReveal = ({ character, onClose }: GachaRevealProps) => {
+  const [imgError, setImgError] = useState(false);
+
   useEffect(() => {
+    setImgError(false);
     if (character) {
       window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
     }
@@ -44,7 +48,8 @@ export const GachaReveal = ({ character, onClose }: GachaRevealProps) => {
         >
           <div className="w-full h-full rounded-2xl border border-white/20 bg-zinc-950 shadow-2xl overflow-hidden relative">
             <img
-              src={character.img_url}
+              src={imgError ? FALLBACK_IMAGE : character.img_url}
+              onError={() => setImgError(true)}
               alt={character.name}
               referrerPolicy="no-referrer"
               className="absolute inset-0 w-full h-full object-cover"

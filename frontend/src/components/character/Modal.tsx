@@ -1,8 +1,8 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { Gem, Info, Package, ShieldCheck, Target, Terminal, X } from 'lucide-react';
-import { type ReactNode, useEffect, useRef } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Character } from '../../context/UserContext';
-import { cn, formatNumber } from '../../utils';
+import { cn, FALLBACK_IMAGE, formatNumber } from '../../utils';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
@@ -15,6 +15,11 @@ interface ModalProps {
 
 export const Modal = ({ character, onClose, actions }: ModalProps) => {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [character?.id]);
 
   useEffect(() => {
     if (character) {
@@ -123,7 +128,8 @@ export const Modal = ({ character, onClose, actions }: ModalProps) => {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.1, duration: 0.4 }}
-              src={character.img_url}
+              src={imgError ? FALLBACK_IMAGE : character.img_url}
+              onError={() => setImgError(true)}
               referrerPolicy="no-referrer"
               className="relative z-10 w-full h-full object-contain p-6"
               alt={character.name}
