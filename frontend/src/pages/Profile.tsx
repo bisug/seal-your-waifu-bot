@@ -81,11 +81,6 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
   }, []);
 
   useEffect(() => {
-    window.addEventListener('harem-refresh', refresh);
-    return () => window.removeEventListener('harem-refresh', refresh);
-  }, [refresh]);
-
-  useEffect(() => {
     if (!focusCollection || userLoading) return;
 
     const timeoutId = window.setTimeout(() => {

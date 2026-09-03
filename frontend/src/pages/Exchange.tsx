@@ -1,6 +1,6 @@
 import { AlertCircle, BadgePercent, Coins, Gem, RefreshCw, Repeat2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { apiFetch, getErrorMessage } from '../api/client';
+import { apiFetch, getErrorMessage, invalidateQueries } from '../api/client';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { ErrorState } from '../components/ui/ErrorState';
@@ -146,7 +146,7 @@ export const Exchange = () => {
       });
       addToast(result.message || 'Exchange successful.', 'success');
       await Promise.allSettled([fetchExchange(), refreshUser()]);
-      window.dispatchEvent(new Event('shop-refresh'));
+      invalidateQueries(['/shop/characters', '/shop/hub']);
     } catch (err: any) {
       addToast(getErrorMessage(err), 'error');
     } finally {

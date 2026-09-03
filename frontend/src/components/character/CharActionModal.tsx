@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Coins, Gem, History, Image as ImageIcon, Loader2, Lock, Pencil } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { apiFetch, getErrorMessage } from '../../api/client';
+import { apiFetch, getErrorMessage, invalidateQueries } from '../../api/client';
 import { type Character, type User, useUser } from '../../context/UserContext';
 import { formatNumber } from '../../utils';
 import { Badge } from '../ui/Badge';
@@ -293,9 +293,7 @@ export const CharActionModal = ({
       setEditMode(false);
       addToast('Registry updated.', 'success');
       triggerRefresh();
-      window.dispatchEvent(new Event('gallery-refresh'));
-      window.dispatchEvent(new Event('harem-refresh'));
-      window.dispatchEvent(new Event('shop-refresh'));
+      invalidateQueries(['/gallery', '/harem', '/shop/characters', '/shop/hub']);
     } catch (err: any) {
       addToast(getErrorMessage(err), 'error');
     } finally {
@@ -308,7 +306,7 @@ export const CharActionModal = ({
     try {
       await apiFetch(`/shop/buy/character/${selectedChar.id}`, { method: 'POST' });
       triggerRefresh();
-      window.dispatchEvent(new Event('shop-refresh'));
+      invalidateQueries(['/shop/characters', '/shop/hub']);
       setSelectedChar(null);
       if (onPurchaseSuccess) onPurchaseSuccess(selectedChar);
     } catch (err: any) {

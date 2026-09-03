@@ -405,10 +405,28 @@ const queryClient = new QueryClient({
   },
 });
 
+// Bridge invalidateQueries() events to the react-query cache.
+// Replaces the old per-page window event listeners.
+const QueryInvalidationBridge = () => {
+  useEffect(() => {
+    const onInvalidate = (event: Event) => {
+      const endpoints = (event as CustomEvent<string[]>).detail || [];
+      for (const endpoint of endpoints) {
+        queryClient.invalidateQueries({ queryKey: ['api', endpoint] });
+        queryClient.invalidateQueries({ queryKey: ['grid', endpoint] });
+      }
+    };
+    window.addEventListener('query-invalidate', onInvalidate);
+    return () => window.removeEventListener('query-invalidate', onInvalidate);
+  }, []);
+  return null;
+};
+
 function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
+        <QueryInvalidationBridge />
         <ToastProvider>
           <UserProvider>
             <AppContent />

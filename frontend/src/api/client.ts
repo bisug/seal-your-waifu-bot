@@ -59,6 +59,15 @@ export const getErrorMessage = (error: unknown) => {
   return 'Something went wrong. Please try again.';
 };
 
+// Query-cache invalidation bus — replaces the old string-typed window events
+// (gallery-refresh / harem-refresh / shop-refresh). Keys mirror useApi's
+// ['api', endpoint, body] and useInfiniteGrid's ['grid', endpoint, ...] shapes.
+export const invalidateQueries = (endpoints: string[]) => {
+  window.dispatchEvent(
+    new CustomEvent('query-invalidate', { detail: Array.from(new Set(endpoints)) }),
+  );
+};
+
 interface RefreshSubscriber {
   resolve: (value: unknown) => void;
   reject: (reason?: unknown) => void;

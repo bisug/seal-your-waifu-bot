@@ -101,17 +101,6 @@ export const Shop = ({ onCharClick }: ShopProps) => {
     }
   }, [now, hubData?.reset_at, fetchShop, fetchHub]);
 
-  useEffect(() => {
-    const refreshShop = () => {
-      fetchShop().catch(() => undefined);
-      fetchHub().catch(() => undefined);
-      refreshUser().catch(() => undefined);
-    };
-
-    window.addEventListener('shop-refresh', refreshShop);
-    return () => window.removeEventListener('shop-refresh', refreshShop);
-  }, [fetchHub, fetchShop, refreshUser]);
-
   const zenithBalance = Number(hubData?.zenith ?? user?.stats?.zenith ?? user?.zenith ?? 0);
   const shardBalance = Number(hubData?.balance ?? user?.balance ?? 0);
 

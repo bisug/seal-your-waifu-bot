@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeftRight, Check, Inbox, Search, Send, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { apiFetch, getErrorMessage } from '../api/client';
+import { apiFetch, getErrorMessage, invalidateQueries } from '../api/client';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { EmptyState } from '../components/ui/EmptyState';
@@ -221,7 +221,7 @@ export const Trading = () => {
       );
       if (action === 'accept') {
         await refreshUser();
-        window.dispatchEvent(new Event('harem-refresh'));
+        invalidateQueries(['/harem']);
       }
       await fetchOffers();
       void res;

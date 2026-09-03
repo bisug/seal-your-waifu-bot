@@ -59,11 +59,6 @@ export const Gallery = ({ onCharClick }: GalleryProps) => {
     apiFetch('/rarities').then(setAvailableRarities).catch(console.error);
   }, []);
 
-  useEffect(() => {
-    window.addEventListener('gallery-refresh', refresh);
-    return () => window.removeEventListener('gallery-refresh', refresh);
-  }, [refresh]);
-
   return (
     <div className="pb-32 pt-6 max-w-5xl mx-auto adaptive-px space-y-8 select-none">
       <header className="space-y-6">
