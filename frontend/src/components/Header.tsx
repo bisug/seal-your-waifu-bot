@@ -2,6 +2,7 @@ import { memo, useEffect, useState } from 'react';
 import { Coins, Gem, Menu } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 import { useApi } from '../hooks/useApi';
+import { useLiveStatus } from '../hooks/useLiveStatus';
 import { formatNumber } from '../utils';
 import { Avatar } from './Avatar';
 import { Button } from './ui/Button';
@@ -14,6 +15,7 @@ export const Header = memo(({ onMenuClick }: HeaderProps) => {
   const { user, loading } = useUser();
   const { data: botInfo } = useApi<{ name?: string }>('/bot/info');
   const botName = botInfo?.name || null;
+  const live = useLiveStatus();
 
   return (
     <header className="sticky top-0 z-[100] flex items-center justify-between px-5 bg-zinc-950/95 h-14 shrink-0 select-none border-b border-white/[0.04]">
@@ -33,9 +35,11 @@ export const Header = memo(({ onMenuClick }: HeaderProps) => {
             <span className="text-[8px] font-mono text-zinc-500 uppercase">V2.4</span>
           </div>
           <div className="flex items-center gap-1 mt-0.5">
-            <div className="w-1 h-1 rounded-full bg-emerald-500" />
+            <div
+              className={`w-1 h-1 rounded-full ${live ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'}`}
+            />
             <span className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest leading-none">
-              READY
+              {live ? 'READY' : 'OFFLINE'}
             </span>
           </div>
         </div>
