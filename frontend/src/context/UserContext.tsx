@@ -6,6 +6,7 @@ import React, {
   useEffect,
   useState,
 } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { apiFetch, getErrorMessage } from '../api/client';
 
 export interface UserStats {
@@ -148,13 +149,20 @@ const hasAuthBootstrap = () => {
 };
 
 export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const refreshUser = useCallback(async () => {
     try {
-      const data = await apiFetch('/me');
+      // Routed through react-query so concurrent triggerRefresh() calls
+      // dedupe into a single /me request.
+      const data = await queryClient.fetchQuery({
+        queryKey: ['api', '/me', null],
+        queryFn: () => apiFetch('/me'),
+        staleTime: 0,
+      });
       setUser(data);
       setError(null);
     } catch (err: any) {
@@ -163,7 +171,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [queryClient]);
 
   const triggerRefresh = useCallback(() => {
     refreshUser();
