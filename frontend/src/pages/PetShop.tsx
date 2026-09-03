@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import { Bone, CheckCircle2, Gem, Lock, PawPrint } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { apiFetch, getErrorMessage } from '../api/client';
@@ -145,7 +145,7 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
             const canAfford = zenithBalance >= price;
 
             return (
-              <motion.div
+              <m.div
                 layout
                 key={pet.id || pet.name}
                 initial={{ opacity: 0, y: 8 }}
@@ -253,7 +253,7 @@ export const PetShop = ({ onPetClick }: PetShopProps) => {
                     </div>
                   </div>
                 </Card>
-              </motion.div>
+              </m.div>
             );
           })}
         </AnimatePresence>

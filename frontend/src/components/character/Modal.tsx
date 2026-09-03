@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import { Gem, Info, Package, ShieldCheck, Target, Terminal, X } from 'lucide-react';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Character } from '../../context/UserContext';
@@ -87,7 +87,7 @@ export const Modal = ({ character, onClose, actions }: ModalProps) => {
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center p-0 sm:p-6">
-        <motion.div
+        <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -95,7 +95,7 @@ export const Modal = ({ character, onClose, actions }: ModalProps) => {
           onClick={onClose}
         />
 
-        <motion.div
+        <m.div
           initial={{ y: '100%' }}
           animate={{ y: 0 }}
           exit={{ y: '100%' }}
@@ -124,7 +124,7 @@ export const Modal = ({ character, onClose, actions }: ModalProps) => {
           <div className="relative aspect-[4/3] flex-shrink-0 bg-zinc-900/50 flex items-center justify-center overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent" />
 
-            <motion.img
+            <m.img
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.1, duration: 0.4 }}
@@ -246,7 +246,7 @@ export const Modal = ({ character, onClose, actions }: ModalProps) => {
 
           {/* Safe Area Padding */}
           <div className="h-[calc(var(--sab,8px)+4px)] sm:hidden" />
-        </motion.div>
+        </m.div>
       </div>
     </AnimatePresence>
   );

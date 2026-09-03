@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import {
   Activity,
   Brain,
@@ -133,7 +133,7 @@ const EnergyDisplay = ({
 
       {/* Visual Energy Bar */}
       <div className="absolute bottom-0 left-0 h-0.5 bg-zinc-800 w-full">
-        <motion.div
+        <m.div
           initial={{ width: 0 }}
           animate={{ width: `${maxEnergy > 0 ? (energy / maxEnergy) * 100 : 0}%` }}
           className="h-full bg-brand-accent shadow-[0_0_10px_rgba(var(--brand-accent-rgb),0.5)]"
@@ -319,7 +319,7 @@ const CipherMatch = ({
       <div className="grid grid-cols-4 gap-2">
         {cards.map((card, idx) => (
           <div key={card.key} className="aspect-[3/4] perspective-1000">
-            <motion.div
+            <m.div
               initial={false}
               animate={{ rotateY: card.isFlipped || card.isMatched ? 180 : 0 }}
               transition={{ type: 'spring', stiffness: 260, damping: 20 }}
@@ -354,13 +354,13 @@ const CipherMatch = ({
                   </div>
                 )}
               </div>
-            </motion.div>
+            </m.div>
           </div>
         ))}
       </div>
 
       {failed && (
-        <motion.div
+        <m.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center"
@@ -383,7 +383,7 @@ const CipherMatch = ({
               Submit Progress
             </Button>
           </div>
-        </motion.div>
+        </m.div>
       )}
     </div>
   );
@@ -488,7 +488,7 @@ const NexusWheel = ({
         {/* Outer Ring */}
         <div className="absolute inset-0 rounded-full border-[6px] border-zinc-900 shadow-[0_0_50px_rgba(0,0,0,0.8)] z-20 pointer-events-none" />
 
-        <motion.div
+        <m.div
           animate={{ rotate: rotation }}
           transition={{ duration: 4.5, ease: [0.15, 0, 0.15, 1] }}
           className="w-full h-full rounded-full bg-zinc-950 overflow-hidden border border-white/10 relative z-10"
@@ -532,7 +532,7 @@ const NexusWheel = ({
               </div>
             </div>
           ))}
-        </motion.div>
+        </m.div>
 
         {/* Center Hub */}
         <div className="absolute inset-0 m-auto w-16 h-16 rounded-full bg-zinc-950 border border-white/10 flex items-center justify-center z-30 shadow-2xl">
@@ -561,7 +561,7 @@ const NexusWheel = ({
             {isSpinning ? 'Spinning...' : 'Spin the Wheel'}
           </span>
           {!isSpinning && (
-            <motion.div
+            <m.div
               initial={{ x: '-100%' }}
               animate={{ x: '100%' }}
               transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}
@@ -587,7 +587,7 @@ const RewardModal = ({ rewards, onClose }: { rewards: Reward; onClose: () => voi
   }, []);
 
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-2xl flex items-center justify-center p-6"
@@ -598,14 +598,14 @@ const RewardModal = ({ rewards, onClose }: { rewards: Reward; onClose: () => voi
 
       <AnimatePresence mode="wait">
         {!revealed && rewards.character ? (
-          <motion.div
+          <m.div
             key="box"
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 1.2, opacity: 0, filter: 'brightness(2) blur(10px)' }}
             className="relative flex flex-col items-center gap-8"
           >
-            <motion.div
+            <m.div
               animate={{
                 y: [0, -10, 0],
                 rotate: [0, 1, -1, 0],
@@ -619,7 +619,7 @@ const RewardModal = ({ rewards, onClose }: { rewards: Reward; onClose: () => voi
                 <Lock size={64} className="text-brand-accent" />
                 <div className="absolute bottom-0 left-0 w-full h-1 bg-brand-accent shadow-[0_0_20px_rgba(59,130,246,0.5)]" />
               </div>
-            </motion.div>
+            </m.div>
 
             <div className="text-center space-y-2">
               <h3 className="text-xl font-bold text-white uppercase tracking-[0.3em]">
@@ -639,9 +639,9 @@ const RewardModal = ({ rewards, onClose }: { rewards: Reward; onClose: () => voi
             >
               Reveal Prize
             </Button>
-          </motion.div>
+          </m.div>
         ) : (
-          <motion.div
+          <m.div
             key="content"
             initial={{ scale: 0.9, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -663,7 +663,7 @@ const RewardModal = ({ rewards, onClose }: { rewards: Reward; onClose: () => voi
               </div>
 
               {rewards.character && (
-                <motion.div
+                <m.div
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.2 }}
@@ -690,7 +690,7 @@ const RewardModal = ({ rewards, onClose }: { rewards: Reward; onClose: () => voi
                       </div>
                     </div>
                   </div>
-                </motion.div>
+                </m.div>
               )}
 
               <div className="grid grid-cols-2 gap-4">
@@ -717,10 +717,10 @@ const RewardModal = ({ rewards, onClose }: { rewards: Reward; onClose: () => voi
                 Confirm & Close
               </Button>
             </div>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </m.div>
   );
 };
 
@@ -827,7 +827,7 @@ export const Minigames = () => {
 
       <AnimatePresence mode="wait">
         {!activeGame ? (
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
@@ -894,9 +894,9 @@ export const Minigames = () => {
                 />
               </div>
             </Card>
-          </motion.div>
+          </m.div>
         ) : (
-          <motion.div
+          <m.div
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.98 }}
@@ -916,7 +916,7 @@ export const Minigames = () => {
                 _onCancel={() => setActiveGame(null)}
               />
             )}
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
 

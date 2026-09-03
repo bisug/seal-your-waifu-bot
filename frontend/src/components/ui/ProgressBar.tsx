@@ -1,5 +1,5 @@
 import 'react';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { cn, formatNumber } from '../../utils';
 
 interface ProgressBarProps {
@@ -54,14 +54,14 @@ export const ProgressBar = ({
           compact ? 'h-1.5' : 'h-2.5',
         )}
       >
-        <motion.div
+        <m.div
           initial={{ width: 0 }}
           animate={{ width: `${percentage}%` }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className={cn('h-full rounded-full relative overflow-hidden', variants[variant])}
         >
           <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent" />
-        </motion.div>
+        </m.div>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import {
   ChevronDown,
   Coins,
@@ -102,7 +102,7 @@ const StaffDetails = ({ member }: { member: StaffMember }) => {
   const uploads = allUploadsFor(member);
 
   return (
-    <motion.div
+    <m.div
       initial={{ height: 0, opacity: 0 }}
       animate={{ height: 'auto', opacity: 1 }}
       className="mt-4 pt-4 border-t border-white/5 space-y-6 overflow-hidden"
@@ -189,7 +189,7 @@ const StaffDetails = ({ member }: { member: StaffMember }) => {
           </div>
         )}
       </div>
-    </motion.div>
+    </m.div>
   );
 };
 

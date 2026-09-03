@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import { Activity, ArrowRight, CheckCircle2, Droplets, Egg, Flame, Target, Timer, Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { apiFetch, getErrorMessage } from '../api/client';
@@ -123,7 +123,7 @@ export const Hatchery = () => {
     const tierLabel = String(egg.tier || 'COMMON').toUpperCase();
 
     return (
-      <motion.div
+      <m.div
         layout
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -257,7 +257,7 @@ export const Hatchery = () => {
             )}
           </div>
         </Card>
-      </motion.div>
+      </m.div>
     );
   };
 

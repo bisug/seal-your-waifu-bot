@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import { ArrowLeftRight, Check, Inbox, Search, Send, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiFetch, getErrorMessage, invalidateQueries } from '../api/client';
@@ -309,7 +309,7 @@ export const Trading = () => {
 
       <AnimatePresence mode="wait">
         {tab !== 'new' ? (
-          <motion.div
+          <m.div
             key={tab}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -345,9 +345,9 @@ export const Trading = () => {
                 />
               </div>
             )}
-          </motion.div>
+          </m.div>
         ) : (
-          <motion.div
+          <m.div
             key="new"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -447,7 +447,7 @@ export const Trading = () => {
             >
               <Send size={14} className="mr-2" /> Send Trade Offer
             </Button>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
     </div>

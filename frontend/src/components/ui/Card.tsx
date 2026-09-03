@@ -1,4 +1,4 @@
-import { HTMLMotionProps, motion } from 'framer-motion';
+import { HTMLMotionProps, m } from 'framer-motion';
 import React from 'react';
 import { cn } from '../../utils';
 
@@ -28,7 +28,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
     };
 
     return (
-      <motion.div
+      <m.div
         ref={ref as any}
         className={cn(
           'rounded-md transition-all relative overflow-hidden',
@@ -40,7 +40,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
         {...(props as HTMLMotionProps<'div'>)}
       >
         {children}
-      </motion.div>
+      </m.div>
     );
   },
 );

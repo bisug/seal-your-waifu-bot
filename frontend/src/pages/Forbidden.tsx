@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { ArrowLeft, Home, Lock, Terminal } from 'lucide-react';
 import { useEffect } from 'react';
 import { Button } from '../components/ui/Button';
@@ -10,7 +10,7 @@ export const Forbidden = ({ onReset }: { onReset: () => void }) => {
 
   return (
     <div className="min-h-[80svh] flex flex-col items-center justify-center p-8 text-center select-none relative overflow-hidden">
-      <motion.div
+      <m.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-sm flex flex-col items-center relative z-10"
@@ -53,7 +53,7 @@ export const Forbidden = ({ onReset }: { onReset: () => void }) => {
             <span>Go Back</span>
           </button>
         </div>
-      </motion.div>
+      </m.div>
 
       <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-2 opacity-20">
         <Terminal size={10} className="text-amber-500" />

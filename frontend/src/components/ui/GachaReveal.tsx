@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import { ShieldCheck, Terminal, Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Character } from '../../context/UserContext';
@@ -34,13 +34,13 @@ export const GachaReveal = ({ character, onClose }: GachaRevealProps) => {
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black select-none overflow-hidden p-6">
-        <motion.div
+        <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.1),transparent_70%)]"
         />
 
-        <motion.div
+        <m.div
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
@@ -94,15 +94,15 @@ export const GachaReveal = ({ character, onClose }: GachaRevealProps) => {
             </div>
           </div>
 
-          <motion.div
+          <m.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 0.2 }}
             transition={{ delay: 0.8 }}
             className="mt-8 flex items-center gap-4"
           >
             <Terminal size={16} className="text-brand-accent" />
-          </motion.div>
-        </motion.div>
+          </m.div>
+        </m.div>
       </div>
     </AnimatePresence>
   );

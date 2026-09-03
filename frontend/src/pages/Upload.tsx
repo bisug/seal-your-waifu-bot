@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import {
   ChevronRight,
   FileImage,
@@ -293,7 +293,7 @@ export const Upload = () => {
 
             <AnimatePresence>
               {previewSrc && (
-                <motion.div
+                <m.div
                   initial={{ opacity: 0, scale: 0.98 }}
                   animate={{ opacity: 1, scale: 1 }}
                   className="rounded-md overflow-hidden border border-white/5 bg-zinc-950"
@@ -309,7 +309,7 @@ export const Upload = () => {
                       className="w-full max-h-64 object-contain"
                     />
                   )}
-                </motion.div>
+                </m.div>
               )}
             </AnimatePresence>
           </Card>

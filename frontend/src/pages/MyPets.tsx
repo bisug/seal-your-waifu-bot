@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import { Beef, Clover, Dumbbell, Heart, PawPrint, RefreshCw, Swords, Wind } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { apiFetch, getErrorMessage } from '../api/client';
@@ -101,7 +101,7 @@ const ActivePetCard = ({
   onTrain?: () => void;
   careBusy?: 'feed' | 'train' | null;
 }) => (
-  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+  <m.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
     <Card
       variant="surface"
       className="p-5 flex flex-col sm:flex-row gap-6 cursor-pointer group"
@@ -180,7 +180,7 @@ const ActivePetCard = ({
         </div>
       </div>
     </Card>
-  </motion.div>
+  </m.div>
 );
 
 export const MyPets = ({ onPetClick }: MyPetsProps) => {
@@ -315,7 +315,7 @@ export const MyPets = ({ onPetClick }: MyPetsProps) => {
 
           <AnimatePresence mode="popLayout">
             {sortedPets.length > 0 ? (
-              <motion.div
+              <m.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 className="grid grid-cols-1 md:grid-cols-2 gap-4"
@@ -393,7 +393,7 @@ export const MyPets = ({ onPetClick }: MyPetsProps) => {
                     </Card>
                   );
                 })}
-              </motion.div>
+              </m.div>
             ) : (
               <div className="py-20 border border-dashed border-white/5 rounded-lg bg-zinc-950/50 text-center flex flex-col items-center justify-center space-y-4">
                 <div className="w-12 h-12 rounded-full border border-white/5 flex items-center justify-center opacity-10">

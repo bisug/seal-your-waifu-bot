@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import { Crown, Gift, Lock, Star, Target, TicketCheck, TrendingUp } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { apiFetch, getErrorMessage } from '../api/client';
@@ -412,7 +412,7 @@ export const Pass = () => {
               const isClaimed = claimedLevels.includes(lvl);
 
               return (
-                <motion.div
+                <m.div
                   layout
                   key={lvl}
                   initial={{ opacity: 0, y: 8 }}
@@ -523,7 +523,7 @@ export const Pass = () => {
                       })}
                     </div>
                   </Card>
-                </motion.div>
+                </m.div>
               );
             })}
           </AnimatePresence>

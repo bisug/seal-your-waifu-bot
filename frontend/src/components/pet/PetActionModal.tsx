@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import {
   Clover,
   Heart,
@@ -88,7 +88,7 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }: PetActionM
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center p-0 sm:p-6">
-        <motion.div
+        <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -99,7 +99,7 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }: PetActionM
           }}
         />
 
-        <motion.div
+        <m.div
           initial={{ y: '100%' }}
           animate={{ y: 0 }}
           exit={{ y: '100%' }}
@@ -129,7 +129,7 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }: PetActionM
             <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent" />
 
             {imgUrl ? (
-              <motion.img
+              <m.img
                 initial={{ scale: 1.05, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ duration: 0.6 }}
@@ -280,7 +280,7 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }: PetActionM
           </div>
 
           <div className="h-[calc(var(--sab,24px)+4px)] sm:hidden" />
-        </motion.div>
+        </m.div>
       </div>
     </AnimatePresence>
   );

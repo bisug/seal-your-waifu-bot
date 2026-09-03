@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { Coins, Gem, History, Image as ImageIcon, Loader2, Lock, Pencil } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { apiFetch, getErrorMessage, invalidateQueries } from '../../api/client';
@@ -114,7 +114,7 @@ const CharacterEditPanel = ({
   };
 
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       className="space-y-4 p-4 rounded-md border border-white/5 bg-zinc-900"
@@ -204,7 +204,7 @@ const CharacterEditPanel = ({
           Update Character
         </Button>
       </div>
-    </motion.div>
+    </m.div>
   );
 };
 
@@ -449,7 +449,7 @@ export const CharActionModal = ({
               Summon Character ({formatNumber(price)} Zenith)
             </Button>
           ) : (
-            <motion.div
+            <m.div
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               className="flex gap-3"
@@ -469,7 +469,7 @@ export const CharActionModal = ({
               >
                 Confirm Summon
               </Button>
-            </motion.div>
+            </m.div>
           )}
         </div>
       )}
@@ -511,7 +511,7 @@ export const CharActionModal = ({
       )}
 
       {confirm && (
-        <motion.div
+        <m.div
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
           className="flex flex-col gap-3"
@@ -539,7 +539,7 @@ export const CharActionModal = ({
               Confirm
             </Button>
           </div>
-        </motion.div>
+        </m.div>
       )}
     </div>
   );

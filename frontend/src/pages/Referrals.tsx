@@ -1,5 +1,5 @@
 import 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import { Activity, Copy, Gem, Gift, Send, Share2, UserPlus } from 'lucide-react';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
@@ -207,7 +207,7 @@ export const Referrals = () => {
               />
             </div>
           ) : referrals && referrals.length > 0 ? (
-            <motion.div
+            <m.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="grid grid-cols-1 gap-2"
@@ -233,7 +233,7 @@ export const Referrals = () => {
                   )}
                 </Card>
               ))}
-            </motion.div>
+            </m.div>
           ) : (
             <div className="py-20 border border-dashed border-white/5 rounded-lg bg-zinc-950/50 text-center flex flex-col items-center justify-center space-y-4">
               <div className="w-12 h-12 rounded-full border border-white/5 flex items-center justify-center opacity-10">
