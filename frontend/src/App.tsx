@@ -209,6 +209,19 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 }
 
+// Restores the saved scroll position for a tab after its content mounts.
+// Rendered inside the keyed page wrapper so it remounts on every tab switch.
+const ScrollRestore = ({ tab, positions }: { tab: string; positions: Map<string, number> }) => {
+  useEffect(() => {
+    const saved = positions.get(tab);
+    const scroller = document.querySelector<HTMLElement>('.app-scroller');
+    if (saved !== undefined && scroller) {
+      scroller.scrollTop = saved;
+    }
+  }, [tab, positions]);
+  return null;
+};
+
 const AppContent = () => {
   const { user, loading, error } = useUser();
 
@@ -232,6 +245,10 @@ const AppContent = () => {
   const [revealedChar, setRevealedChar] = useState<any>(null);
 
   const backHandlerRef = useRef<(() => void) | null>(null);
+  // Per-tab scroll positions so switching tabs restores where you were.
+  const scrollPositions = useRef(new Map<string, number>());
+  const activeRouteRef = useRef(activeRoute);
+  activeRouteRef.current = activeRoute;
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -305,6 +322,9 @@ const AppContent = () => {
 
   const handleNavigate = useCallback((tab: string) => {
     window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
+    // Save scroll position of the tab we're leaving.
+    const scroller = document.querySelector<HTMLElement>('.app-scroller');
+    if (scroller) scrollPositions.current.set(activeRouteRef.current.tab, scroller.scrollTop);
     setActiveRoute({ tab, alias: tab });
     if (VALID_TABS.includes(tab) && window.location.hash !== `#${tab}`) {
       window.history.replaceState(null, '', `#${tab}`);
@@ -335,6 +355,7 @@ const AppContent = () => {
           }
         >
           <div key={activeTab} className="page-transition-wrapper">
+            <ScrollRestore tab={activeTab} positions={scrollPositions.current} />
             {activeTab === 'profile' && (
               <Profile
                 onCharClick={setSelectedChar}
