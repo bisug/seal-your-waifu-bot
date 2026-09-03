@@ -3,7 +3,7 @@ import { cn } from '../../utils';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   icon?: React.ElementType;
-  error?: string;
+  error?: string | undefined;
 }
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(

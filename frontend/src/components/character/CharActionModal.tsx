@@ -37,6 +37,177 @@ const buildEditForm = (character: Character | null): CharacterEditForm => ({
   img_url: character?.img_url || '',
 });
 
+const EDIT_TEXT_MAX = 120;
+const EDIT_URL_MAX = 1000;
+const CONTROL_CHAR_RE = /[\x00-\x1f\x7f]/;
+
+type EditErrors = Partial<Record<keyof CharacterEditForm, string>>;
+
+const validateEditForm = (
+  form: CharacterEditForm,
+  rarityOptions: RarityOption[],
+): EditErrors => {
+  const errors: EditErrors = {};
+
+  const name = form.name.trim();
+  if (!name) errors.name = 'Name is required.';
+  else if (name.length > EDIT_TEXT_MAX) errors.name = `Max ${EDIT_TEXT_MAX} characters.`;
+  else if (CONTROL_CHAR_RE.test(name)) errors.name = 'Invalid control characters.';
+
+  const anime = form.anime.trim();
+  if (!anime) errors.anime = 'Source is required.';
+  else if (anime.length > EDIT_TEXT_MAX) errors.anime = `Max ${EDIT_TEXT_MAX} characters.`;
+  else if (CONTROL_CHAR_RE.test(anime)) errors.anime = 'Invalid control characters.';
+
+  const rarity = form.rarity.trim();
+  if (!rarity) errors.rarity = 'Rarity is required.';
+  else if (rarityOptions.length > 0 && !rarityOptions.some((o) => o.label === rarity))
+    errors.rarity = 'Unknown rarity class.';
+
+  const img_url = form.img_url.trim();
+  if (!img_url) errors.img_url = 'Image URL is required.';
+  else if (img_url.length > EDIT_URL_MAX) errors.img_url = 'URL too long.';
+  else {
+    try {
+      const parsed = new URL(img_url);
+      if (parsed.protocol !== 'https:') errors.img_url = 'Must be an https:// URL.';
+      else if (!parsed.hostname) errors.img_url = 'Missing hostname.';
+      else if (parsed.username || parsed.password) errors.img_url = 'Credentials not allowed.';
+    } catch {
+      errors.img_url = 'Invalid URL.';
+    }
+  }
+
+  return errors;
+};
+
+// Isolated so keystrokes only re-render the form, not the whole modal.
+const CharacterEditPanel = ({
+  character,
+  rarityOptions,
+  saving,
+  onCancel,
+  onSave,
+}: {
+  character: Character;
+  rarityOptions: RarityOption[];
+  saving: boolean;
+  onCancel: () => void;
+  onSave: (form: CharacterEditForm) => void;
+}) => {
+  const [form, setForm] = useState<CharacterEditForm>(() => buildEditForm(character));
+  const [errors, setErrors] = useState<EditErrors>({});
+
+  const updateField = (field: keyof CharacterEditForm, value: string) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
+  };
+
+  const submit = () => {
+    if (saving) return;
+    const nextErrors = validateEditForm(form, rarityOptions);
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
+      return;
+    }
+    onSave(form);
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-4 p-4 rounded-md border border-white/5 bg-zinc-900"
+    >
+      <div className="space-y-3">
+        <div className="space-y-1">
+          <span className="text-[9px] font-bold uppercase text-zinc-600 tracking-widest pl-0.5">
+            Character Name
+          </span>
+          <Input
+            value={form.name}
+            onChange={(event) => updateField('name', event.target.value)}
+            disabled={saving}
+            maxLength={EDIT_TEXT_MAX}
+            error={errors.name}
+            placeholder="Name..."
+          />
+        </div>
+        <div className="space-y-1">
+          <span className="text-[9px] font-bold uppercase text-zinc-600 tracking-widest pl-0.5">
+            Source
+          </span>
+          <Input
+            value={form.anime}
+            onChange={(event) => updateField('anime', event.target.value)}
+            disabled={saving}
+            maxLength={EDIT_TEXT_MAX}
+            error={errors.anime}
+            placeholder="Source..."
+          />
+        </div>
+        <div className="space-y-1">
+          <span className="text-[9px] font-bold uppercase text-zinc-600 tracking-widest pl-0.5">
+            Rarity Class
+          </span>
+          <div className="relative group">
+            <select
+              aria-label="Rarity class"
+              value={form.rarity}
+              onChange={(event) => updateField('rarity', event.target.value)}
+              disabled={saving}
+              className="w-full h-10 bg-zinc-950 border border-white/10 rounded-md px-3.5 text-[11px] font-bold text-zinc-100 uppercase tracking-widest outline-none focus:border-brand-accent transition-all appearance-none cursor-pointer"
+            >
+              {!rarityOptions.some((option) => option.label === form.rarity) && form.rarity && (
+                <option value={form.rarity}>{form.rarity.toUpperCase()}</option>
+              )}
+              {rarityOptions.map((option) => (
+                <option key={option.value} value={option.label}>
+                  Tier {option.value}: {option.label.toUpperCase()}
+                </option>
+              ))}
+            </select>
+          </div>
+          {errors.rarity && (
+            <p className="text-[9px] font-bold text-red-500 uppercase tracking-widest pl-1">
+              {errors.rarity}
+            </p>
+          )}
+        </div>
+        <div className="space-y-1">
+          <span className="text-[9px] font-bold uppercase text-zinc-600 tracking-widest pl-0.5">
+            Visual Manifest
+          </span>
+          <Input
+            icon={ImageIcon}
+            value={form.img_url}
+            onChange={(event) => updateField('img_url', event.target.value)}
+            disabled={saving}
+            maxLength={EDIT_URL_MAX}
+            error={errors.img_url}
+            placeholder="Image URL..."
+          />
+        </div>
+      </div>
+
+      <div className="flex gap-2 pt-1">
+        <Button variant="outline" size="sm" onClick={onCancel} disabled={saving} className="flex-1">
+          Cancel
+        </Button>
+        <Button
+          onClick={submit}
+          variant="secondary"
+          size="sm"
+          isLoading={saving}
+          className="flex-[1.5]"
+        >
+          Update Character
+        </Button>
+      </div>
+    </motion.div>
+  );
+};
+
 export const CharActionModal = ({
   selectedChar,
   setSelectedChar,
@@ -53,7 +224,6 @@ export const CharActionModal = ({
   );
   const [editMode, setEditMode] = useState(false);
   const [editStage, setEditStage] = useState<'idle' | 'saving'>('idle');
-  const [editForm, setEditForm] = useState<CharacterEditForm>(() => buildEditForm(selectedChar));
   const [rarityOptions, setRarityOptions] = useState<RarityOption[]>([]);
   const canEdit = Boolean(user?.can_edit_character ?? user?.is_sudo);
   const _selectedCharId = selectedChar?.id;
@@ -63,7 +233,6 @@ export const CharActionModal = ({
     setSellStage('idle');
     setEditStage('idle');
     setEditMode(false);
-    setEditForm(buildEditForm(selectedChar));
   }, [selectedChar]);
 
   useEffect(() => {
@@ -98,24 +267,15 @@ export const CharActionModal = ({
     Boolean(selectedChar.sold_out) || (stockRemaining !== null && stockRemaining <= 0);
   const canAfford = zenithBalance >= price;
 
-  const updateEditField = (field: keyof CharacterEditForm, value: string) => {
-    setEditForm((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleEditSave = async () => {
+  const handleEditSave = async (form: CharacterEditForm) => {
     if (editStage !== 'idle') return;
 
     const payload = {
-      name: editForm.name.trim(),
-      anime: editForm.anime.trim(),
-      rarity: editForm.rarity.trim(),
-      img_url: editForm.img_url.trim(),
+      name: form.name.trim(),
+      anime: form.anime.trim(),
+      rarity: form.rarity.trim(),
+      img_url: form.img_url.trim(),
     };
-
-    if (!payload.name || !payload.anime || !payload.rarity || !payload.img_url) {
-      addToast('All fields are required.', 'error');
-      return;
-    }
 
     setEditStage('saving');
     try {
@@ -130,7 +290,6 @@ export const CharActionModal = ({
       };
 
       setSelectedChar(updatedChar);
-      setEditForm(buildEditForm(updatedChar));
       setEditMode(false);
       addToast('Registry updated.', 'success');
       triggerRefresh();
@@ -235,96 +394,13 @@ export const CharActionModal = ({
       {canEdit && (
         <div className="w-full">
           {editMode ? (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="space-y-4 p-4 rounded-md border border-white/5 bg-zinc-900"
-            >
-              <div className="space-y-3">
-                <div className="space-y-1">
-                  <span className="text-[9px] font-bold uppercase text-zinc-600 tracking-widest pl-0.5">
-                    Character Name
-                  </span>
-                  <Input
-                    value={editForm.name}
-                    onChange={(event) => updateEditField('name', event.target.value)}
-                    disabled={editStage === 'saving'}
-                    placeholder="Name..."
-                  />
-                </div>
-                <div className="space-y-1">
-                  <span className="text-[9px] font-bold uppercase text-zinc-600 tracking-widest pl-0.5">
-                    Source
-                  </span>
-                  <Input
-                    value={editForm.anime}
-                    onChange={(event) => updateEditField('anime', event.target.value)}
-                    disabled={editStage === 'saving'}
-                    placeholder="Source..."
-                  />
-                </div>
-                <div className="space-y-1">
-                  <span className="text-[9px] font-bold uppercase text-zinc-600 tracking-widest pl-0.5">
-                    Rarity Class
-                  </span>
-                  <div className="relative group">
-                    <select
-                      aria-label="Rarity class"
-                      value={editForm.rarity}
-                      onChange={(event) => updateEditField('rarity', event.target.value)}
-                      disabled={editStage === 'saving'}
-                      className="w-full h-10 bg-zinc-950 border border-white/10 rounded-md px-3.5 text-[11px] font-bold text-zinc-100 uppercase tracking-widest outline-none focus:border-brand-accent transition-all appearance-none cursor-pointer"
-                    >
-                      {!rarityOptions.some((option) => option.label === editForm.rarity) &&
-                        editForm.rarity && (
-                          <option value={editForm.rarity}>{editForm.rarity.toUpperCase()}</option>
-                        )}
-                      {rarityOptions.map((option) => (
-                        <option key={option.value} value={option.label}>
-                          Tier {option.value}: {option.label.toUpperCase()}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <span className="text-[9px] font-bold uppercase text-zinc-600 tracking-widest pl-0.5">
-                    Visual Manifest
-                  </span>
-                  <Input
-                    icon={ImageIcon}
-                    value={editForm.img_url}
-                    onChange={(event) => updateEditField('img_url', event.target.value)}
-                    disabled={editStage === 'saving'}
-                    placeholder="Image URL..."
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-2 pt-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setEditForm(buildEditForm(selectedChar));
-                    setEditMode(false);
-                  }}
-                  disabled={editStage === 'saving'}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleEditSave}
-                  variant="secondary"
-                  size="sm"
-                  isLoading={editStage === 'saving'}
-                  className="flex-[1.5]"
-                >
-                  Update Character
-                </Button>
-              </div>
-            </motion.div>
+            <CharacterEditPanel
+              character={selectedChar}
+              rarityOptions={rarityOptions}
+              saving={editStage === 'saving'}
+              onCancel={() => setEditMode(false)}
+              onSave={handleEditSave}
+            />
           ) : (
             <Button
               variant="secondary"
