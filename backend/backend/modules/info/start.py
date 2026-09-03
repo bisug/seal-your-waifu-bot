@@ -1,9 +1,12 @@
 import random
+import uuid
+from datetime import datetime, timezone
 
 from pyrogram import enums, errors, filters, types
 
 from backend.client import app
 from backend.core.cache import invalidate_user_cache
+from backend.core.eggs import roll_egg_tier
 from backend.core.keyboard import KeyboardBuilder, get_webapp_button
 from backend.core.leaderboard import (
     get_total_ranked_users,
@@ -12,9 +15,11 @@ from backend.core.leaderboard import (
 )
 from backend.core.logging import get_logger
 from backend.core.progression import get_user_progress
+from backend.core.rarities import CLAIM_RARITY_WEIGHTS, weighted_pick
 from backend.core.referrals import claim_referral_bonus, parse_referral_payload
 from backend.core.user import add_user_set_on_insert, ensure_user_document, get_user_filter
 from backend.core.utils import handle_errors, html_escape, reply_media_dynamic
+from backend.core.waifu import sample_character_by_rarity
 from backend.database import collection, total_pm_users, user_collection
 from config import config
 
@@ -268,6 +273,91 @@ async def _handle_referral_param(message: types.Message, param: str, *, is_new_u
     return True
 
 
+async def _handle_bonus_param(message: types.Message) -> bool:
+    """Deep link bonus_: daily bonus roll in the bot's DM.
+
+    Random reward: an egg, a character (claim-weighted rarities), or a small
+    shard pile. Once per UTC day, guarded atomically so double-taps and
+    concurrent /daily claims can't both pay out.
+    """
+    user_id = message.from_user.id
+    now_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    # Atomic claim: only the first writer of today's date wins.
+    claim_filter = get_user_filter(user_id)
+    claim_filter["last_bonus_date"] = {"$ne": now_date}
+    roll = random.random()
+    update_op: dict = {"$set": {"last_bonus_date": now_date}}
+    reward_kind = "coins"
+    if roll < 0.35:
+        # Egg: full-luck tier roll (same distribution as hunts).
+        from backend.core.constants import EGG_TIERS
+        tier_key = roll_egg_tier(0.0, 0.0)
+        tier_data = EGG_TIERS.get(tier_key, EGG_TIERS["common"])
+        egg = {
+            "id": f"egg_{uuid.uuid4().hex[:12]}",
+            "tier": tier_key,
+            "name": tier_data["name"],
+            "obtained_at": datetime.now(timezone.utc),
+            "status": "fresh",
+            "is_corrupted": False,
+        }
+        update_op["$push"] = {"eggs": egg}
+        reward_kind = "egg"
+        reward_label = tier_data["name"]
+    elif roll < 0.80:
+        # Character: claim-weighted rarity, same pool as /daily waifu.
+        rarity = weighted_pick(CLAIM_RARITY_WEIGHTS)
+        char = await sample_character_by_rarity(rarity) if rarity else None
+        if char:
+            update_op["$push"] = {"characters": char}
+            update_op["$inc"] = {"char_count": 1, "version": 1}
+            reward_kind = "character"
+            reward_label = f"{char['rarity']} — {char['name']}"
+        else:
+            update_op["$inc"] = {"balance": 500, "version": 1}
+            reward_label = "500 ⬪"
+    else:
+        coins = random.randint(300, 800)
+        update_op["$inc"] = {"balance": coins, "version": 1}
+        reward_label = f"{coins:,} ⬪"
+
+    try:
+        result = await user_collection.update_one(
+            claim_filter,
+            add_user_set_on_insert(update_op, user_id),
+            upsert=True,
+        )
+    except Exception:
+        return True  # Fail-safe: never break /start over a bonus.
+    if result.modified_count == 0 and result.upserted_id is None:
+        await message.reply_text(
+            "🎁 <b>Bonus already claimed today!</b>\nCome back tomorrow, Collector.",
+            parse_mode=enums.ParseMode.HTML,
+        )
+        return True
+    await invalidate_user_cache(user_id)
+
+    if reward_kind == "character":
+        await reply_media_dynamic(
+            message,
+            char["img_url"],
+            caption=(
+                "🎁 <b>Daily Bonus!</b>\n\n"
+                f"You found <b>{html_escape(char['name'])}</b>\n"
+                f"<b>{html_escape(char['rarity'])}</b> • {html_escape(char['anime'])}\n\n"
+                "<i>Come back tomorrow for more!</i>"
+            ),
+            parse_mode=enums.ParseMode.HTML,
+        )
+    else:
+        await message.reply_text(
+            f"🎁 <b>Daily Bonus!</b>\n\nYou received: <b>{html_escape(str(reward_label))}</b>\n\n"
+            "<i>Come back tomorrow for more!</i>",
+            parse_mode=enums.ParseMode.HTML,
+        )
+    return True
+
+
 async def _handle_deep_link(message: types.Message, param: str, *, is_new_user: bool) -> bool:
     """Dispatch a /start deep-link payload. Returns True when the payload was consumed."""
     if param.startswith("locate_"):
@@ -276,6 +366,8 @@ async def _handle_deep_link(message: types.Message, param: str, *, is_new_user: 
         return await _handle_claim_param(message, param)
     if param.startswith("ref_"):
         return await _handle_referral_param(message, param, is_new_user=is_new_user)
+    if param.startswith("bonus"):
+        return await _handle_bonus_param(message)
     return False
 
 

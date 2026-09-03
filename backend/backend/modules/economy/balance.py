@@ -4,7 +4,6 @@ from pyrogram import enums, filters, types
 
 from backend.client import app
 from backend.core.balance import check_and_deduct, get_user_balance, update_user_balance
-from backend.core.cache import invalidate_user_cache
 from backend.core.logging import get_logger
 from backend.core.sessions import consume_session, create_session, delete_session, get_session
 from backend.core.user import get_user_filter
@@ -128,21 +127,6 @@ async def pay_callback_handler(_, query: types.CallbackQuery):
         )
     else:
         await query.answer("Insufficient balance or transaction failed.", show_alert=True)
-@app.on_message(filters.command("bonus"))
-@handle_errors
-async def bonus_cmd(_, message: types.Message):
-    user_id = message.from_user.id
-    # Atomic claim: the $ne guard turns the read-then-write into a single
-    # conditional update so concurrent /bonus calls can't both grant.
-    result = await user_collection.update_one(
-        {**get_user_filter(user_id), "bonus_claimed": {"$ne": True}},
-        {"$inc": {"balance": 3000}, "$set": {"bonus_claimed": True}},
-        upsert=True,
-    )
-    if result.modified_count == 0 and result.upserted_id is None:
-        return await message.reply_text("Already claimed, stay tuned!")
-    await invalidate_user_cache(user_id)
-    await message.reply_text("You've claimed 3000 ⬪!")
 @app.on_message(filters.command("mtop"))
 @handle_errors
 async def mtop_cmd(_, message: types.Message):

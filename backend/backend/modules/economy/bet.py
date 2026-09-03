@@ -37,7 +37,7 @@ async def bet_cmd(_, message: types.Message):
     if not user_data:
         await message.reply_text(
             "<b>You don't have an account yet!</b>\n"
-            "Use <code>/bonus</code> to claim free Shards & start betting!",
+            "Use <code>/daily</code> to claim free Shards & start betting!",
             parse_mode=enums.ParseMode.HTML
         )
         return
@@ -45,7 +45,7 @@ async def bet_cmd(_, message: types.Message):
     if balance_amount == 0:
         await message.reply_text(
             "<b>You're out of Shards!</b>\n"
-            "Use <code>/bonus</code> to claim free Shards & try again!",
+            "Use <code>/daily</code> to claim free Shards & try again!",
             parse_mode=enums.ParseMode.HTML
         )
         return
@@ -59,7 +59,7 @@ async def bet_cmd(_, message: types.Message):
         await message.reply_text(
             f"<b>Not Enough Shards!</b>\n"
             f"Your Balance: <b>{balance_amount:,} ⬪</b>\n\n"
-            f"Use <code>/bonus</code> to get free Shards!",
+            f"Use <code>/daily</code> to get free Shards!",
             parse_mode=enums.ParseMode.HTML
         )
         return

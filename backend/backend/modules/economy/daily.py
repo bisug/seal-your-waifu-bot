@@ -107,7 +107,13 @@ async def daily_command_handler(_, message: types.Message):
         f"<b>Coins:</b> +{reward_coins} ⬪{pass_bonus_text}{staff_bonus_text}\n"
         f"<b>Streak:</b> {streak}/7 Days{pm_note}"
     )
-    await reply_media_dynamic(message, char['img_url'], caption=caption, parse_mode=enums.ParseMode.HTML)
+    # Daily bonus roll lives in the bot's DM: deep-link the user there.
+    bonus_btn = types.InlineKeyboardButton(
+        "🎁 Claim Bonus",
+        url=f"https://t.me/{config.BOT_USERNAME}?start=bonus",
+    )
+    markup = types.InlineKeyboardMarkup([[bonus_btn]])
+    await reply_media_dynamic(message, char['img_url'], caption=caption, reply_markup=markup, parse_mode=enums.ParseMode.HTML)
 @app.on_message(filters.command("weekly"))
 @handle_errors
 async def weekly_command_handler(_, message: types.Message):

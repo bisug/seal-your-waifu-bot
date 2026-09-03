@@ -342,9 +342,8 @@ Owner can manage DB-backed staff roles with `/addsudo`, `/rmsudo`, and `/sudolis
 | Command | Scope | Description |
 | --- | --- | --- |
 | `/balance`, `/bal` | Any | Show Shards and Zenith wallet. |
-| `/daily` | Group | Claim daily reward and streak reward. |
+| `/daily` | Group | Claim daily reward, streak reward, and bonus roll button. |
 | `/weekly` | Group | Claim weekly reward. |
-| `/bonus` | Any | Bonus/reward status. |
 | `/pay <amount>` | Reply | Send Shards to the replied user with confirmation. |
 | `/givebalance <amount>` | Reply | User transfer; staff can grant without paying. |
 | `/takebalance <amount>` | Reply/staff | Staff-only Shards deduction. |
