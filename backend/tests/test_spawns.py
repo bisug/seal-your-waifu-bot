@@ -10,7 +10,6 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from backend.core import spawns
-from backend.modules.collection import message_counter
 
 
 @pytest.mark.asyncio

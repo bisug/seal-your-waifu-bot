@@ -9,9 +9,9 @@ Guards:
 """
 from backend.core.constants import EGG_TIERS
 from backend.core.eggs import (
-    EGG_TIER_ORDER,
     EGG_PURIFY_PRICES,
     EGG_SELL_PRICES,
+    EGG_TIER_ORDER,
     get_egg_purify_price,
     get_egg_sell_price,
     get_next_egg_tier,
