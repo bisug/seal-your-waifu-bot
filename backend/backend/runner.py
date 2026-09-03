@@ -82,8 +82,8 @@ async def _refresh_instance_lock():
                         "with another instance."
                     )
                     return
-        except Exception:
-            pass
+        except Exception as e:
+            LOGGER.warning("Instance lock refresh failed (Redis unavailable?): %s", e)
 
 
 async def _release_instance_lock():

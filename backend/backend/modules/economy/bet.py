@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import random
 
 from pyrogram import enums, filters, types
@@ -8,6 +9,7 @@ from backend.core.cache import invalidate_user_cache
 from backend.core.utils import handle_errors
 from backend.database import user_collection
 
+LOGGER = logging.getLogger(__name__)
 CURRENCY_SYMBOL = "⬪"
 @app.on_message(filters.command("bet"))
 @handle_errors
@@ -77,11 +79,23 @@ async def bet_cmd(_, message: types.Message):
     if is_win:
         win_multiplier = 2
         winnings = amount * win_multiplier
-        # Atomic balance update for winnings
-        await user_collection.update_one(
-            {'id': {'$in': [user_id, str(user_id)]}},
-            {'$inc': {'balance': winnings}}
-        )
+        # Credit the winnings; if the DB write fails the stake must go back —
+        # otherwise a transient error eats the bet silently.
+        try:
+            await user_collection.update_one(
+                {'id': {'$in': [user_id, str(user_id)]}},
+                {'$inc': {'balance': winnings}}
+            )
+        except Exception:
+            LOGGER.exception("BET_CREDIT_FAILED user=%s amount=%s", user_id, winnings)
+            try:
+                await user_collection.update_one(
+                    {'id': {'$in': [user_id, str(user_id)]}},
+                    {'$inc': {'balance': amount}}
+                )
+            except Exception:
+                LOGGER.critical("BET_REFUND_FAILED user=%s stake=%s lost", user_id, amount)
+            raise
 
         # Get fresh balance for display
         new_user_data = await user_collection.find_one({'id': {'$in': [user_id, str(user_id)]}}, projection={'balance': 1})

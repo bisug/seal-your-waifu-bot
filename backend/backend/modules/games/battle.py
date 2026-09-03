@@ -220,5 +220,5 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
                 LOGGER.exception(f"CRITICAL: battle refund failed for {attacker_id}/{defender_id}: {refund_err}")
         try:
             await query.message.reply_text(f"❌ A technical error occurred during battle.{refund_note}", parse_mode=enums.ParseMode.HTML)
-        except:
+        except Exception:
             pass

@@ -6,6 +6,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException
 from pymongo import ReturnDocument
 
 from backend.core.leaderboard import sync_user_to_redis
+from backend.core.logging import get_logger
 from backend.core.referrals import get_referral_stats as build_referral_stats
 from backend.core.referrals import normalize_referral_ids
 from backend.core.utils import get_now_utc, get_user_id_query, normalize_user_id
@@ -19,6 +20,7 @@ from backend.webapp.schemas import (
     TradeOffer,
 )
 
+LOGGER = get_logger(__name__)
 router = APIRouter()
 TRADE_OFFER_TTL = timedelta(hours=24)
 
@@ -150,12 +152,22 @@ async def respond_to_trade(
         await sync_user_to_redis(sender_id)
         await sync_user_to_redis(user_id)
         return {"status": "accepted"}
-    except Exception as e:
+    except ValueError as e:
+        # Expected business failure (character moved mid-trade): offer is dead.
         await sessions_collection.update_one(
             {"id": trade_id, "type": "trade_offer"},
             {"$set": {"status": "failed", "error": str(e)}}
         )
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception as e:
+        # Unexpected (DB hiccup, txn abort): release the processing lock so the
+        # user can retry instead of bricking the offer, and never leak internals.
+        LOGGER.exception("Trade acceptance failed for offer %s", trade_id)
+        await sessions_collection.update_one(
+            {"id": trade_id, "type": "trade_offer", "status": "processing"},
+            {"$set": {"status": "pending"}}
+        )
+        raise HTTPException(status_code=500, detail="Trade could not be completed. Please try again.") from e
 
 # --- MARRIAGE ---
 

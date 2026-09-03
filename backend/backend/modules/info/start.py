@@ -328,7 +328,14 @@ async def _handle_bonus_param(message: types.Message) -> bool:
             upsert=True,
         )
     except Exception:
-        return True  # Fail-safe: never break /start over a bonus.
+        # Fail-safe: never break /start over a bonus. The atomic date guard
+        # makes a retry safe, so tell the user to tap again.
+        LOGGER.exception("Bonus claim DB error for %s", user_id)
+        await message.reply_text(
+            "🎁 <b>Bonus hiccup!</b> Please tap the button again in a minute.",
+            parse_mode=enums.ParseMode.HTML,
+        )
+        return True
     if result.modified_count == 0 and result.upserted_id is None:
         await message.reply_text(
             "🎁 <b>Bonus already claimed today!</b>\nCome back tomorrow, Collector.",

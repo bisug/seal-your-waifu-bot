@@ -186,9 +186,9 @@ async def hunt_cmd(bot, message: types.Message):
             f"<b>+{xp_gain} XP</b> for {html_escape(pet['name'])}"
         )
         await msg.edit_text(final_text, parse_mode=enums.ParseMode.HTML)
-    except Exception as e:
+    except Exception:
         LOGGER.exception("HUNT_CRASH")
-        await message.reply_text(f"<b>Hunt Error:</b> <code>{e}</code>", parse_mode=enums.ParseMode.HTML)
+        await message.reply_text("<b>Hunt failed.</b> Please try again in a moment.", parse_mode=enums.ParseMode.HTML)
 async def eggs_cmd(bot, message: types.Message):
     """View egg inventory."""
     user_id = message.from_user.id if message.from_user else None

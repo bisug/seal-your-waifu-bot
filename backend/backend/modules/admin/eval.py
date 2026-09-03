@@ -68,7 +68,7 @@ async def evaluate_or_execute(_, message: types.Message):
             else:
                 try:
                     result = f"{repr(eval(body, env))}"
-                except:
+                except Exception:
                     pass
         else:
             result = f"{value}{func_return}"
