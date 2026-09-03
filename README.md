@@ -45,6 +45,7 @@ flowchart LR
 - [Configuration](#configuration)
 - [Development Commands](#development-commands)
 - [Bot Features](#bot-features)
+- [Anti-Abuse And Fairness](#anti-abuse-and-fairness)
 - [Mini App](#mini-app)
 - [API Reference](#api-reference)
 - [Data Storage](#data-storage)
@@ -345,7 +346,7 @@ Owner can manage DB-backed staff roles with `/addsudo`, `/rmsudo`, and `/sudolis
 | `/daily` | Group | Claim daily reward, streak reward, and bonus roll button. |
 | `/weekly` | Group | Claim weekly reward. |
 | `/pay <amount>` | Reply | Send Shards to the replied user with confirmation. |
-| `/givebalance <amount>` | Reply | User transfer; staff can grant without paying. |
+| `/givebalance <amount>` | Reply | User transfer; staff can grant without paying. Bots and self are rejected. |
 | `/takebalance <amount>` | Reply/staff | Staff-only Shards deduction. |
 | `/bet <amount> <choice>` | Any | Gamble Shards. |
 | `/mtop` | Any | Richest users leaderboard. |
@@ -363,7 +364,7 @@ Owner can manage DB-backed staff roles with `/addsudo`, `/rmsudo`, and `/sudolis
 | --- | --- | --- |
 | `/trade <your_char_id> <their_char_id>` | Group | Request a character trade. |
 | `/propose` | Reply | Propose to another user. |
-| `/referrals` | Any | Referral link and stats. |
+| `/referrals` | Any | Referral link and stats. Referrer payouts are capped at 50 lifetime. |
 | `/battle <bet_amount>` | Group/reply | PvP pet battle. |
 | `/quests` | Any | Daily, weekly, and pass missions. |
 | `/pass` | Any | Battle pass progress and purchases. |
@@ -446,6 +447,17 @@ Battle pass season config lives in `backend/core/pass_config.py`:
 - Max level: `100`.
 - Tiers: `free`, `premium`, `elite`.
 - Premium and elite alter rewards, hunt multipliers, XP multipliers, incubation speed, egg quality, bonus egg chance, and incubation slots.
+
+## Anti-Abuse And Fairness
+
+Economy and reward paths use atomic MongoDB guards (`$gte`/`$ne`/`$lt` filters in the same update) so double-spends, double-claims, and forged callback data cannot pay out twice. On top of that:
+
+- **Referral payouts are capped** at `50` paid referrals per referrer for life (`MAX_REFERRAL_PAYOUTS` in `backend/core/referrals.py`). The cap is enforced atomically in the payout update, so concurrent claims cannot race past it. The referred user keeps their welcome bonus even when the referrer is at the cap.
+- **Free Spin** rolls rarity through the same claim-weighted pool as `/claim` and `/daily` (`CLAIM_RARITY_WEIGHTS`), not an unweighted sample of the catalog.
+- **Minigames** pre-roll prizes server-side, clamp scores to `0-8`, reject scores submitted under 5 seconds, and consume one-shot sessions; energy is deducted atomically.
+- **Battles** deduct both stakes atomically, refund on failure, and take a 10% pot tax, so alt-account battle farming is net-negative.
+- **Cooldowns** (hunts, battles, dailies) live in Redis. If Redis is degraded, cooldown checks fail open as a deliberate availability trade-off rather than blocking all gameplay.
+- **Join gates** (`/claim`) fail open on Telegram API errors so rate limits on our side never lock legitimate users out of the one-time starter claim.
 
 ## Mini App
 
