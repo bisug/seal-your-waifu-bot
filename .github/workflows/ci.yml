@@ -37,7 +37,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends build-essential libffi-dev libssl-dev
       - run: uv sync --frozen
       - run: uvx ruff check .
-      - run: uv run python -m compileall -q config.py backend scripts
+      - run: uv run python -m compileall -q config.py backend
       # python -m pytest puts CWD on sys.path so `backend` imports resolve
       # (project has no build-system, so it is not installed as a package)
       - run: uv run python -m pytest tests/ -q

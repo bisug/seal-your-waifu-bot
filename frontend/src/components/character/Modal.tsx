@@ -16,11 +16,12 @@ interface ModalProps {
 export const Modal = ({ character, onClose, actions }: ModalProps) => {
   const dialogRef = useRef<HTMLDivElement>(null);
   const [imgError, setImgError] = useState(false);
+  const characterId = character?.id;
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: id is the reset trigger, not a body dep
   useEffect(() => {
     setImgError(false);
-  }, [character?.id]);
-
+  }, [characterId]);
   useEffect(() => {
     if (character) {
       document.body.style.overflow = 'hidden';
@@ -77,7 +78,7 @@ export const Modal = ({ character, onClose, actions }: ModalProps) => {
   const hasStock = stockLimit !== null && stockRemaining !== null;
   const soldOut = character.sold_out || (hasStock && stockRemaining <= 0);
   const hasPrice = typeof character.zenith_price === 'number' && character.zenith_price > 0;
-  const characterId = String(character.id || '');
+  const characterIdStr = String(character.id || '');
 
   const getRarityVariant = (rarity: string) => {
     const r = rarity.toLowerCase();
@@ -170,7 +171,7 @@ export const Modal = ({ character, onClose, actions }: ModalProps) => {
               <div className="flex items-center gap-1.5">
                 <Target size={11} className="text-zinc-500" />
                 <span className="text-[9px] font-mono font-bold uppercase text-zinc-500 tracking-widest">
-                  ID: #{characterId}
+                  ID: #{characterIdStr}
                 </span>
               </div>
               <h2 className="text-2xl font-bold text-zinc-100 uppercase tracking-tight">

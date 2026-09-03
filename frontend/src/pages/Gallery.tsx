@@ -13,7 +13,6 @@ import {
   X,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { apiFetch } from '../api/client';
 import { useApi } from '../hooks/useApi';
 import { Card as CharacterCard } from '../components/character/Card';
 import { EmptyState } from '../components/ui/EmptyState';

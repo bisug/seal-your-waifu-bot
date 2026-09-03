@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from 'react';
+import { memo } from 'react';
 import { Coins, Gem, Menu } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 import { useApi } from '../hooks/useApi';

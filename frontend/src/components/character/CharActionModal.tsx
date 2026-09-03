@@ -39,6 +39,7 @@ const buildEditForm = (character: Character | null): CharacterEditForm => ({
 
 const EDIT_TEXT_MAX = 120;
 const EDIT_URL_MAX = 1000;
+// biome-ignore lint/suspicious/noControlCharactersInRegex: control chars are exactly what we strip
 const CONTROL_CHAR_RE = /[\x00-\x1f\x7f]/;
 
 type EditErrors = Partial<Record<keyof CharacterEditForm, string>>;
@@ -226,14 +227,15 @@ export const CharActionModal = ({
   const [editStage, setEditStage] = useState<'idle' | 'saving'>('idle');
   const [rarityOptions, setRarityOptions] = useState<RarityOption[]>([]);
   const canEdit = Boolean(user?.can_edit_character ?? user?.is_sudo);
-  const _selectedCharId = selectedChar?.id;
+  const selectedCharId = selectedChar?.id;
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: id is the reset trigger, not a body dep
   useEffect(() => {
     setPurchaseStage('idle');
     setSellStage('idle');
     setEditStage('idle');
     setEditMode(false);
-  }, [selectedChar]);
+  }, [selectedCharId]);
 
   useEffect(() => {
     if (!canEdit || rarityOptions.length > 0) return;
