@@ -26,6 +26,10 @@ from backend.modules.progression.quests import update_quest_progress
 from config import config
 
 LOGGER = get_logger(__name__)
+
+# Characters offered in the daily shop rotation.
+DAILY_SHOP_SIZE = 10
+
 async def get_daily_shop_characters():
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     # 1. Check persistent daily storage
@@ -37,14 +41,14 @@ async def get_daily_shop_characters():
         chars_raw = [char_map[cid] for cid in char_ids if cid in char_map]
         return [Character(**c) for c in chars_raw]
 
-    # 2. If it's a new day, pick 5 new characters from various rarities
+    # 2. If it's a new day, pick DAILY_SHOP_SIZE new characters from various rarities
     rarities = list(SHOP_RARITY_WEIGHTS.keys())
     weights = list(SHOP_RARITY_WEIGHTS.values())
 
     selected_raw = []
     attempts = 0
-    # Try to pick 5 unique characters of potentially different rarities
-    while len(selected_raw) < 5 and attempts < 20:
+    # Try to pick DAILY_SHOP_SIZE unique characters of potentially different rarities
+    while len(selected_raw) < DAILY_SHOP_SIZE and attempts < DAILY_SHOP_SIZE * 4:
         attempts += 1
         r = random.choices(rarities, weights=weights, k=1)[0]
         pipeline = [
