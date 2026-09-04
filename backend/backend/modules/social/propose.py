@@ -33,11 +33,11 @@ rejection_images = [
     "https://te.legra.ph/file/e4e1ba60b4e79359bf9e7.png",
     "https://te.legra.ph/file/81d011398da3a6f49fa7f.png"
 ]
-async def get_random_waifu():
+async def get_random_waifu(user_id: int):
     rarity = weighted_pick(CLAIM_RARITY_WEIGHTS)
     if rarity is None:
         return None
-    return await sample_character_by_rarity(rarity)
+    return await sample_character_by_rarity(rarity, user_id)
 @app.on_message(filters.command("propose"))
 @handle_errors
 async def propose_command(_, message: types.Message):
@@ -62,7 +62,7 @@ async def propose_command(_, message: types.Message):
     await asyncio.sleep(2)
     roll = random.uniform(0, 100)
     if roll < 3:
-        char = await get_random_waifu()
+        char = await get_random_waifu(user_id)
         if char:
             await add_char_to_user(user_id, char)
             caption = (

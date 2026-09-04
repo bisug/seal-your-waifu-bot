@@ -32,11 +32,11 @@ STREAK_REWARDS = {
     6: 600,
     7: 1000  # Big reward for 7 days
 }
-async def get_daily_waifu():
+async def get_daily_waifu(user_id: int):
     rarity = weighted_pick(CLAIM_RARITY_WEIGHTS)
     if rarity is None:
         return None
-    return await sample_character_by_rarity(rarity)
+    return await sample_character_by_rarity(rarity, user_id)
 @app.on_message(filters.command("daily"))
 @handle_errors
 async def daily_command_handler(_, message: types.Message):
@@ -74,7 +74,7 @@ async def daily_command_handler(_, message: types.Message):
     pass_bonus_text = f"\n<b>Pass Bonus:</b> +{bonus_coins} ⬪" if multiplier > 1.0 and bonus_coins > 0 else ""
     reward_coins, staff_bonus = apply_role_bonus(user_id, reward_coins, "daily_bonus_percent")
     staff_bonus_text = f"\n<b>Staff Bonus:</b> +{staff_bonus} ⬪" if staff_bonus else ""
-    char = await get_daily_waifu()
+    char = await get_daily_waifu(user_id)
     if not char:
         return await message.reply_text("No characters available currently.", parse_mode=enums.ParseMode.HTML)
     claim_filter = get_user_id_query(user_id)

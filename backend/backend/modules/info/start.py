@@ -307,7 +307,7 @@ async def _handle_bonus_param(message: types.Message) -> bool:
     elif roll < 0.80:
         # Character: claim-weighted rarity, same pool as /daily waifu.
         rarity = weighted_pick(CLAIM_RARITY_WEIGHTS)
-        char = await sample_character_by_rarity(rarity) if rarity else None
+        char = await sample_character_by_rarity(rarity, user_id) if rarity else None
         if char:
             update_op["$push"] = {"characters": char}
             update_op["$inc"] = {"char_count": 1, "version": 1}
@@ -481,7 +481,7 @@ async def free_spin_handler(_, query: types.CallbackQuery):
     waifu = None
     rarity = weighted_pick(CLAIM_RARITY_WEIGHTS)
     if rarity:
-        waifu = await sample_character_by_rarity(rarity)
+        waifu = await sample_character_by_rarity(rarity, user_id)
     if not waifu:
         await query.answer("No characters available in the bot yet.", show_alert=True)
         return

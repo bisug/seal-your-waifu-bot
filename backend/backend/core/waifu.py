@@ -8,6 +8,7 @@ import httpx
 
 from backend.core.logging import get_logger
 from backend.database import collection, db
+from backend.database import r as _redis
 from config import config
 
 LOGGER = get_logger(__name__)
@@ -191,15 +192,64 @@ def invalidate_character_cache(rarity: str = None):
         characters_by_rarity.clear()
 
 
-async def sample_character_by_rarity(rarity: str) -> Optional[dict]:
+# Per-user recent-reward memory: characters handed out by /daily, /claim,
+# /propose, egg hatches and free spins are excluded from that user's next
+# picks so the same face doesn't come back day after day.
+RECENT_REWARD_HISTORY = 20
+RECENT_REWARD_TTL_SECONDS = 7 * 86400
+
+
+async def _get_recent_reward_ids(user_id: int) -> list:
+    """Character ids recently rewarded to this user (Redis list, newest first)."""
+    if not _redis:
+        return []
+    try:
+        ids = await _redis.lrange(f"reward:recent:{user_id}", 0, -1)
+        return [i.decode() if isinstance(i, bytes) else str(i) for i in ids]
+    except Exception as e:
+        LOGGER.debug(f"Recent-reward read failed for {user_id}: {e}")
+        return []
+
+
+async def _record_recent_reward(user_id: int, char_id: str) -> None:
+    """Push a rewarded character id onto the user's recent list (capped)."""
+    if not _redis or not char_id:
+        return
+    try:
+        key = f"reward:recent:{user_id}"
+        async with _redis.pipeline(transaction=False) as pipe:
+            pipe.lpush(key, char_id)
+            pipe.ltrim(key, 0, RECENT_REWARD_HISTORY - 1)
+            pipe.expire(key, RECENT_REWARD_TTL_SECONDS)
+            await pipe.execute()
+    except Exception as e:
+        LOGGER.debug(f"Recent-reward write failed for {user_id}: {e}")
+
+
+def _pick_excluding(chars: list, recent_ids: list) -> dict:
+    """random.choice over chars, skipping ids rewarded/spawned recently.
+
+    Falls back to the full pool when the exclusion would leave nothing
+    (tiny rarity pools) — variety is best-effort, never a failed pick.
+    """
+    if not recent_ids:
+        return random.choice(chars)
+    fresh = [c for c in chars if str(c.get("id")) not in recent_ids]
+    return random.choice(fresh or chars)
+
+
+async def sample_character_by_rarity(rarity: str, user_id: Optional[int] = None) -> Optional[dict]:
     """Pick one random character of a rarity, reusing the per-rarity cache.
 
-    Shared by /claim, /daily and /propose. Each of those used to run its own
-    $sample aggregation on every call; now they hit the same cache the
-    spawn path uses, so a rarity's docs are read from Mongo at most once
-    per TTL window instead of once per claim.
+    Shared by /claim, /daily, /propose, egg hatches and free spins. With a
+    user_id, the user's recently rewarded characters are excluded and the
+    pick is recorded, so the same character isn't handed out repeatedly.
     """
     chars = await get_or_load_characters(rarity)
     if not chars:
         return None
-    return random.choice(chars)
+    if not user_id:
+        return random.choice(chars)
+    pick = _pick_excluding(chars, await _get_recent_reward_ids(user_id))
+    await _record_recent_reward(user_id, str(pick.get("id") or ""))
+    return pick

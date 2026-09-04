@@ -413,15 +413,14 @@ async def process_egg_hatch(user_id: int, egg: dict) -> tuple[bool, any]:
             await user_collection.update_one(get_user_filter(user_id), {"$pull": {"eggs": {"id": egg["id"]}}})
             return False, "💥 <b>The egg exploded!</b>\nIt was corrupted..."
         tier_key, tier_info = get_egg_tier_info(egg.get("tier", "common"))
-        from backend.core.waifu import get_or_load_characters
-        chars = []
+        from backend.core.waifu import sample_character_by_rarity
+        character = None
         for rarity in random.sample(tier_info["pool"], k=len(tier_info["pool"])):
-            chars = await get_or_load_characters(rarity)
-            if chars:
+            character = await sample_character_by_rarity(rarity, user_id)
+            if character:
                 break
-        if not chars:
+        if not character:
             return False, "Egg was empty! No matching characters are available right now."
-        character = random.choice(chars)
         hatch_filter = get_user_filter(user_id)
         hatch_filter["eggs.id"] = egg["id"]
         result = await user_collection.update_one(

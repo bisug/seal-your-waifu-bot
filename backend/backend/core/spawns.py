@@ -11,7 +11,7 @@ from backend.client import app
 from backend.core.cache import rget, rset
 from backend.core.logging import get_logger
 from backend.core.tasks import run_background_task
-from backend.core.waifu import get_or_load_characters
+from backend.core.waifu import _pick_excluding, get_or_load_characters
 from backend.database import message_counts_collection, spawns_collection, user_totals_collection
 from backend.database import r as _redis
 
@@ -423,18 +423,6 @@ async def _record_recent_spawn(chat_id: int, char_id: str) -> None:
             await pipe.execute()
     except Exception as e:
         LOGGER.debug(f"Recent-spawn write failed for {chat_id}: {e}")
-
-
-def _pick_excluding(chars: list, recent_ids: list) -> dict:
-    """random.choice over chars, skipping ids spawned recently in this chat.
-
-    Falls back to the full pool when the exclusion would leave nothing
-    (tiny rarity pools) — variety is best-effort, never a failed spawn.
-    """
-    if not recent_ids:
-        return random.choice(chars)
-    fresh = [c for c in chars if str(c.get("id")) not in recent_ids]
-    return random.choice(fresh or chars)
 
 
 async def send_character(chat_id: int, rarity: str, *, force: bool = False):

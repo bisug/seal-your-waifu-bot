@@ -24,11 +24,11 @@ LOGGER = get_logger(__name__)
 MUST_JOIN = config.SUPPORT_CHAT
 SECOND_JOIN = config.UPDATE_CHAT
 DAILY_SHARD_REWARD = 500
-async def get_weighted_rarity_character():
+async def get_weighted_rarity_character(user_id: int):
     rarity = weighted_pick(CLAIM_RARITY_WEIGHTS)
     if rarity is None:
         return None
-    return await sample_character_by_rarity(rarity)
+    return await sample_character_by_rarity(rarity, user_id)
 async def check_groups_joined(user_id: int) -> bool:
     try:
         await app.get_chat_member(MUST_JOIN, user_id)
@@ -63,7 +63,7 @@ async def claim_handler(_, message: types.Message):
         )
     await show_preview(message, user_id)
 async def show_preview(message_or_query, user_id):
-    char = await get_weighted_rarity_character()
+    char = await get_weighted_rarity_character(user_id)
     if not char:
         error_msg = "⚠️ No characters found."
         if isinstance(message_or_query, types.CallbackQuery):
