@@ -1,41 +1,78 @@
 import { Fingerprint, Terminal } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { cn } from '../utils';
 
-const loadingSteps = [
-  'LOADING',
-  'CONNECTING',
-  'FETCHING PROFILE',
-  'LOADING PETS',
-  'ALMOST THERE',
-];
+export type IntroStatus = 'loading' | 'ready' | 'error';
 
-export const IntroLoading = () => {
+// Steps map to the real boot phases: secure_init → token verify → /me fetch.
+const LOADING_STEPS = ['INITIALIZING', 'VERIFYING TELEGRAM', 'LOADING PROFILE'];
+
+// Minimum time the intro stays visible so it never flashes on fast networks.
+const MIN_DISPLAY_MS = 900;
+
+interface IntroLoadingProps {
+  status: IntroStatus;
+  onFinish: () => void;
+}
+
+export const IntroLoading = ({ status, onFinish }: IntroLoadingProps) => {
   const [progress, setProgress] = useState(0);
+  const [fading, setFading] = useState(false);
+  const startedAt = useRef(Date.now());
+  const finishedRef = useRef(false);
+  const onFinishRef = useRef(onFinish);
+  onFinishRef.current = onFinish;
 
+  // Ease progress toward its target: 90% while booting, 100% once resolved.
   useEffect(() => {
     const timer = setInterval(() => {
       setProgress((prev) => {
-        if (prev >= 90) return 90;
-        const step = Math.random() * 12 + 8;
-        return Math.min(90, prev + step);
+        const target = status === 'loading' ? 90 : 100;
+        if (prev >= target) return prev;
+        const rate = status === 'loading' ? 0.09 : 0.3;
+        return Math.min(target, prev + Math.max(0.6, (target - prev) * rate));
       });
-    }, 150);
-
+    }, 90);
     return () => clearInterval(timer);
-  }, []);
+  }, [status]);
+
+  // Once complete: haptic tick, hold the end state briefly, fade out, unmount.
+  useEffect(() => {
+    if (status === 'loading' || progress < 100 || finishedRef.current) return;
+    finishedRef.current = true;
+
+    if (status === 'ready') {
+      window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.('success');
+    }
+
+    const hold = Math.max(0, MIN_DISPLAY_MS - (Date.now() - startedAt.current)) + 400;
+    const t1 = setTimeout(() => setFading(true), hold);
+    const t2 = setTimeout(() => onFinishRef.current(), hold + 300);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [progress, status]);
+
+  const failed = status === 'error';
 
   const currentStep = useMemo(() => {
+    if (failed) return 'CONNECTION FAILED';
+    if (progress >= 100) return 'READY';
     const index = Math.min(
-      loadingSteps.length - 1,
-      Math.floor((progress / 100) * loadingSteps.length),
+      LOADING_STEPS.length - 1,
+      Math.floor((progress / 90) * LOADING_STEPS.length),
     );
-    return loadingSteps[index];
-  }, [progress]);
+    return LOADING_STEPS[index];
+  }, [progress, failed]);
 
   return (
-    <div className="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-zinc-950 px-8 select-none">
-      <div className="w-full max-w-xs space-y-16 relative z-10">
+    <div
+      className={cn(
+        'fixed inset-0 z-[999] flex flex-col items-center justify-center bg-zinc-950 px-8 select-none transition-opacity duration-300',
+        fading ? 'opacity-0' : 'opacity-100',
+      )}
+    >      <div className="w-full max-w-xs space-y-16 relative z-10">
         {/* Visual Brand - Creative Minimalist Animation */}
         <div className="relative flex flex-col items-center justify-center gap-8">
           <div className="relative w-24 h-24 flex items-center justify-center">
@@ -46,9 +83,26 @@ export const IntroLoading = () => {
             <div className="absolute inset-2 rounded-full border border-white/5 animate-[spin_8s_linear_infinite_reverse]" />
 
             {/* Core Brand Symbol */}
-            <div className="relative w-12 h-12 bg-zinc-900 rounded-lg border border-white/10 flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.02)] animate-[intro-pulse_2s_ease-in-out_infinite]">
-              <span className="text-xl font-black text-white tracking-tighter">S</span>
-              <div className="absolute inset-0 rounded-lg bg-brand-accent/5 animate-[intro-pulse_2s_ease-in-out_infinite]" />
+            <div
+              className={cn(
+                'relative w-12 h-12 rounded-lg border flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.02)] animate-[intro-pulse_2s_ease-in-out_infinite] transition-colors duration-500',
+                failed ? 'bg-red-950/50 border-red-500/30' : 'bg-zinc-900 border-white/10',
+              )}
+            >
+              <span
+                className={cn(
+                  'text-xl font-black tracking-tighter transition-colors duration-500',
+                  failed ? 'text-red-400' : 'text-white',
+                )}
+              >
+                S
+              </span>
+              <div
+                className={cn(
+                  'absolute inset-0 rounded-lg animate-[intro-pulse_2s_ease-in-out_infinite]',
+                  failed ? 'bg-red-500/5' : 'bg-brand-accent/5',
+                )}
+              />
             </div>
 
             {/* Orbiting particles */}
@@ -76,7 +130,7 @@ export const IntroLoading = () => {
 
           <div className="flex flex-col items-center gap-1">
             <span className="text-2xl font-black text-white tracking-[0.2em] uppercase">SEAL</span>
-            <span className="text-[8px] font-bold text-zinc-600 tracking-[0.4em] uppercase">
+            <span className="text-[9px] font-bold text-zinc-600 tracking-[0.4em] uppercase">
               Waifu Collector
             </span>
           </div>
@@ -84,46 +138,71 @@ export const IntroLoading = () => {
 
         {/* Progress & Stats */}
         <div className="space-y-6">
-          <div className="space-y-3">
+          <div className="space-y-3" role="status" aria-live="polite">
             <div className="flex justify-between items-end px-1">
               <div
                 key={currentStep}
                 className="flex items-center gap-2 animate-[intro-step_0.3s_ease-out]"
               >
-                <Terminal size={10} className="text-brand-accent" />
-                <span className="text-[9px] font-bold text-zinc-100 tracking-widest uppercase">
+                <Terminal size={11} className={failed ? 'text-red-500' : 'text-brand-accent'} />
+                <span
+                  className={cn(
+                    'text-[10px] font-bold tracking-widest uppercase',
+                    failed ? 'text-red-400' : 'text-zinc-100',
+                  )}
+                >
                   {currentStep}
                 </span>
               </div>
-              <span className="text-[10px] font-mono text-zinc-500 font-bold tabular-nums">
+              <span className="text-[11px] font-mono text-zinc-500 font-bold tabular-nums">
                 {Math.round(progress)}%
               </span>
             </div>
 
-            <div className="h-0.5 w-full bg-zinc-900 rounded-full overflow-hidden">
+            <div className="h-1 w-full bg-zinc-900 rounded-full overflow-hidden">
               <div
-                className="h-full bg-white transition-[width] duration-300 ease-out"
+                className={cn(
+                  'relative h-full rounded-full transition-[width] duration-200 ease-out',
+                  failed
+                    ? 'bg-red-500'
+                    : 'bg-gradient-to-r from-brand-accent/60 to-brand-accent',
+                )}
                 style={{ width: `${progress}%` }}
-              />
+              >
+                {!failed && progress < 100 && (
+                  <div className="absolute inset-0 overflow-hidden rounded-full">
+                    <div className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-white/25 to-transparent animate-shimmer" />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
           <div className="flex items-center justify-between px-1">
             <div className="flex items-center gap-1.5">
-              <Fingerprint size={8} className="text-zinc-600" />
-              <span className="text-[7px] font-bold text-zinc-600 uppercase tracking-widest">
+              <Fingerprint size={9} className="text-zinc-600" />
+              <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">
                 Signed in via Telegram
               </span>
             </div>
             <div className="flex items-center gap-1.5">
               <div
                 className={cn(
-                  'w-1 h-1 rounded-full transition-colors duration-500',
-                  progress === 100 ? 'bg-emerald-500' : 'bg-zinc-800',
+                  'w-1.5 h-1.5 rounded-full transition-colors duration-500',
+                  failed
+                    ? 'bg-red-500'
+                    : progress >= 100
+                      ? 'bg-emerald-500'
+                      : 'bg-zinc-800 animate-pulse',
                 )}
               />
-              <span className="text-[7px] font-mono text-zinc-600 uppercase tracking-widest">
-                {progress === 100 ? 'READY' : 'SYNCING'}
+              <span
+                className={cn(
+                  'text-[8px] font-mono uppercase tracking-widest',
+                  failed ? 'text-red-400' : 'text-zinc-600',
+                )}
+              >
+                {failed ? 'FAILED' : progress >= 100 ? 'READY' : 'SYNCING'}
               </span>
             </div>
           </div>

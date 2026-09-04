@@ -3,7 +3,7 @@ import { Loader2 } from 'lucide-react';
 import React, { lazy, ReactNode, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { CharActionModal } from './components/character/CharActionModal';
 import { Header } from './components/Header';
-import { IntroLoading } from './components/IntroLoading';
+import { IntroLoading, type IntroStatus } from './components/IntroLoading';
 import { NavigationDrawer } from './components/NavigationDrawer';
 import { PetActionModal } from './components/pet/PetActionModal';
 import { GachaReveal } from './components/ui/GachaReveal';
@@ -225,6 +225,19 @@ const ScrollRestore = ({ tab, positions }: { tab: string; positions: Map<string,
 const AppContent = () => {
   const { user, loading, error } = useUser();
 
+  // Returning visitors within the same session skip the full intro — only a
+  // brief fade so the app never hard-cuts between boots.
+  const [introDone, setIntroDone] = useState(() =>
+    sessionStorage.getItem('seal_intro_seen') === '1',
+  );
+  const introStatus: IntroStatus = error ? 'error' : loading ? 'loading' : 'ready';
+  const showIntro = !introDone || introStatus === 'error';
+
+  const finishIntro = useCallback(() => {
+    sessionStorage.setItem('seal_intro_seen', '1');
+    setIntroDone(true);
+  }, []);
+
   const getInitialRoute = useCallback((): RouteTarget => {
     const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
     const candidates = [...getCandidates(), startParam];
@@ -331,7 +344,9 @@ const AppContent = () => {
     }
   }, []);
 
-  if (loading) return <IntroLoading />;
+  if (showIntro) {
+    return <IntroLoading status={introStatus} onFinish={finishIntro} />;
+  }
 
   if (error || (!loading && !user)) {
     return <ServerError onRetry={() => window.location.reload()} />;
