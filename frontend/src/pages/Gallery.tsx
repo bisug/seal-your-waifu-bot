@@ -45,6 +45,9 @@ const SORT_OPTIONS: Array<{
 export const Gallery = ({ onCharClick }: GalleryProps) => {
   const [sort, setSort] = useState<CatalogSort>('numeric');
   const [order, setOrder] = useState<CatalogOrder>('asc');
+  const [sortOpen, setSortOpen] = useState(false);
+  const ActiveSortIcon =
+    SORT_OPTIONS.find((o) => o.sort === sort && o.order === order)?.Icon ?? ArrowUp01;
   const gridParams = useMemo(() => ({ sort, order }), [sort, order]);
   const { items, loading, search, setSearch, rarity, setRarity, lastElementRef, error, refresh } =
     useInfiniteGrid<Character>('/gallery', { params: gridParams, limit: 42 });
@@ -130,30 +133,52 @@ export const Gallery = ({ onCharClick }: GalleryProps) => {
               />
             </div>
 
-            <div className="flex gap-1 p-1 bg-zinc-900 border border-white/10 rounded-md h-10 items-center shrink-0">
-              {SORT_OPTIONS.map(({ sort: optionSort, order: optionOrder, label, Icon }) => {
-                const active = sort === optionSort && order === optionOrder;
-                return (
-                  <button
-                    key={`${optionSort}-${optionOrder}`}
-                    type="button"
-                    title={`Sort ${label}`}
-                    onClick={() => {
-                      window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
-                      setSort(optionSort);
-                      setOrder(optionOrder);
-                    }}
-                    className={cn(
-                      'p-2.5 rounded transition-all',
-                      active
-                        ? 'bg-brand-accent text-white'
-                        : 'text-zinc-600 hover:text-zinc-300 hover:bg-white/5',
-                    )}
-                  >
-                    <Icon size={16} />
-                  </button>
-                );
-              })}
+            <div className="relative shrink-0">
+              <button
+                type="button"
+                aria-label="Sort options"
+                aria-expanded={sortOpen}
+                onClick={() => setSortOpen((v) => !v)}
+                className="h-10 w-10 flex items-center justify-center rounded-md bg-zinc-900 border border-white/10 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-all"
+              >
+                <ActiveSortIcon size={16} className={sortOpen ? 'text-brand-accent' : undefined} />
+              </button>
+
+              {sortOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-[900]"
+                    onClick={() => setSortOpen(false)}
+                    aria-hidden="true"
+                  />
+                  <div className="absolute right-0 top-11 z-[901] w-36 rounded-md bg-zinc-900 border border-white/10 shadow-xl p-1.5 space-y-1">
+                    {SORT_OPTIONS.map(({ sort: optionSort, order: optionOrder, label, Icon }) => {
+                      const active = sort === optionSort && order === optionOrder;
+                      return (
+                        <button
+                          key={`${optionSort}-${optionOrder}`}
+                          type="button"
+                          onClick={() => {
+                            window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
+                            setSort(optionSort);
+                            setOrder(optionOrder);
+                            setSortOpen(false);
+                          }}
+                          className={cn(
+                            'flex items-center gap-2.5 w-full h-9 px-3 rounded text-[10px] font-bold uppercase tracking-widest transition-all',
+                            active
+                              ? 'bg-brand-accent text-white'
+                              : 'text-zinc-400 hover:text-zinc-100 hover:bg-white/5',
+                          )}
+                        >
+                          <Icon size={14} className="shrink-0" />
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
