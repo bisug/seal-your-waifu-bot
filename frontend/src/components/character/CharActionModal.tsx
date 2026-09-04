@@ -405,7 +405,7 @@ export const CharActionModal = ({
             <Button
               variant="secondary"
               onClick={() => setEditMode(true)}
-              className="w-full group h-12"
+              className="w-full group h-10"
               leftIcon={
                 <Pencil
                   size={14}
@@ -446,7 +446,7 @@ export const CharActionModal = ({
             <Button
               onClick={() => setPurchaseStage('confirm')}
               variant="accent"
-              className="w-full h-14"
+              className="w-full h-11"
             >
               Summon Character ({formatNumber(price)} Zenith)
             </Button>
@@ -459,7 +459,7 @@ export const CharActionModal = ({
               <Button
                 variant="outline"
                 onClick={() => setPurchaseStage('idle')}
-                className="flex-1 h-14"
+                className="flex-1 h-11"
               >
                 Abort
               </Button>
@@ -467,7 +467,7 @@ export const CharActionModal = ({
                 variant="accent"
                 onClick={handleBuy}
                 isLoading={purchaseStage === 'buying'}
-                className="flex-[2] h-14"
+                className="flex-[2] h-11"
               >
                 Confirm Summon
               </Button>
@@ -482,7 +482,7 @@ export const CharActionModal = ({
             variant="danger"
             onClick={handleRecycle}
             disabled={sellStage !== 'idle'}
-            className="flex-1 h-14"
+            className="flex-1 h-11"
             leftIcon={
               sellStage === 'previewing' || sellStage === 'selling' ? (
                 <Loader2 size={14} className="animate-spin" />
@@ -498,7 +498,7 @@ export const CharActionModal = ({
             variant="secondary"
             onClick={handleSell}
             disabled={sellStage !== 'idle'}
-            className="flex-1 h-14"
+            className="flex-1 h-11"
             leftIcon={
               sellStage === 'selling' ? (
                 <Loader2 size={14} className="animate-spin" />
@@ -528,7 +528,7 @@ export const CharActionModal = ({
                 setConfirm(null);
                 setSellStage('idle');
               }}
-              className="flex-1 h-14"
+              className="flex-1 h-11"
             >
               Abort
             </Button>
@@ -536,7 +536,7 @@ export const CharActionModal = ({
               variant="danger"
               onClick={confirm.kind === 'recycle' ? doRecycle : doSell}
               isLoading={sellStage === 'selling'}
-              className="flex-[2] h-14"
+              className="flex-[2] h-11"
             >
               Confirm
             </Button>

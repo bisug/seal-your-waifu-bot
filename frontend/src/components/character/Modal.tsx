@@ -185,7 +185,7 @@ export const Modal = ({ character, onClose, actions }: ModalProps) => {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            <div className="grid grid-cols-3 gap-2">
               {[
                 {
                   icon: ShieldCheck,
@@ -215,10 +215,10 @@ export const Modal = ({ character, onClose, actions }: ModalProps) => {
                 <Card
                   key={i}
                   variant="default"
-                  className="p-3 flex flex-col justify-between border-white/[0.04] bg-zinc-900/50"
+                  className="p-2 flex flex-col justify-between border-white/[0.04] bg-zinc-900/50"
                 >
                   <stat.icon
-                    size={13}
+                    size={11}
                     className={cn(
                       stat.variant === 'success' && 'text-emerald-500',
                       stat.variant === 'danger' && 'text-red-500',
@@ -227,8 +227,8 @@ export const Modal = ({ character, onClose, actions }: ModalProps) => {
                       stat.variant === 'secondary' && 'text-zinc-700',
                     )}
                   />
-                  <div className="mt-3">
-                    <span className="block text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-1">
+                  <div className="mt-1.5">
+                    <span className="block text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-0.5">
                       {stat.label}
                     </span>
                     <span
