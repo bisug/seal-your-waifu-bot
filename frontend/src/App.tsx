@@ -344,7 +344,7 @@ const AppContent = () => {
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-zinc-950">
-      <Header onMenuClick={() => setIsMenuOpen(true)} />
+      <Header onMenuClick={() => setIsMenuOpen(true)} onNavigate={handleNavigate} />
 
       <main className="app-scroller">
         <Suspense

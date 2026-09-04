@@ -88,82 +88,72 @@ export const Gallery = ({ onCharClick }: GalleryProps) => {
           </button>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-end bg-zinc-950 border border-white/5 p-4 rounded-md">
-          <div className="flex-1 space-y-1.5">
-            <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest pl-1">
-              Search Characters
-            </span>
-            <div className="relative">
-              <Input
-                icon={Search}
-                placeholder="Enter character name..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className={cn('h-10', search && 'pr-10')}
-              />
-              {search && (
-                <button
-                  type="button"
-                  aria-label="Clear search"
-                  onClick={() => setSearch('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-zinc-500 hover:text-zinc-200 transition-colors"
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
+        <div className="space-y-3 bg-zinc-950 border border-white/5 p-4 rounded-md">
+          <div className="relative">
+            <Input
+              icon={Search}
+              placeholder="Search characters..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className={cn('h-10', search && 'pr-10')}
+            />
+            {search && (
+              <button
+                type="button"
+                aria-label="Clear search"
+                onClick={() => setSearch('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-zinc-500 hover:text-zinc-200 transition-colors"
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
 
-          <div className="space-y-1.5">
-            <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest pl-1">
-              Filter & Sort
-            </span>
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="relative group w-40 sm:w-48">
-                <select
-                  aria-label="Filter by rarity"
-                  value={rarity}
-                  onChange={(event) => setRarity(event.target.value)}
-                  className="w-full h-10 pl-3.5 pr-10 bg-zinc-900 border border-white/10 rounded-md text-[10px] font-bold text-zinc-400 uppercase tracking-widest outline-none focus:border-brand-accent appearance-none cursor-pointer hover:bg-zinc-800 transition-all"
-                >
-                  <option value="">ALL RARITIES</option>
-                  {rarityOptions.map(({ value, label }) => (
-                    <option key={value} value={value}>
-                      {label.toUpperCase()}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown
-                  size={14}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-600 pointer-events-none group-focus-within:text-brand-accent transition-colors"
-                />
-              </div>
+          <div className="flex items-center gap-2">
+            <div className="relative group flex-1 min-w-0">
+              <select
+                aria-label="Filter by rarity"
+                value={rarity}
+                onChange={(event) => setRarity(event.target.value)}
+                className="w-full h-10 pl-3.5 pr-10 bg-zinc-900 border border-white/10 rounded-md text-[10px] font-bold text-zinc-400 uppercase tracking-widest outline-none focus:border-brand-accent appearance-none cursor-pointer hover:bg-zinc-800 transition-all truncate"
+              >
+                <option value="">ALL RARITIES</option>
+                {rarityOptions.map(({ value, label }) => (
+                  <option key={value} value={value}>
+                    {label.toUpperCase()}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                size={14}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-600 pointer-events-none group-focus-within:text-brand-accent transition-colors"
+              />
+            </div>
 
-              <div className="flex gap-1 p-1 bg-zinc-900 border border-white/10 rounded-md h-10 items-center">
-                {SORT_OPTIONS.map(({ sort: optionSort, order: optionOrder, label, Icon }) => {
-                  const active = sort === optionSort && order === optionOrder;
-                  return (
-                    <button
-                      key={`${optionSort}-${optionOrder}`}
-                      type="button"
-                      title={`Sort ${label}`}
-                      onClick={() => {
-                        window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
-                        setSort(optionSort);
-                        setOrder(optionOrder);
-                      }}
-                      className={cn(
-                        'p-2.5 rounded transition-all',
-                        active
-                          ? 'bg-brand-accent text-white'
-                          : 'text-zinc-600 hover:text-zinc-300 hover:bg-white/5',
-                      )}
-                    >
-                      <Icon size={16} />
-                    </button>
-                  );
-                })}
-              </div>
+            <div className="flex gap-1 p-1 bg-zinc-900 border border-white/10 rounded-md h-10 items-center shrink-0">
+              {SORT_OPTIONS.map(({ sort: optionSort, order: optionOrder, label, Icon }) => {
+                const active = sort === optionSort && order === optionOrder;
+                return (
+                  <button
+                    key={`${optionSort}-${optionOrder}`}
+                    type="button"
+                    title={`Sort ${label}`}
+                    onClick={() => {
+                      window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
+                      setSort(optionSort);
+                      setOrder(optionOrder);
+                    }}
+                    className={cn(
+                      'p-2.5 rounded transition-all',
+                      active
+                        ? 'bg-brand-accent text-white'
+                        : 'text-zinc-600 hover:text-zinc-300 hover:bg-white/5',
+                    )}
+                  >
+                    <Icon size={16} />
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>

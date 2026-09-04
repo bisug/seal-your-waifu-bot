@@ -9,9 +9,10 @@ import { Button } from './ui/Button';
 
 interface HeaderProps {
   onMenuClick: () => void;
+  onNavigate: (tab: string) => void;
 }
 
-export const Header = memo(({ onMenuClick }: HeaderProps) => {
+export const Header = memo(({ onMenuClick, onNavigate }: HeaderProps) => {
   const { user, loading } = useUser();
   const { data: botInfo } = useApi<{ name?: string }>('/bot/info');
   const botName = botInfo?.name || null;
@@ -19,8 +20,13 @@ export const Header = memo(({ onMenuClick }: HeaderProps) => {
 
   return (
     <header className="sticky top-0 z-[100] flex items-center justify-between px-5 bg-zinc-950/95 h-14 shrink-0 select-none border-b border-white/[0.04]">
-      {/* Brand Section */}
-      <div className="flex items-center gap-3">
+      {/* Brand Section — click to return to Dashboard */}
+      <button
+        type="button"
+        aria-label="Go to Dashboard"
+        onClick={() => onNavigate('profile')}
+        className="flex items-center gap-3 rounded-md -ml-1.5 pl-1.5 pr-2 py-1 text-left transition-colors hover:bg-white/5 active:bg-white/10"
+      >
         <Avatar
           src={user?.avatar}
           alt={user?.username || 'User avatar'}
@@ -43,7 +49,7 @@ export const Header = memo(({ onMenuClick }: HeaderProps) => {
             </span>
           </div>
         </div>
-      </div>
+      </button>
 
       {/* Stats Section */}
       <div className="flex items-center gap-1.5 sm:gap-2">

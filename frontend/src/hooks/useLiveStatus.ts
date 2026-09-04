@@ -1,46 +1,39 @@
 import { useEffect, useState } from 'react';
 
-const WS_PATH = `/api/${import.meta.env.VITE_API_PREFIX ?? 'v1_7b82'}/ws/leaderboard`;
+const HEALTH_PATH = `/api/${import.meta.env.VITE_API_PREFIX ?? 'v1_7b82'}/healthz`;
+const PROBE_INTERVAL_MS = 30000;
 
 /**
- * Shared WebSocket liveness probe. Connects to the leaderboard WS channel
- * (same channel Leaderboard.tsx uses) purely to detect backend reachability.
- * Reconnects every 10s on drop; auto-cleans on unmount.
+ * Shared backend liveness probe. Pings the public /healthz endpoint —
+ * works on every host (some block or misroute WebSocket upgrades, which
+ * made the old WS probe show OFFLINE forever). Rechecks every 30s.
  */
 export const useLiveStatus = () => {
   const [live, setLive] = useState(false);
 
   useEffect(() => {
-    const token = sessionStorage.getItem('auth_token');
-    if (!token) return;
-
     const apiBase = import.meta.env.VITE_API_URL ?? '';
-    const wsUrl = `${apiBase.replace(/^http/, 'ws')}${WS_PATH}`;
+    let cancelled = false;
+    let timer: number | undefined;
 
-    let ws: WebSocket | null = null;
-    let closedByUs = false;
-    let reconnectTimer: number | undefined;
-
-    const connect = () => {
+    const probe = async () => {
       try {
-        ws = new WebSocket(wsUrl, [`seal-token.${token}`]);
+        const res = await fetch(`${apiBase}${HEALTH_PATH}`, {
+          signal: AbortSignal.timeout(5000),
+        });
+        if (!cancelled) setLive(res.ok);
       } catch {
-        return;
+        if (!cancelled) setLive(false);
+      } finally {
+        if (!cancelled) timer = window.setTimeout(probe, PROBE_INTERVAL_MS);
       }
-      ws.onopen = () => setLive(true);
-      ws.onclose = () => {
-        setLive(false);
-        if (!closedByUs) reconnectTimer = window.setTimeout(connect, 10000);
-      };
-      ws.onerror = () => ws?.close();
     };
 
-    connect();
+    probe();
 
     return () => {
-      closedByUs = true;
-      if (reconnectTimer) window.clearTimeout(reconnectTimer);
-      ws?.close();
+      cancelled = true;
+      if (timer) window.clearTimeout(timer);
     };
   }, []);
 
