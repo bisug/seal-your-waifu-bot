@@ -394,7 +394,7 @@ async def has_recent_unclaimed_spawn(chat_id: int, *, max_age_seconds: float = A
 # How many recent spawns per chat to exclude from the next pick. Small enough
 # to stay cheap, large enough that a chat never sees the same face twice in a
 # row (unless the rarity pool is tiny).
-RECENT_SPAWN_HISTORY = 10
+RECENT_SPAWN_HISTORY = 30
 RECENT_SPAWN_TTL_SECONDS = 86400
 
 

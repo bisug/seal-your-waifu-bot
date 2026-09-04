@@ -147,7 +147,7 @@ async def get_character_by_id(char_id: str) -> Optional[dict]:
 characters_by_rarity: Dict[str, list] = {}
 _cache_timestamps: Dict[str, float] = {}
 _rarity_locks: Dict[str, asyncio.Lock] = {}  # Per-rarity lock to prevent concurrent stampede
-CACHE_TTL = 3600  # 1 hour
+CACHE_TTL = 600  # 10 minutes — pool reshuffles often enough that users see variety
 async def get_or_load_characters(rarity: str) -> list:
     """
     Get a list of characters for a specific rarity, loading from DB into cache if needed.
@@ -165,7 +165,10 @@ async def get_or_load_characters(rarity: str) -> list:
         # Double-check after acquiring lock — another waiter may have already loaded
         now = time.time()
         if rarity not in characters_by_rarity or now - _cache_timestamps.get(rarity, 0) > CACHE_TTL:
-            MAX_CACHED_PER_RARITY = 500
+            # Sample a large slice of the rarity's docs. With 7000+ characters
+            # a 500-doc sample meant every pick for a whole hour came from the
+            # same tiny subset — users saw the same faces over and over.
+            MAX_CACHED_PER_RARITY = 5000
             cursor = await collection.aggregate([
                 {"$match": {"rarity": rarity}},
                 {"$sample": {"size": MAX_CACHED_PER_RARITY}},
@@ -192,9 +195,9 @@ async def sample_character_by_rarity(rarity: str) -> Optional[dict]:
     """Pick one random character of a rarity, reusing the per-rarity cache.
 
     Shared by /claim, /daily and /propose. Each of those used to run its own
-    $sample aggregation on every call; now they hit the same 1h cache the
+    $sample aggregation on every call; now they hit the same cache the
     spawn path uses, so a rarity's docs are read from Mongo at most once
-    per hour instead of once per claim.
+    per TTL window instead of once per claim.
     """
     chars = await get_or_load_characters(rarity)
     if not chars:
