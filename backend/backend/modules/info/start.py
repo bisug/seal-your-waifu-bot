@@ -95,7 +95,7 @@ HELP_DATA = {
 /daily - Claim daily rewards
 /weekly - Claim weekly bonus
 /top - Global leaderboard
-/bet - Gamble Coins
+/bet - Coin flip game
 /pay - Send Coins to user
 /sell - Sell a character
 """,
@@ -113,6 +113,9 @@ HELP_DATA = {
 /check - User status check
 /animes - Available anime list
 /sani - Search by anime
+/privacy - Privacy policy
+/delete - Erase your data
+/dmca - Report copyright
 """,
     },
     "PROGRESSION": {
@@ -375,6 +378,17 @@ async def _handle_deep_link(message: types.Message, param: str, *, is_new_user: 
         return await _handle_referral_param(message, param, is_new_user=is_new_user)
     if param.startswith("bonus"):
         return await _handle_bonus_param(message)
+    # Legal deep links from the Mini App footer.
+    if param in {"terms", "privacy", "dmca"}:
+        from backend.modules.progression.battlepass import terms_cmd
+        from backend.modules.info.privacy import privacy_command, dmca_command
+        if param == "terms":
+            await terms_cmd(None, message)
+        elif param == "privacy":
+            await privacy_command(None, message)
+        else:
+            await dmca_command(None, message)
+        return True
     return False
 
 

@@ -91,6 +91,27 @@ async def scrape_group_command_handler(client, message):
             "• Example: `/scrape @mygroup 400`\n"
             "Note: Bot/UserBot must be a member of the group."
         )
+    # Only groups the bot owns may be scraped — scraping third-party groups
+    # (other bots' content) is a copyright/ToS hazard. Set SCRAPE_ALLOWLIST
+    # to a comma-separated list of chat IDs/usernames you control.
+    allowlist = [c.strip().lstrip("@") for c in config.SCRAPE_ALLOWLIST.split(",") if c.strip()]
+    raw_target = message.command[1].lstrip("@")
+    try:
+        numeric_target = int(raw_target) if raw_target.lstrip("-").isdigit() else None
+    except ValueError:
+        numeric_target = None
+    allowed = any(
+        raw_target.lower() == a.lower() or (numeric_target is not None and a.lstrip("-").isdigit() and int(a.lstrip("-")) == abs(numeric_target))
+        for a in allowlist
+    )
+    if not allowed:
+        return await message.reply_text(
+            "❌ <b>Scraping is restricted to groups you own.</b>\n\n"
+            "Add the chat to <code>SCRAPE_ALLOWLIST</code> (comma-separated IDs/usernames) "
+            "to enable it. Scraping groups you don't control risks copyright strikes "
+            "and Telegram ToS violations.",
+            parse_mode=enums.ParseMode.HTML,
+        )
     if message.chat.id in scraping_tasks:
         return await message.reply_text("⚠️ A scraping task is already running. Use `/stop_scrape`.")
     target_chat = message.command[1]

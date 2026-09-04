@@ -39,7 +39,7 @@ async def bet_cmd(_, message: types.Message):
     if not user_data:
         await message.reply_text(
             "<b>You don't have an account yet!</b>\n"
-            "Use <code>/daily</code> to claim free Coins & start betting!",
+            "Use <code>/daily</code> to claim free Coins & start playing!",
             parse_mode=enums.ParseMode.HTML
         )
         return
@@ -67,7 +67,7 @@ async def bet_cmd(_, message: types.Message):
         return
 
     user_choice_name = "Heads" if choice == "h" else "Tails"
-    await message.reply_text(f"<b>Placing Bet:</b> {amount:,} 🪙\n<b>You Chose:</b> {user_choice_name}", parse_mode=enums.ParseMode.HTML)
+    await message.reply_text(f"<b>Coin Flip:</b> {amount:,} 🪙\n<b>You Chose:</b> {user_choice_name}", parse_mode=enums.ParseMode.HTML)
 
     await asyncio.sleep(2)
 

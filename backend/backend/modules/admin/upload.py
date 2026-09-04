@@ -33,7 +33,12 @@ def get_rarity_help():
         "Reply to media: <code>/upload \"Name\" \"Anime\" RarityNum</code>\n"
         "With URL: <code>/upload URL \"Name\" \"Anime\" RarityNum</code>\n\n"
         "<b>Rarity Map:</b>\n"
-        f"{rarity_list}"
+        f"{rarity_list}\n\n"
+        "<b>Content rules — uploading means you confirm:</b>\n"
+        "• You have the right to share this media\n"
+        "• No adult/NSFW or suggestive content\n"
+        "• No content designed to harass or defame\n"
+        "Violations are removed and may cost upload rights."
     )
 
 

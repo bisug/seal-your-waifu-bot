@@ -219,10 +219,18 @@ async def pay_support_cmd(_, message: types.Message):
 
 @app.on_message(filters.command("terms"))
 async def terms_cmd(_, message: types.Message):
+    if not message:
+        return
     await message.reply_text(
         "<b>Digital Purchase Terms</b>\n\n"
         "Battle Pass purchases are digital goods delivered inside this Telegram bot. "
-        "Payments are processed with Telegram Stars. Refund requests are handled through /paysupport.",
+        "Payments are processed with Telegram Stars.\n\n"
+        "<b>Refunds</b>\n"
+        "• If a paid pass is not delivered within 48 hours, you are entitled to a full refund.\n"
+        "• Refund requests are handled through /paysupport — include your Telegram ID.\n"
+        "• Delivered and used passes are non-refundable, except where required by law.\n\n"
+        "<b>Support</b>\n"
+        f"Contact @{config.SUPPORT_CHAT} for payment help.",
         parse_mode=enums.ParseMode.HTML,
     )
 

@@ -154,6 +154,8 @@ class CharacterUploadPayload(MediaUploadPayload):
     name: str = Field(..., min_length=1, max_length=120)
     anime: str = Field(..., min_length=1, max_length=120)
     rarity: int | str
+    # Uploader must confirm they have the rights to share this media.
+    rights_confirmed: bool = Field(..., description="Uploader confirms media rights + content rules")
 
     @field_validator("name", "anime", mode="before")
     @classmethod
@@ -366,6 +368,11 @@ async def upload_character_api(
     payload: CharacterUploadPayload,
     user_id: int = Depends(require_uploader_user),
 ):
+    if not payload.rights_confirmed:
+        raise HTTPException(
+            status_code=400,
+            detail="You must confirm you have the rights to this media and it follows the content rules.",
+        )
     temp_path = None
     try:
         uploader = await _get_uploader(user_id)

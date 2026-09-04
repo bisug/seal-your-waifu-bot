@@ -44,6 +44,7 @@ class Database:
         self.global_group_bans = self.db['global_group_bans']
         self.pet_catalog = self.db['pet_catalog']
         self.rarities = self.db['rarities']
+        self.takedown_log = self.db['takedown_log']
 
     async def ensure_indexes(self):
         """Create performance indexes for all collections."""
@@ -170,6 +171,7 @@ global_user_bans_collection = seal_db.global_user_bans
 global_group_bans_collection = seal_db.global_group_bans
 pet_catalog_collection = seal_db.pet_catalog
 rarities_collection = seal_db.rarities
+takedown_log_collection = seal_db.takedown_log
 
 
 async def close_connections():

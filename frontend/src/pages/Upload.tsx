@@ -78,6 +78,7 @@ export const Upload = () => {
   const [mediaData, setMediaData] = useState<string | null>(null);
   const [filename, setFilename] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [rightsConfirmed, setRightsConfirmed] = useState(false);
 
   useEffect(() => {
     apiFetch('/admin/upload/options')
@@ -157,6 +158,7 @@ export const Upload = () => {
               name: character.name.trim(),
               anime: character.anime.trim(),
               rarity: Number(character.rarity),
+              rights_confirmed: rightsConfirmed,
             }
           : {
               ...mediaPayload,
@@ -513,9 +515,27 @@ export const Upload = () => {
         </section>
 
         <div className="pt-4">
+          {mode === 'character' && (
+            <div className="flex items-start gap-3 mb-4 p-3 rounded-md bg-zinc-900/50 border border-white/5">
+              <input
+                type="checkbox"
+                checked={rightsConfirmed}
+                onChange={(event) => setRightsConfirmed(event.target.checked)}
+                className="h-4 w-4 mt-0.5 rounded border-white/10 bg-zinc-950 accent-brand-accent cursor-pointer shrink-0"
+                id="rights-confirm"
+              />
+              <label
+                htmlFor="rights-confirm"
+                className="text-[10px] font-medium text-zinc-400 leading-relaxed cursor-pointer select-none"
+              >
+                I confirm I have the right to share this media, and it follows the content
+                rules: no adult/NSFW content, no content meant to harass or defame.
+              </label>
+            </div>
+          )}
           <Button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || (mode === 'character' && !rightsConfirmed)}
             variant="accent"
             className="w-full h-14"
             isLoading={submitting}

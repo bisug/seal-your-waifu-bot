@@ -355,6 +355,9 @@ async def upload_character_from_path(
         "added_by_id": int(added_by_id),
         "added_by_name": str(added_by_name or added_by_id),
         "uploaded_at": datetime.now(timezone.utc),
+        # Uploader warranty: staff confirm rights when uploading. Kept on the
+        # doc so DMCA reports can trace the source of disputed media.
+        "rights_confirmed": True,
     }
     char_id = await add_character_to_db(char_data)
     invalidate_character_cache(rarity_text)

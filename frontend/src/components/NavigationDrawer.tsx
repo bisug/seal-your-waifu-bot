@@ -342,6 +342,36 @@ export const NavigationDrawer = ({
                   <span className="text-[8px] font-mono text-emerald-500/80 uppercase">ONLINE</span>
                 </div>
               </div>
+
+              {/* Legal links — Telegram requires terms + privacy for Mini Apps */}
+              <div className="flex items-center justify-center gap-3 mt-3">
+                <a
+                  href={`https://t.me/${import.meta.env.VITE_BOT_USERNAME || 'SealYourWaifuBot'}?start=terms`}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest hover:text-zinc-400 transition-colors"
+                >
+                  Terms
+                </a>
+                <span className="text-zinc-800">·</span>
+                <a
+                  href={`https://t.me/${import.meta.env.VITE_BOT_USERNAME || 'SealYourWaifuBot'}?start=privacy`}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest hover:text-zinc-400 transition-colors"
+                >
+                  Privacy
+                </a>
+                <span className="text-zinc-800">·</span>
+                <a
+                  href={`https://t.me/${import.meta.env.VITE_BOT_USERNAME || 'SealYourWaifuBot'}?start=dmca`}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest hover:text-zinc-400 transition-colors"
+                >
+                  DMCA
+                </a>
+              </div>
             </div>
           </div>
     </>

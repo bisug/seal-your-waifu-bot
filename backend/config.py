@@ -73,6 +73,7 @@ class Config:
 
     # --- EXTERNAL INTEGRATIONS ---
     IMGBB_API_KEY = os.getenv("IMGBB_API_KEY", "")
+    DMCA_CONTACT = os.getenv("DMCA_CONTACT", "")  # Public email for copyright reports
     
     # --- WEBAPP CONFIG ---
     WEB_APP_URL = os.getenv("WEB_APP_URL", "") # Public HTTPS origin; empty default until set by the host
@@ -103,5 +104,10 @@ class Config:
 
     # --- USERBOT CONFIG ---
     STRING_SESSION = os.getenv("STRING_SESSION", "")
+
+    # --- CONTENT POLICY ---
+    # Only these chats (IDs or @usernames, comma-separated) may be scraped.
+    # Leave empty to disable scraping entirely.
+    SCRAPE_ALLOWLIST = os.getenv("SCRAPE_ALLOWLIST", "")
 
 config = Config()
