@@ -44,7 +44,7 @@ export const GachaReveal = ({ character, onClose }: GachaRevealProps) => {
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className="relative w-full max-w-[380px] aspect-[3/4.5] flex flex-col items-center"
+          className="relative w-full max-w-[380px] max-h-[78svh] aspect-[3/4.5] flex flex-col items-center"
         >
           <div className="w-full h-full rounded-2xl border border-white/20 bg-zinc-950 shadow-2xl overflow-hidden relative">
             <img

@@ -121,7 +121,7 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }: PetActionM
           animate={{ y: 0 }}
           exit={{ y: '100%' }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className="relative w-full max-w-[440px] bg-zinc-950 rounded-t-xl sm:rounded-xl flex flex-col overflow-hidden shadow-2xl border-t sm:border border-white/5"
+          className="relative w-full max-w-[440px] max-h-[92svh] bg-zinc-950 rounded-t-xl sm:rounded-xl flex flex-col overflow-hidden shadow-2xl border-t sm:border border-white/5"
           ref={dialogRef}
           role="dialog"
           aria-modal="true"
@@ -176,8 +176,8 @@ export const PetActionModal = ({ selectedPet, setSelectedPet, user }: PetActionM
             </div>
           </div>
 
-          {/* Content Section */}
-          <div className="flex-1 p-6 space-y-6">
+          {/* Content Section — scrolls when the sheet is taller than the viewport */}
+          <div className="flex-1 p-6 space-y-6 overflow-y-auto overscroll-contain max-sm:pb-[max(1.5rem,var(--sab))]">
             <div className="space-y-1.5">
               <div className="flex items-center gap-1.5">
                 <Target size={11} className="text-zinc-500" />

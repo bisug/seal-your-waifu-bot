@@ -195,7 +195,7 @@ export const Gallery = ({ onCharClick }: GalleryProps) => {
           <ErrorState message={error} onAction={refresh} />
         </div>
       ) : items.length > 0 ? (
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-4 px-0.5">
+        <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-4 px-0.5">
           {items.map((char, i) => (
             <CharacterCard
               key={char.id}
@@ -207,7 +207,7 @@ export const Gallery = ({ onCharClick }: GalleryProps) => {
           {loading && Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={`load-${i}`} />)}
         </div>
       ) : loading ? (
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-4 px-0.5">
+        <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-4 px-0.5">
           {Array.from({ length: 18 }).map((_, i) => (
             <CardSkeleton key={`skeleton-${i}`} />
           ))}

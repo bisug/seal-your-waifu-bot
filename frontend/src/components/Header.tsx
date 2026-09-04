@@ -35,7 +35,7 @@ export const Header = memo(({ onMenuClick, onNavigate }: HeaderProps) => {
         />
         <div className="flex flex-col justify-center">
           <div className="flex items-center gap-1.5">
-            <span className="text-[10px] font-black text-zinc-100 tracking-wider uppercase leading-none truncate max-w-[120px]">
+            <span className="text-[10px] font-black text-zinc-100 tracking-wider uppercase leading-none truncate max-w-[80px] xs:max-w-[120px]">
               {botName || 'SEAL'}
             </span>
             <span className="text-[8px] font-mono text-zinc-500 uppercase">V2.4</span>
@@ -53,7 +53,7 @@ export const Header = memo(({ onMenuClick, onNavigate }: HeaderProps) => {
 
       {/* Stats Section */}
       <div className="flex items-center gap-1.5 sm:gap-2">
-        <div className="flex items-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-3 h-8 rounded-md bg-zinc-900 border border-white/5 transition-colors hover:border-white/10 group">
+        <div className="flex items-center gap-1 xs:gap-1.5 sm:gap-2.5 px-2 xs:px-2.5 sm:px-3 h-8 rounded-md bg-zinc-900 border border-white/5 transition-colors hover:border-white/10 group">
           <Coins size={12} className="text-amber-500 shrink-0" />
           <div className="flex items-baseline gap-1">
             <span className="text-[11px] font-mono font-bold text-zinc-100 tabular-nums">
@@ -69,7 +69,7 @@ export const Header = memo(({ onMenuClick, onNavigate }: HeaderProps) => {
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-3 h-8 rounded-md bg-zinc-900 border border-white/5 transition-colors hover:border-white/10 group">
+        <div className="flex items-center gap-1 xs:gap-1.5 sm:gap-2.5 px-2 xs:px-2.5 sm:px-3 h-8 rounded-md bg-zinc-900 border border-white/5 transition-colors hover:border-white/10 group">
           <Gem size={12} className="text-brand-accent shrink-0" />
           <div className="flex items-baseline gap-1">
             <span className="text-[11px] font-mono font-bold text-zinc-100 tabular-nums">

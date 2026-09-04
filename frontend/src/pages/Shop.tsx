@@ -272,7 +272,7 @@ export const Shop = ({ onCharClick }: ShopProps) => {
         </div>
 
         {inventory.length > 0 ? (
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-4 px-0.5">
+          <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-4 px-0.5">
             {inventory.map((char) => (
               <CharacterCard key={char.id} character={char} onClick={() => onCharClick(char)} />
             ))}

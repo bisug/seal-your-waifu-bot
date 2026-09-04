@@ -193,7 +193,7 @@ export const NavigationDrawer = ({
 
       <div
         className={cn(
-          'fixed top-0 right-0 z-[120] h-full w-[280px] bg-zinc-950 border-l border-white/5 flex flex-col shadow-2xl transition-transform duration-200 ease-out',
+          'fixed top-0 right-0 z-[120] h-full w-[min(280px,85vw)] bg-zinc-950 border-l border-white/5 flex flex-col shadow-2xl transition-transform duration-200 ease-out',
           isOpen ? 'translate-x-0' : 'translate-x-full',
         )}
         ref={panelRef}
