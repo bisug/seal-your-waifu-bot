@@ -12,10 +12,10 @@ async def gamebot_start_handler(_, message: types.Message):
     text = (
         "<b>🎮 Welcome to the GameBot!</b>\n\n"
         f"I am the secondary assistant for {main_bot_mention}, dedicated to providing fun and interactive mini-games. "
-        "Earn <b>Shards</b> and test your knowledge!\n\n"
+        "Earn <b>Coins</b> and test your knowledge!\n\n"
         "<b>Available Commands:</b>\n"
         "🔹 <code>/nguess</code> - Identify a character from their image\n"
-        "🔹 <code>/quiz</code> - Test your anime knowledge for Shards\n"
+        "🔹 <code>/quiz</code> - Test your anime knowledge for Coins\n"
         "🔹 <code>/scramble</code> - Unscramble the shuffled character name\n"
         "🔹 <code>/top</code> - View GameBot rankings and totals\n\n"
         f"<i>Check out {main_bot_mention} for the full Seal-Bot experience!</i>"

@@ -123,7 +123,7 @@ export const RewardModal = ({ rewards, onClose }: { rewards: Reward; onClose: ()
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 rounded-2xl bg-zinc-900/50 border border-white/[0.05] flex flex-col items-center gap-1">
                   <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">
-                    Shards
+                    Coins
                   </span>
                   <span className="text-2xl font-mono font-bold text-zinc-100">
                     +{rewards.shards}

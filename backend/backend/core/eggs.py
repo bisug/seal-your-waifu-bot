@@ -5,7 +5,7 @@ from backend.core.pets import get_caregiver_incubation_minutes
 
 EGG_TIER_ORDER = ("common", "gold", "void", "rare", "legendary", "celestial")
 
-# Liquidation value per egg tier (Shards). Scaled to the tier's rarity chance
+# Liquidation value per egg tier (Coins). Scaled to the tier's rarity chance
 # and incubation cost; deliberately below the fusion upgrade path so selling
 # is the "I don't want to wait" option, not the optimal one.
 EGG_SELL_PRICES = {
@@ -17,7 +17,7 @@ EGG_SELL_PRICES = {
     "celestial": 25000,
 }
 
-# Cost to purify a corrupted egg (Shards), tier-scaled. Cheaper than losing
+# Cost to purify a corrupted egg (Coins), tier-scaled. Cheaper than losing
 # the egg to a 30% explosion at hatch time.
 EGG_PURIFY_PRICES = {
     "common": 500,

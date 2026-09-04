@@ -15,7 +15,7 @@ LOGGER = logging.getLogger(__name__)
 
 # (rarity_id, emoji, name, spawn_weight, active_spawn_weight, shop_weight,
 #  claim_weight, shop_price, stock_limit, sell_price)
-# Price ladder: strictly-rarer spawn bands cost strictly more, ceiling 100⧫
+# Price ladder: strictly-rarer spawn bands cost strictly more, ceiling 100💠
 # (guarded by test_default_shop_price_ladder_is_balanced).
 _DEFAULT_RARITIES = [
     (1, "⚪", "Common", 360, 280, 25, 60, 1, 50, 50),

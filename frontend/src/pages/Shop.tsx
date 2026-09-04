@@ -204,8 +204,8 @@ export const Shop = ({ onCharClick }: ShopProps) => {
 
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {[
-            { icon: Coins, label: 'Shards', value: formatNumber(shardBalance), variant: 'warning' },
-            { icon: Gem, label: 'Zenith', value: formatNumber(zenithBalance), variant: 'primary' },
+            { icon: Coins, label: 'Coins', value: formatNumber(shardBalance), variant: 'warning' },
+            { icon: Gem, label: 'Prisms', value: formatNumber(zenithBalance), variant: 'primary' },
             {
               icon: Clock,
               label: 'Reset In',

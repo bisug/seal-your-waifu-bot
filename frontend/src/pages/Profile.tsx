@@ -244,13 +244,13 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
         {[
           {
             icon: Coins,
-            label: 'Shards',
+            label: 'Coins',
             value: formatNumber(stats?.points ?? user.balance ?? 0),
             variant: 'warning',
           },
           {
             icon: Gem,
-            label: 'Zenith',
+            label: 'Prisms',
             value: formatNumber(stats?.zenith || 0),
             variant: 'primary',
           },

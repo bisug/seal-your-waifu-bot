@@ -71,9 +71,9 @@ async def daily_command_handler(_, message: types.Message):
     reward_coins = int(base_coins * multiplier * reward_mult)
     bonus_coins = reward_coins - base_coins
     # reward_mult=0.6 outside the main group can make the bonus negative.
-    pass_bonus_text = f"\n<b>Pass Bonus:</b> +{bonus_coins} ⬪" if multiplier > 1.0 and bonus_coins > 0 else ""
+    pass_bonus_text = f"\n<b>Pass Bonus:</b> +{bonus_coins} 🪙" if multiplier > 1.0 and bonus_coins > 0 else ""
     reward_coins, staff_bonus = apply_role_bonus(user_id, reward_coins, "daily_bonus_percent")
-    staff_bonus_text = f"\n<b>Staff Bonus:</b> +{staff_bonus} ⬪" if staff_bonus else ""
+    staff_bonus_text = f"\n<b>Staff Bonus:</b> +{staff_bonus} 🪙" if staff_bonus else ""
     char = await get_daily_waifu(user_id)
     if not char:
         return await message.reply_text("No characters available currently.", parse_mode=enums.ParseMode.HTML)
@@ -104,7 +104,7 @@ async def daily_command_handler(_, message: types.Message):
         f"<b>Character:</b> {html_escape(char['name'])}\n"
         f"<b>Rarity:</b> {html_escape(char['rarity'])}\n"
         f"<b>Anime:</b> {html_escape(char['anime'])}\n\n"
-        f"<b>Coins:</b> +{reward_coins} ⬪{pass_bonus_text}{staff_bonus_text}\n"
+        f"<b>Coins:</b> +{reward_coins} 🪙{pass_bonus_text}{staff_bonus_text}\n"
         f"<b>Streak:</b> {streak}/7 Days{pm_note}"
     )
     # Daily bonus roll lives in the bot's DM: deep-link the user there.
@@ -172,7 +172,7 @@ async def weekly_command_handler(_, message: types.Message):
     await add_xp(user_id, xp_reward, "weekly_claim")
     await message.reply_text(
         f"<b>Weekly Reward Claimed!</b>\n\n"
-        f"<b>Coins:</b> +{reward_coins} ⬪{pass_bonus_text}{staff_coin_text}\n"
+        f"<b>Coins:</b> +{reward_coins} 🪙{pass_bonus_text}{staff_coin_text}\n"
         f"<b>XP:</b> +{xp_reward} XP{staff_xp_text}\n"
         f"Come back in 7 days!{pm_note}",
         parse_mode=enums.ParseMode.HTML

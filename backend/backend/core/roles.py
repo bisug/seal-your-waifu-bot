@@ -228,16 +228,16 @@ def get_role_payload(user_id: int | str | None) -> dict:
 
 
 def format_upload_reward(reward: dict | None) -> str:
-    """Human-readable '+X Shards and +Y Zenith' string for an upload reward."""
+    """Human-readable '+X Coins and +Y Prisms' string for an upload reward."""
     if not reward:
         return ""
     parts = []
     balance = int(reward.get("balance") or 0)
     zenith = int(reward.get("zenith") or 0)
     if balance:
-        parts.append(f"+{balance:,} Shards")
+        parts.append(f"+{balance:,} Coins")
     if zenith:
-        parts.append(f"+{zenith:,} Zenith")
+        parts.append(f"+{zenith:,} Prisms")
     return " and ".join(parts)
 
 

@@ -76,15 +76,15 @@ async def propose_command(_, message: types.Message):
             await reply_media_dynamic(message, img_url, caption=caption, parse_mode=enums.ParseMode.HTML)
         else:
             await update_user_balance(user_id, 2000)
-            await message.reply_text("<b>Proposal Accepted!</b>\nHowever, she was too shy to appear. You found <code>2,000</code> Shards instead!", parse_mode=enums.ParseMode.HTML)
+            await message.reply_text("<b>Proposal Accepted!</b>\nHowever, she was too shy to appear. You found <code>2,000</code> Coins instead!", parse_mode=enums.ParseMode.HTML)
     elif roll < 13:
         await update_user_balance(user_id, 2000)
         img = random.choice(acceptance_images)
-        await reply_media_dynamic(message, img, caption="<b>Proposal Accepted!</b>\nShe was flattered but busy. She sent you <b>2,000 Shards</b> as a gift!", parse_mode=enums.ParseMode.HTML)
+        await reply_media_dynamic(message, img, caption="<b>Proposal Accepted!</b>\nShe was flattered but busy. She sent you <b>2,000 Coins</b> as a gift!", parse_mode=enums.ParseMode.HTML)
     elif roll < 43:
         await update_user_balance(user_id, 500)
         img = random.choice(acceptance_images)
-        await reply_media_dynamic(message, img, caption="<b>Proposal Accepted!</b>\nShe smiled and gave you <b>500 Shards</b> for your effort!", parse_mode=enums.ParseMode.HTML)
+        await reply_media_dynamic(message, img, caption="<b>Proposal Accepted!</b>\nShe smiled and gave you <b>500 Coins</b> for your effort!", parse_mode=enums.ParseMode.HTML)
     else:
         img = random.choice(rejection_images)
         caption = random.choice(rejection_captions)

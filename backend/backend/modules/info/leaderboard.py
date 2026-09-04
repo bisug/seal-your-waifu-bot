@@ -233,9 +233,9 @@ def build_leaderboard_text(metric: str, users: list):
             lvl = get_level_from_xp(value)
             display_value = f"Lvl {lvl}"
         elif metric == "shards":
-            display_value = f"{value:,} ⬪"
+            display_value = f"{value:,} 🪙"
         elif metric == "zenith":
-            display_value = f"{value:,} ⧫"
+            display_value = f"{value:,} 💠"
         elif metric == "guesses":
             display_value = f"{value:,} Guesses"
         else:

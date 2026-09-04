@@ -39,8 +39,8 @@ EGG_TIERS = {
 METRIC_ORDER = ["harem", "shards", "zenith", "level", "guesses"]
 METRICS = {
     "harem": {"label": "Harem", "field": "char_count", "icon": "◈"},
-    "shards": {"label": "Shards", "field": "balance", "icon": "⬪"},
-    "zenith": {"label": "Zenith", "field": "zenith", "icon": "⧫"},
+    "shards": {"label": "Coins", "field": "balance", "icon": "🪙"},
+    "zenith": {"label": "Prisms", "field": "zenith", "icon": "💠"},
     "level": {"label": "Level", "field": "xp", "icon": "◉"},
     "guesses": {"label": "Guesses", "field": "guess_count", "icon": "◎"}
 }

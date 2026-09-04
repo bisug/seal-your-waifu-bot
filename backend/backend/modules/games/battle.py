@@ -115,16 +115,16 @@ async def battle_challenge_handler(_, message: types.Message):
     except (IndexError, ValueError):
         return await message.reply_text("❌ Usage: <code>/battle &lt;bet_amount&gt;</code>", parse_mode=enums.ParseMode.HTML)
     if await get_user_balance(attacker.id) < bet:
-        return await message.reply_text("❌ You don't have enough Shards!", parse_mode=enums.ParseMode.HTML)
+        return await message.reply_text("❌ You don't have enough Coins!", parse_mode=enums.ParseMode.HTML)
     if await get_user_balance(defender.id) < bet:
-        return await message.reply_text(f"❌ <b>{html_escape(defender.first_name)}</b> doesn't have enough Shards!", parse_mode=enums.ParseMode.HTML)
+        return await message.reply_text(f"❌ <b>{html_escape(defender.first_name)}</b> doesn't have enough Coins!", parse_mode=enums.ParseMode.HTML)
     battle_id = f"bt_{attacker.id}_{defender.id}"
     await create_session(battle_id, {"attacker": attacker.id, "defender": defender.id, "bet": bet})
     markup = types.InlineKeyboardMarkup([[
         types.InlineKeyboardButton("Accept Challenge", callback_data=f"abt_acc:{battle_id}", style=enums.ButtonStyle.SUCCESS)
     ]])
     await message.reply_to_message.reply_text(
-        f"⚔ <a href=\"tg://user?id={attacker.id}\">{html_escape(attacker.first_name)}</a> challenged you to a battle for <b>{bet:,} ⬪</b>!",
+        f"⚔ <a href=\"tg://user?id={attacker.id}\">{html_escape(attacker.first_name)}</a> challenged you to a battle for <b>{bet:,} 🪙</b>!",
         reply_markup=markup,
         parse_mode=enums.ParseMode.HTML
     )
@@ -198,8 +198,8 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
         result_text = (
             f"📜 <b>Battle Log</b>:\n{battle_log}\n\n"
             f"🏆 <b>Winner:</b> <a href=\"tg://user?id={winner_user.id}\">{html_escape(winner_user.first_name)}</a>\n"
-            f"<b>Winnings:</b> <code>{winnings}</code> ⬪\n"
-            f"<b>Tax:</b> <code>{tax}</code> ⬪\n"
+            f"<b>Winnings:</b> <code>{winnings}</code> 🪙\n"
+            f"<b>Tax:</b> <code>{tax}</code> 🪙\n"
             f"📈 <b>+30 XP</b> for {html_escape(winner_user.first_name)}"
         )
         await query.message.edit_text(result_text, parse_mode=enums.ParseMode.HTML)

@@ -5,10 +5,10 @@ from pyrogram import enums, filters, types
 from backend.client import app
 from backend.core.leaderboard import sync_user_to_redis
 
-# Per-rarity liquidation value in SHARDS. Used by BOTH /sell and /recycle
+# Per-rarity liquidation value in COINS. Used by BOTH /sell and /recycle
 # (the latter via get_sell_price) so dupe liquidation is consistent and every
-# rarity is covered. High tiers are intentionally far below their shop (Zenith)
-# price to keep Zenith scarce and prevent sell/rebuy arbitrage.
+# rarity is covered. High tiers are intentionally far below their shop (Prisms)
+# price to keep Prisms scarce and prevent sell/rebuy arbitrage.
 # Values now live in the `rarities` collection (see core/rarities.py); this
 # is the same live dict, keyed by bare name ("Common").
 from backend.core.rarities import SELL_PRICES  # noqa: E402
@@ -83,7 +83,7 @@ async def sell_character_from_user(user_id: int, char_id: str):
 @handle_errors
 async def sell_handler(_, message: types.Message):
     if len(message.command) < 2:
-        rates = "\n".join([f"{rarity}: <b>{price:,} ⬪</b>" for rarity, price in SELL_PRICES.items()])
+        rates = "\n".join([f"{rarity}: <b>{price:,} 🪙</b>" for rarity, price in SELL_PRICES.items()])
         return await message.reply_text(
             f"<b>Usage:</b> <code>/sell &lt;id&gt;</code>\n\n"
             f"<b>Sell Rates:</b>\n{rates}",
@@ -113,10 +113,10 @@ async def sell_handler(_, message: types.Message):
         f"<b>Sell Confirmation</b>\n\n"
         f"<b>Character:</b> {html_escape(char['name'])}\n"
         f"<b>Rarity:</b> {html_escape(rarity)}\n"
-        f"<b>Value:</b> <code>{price:,}</code> ⬪"
+        f"<b>Value:</b> <code>{price:,}</code> 🪙"
         f"{f' (+{staff_bonus:,} staff)' if staff_bonus else ''}\n\n"
-        f"<b>Current Balance:</b> <code>{current_shards:,}</code> ⬪\n"
-        f"<b>New Balance:</b> <code>{new_shards:,}</code> ⬪\n\n"
+        f"<b>Current Balance:</b> <code>{current_shards:,}</code> 🪙\n"
+        f"<b>New Balance:</b> <code>{new_shards:,}</code> 🪙\n\n"
         f"<i>Are you sure you want to sell this character?</i>"
     )
     await message.reply_text(
@@ -167,8 +167,8 @@ async def sell_callback_handler(_, query: types.CallbackQuery):
         await query.message.edit_text(
             f"<b>Successfully Sold!</b>\n\n"
             f"<b>Character:</b> {html_escape(sold_char['name'])}\n"
-            f"<b>Price:</b> <code>{price:,}</code> ⬪\n\n"
-            f"<b>Your New Balance:</b> <code>{new_shards:,}</code> ⬪",
+            f"<b>Price:</b> <code>{price:,}</code> 🪙\n\n"
+            f"<b>Your New Balance:</b> <code>{new_shards:,}</code> 🪙",
             parse_mode=enums.ParseMode.HTML
         )
     else:

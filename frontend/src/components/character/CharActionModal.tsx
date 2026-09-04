@@ -325,7 +325,7 @@ export const CharActionModal = ({
         method: 'POST',
         body: JSON.stringify([selectedChar.id]),
       });
-      addToast(`Character recycled: +${res.reward} Shards`, 'success');
+      addToast(`Character recycled: +${res.reward} Coins`, 'success');
       triggerRefresh();
       setSelectedChar(null);
     } catch (err: any) {
@@ -339,7 +339,7 @@ export const CharActionModal = ({
     setSellStage('selling');
     try {
       const res = await apiFetch(`/character/sell/${selectedChar.id}`, { method: 'POST' });
-      addToast(`Character sold: +${res.reward} Shards`, 'success');
+      addToast(`Character sold: +${res.reward} Coins`, 'success');
       triggerRefresh();
       setSelectedChar(null);
     } catch (err: any) {
@@ -376,7 +376,7 @@ export const CharActionModal = ({
       });
       askConfirm(
         'recycle',
-        `Recycle ${selectedChar.name.toUpperCase()} for ${preview.reward} Shards?`,
+        `Recycle ${selectedChar.name.toUpperCase()} for ${preview.reward} Coins?`,
       );
     } catch (err: any) {
       addToast(getErrorMessage(err), 'error');
@@ -386,7 +386,7 @@ export const CharActionModal = ({
 
   const handleSell = () => {
     setSellStage('selling');
-    askConfirm('sell', `Sell ${selectedChar.name.toUpperCase()} for Shards?`);
+    askConfirm('sell', `Sell ${selectedChar.name.toUpperCase()} for Coins?`);
   };
 
   const actions = (
@@ -436,7 +436,7 @@ export const CharActionModal = ({
                 icon={Gem}
                 className="w-full py-4 rounded-md justify-center font-bold border-white/5 opacity-50"
               >
-                {formatNumber(price - zenithBalance)} Zenith Needed
+                {formatNumber(price - zenithBalance)} Prisms Needed
               </Badge>
               <p className="text-[8px] font-bold text-center text-zinc-700 uppercase tracking-widest">
                 Insufficient funds
@@ -448,7 +448,7 @@ export const CharActionModal = ({
               variant="accent"
               className="w-full h-11"
             >
-              Summon Character ({formatNumber(price)} Zenith)
+              Summon Character ({formatNumber(price)} Prisms)
             </Button>
           ) : (
             <m.div

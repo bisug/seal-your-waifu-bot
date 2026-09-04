@@ -23,15 +23,15 @@ def _parse_amount(raw: str) -> int | None:
 async def _send_shards_to_zenith_confirmation(message: types.Message, shards_amount: int):
     user_id = message.from_user.id
     if shards_amount < EXCHANGE_RATE:
-        return await message.reply_text(f"Minimum exchange is {EXCHANGE_RATE:,} Shards.")
+        return await message.reply_text(f"Minimum exchange is {EXCHANGE_RATE:,} Coins.")
     if shards_amount % EXCHANGE_RATE != 0:
-        return await message.reply_text(f"Amount must be divisible by {EXCHANGE_RATE:,} Shards.")
+        return await message.reply_text(f"Amount must be divisible by {EXCHANGE_RATE:,} Coins.")
 
     user = await user_collection.find_one(get_user_filter(user_id))
     current_shards = user.get("balance", 0) if user else 0
     if current_shards < shards_amount:
         return await message.reply_text(
-            f"Insufficient Shards!\n\n"
+            f"Insufficient Coins!\n\n"
             f"You have: {current_shards:,}\n"
             f"Need: {shards_amount:,}"
         )
@@ -43,7 +43,7 @@ async def _send_shards_to_zenith_confirmation(message: types.Message, shards_amo
     ]]
     await message.reply_text(
         f"<b>Exchange Confirmation</b>\n\n"
-        f"<b>Converting:</b> <code>{shards_amount:,}</code> Shards to <b>{zenith_amount:,}</b> Zenith\n\n"
+        f"<b>Converting:</b> <code>{shards_amount:,}</code> Coins to <b>{zenith_amount:,}</b> Prisms\n\n"
         f"<i>Proceed?</i>",
         reply_markup=types.InlineKeyboardMarkup(buttons),
         parse_mode=enums.ParseMode.HTML,
@@ -53,13 +53,13 @@ async def _send_shards_to_zenith_confirmation(message: types.Message, shards_amo
 async def _send_zenith_to_shards_confirmation(message: types.Message, zenith_amount: int):
     user_id = message.from_user.id
     if zenith_amount < 1:
-        return await message.reply_text("Minimum exchange is 1 Zenith.")
+        return await message.reply_text("Minimum exchange is 1 Prisms.")
 
     user = await user_collection.find_one(get_user_filter(user_id))
     current_zenith = user.get("zenith", 0) if user else 0
     if current_zenith < zenith_amount:
         return await message.reply_text(
-            f"Insufficient Zenith!\n\n"
+            f"Insufficient Prisms!\n\n"
             f"You have: {current_zenith:,}\n"
             f"Need: {zenith_amount:,}"
         )
@@ -71,7 +71,7 @@ async def _send_zenith_to_shards_confirmation(message: types.Message, zenith_amo
     ]]
     await message.reply_text(
         f"<b>Exchange Confirmation</b>\n\n"
-        f"<b>Converting:</b> <code>{zenith_amount:,}</code> Zenith to <b>{shards_amount:,}</b> Shards\n\n"
+        f"<b>Converting:</b> <code>{zenith_amount:,}</code> Prisms to <b>{shards_amount:,}</b> Coins\n\n"
         f"<i>Proceed?</i>",
         reply_markup=types.InlineKeyboardMarkup(buttons),
         parse_mode=enums.ParseMode.HTML,
@@ -107,13 +107,13 @@ async def exchange_command(_, message: types.Message):
 
     await message.reply_text(
         "<b>Currency Exchange</b>\n\n"
-        f"<b>Your Shards:</b> <code>{int(user.get('balance', 0) or 0):,}</code>\n"
-        f"<b>Your Zenith:</b> <code>{int(user.get('zenith', 0) or 0):,}</code>\n\n"
-        f"<b>Rate:</b> {EXCHANGE_RATE:,} Shards = 1 Zenith\n\n"
+        f"<b>Your Coins:</b> <code>{int(user.get('balance', 0) or 0):,}</code>\n"
+        f"<b>Your Prisms:</b> <code>{int(user.get('zenith', 0) or 0):,}</code>\n\n"
+        f"<b>Rate:</b> {EXCHANGE_RATE:,} Coins = 1 Prisms\n\n"
         "<b>Commands:</b>\n"
-        f"<code>/exchange {EXCHANGE_RATE}</code> - Shards to Zenith\n"
-        f"<code>/zenith {EXCHANGE_RATE}</code> - Shards to Zenith\n"
-        "<code>/shard 1</code> - Zenith to Shards",
+        f"<code>/exchange {EXCHANGE_RATE}</code> - Coins to Prisms\n"
+        f"<code>/zenith {EXCHANGE_RATE}</code> - Coins to Prisms\n"
+        "<code>/shard 1</code> - Prisms to Coins",
         parse_mode=enums.ParseMode.HTML,
         reply_markup=types.InlineKeyboardMarkup(buttons) if buttons else None,
     )
@@ -122,14 +122,14 @@ async def exchange_command(_, message: types.Message):
 @app.on_message(filters.command("zenith"))
 @handle_errors
 async def zenith_command(_, message: types.Message):
-    """Convert Shards to Zenith."""
+    """Convert Coins to Prisms."""
     if len(message.command) < 2:
         return await message.reply_text(
-            "<b>Shards → Zenith Exchange</b>\n\n"
+            "<b>Coins → Prisms Exchange</b>\n\n"
             "<b>Usage:</b> <code>/zenith &lt;amount&gt;</code>\n"
             f"<b>Example:</b> <code>/zenith {EXCHANGE_RATE * 5}</code>\n\n"
-            f"<b>Rate:</b> {EXCHANGE_RATE:,} ⬪ = 1 ⧫\n"
-            f"<b>Minimum:</b> {EXCHANGE_RATE:,} Shards",
+            f"<b>Rate:</b> {EXCHANGE_RATE:,} 🪙 = 1 💠\n"
+            f"<b>Minimum:</b> {EXCHANGE_RATE:,} Coins",
             parse_mode=enums.ParseMode.HTML
         )
     shards_amount = _parse_amount(message.command[1])
@@ -141,14 +141,14 @@ async def zenith_command(_, message: types.Message):
 @app.on_message(filters.command("shard"))
 @handle_errors
 async def shard_command(_, message: types.Message):
-    """Convert Zenith to Shards."""
+    """Convert Prisms to Coins."""
     if len(message.command) < 2:
         return await message.reply_text(
-            "<b>Zenith → Shards Exchange</b>\n\n"
+            "<b>Prisms → Coins Exchange</b>\n\n"
             "<b>Usage:</b> <code>/shard &lt;amount&gt;</code>\n"
             "<b>Example:</b> <code>/shard 5</code>\n\n"
-            f"<b>Rate:</b> 1 ⧫ = {EXCHANGE_RATE:,} ⬪\n"
-            "<b>Minimum:</b> 1 Zenith",
+            f"<b>Rate:</b> 1 💠 = {EXCHANGE_RATE:,} 🪙\n"
+            "<b>Minimum:</b> 1 Prisms",
             parse_mode=enums.ParseMode.HTML
         )
     zenith_amount = _parse_amount(message.command[1])
@@ -169,11 +169,11 @@ async def conversion_confirm_callback(_, query: types.CallbackQuery):
     if not user:
         return await query.answer("User profile not found!", show_alert=True)
     if mode == "s":
-        # Shards to Zenith
+        # Coins to Prisms
         shards_to_deduct = amount
         zenith_to_add = amount // EXCHANGE_RATE
         if user.get("balance", 0) < shards_to_deduct:
-            return await query.answer("Insufficient Shards!", show_alert=True)
+            return await query.answer("Insufficient Coins!", show_alert=True)
         update_filter = get_user_filter(user_id)
         update_filter["balance"] = {"$gte": shards_to_deduct}
         update_query = {
@@ -183,13 +183,13 @@ async def conversion_confirm_callback(_, query: types.CallbackQuery):
                 "version": 1
             }
         }
-        success_text = f"Converted: <code>{shards_to_deduct:,}</code> Shards to <b>{zenith_to_add:,}</b> Zenith"
+        success_text = f"Converted: <code>{shards_to_deduct:,}</code> Coins to <b>{zenith_to_add:,}</b> Prisms"
     else:
-        # Zenith to Shards
+        # Prisms to Coins
         zenith_to_deduct = amount
         shards_to_add = amount * EXCHANGE_RATE
         if user.get("zenith", 0) < zenith_to_deduct:
-            return await query.answer("Insufficient Zenith!", show_alert=True)
+            return await query.answer("Insufficient Prisms!", show_alert=True)
         update_filter = get_user_filter(user_id)
         update_filter["zenith"] = {"$gte": zenith_to_deduct}
         update_query = {
@@ -199,7 +199,7 @@ async def conversion_confirm_callback(_, query: types.CallbackQuery):
                 "version": 1
             }
         }
-        success_text = f"Converted: <code>{zenith_to_deduct:,}</code> Zenith to <b>{shards_to_add:,}</b> Shards"
+        success_text = f"Converted: <code>{zenith_to_deduct:,}</code> Prisms to <b>{shards_to_add:,}</b> Coins"
     # Atomic update
     result = await user_collection.update_one(update_filter, update_query)
     if result.modified_count == 0:

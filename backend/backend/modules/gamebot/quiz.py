@@ -145,8 +145,8 @@ async def quiz_callback_handler(_, query: types.CallbackQuery):
         new_balance = int(updated_user.get("balance", 0) or 0)
         result_text = (
             f"✅ <b>Correct!</b>\n\n"
-            f"💰 <b>Reward:</b> {QUIZ_REWARD} Shards\n"
-            f"💳 <b>New Balance:</b> {new_balance:,} Shards\n\n"
+            f"💰 <b>Reward:</b> {QUIZ_REWARD} Coins\n"
+            f"💳 <b>New Balance:</b> {new_balance:,} Coins\n\n"
             "Well done! 🎉"
         )
     else:

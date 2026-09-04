@@ -26,7 +26,7 @@ _pending_renames: dict[str, tuple[int, str, str]] = {}
 async def rarity_config_handler(_, message: types.Message):
     lines = [
         "<b>Rarity Config (DB-backed, by rarity_id)</b>",
-        "<i>id · label · spawn/active/shop/claim weights · price ⧫ · stock · sell ⬪</i>",
+        "<i>id · label · spawn/active/shop/claim weights · price 💠 · stock · sell 🪙</i>",
         "",
     ]
     for doc in get_rarity_docs():
@@ -35,8 +35,8 @@ async def rarity_config_handler(_, message: types.Message):
             f"{html_escape(doc.get('name', ''))} — "
             f"w:{doc.get('spawn_weight')}/{doc.get('active_spawn_weight')}/"
             f"{doc.get('shop_weight')}/{doc.get('claim_weight')} · "
-            f"{doc.get('shop_price')}⧫ · stock {doc.get('stock_limit')} · "
-            f"sell {doc.get('sell_price')}⬪"
+            f"{doc.get('shop_price')}💠 · stock {doc.get('stock_limit')} · "
+            f"sell {doc.get('sell_price')}🪙"
         )
     lines.extend([
         "",

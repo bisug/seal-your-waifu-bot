@@ -14,7 +14,7 @@ LOGGER = get_logger(__name__)
 @app.on_message(filters.command(["balance", "bal"]))
 @handle_errors
 async def balance_cmd(_, message: types.Message):
-    """Retrieve and display the user's Shards and Zenith balance."""
+    """Retrieve and display the user's Coins and Prisms balance."""
     user_id = message.from_user.id
     user = await user_collection.find_one(get_user_filter(user_id))
     if not user:
@@ -25,8 +25,8 @@ async def balance_cmd(_, message: types.Message):
         zenith = user.get("zenith", 0)
     text = (
         f"<b>Your Balance</b>\n\n"
-        f"<b>Shards:</b> {shards:,} ⬪\n"
-        f"<b>Zenith:</b> {zenith:,} ⧫\n\n"
+        f"<b>Coins:</b> {shards:,} 🪙\n"
+        f"<b>Prisms:</b> {zenith:,} 💠\n\n"
         f"<i>Use <code>/zenith</code> or <code>/shard</code> to exchange currency.</i>"
     )
     await message.reply_text(text, parse_mode=enums.ParseMode.HTML)
@@ -64,8 +64,8 @@ async def pay_cmd(_, message: types.Message):
     await message.reply_text(
         f"<b>Payment Confirmation</b>\n\n"
         f'<b>To:</b> <a href="tg://user?id={recipient.id}">{html_escape(recipient.first_name)}</a>\n'
-        f"<b>Amount:</b> {amount:,} ⬪\n\n"
-        f"<i>Are you sure you want to send these Shards?</i>",
+        f"<b>Amount:</b> {amount:,} 🪙\n\n"
+        f"<i>Are you sure you want to send these Coins?</i>",
         reply_markup=types.InlineKeyboardMarkup(buttons),
         parse_mode=enums.ParseMode.HTML
     )
@@ -113,7 +113,7 @@ async def pay_callback_handler(_, query: types.CallbackQuery):
                 await update_user_balance(sender_id, amount)
             except Exception:
                 LOGGER.exception(f"CRITICAL: payment refund failed for {sender_id}")
-            return await query.answer("Payment failed. Your Shards were returned.", show_alert=True)
+            return await query.answer("Payment failed. Your Coins were returned.", show_alert=True)
         try:
             recipient = await app.get_users(recipient_id)
             mention = f'<a href="tg://user?id={recipient.id}">{html_escape(recipient.first_name)}</a>'
@@ -121,7 +121,7 @@ async def pay_callback_handler(_, query: types.CallbackQuery):
             mention = f"User ID: {recipient_id}"
         await query.message.edit_text(
             f"<b>Payment Successful!</b>\n\n"
-            f"<b>Sent:</b> {amount:,} ⬪\n"
+            f"<b>Sent:</b> {amount:,} 🪙\n"
             f"<b>To:</b> {mention}",
             parse_mode=enums.ParseMode.HTML
         )
@@ -144,6 +144,6 @@ async def mtop_cmd(_, message: types.Message):
         full_name = f"{first_name} {last_name}" if last_name else first_name
         mention = f'<a href="tg://user?id={uid}">{html_escape(full_name)}</a>'
         balance = u.get('balance', 0)
-        lines.append(f"{i+1}. {mention} - <b>{balance:,} ⬪</b>")
+        lines.append(f"{i+1}. {mention} - <b>{balance:,} 🪙</b>")
 
     await message.reply_text("<b>Top 10 Rich Users</b>\n\n" + "\n".join(lines), parse_mode=enums.ParseMode.HTML)

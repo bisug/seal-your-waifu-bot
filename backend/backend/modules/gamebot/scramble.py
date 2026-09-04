@@ -104,7 +104,7 @@ async def start_scramble_game(chat_id):
             "🧩 <b>Unscramble the Character Name!</b>\n\n"
             f"Series: <b>{html_escape(char['anime'])}</b>\n"
             f"Letters: <code>{scrambled}</code>\n\n"
-            f"💰 <b>Reward:</b> {REWARD} Shards\n"
+            f"💰 <b>Reward:</b> {REWARD} Coins\n"
             f"⏱ <b>Time:</b> 1 minute"
         )
         await game_bot.send_message_safe(chat_id, text, parse_mode=enums.ParseMode.HTML)
@@ -160,7 +160,7 @@ async def scramble_guess_handler(_, message: types.Message):
             f"🎉 {mention} unscrambled it correctly!\n"
             f"✅ The word was: <b>{html_escape(session['target_word'])}</b>\n"
             f"👤 Character: <b>{html_escape(session['original_name'])}</b>\n"
-            f"💰 <b>Reward:</b> +{REWARD} Shards",
+            f"💰 <b>Reward:</b> +{REWARD} Coins",
             parse_mode=enums.ParseMode.HTML,
             reply_parameters=types.ReplyParameters(message_id=message.id)
         )

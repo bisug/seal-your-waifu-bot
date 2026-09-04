@@ -39,7 +39,7 @@ async def gamebot_stats_handler(_, message: types.Message):
     lines.append(f"<b>Name guesses:</b> <code>{int(name_stats.get('total_guesses', 0) or 0):,}</code>")
     lines.append(f"<b>Quiz wins:</b> <code>{int(stats.get('quiz_wins', 0) or 0):,}</code>")
     lines.append(f"<b>Scramble wins:</b> <code>{int(stats.get('scramble_wins', 0) or 0):,}</code>")
-    lines.append(f"<b>Rewards paid:</b> <code>{int(stats.get('total_rewards', 0) or 0):,}</code> Shards")
+    lines.append(f"<b>Rewards paid:</b> <code>{int(stats.get('total_rewards', 0) or 0):,}</code> Coins")
     lines.append("")
     lines.append("<b>Top Players</b>")
 

@@ -99,7 +99,7 @@ async def profile_handler(_, message: types.Message):
         f"<b>Level:</b> <code>{level}</code>\n"
         f"<b>XP:</b> {xp_bar} <code>{xp_current:,}/{xp_needed:,}</code>\n"
         f"<b>Total XP:</b> <code>{total_xp:,}</code>\n\n"
-        f"<b>Wallet:</b> <code>{user_balance:,}</code> Shards | <code>{zenith:,}</code> Zenith\n\n"
+        f"<b>Wallet:</b> <code>{user_balance:,}</code> Coins | <code>{zenith:,}</code> Prisms\n\n"
         f"<b>Collection:</b> <code>{unique_count:,}/{total_db_chars:,}</code> unique ({progress_percent:.1f}%)\n"
         f"<b>Total Copies:</b> <code>{owned_copies:,}</code>\n"
         f"<b>Completion:</b> {progress_bar}\n"

@@ -27,12 +27,12 @@ def _reward_text(track: dict, tier: str) -> str:
     reward = track.get(tier) or track["free"]
     extra = int(track.get(f"{tier}_extra_amount", 0) or 0)
     if reward["type"] == "shards":
-        label = f"{reward['amount']:,} Shards"
+        label = f"{reward['amount']:,} Coins"
     else:
         tier_names = {1: "Gold", 2: "Void", 3: "Rare", 4: "Legendary", 5: "Celestial"}
         label = f"{tier_names.get(int(reward.get('tier', 1)), 'Gold')} Egg"
     if extra:
-        label += f" + {extra:,} Shards"
+        label += f" + {extra:,} Coins"
     return label
 
 
@@ -43,7 +43,7 @@ def _bank_text(bank: dict) -> str:
         return "No banked paid rewards"
     parts = []
     if shards > 0:
-        parts.append(f"{shards:,} Shards")
+        parts.append(f"{shards:,} Coins")
     if eggs > 0:
         parts.append(f"{eggs} Eggs")
     return " + ".join(parts)

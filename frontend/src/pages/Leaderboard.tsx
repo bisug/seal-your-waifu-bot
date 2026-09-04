@@ -118,8 +118,8 @@ export const Leaderboard = () => {
 
   const METRICS = [
     { id: 'harem', label: 'Archive', icon: BookOpen },
-    { id: 'shards', label: 'Shards', icon: Coins },
-    { id: 'zenith', label: 'Zenith', icon: Gem },
+    { id: 'shards', label: 'Coins', icon: Coins },
+    { id: 'zenith', label: 'Prisms', icon: Gem },
     { id: 'level', label: 'Level', icon: TrendingUp },
     { id: 'guesses', label: 'Intel', icon: Brain },
   ];

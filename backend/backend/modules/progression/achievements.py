@@ -83,7 +83,7 @@ ACHIEVEMENTS = {
     },
     "rich_vip": {
         "name": "Millionaire",
-        "description": "Hold 1,000,000 Shards",
+        "description": "Hold 1,000,000 Coins",
         "condition": lambda u: u.get("balance", 0) >= 1000000,
         "title": "Tycoon",
         "reward_xp": 2000,
@@ -162,7 +162,7 @@ async def achievements_command(_, message: types.Message):
         if data.get("reward_xp"):
             reward_bits.append(f"{data['reward_xp']:,} XP")
         if data.get("reward_shards"):
-            reward_bits.append(f"{data['reward_shards']:,} Shards")
+            reward_bits.append(f"{data['reward_shards']:,} Coins")
         reward_text = ", ".join(reward_bits) if reward_bits else "Title"
         lines.append(
             f"<b>{html_escape(data['symbol'])} {html_escape(data['name'])}</b> - {status}\n"

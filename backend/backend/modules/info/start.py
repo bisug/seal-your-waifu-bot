@@ -39,7 +39,7 @@ START_TEXT_RETURNING = """
 ━━━━━━━━━━━━━━━━━━━━━
 <b>Rank:</b> <code>#{rank}</code> / {total_ranked}
 <b>Level:</b> <code>{level}</code>
-<b>Balance:</b> <code>{balance}</code> ⬪ | <code>{zenith}</code> ⧫
+<b>Balance:</b> <code>{balance}</code> 🪙 | <code>{zenith}</code> 💠
 <b>Harem:</b> <code>{harem_size}</code> Unique Characters
 ━━━━━━━━━━━━━━━━━━━━━
 <i>Select an option below to continue your journey!</i>
@@ -89,14 +89,14 @@ HELP_DATA = {
 /battle - Start a PvP duel
 /balance - Check your balance
 /exchange - Currency exchange
-/zenith - Shards to Zenith
-/shard - Zenith to Shards
+/zenith - Coins to Prisms
+/shard - Prisms to Coins
 /shop - Open the shop
 /daily - Claim daily rewards
 /weekly - Claim weekly bonus
 /top - Global leaderboard
-/bet - Gamble Shards
-/pay - Send Shards to user
+/bet - Gamble Coins
+/pay - Send Coins to user
 /sell - Sell a character
 """,
     },
@@ -254,7 +254,7 @@ async def _handle_referral_param(message: types.Message, param: str, *, is_new_u
                     f'🎉 <b>New Referral!</b>\n\n'
                     f'<a href="tg://user?id={message.from_user.id}">{html_escape(first_name_clean)}</a> '
                     f"joined using your link.\n"
-                    f"+{referral_result.referrer_reward_shards:,} ⬪ | "
+                    f"+{referral_result.referrer_reward_shards:,} 🪙 | "
                     f"+{referral_result.referrer_reward_xp:,} XP"
                 ),
                 parse_mode=enums.ParseMode.HTML
@@ -264,7 +264,7 @@ async def _handle_referral_param(message: types.Message, param: str, *, is_new_u
         await message.reply_text(
             (
                 "🎁 <b>Welcome Bonus!</b>\n"
-                f"You received <b>{referral_result.referred_reward_shards:,} ⬪</b> "
+                f"You received <b>{referral_result.referred_reward_shards:,} 🪙</b> "
                 f"and a <b>Level {referral_result.referred_pet_level} Pet</b> "
                 "for using a referral link! 🚀"
             ),
@@ -315,11 +315,11 @@ async def _handle_bonus_param(message: types.Message) -> bool:
             reward_label = f"{char['rarity']} — {char['name']}"
         else:
             update_op["$inc"] = {"balance": 500, "version": 1}
-            reward_label = "500 ⬪"
+            reward_label = "500 🪙"
     else:
         coins = random.randint(300, 800)
         update_op["$inc"] = {"balance": coins, "version": 1}
-        reward_label = f"{coins:,} ⬪"
+        reward_label = f"{coins:,} 🪙"
 
     try:
         result = await user_collection.update_one(

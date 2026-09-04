@@ -64,13 +64,13 @@ async def get_user_energy(user_id: int, user_data: Optional[dict] = None) -> Tup
     return current_energy, last_recharge_dt
 
 WHEEL_PRIZES = [
-    {"type": "shards", "amount": 50, "label": "50 Shards"},
-    {"type": "shards", "amount": 100, "label": "100 Shards"},
-    {"type": "shards", "amount": 200, "label": "200 Shards"},
+    {"type": "shards", "amount": 50, "label": "50 Coins"},
+    {"type": "shards", "amount": 100, "label": "100 Coins"},
+    {"type": "shards", "amount": 200, "label": "200 Coins"},
     {"type": "character", "label": "Character"},
-    {"type": "shards", "amount": 150, "label": "150 Shards"},
-    {"type": "shards", "amount": 500, "label": "500 Shards"},
-    {"type": "shards", "amount": 80, "label": "80 Shards"},
+    {"type": "shards", "amount": 150, "label": "150 Coins"},
+    {"type": "shards", "amount": 500, "label": "500 Coins"},
+    {"type": "shards", "amount": 80, "label": "80 Coins"},
     {"type": "xp", "amount": 0, "label": "XP Boost"},
 ]
 

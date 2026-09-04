@@ -64,7 +64,7 @@ export const Header = memo(({ onMenuClick, onNavigate }: HeaderProps) => {
               )}
             </span>
             <span className="hidden sm:inline text-[8px] font-bold text-zinc-500 uppercase tracking-wider">
-              SHARDS
+              COINS
             </span>
           </div>
         </div>
@@ -80,7 +80,7 @@ export const Header = memo(({ onMenuClick, onNavigate }: HeaderProps) => {
               )}
             </span>
             <span className="hidden sm:inline text-[8px] font-bold text-zinc-500 uppercase tracking-wider">
-              ZENITH
+              PRISMS
             </span>
           </div>
         </div>

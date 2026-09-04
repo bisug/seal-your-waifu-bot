@@ -51,10 +51,10 @@ def test_pass_bonus_text_matches_multiplier():
         ctx = make_ctx()
         mult = PASS_BENEFITS[tier]["hunt_multiplier"]
         expected_pct = int((mult - 1.0) * 100)
-        # Shards always show the pass line for paid tiers.
+        # Coins always show the pass line for paid tiers.
         for _ in range(10):
             _, _, _, bonus = _roll_hunt_rewards(ctx, user)
-            if f"+{expected_pct}% {tier.capitalize()} Shards!" in bonus:
+            if f"+{expected_pct}% {tier.capitalize()} Coins!" in bonus:
                 break
         else:
             raise AssertionError(f"{tier} bonus text missing for multiplier {mult}")

@@ -224,7 +224,7 @@ async def sell_character_api(
     if not sale:
         raise HTTPException(status_code=400, detail="Failed to sell character")
     _, price, _ = sale
-    return {"status": "success", "reward": price, "currency": "Shards"}
+    return {"status": "success", "reward": price, "currency": "Coins"}
 
 @router.post("/recycle")
 async def recycle_characters(

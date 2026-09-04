@@ -90,21 +90,21 @@ async def exchange_currency_api(
 
     if direction == "shards_to_zenith":
         if amount < EXCHANGE_RATE_SHARDS_PER_ZENITH:
-            raise HTTPException(status_code=400, detail=f"Minimum exchange is {EXCHANGE_RATE_SHARDS_PER_ZENITH:,} Shards")
+            raise HTTPException(status_code=400, detail=f"Minimum exchange is {EXCHANGE_RATE_SHARDS_PER_ZENITH:,} Coins")
         if amount % EXCHANGE_RATE_SHARDS_PER_ZENITH != 0:
-            raise HTTPException(status_code=400, detail=f"Shards must be divisible by {EXCHANGE_RATE_SHARDS_PER_ZENITH:,}")
+            raise HTTPException(status_code=400, detail=f"Coins must be divisible by {EXCHANGE_RATE_SHARDS_PER_ZENITH:,}")
         zenith_amount = amount // EXCHANGE_RATE_SHARDS_PER_ZENITH
         q = get_user_id_query(user_id)
         q["balance"] = {"$gte": amount}
         update = {"$inc": {"balance": -amount, "zenith": zenith_amount, "version": 1}}
-        message = f"Converted {amount:,} Shards to {zenith_amount:,} Zenith"
+        message = f"Converted {amount:,} Coins to {zenith_amount:,} Prisms"
     elif direction == "zenith_to_shards":
         zenith_amount = amount
         shards_amount = amount * EXCHANGE_RATE_SHARDS_PER_ZENITH
         q = get_user_id_query(user_id)
         q["zenith"] = {"$gte": zenith_amount}
         update = {"$inc": {"balance": shards_amount, "zenith": -zenith_amount, "version": 1}}
-        message = f"Converted {zenith_amount:,} Zenith to {shards_amount:,} Shards"
+        message = f"Converted {zenith_amount:,} Prisms to {shards_amount:,} Coins"
     else:
         raise HTTPException(status_code=400, detail="Invalid exchange direction")
 
@@ -169,12 +169,12 @@ async def buy_character_api(char_id: str, user_id: int = Depends(get_current_use
             price, staff_discount = apply_role_discount(user_id, base_price)
             if user_raw.get("zenith", 0) < price:
                 LOGGER.info(
-                    "Shop Purchase Error: User %s has insufficient Zenith (%s) for price %s",
+                    "Shop Purchase Error: User %s has insufficient Prisms (%s) for price %s",
                     user_id,
                     user_raw.get("zenith", 0),
                     price,
                 )
-                raise HTTPException(status_code=400, detail=f"Insufficient Zenith (Need {price})")
+                raise HTTPException(status_code=400, detail=f"Insufficient Prisms (Need {price})")
 
             owned_ids = [c["id"] for c in user_raw.get("characters", []) if isinstance(c, dict) and "id" in c]
             if char_id in owned_ids:
@@ -350,7 +350,7 @@ async def claim_pass_bank(user_id: int = Depends(get_current_user)):
         raise HTTPException(status_code=400, detail="Bank already claimed or modified.")
     
     await sync_user_to_redis(user_id)
-    return {"message": f"Claimed {shards} Shards and {len(eggs_to_add)} Eggs!", "shards": shards, "eggs": len(eggs_to_add)}
+    return {"message": f"Claimed {shards} Coins and {len(eggs_to_add)} Eggs!", "shards": shards, "eggs": len(eggs_to_add)}
 
 @router.post("/claim_level/{level}")
 async def claim_pass_level(level: int, user_id: int = Depends(get_current_user)):
@@ -436,7 +436,7 @@ async def api_buy_level(levels: int = Query(1, ge=1, le=50), user_id: int = Depe
         async with await mongo_session.start_transaction():
             user = await user_collection.find_one(get_user_id_query(user_id), session=mongo_session)
             if not user or user.get("balance", 0) < cost:
-                raise HTTPException(status_code=400, detail=f"Insufficient Shards (Need {cost})")
+                raise HTTPException(status_code=400, detail=f"Insufficient Coins (Need {cost})")
 
             deduct_result = await user_collection.update_one(
                 {**get_user_id_query(user_id), "balance": {"$gte": cost}},
@@ -444,7 +444,7 @@ async def api_buy_level(levels: int = Query(1, ge=1, le=50), user_id: int = Depe
                 session=mongo_session,
             )
             if deduct_result.modified_count == 0:
-                raise HTTPException(status_code=400, detail="Insufficient Shards (concurrent check failed)")
+                raise HTTPException(status_code=400, detail="Insufficient Coins (concurrent check failed)")
 
             from backend.core.progression import add_xp
             new_xp = await add_xp(
@@ -467,4 +467,4 @@ async def api_buy_level(levels: int = Query(1, ge=1, le=50), user_id: int = Depe
     except Exception:
         LOGGER.exception("Post-buy-level cache sync failed for user %s", user_id)
     
-    return {"status": "success", "message": f"Bought {levels} levels for {cost} Shards!"}
+    return {"status": "success", "message": f"Bought {levels} levels for {cost} Coins!"}

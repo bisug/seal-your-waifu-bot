@@ -130,7 +130,7 @@ async def claim_referral_bonus(
         return ReferralClaimResult("referrer_capped", normalized_referrer_id)
 
     now = get_now_utc()
-    # Referral reward pet: Blaze Fang (a real shop pet worth 2 ⧫) instead of
+    # Referral reward pet: Blaze Fang (a real shop pet worth 2 💠) instead of
     # a leveled starter fox, which felt like a downgrade as a reward.
     reward_pet = get_pet_template("blaze_fang")
     reward_pet_doc = {

@@ -87,7 +87,7 @@ export const Referrals = () => {
           <h1 className="text-xl font-bold text-zinc-100 uppercase tracking-tight">Recruitment</h1>
         </div>
         <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest opacity-60">
-          Invite friends, earn Shards
+          Invite friends, earn Coins
         </p>
       </header>
 
@@ -148,7 +148,7 @@ export const Referrals = () => {
               <span className="text-2xl font-mono font-bold text-zinc-100">
                 {formatNumber(earnedShards)}
               </span>
-              <span className="text-[9px] font-bold text-zinc-600 uppercase">Shards</span>
+              <span className="text-[9px] font-bold text-zinc-600 uppercase">Coins</span>
             </div>
           </Card>
         </div>
@@ -168,7 +168,7 @@ export const Referrals = () => {
                 YOU GET
               </p>
               <p className="text-xs font-bold text-zinc-100 uppercase">
-                {formatNumber(referrerRewardShards)} Shards + {formatNumber(referrerRewardXp)} XP
+                {formatNumber(referrerRewardShards)} Coins + {formatNumber(referrerRewardXp)} XP
               </p>
             </div>
           </Card>
@@ -181,7 +181,7 @@ export const Referrals = () => {
                 THEY GET
               </p>
               <p className="text-xs font-bold text-zinc-100 uppercase">
-                {formatNumber(referredRewardShards)} Shards + {referredRewardPet.replace(/_/g, ' ')} pet
+                {formatNumber(referredRewardShards)} Coins + {referredRewardPet.replace(/_/g, ' ')} pet
               </p>
             </div>
           </Card>

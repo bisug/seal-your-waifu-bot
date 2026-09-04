@@ -150,7 +150,7 @@ async def publish_leaderboard_update():
 
 async def sync_user_to_redis(user_id: int, user_doc: dict = None):
     """
-    Synchronizes a user's critical metrics (Level, Harem, Balance, Zenith, Guesses)
+    Synchronizes a user's critical metrics (Level, Harem, Balance, Prisms, Guesses)
     to Redis ZSETs instantly. Used after major state changes to prevent drift.
     """
     if not _redis: return

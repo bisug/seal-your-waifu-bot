@@ -165,6 +165,6 @@ async def fuse_handler(_, message: types.Message):
     await message.reply_text(
         f"<b>⚗️ Fused {to_fuse} duplicate(s)!</b>\n\n"
         f"<b>Character:</b> {html_escape(name)}\n"
-        f"<b>Earned:</b> <code>{earned:,}</code> ⬪",
+        f"<b>Earned:</b> <code>{earned:,}</code> 🪙",
         parse_mode=HTML,
     )

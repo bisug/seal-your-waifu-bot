@@ -52,7 +52,7 @@ async def give_balance(_, message: types.Message):
             upsert=True
         )
         await invalidate_user_cache(recipient_id)
-        await message.reply_text(f"{amount} ⬪ given to {html_escape(recipient.first_name)}!")
+        await message.reply_text(f"{amount} 🪙 given to {html_escape(recipient.first_name)}!")
         LOGGER.info(f"ADMIN {sender_id} gave {amount} to {recipient_id}")
         return
     try:
@@ -84,7 +84,7 @@ async def give_balance(_, message: types.Message):
         return
     await invalidate_user_cache(sender_id)
     await invalidate_user_cache(recipient_id)
-    await message.reply_text(f"You gave {amount} ⬪ to {html_escape(recipient.first_name)}!")
+    await message.reply_text(f"You gave {amount} 🪙 to {html_escape(recipient.first_name)}!")
     LOGGER.info(f"User {sender_id} gave {amount} to {recipient_id}")
     await update_quest_progress(sender_id, "generous_soul", 1)
     await check_achievements(sender_id)
@@ -116,5 +116,5 @@ async def take_balance(_, message: types.Message):
         await message.reply_text("User does not have enough balance to take that amount.")
         return
     await invalidate_user_cache(recipient_id)
-    await message.reply_text(f"{amount} ⬪ taken from {html_escape(recipient.first_name)}!")
+    await message.reply_text(f"{amount} 🪙 taken from {html_escape(recipient.first_name)}!")
     LOGGER.info(f"ADMIN {sender_id} took {amount} from {recipient_id}")

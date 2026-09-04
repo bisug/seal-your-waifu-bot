@@ -41,7 +41,7 @@ def html_escape(text: str) -> str:
     if not text:
         return ""
     return html.escape(text, quote=False)
-def format_currency(amount: int, symbol: str = "⬪") -> str:
+def format_currency(amount: int, symbol: str = "🪙") -> str:
     """Formats an integer amount with commas and appends a symbol."""
     try:
         if not amount: return f"0 {symbol}"

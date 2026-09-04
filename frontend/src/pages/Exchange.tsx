@@ -24,14 +24,14 @@ interface ExchangeData {
 const getModeCopy = (mode: ExchangeMode) => {
   if (mode === 'shards_to_zenith') {
     return {
-      inputLabel: 'SHARDS',
-      outputLabel: 'ZENITH',
+      inputLabel: 'COINS',
+      outputLabel: 'PRISMS',
     };
   }
 
   return {
-    inputLabel: 'ZENITH',
-    outputLabel: 'SHARDS',
+    inputLabel: 'PRISMS',
+    outputLabel: 'COINS',
   };
 };
 
@@ -76,14 +76,14 @@ export const Exchange = () => {
     if (!hasValidAmount) return 'Positive integers only';
 
     if (isShardMode) {
-      if (amountNumber < minimumShards) return `Min: ${formatNumber(minimumShards)} Shards`;
+      if (amountNumber < minimumShards) return `Min: ${formatNumber(minimumShards)} Coins`;
       if (amountNumber % rate !== 0) return `Use ${formatNumber(rate)} increments`;
-      if (shardBalance < amountNumber) return 'Insufficient Shards';
+      if (shardBalance < amountNumber) return 'Insufficient Coins';
       return null;
     }
 
-    if (amountNumber < minimumZenith) return `Min: ${formatNumber(minimumZenith)} Zenith`;
-    if (zenithBalance < amountNumber) return 'Insufficient Zenith';
+    if (amountNumber < minimumZenith) return `Min: ${formatNumber(minimumZenith)} Prisms`;
+    if (zenithBalance < amountNumber) return 'Insufficient Prisms';
     return null;
   }, [
     amountNumber,
@@ -101,14 +101,14 @@ export const Exchange = () => {
   const presetOptions = useMemo(() => {
     const baseOptions = isShardMode
       ? [
-          { label: '1 Zenith', amount: rate },
-          { label: '5 Zenith', amount: rate * 5 },
-          { label: '10 Zenith', amount: rate * 10 },
+          { label: '1 Prism', amount: rate },
+          { label: '5 Prisms', amount: rate * 5 },
+          { label: '10 Prisms', amount: rate * 10 },
         ]
       : [
-          { label: '1 Zenith', amount: 1 },
-          { label: '5 Zenith', amount: 5 },
-          { label: '10 Zenith', amount: 10 },
+          { label: '1 Prism', amount: 1 },
+          { label: '5 Prisms', amount: 5 },
+          { label: '10 Prisms', amount: 10 },
         ];
     const options = [...baseOptions, { label: 'Max', amount: maxInputAmount }];
     const seen = new Set<number>();
@@ -204,8 +204,8 @@ export const Exchange = () => {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {[
-            { icon: Coins, label: 'Shards', value: formatNumber(shardBalance), variant: 'default' },
-            { icon: Gem, label: 'Zenith', value: formatNumber(zenithBalance), variant: 'primary' },
+            { icon: Coins, label: 'Coins', value: formatNumber(shardBalance), variant: 'default' },
+            { icon: Gem, label: 'Prisms', value: formatNumber(zenithBalance), variant: 'primary' },
             {
               icon: BadgePercent,
               label: 'Rate',
@@ -241,8 +241,8 @@ export const Exchange = () => {
         <Card variant="surface" className="p-6 sm:p-8 space-y-8">
           <div className="flex items-center justify-between gap-4 p-1 bg-zinc-950 rounded-md border border-white/5">
             {[
-              { id: 'shards_to_zenith', label: 'Shards → Zenith' },
-              { id: 'zenith_to_shards', label: 'Zenith → Shards' },
+              { id: 'shards_to_zenith', label: 'Coins → Prisms' },
+              { id: 'zenith_to_shards', label: 'Prisms → Coins' },
             ].map((m) => (
               <button
                 key={m.id}

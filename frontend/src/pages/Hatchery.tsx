@@ -231,7 +231,7 @@ export const Hatchery = () => {
                   disabled={!hasEggId}
                   className="h-9 px-4 text-zinc-400 hover:text-zinc-200"
                 >
-                  Sell {egg.sell_price ? `${egg.sell_price.toLocaleString()}⬪` : ''}
+                  Sell {egg.sell_price ? `${egg.sell_price.toLocaleString()}🪙` : ''}
                 </Button>
               </>
             )}

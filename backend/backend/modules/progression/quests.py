@@ -58,7 +58,7 @@ QUEST_POOL = {
     },
     "generous_soul": {
         "name": "Gift Giver",
-        "description": "Gift Shards to a player",
+        "description": "Gift Coins to a player",
         "target": 1,
         "reward_xp": 40,
         "reward_shards": 400,
@@ -76,7 +76,7 @@ QUEST_POOL = {
     },
     "big_spender": {
         "name": "Big Spender",
-        "description": "Spend 1,000 Shards",
+        "description": "Spend 1,000 Coins",
         "target": 1000,
         "reward_xp": 100,
         "reward_shards": 1000,
@@ -123,7 +123,7 @@ WEEKLY_POOL = {
     },
     "weekly_spender": {
         "name": "Tycoon",
-        "description": "Spend 10,000 Shards this week",
+        "description": "Spend 10,000 Coins this week",
         "target": 10000,
         "reward_xp": 800,
         "reward_shards": 8000,
@@ -364,5 +364,5 @@ async def claim_quest_callback(_, query: types.CallbackQuery):
             {"$inc": {"balance": reward_shards}}
         )
 
-    await query.answer(f"Claimed! +{reward_xp} XP & +{reward_shards} Shards!", show_alert=True)
+    await query.answer(f"Claimed! +{reward_xp} XP & +{reward_shards} Coins!", show_alert=True)
     await view_quests(None, query.message, edit_message=True)

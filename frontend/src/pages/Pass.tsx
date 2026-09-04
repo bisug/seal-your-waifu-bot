@@ -34,9 +34,9 @@ function formatReward(track: any, tier: string) {
   const extra = Number(track?.[`${tier}_extra_amount`] || 0);
   const base =
     reward.type === 'shards'
-      ? `${formatNumber(reward.amount)} Shards`
+      ? `${formatNumber(reward.amount)} Coins`
       : `${EGG_TIER_LABELS[Number(reward.tier)] || `Tier ${reward.tier}`} Egg`;
-  return extra > 0 ? `${base} + ${formatNumber(extra)} Shards` : base;
+  return extra > 0 ? `${base} + ${formatNumber(extra)} Coins` : base;
 }
 
 function bankSummary(bank: Record<string, number> = {}) {
@@ -122,7 +122,7 @@ export const Pass = () => {
     // Call showConfirm bound to the WebApp object; detaching it can throw
     // "Illegal invocation" in some WebViews.
     if (tg?.showConfirm) {
-      tg.showConfirm(`Buy 1 level for ${formatNumber(cost)} Shards?`, (ok) => {
+      tg.showConfirm(`Buy 1 level for ${formatNumber(cost)} Coins?`, (ok) => {
         if (ok) doBuy();
       });
       return;
@@ -240,7 +240,7 @@ export const Pass = () => {
                 BUY LEVEL
               </h2>
               <p className="text-[9px] font-mono font-bold text-zinc-500 uppercase">
-                {formatNumber(passData.level_buy_cost || 0)} SHARDS / LVL
+                {formatNumber(passData.level_buy_cost || 0)} COINS / LVL
               </p>
             </div>
           </div>
@@ -320,7 +320,7 @@ export const Pass = () => {
             <div className="grid grid-cols-2 gap-3">
               {[
                 {
-                  label: 'Hunt Shards',
+                  label: 'Hunt Coins',
                   value: percentBonus(nextBenefits.hunt_multiplier),
                   color: 'text-amber-500',
                 },
@@ -377,7 +377,7 @@ export const Pass = () => {
                 REWARD VAULT
               </h2>
               <p className="text-[11px] font-mono font-bold text-zinc-100 uppercase">
-                {formatNumber(bank.shards)} Shards {bank.eggs ? `+ ${bank.eggs} Eggs` : ''}
+                {formatNumber(bank.shards)} Coins {bank.eggs ? `+ ${bank.eggs} Eggs` : ''}
               </p>
             </div>
           </div>

@@ -93,12 +93,12 @@ def _roll_hunt_rewards(ctx: dict, user: dict) -> tuple[int, int, list, str]:
     if hunt_multiplier > 1.0:
         pct = int((hunt_multiplier - 1.0) * 100)
         shards = int(shards * hunt_multiplier)
-        bonus_text += f"\n<b>+{pct}% {pass_type.capitalize()} Shards!</b>"
+        bonus_text += f"\n<b>+{pct}% {pass_type.capitalize()} Coins!</b>"
 
     scavenger_chance = 0.2 * aff_multiplier
     if ability == "Scavenger" and random.random() < scavenger_chance:
         shards *= 2
-        bonus_text += "\n<b>Double Shards!</b> (Scavenger)"
+        bonus_text += "\n<b>Double Coins!</b> (Scavenger)"
 
     xp_gain = random.randint(10, 20)
     if ability == "Beginner's Luck":
@@ -258,10 +258,10 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
         )
         action_button = types.InlineKeyboardButton("Start Incubation", callback_data=f"egg_incubate:{egg['id']}:{user_id}:{page}")
         sell_price = get_egg_sell_price(tier_key)
-        extra_buttons.append(types.InlineKeyboardButton(f"Sell ({sell_price:,} ⬪)", callback_data=f"egg_sell:{egg['id']}:{user_id}:{page}"))
+        extra_buttons.append(types.InlineKeyboardButton(f"Sell ({sell_price:,} 🪙)", callback_data=f"egg_sell:{egg['id']}:{user_id}:{page}"))
         if egg.get("is_corrupted"):
             purify_price = get_egg_purify_price(tier_key)
-            extra_buttons.append(types.InlineKeyboardButton(f"Purify ({purify_price:,} ⬪)", callback_data=f"egg_purify:{egg['id']}:{user_id}:{page}"))
+            extra_buttons.append(types.InlineKeyboardButton(f"Purify ({purify_price:,} 🪙)", callback_data=f"egg_purify:{egg['id']}:{user_id}:{page}"))
     elif status == "incubating":
         hatch_time = egg.get("hatch_time")
         if hatch_time:
@@ -448,7 +448,7 @@ async def process_egg_hatch(user_id: int, egg: dict) -> tuple[bool, any]:
 
 
 async def process_egg_sell(user_id: int, egg_id: str) -> tuple[bool, str, int]:
-    """Sell a fresh egg for Shards. Returns (success, message, price)."""
+    """Sell a fresh egg for Coins. Returns (success, message, price)."""
     user = await user_collection.find_one(get_user_filter(user_id)) or {}
     egg = next((e for e in user.get("eggs", []) if isinstance(e, dict) and e.get("id") == egg_id), None)
     if not egg:
@@ -465,11 +465,11 @@ async def process_egg_sell(user_id: int, egg_id: str) -> tuple[bool, str, int]:
     if result.modified_count == 0:
         return False, "This egg was already handled.", 0
     run_background_task(sync_user_to_redis(user_id))
-    return True, f"Sold for <b>{price:,} ⬪</b>!", price
+    return True, f"Sold for <b>{price:,} 🪙</b>!", price
 
 
 async def process_egg_purify(user_id: int, egg_id: str) -> tuple[bool, str]:
-    """Cleanse a corrupted egg by paying Shards. Returns (success, message)."""
+    """Cleanse a corrupted egg by paying Coins. Returns (success, message)."""
     user = await user_collection.find_one(get_user_filter(user_id)) or {}
     egg = next((e for e in user.get("eggs", []) if isinstance(e, dict) and e.get("id") == egg_id), None)
     if not egg:
@@ -479,7 +479,7 @@ async def process_egg_purify(user_id: int, egg_id: str) -> tuple[bool, str]:
     price = get_egg_purify_price(egg.get("tier", "common"))
     balance = user.get("balance", 0)
     if balance < price:
-        return False, f"Purification costs <b>{price:,} ⬪</b>. You have {balance:,} ⬪."
+        return False, f"Purification costs <b>{price:,} 🪙</b>. You have {balance:,} 🪙."
     # Atomic guard: deducts only while the egg is still corrupted and the
     # balance still covers the cost — no double-spend under concurrent taps.
     result = await user_collection.update_one(
@@ -489,7 +489,7 @@ async def process_egg_purify(user_id: int, egg_id: str) -> tuple[bool, str]:
     if result.modified_count == 0:
         return False, "This egg was already handled."
     run_background_task(sync_user_to_redis(user_id))
-    return True, f"Purified for <b>{price:,} ⬪</b>! Safe to incubate."
+    return True, f"Purified for <b>{price:,} 🪙</b>! Safe to incubate."
 
 
 async def process_egg_fusion(user_id: int, raw_tier) -> tuple[bool, str]:

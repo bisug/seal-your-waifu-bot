@@ -122,10 +122,10 @@ async def _milestone_bonus() -> tuple[int, str, int]:
     total_guesses = stats.get("total_guesses", 1)
     if total_guesses % 100 == 0:
         bonus = NAME_GUESS_ELITE_MILESTONE_BONUS
-        text = f"\n\n<b>ELITE MILESTONE ACHIEVED</b>\nYou are the 100th guesser! Granted {bonus:,} bonus Shards."
+        text = f"\n\n<b>ELITE MILESTONE ACHIEVED</b>\nYou are the 100th guesser! Granted {bonus:,} bonus Coins."
     elif total_guesses % 100 == 50:
         bonus = NAME_GUESS_MID_MILESTONE_BONUS
-        text = f"\n\n<b>MILESTONE REACHED</b>\nYou are the 50th guesser! Granted {bonus:,} bonus Shards."
+        text = f"\n\n<b>MILESTONE REACHED</b>\nYou are the 50th guesser! Granted {bonus:,} bonus Coins."
     else:
         return 0, "", total_guesses
     return bonus, text, total_guesses
@@ -185,7 +185,7 @@ async def nguess_check_handler(_, message: types.Message):
     target_name = html_escape(char['name'])
     success_msg = (
         f"✅ {mention} identified <b>{target_name}</b>!\n"
-        f"💰 <b>Bounty:</b> +{reward} Shards\n"
+        f"💰 <b>Bounty:</b> +{reward} Coins\n"
         f"🔥 <b>Progress:</b> {display_progress}/100{milestone_text}"
     )
     await game_bot.send_message_safe(chat_id, text=success_msg, auto_delete=300)

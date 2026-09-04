@@ -57,7 +57,7 @@ async def claim_handler(_, message: types.Message):
         ])
         return await message.reply_text(
             "<b>Authorization Required</b>\n\n"
-            "To unlock your <b>Free Starter Waifu</b> and bonus Shards, please join our official sectors below.",
+            "To unlock your <b>Free Starter Waifu</b> and bonus Coins, please join our official sectors below.",
             reply_markup=markup,
             parse_mode=enums.ParseMode.HTML
         )
@@ -77,7 +77,7 @@ async def show_preview(message_or_query, user_id):
         f"<b>Name:</b> {html_escape(char['name'])}\n"
         f"<b>Anime:</b> {html_escape(char['anime'])}\n"
         f"<b>Rarity:</b> {html_escape(char['rarity'])}\n\n"
-        f"<b>Bonus:</b> +{DAILY_SHARD_REWARD} Shards ⬪\n\n"
+        f"<b>Bonus:</b> +{DAILY_SHARD_REWARD} Coins 🪙\n\n"
         f"<i>Click below to claim this character!</i>"
     )
     markup = types.InlineKeyboardMarkup([
@@ -143,7 +143,7 @@ async def claim_confirm_handler(_, query: types.CallbackQuery):
         f"<b>Name:</b> {html_escape(char['name'])}\n"
         f"<b>Anime:</b> {html_escape(char['anime'])}\n"
         f"<b>Rarity:</b> {html_escape(char['rarity'])}\n\n"
-        f"<b>Bonus:</b> +{DAILY_SHARD_REWARD} Shards ⬪\n\n"
+        f"<b>Bonus:</b> +{DAILY_SHARD_REWARD} Coins 🪙\n\n"
         f"<i>Start your journey by checking your /harem!</i>"
     )
     try:

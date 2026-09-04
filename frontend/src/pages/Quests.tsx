@@ -73,7 +73,7 @@ const QuestItem = ({ quest, onClaim, claiming }: QuestItemProps) => {
                 {formatNumber(quest.reward_shards)}
               </span>
               <span className="text-[8px] font-bold text-amber-500 uppercase tracking-widest leading-none">
-                Shards
+                Coins
               </span>
             </div>
             <div className="text-[9px] font-mono font-bold text-zinc-600 uppercase mt-1 px-1">
@@ -140,7 +140,7 @@ export const Quests = () => {
     window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
     try {
       const res = await apiFetch(`/quests/claim/${questId}`, { method: 'POST' });
-      addToast(`Mission complete: +${res.reward_shards} Shards`, 'success');
+      addToast(`Mission complete: +${res.reward_shards} Coins`, 'success');
       triggerRefresh();
       fetchQuests().catch(() => undefined);
     } catch (err: any) {

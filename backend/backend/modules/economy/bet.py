@@ -10,7 +10,7 @@ from backend.core.utils import handle_errors
 from backend.database import user_collection
 
 LOGGER = logging.getLogger(__name__)
-CURRENCY_SYMBOL = "⬪"
+CURRENCY_SYMBOL = "🪙"
 @app.on_message(filters.command("bet"))
 @handle_errors
 async def bet_cmd(_, message: types.Message):
@@ -39,15 +39,15 @@ async def bet_cmd(_, message: types.Message):
     if not user_data:
         await message.reply_text(
             "<b>You don't have an account yet!</b>\n"
-            "Use <code>/daily</code> to claim free Shards & start betting!",
+            "Use <code>/daily</code> to claim free Coins & start betting!",
             parse_mode=enums.ParseMode.HTML
         )
         return
     balance_amount = user_data.get('balance', 0)
     if balance_amount == 0:
         await message.reply_text(
-            "<b>You're out of Shards!</b>\n"
-            "Use <code>/daily</code> to claim free Shards & try again!",
+            "<b>You're out of Coins!</b>\n"
+            "Use <code>/daily</code> to claim free Coins & try again!",
             parse_mode=enums.ParseMode.HTML
         )
         return
@@ -59,15 +59,15 @@ async def bet_cmd(_, message: types.Message):
 
     if update_res.modified_count == 0:
         await message.reply_text(
-            f"<b>Not Enough Shards!</b>\n"
-            f"Your Balance: <b>{balance_amount:,} ⬪</b>\n\n"
-            f"Use <code>/daily</code> to get free Shards!",
+            f"<b>Not Enough Coins!</b>\n"
+            f"Your Balance: <b>{balance_amount:,} 🪙</b>\n\n"
+            f"Use <code>/daily</code> to get free Coins!",
             parse_mode=enums.ParseMode.HTML
         )
         return
 
     user_choice_name = "Heads" if choice == "h" else "Tails"
-    await message.reply_text(f"<b>Placing Bet:</b> {amount:,} ⬪\n<b>You Chose:</b> {user_choice_name}", parse_mode=enums.ParseMode.HTML)
+    await message.reply_text(f"<b>Placing Bet:</b> {amount:,} 🪙\n<b>You Chose:</b> {user_choice_name}", parse_mode=enums.ParseMode.HTML)
 
     await asyncio.sleep(2)
 
@@ -104,8 +104,8 @@ async def bet_cmd(_, message: types.Message):
         result_text = (
             f"<b>YOU WIN!</b>\n"
             f"The coin landed on <b>{coin_name}</b>!\n"
-            f"<b>You Earned:</b> {winnings:,} ⬪\n\n"
-            f"<b>New Balance:</b> {new_balance:,} ⬪"
+            f"<b>You Earned:</b> {winnings:,} 🪙\n\n"
+            f"<b>New Balance:</b> {new_balance:,} 🪙"
         )
     else:
         # Balance already deducted
@@ -115,8 +115,8 @@ async def bet_cmd(_, message: types.Message):
         result_text = (
             f"<b>YOU LOST!</b>\n"
             f"The coin landed on <b>{coin_name}</b>.\n"
-            f"<b>You Lost:</b> {amount:,} ⬪\n\n"
-            f"<b>New Balance:</b> {new_balance:,} ⬪"
+            f"<b>You Lost:</b> {amount:,} 🪙\n\n"
+            f"<b>New Balance:</b> {new_balance:,} 🪙"
         )
 
     await invalidate_user_cache(user_id)

@@ -156,9 +156,9 @@ async def exchange_help_callback(_, query: types.CallbackQuery):
         buttons.append([webapp_btn])
     await query.message.reply_text(
         "<b>Currency Exchange</b>\n\n"
-        f"<b>Rate:</b> {SHARDS_PER_ZENITH:,} Shards = 1 Zenith\n\n"
-        f"<code>/exchange {SHARDS_PER_ZENITH}</code> - Shards to Zenith\n"
-        "<code>/shard 1</code> - Zenith to Shards",
+        f"<b>Rate:</b> {SHARDS_PER_ZENITH:,} Coins = 1 Prisms\n\n"
+        f"<code>/exchange {SHARDS_PER_ZENITH}</code> - Coins to Prisms\n"
+        "<code>/shard 1</code> - Prisms to Coins",
         parse_mode=enums.ParseMode.HTML,
         reply_markup=types.InlineKeyboardMarkup(buttons) if buttons else None,
     )
@@ -208,13 +208,13 @@ async def send_shop_message(message, user_id):
         stock_display = "SOLD OUT"
     text = (
         f"<b>Character Shop</b>\n"
-        f"⧫ <b>Zenith Balance:</b> <code>{zenith_balance:,}</code>\n\n"
+        f"💠 <b>Prisms Balance:</b> <code>{zenith_balance:,}</code>\n\n"
         f"<b>ID:</b> <code>{char.id}</code>\n"
         f"<b>Name:</b> {html_escape(char.name)}\n"
         f"<b>Anime:</b> {html_escape(char.anime)}\n"
         f"<b>Rarity:</b> {html_escape(char.rarity)}\n"
         f"<b>Stock:</b> {stock_display}\n"
-        f"<b>Price:</b> <code>{price}</code> ⧫"
+        f"<b>Price:</b> <code>{price}</code> 💠"
     )
     builder = KeyboardBuilder()
     webapp_btn = get_webapp_button(user_id == message.from_user.id if hasattr(message, "from_user") else True, path="#shop")
@@ -286,7 +286,7 @@ async def ask_buy_character(_, query: types.CallbackQuery):
         f"<b>Rarity:</b> {html_escape(char.rarity)}\n"
         f"<b>ID:</b> <code>{char_id}</code>\n"
         f"<b>Stock:</b> <code>{sold_count}</code>/{stock_limit}\n\n"
-        f"<b>Price:</b> <code>{price}</code> ⧫\n"
+        f"<b>Price:</b> <code>{price}</code> 💠\n"
         f"Are you sure you want to buy this character?"
     )
     builder = KeyboardBuilder()
@@ -325,7 +325,7 @@ async def buy_character(_, query: types.CallbackQuery):
     stock_limit = RARITY_STOCK_LIMITS.get(char.rarity, SHOP_LIMIT)
     user_zenith = user_data.zenith if user_data else 0
     if user_zenith < price:
-        await query.answer(f"Insufficient Zenith!\nYou have: {user_zenith} ⧫\nNeed: {price} ⧫", show_alert=True)
+        await query.answer(f"Insufficient Prisms!\nYou have: {user_zenith} 💠\nNeed: {price} 💠", show_alert=True)
         return
     update_result = await collection.update_one(
         {"id": char_id, "$or": [{"sold_count": {"$lt": stock_limit}}, {"sold_count": {"$exists": False}}]},
@@ -348,7 +348,7 @@ async def buy_character(_, query: types.CallbackQuery):
     )
     if user_update.modified_count == 0:
         await collection.update_one({"id": char_id}, {"$inc": {"sold_count": -1}})
-        await query.answer("Transaction failed. Insufficient Zenith or character already owned.", show_alert=True)
+        await query.answer("Transaction failed. Insufficient Prisms or character already owned.", show_alert=True)
         return
     await update_quest_progress(user_id, "big_spender", price)
     await update_quest_progress(user_id, "weekly_spender", price)
@@ -378,7 +378,7 @@ async def buy_level_cmd(_, message: types.Message):
     )
 
     if res.modified_count == 0:
-        return await message.reply_text(f"You need <b>{cost:,}</b> ⬪ Shards to buy {levels} levels.", parse_mode=enums.ParseMode.HTML)
+        return await message.reply_text(f"You need <b>{cost:,}</b> 🪙 Coins to buy {levels} levels.", parse_mode=enums.ParseMode.HTML)
     from backend.core.progression import add_xp
     try:
         await add_xp(user_id, levels * 100, "shop_buylevel")
@@ -392,4 +392,4 @@ async def buy_level_cmd(_, message: types.Message):
     await update_quest_progress(user_id, "big_spender", cost)
     await update_quest_progress(user_id, "weekly_spender", cost)
     await check_achievements(user_id)
-    await message.reply_text(f"<b>Levels Purchased!</b>\n\nSpent {cost:,} ⬪ Shards for +{levels * 100} XP.", parse_mode=enums.ParseMode.HTML)
+    await message.reply_text(f"<b>Levels Purchased!</b>\n\nSpent {cost:,} 🪙 Coins for +{levels * 100} XP.", parse_mode=enums.ParseMode.HTML)

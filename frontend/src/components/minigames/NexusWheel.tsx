@@ -6,13 +6,13 @@ import { cn, haptics } from '../../utils';
 import type { SessionData } from './types';
 
 const WHEEL_PRIZES = [
-  { label: '50 Shards', value: 50, color: 'zinc' },
-  { label: '100 Shards', value: 100, color: 'zinc' },
-  { label: '200 Shards', value: 200, color: 'brand' },
+  { label: '50 Coins', value: 50, color: 'zinc' },
+  { label: '100 Coins', value: 100, color: 'zinc' },
+  { label: '200 Coins', value: 200, color: 'brand' },
   { label: 'Character', value: 'char', color: 'epic' },
-  { label: '150 Shards', value: 150, color: 'zinc' },
-  { label: '500 Shards', value: 500, color: 'rare' },
-  { label: '80 Shards', value: 80, color: 'zinc' },
+  { label: '150 Coins', value: 150, color: 'zinc' },
+  { label: '500 Coins', value: 500, color: 'rare' },
+  { label: '80 Coins', value: 80, color: 'zinc' },
   { label: 'XP Boost', value: 'xp', color: 'brand' },
 ];
 

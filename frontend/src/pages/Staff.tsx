@@ -118,8 +118,8 @@ const StaffDetails = ({ member }: { member: StaffMember }) => {
             value: formatNumber(member.contributions.character_uploads),
           },
           { icon: PawPrint, label: 'Pets', value: formatNumber(member.contributions.pet_uploads) },
-          { icon: Gem, label: 'Zenith', value: formatNumber(member.stats.zenith) },
-          { icon: Coins, label: 'Shards', value: formatNumber(member.stats.balance) },
+          { icon: Gem, label: 'Prisms', value: formatNumber(member.stats.zenith) },
+          { icon: Coins, label: 'Coins', value: formatNumber(member.stats.balance) },
         ].map((stat, i) => (
           <div key={i} className="bg-zinc-950 p-2.5 rounded border border-white/5">
             <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-1">

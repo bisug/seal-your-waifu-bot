@@ -228,7 +228,7 @@ async def upload_pet_handler(_, message: types.Message):
             f"✅ <b>Pet Uploaded!</b>\n"
             f"ID: <code>{html_escape(pet['petid'])}</code>\n"
             f"Name: {html_escape(pet['name'])}\n"
-            f"Price: <code>{pet['zenith_price']}</code> Zenith\n"
+            f"Price: <code>{pet['zenith_price']}</code> Prisms\n"
             f"Enabled: <code>{str(pet['enabled'])}</code>"
             f"{reward_line}",
             parse_mode=enums.ParseMode.HTML,
