@@ -4,6 +4,7 @@ from .routes.auth import router as auth_router
 from .routes.harem import router as harem_router
 from .routes.minigames import router as minigames_router
 from .routes.progression import router as progression_router
+from .routes.rarities_admin import router as rarities_admin_router
 from .routes.shop import router as shop_router
 from .routes.social import router as social_router
 from .routes.staff import router as staff_router
@@ -23,3 +24,4 @@ router.include_router(social_router, tags=["social"])
 router.include_router(minigames_router, tags=["minigames"])
 router.include_router(staff_router, tags=["staff"])
 router.include_router(upload_router, tags=["upload"])
+router.include_router(rarities_admin_router, tags=["rarities-admin"])

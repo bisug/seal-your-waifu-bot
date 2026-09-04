@@ -6,15 +6,18 @@ import {
   History,
   Image as ImageIcon,
   PawPrint,
+  Sparkles,
   Terminal,
   Users,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Avatar } from '../components/Avatar';
+import { RarityEditor } from '../components/admin/RarityEditor';
 import { Badge } from '../components/ui/Badge';
 import { Card } from '../components/ui/Card';
 import { ErrorState } from '../components/ui/ErrorState';
 import { Skeleton } from '../components/ui/Skeleton';
+import { useUser } from '../context/UserContext';
 import { useApi } from '../hooks/useApi';
 import { cn, formatNumber } from '../utils';
 
@@ -194,10 +197,12 @@ const StaffDetails = ({ member }: { member: StaffMember }) => {
 };
 
 export const Staff = () => {
+  const { user } = useUser();
   const { data, loading, error, execute } = useApi<StaffContributionsResponse>(
     '/admin/sudos/contributions',
   );
   const [openStaffId, setOpenStaffId] = useState<number | null>(null);
+  const isSudo = Boolean(user?.is_sudo);
 
   const rankedStaff = useMemo(() => {
     return [...(data?.staff || [])].sort((a, b) => {
@@ -222,6 +227,18 @@ export const Staff = () => {
           </p>
         </div>
       </header>
+
+      {isSudo && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2.5">
+            <Sparkles className="text-brand-accent" size={16} />
+            <h2 className="text-[12px] font-bold text-zinc-100 uppercase tracking-tight">
+              Admin Tools
+            </h2>
+          </div>
+          <RarityEditor />
+        </div>
+      )}
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
