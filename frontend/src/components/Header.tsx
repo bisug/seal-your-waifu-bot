@@ -45,7 +45,7 @@ export const Header = memo(({ onMenuClick, onNavigate }: HeaderProps) => {
               className={`w-1 h-1 rounded-full ${live ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'}`}
             />
             <span className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest leading-none">
-              {live ? 'READY' : 'OFFLINE'}
+              {live ? 'ONLINE' : 'OFFLINE'}
             </span>
           </div>
         </div>
