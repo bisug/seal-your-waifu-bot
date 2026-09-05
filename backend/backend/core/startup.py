@@ -59,7 +59,6 @@ def _format_startup_status(startup_status: dict | None) -> list[str]:
         f"<code>Startup</code>    → {_status_text(startup_status.get('startup'))}",
         f"<code>Sudo roles</code> → {_status_text(startup_status.get('sudo_users'))}",
         f"<code>Indexes</code>    → {_status_text(startup_status.get('indexes'))}",
-        f"<code>Pet catalog</code>→ {_status_text(startup_status.get('pet_catalog'))}",
         f"<code>Monitor</code>    → {_status_text(startup_status.get('resource_monitor'))}",
     ]
     lines.extend(_format_bot_status("MainBot", startup_status.get("main_bot")))

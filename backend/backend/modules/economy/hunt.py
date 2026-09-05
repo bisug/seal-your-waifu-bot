@@ -27,18 +27,9 @@ from backend.core.pass_config import (
     get_active_pass_type,
     get_pass_incubation_slots,
 )
-from backend.core.pets import (
-    DEFAULT_PET,
-    ensure_user_pet_state,
-    find_pet,
-    get_effective_affection,
-    get_pet_key,
-    get_pet_luck,
-    normalize_pet,
-)
 from backend.core.progression import add_xp
 from backend.core.tasks import run_background_task
-from backend.core.user import add_pet_xp, add_user_set_on_insert, get_user_filter
+from backend.core.user import add_user_set_on_insert, get_user_filter
 from backend.core.utils import format_currency, get_now_utc, html_escape, reply_media_dynamic
 from backend.database import user_collection
 from backend.modules.progression.achievements import check_achievements
@@ -60,31 +51,17 @@ def load_handlers(bot):
     bot.add_handler(CallbackQueryHandler(egg_fuse_callback, filters.regex(r"^egg_fuse:([a-z]+):(\d+):(\d+)$")), group=0)
     bot.add_handler(CallbackQueryHandler(egg_noop_callback, filters.regex(r"^egg_noop$")), group=0)
     LOGGER.info(f"Registered Hunt & Egg handlers for {bot.name}")
-def _pet_hunt_context(user: dict) -> dict:
-    """Resolve the active pet into hunt modifiers (multiplier, luck, cooldown, ability)."""
-    pets = [normalize_pet(p) for p in user.get("pets", [DEFAULT_PET])]
-    current_pet_name = user.get("current_pet", DEFAULT_PET["petid"])
-    pet = find_pet(pets, current_pet_name) or DEFAULT_PET
-    affection = get_effective_affection(pet)
-    aff_multiplier = 1.2 if affection >= 80 else (0.8 if affection <= 20 else 1.0)
-    ability = pet.get("ability", "None")
-    # Level-scaled luck: pet levels now actually matter for hunts.
-    luck = get_pet_luck(pet)
-    base_cd = 50 if ability == "Speedster" else 60
+
+
+def _hunt_context() -> dict:
+    """Hunt modifiers without pets: flat cooldown, no luck/affection scaling."""
     return {
-        "pet": pet,
-        "aff_multiplier": aff_multiplier,
-        "ability": ability,
-        "luck": luck,
-        "cooldown_duration": int(base_cd / aff_multiplier),
+        "cooldown_duration": 60,
     }
 
 
 def _roll_hunt_rewards(ctx: dict, user: dict) -> tuple[int, int, list, str]:
-    """(shards, xp_gain, eggs_to_push, bonus_text) for one hunt, pet/pass applied."""
-    ability = ctx["ability"]
-    aff_multiplier, luck = ctx["aff_multiplier"], ctx["luck"]
-
+    """(shards, xp_gain, eggs_to_push, bonus_text) for one hunt, pass applied."""
     shards = random.randint(100, 300)
     bonus_text = ""
     pass_type = get_active_pass_type(user)
@@ -95,24 +72,14 @@ def _roll_hunt_rewards(ctx: dict, user: dict) -> tuple[int, int, list, str]:
         shards = int(shards * hunt_multiplier)
         bonus_text += f"\n<b>+{pct}% {pass_type.capitalize()} Coins!</b>"
 
-    scavenger_chance = 0.2 * aff_multiplier
-    if ability == "Scavenger" and random.random() < scavenger_chance:
-        shards *= 2
-        bonus_text += "\n<b>Double Coins!</b> (Scavenger)"
-
     xp_gain = random.randint(10, 20)
-    if ability == "Beginner's Luck":
-        # Luck-scaled XP: the ability name finally matches its math.
-        xp_gain = int(xp_gain * (1.0 + 0.5 * luck))
 
     eggs_to_push = []
-    base_drop_chance = min(80, 15 * (1 + luck) * pass_benefits["egg_drop_multiplier"])
-    hoarder_chance = 0.05 * aff_multiplier
+    base_drop_chance = min(80, 15 * pass_benefits["egg_drop_multiplier"])
     pass_bonus_drop = random.random() < pass_benefits.get("bonus_egg_chance", 0)
-    hoarder_drop = ability == "Hoarder" and random.random() < hoarder_chance
-    extra_drop = hoarder_drop or pass_bonus_drop
+    extra_drop = pass_bonus_drop
     if random.uniform(0, 100) <= base_drop_chance or extra_drop:
-        tier_key = roll_egg_tier(luck, pass_benefits["egg_quality_bonus"])
+        tier_key = roll_egg_tier(0.0, pass_benefits["egg_quality_bonus"])
         tier_data = EGG_TIERS.get(tier_key, EGG_TIERS["common"])
         corruption_chance = CORRUPTED_EGG_CHANCE * (1 - pass_benefits.get("corruption_resistance", 0))
         egg_data = {
@@ -125,9 +92,7 @@ def _roll_hunt_rewards(ctx: dict, user: dict) -> tuple[int, int, list, str]:
         }
         eggs_to_push.append(egg_data)
         if extra_drop:
-            # Bonus egg rolls at FULL luck — a bonus find should never be
-            # strictly worse than the egg that triggered it.
-            bonus_tier = roll_egg_tier(luck, pass_benefits["egg_quality_bonus"])
+            bonus_tier = roll_egg_tier(0.0, pass_benefits["egg_quality_bonus"])
             bonus_tier_data = EGG_TIERS.get(bonus_tier, EGG_TIERS["common"])
             extra_egg = egg_data.copy()
             extra_egg.update({
@@ -137,8 +102,7 @@ def _roll_hunt_rewards(ctx: dict, user: dict) -> tuple[int, int, list, str]:
                 "is_corrupted": random.uniform(0, 100) <= corruption_chance
             })
             eggs_to_push.append(extra_egg)
-            bonus_source = "Hoarder" if hoarder_drop else pass_type.capitalize()
-            bonus_text += f"\n<b>Bonus Egg Found!</b> ({bonus_source})"
+            bonus_text += f"\n<b>Bonus Egg Found!</b> ({pass_type.capitalize()})"
         if pass_type != "free":
             bonus_text += f"\n<b>{pass_type.capitalize()} Egg Luck:</b> improved drop and tier roll"
     return shards, xp_gain, eggs_to_push, bonus_text
@@ -151,16 +115,14 @@ async def hunt_cmd(bot, message: types.Message):
     LOGGER.info(f"HUNT_START: User {user_id} via {bot.name}")
     try:
         user = await asyncio.wait_for(user_collection.find_one(get_user_filter(user_id)), timeout=5.0) or {}
-        user = await ensure_user_pet_state(user_id, user)
-        ctx = _pet_hunt_context(user)
-        pet = ctx["pet"]
+        ctx = _hunt_context()
         try:
             on_cd, seconds_left = await asyncio.wait_for(redis_cooldown("hunt", user_id, ctx["cooldown_duration"]), timeout=2.5)
             if on_cd:
                 return await message.reply_text(f"Please wait <b>{seconds_left}s</b> before hunting again.", parse_mode=enums.ParseMode.HTML)
         except asyncio.TimeoutError:
             LOGGER.warning(f"Cooldown check timed out for {user_id}. Proceeding as fail-safe.")
-        msg = await message.reply_text(f"<b>{html_escape(pet['name'])}</b> is going hunting...", parse_mode=enums.ParseMode.HTML)
+        msg = await message.reply_text("<b>Your companion</b> is going hunting...", parse_mode=enums.ParseMode.HTML)
         await asyncio.sleep(2)
         shards, xp_gain, eggs_to_push, bonus_text = _roll_hunt_rewards(ctx, user)
         update_op = {"$inc": {"balance": shards}}
@@ -171,7 +133,7 @@ async def hunt_cmd(bot, message: types.Message):
             add_user_set_on_insert(update_op, user_id),
             upsert=True
         ), timeout=5.0)
-        run_background_task(add_pet_xp(user_id, get_pet_key(pet), xp_gain))
+        run_background_task(add_xp(user_id, xp_gain, "hunt"))
         if eggs_to_push:
             run_background_task(update_quest_progress(user_id, "egg_hunter", len(eggs_to_push)))
         run_background_task(sync_user_to_redis(user_id))
@@ -183,7 +145,7 @@ async def hunt_cmd(bot, message: types.Message):
             f"{'<b>Egg Found!</b>' if eggs_to_push else '<i>No eggs found this time.</i>'}\n"
             f"{found_egg_desc}\n"
             f"<b>+{shards_text}</b>{bonus_text}\n"
-            f"<b>+{xp_gain} XP</b> for {html_escape(pet['name'])}"
+            f"<b>+{xp_gain} XP</b>"
         )
         await msg.edit_text(final_text, parse_mode=enums.ParseMode.HTML)
     except Exception:
@@ -245,9 +207,7 @@ async def show_egg_page(message_or_query, page: int, user_id: int):
     status_display = ""
     corrupted_display = "\n<b>⚠️ Corrupted:</b> 30% explosion risk at hatch!" if egg.get("is_corrupted") else ""
     if status == "fresh":
-        pets = [normalize_pet(p) for p in user.get("pets", [DEFAULT_PET])]
-        active_pet = find_pet(pets, user.get("current_pet"))
-        base_wait_min = get_incubation_wait_minutes(tier_key, active_pet)
+        base_wait_min = get_incubation_wait_minutes(tier_key)
         wait_min = apply_pass_incubation_bonus(base_wait_min, user)
         active_incubations = get_incubating_count(eggs)
         slots = get_pass_incubation_slots(user)
@@ -333,11 +293,9 @@ async def egg_incubate_callback(_, query: types.CallbackQuery):
     slots = get_pass_incubation_slots(user)
     if active_incubations >= slots:
         return await query.answer(f"All incubators are busy ({active_incubations}/{slots}).", show_alert=True)
-    pets = [normalize_pet(p) for p in user.get("pets", [DEFAULT_PET])]
-    active_pet = find_pet(pets, user.get("current_pet")) or {}
     raw_tier = egg.get("tier", "common") if isinstance(egg, dict) else egg
     tier_key = normalize_egg_tier(raw_tier)
-    base_wait_min = get_incubation_wait_minutes(tier_key, active_pet)
+    base_wait_min = get_incubation_wait_minutes(tier_key)
     wait_min = apply_pass_incubation_bonus(base_wait_min, user)
     ready_time = get_now_utc() + timedelta(minutes=wait_min)
     incubate_filter = get_user_filter(owner_id)

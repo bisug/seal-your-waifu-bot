@@ -24,24 +24,6 @@ class StatsModel(BaseModel):
     energy: int = 5
     last_energy_recharge: Optional[str] = None
 
-class PetModel(BaseModel):
-    id: str
-    petid: Optional[str] = None
-    name: str
-    level: int
-    xp: int
-    xp_needed: int
-    hp: int
-    atk: int
-    spd: int
-    luck: float
-    ability: str
-    desc: str
-    img: str
-    affection: int = 50
-    mood: str = "Neutral"
-    is_active: bool
-
 class EggModel(BaseModel):
     # id is Optional to handle corrupt DB records where the field is missing.
     # A required str here caused a Pydantic ValidationError (500) for any user
@@ -91,8 +73,6 @@ class UserProfileResponse(BaseModel):
     stats: StatsModel
     achievements: List[AchievementModel] = Field(default_factory=list)
     titles: TitlesModel
-    current_pet: Optional[PetModel] = None
-    pets: List[PetModel] = Field(default_factory=list)
     eggs: List[EggModel] = Field(default_factory=list)
 
 class CharacterModel(BaseModel):
@@ -156,7 +136,6 @@ class ReferralStatsModel(BaseModel):
     referrer_reward_shards: int
     referrer_reward_xp: int
     referred_reward_shards: int
-    referred_pet_level: int
 
 class BattleStatsModel(BaseModel):
     total_battles: int = 0

@@ -8,7 +8,7 @@ from backend.core.logging import get_logger
 from backend.core.pass_config import get_pass_incubation_slots
 from backend.core.progression import get_progress_bar, get_user_progress
 from backend.core.roles import get_role_payload
-from backend.core.user import get_active_pet, get_user_data, get_user_rank_with_fallback
+from backend.core.user import get_user_data, get_user_rank_with_fallback
 from backend.core.utils import handle_errors, html_escape, reply_media_dynamic
 from backend.database import collection
 from config import config
@@ -67,8 +67,6 @@ async def profile_handler(_, message: types.Message):
     xp_bar = get_progress_bar(xp_current, xp_needed, 10)
     rank, total_ranked, percentile = await get_user_rank_with_fallback(user_id, total_xp)
     role_payload = get_role_payload(user_id)
-    active_pet = await get_active_pet(user_id)
-    pet_text = html_escape(f"{active_pet['name']} (Lvl {active_pet.get('level', 1)})") if active_pet else "None"
     eggs = user_data.get("eggs") or []
     active_incubations = get_incubating_count(eggs)
     incubation_slots = get_pass_incubation_slots(user_data)
@@ -104,7 +102,6 @@ async def profile_handler(_, message: types.Message):
         f"<b>Total Copies:</b> <code>{owned_copies:,}</code>\n"
         f"<b>Completion:</b> {progress_bar}\n"
         f"<b>Favorite:</b> <code>{fav_name}</code>\n"
-        f"<b>Active Pet:</b> <code>{pet_text}</code>\n"
         f"<b>Incubation:</b> <code>{active_incubations}/{incubation_slots}</code> slots\n"
         f"<b>Achievements:</b> <code>{achievement_count}</code>\n\n"
         f"<b>Collection By Rarity</b>\n"

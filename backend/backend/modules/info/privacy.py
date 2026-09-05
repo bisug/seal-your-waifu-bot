@@ -5,7 +5,7 @@
            confirm via inline buttons so a typo can't nuke an account.
 
 Erasure scope (all collections holding personal data):
-  user doc (profile, balance, harem, pets, quests, pass, referrals),
+  user doc (profile, balance, harem, quests, pass, referrals),
   PM registry, per-chat activity totals, webapp sessions, Redis caches,
   referral edges pointing at the user, and the user's own referral events.
 """
@@ -31,7 +31,7 @@ PRIVACY_TEXT = (
     "<b>SEAL Privacy Policy</b>\n\n"
     "<b>What we store</b>\n"
     "• Your Telegram ID, first name, username, and avatar URL\n"
-    "• Gameplay data: balance, characters, pets, quests, XP, battle pass\n"
+    "• Gameplay data: balance, characters, quests, XP, battle pass\n"
     "• Per-chat activity counts (messages sent, characters caught) — counts only, never message content\n"
     "• Referral links between users (who invited whom)\n"
     "• WebApp session tokens (hashed, expire after 1 hour)\n\n"
@@ -71,7 +71,7 @@ async def delete_command(_, message: types.Message):
     await message.reply_text(
         "<b>Delete your account?</b>\n\n"
         "This <b>permanently erases</b>:\n"
-        "• Your profile, balance, characters, pets, and progress\n"
+        "• Your profile, balance, characters, and progress\n"
         "• Your activity counts in every chat\n"
         "• Your referral history\n"
         "• All active web sessions\n\n"
@@ -95,7 +95,7 @@ async def gdpr_callback(_, query: types.CallbackQuery):
     user_id = int(target_id)
     user_filter = get_user_id_query(user_id)
 
-    # 1. Core user document (profile, harem, pets, quests, pass, referrals).
+    # 1. Core user document (profile, harem, quests, pass, referrals).
     await user_collection.delete_many(user_filter)
 
     # 2. PM registry + per-chat activity totals.

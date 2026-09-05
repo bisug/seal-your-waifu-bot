@@ -26,7 +26,6 @@ async def referrals_cmd(_, message: types.Message):
         f"<b>Rewards:</b>\n"
         f"◉ You get: <b>{stats['referrer_reward_shards']:,} 🪙</b> "
         f"+ <b>{stats['referrer_reward_xp']:,} XP</b>\n"
-        f"◎ They get: <b>{stats['referred_reward_shards']:,} 🪙</b> "
-        f"+ <b>Level {stats['referred_pet_level']} Pet!</b>"
+        f"◎ They get: <b>{stats['referred_reward_shards']:,} 🪙</b>"
     )
     await message.reply_text(text, parse_mode=enums.ParseMode.HTML)

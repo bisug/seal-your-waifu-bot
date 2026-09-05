@@ -9,45 +9,32 @@ from backend.core.cache import is_on_cooldown as redis_cooldown
 from backend.core.logging import get_logger
 from backend.core.progression import add_xp
 from backend.core.sessions import consume_session, create_session, get_session
-from backend.core.user import get_active_pet
 from backend.core.utils import handle_errors, html_escape
 from backend.modules.progression.achievements import check_achievements
 from backend.modules.progression.quests import update_quest_progress
 
 LOGGER = get_logger(__name__)
-def calculate_stats(pet_data):
+
+def calculate_stats():
     """
-    Calculate derived combat stats from pet base stats and level.
-    Provides default stats if no pet is active.
+    Flat combat stats for every fighter (pets removed; Pokémon stats arrive
+    in Phase 3 and will replace this).
     """
-    if not pet_data:
-        return {
-            "name": "Fists",
-            "hp": 100,
-            "atk": 10,
-            "spd": 10,
-            "luck": 0.05,
-            "level": 1,
-            "max_hp": 100
-        }
-    level = pet_data.get("level", 1)
-    base_hp = pet_data.get("hp", 150)
-    base_atk = pet_data.get("atk", 20)
-    base_spd = pet_data.get("spd", 15)
     return {
-        "name": pet_data["name"],
-        "hp": base_hp + (level * 5),
-        "atk": base_atk + (level * 2),
-        "spd": base_spd + (level * 1),
-        "luck": pet_data.get("luck", 0.1),
-        "level": level,
-        "max_hp": base_hp + (level * 5)
+        "name": "Fists",
+        "hp": 100,
+        "atk": 10,
+        "spd": 10,
+        "luck": 0.05,
+        "level": 1,
+        "max_hp": 100
     }
+
 def simulate_battle(p1_stats, p2_stats, p1_name, p2_name):
     """
-    Simulate a turn-based battle between two pets.
+    Simulate a turn-based battle between two fighters.
     Determines initiative based on speed and iterates through attacks
-    until one pet's HP reaches zero or the turn limit is hit.
+    until one fighter's HP reaches zero or the turn limit is hit.
     """
     log = []
     if p1_stats["spd"] >= p2_stats["spd"]:
@@ -164,10 +151,8 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
     try:
         a_user = await app.get_users(attacker_id)
         d_user = await app.get_users(defender_id)
-        a_pet_data = await get_active_pet(attacker_id)
-        d_pet_data = await get_active_pet(defender_id)
-        a_stats = calculate_stats(a_pet_data)
-        d_stats = calculate_stats(d_pet_data)
+        a_stats = calculate_stats()
+        d_stats = calculate_stats()
         text = (
             f"⚔️ <b>Battle Started!</b>\n"
             f"🔴 <a href=\"tg://user?id={a_user.id}\">{html_escape(a_user.first_name)}</a> - <b>{html_escape(a_stats['name'])}</b> (Lvl {a_stats['level']})\n"

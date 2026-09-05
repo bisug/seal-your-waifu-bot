@@ -10,14 +10,6 @@ from backend.core.pass_config import (
     get_active_pass_type,
     get_pass_incubation_slots,
 )
-from backend.core.pets import (
-    DEFAULT_PET,
-    ensure_user_pet_state,
-    find_pet,
-    get_pet_key,
-    normalize_pet,
-    perform_pet_care,
-)
 from backend.core.utils import get_now_utc, get_user_id_query, normalize_user_id
 from backend.database import user_collection
 from backend.modules.progression.quests import (
@@ -106,49 +98,6 @@ async def claim_quest(quest_id: str, user_id: int = Depends(get_current_user)):
     
     return {"success": True, "reward_xp": info["reward_xp"], "reward_shards": reward_shards}
 
-@router.post("/pets/set_active/{pet_ref}")
-async def set_active_pet(pet_ref: str, user: dict = Depends(get_current_user_data)):
-    uid_int = normalize_user_id(user["id"])
-    user = await ensure_user_pet_state(uid_int, user)
-    pets = [normalize_pet(p) for p in user.get("pets", [DEFAULT_PET])]
-    pet = find_pet(pets, pet_ref)
-    if not pet:
-        raise HTTPException(status_code=400, detail="Pet not owned")
-
-    pet_key = get_pet_key(pet)
-    await user_collection.update_one(
-        get_user_id_query(uid_int),
-        {"$set": {"current_pet": pet_key}}
-    )
-    await invalidate_user_cache(uid_int)
-    return {"status": "success", "pet": pet_key}
-
-@router.post("/pets/feed")
-async def feed_pet(user: dict = Depends(get_current_user_data)):
-    from backend.core.cache import is_on_cooldown as redis_cooldown
-
-    uid_int = normalize_user_id(user["id"])
-    on_cd, secs = await redis_cooldown("feed_pet", uid_int, 900)
-    if on_cd:
-        raise HTTPException(status_code=429, detail=f"Pet is full. Try again in {int(secs / 60)}m {secs % 60}s.")
-    success, msg, pet = await perform_pet_care(uid_int, "feed")
-    if not success:
-        raise HTTPException(status_code=400, detail=msg.replace("<b>", "").replace("</b>", ""))
-    return {"status": "success", "message": msg.replace("<b>", "").replace("</b>", ""), "pet": pet}
-
-@router.post("/pets/train")
-async def train_pet(user: dict = Depends(get_current_user_data)):
-    from backend.core.cache import is_on_cooldown as redis_cooldown
-
-    uid_int = normalize_user_id(user["id"])
-    on_cd, secs = await redis_cooldown("train_pet", uid_int, 1800)
-    if on_cd:
-        raise HTTPException(status_code=429, detail=f"Pet is tired. Try again in {int(secs / 60)}m {secs % 60}s.")
-    success, msg, pet = await perform_pet_care(uid_int, "train")
-    if not success:
-        raise HTTPException(status_code=400, detail=msg.replace("<b>", "").replace("</b>", ""))
-    return {"status": "success", "message": msg.replace("<b>", "").replace("</b>", ""), "pet": pet}
-
 @router.post("/eggs/incubate/{egg_id}")
 async def incubate_egg(egg_id: str, user: dict = Depends(get_current_user_data)):
     uid_int = normalize_user_id(user["id"])
@@ -168,11 +117,8 @@ async def incubate_egg(egg_id: str, user: dict = Depends(get_current_user_data))
     slots = get_pass_incubation_slots(fresh_user)
     if active_incubations >= slots:
         raise HTTPException(status_code=400, detail=f"All incubators are busy ({active_incubations}/{slots})")
-        
-    fresh_user = await ensure_user_pet_state(uid_int, fresh_user)
-    pets = [normalize_pet(p) for p in fresh_user.get("pets", [DEFAULT_PET])]
-    active_pet = find_pet(pets, fresh_user.get("current_pet"))
-    base_wait_min = get_incubation_wait_minutes(egg.get("tier", "common"), active_pet)
+
+    base_wait_min = get_incubation_wait_minutes(egg.get("tier", "common"))
     wait_min = apply_pass_incubation_bonus(base_wait_min, fresh_user)
         
     ready_time = get_now_utc() + timedelta(minutes=wait_min)

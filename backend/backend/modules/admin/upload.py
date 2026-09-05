@@ -11,11 +11,9 @@ from backend.core.roles import format_upload_reward, grant_upload_reward
 from backend.core.uploads import (
     UploadError,
     download_media_url,
-    parse_luck,
     remove_temp_file,
     temp_download_dir,
     upload_character_from_path,
-    upload_pet_from_path,
 )
 from backend.core.utils import handle_errors, html_escape
 from backend.database import collection
@@ -39,17 +37,6 @@ def get_rarity_help():
         "• No adult/NSFW or suggestive content\n"
         "• No content designed to harass or defame\n"
         "Violations are removed and may cost upload rights."
-    )
-
-
-def get_pet_upload_help():
-    return (
-        "<b>Format:</b>\n"
-        "Reply to media:\n"
-        "<code>/uploadpet \"Name\" \"Rarity\" HP ATK SPD Luck Price ReqLevel \"Ability\" \"Description\" [petid] [sort_order] [enabled]</code>\n\n"
-        "With URL:\n"
-        "<code>/uploadpet URL \"Name\" \"Rarity\" HP ATK SPD Luck Price ReqLevel \"Ability\" \"Description\" [petid] [sort_order] [enabled]</code>\n\n"
-        "Luck accepts decimals or percent values, for example <code>0.12</code> or <code>12%</code>."
     )
 
 
@@ -165,83 +152,6 @@ async def upload_waifu_handler(_, message: types.Message):
         await status.edit_text(f"❌ {html_escape(str(e))}", parse_mode=enums.ParseMode.HTML)
     except Exception as e:
         LOGGER.error("Upload Failure: %s", e, exc_info=True)
-        await status.edit_text(f"❌ Error: {html_escape(str(e))}", parse_mode=enums.ParseMode.HTML)
-    finally:
-        remove_temp_file(temp_path)
-
-
-@app.on_message(filters.command("uploadpet") & uploader_filter)
-@handle_errors
-async def upload_pet_handler(_, message: types.Message):
-    try:
-        args = _parse_command_args(message)
-    except ValueError as e:
-        return await message.reply_text(f"❌ <b>Parsing Error:</b> {html_escape(str(e))}", parse_mode=enums.ParseMode.HTML)
-
-    if args is None:
-        return
-
-    is_reply = _message_has_upload_media(message.reply_to_message)
-    try:
-        media_url, values = _split_media_args(args, is_reply, 10)
-        name, rarity, hp, atk, spd, luck, price, req_level, ability, desc = values[:10]
-        petid = values[10] if len(values) > 10 and values[10].lower() not in {"-", "auto", "none"} else None
-        sort_order = int(values[11]) if len(values) > 11 else 100
-        enabled = _parse_bool(values[12]) if len(values) > 12 else True
-        hp = int(hp)
-        atk = int(atk)
-        spd = int(spd)
-        price = int(price)
-        req_level = int(req_level)
-        parse_luck(luck)
-    except (UploadError, ValueError):
-        return await message.reply_text(get_pet_upload_help(), parse_mode=enums.ParseMode.HTML)
-
-    status = await message.reply_text("⏳ <b>Processing pet upload...</b>", parse_mode=enums.ParseMode.HTML)
-    temp_path = None
-
-    try:
-        temp_path = await _materialize_message_media(
-            message,
-            media_url=media_url,
-            is_reply=is_reply,
-            status=status,
-            temp_prefix=f"tg_pet_{message.id}",
-        )
-        await status.edit_text("☁️ Uploading pet media to secure host...")
-        pet = await upload_pet_from_path(
-            temp_path,
-            name=name,
-            petid=petid,
-            rarity=rarity,
-            hp=hp,
-            atk=atk,
-            spd=spd,
-            luck=luck,
-            ability=ability,
-            desc=desc,
-            zenith_price=price,
-            req_level=req_level,
-            sort_order=sort_order,
-            enabled=enabled,
-            uploaded_by=message.from_user.id,
-        )
-        reward = await grant_upload_reward(message.from_user.id, source="bot_pet")
-        reward_text = format_upload_reward(reward)
-        reward_line = f"\nReward: <code>{html_escape(reward_text)}</code>" if reward_text else ""
-        await status.edit_text(
-            f"✅ <b>Pet Uploaded!</b>\n"
-            f"ID: <code>{html_escape(pet['petid'])}</code>\n"
-            f"Name: {html_escape(pet['name'])}\n"
-            f"Price: <code>{pet['zenith_price']}</code> Prisms\n"
-            f"Enabled: <code>{str(pet['enabled'])}</code>"
-            f"{reward_line}",
-            parse_mode=enums.ParseMode.HTML,
-        )
-    except UploadError as e:
-        await status.edit_text(f"❌ {html_escape(str(e))}", parse_mode=enums.ParseMode.HTML)
-    except Exception as e:
-        LOGGER.error("Pet Upload Failure: %s", e, exc_info=True)
         await status.edit_text(f"❌ Error: {html_escape(str(e))}", parse_mode=enums.ParseMode.HTML)
     finally:
         remove_temp_file(temp_path)

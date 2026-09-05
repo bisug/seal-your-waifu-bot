@@ -1,4 +1,4 @@
-"""Referral anti-sybil: lifetime payout cap + referred_pet_level regression.
+"""Referral anti-sybil: lifetime payout cap regression.
 
 Run: cd backend && .venv/bin/python -m pytest tests/test_referral_cap.py -q
 """
@@ -59,11 +59,3 @@ def test_referrer_below_cap_gets_paid_with_atomic_guard():
     assert {"referrals_count": {"$lt": referrals_mod.MAX_REFERRAL_PAYOUTS}} in cap_clause
     # $exists False keeps legacy referrer docs (no counter yet) eligible.
     assert {"referrals_count": {"$exists": False}} in cap_clause
-
-
-def test_result_exposes_referred_pet_level():
-    """Regression: consumers (start.py, /referrals, webapp) read referred_pet_level."""
-    result = referrals_mod.ReferralClaimResult("applied")
-    assert result.referred_pet_level == 1
-    stats = referrals_mod.get_referral_stats(None)
-    assert stats["referred_pet_level"] == 1

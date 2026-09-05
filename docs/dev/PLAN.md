@@ -10,20 +10,20 @@
 
 ## Phase 1 — Remove pets (backend)
 
-- [ ] 1.1 Delete `core/pets.py` + `modules/progression/pet.py`
-- [ ] 1.2 Rewire `core/eggs.py` — drop Caregiver incubation bonus (flat wait times)
-- [ ] 1.3 Rewire `modules/games/battle.py` — remove pet combat stats (base stats only)
-- [ ] 1.4 Rewire `core/referrals.py` — replace reward pet with shards/zenith reward
-- [ ] 1.5 Remove pet endpoints: `webapp/routes/shop.py` (`/shop/pets`),
+- [x] 1.1 Delete `core/pets.py` + `modules/progression/pet.py`
+- [x] 1.2 Rewire `core/eggs.py` — drop Caregiver incubation bonus (flat wait times)
+- [x] 1.3 Rewire `modules/games/battle.py` — remove pet combat stats (base stats only)
+- [x] 1.4 Rewire `core/referrals.py` — replace reward pet with shards/zenith reward
+- [x] 1.5 Remove pet endpoints: `webapp/routes/shop.py` (`/shop/pets`),
       `users.py` (`current_pet`, pets in `/me`), `staff.py`, `upload.py`,
       `progression.py` pet bits
-- [ ] 1.6 Remove pet refs from `core/user.py`, `uploads.py`, `startup.py`,
+- [x] 1.6 Remove pet refs from `core/user.py`, `uploads.py`, `startup.py`,
       `client.py`, `runner.py`, `modules/info/{privacy,profile,start}.py`,
       `modules/economy/{shop,hunt}.py`, `modules/admin/upload.py`,
       `modules/social/referral.py`, `webapp/schemas.py`
-- [ ] 1.7 Drop `pet_catalog` collection + indexes from `database/__init__.py`
-- [ ] 1.8 Delete `tests/test_pets.py`; fix remaining tests
-- [ ] 1.9 Validate: pytest green, compileall clean
+- [x] 1.7 Drop `pet_catalog` collection + indexes from `database/__init__.py`
+- [x] 1.8 Delete `tests/test_pets.py`; fix remaining tests
+- [x] 1.9 Validate: pytest green (48 passed), compileall clean, ruff F401/F811/F841 clean
 
 ## Phase 2 — Remove pets (frontend)
 

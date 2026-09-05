@@ -19,14 +19,6 @@ from backend.core.pass_config import (
     get_active_pass_type,
     get_pass_incubation_slots,
 )
-from backend.core.pets import (
-    DEFAULT_PET,
-    ensure_user_pet_state,
-    get_effective_affection,
-    get_pet_key,
-    normalize_pet,
-    pet_matches,
-)
 from backend.core.progression import get_level_from_xp, get_user_progress
 from backend.core.roles import get_role_payload
 from backend.core.tasks import run_background_task
@@ -130,52 +122,7 @@ def _collection_stats(user: dict, total_available: int) -> tuple[int, int, float
     return total, unique, percent
 
 
-def _format_pets(user: dict) -> tuple[list, dict | None, dict]:
-    """(formatted pets, current pet payload, active pet doc) for the /me response."""
-    user_pets = [normalize_pet(p) for p in user.get("pets", [DEFAULT_PET])]
-    current_pet_name = user.get("current_pet", DEFAULT_PET["petid"])
-
-    formatted = []
-    current_payload = None
-    for p in user_pets:
-        eff_affection = get_effective_affection(p)
-        if eff_affection >= 80:
-            mood = "🥰 Happy"
-        elif eff_affection <= 20:
-            mood = "😢 Sad"
-        else:
-            mood = "😐 Neutral"
-
-        p_data = {
-            "id": get_pet_key(p),
-            "petid": get_pet_key(p),
-            "name": p["name"],
-            "level": p.get("level", 1),
-            "xp": p.get("xp", 0),
-            "xp_needed": p.get("level", 1) * 100,
-            "hp": p.get("hp", 100),
-            "atk": p.get("atk", 10),
-            "spd": p.get("spd", 10),
-            "luck": p.get("luck", 0.1),
-            "ability": p.get("ability", "None"),
-            "desc": p.get("desc", ""),
-            "img": p.get("img", ""),
-            "affection": eff_affection,
-            "mood": mood,
-            "is_active": pet_matches(p, current_pet_name),
-        }
-        formatted.append(p_data)
-        if p_data["is_active"]:
-            current_payload = p_data
-
-    active_pet = next(
-        (pet for pet in user_pets if pet_matches(pet, current_pet_name)),
-        user_pets[0] if user_pets else DEFAULT_PET,
-    )
-    return formatted, current_payload, active_pet
-
-
-def _process_eggs(user: dict, active_pet: dict, pass_type) -> tuple[list, bool]:
+def _process_eggs(user: dict, pass_type) -> tuple[list, bool]:
     """Normalize egg docs for the response; flag legacy string eggs for migration."""
     eggs = user.get("eggs", [])
     processed = []
@@ -184,7 +131,7 @@ def _process_eggs(user: dict, active_pet: dict, pass_type) -> tuple[list, bool]:
         if isinstance(egg, str):
             migration_needed = True
             tier_key, tier_info = get_egg_tier_info(egg)
-            base_wait_min = get_incubation_wait_minutes(tier_key, active_pet)
+            base_wait_min = get_incubation_wait_minutes(tier_key)
             wait_min = apply_pass_incubation_bonus(base_wait_min, user)
             processed.append({
                 "id": f"mig_{str(uuid.uuid4())[:12]}",
@@ -200,7 +147,7 @@ def _process_eggs(user: dict, active_pet: dict, pass_type) -> tuple[list, bool]:
             continue
 
         tier_key, tier_info = get_egg_tier_info(egg.get("tier", "common"))
-        base_wait_min = get_incubation_wait_minutes(tier_key, active_pet)
+        base_wait_min = get_incubation_wait_minutes(tier_key)
         wait_min = apply_pass_incubation_bonus(base_wait_min, user)
         h_time = egg.get("hatch_time")
         rem_mins = 0
@@ -232,7 +179,6 @@ def _process_eggs(user: dict, active_pet: dict, pass_type) -> tuple[list, bool]:
 @router.get("/me", response_model=UserProfileResponse)
 async def get_me(user: dict = Depends(get_current_user_data)):
     user_id = normalize_user_id(user["id"])
-    user = await ensure_user_pet_state(user_id, user)
 
     user_xp = user.get("xp", 0)
 
@@ -298,16 +244,10 @@ async def get_me(user: dict = Depends(get_current_user_data)):
             "current": current_title,
             "all": clean_titles
         },
-        "current_pet": None,
-        "pets": [],
         "eggs": []
     }
 
-    formatted_pets, current_pet_payload, active_pet_for_eggs = _format_pets(user)
-    resp_data["pets"] = formatted_pets
-    resp_data["current_pet"] = current_pet_payload
-
-    processed_eggs, migration_needed = _process_eggs(user, active_pet_for_eggs, pass_type)
+    processed_eggs, migration_needed = _process_eggs(user, pass_type)
     resp_data["eggs"] = processed_eggs
     
     if migration_needed:

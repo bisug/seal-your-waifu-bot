@@ -40,7 +40,6 @@ class Database:
         self.star_orders = self.db['star_orders']
         self.global_user_bans = self.db['global_user_bans']
         self.global_group_bans = self.db['global_group_bans']
-        self.pet_catalog = self.db['pet_catalog']
         self.rarities = self.db['rarities']
         self.takedown_log = self.db['takedown_log']
 
@@ -87,9 +86,6 @@ class Database:
             (self.global_user_bans,  lambda c: c.create_index("expires_at_dt", expireAfterSeconds=0)),
             (self.global_group_bans, lambda c: c.create_index("chat_id", unique=True)),
             (self.global_group_bans, lambda c: c.create_index("expires_at_dt", expireAfterSeconds=0)),
-            (self.pet_catalog,       lambda c: c.create_index("petid", unique=True)),
-            (self.pet_catalog,       lambda c: c.create_index([("enabled", 1), ("sort_order", 1)])),
-            (self.pet_catalog,       lambda c: c.create_index([("uploaded_by", 1), ("updated_at", -1)], sparse=True)),
         ]
         failed = 0
         for collection, idx_fn in indexes:
@@ -161,7 +157,6 @@ daily_shop_collection = seal_db.daily_shop
 star_orders_collection = seal_db.star_orders
 global_user_bans_collection = seal_db.global_user_bans
 global_group_bans_collection = seal_db.global_group_bans
-pet_catalog_collection = seal_db.pet_catalog
 rarities_collection = seal_db.rarities
 takedown_log_collection = seal_db.takedown_log
 

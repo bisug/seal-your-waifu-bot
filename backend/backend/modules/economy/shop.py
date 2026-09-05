@@ -104,7 +104,7 @@ async def shop_hub(_, message: types.Message):
 async def send_shop_hub(message_or_query):
     text = (
         "<b>Seal Shop</b>\n\n"
-        "Open the Mini App shop, browse today's character rotation, manage pets, or view the Battle Pass."
+        "Open the Mini App shop, browse today's character rotation, or view the Battle Pass."
     )
     is_private = (message_or_query.message if isinstance(message_or_query, types.CallbackQuery) else message_or_query).chat.type == enums.ChatType.PRIVATE
     builder = KeyboardBuilder()
@@ -116,7 +116,6 @@ async def send_shop_hub(message_or_query):
         types.InlineKeyboardButton("Battle Pass", callback_data="hub_pass"),
     )
     builder.add_row(
-        types.InlineKeyboardButton("Pet Shop", callback_data="hub_pet"),
         types.InlineKeyboardButton("Currency Exchange", callback_data="exchange_help"),
     )
     reply_markup = builder.build()
@@ -162,7 +161,7 @@ async def exchange_help_callback(_, query: types.CallbackQuery):
         parse_mode=enums.ParseMode.HTML,
         reply_markup=types.InlineKeyboardMarkup(buttons) if buttons else None,
     )
-@app.on_callback_query(filters.regex(r"^hub_(char|pet|pass|egg|main)$"))
+@app.on_callback_query(filters.regex(r"^hub_(char|pass|egg|main)$"))
 @handle_errors
 async def hub_callback_handler(_, query: types.CallbackQuery):
     await query.answer()  # Dismiss spinner instantly
@@ -176,9 +175,6 @@ async def hub_callback_handler(_, query: types.CallbackQuery):
         chars_data = [c.model_dump() for c in chars]
         await create_session(f"shop_{query.from_user.id}", {"shop": chars_data, "page": 0})
         await send_shop_message(query, query.from_user.id)
-    elif choice == "pet":
-        import backend.modules.progression.pet as pet_module
-        await pet_module.send_petshop_page(query, 0, query.from_user.id)
     elif choice == "pass":
         import backend.modules.progression.battlepass as pass_module
         await pass_module.view_pass_inline(query)

@@ -49,11 +49,9 @@ HELP_DATA = {
         "text": "<b>Seal Bot - Help Menu</b>\n\nSelect a category below to see available commands:",
         "buttons": [
             [types.InlineKeyboardButton("Core Basics", callback_data="help:core", style=enums.ButtonStyle.PRIMARY),
-             types.InlineKeyboardButton("Pet System", callback_data="help:pet", style=enums.ButtonStyle.PRIMARY)],
-            [types.InlineKeyboardButton("Battle & Economy", callback_data="help:battle", style=enums.ButtonStyle.PRIMARY),
-             types.InlineKeyboardButton("Progression", callback_data="help:progression", style=enums.ButtonStyle.PRIMARY)],
-            [types.InlineKeyboardButton("Info & Stats", callback_data="help:info", style=enums.ButtonStyle.PRIMARY),
-             types.InlineKeyboardButton("Admin Tools", callback_data="help:owner", style=enums.ButtonStyle.DANGER)],
+             types.InlineKeyboardButton("Battle & Economy", callback_data="help:battle", style=enums.ButtonStyle.PRIMARY)],
+            [types.InlineKeyboardButton("Progression", callback_data="help:progression", style=enums.ButtonStyle.PRIMARY),
+             types.InlineKeyboardButton("Info & Stats", callback_data="help:info", style=enums.ButtonStyle.PRIMARY)],
             [types.InlineKeyboardButton("Back to Dashboard", callback_data="st:b")]
         ]
     },
@@ -69,18 +67,6 @@ HELP_DATA = {
 /gift - Gift characters
 /transfer - Full collection merge
 /reedem <code> - Redeem waifugen codes
-""",
-    },
-    "PET": {
-        "text": """
-<b>Pet System</b>
-/petshop - Buy powerful pets
-/mypet - Manage your pet
-/hunt - Send pet to hunt
-/eggs - View your eggs
-/hatch - Hatch char eggs
-/feed - Feed your pet
-/train - Train your pet
 """,
     },
     "BATTLE": {
@@ -268,7 +254,6 @@ async def _handle_referral_param(message: types.Message, param: str, *, is_new_u
             (
                 "🎁 <b>Welcome Bonus!</b>\n"
                 f"You received <b>{referral_result.referred_reward_shards:,} 🪙</b> "
-                f"and a <b>Level {referral_result.referred_pet_level} Pet</b> "
                 "for using a referral link! 🚀"
             ),
             parse_mode=enums.ParseMode.HTML,

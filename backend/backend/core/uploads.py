@@ -16,7 +16,6 @@ from pyrogram.errors import FloodWait
 
 from backend.client import app
 from backend.core.logging import get_logger
-from backend.core.pets import get_pet_key, pet_id_from_name, upsert_catalog_pet
 from backend.core.utils import html_escape, send_media_dynamic
 from backend.core.waifu import (
     add_character_to_db,
@@ -362,56 +361,3 @@ async def upload_character_from_path(
     char_id = await add_character_to_db(char_data)
     invalidate_character_cache(rarity_text)
     return {**char_data, "id": char_id}
-
-
-async def upload_pet_from_path(
-    temp_path: str,
-    *,
-    name: str,
-    rarity: str,
-    hp: int,
-    atk: int,
-    spd: int,
-    luck: float | int | str,
-    ability: str,
-    desc: str,
-    zenith_price: int = 0,
-    req_level: int = 0,
-    petid: str | None = None,
-    sort_order: int = 100,
-    enabled: bool = True,
-    uploaded_by: int | None = None,
-) -> dict:
-    pet_name = str(name or "").strip()
-    if not pet_name:
-        raise UploadError("Pet name is required.")
-
-    final_url = await upload_media_safely(temp_path)
-    if not final_url:
-        raise UploadError("Media upload failed. Catbox/ImgBB rejected the file.")
-
-    now = datetime.now(timezone.utc)
-    normalized_petid = pet_id_from_name(petid) if petid else None
-    pet_doc = {
-        "petid": normalized_petid,
-        "id": normalized_petid,
-        "name": pet_name,
-        "rarity": str(rarity or "Common").strip() or "Common",
-        "hp": int(hp),
-        "atk": int(atk),
-        "spd": int(spd),
-        "luck": parse_luck(luck),
-        "ability": str(ability or "None").strip() or "None",
-        "desc": str(desc or "").strip(),
-        "img": final_url,
-        "zenith_price": int(zenith_price),
-        "req_level": int(req_level),
-        "sort_order": int(sort_order),
-        "enabled": bool(enabled),
-        "updated_at": now,
-    }
-    if uploaded_by is not None:
-        pet_doc["uploaded_by"] = int(uploaded_by)
-
-    saved = await upsert_catalog_pet(pet_doc)
-    return {**saved, "petid": get_pet_key(saved), "id": get_pet_key(saved)}

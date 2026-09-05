@@ -15,13 +15,13 @@ from backend.core.roles import (
     normalize_role,
 )
 from backend.core.utils import normalize_user_id
-from backend.database import collection, pet_catalog_collection, sudo_collection, user_collection
+from backend.database import collection, sudo_collection, user_collection
 from backend.webapp.auth import require_sudo_user
 from config import config
 
 router = APIRouter()
 
-UPLOAD_SOURCE_KEYS = ("web_character", "bot_character", "web_pet", "bot_pet")
+UPLOAD_SOURCE_KEYS = ("web_character", "bot_character")
 UPLOAD_DETAIL_LIMIT = 50
 
 
@@ -134,52 +134,19 @@ def _character_upload_item(item: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _pet_upload_item(item: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "type": "pet",
-        "id": item.get("petid") or item.get("id"),
-        "name": item.get("name") or "Unknown Pet",
-        "subtitle": item.get("ability") or item.get("rarity") or "Pet",
-        "rarity": item.get("rarity"),
-        "image": item.get("img"),
-        "uploaded_at": _iso_datetime(item.get("updated_at") or item.get("created_at")),
-        "enabled": bool(item.get("enabled", True)),
-    }
-
-
-async def _get_uploads(user_id: int) -> tuple[int, int, list[dict[str, Any]], list[dict[str, Any]]]:
+async def _get_uploads(user_id: int) -> tuple[int, list[dict[str, Any]]]:
     character_filter = {"added_by_id": user_id}
-    pet_filter = {"uploaded_by": user_id}
 
     character_count = await collection.count_documents(character_filter)
-    pet_count = await pet_catalog_collection.count_documents(pet_filter)
 
     characters = await collection.find(
         character_filter,
         {"_id": 0, "id": 1, "name": 1, "anime": 1, "rarity": 1, "img_url": 1, "uploaded_at": 1},
     ).sort([("uploaded_at", -1), ("id", -1)]).to_list(length=UPLOAD_DETAIL_LIMIT)
 
-    pets = await pet_catalog_collection.find(
-        pet_filter,
-        {
-            "_id": 0,
-            "petid": 1,
-            "id": 1,
-            "name": 1,
-            "rarity": 1,
-            "ability": 1,
-            "img": 1,
-            "enabled": 1,
-            "updated_at": 1,
-            "created_at": 1,
-        },
-    ).sort([("updated_at", -1), ("created_at", -1)]).to_list(length=UPLOAD_DETAIL_LIMIT)
-
     return (
         character_count,
-        pet_count,
         [_character_upload_item(item) for item in characters],
-        [_pet_upload_item(item) for item in pets],
     )
 
 
@@ -193,9 +160,7 @@ async def get_sudo_contributions(user_id: int = Depends(require_sudo_user)):
         "total_staff": len(records),
         "total_uploads": 0,
         "character_uploads": 0,
-        "pet_uploads": 0,
         "persisted_character_uploads": 0,
-        "persisted_pet_uploads": 0,
     }
 
     for record in records:
@@ -205,18 +170,14 @@ async def get_sudo_contributions(user_id: int = Depends(require_sudo_user)):
         user_doc = user_docs.get(target_id) or {}
         source_counts = _source_counts(user_doc)
         character_source_count = source_counts["web_character"] + source_counts["bot_character"]
-        pet_source_count = source_counts["web_pet"] + source_counts["bot_pet"]
-        persisted_character_count, persisted_pet_count, character_uploads_list, pet_uploads_list = await _get_uploads(target_id)
+        persisted_character_count, character_uploads_list = await _get_uploads(target_id)
 
         character_uploads = max(character_source_count, persisted_character_count)
-        pet_uploads = max(pet_source_count, persisted_pet_count)
-        total_uploads = max(_safe_int(user_doc.get("upload_count")), character_uploads + pet_uploads)
+        total_uploads = max(_safe_int(user_doc.get("upload_count")), character_uploads)
 
         summary["total_uploads"] += total_uploads
         summary["character_uploads"] += character_uploads
-        summary["pet_uploads"] += pet_uploads
         summary["persisted_character_uploads"] += persisted_character_count
-        summary["persisted_pet_uploads"] += persisted_pet_count
 
         staff.append({
             "id": target_id,
@@ -244,23 +205,16 @@ async def get_sudo_contributions(user_id: int = Depends(require_sudo_user)):
             "contributions": {
                 "total_uploads": total_uploads,
                 "character_uploads": character_uploads,
-                "pet_uploads": pet_uploads,
                 "persisted_character_uploads": persisted_character_count,
-                "persisted_pet_uploads": persisted_pet_count,
                 "sources": source_counts,
             },
             "uploads": {
                 "characters": character_uploads_list,
-                "pets": pet_uploads_list,
                 "limit": UPLOAD_DETAIL_LIMIT,
-                "truncated": (
-                    persisted_character_count > len(character_uploads_list)
-                    or persisted_pet_count > len(pet_uploads_list)
-                ),
+                "truncated": persisted_character_count > len(character_uploads_list),
             },
             "recent_uploads": {
                 "characters": character_uploads_list[:8],
-                "pets": pet_uploads_list[:8],
             },
         })
 

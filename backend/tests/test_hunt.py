@@ -5,17 +5,15 @@ Guards:
    every eggs.id atomic guard (incubate/sell/purify/fuse) keys on that id.
 2. A bonus egg rolls at full luck, never worse than the egg that triggered it.
 3. Pass shard bonus text matches the configured multiplier (no hardcoded %).
-4. Beginner's Luck scales pet XP with luck, not affection.
 """
 import random
 
 from backend.core.pass_config import PASS_BENEFITS
-from backend.modules.economy.hunt import _pet_hunt_context, _roll_hunt_rewards
+from backend.modules.economy.hunt import _hunt_context, _roll_hunt_rewards
 
 
-def make_ctx(petid="fluffy_fox", level=1, affection=50):
-    pet = {"petid": petid, "level": level, "affection": affection, "last_interacted": 0}
-    return _pet_hunt_context({"pets": [pet], "current_pet": petid})
+def make_ctx():
+    return _hunt_context()
 
 
 def test_egg_ids_unique_across_rapid_hunts():
@@ -58,17 +56,3 @@ def test_pass_bonus_text_matches_multiplier():
                 break
         else:
             raise AssertionError(f"{tier} bonus text missing for multiplier {mult}")
-
-
-def test_beginners_luck_scales_with_luck_not_affection():
-    # Same affection, different luck → XP must differ (luck-driven).
-    low = make_ctx(petid="fluffy_fox", level=1, affection=50)  # luck 0.08
-    high = make_ctx(petid="mystic_dragon", level=100, affection=50)  # luck ~0.72
-    low["ability"] = "Beginner's Luck"
-    high["ability"] = "Beginner's Luck"
-    user = {"pass_type": "free"}
-    random.seed(42)
-    xp_low = [_roll_hunt_rewards(low, user)[1] for _ in range(500)]
-    random.seed(42)
-    xp_high = [_roll_hunt_rewards(high, user)[1] for _ in range(500)]
-    assert sum(xp_high) > sum(xp_low), "high-luck pet should earn more XP per hunt"
