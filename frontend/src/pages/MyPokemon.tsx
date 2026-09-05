@@ -40,7 +40,7 @@ export const MyPokemon = () => {
       <EmptyState
         icon={Sparkles}
         title="No Pokémon yet"
-        message="Claim your starter with /starter in the bot, then it will appear here."
+        message="Catch a wild Pokémon in a group chat — guess its name before anyone else to claim it."
       />
     );
   }

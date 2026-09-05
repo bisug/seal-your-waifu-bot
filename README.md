@@ -285,7 +285,7 @@ The backend Docker image no longer bundles the frontend. To serve the Mini App f
 
 Full Pokémon system powered by [PokéAPI](https://pokeapi.co) data (1025 species, Gen 1-9):
 
-- **Starters**: `/starter` — one-time pick of Bulbasaur, Charmander, Squirtle, Pikachu, or Eevee at level 5.
+- **Catching**: wild Pokémon spawn in group chats — guess the name first to claim it.
 - **Active partner**: `/setpokemon <dex>` — your partner earns XP from battles and guess games.
 - **Leveling**: partners gain XP (`level * 100` per level) from battle wins (+40), battle losses (+15), and Pokémon guess spawns (+25).
 - **Evolution**: partners auto-evolve at stage thresholds (level 16 for stage 1→2, 32 for 2→3). Branching lines (Eevee) pick a random unowned evolution. The active pointer follows the evolution.
@@ -380,7 +380,6 @@ Owner can manage DB-backed staff roles with `/addsudo`, `/rmsudo`, and `/sudolis
 | `/pass` | Any | Battle pass progress and purchases. |
 | `/level` | Any | Level and XP progress. |
 | `/achievements` | Any | Achievement milestones. |
-| `/starter` | Any | One-time starter Pokémon selection (Bulbasaur, Charmander, Squirtle, Pikachu, Eevee). |
 | `/mypokemon` | Any | List owned Pokémon with the active one highlighted. |
 | `/setpokemon <dex>` | Any | Set an owned Pokémon as active partner. |
 | `/pokedex [name or dex]` | Any | Full Pokédex lookup: types, stats, abilities, evolution line, flavor text. |

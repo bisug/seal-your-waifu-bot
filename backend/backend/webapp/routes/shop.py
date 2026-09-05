@@ -1,3 +1,4 @@
+import re
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -153,12 +154,20 @@ async def get_pokemon_catalog(
     page: int = Query(1, ge=1),
     limit: int = Query(60, ge=1, le=120),
     type: str | None = Query(None),
+    search: str | None = Query(None, max_length=60),
     user: dict = Depends(get_current_user_data),
 ):
-    """Browse the Pokémon catalog (paged, optional type filter)."""
+    """Browse the Pokémon catalog (paged, optional type + name search)."""
     query = {"enabled": True}
     if type:
         query["types"] = type.lower()
+    if search and search.strip():
+        # Case-insensitive name match; numeric queries match the dex number.
+        term = search.strip()
+        if term.isdigit():
+            query["dex"] = int(term)
+        else:
+            query["name"] = {"$regex": re.escape(term), "$options": "i"}
     cursor = pokemon_catalog_collection.find(query, {"_id": 0}).sort("sort_order", 1)
     total = await pokemon_catalog_collection.count_documents(query)
     items = await cursor.skip((page - 1) * limit).limit(limit).to_list(length=limit)

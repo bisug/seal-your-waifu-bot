@@ -12,7 +12,6 @@ from backend.database import pokemon_catalog_collection, user_collection
 
 LOGGER = get_logger(__name__)
 
-STARTER_DEXES = (1, 4, 7, 25, 133)  # Bulbasaur, Charmander, Squirtle, Pikachu, Eevee
 XP_PER_LEVEL = 100
 # Level at which a Pokémon evolves to its next chain stage. Later stages
 # cost more: stage 1→2 at 16, 2→3 at 32 (mirrors the games' mid/late evolutions).
@@ -231,6 +230,7 @@ def battle_stats(pokemon: dict) -> dict:
     return {
         "name": pokemon["name"],
         "types": pokemon.get("types", []),
+        "img": pokemon.get("img"),
         "hp": hp,
         "atk": atk,
         "spd": spd,

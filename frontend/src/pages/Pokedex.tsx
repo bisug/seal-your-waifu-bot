@@ -1,9 +1,10 @@
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Search, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { PokemonCard } from '../components/pokemon/PokemonCard';
 import { PokemonDetailModal } from '../components/pokemon/PokemonDetailModal';
 import { Button } from '../components/ui/Button';
 import { EmptyState } from '../components/ui/EmptyState';
+import { Input } from '../components/ui/Input';
 import { Skeleton } from '../components/ui/Skeleton';
 import { useInfiniteGrid } from '../hooks/useInfiniteGrid';
 import type { Pokemon } from '../context/UserContext';
@@ -27,7 +28,7 @@ export const Pokedex = () => {
   const [type, setType] = useState<string | null>(null);
   const [detailDex, setDetailDex] = useState<number | null>(null);
   const gridParams = useMemo(() => (type ? { type } : {}), [type]);
-  const { items, loading, lastElementRef } = useInfiniteGrid<Pokemon>(
+  const { items, loading, search, setSearch, lastElementRef } = useInfiniteGrid<Pokemon>(
     '/shop/pokemon',
     { params: gridParams, limit: PAGE_SIZE },
   );
@@ -39,6 +40,26 @@ export const Pokedex = () => {
         <h2 className="text-sm font-semibold text-zinc-300">
           Pokédex <span className="text-zinc-600">({total})</span>
         </h2>
+      </div>
+
+      <div className="relative">
+        <Input
+          icon={Search}
+          placeholder="Search Pokémon by name or number..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className={search ? 'pr-10' : undefined}
+        />
+        {search && (
+          <button
+            type="button"
+            aria-label="Clear search"
+            onClick={() => setSearch('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-zinc-500 hover:text-zinc-200 transition-colors"
+          >
+            <X size={14} />
+          </button>
+        )}
       </div>
 
       <div className="flex gap-1.5 flex-wrap">
@@ -71,7 +92,7 @@ export const Pokedex = () => {
         <EmptyState
           icon={BookOpen}
           title="Nothing found"
-          message="No Pokémon match this filter."
+          message={search ? `No Pokémon match "${search}".` : 'No Pokémon match this filter.'}
         />
       ) : (
         <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">

@@ -11,7 +11,7 @@ from pyrogram import enums, filters, types
 from backend.client import app
 from backend.core.balance import update_user_balance
 from backend.core.logging import get_logger
-from backend.core.pokemon import add_pokemon_xp
+from backend.core.pokemon import add_pokemon_xp, get_catalog_pokemon
 from backend.core.progression import add_xp
 from backend.core.spawns import (
     POKEMON_GUESS_MON_XP,
@@ -74,7 +74,29 @@ async def pokemon_guess_handler(_, message: types.Message):
             f"\n✨ <b>{html_escape(evo['from_name'])}</b> evolved into "
             f"<b>{html_escape(evo['to_name'])}</b>!"
         )
-    try:
-        await message.reply_text(text, parse_mode=enums.ParseMode.HTML)
-    except Exception as e:
-        LOGGER.error(f"Failed to send Pokémon guess result: {e}")
+    # Reveal the artwork with the win message; evolution gets its own photo.
+    cat = await get_catalog_pokemon(spawn["dex"])
+    img = (cat or {}).get("img")
+    sent = None
+    if img:
+        sent = await app.send_media_safe(
+            message.chat.id, media_url=img, caption=text, parse_mode=enums.ParseMode.HTML
+        )
+    if not sent:
+        try:
+            await message.reply_text(text, parse_mode=enums.ParseMode.HTML)
+        except Exception as e:
+            LOGGER.error(f"Failed to send Pokémon guess result: {e}")
+    if evo:
+        evo_cat = await get_catalog_pokemon(evo["to"])
+        evo_img = (evo_cat or {}).get("img")
+        if evo_img:
+            await app.send_media_safe(
+                message.chat.id,
+                media_url=evo_img,
+                caption=(
+                    f"✨ <b>{html_escape(evo['from_name'])}</b> evolved into "
+                    f"<b>{html_escape(evo['to_name'])}</b>!"
+                ),
+                parse_mode=enums.ParseMode.HTML,
+            )

@@ -7,7 +7,12 @@ from backend.client import app
 from backend.core.balance import check_and_deduct, get_user_balance, update_user_balance
 from backend.core.cache import is_on_cooldown as redis_cooldown
 from backend.core.logging import get_logger
-from backend.core.pokemon import add_pokemon_xp, battle_stats, get_active_pokemon
+from backend.core.pokemon import (
+    add_pokemon_xp,
+    battle_stats,
+    get_active_pokemon,
+    get_catalog_pokemon,
+)
 from backend.core.progression import add_xp
 from backend.core.sessions import consume_session, create_session, get_session
 from backend.core.utils import handle_errors, html_escape
@@ -19,6 +24,7 @@ LOGGER = get_logger(__name__)
 FALLBACK_STATS = {
     "name": "Fists",
     "types": [],
+    "img": None,
     "hp": 100,
     "atk": 10,
     "spd": 10,
@@ -218,10 +224,26 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
             f"   ❤️ {d_stats['hp']} | ⚔️ {d_stats['atk']} | ⚡ {d_stats['spd']}\n\n"
             f"🔥 <b>Fighting...</b>"
         )
-        try:
-            await query.message.edit_text(text, parse_mode=enums.ParseMode.HTML)
-        except errors.MessageNotModified:
-            pass
+        # Show both fighters' artwork as an album; caption rides on photo one.
+        sent_album = False
+        imgs = [s.get("img") for s in (a_stats, d_stats) if s.get("img")]
+        if len(imgs) == 2:
+            try:
+                await app.send_media_group(
+                    query.message.chat.id,
+                    media=[
+                        types.InputMediaPhoto(imgs[0], caption=text, parse_mode=enums.ParseMode.HTML),
+                        types.InputMediaPhoto(imgs[1]),
+                    ],
+                )
+                sent_album = True
+            except Exception as e:
+                LOGGER.warning(f"Battle album failed, falling back to text: {e}")
+        if not sent_album:
+            try:
+                await query.message.edit_text(text, parse_mode=enums.ParseMode.HTML)
+            except errors.MessageNotModified:
+                pass
         await asyncio.sleep(2)
         winner_idx, battle_log = simulate_battle(a_stats.copy(), d_stats.copy(), a_stats['name'], d_stats['name'])
         winner_id = attacker_id if winner_idx == 1 else defender_id
@@ -259,6 +281,22 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
         if evo_lines:
             result_text += "\n\n" + "\n".join(evo_lines)
         await query.message.edit_text(result_text, parse_mode=enums.ParseMode.HTML)
+        # Evolution is a milestone — show the new form's artwork.
+        for evo in (winner_evo, loser_evo):
+            if not evo:
+                continue
+            evo_cat = await get_catalog_pokemon(evo["to"])
+            evo_img = (evo_cat or {}).get("img")
+            if evo_img:
+                await app.send_media_safe(
+                    query.message.chat.id,
+                    media_url=evo_img,
+                    caption=(
+                        f"✨ <b>{html_escape(evo['from_name'])}</b> evolved into "
+                        f"<b>{html_escape(evo['to_name'])}</b>!"
+                    ),
+                    parse_mode=enums.ParseMode.HTML,
+                )
 
     except Exception as e:
         # Both bets were already deducted. Any failure before the payout
