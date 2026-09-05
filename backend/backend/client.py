@@ -334,6 +334,7 @@ class SealClient(Client):
                 "profile": "Collector profile",
                 "balance": "Check Coins",
                 "harem": "Your collection",
+                "pokedex": "Look up a Pokémon",
                 "shop": "Open the shop",
                 "top": "Global leaderboard",
                 "daily": "Daily reward",

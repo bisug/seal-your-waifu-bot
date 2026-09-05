@@ -84,7 +84,9 @@ def build_doc(pokemon: dict, species: dict, evolution_dexes: list[int]) -> dict:
         "dex": dex,
         "name": pokemon["name"].replace("-", " ").title(),
         "types": [t["type"]["name"] for t in pokemon["types"]],
-        "img": artwork or f"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/{dex}.png",
+        # jsDelivr CDN — raw.githubusercontent.com is 20-50x slower for
+        # these PNGs and made the Mini App Pokédex unusable.
+        "img": artwork or f"https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/other/official-artwork/{dex}.png",
         "shiny_img": shiny_artwork,
         "cry": pokemon.get("cries", {}).get("latest"),
         "height_dm": pokemon.get("height", 0),

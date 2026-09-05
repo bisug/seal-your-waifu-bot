@@ -16,6 +16,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Pokemon } from '../../context/UserContext';
 import { cn, FALLBACK_IMAGE } from '../../utils';
 import { useApi } from '../../hooks/useApi';
+import { cdnUrl } from './PokemonCard';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { Skeleton } from '../ui/Skeleton';
@@ -190,16 +191,14 @@ export const PokemonDetailModal = ({
                     src={
                       imgError
                         ? FALLBACK_IMAGE
-                        : shiny && detail.shiny_img
-                          ? detail.shiny_img
-                          : detail.img
+                        : cdnUrl(shiny && detail.shiny_img ? detail.shiny_img : detail.img)
                     }
                     onError={() => setImgError(true)}
                     className="relative z-10 w-full h-full object-contain p-6"
                     alt={detail.name}
                   />
                   <div className="absolute bottom-4 left-4 z-20 flex gap-2 flex-wrap">
-                    {detail.types.map((t) => (
+                    {(detail.types ?? []).map((t) => (
                       <Badge key={t} variant="secondary" size="sm">
                         {TYPE_EMOJI[t] ?? '❔'} {t.toUpperCase()}
                       </Badge>
@@ -429,7 +428,7 @@ export const PokemonDetailModal = ({
                               aria-label={`View ${e.name}`}
                             >
                               <img
-                                src={e.img || FALLBACK_IMAGE}
+                                src={cdnUrl(e.img) || FALLBACK_IMAGE}
                                 alt={e.name}
                                 loading="lazy"
                                 className="w-full aspect-square object-contain"

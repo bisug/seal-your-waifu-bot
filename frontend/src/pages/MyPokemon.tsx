@@ -1,7 +1,7 @@
 import { Sparkles, Star } from 'lucide-react';
 import { useState } from 'react';
 import { apiFetch, getErrorMessage } from '../api/client';
-import { PokemonCard } from '../components/pokemon/PokemonCard';
+import { PokemonCard, cdnUrl } from '../components/pokemon/PokemonCard';
 import { PokemonDetailModal } from '../components/pokemon/PokemonDetailModal';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
@@ -50,7 +50,7 @@ export const MyPokemon = () => {
       {active && (
         <Card className="p-4 flex items-center gap-4">
           <div className="w-16 h-16 rounded-md bg-zinc-900 border border-white/5 overflow-hidden shrink-0">
-            <img src={active.img} alt={active.name} className="w-full h-full object-contain p-1" />
+            <img src={cdnUrl(active.img)} alt={active.name} className="w-full h-full object-contain p-1" />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">

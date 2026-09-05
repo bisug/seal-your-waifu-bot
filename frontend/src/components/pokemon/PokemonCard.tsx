@@ -16,9 +16,26 @@ const TYPE_EMOJI: Record<string, string> = {
   dark: '🌑', steel: '⚙️', fairy: '🧚',
 };
 
+/**
+ * raw.githubusercontent.com is slow (7-13s per PNG). jsDelivr serves the
+ * same files from its CDN in ~0.2s — rewrite at render time so old
+ * catalog URLs still load fast without a data migration.
+ */
+export const cdnUrl = (url?: string | null): string => {
+  if (!url) return '';
+  return url.replace(
+    'https://raw.githubusercontent.com/PokeAPI/sprites/master/',
+    'https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/',
+  );
+};
+
 export const PokemonCard = memo(({ pokemon, onClick, compact }: PokemonCardProps) => {
   const [imgError, setImgError] = React.useState(false);
-  React.useEffect(() => setImgError(false), [pokemon.img]);
+  const [loaded, setLoaded] = React.useState(false);
+  React.useEffect(() => {
+    setImgError(false);
+    setLoaded(false);
+  }, [pokemon.img]);
 
   return (
     <button
@@ -34,16 +51,24 @@ export const PokemonCard = memo(({ pokemon, onClick, compact }: PokemonCardProps
       )}
     >
       {!imgError ? (
-        <img
-          src={pokemon.img || FALLBACK_IMAGE}
-          alt={pokemon.name}
-          loading="lazy"
-          onError={() => setImgError(true)}
-          className={cn(
-            'absolute inset-0 w-full h-full object-contain p-2 transition-transform duration-200',
-            'group-hover:scale-105 bg-[radial-gradient(circle_at_50%_35%,rgba(120,120,140,0.12),transparent_70%)]',
+        <>
+          {!loaded && (
+            <div className="absolute inset-0 animate-pulse bg-zinc-900/80" aria-hidden="true" />
           )}
-        />
+          <img
+            src={cdnUrl(pokemon.img) || FALLBACK_IMAGE}
+            alt={pokemon.name}
+            loading="lazy"
+            decoding="async"
+            onLoad={() => setLoaded(true)}
+            onError={() => setImgError(true)}
+            className={cn(
+              'absolute inset-0 w-full h-full object-contain p-2 transition-all duration-300',
+              loaded ? 'opacity-100 group-hover:scale-105' : 'opacity-0',
+              'bg-[radial-gradient(circle_at_50%_35%,rgba(120,120,140,0.12),transparent_70%)]',
+            )}
+          />
+        </>
       ) : (
         <div className="absolute inset-0 flex items-center justify-center text-zinc-700 text-3xl font-bold">
           #{pokemon.dex}
