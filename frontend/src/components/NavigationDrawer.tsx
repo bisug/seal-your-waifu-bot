@@ -9,7 +9,6 @@ import {
   LayoutDashboard,
   ListChecks,
   LogOut,
-  PawPrint,
   Repeat2,
   Satellite,
   Store,
@@ -57,7 +56,6 @@ const SECTIONS: NavSection[] = [
   {
     title: 'OPERATIONS',
     items: [
-      { id: 'mypets', label: 'Companions', icon: PawPrint },
       { id: 'minigames', label: 'Nexus Games', icon: Gamepad2 },
       { id: 'achievements', label: 'Milestones', icon: BadgeCheck },
     ],

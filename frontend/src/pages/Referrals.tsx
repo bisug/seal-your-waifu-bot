@@ -24,7 +24,6 @@ interface ReferralStats {
   referrer_reward_shards: number;
   referrer_reward_xp: number;
   referred_reward_shards: number;
-  referred_reward_pet: string;
 }
 
 export const Referrals = () => {
@@ -42,8 +41,7 @@ export const Referrals = () => {
   const earnedShards = stats?.earned_shards ?? referralCount * 500;
   const referrerRewardShards = stats?.referrer_reward_shards ?? 500;
   const referrerRewardXp = stats?.referrer_reward_xp ?? 50;
-  const referredRewardShards = stats?.referred_reward_shards ?? 1500;
-  const referredRewardPet = stats?.referred_reward_pet ?? 'blaze_fang';
+  const referredRewardShards = stats?.referred_reward_shards ?? 2500;
 
   const copyToClipboard = async () => {
     if (!referralLink) return;
@@ -181,7 +179,7 @@ export const Referrals = () => {
                 THEY GET
               </p>
               <p className="text-xs font-bold text-zinc-100 uppercase">
-                {formatNumber(referredRewardShards)} Coins + {referredRewardPet.replace(/_/g, ' ')} pet
+                {formatNumber(referredRewardShards)} Coins
               </p>
             </div>
           </Card>

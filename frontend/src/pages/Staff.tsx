@@ -5,7 +5,6 @@ import {
   Gem,
   History,
   Image as ImageIcon,
-  PawPrint,
   Sparkles,
   Terminal,
   Users,
@@ -27,7 +26,7 @@ interface UploadReward {
 }
 
 interface StaffUploadItem {
-  type: 'character' | 'pet';
+  type: 'character';
   id?: string | null;
   name: string;
   subtitle?: string | null;
@@ -56,12 +55,10 @@ interface StaffMember {
   contributions: {
     total_uploads: number;
     character_uploads: number;
-    pet_uploads: number;
     sources: Record<string, number>;
   };
   uploads: {
     characters: StaffUploadItem[];
-    pets: StaffUploadItem[];
     limit?: number;
     truncated?: boolean;
   };
@@ -72,7 +69,6 @@ interface StaffContributionsResponse {
     total_staff: number;
     total_uploads: number;
     character_uploads: number;
-    pet_uploads: number;
   };
   staff: StaffMember[];
 }
@@ -95,7 +91,7 @@ const formatDate = (value?: string | null) => {
 };
 
 const allUploadsFor = (member: StaffMember) =>
-  [...member.uploads.characters, ...member.uploads.pets].sort((a, b) => {
+  [...member.uploads.characters].sort((a, b) => {
     const aTime = a.uploaded_at ? new Date(a.uploaded_at).getTime() : 0;
     const bTime = b.uploaded_at ? new Date(b.uploaded_at).getTime() : 0;
     return bTime - aTime;
@@ -117,7 +113,6 @@ const StaffDetails = ({ member }: { member: StaffMember }) => {
             label: 'Characters',
             value: formatNumber(member.contributions.character_uploads),
           },
-          { icon: PawPrint, label: 'Pets', value: formatNumber(member.contributions.pet_uploads) },
           { icon: Gem, label: 'Prisms', value: formatNumber(member.stats.zenith) },
           { icon: Coins, label: 'Coins', value: formatNumber(member.stats.balance) },
         ].map((stat, i) => (
@@ -157,7 +152,7 @@ const StaffDetails = ({ member }: { member: StaffMember }) => {
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-zinc-800">
-                      {item.type === 'pet' ? <PawPrint size={16} /> : <ImageIcon size={16} />}
+                      <ImageIcon size={16} />
                     </div>
                   )}
                 </div>
@@ -167,7 +162,7 @@ const StaffDetails = ({ member }: { member: StaffMember }) => {
                       {item.name}
                     </p>
                     <Badge variant="secondary" size="xs" className="px-1 py-0 opacity-60">
-                      {item.type === 'pet' ? 'PET' : 'CHARACTER'}
+                      CHARACTER
                     </Badge>
                   </div>
                   <p className="truncate text-[9px] font-medium text-zinc-600 uppercase tracking-widest mt-0.5">
@@ -245,7 +240,6 @@ export const Staff = () => {
           { label: 'Staff', value: data?.summary.total_staff || 0, variant: 'primary' },
           { label: 'Uploads', value: data?.summary.total_uploads || 0, variant: 'default' },
           { label: 'Characters', value: data?.summary.character_uploads || 0, variant: 'success' },
-          { label: 'Pets', value: data?.summary.pet_uploads || 0, variant: 'warning' },
         ].map((item, i) => (
           <Card key={i} variant="default" className="p-3.5">
             <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest block mb-1.5">

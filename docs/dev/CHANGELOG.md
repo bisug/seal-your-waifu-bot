@@ -4,6 +4,15 @@
 
 ## 2026-09-05
 
+- **[2.1–2.3]** Phase 2 complete — pets fully removed from frontend:
+  - Deleted `pages/MyPets.tsx`, `pages/PetShop.tsx`, `components/pet/PetActionModal.tsx`.
+  - `App.tsx`: pet tabs/aliases/routes/modal state removed.
+  - `NavigationDrawer`: Companions nav item removed.
+  - `UserContext`: `Pet` interface + `current_pet`/`pets` fields dropped.
+  - `Profile`: companion card removed; `Referrals`: pet reward text → coins-only;
+    `Staff`: pet uploads removed; `Upload`: character-only mode;
+    `Hatchery`: copy tweak.
+  - Validate: biome lint (4 pre-existing warnings), tsc clean, vite build ✓.
 - **[1.1–1.9]** Phase 1 complete — pets fully removed from backend:
   - Deleted `core/pets.py` (498 lines), `modules/progression/pet.py` (325 lines),
     `tests/test_pets.py`.

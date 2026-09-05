@@ -27,10 +27,10 @@
 
 ## Phase 2 — Remove pets (frontend)
 
-- [ ] 2.1 Delete `pages/MyPets.tsx`, `pages/PetShop.tsx`, `components/pet/`
-- [ ] 2.2 Remove pet routes/nav/types from `App.tsx`, `NavigationDrawer.tsx`,
+- [x] 2.1 Delete `pages/MyPets.tsx`, `pages/PetShop.tsx`, `components/pet/`
+- [x] 2.2 Remove pet routes/nav/types from `App.tsx`, `NavigationDrawer.tsx`,
       `types.d.ts`, api client
-- [ ] 2.3 Validate: lint + type-check + build green
+- [x] 2.3 Validate: lint + type-check + build green
 
 ## Phase 3 — Pokémon backend
 

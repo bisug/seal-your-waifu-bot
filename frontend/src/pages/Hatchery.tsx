@@ -367,7 +367,7 @@ export const Hatchery = () => {
               No eggs yet
             </p>
             <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-widest max-w-[200px] mx-auto leading-relaxed">
-              Go hunt with your pet to find eggs.
+              Go hunt to find eggs.
             </p>
           </div>
         </div>

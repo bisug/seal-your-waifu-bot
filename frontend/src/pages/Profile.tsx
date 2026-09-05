@@ -8,7 +8,6 @@ import {
   Gem,
   Heart,
   Loader2,
-  PawPrint,
   RefreshCw,
   Search,
   Swords,
@@ -131,7 +130,6 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
       ? `TOP ${stats.percentile}%`
       : 'UNRANKED';
   const currentTitle = user.titles?.current || 'OPERATOR';
-  const activePet = user.current_pet;
   const usernameLabel = user.username ? `@${user.username}` : `ID ${user.id}`;
 
   return (
@@ -299,31 +297,6 @@ export const Profile = ({ onCharClick, focusCollection = false }: ProfileProps) 
 
       {/* Sub-Systems Section */}
       <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Card
-          variant="default"
-          className="flex items-center gap-4 p-4 hover:bg-zinc-900 transition-colors cursor-pointer group"
-        >
-          <div className="w-10 h-10 rounded bg-zinc-900 border border-white/5 flex items-center justify-center shrink-0">
-            <PawPrint
-              size={18}
-              className="text-zinc-400 group-hover:text-brand-accent transition-colors"
-            />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5">
-              COMPANION
-            </div>
-            <div className="text-xs font-bold text-zinc-100 truncate uppercase tracking-tight">
-              {activePet?.name || 'NONE ACTIVE'}
-            </div>
-          </div>
-          {activePet && (
-            <Badge variant="secondary" size="xs" className="font-mono">
-              LVL {activePet.level || 1}
-            </Badge>
-          )}
-        </Card>
-
         <Card
           variant="default"
           className="flex items-center gap-4 p-4 hover:bg-zinc-900 transition-colors cursor-pointer group"

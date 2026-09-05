@@ -5,7 +5,6 @@ import { CharActionModal } from './components/character/CharActionModal';
 import { Header } from './components/Header';
 import { IntroLoading, type IntroStatus } from './components/IntroLoading';
 import { NavigationDrawer } from './components/NavigationDrawer';
-import { PetActionModal } from './components/pet/PetActionModal';
 import { TermsGate } from './components/TermsGate';
 import { GachaReveal } from './components/ui/GachaReveal';
 import { ToastProvider } from './components/ui/Toast';
@@ -18,7 +17,6 @@ import { ServerError } from './pages/ServerError';
 // Lazy load all pages
 const Shop = lazy(() => import('./pages/Shop').then((m) => ({ default: m.Shop })));
 const Gallery = lazy(() => import('./pages/Gallery').then((m) => ({ default: m.Gallery })));
-const PetShop = lazy(() => import('./pages/PetShop').then((m) => ({ default: m.PetShop })));
 const Hatchery = lazy(() => import('./pages/Hatchery').then((m) => ({ default: m.Hatchery })));
 const Quests = lazy(() => import('./pages/Quests').then((m) => ({ default: m.Quests })));
 const Pass = lazy(() => import('./pages/Pass').then((m) => ({ default: m.Pass })));
@@ -29,7 +27,6 @@ const Referrals = lazy(() => import('./pages/Referrals').then((m) => ({ default:
 const Achievements = lazy(() =>
   import('./pages/Achievements').then((m) => ({ default: m.Achievements })),
 );
-const MyPets = lazy(() => import('./pages/MyPets').then((m) => ({ default: m.MyPets })));
 const Exchange = lazy(() => import('./pages/Exchange').then((m) => ({ default: m.Exchange })));
 const Upload = lazy(() => import('./pages/Upload').then((m) => ({ default: m.Upload })));
 const Staff = lazy(() => import('./pages/Staff').then((m) => ({ default: m.Staff })));
@@ -42,13 +39,11 @@ const VALID_TABS = [
   'shop',
   'exchange',
   'gallery',
-  'pets',
   'referrals',
   'quests',
   'pass',
   'leaderboard',
   'achievements',
-  'mypets',
   'upload',
   'staff',
   'minigames',
@@ -84,14 +79,6 @@ const TAB_ALIASES: Record<string, string> = {
   gallery: 'gallery',
   catalog: 'gallery',
   characters: 'gallery',
-  pets: 'pets',
-  petshop: 'pets',
-  pet_store: 'pets',
-  companionshop: 'pets',
-  mypets: 'mypets',
-  mypet: 'mypets',
-  pet: 'mypets',
-  companions: 'mypets',
   upload: 'upload',
   uploads: 'upload',
   admin: 'upload',
@@ -255,7 +242,6 @@ const AppContent = () => {
   const activeTab = activeRoute.tab;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [selectedChar, setSelectedChar] = useState<any>(null);
-  const [selectedPet, setSelectedPet] = useState<any>(null);
   const [revealedChar, setRevealedChar] = useState<any>(null);
 
   const backHandlerRef = useRef<(() => void) | null>(null);
@@ -280,10 +266,9 @@ const AppContent = () => {
       tg.BackButton?.offClick?.(backHandlerRef.current);
     }
 
-    if (selectedChar || selectedPet || isMenuOpen) {
+    if (selectedChar || isMenuOpen) {
       const handler = () => {
         setSelectedChar(null);
-        setSelectedPet(null);
         setIsMenuOpen(false);
       };
       backHandlerRef.current = handler;
@@ -297,7 +282,7 @@ const AppContent = () => {
 
     // Lock Telegram's swipe-to-close while a bottom-sheet dialog is open so it
     // doesn't fight our own sheet drag.
-    if (selectedChar || selectedPet || isMenuOpen) {
+    if (selectedChar || isMenuOpen) {
       tg.disableVerticalSwipes?.();
     }
 
@@ -308,7 +293,7 @@ const AppContent = () => {
         tg?.BackButton?.offClick?.(backHandlerRef.current);
       }
     };
-  }, [selectedChar, selectedPet, isMenuOpen]);
+  }, [selectedChar, isMenuOpen]);
 
   // Harmonize the Telegram chrome (header bar + overscroll area) and the
   // native control scheme with the user's Telegram theme instead of forcing
@@ -385,13 +370,11 @@ const AppContent = () => {
             {activeTab === 'shop' && <Shop onCharClick={setSelectedChar} />}
             {activeTab === 'exchange' && <Exchange />}
             {activeTab === 'gallery' && <Gallery onCharClick={setSelectedChar} />}
-            {activeTab === 'pets' && <PetShop onPetClick={setSelectedPet} />}
             {activeTab === 'referrals' && <Referrals />}
             {activeTab === 'quests' && <Quests />}
             {activeTab === 'pass' && <Pass />}
             {activeTab === 'leaderboard' && <Leaderboard />}
             {activeTab === 'achievements' && <Achievements />}
-            {activeTab === 'mypets' && <MyPets onPetClick={setSelectedPet} />}
             {activeTab === 'minigames' && <Minigames />}
             {activeTab === 'trading' && <Trading />}
             {activeTab === 'upload' && canViewUpload && <Upload />}
@@ -414,9 +397,6 @@ const AppContent = () => {
           user={user}
           onPurchaseSuccess={setRevealedChar}
         />
-      )}
-      {selectedPet && (
-        <PetActionModal selectedPet={selectedPet} setSelectedPet={setSelectedPet} user={user} />
       )}
       {revealedChar && (
         <GachaReveal character={revealedChar} onClose={() => setRevealedChar(null)} />
