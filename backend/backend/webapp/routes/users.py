@@ -30,6 +30,7 @@ from backend.core.pets import (
 from backend.core.progression import get_level_from_xp, get_user_progress
 from backend.core.roles import get_role_payload
 from backend.core.tasks import run_background_task
+from backend.core.cache import invalidate_user_cache
 from backend.core.user import get_user_rank_with_fallback
 from backend.core.utils import get_user_id_query, normalize_user_id
 from backend.database import collection, user_collection
@@ -336,6 +337,9 @@ async def accept_terms(user_id: int = Depends(get_current_user)):
     )
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="User not found.")
+    # /me reads through the Redis user cache; without this the gate would
+    # stay visible for up to TTL_USER (60s) after accepting.
+    await invalidate_user_cache(user_id)
     return {"status": "success", "accepted_at": now.isoformat()}
 
 

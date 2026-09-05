@@ -41,7 +41,17 @@ export const TermsGate = () => {
       setError(
         err instanceof Error ? err.message : 'Could not save acceptance. Check your connection and try again.',
       );
+    } finally {
       setAccepting(false);
+    }
+  };
+
+  const decline = () => {
+    window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.('error');
+    try {
+      window.Telegram?.WebApp?.close();
+    } catch {
+      // Outside Telegram (browser preview) there is nothing to close.
     }
   };
 
@@ -89,6 +99,14 @@ export const TermsGate = () => {
             disabled={accepting}
           >
             Accept & Continue
+          </Button>
+          <Button
+            variant="ghost"
+            className="w-full h-9"
+            onClick={decline}
+            disabled={accepting}
+          >
+            Decline & Close
           </Button>
           <p className="text-[8px] text-zinc-600 text-center uppercase tracking-widest font-bold">
             Required to use the app
