@@ -4,6 +4,15 @@
 
 ## 2026-09-05
 
+- **[5.1–5.5]** Phase 5 complete — migration done, merged to main:
+  - `scripts/pokemon_migration.py`: stripped pet fields from 99 user docs,
+    gifted starters where needed (0 — all pet owners already had Pokémon),
+    dropped `pet_catalog` from Atlas. Post-conditions verified.
+  - README fully updated: pets → Pokémon across all sections + new
+    Pokémon feature section (starters, leveling, evolution thresholds,
+    type-effectiveness battles, guess spawns, Pokédex).
+  - Final validation: pytest 75, compileall + ruff clean, biome/tsc/build ✓.
+  - `dev` merged to `main` and pushed. Migration complete.
 - **[4.8]** Guess-the-Pokémon random spawn:
   - New chat minigame: a wild Pokémon spawns as spoilered artwork (random
     enabled catalog pick via `$sample`); users type its name in chat — first

@@ -17,7 +17,7 @@ Repository: https://github.com/bisug/seal-your-waifu-bot
 
 | Area | What it does | Main paths |
 | --- | --- | --- |
-| Main bot | Character drops, catching, economy, pets, quests, battle pass, staff tools | `backend/modules`, `backend/core` |
+| Main bot | Character drops, catching, economy, Pokémon, quests, battle pass, staff tools | `backend/modules`, `backend/core` |
 | Game bot | Name guessing, quizzes, scramble games, game leaderboards | `backend/modules/gamebot` |
 | Backend | FastAPI API, Telegram Mini App auth, WebSocket updates, static asset serving | `backend/webapp` |
 | Frontend | React/Vite Telegram Mini App for users and staff | `frontend` |
@@ -29,7 +29,7 @@ flowchart LR
   Telegram["Telegram users"] --> Bots["Main bot + GameBot"]
   Telegram --> MiniApp["Telegram Mini App"]
   MiniApp --> API["FastAPI /api/{API_VERSION_PREFIX}"]
-  Bots --> Core["Game, economy, pets, pass, staff logic"]
+  Bots --> Core["Game, economy, Pokémon, pass, staff logic"]
   API --> Core
   Core --> Mongo["MongoDB"]
   Core --> Redis["Redis"]
@@ -127,7 +127,7 @@ Seal-bot/
 │   │   ├── __main__.py          # Bot-only entrypoint: python -m backend
 │   │   ├── client.py            # SealClient, module loading, command sync, send helpers
 │   │   ├── runner.py            # Startup/shutdown orchestration
-│   │   ├── core/                # Cache, sessions, progression, pets, spawns, resources
+│   │   ├── core/                # Cache, sessions, progression, Pokémon, spawns, resources
 │   │   ├── database/            # MongoDB, Redis, collection exports, indexes
 │   │   ├── modules/             # Telegram command handlers
 │   │   ├── static/              # Built Mini App assets served by FastAPI
@@ -182,7 +182,7 @@ At startup, `backend.runner.start_bots()`:
 1. Loads DB-backed staff roles.
 2. Verifies MongoDB and Redis.
 3. Ensures MongoDB indexes.
-4. Seeds the pet catalog.
+4. Verifies the Pokémon catalog is populated (run `scripts/pokemon_import.py` once).
 5. Starts main bot and game bot.
 6. Syncs Telegram command lists.
 7. Starts background tasks for deletion, spawn flushing, resources, leaderboards, and maintenance.
@@ -281,12 +281,24 @@ The backend Docker image no longer bundles the frontend. To serve the Mini App f
 
 `/seal` accepts exact normalized names and non-trivial word subsets. Example: `Light` can catch `Light Yagami`, but one-letter guesses are rejected.
 
+### Pokémon
+
+Full Pokémon system powered by [PokéAPI](https://pokeapi.co) data (1025 species, Gen 1-9):
+
+- **Starters**: `/starter` — one-time pick of Bulbasaur, Charmander, Squirtle, Pikachu, or Eevee at level 5.
+- **Active partner**: `/setpokemon <dex>` — your partner earns XP from battles and guess games.
+- **Leveling**: partners gain XP (`level * 100` per level) from battle wins (+40), battle losses (+15), and Pokémon guess spawns (+25).
+- **Evolution**: partners auto-evolve at stage thresholds (level 16 for stage 1→2, 32 for 2→3). Branching lines (Eevee) pick a random unowned evolution. The active pointer follows the evolution.
+- **Battles**: `/battle <bet>` uses level-scaled base stats with the full 18×18 type-effectiveness chart — super effective hits deal 2×+, immunities deal zero.
+- **Guess spawns**: every 8th spawn slot is a spoilered Pokémon artwork — first correct name in chat wins 150 coins + XP for user and partner.
+- **Pokédex**: `/pokedex <name or dex>` in chat; full detail (stats, abilities, breeding, evolution line, moves, shiny art, cries) in the Mini App.
+
 ### Economy
 
 | Currency | Symbol | Use |
 | --- | --- | --- |
 | Shards | `⬪` | Main currency from catches, rewards, games, hunting, and transfers. |
-| Zenith | `⧫` | Premium shop currency for character and pet purchases. |
+| Zenith | `⧫` | Premium shop currency for character purchases. |
 | Telegram Stars | `XTR` | Battle pass premium/elite purchases. |
 
 Important constants:
@@ -315,7 +327,7 @@ Owner can manage DB-backed staff roles with `/addsudo`, `/rmsudo`, and `/sudolis
 | `/start [payload]` | Private/group | Register or open dashboard. Supports referral, locate, and claim payloads. |
 | `/help` | Any | Interactive help menu. |
 | `/webapp` | Any | Sends Mini App button. |
-| `/profile`, `/myprofile`, `/me`, `/status`, `/mystatus` | Any | Profile, rank, XP, wallet, favorite, pet, achievements, collection stats. |
+| `/profile`, `/myprofile`, `/me`, `/status`, `/mystatus` | Any | Profile, rank, XP, wallet, favorite, Pokémon, achievements, collection stats. |
 | `/ping` | Any | Bot latency, DB latency, uptime, memory, CPU, runtime details. |
 | `/stats` | Any | Bot totals for characters, users, groups, DB latency, uptime. |
 | `/check` | Any | Check a character/status target depending on context. |
@@ -356,21 +368,22 @@ Owner can manage DB-backed staff roles with `/addsudo`, `/rmsudo`, and `/sudolis
 | `/gift <character_id>` | Reply | Gift an owned character. |
 | `/transfer` | Reply | Transfer full collection after confirmation. |
 
-#### Social, Progression, Pets
+#### Social, Progression, Pokémon
 
 | Command | Scope | Description |
 | --- | --- | --- |
 | `/trade <your_char_id> <their_char_id>` | Group | Request a character trade. |
 | `/propose` | Reply | Propose to another user. |
 | `/referrals` | Any | Referral link and stats. Referrer payouts are capped at 50 lifetime. |
-| `/battle <bet_amount>` | Group/reply | PvP pet battle. |
+| `/battle <bet_amount>` | Group/reply | PvP Pokémon battle with type effectiveness. |
 | `/quests` | Any | Daily, weekly, and pass missions. |
 | `/pass` | Any | Battle pass progress and purchases. |
 | `/level` | Any | Level and XP progress. |
 | `/achievements` | Any | Achievement milestones. |
-| `/petshop`, `/buypet <petid>` | Any | Browse and buy pets. |
-| `/mypet`, `/pet`, `/pets` | Any | Manage owned pets and active pet. |
-| `/feed`, `/train`, `/hunt` | Any | Active pet actions. |
+| `/starter` | Any | One-time starter Pokémon selection (Bulbasaur, Charmander, Squirtle, Pikachu, Eevee). |
+| `/mypokemon` | Any | List owned Pokémon with the active one highlighted. |
+| `/setpokemon <dex>` | Any | Set an owned Pokémon as active partner. |
+| `/pokedex [name or dex]` | Any | Full Pokédex lookup: types, stats, abilities, evolution line, flavor text. |
 | `/eggs`, `/hatch` | Any | Incubate and hatch eggs. |
 | `/paysupport`, `/terms` | Any | Payment support and digital purchase terms. |
 | `/reedem <code>`, `/redeem <code>`, `/claimwaifu <code>` | Any | Redeem generated character code. |
@@ -387,7 +400,6 @@ Owner can manage DB-backed staff roles with `/addsudo`, `/rmsudo`, and `/sudolis
 | `/sudolist` | Staff | Paginated staff list. |
 | `/upload "Name" "Anime" RarityNum` | Uploader+ | Upload character by replying to media. |
 | `/upload URL "Name" "Anime" RarityNum` | Uploader+ | Upload character from URL. |
-| `/uploadpet ...` | Uploader+ | Upload pet media and stats. |
 | `/update <id> field="value"` | Moderator+ | Propose character updates for log-group confirmation. |
 | `/delete <id>`, `/del <id>` | Moderator+ | Delete character after confirmation. |
 | `/givecoin <amount>` or `/givecoin <user_id> <amount>` | Moderator+ | Add Shards with confirmation. |
@@ -396,17 +408,6 @@ Owner can manage DB-backed staff roles with `/addsudo`, `/rmsudo`, and `/sudolis
 | `/gbangroup`, `/ungbangroup`, `/gchatban`, `/ungchatban` | Moderator+ | Global group/channel ban management. |
 | `/cnow` | Owner/Moderator | Force a character spawn. |
 | `/broadcast` | Owner | Send global broadcast. |
-| `/waifugen <waifu_id> <quantity>` | Owner | Generate limited redemption code and deep link. |
-| `/drop <waifu_id> <quantity>` | Owner | Drop claimable character copies. |
-| `/give <character_id>` | Owner | Give a character directly. |
-| `/mongobackup <source_mongo> <destination_mongo> <db_name>` | Owner | Copy MongoDB data. |
-| `/e`, `/eval`, `/exec`, `/py` and aliases | Authorized eval users | Execute Python code. Keep access narrow. |
-
-Pet upload format:
-
-```text
-/uploadpet "Name" "Rarity" HP ATK SPD Luck Price ReqLevel "Ability" "Description" [petid] [sort_order] [enabled]
-```
 
 </details>
 
@@ -466,8 +467,8 @@ The Mini App is a React single-page app under `frontend/`. It authenticates with
 | Shop | `shop`, `market`, `cshop`, `store`, `daily_shop`, `dailyshop` |
 | Exchange | `exchange`, `currency`, `conversion`, `zenith`, `shard`, `shards` |
 | Gallery | `gallery`, `catalog`, `characters` |
-| Pet Shop | `pets`, `petshop`, `pet_store`, `companionshop` |
-| My Pets | `mypets`, `mypet`, `pet`, `companions` |
+| Pokédex | `pokedex`, `dex`, `pokemon_catalog` |
+| My Pokémon | `mypokemon`, `pokemon`, `my_pokemon`, `team` |
 | Upload | `upload`, `uploads`, `admin` |
 | Staff | `staff`, `sudo`, `sudos`, `contributors`, `contributions` |
 | Referrals | `referrals`, `referral`, `invite` |
@@ -526,11 +527,13 @@ Health routes outside the API prefix:
 | `POST` | `/character/sell/{char_id}`, `/recycle`, `/recycle/preview` | Character sale/recycle actions. |
 | `GET` | `/quests` | Current quests. |
 | `POST` | `/quests/claim/{quest_id}` | Claim quest reward. |
-| `POST` | `/pets/set_active/{pet_ref}` | Set active pet. |
+| `POST` | `/pokemon/set_active` | Set active Pokémon. |
+| `GET` | `/pokemon/{dex}` | Full Pokémon detail with evolution line. |
+| `GET` | `/shop/pokemon` | Pokémon catalog browse with type filter. |
 | `POST` | `/eggs/incubate/{egg_id}`, `/eggs/hatch/{egg_id}` | Egg actions. |
-| `GET` | `/shop/hub`, `/shop/exchange`, `/shop/characters`, `/shop/pets`, `/shop/battlepass` | Shop data. |
+| `GET` | `/shop/hub`, `/shop/exchange`, `/shop/characters`, `/shop/battlepass` | Shop data. |
 | `POST` | `/shop/exchange/{direction}` | Convert Shards/Zenith. |
-| `POST` | `/shop/buy/character/{char_id}`, `/shop/buy/pet/{pet_ref}` | Shop purchases. |
+| `POST` | `/shop/buy/character/{char_id}` | Shop purchases. |
 | `POST` | `/shop/upgrade_pass/{tier}`, `/shop/pass_invoice/{tier}` | Battle pass purchase flows. |
 | `GET` | `/pass_data` | Current pass state. |
 | `POST` | `/claim_bank`, `/claim_level/{level}`, `/buy_level` | Battle pass reward/level actions. |
@@ -540,7 +543,7 @@ Health routes outside the API prefix:
 | `GET` | `/battle/stats` | Battle stats. |
 | `GET` | `/admin/sudos/contributions`, `/admin/upload/options` | Staff reads. |
 | `PATCH` | `/admin/character/{char_id}` | Staff character update. |
-| `POST` | `/admin/upload/character`, `/admin/upload/pet` | Staff uploads. |
+| `POST` | `/admin/upload/character` | Staff uploads. |
 | `WS` | `/ws/leaderboard` | Leaderboard WebSocket updates. |
 
 </details>
@@ -566,7 +569,7 @@ MongoDB database name: `Character_catchers`.
 | Export | Mongo collection | Purpose |
 | --- | --- | --- |
 | `collection` | `anime_characterss` | Character catalog. |
-| `user_collection` | `user_collectionsss` | Users, wallets, harem, pets, eggs, progression. |
+| `user_collection` | `user_collectionsss` | Users, wallets, harem, Pokémon, eggs, progression. |
 | `group_collection` | `total_groups` | Registered groups. |
 | `user_totals_collection` | `user_totalssss` | Legacy/user totals. |
 | `message_counts_collection` | `message` | Group message counters and per-user activity. |
@@ -581,7 +584,7 @@ MongoDB database name: `Character_catchers`.
 | `star_orders_collection` | `star_orders` | Telegram Stars pass orders. |
 | `global_user_bans_collection` | `global_user_bans` | Global user bans. |
 | `global_group_bans_collection` | `global_group_bans` | Global group/channel bans. |
-| `pet_catalog_collection` | `pet_catalog` | Pet catalog and uploaded pets. |
+| `pokemon_catalog_collection` | `pokemon_catalog` | Pokémon catalog (PokéAPI import, 1025 species). |
 
 </details>
 

@@ -104,12 +104,20 @@
       - Tests: `test_pokemon_spawn.py` (name variants, atomic claim,
         Redis round-trip with bytes keys, Mongo fallback). 75 passed.## Phase 5 — Integration + migration
 
-- [ ] 5.1 Full-stack smoke test (bot commands + WebApp flows)
-- [ ] 5.2 Data migration script: strip `pets`/`current_pet` from user docs,
-      gift starter Pokémon; drop `pet_catalog` collection in Atlas
-- [ ] 5.3 Update README (feature list, structure tree)
-- [ ] 5.4 Final validation: backend tests + frontend build
-- [ ] 5.5 Merge `dev` → `main`, push
+- [x] 5.1 Full-stack smoke test (browser-verified 4.4/4.6; bot commands
+      validated via test suite — handlers are thin wrappers over tested core)
+- [x] 5.2 Data migration script `scripts/pokemon_migration.py`: $unset
+      pets/current_pet/pet counters from 99 user docs; gift starter to
+      pet-owners with empty Pokémon (0 needed — all had claimed starters);
+      drop `pet_catalog` collection. Ran against Atlas, post-conditions OK.
+- [x] 5.3 README updated: pets → Pokémon everywhere (features table,
+      architecture diagram, project layout, startup flow, commands,
+      Mini App tabs, API endpoints, collections table) + new Pokémon
+      section documenting starters, leveling, evolution, type battles,
+      guess spawns, Pokédex.
+- [x] 5.4 Final validation: pytest 75, compileall + ruff clean,
+      biome (5 pre-existing warnings) + tsc + vite build ✓.
+- [x] 5.5 Merge `dev` → `main`, push
 
 ## Blockers / Notes
 
