@@ -50,7 +50,7 @@ def _bank_text(bank: dict) -> str:
 
 
 async def _pass_text(user_id: int) -> tuple[str, types.InlineKeyboardMarkup]:
-    user = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}}) or {}
+    user = await user_collection.find_one({"id": user_id}) or {}
     progress = await get_user_progress(user_id, user_data=user)
     level = progress["level"]
     xp_current = progress["xp_current"]
@@ -115,7 +115,7 @@ async def buypass_ask_callback(_, query: types.CallbackQuery):
     if query.from_user.id != owner_id:
         return await query.answer("This is not your menu.", show_alert=True)
 
-    user = await user_collection.find_one({"id": {"$in": [owner_id, str(owner_id)]}}) or {}
+    user = await user_collection.find_one({"id": owner_id}) or {}
     progress = await get_user_progress(owner_id, user_data=user)
     price = calculate_pass_upgrade_price(progress["pass_type"], tier)
     if not price:

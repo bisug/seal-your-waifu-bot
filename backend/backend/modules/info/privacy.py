@@ -102,7 +102,7 @@ async def gdpr_callback(_, query: types.CallbackQuery):
 
     # 2. PM registry + per-chat activity totals.
     await total_pm_users.delete_one({"_id": user_id})
-    await group_user_totals_collection.delete_many({"user_id": {"$in": [user_id, str(user_id)]}})
+    await group_user_totals_collection.delete_many({"user_id": user_id})
 
     # 3. Web sessions (hashed token keys embed the user id in their value,
     #    so remove by the session key pattern and the user-id index doc).

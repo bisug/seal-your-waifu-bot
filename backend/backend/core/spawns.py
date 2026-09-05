@@ -313,7 +313,7 @@ async def get_chat_frequency(chat_id: int) -> int:
         except Exception as e:
             LOGGER.debug(f"Redis frequency cache read failed for {chat_id}: {e}")
     if freq is None:
-        doc = await user_totals_collection.find_one({"chat_id": {"$in": [chat_id, str(chat_id)]}}, projection={"message_frequency": 1})
+        doc = await user_totals_collection.find_one({"chat_id": chat_id}, projection={"message_frequency": 1})
         freq = int(doc["message_frequency"]) if doc and doc.get("message_frequency") else 100
         if _redis:
             try:

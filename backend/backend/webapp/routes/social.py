@@ -34,8 +34,8 @@ async def get_trade_offers(user_id: int = Depends(get_current_user)):
         "$and": [
             {
                 "$or": [
-                    {"sender_id": {"$in": [user_id, str(user_id)]}},
-                    {"receiver_id": {"$in": [user_id, str(user_id)]}},
+                    {"sender_id": user_id},
+                    {"receiver_id": user_id},
                 ]
             },
             {
@@ -193,9 +193,7 @@ async def get_referrals(user: dict = Depends(get_current_user_data)):
     if not referrals:
         return []
 
-    ref_query_ids = []
-    for rid in referrals:
-        ref_query_ids.extend([rid, str(rid)])
+    ref_query_ids = [normalize_user_id(rid) for rid in referrals]
 
     cursor = user_collection.find({"id": {"$in": ref_query_ids}})
     ref_users = await cursor.to_list(length=100)

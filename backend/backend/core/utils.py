@@ -31,11 +31,11 @@ def normalize_user_id(uid):
         return 0
 def get_user_id_query(user_id):
     """
-    Returns a MongoDB query mapping for user IDs, resolving type inconsistencies
-    between integers and strings stored dynamically in MongoDB collections.
+    Returns a MongoDB equality filter for a user ID.
+    IDs are stored as integers (verified: 0 string-typed ids in the live DB);
+    equality keeps the EXPRESS_IXSCAN fast path that $in loses.
     """
-    uid_int = normalize_user_id(user_id)
-    return {"id": {"$in": [uid_int, str(uid_int)]}}
+    return {"id": normalize_user_id(user_id)}
 def html_escape(text: str) -> str:
     """Escapes special characters for Telegram HTML."""
     if not text:
@@ -162,7 +162,7 @@ def handle_errors(func):
             if not is_start and not is_sudo:
                 cached = await get_cached_user(user.id)
                 if not cached:
-                    db_user = await user_collection.find_one({"id": {"$in": [user.id, str(user.id)]}})
+                    db_user = await user_collection.find_one({"id": user.id})
                     if not db_user:
                         await _deny_unregistered(message, user)
                         return  # Stop execution!

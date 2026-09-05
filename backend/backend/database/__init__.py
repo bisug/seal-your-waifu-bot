@@ -61,7 +61,6 @@ class Database:
             (self.groups,            lambda c: c.create_index("group_id", unique=True)),
             # Previously missing indexes — added for query performance
             (self.user_totals,       lambda c: c.create_index("chat_id")),
-            (self.total_pm_users,    lambda c: c.create_index("_id")),
             # WebApp Specific Indexes
             (self.users,             lambda c: c.create_index("characters.id")),
             (self.users,             lambda c: c.create_index([("id", 1), ("characters.id", 1)])),
@@ -88,8 +87,8 @@ class Database:
             (self.star_orders,       lambda c: c.create_index([("user_id", 1), ("status", 1), ("created_at", -1)])),
             (self.star_orders,       lambda c: c.create_index("expires_at_dt", expireAfterSeconds=0)),
             (self.global_user_bans,  lambda c: c.create_index("user_id", unique=True)),
-            (self.global_group_bans, lambda c: c.create_index("chat_id", unique=True)),
             (self.global_user_bans,  lambda c: c.create_index("expires_at_dt", expireAfterSeconds=0)),
+            (self.global_group_bans, lambda c: c.create_index("chat_id", unique=True)),
             (self.global_group_bans, lambda c: c.create_index("expires_at_dt", expireAfterSeconds=0)),
             (self.pet_catalog,       lambda c: c.create_index("petid", unique=True)),
             (self.pet_catalog,       lambda c: c.create_index([("enabled", 1), ("sort_order", 1)])),

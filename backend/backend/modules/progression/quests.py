@@ -203,7 +203,7 @@ async def get_user_quests(user_id: int) -> dict:
         updates["quests_week"] = current_week
     if updates:
         updates["quests"] = quests_data
-        await user_collection.update_one({"id": {"$in": [user_id, str(user_id)]}}, {"$set": updates})
+        await user_collection.update_one({"id": user_id}, {"$set": updates})
     return quests_data
 async def update_quest_progress(user_id: int, quest_id: str, increment: int = 1):
     """
@@ -338,7 +338,7 @@ async def claim_quest_callback(_, query: types.CallbackQuery):
         quest_info = WEEKLY_POOL[quest_id]
     elif quest_id in PASS_MISSIONS:
         quest_info = PASS_MISSIONS[quest_id]
-        user_raw = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
+        user_raw = await user_collection.find_one({"id": user_id})
         pass_type = get_active_pass_type(user_raw)
         if pass_type == "free":
             return await query.answer("This mission requires a Premium or Elite Pass!", show_alert=True)
@@ -346,7 +346,7 @@ async def claim_quest_callback(_, query: types.CallbackQuery):
         return await query.answer("Quest not found!", show_alert=True)
     result = await user_collection.update_one(
         {
-            "id": {"$in": [user_id, str(user_id)]},
+            "id": user_id,
             f"quests.{quest_id}.claimed": {"$ne": True},
             f"quests.{quest_id}.progress": {"$gte": quest_info["target"]}
         },
@@ -360,7 +360,7 @@ async def claim_quest_callback(_, query: types.CallbackQuery):
     await add_xp(user_id, reward_xp, f"quest_{quest_id}")
     if reward_shards > 0:
         await user_collection.update_one(
-            {"id": {"$in": [user_id, str(user_id)]}},
+            {"id": user_id},
             {"$inc": {"balance": reward_shards}}
         )
 

@@ -26,7 +26,7 @@ async def sync_user_data(message):
     await rset(cache_key, "1", 1800)  # Sync once every 30 minutes
     try:
         await user_collection.update_many(
-            {"id": {"$in": [user_id, str(user_id)]}},
+            {"id": user_id},
             {"$set": {
                 "first_name": first_name,
                 "last_name": last_name,

@@ -35,7 +35,7 @@ async def bet_cmd(_, message: types.Message):
     if amount <= 0:
         await message.reply_text("Amount must be a <b>positive number</b>.", parse_mode=enums.ParseMode.HTML)
         return
-    user_data = await user_collection.find_one({'id': {'$in': [user_id, str(user_id)]}}, projection={'balance': 1})
+    user_data = await user_collection.find_one({'id': user_id}, projection={'balance': 1})
     if not user_data:
         await message.reply_text(
             "<b>You don't have an account yet!</b>\n"
@@ -53,7 +53,7 @@ async def bet_cmd(_, message: types.Message):
         return
     # Atomic balance deduction (prevents race conditions)
     update_res = await user_collection.update_one(
-        {'id': {'$in': [user_id, str(user_id)]}, 'balance': {'$gte': amount}},
+        {'id': user_id, 'balance': {'$gte': amount}},
         {'$inc': {'balance': -amount}}
     )
 
@@ -83,14 +83,14 @@ async def bet_cmd(_, message: types.Message):
         # otherwise a transient error eats the bet silently.
         try:
             await user_collection.update_one(
-                {'id': {'$in': [user_id, str(user_id)]}},
+                {'id': user_id},
                 {'$inc': {'balance': winnings}}
             )
         except Exception:
             LOGGER.exception("BET_CREDIT_FAILED user=%s amount=%s", user_id, winnings)
             try:
                 await user_collection.update_one(
-                    {'id': {'$in': [user_id, str(user_id)]}},
+                    {'id': user_id},
                     {'$inc': {'balance': amount}}
                 )
             except Exception:
@@ -98,7 +98,7 @@ async def bet_cmd(_, message: types.Message):
             raise
 
         # Get fresh balance for display
-        new_user_data = await user_collection.find_one({'id': {'$in': [user_id, str(user_id)]}}, projection={'balance': 1})
+        new_user_data = await user_collection.find_one({'id': user_id}, projection={'balance': 1})
         new_balance = new_user_data.get('balance', 0)
 
         result_text = (
@@ -109,7 +109,7 @@ async def bet_cmd(_, message: types.Message):
         )
     else:
         # Balance already deducted
-        new_user_data = await user_collection.find_one({'id': {'$in': [user_id, str(user_id)]}}, projection={'balance': 1})
+        new_user_data = await user_collection.find_one({'id': user_id}, projection={'balance': 1})
         new_balance = new_user_data.get('balance', 0)
 
         result_text = (

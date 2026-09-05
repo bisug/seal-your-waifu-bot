@@ -15,22 +15,11 @@ LOGGER = get_logger(__name__)
 
 # METRIC_ORDER and METRICS have been moved to backend.core.constants for centralization.
 def _user_id_variants(user_id) -> list:
-    variants = []
-    if user_id is None:
-        return variants
-
-    variants.append(user_id)
+    """Normalize a user id to its int form; ids are stored as ints in Mongo."""
     try:
-        uid_int = int(user_id)
-        variants.extend([uid_int, str(uid_int)])
+        return [int(user_id)]
     except (TypeError, ValueError):
-        variants.append(str(user_id))
-
-    deduped = []
-    for value in variants:
-        if value not in deduped:
-            deduped.append(value)
-    return deduped
+        return []
 
 
 def _needs_name_resolution(user: dict) -> bool:
@@ -112,7 +101,7 @@ async def _resolve_missing_names(users: list) -> list:
         # Persist resolved names back to DB in the background
         for uid, info in user_info_map.items():
             await user_collection.update_many(
-                {"id": {"$in": [uid, str(uid)]}},
+                {"id": uid},
                 {"$set": info}
             )
         # Patch the results in-place

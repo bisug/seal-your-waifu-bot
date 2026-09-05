@@ -30,7 +30,7 @@ def _role_help() -> str:
 
 
 async def _set_sudo_role(target_id: int, role: str) -> dict:
-    await sudo_collection.delete_many({"user_id": {"$in": [target_id, str(target_id)]}})
+    await sudo_collection.delete_many({"user_id": target_id})
     await sudo_collection.insert_one({"user_id": target_id, "role": role})
     if role == MODERATOR_ROLE and target_id not in sudo_users:
         sudo_users.append(target_id)
@@ -41,7 +41,7 @@ async def _set_sudo_role(target_id: int, role: str) -> dict:
 
 
 async def _remove_sudo_role(target_id: int):
-    res = await sudo_collection.delete_one({"user_id": {"$in": [target_id, str(target_id)]}})
+    res = await sudo_collection.delete_one({"user_id": target_id})
     if target_id in sudo_users:
         sudo_users.remove(target_id)
     sudo_roles.pop(target_id, None)
@@ -131,7 +131,7 @@ async def _build_sudo_detail(viewer_id: int, page: int, target_id: int):
         role = "owner"
         is_owner = True
     else:
-        doc = await sudo_collection.find_one({"user_id": {"$in": [target_id, str(target_id)]}})
+        doc = await sudo_collection.find_one({"user_id": target_id})
         if not doc:
             role = None
             is_owner = False

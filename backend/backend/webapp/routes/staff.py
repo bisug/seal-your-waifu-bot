@@ -83,10 +83,6 @@ async def _get_sudo_records() -> list[dict[str, Any]]:
 
 
 async def _load_user_docs(user_ids: list[int]) -> dict[int, dict[str, Any]]:
-    lookup_ids: list[int | str] = []
-    for user_id in user_ids:
-        lookup_ids.extend([user_id, str(user_id)])
-
     projection = {
         "_id": 0,
         "id": 1,
@@ -101,7 +97,7 @@ async def _load_user_docs(user_ids: list[int]) -> dict[int, dict[str, Any]]:
         "role_upload_counts": 1,
         "created_at": 1,
     }
-    docs = await user_collection.find({"id": {"$in": lookup_ids}}, projection).to_list(length=None)
+    docs = await user_collection.find({"id": {"$in": user_ids}}, projection).to_list(length=None)
     return {
         normalize_user_id(doc.get("id")): doc
         for doc in docs
@@ -152,9 +148,8 @@ def _pet_upload_item(item: dict[str, Any]) -> dict[str, Any]:
 
 
 async def _get_uploads(user_id: int) -> tuple[int, int, list[dict[str, Any]], list[dict[str, Any]]]:
-    id_values = [user_id, str(user_id)]
-    character_filter = {"added_by_id": {"$in": id_values}}
-    pet_filter = {"uploaded_by": {"$in": id_values}}
+    character_filter = {"added_by_id": user_id}
+    pet_filter = {"uploaded_by": user_id}
 
     character_count = await collection.count_documents(character_filter)
     pet_count = await pet_catalog_collection.count_documents(pet_filter)

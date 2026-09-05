@@ -156,7 +156,7 @@ async def sync_user_to_redis(user_id: int, user_doc: dict = None):
     if not _redis: return
     if not user_doc:
         from backend.database import user_collection
-        user_doc = await user_collection.find_one({"id": {"$in": [user_id, str(user_id)]}})
+        user_doc = await user_collection.find_one({"id": user_id})
     if not user_doc: return
     uid_str = str(user_id)
     try:
