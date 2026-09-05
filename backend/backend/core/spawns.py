@@ -1,6 +1,5 @@
 import asyncio
 import json
-import random
 import time
 from typing import Any, Dict, Optional
 
@@ -12,7 +11,7 @@ from backend.core.cache import rget, rset
 from backend.core.logging import get_logger
 from backend.core.tasks import run_background_task
 from backend.core.waifu import _pick_excluding, get_or_load_characters
-from backend.database import message_counts_collection, spawns_collection, user_totals_collection
+from backend.database import message_counts_collection, spawns_collection
 from backend.database import r as _redis
 
 LOGGER = get_logger(__name__)
@@ -313,8 +312,9 @@ async def get_chat_frequency(chat_id: int) -> int:
         except Exception as e:
             LOGGER.debug(f"Redis frequency cache read failed for {chat_id}: {e}")
     if freq is None:
-        doc = await user_totals_collection.find_one({"chat_id": chat_id}, projection={"message_frequency": 1})
-        freq = int(doc["message_frequency"]) if doc and doc.get("message_frequency") else 100
+        # No per-chat frequency is configured anywhere; the default keeps
+        # spawn pacing uniform until an admin knob exists.
+        freq = 100
         if _redis:
             try:
                 await asyncio.wait_for(_redis.hset(key, "_cached_frequency", str(freq)), timeout=3.0)

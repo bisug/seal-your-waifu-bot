@@ -10,8 +10,6 @@ reporter could de-list characters they dislike. Upgrade path: require a
 signed statement field + restore window before deletion becomes permanent.
 """
 
-import html
-import os
 import time
 
 from pyrogram import enums, filters, types

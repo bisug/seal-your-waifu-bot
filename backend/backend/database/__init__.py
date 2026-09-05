@@ -27,7 +27,6 @@ class Database:
         # NOTE: Legacy collection names contain intentional typos (e.g. 'user_totalssss')
         self.anime_characters = self.db['anime_characterss']
         self.groups = self.db['total_groups']
-        self.user_totals = self.db['user_totalssss']
         self.message_counts = self.db['message']
         self.users = self.db["user_collectionsss"]
         self.group_user_totals = self.db['group_user_totals']
@@ -59,8 +58,6 @@ class Database:
             (self.group_user_totals, lambda c: c.create_index([("group_id", 1), ("user_id", 1)])),
             (self.group_user_totals, lambda c: c.create_index([("group_id", 1), ("count", -1)])),
             (self.groups,            lambda c: c.create_index("group_id", unique=True)),
-            # Previously missing indexes — added for query performance
-            (self.user_totals,       lambda c: c.create_index("chat_id")),
             # WebApp Specific Indexes
             (self.users,             lambda c: c.create_index("characters.id")),
             (self.users,             lambda c: c.create_index([("id", 1), ("characters.id", 1)])),
@@ -151,7 +148,6 @@ db = seal_db.db
 
 collection = seal_db.anime_characters
 group_collection = seal_db.groups
-user_totals_collection = seal_db.user_totals
 message_counts_collection = seal_db.message_counts
 user_collection = seal_db.users
 group_user_totals_collection = seal_db.group_user_totals

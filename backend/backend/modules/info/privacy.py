@@ -10,7 +10,6 @@ Erasure scope (all collections holding personal data):
   referral edges pointing at the user, and the user's own referral events.
 """
 
-import time
 
 from pyrogram import enums, filters, types
 
@@ -19,7 +18,6 @@ from backend.core.cache import invalidate_user_cache, rdel
 from backend.core.logging import get_logger
 from backend.core.utils import handle_errors, get_user_id_query
 from backend.database import (
-    db,
     group_user_totals_collection,
     sessions_collection,
     total_pm_users,

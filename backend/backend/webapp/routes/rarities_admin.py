@@ -94,7 +94,7 @@ async def delete_rarity_api(rarity_id: int, user_id: int = Depends(require_sudo_
     if rarity_id not in RARITY_MAP:
         raise HTTPException(status_code=404, detail="Rarity not found")
 
-    from backend.database import collection, rarities_collection, user_collection
+    from backend.database import collection, rarities_collection
     label = RARITY_MAP[rarity_id]
 
     # Block deletion while characters still use the rarity — deleting would
