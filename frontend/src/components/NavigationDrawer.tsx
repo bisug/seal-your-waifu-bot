@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   ListChecks,
   LogOut,
+  PawPrint,
   Repeat2,
   Satellite,
   Store,
@@ -48,6 +49,8 @@ const SECTIONS: NavSection[] = [
     items: [
       { id: 'profile', label: 'Dashboard', icon: LayoutDashboard },
       { id: 'incubation', label: 'Hatchery', icon: Egg },
+      { id: 'mypokemon', label: 'Pokémon', icon: PawPrint },
+      { id: 'pokedex', label: 'Pokédex', icon: BookOpen },
       { id: 'shop', label: 'Market', icon: Store },
       { id: 'exchange', label: 'Currency', icon: Repeat2 },
       { id: 'gallery', label: 'Archive', icon: BookOpen },

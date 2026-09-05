@@ -18,13 +18,16 @@ from backend.database import user_collection
 
 LOGGER = get_logger(__name__)
 
-RARITY_BADGES = {
-    "Common": "⚪",
-    "Rare": "🔵",
-    "Epic": "🟣",
-    "Mythic": "🟠",
-    "Legendary": "🔴",
+TYPE_EMOJI = {
+    "normal": "⭐", "fire": "🔥", "water": "💧", "electric": "⚡", "grass": "🌿",
+    "ice": "❄️", "fighting": "🥊", "poison": "☠️", "ground": "⛰️", "flying": "🕊️",
+    "psychic": "🔮", "bug": "🐛", "rock": "🪨", "ghost": "👻", "dragon": "🐉",
+    "dark": "🌑", "steel": "⚙️", "fairy": "🧚",
 }
+
+
+def type_badges(types: list) -> str:
+    return "".join(TYPE_EMOJI.get(t, "❔") for t in types)
 
 
 @app.on_message(filters.command("starter"))
@@ -51,7 +54,7 @@ async def starter_cmd(_, message: types.Message):
         )
     lines = ["🧬 <b>Choose your starter Pokémon!</b>\n"]
     for i, cat in enumerate(starters, 1):
-        badge = RARITY_BADGES.get(cat["rarity"], "⚪")
+        badge = type_badges(cat["types"])
         lines.append(f"<b>{i}.</b> {badge} <b>{html_escape(cat['name'])}</b> — {'/'.join(cat['types'])}")
     lines.append("\nReply with <code>/starter &lt;number&gt;</code> to choose.")
     await message.reply_text("\n".join(lines), parse_mode=enums.ParseMode.HTML)
@@ -110,7 +113,7 @@ async def mypokemon_cmd(_, message: types.Message):
     lines = ["🧬 <b>Your Pokémon</b>\n"]
     for entry in sorted(owned, key=lambda p: int(p.get("dex", 0))):
         p = normalize_pokemon(entry, catalog.get(int(entry.get("dex", 0))))
-        badge = RARITY_BADGES.get(p["rarity"], "⚪")
+        badge = type_badges(p["types"])
         marker = " ⭐" if current is not None and int(entry.get("dex", 0)) == int(current) else ""
         lines.append(
             f"{badge} <b>#{p['dex']:03d} {html_escape(p['name'])}</b> "
@@ -164,12 +167,12 @@ async def pokedex_cmd(_, message: types.Message):
         )
     if not cat:
         return await message.reply_text("❌ Not found in the Pokédex.", parse_mode=enums.ParseMode.HTML)
-    badge = RARITY_BADGES.get(cat["rarity"], "⚪")
+    badge = type_badges(cat["types"])
     stats = cat.get("base_stats", {})
     await message.reply_text(
         f"{badge} <b>#{cat['dex']:03d} {html_escape(cat['name'])}</b>\n"
         f"<b>Type:</b> {'/'.join(cat['types'])}\n"
-        f"<b>Rarity:</b> {cat['rarity']} (BST {cat.get('base_total', '?')})\n"
+        f"<b>Base stat total:</b> {cat.get('base_total', '?')}\n"
         f"<b>Stats:</b> ❤️ {stats.get('hp', '?')} | ⚔️ {stats.get('atk', '?')} | "
         f"🛡 {stats.get('def', '?')} | ✨ {stats.get('spatk', '?')}/{stats.get('spdef', '?')} | 💨 {stats.get('spd', '?')}\n"
         f"<i>{html_escape(cat.get('desc', ''))}</i>",

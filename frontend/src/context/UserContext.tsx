@@ -70,6 +70,20 @@ export interface Egg {
   incubation_pass_type?: string | null;
 }
 
+export interface Pokemon {
+  dex: number;
+  name: string;
+  types: string[];
+  img: string;
+  base_stats?: Record<string, number>;
+  base_total?: number;
+  desc?: string | null;
+  level?: number;
+  xp?: number;
+  xp_needed?: number;
+  is_active?: boolean;
+}
+
 export interface User {
   id: number;
   first_name: string;
@@ -98,6 +112,8 @@ export interface User {
   titles?: Titles;
   characters: Character[];
   eggs?: Egg[];
+  pokemon?: Pokemon[];
+  current_pokemon?: Pokemon | null;
 }
 
 interface UserContextType {

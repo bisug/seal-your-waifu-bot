@@ -4,6 +4,34 @@
 
 ## 2026-09-05
 
+- **[4.5]** Rarity removed from Pokémon — organized by type instead:
+  - Rationale: rarity tiers don't fit Pokémon; types are the natural taxonomy.
+  - `scripts/pokemon_import.py`: RARITY_TIERS + rarity_for deleted; no rarity
+    field in upserts.
+  - `core/pokemon.py`: normalize no longer returns rarity.
+  - `database/__init__.py`: catalog index rarity → `types`.
+  - `/shop/pokemon`: `rarity` query param → `type` (matches on `types`).
+  - `schemas.py`: PokemonCatalogItem drops rarity.
+  - Bot commands: TYPE_EMOJI badges (18 types) replace rarity badges;
+    `/pokedex` shows base-stat total instead of rarity.
+  - Frontend: Pokedex 18-type filter buttons (emoji + name), PokemonCard type
+    emojis replace rarity badge, UserContext Pokemon interface drops rarity.
+  - Atlas: `$unset rarity` on 1025 catalog docs (done, verified).
+  - Validate: pytest 56 passed, compileall + ruff clean, biome/tsc/build ✓.
+- **[4.1–4.4]** Phase 4 complete — Pokémon frontend live:
+  - `components/pokemon/PokemonCard.tsx`: shared card (artwork, dex# name,
+    level, rarity badge, active star, fallback #dex).
+  - `pages/MyPokemon.tsx`: active partner card + owned grid with Set Active
+    (POST `/pokemon/set_active`), empty state pointing to `/starter`.
+  - `pages/Pokedex.tsx`: paged catalog browse (60/page, rarity filter,
+    load-more) via GET `/shop/pokemon`.
+  - `App.tsx`: tabs `mypokemon`/`pokedex` + aliases (pokemon, my_pokemon, dex);
+    `NavigationDrawer`: Pokémon + Pokédex nav items (PawPrint icon).
+  - `UserContext`: `Pokemon` interface; `User.pokemon[]` + `current_pokemon`.
+  - Backend: POST `/pokemon/set_active` route added (progression.py).
+  - Browser-verified via preview 4173 with stubbed telegram + API: both pages
+    render, rarity filter + load-more work, set-active toast fires.
+  - Validate: biome lint (5 pre-existing warnings), tsc clean, vite build ✓.
 - **[3.1–3.8]** Phase 3 complete — Pokémon backend live:
   - `database/__init__.py`: `pokemon_catalog` collection + 3 indexes
     (unique dex, enabled+sort_order, rarity).

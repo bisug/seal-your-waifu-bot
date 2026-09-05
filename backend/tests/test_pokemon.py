@@ -20,7 +20,6 @@ PIKA_CATALOG = {
     "name": "Pikachu",
     "types": ["electric"],
     "img": "https://example.com/pikachu.png",
-    "rarity": "Rare",
     "base_stats": {"hp": 35, "atk": 55, "def": 40, "spatk": 50, "spdef": 50, "spd": 90},
     "base_total": 320,
     "sort_order": 25,
@@ -31,7 +30,7 @@ PIKA_CATALOG = {
 def test_normalize_merges_catalog():
     out = poke.normalize_pokemon({"dex": 25, "level": 3, "xp": 40}, PIKA_CATALOG)
     assert out["name"] == "Pikachu"
-    assert out["rarity"] == "Rare"
+    assert out["types"] == ["electric"]
     assert out["level"] == 3
     assert out["xp_needed"] == 3 * poke.XP_PER_LEVEL
     assert out["is_active"] is False
@@ -40,7 +39,6 @@ def test_normalize_merges_catalog():
 def test_normalize_without_catalog_falls_back():
     out = poke.normalize_pokemon({"dex": 999, "level": 1, "xp": 0}, None)
     assert out["name"] == "Pokemon #999"
-    assert out["rarity"] == "Common"
     assert out["types"] == []
 
 

@@ -50,10 +50,16 @@
 
 ## Phase 4 — Pokémon frontend
 
-- [ ] 4.1 `pages/MyPokemon.tsx` + `pages/PokemonShop.tsx` + `components/pokemon/`
-- [ ] 4.2 Wire routes/nav/types
-- [ ] 4.3 Validate: lint + type-check + build green
-- [ ] 4.4 Browser-verify via preview server (stub telegram-web-app.js)
+- [x] 4.1 `pages/MyPokemon.tsx` + `pages/Pokedex.tsx` + `components/pokemon/PokemonCard.tsx`
+- [x] 4.2 Wire routes/nav/types (tabs `mypokemon`/`pokedex`, aliases, nav items, UserContext Pokemon interface)
+- [x] 4.3 Validate: lint + type-check + build green
+- [x] 4.4 Browser-verify via preview server (stubbed telegram + API: pages render,
+      rarity filter, load-more, set-active flow, nav items present)
+- [x] 4.5 Remove rarity concept — organize by Pokémon type instead:
+      import script, core normalize, DB index (rarity→types), shop `type` filter,
+      schemas, bot commands (type emoji badges), tests, frontend (Pokedex type
+      filter, PokemonCard type emojis, UserContext interface); Atlas `$unset`
+      rarity from 1025 catalog docs
 
 ## Phase 5 — Integration + migration
 

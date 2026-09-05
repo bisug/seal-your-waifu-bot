@@ -82,7 +82,6 @@ class PokemonCatalogItem(BaseModel):
     name: str
     types: List[str] = Field(default_factory=list)
     img: Optional[str] = None
-    rarity: str = "Common"
     base_total: int = 0
     desc: Optional[str] = None
 

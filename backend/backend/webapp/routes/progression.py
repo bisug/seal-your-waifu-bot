@@ -10,6 +10,7 @@ from backend.core.pass_config import (
     get_active_pass_type,
     get_pass_incubation_slots,
 )
+from backend.core.pokemon import set_active_pokemon
 from backend.core.utils import get_now_utc, get_user_id_query, normalize_user_id
 from backend.database import user_collection
 from backend.modules.progression.quests import (
@@ -23,6 +24,24 @@ from backend.webapp.auth import get_current_user, get_current_user_data
 from backend.webapp.schemas import QuestsResponse
 
 router = APIRouter()
+
+
+@router.post("/pokemon/set_active")
+async def pokemon_set_active(
+    payload: dict,
+    user: dict = Depends(get_current_user_data),
+):
+    """Set the user's active Pokémon (must be owned)."""
+    try:
+        dex = int(payload.get("dex", 0))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="Invalid dex")
+    user_id = normalize_user_id(user["id"])
+    ok = await set_active_pokemon(user_id, dex)
+    if not ok:
+        raise HTTPException(status_code=400, detail="Pokémon not owned")
+    await invalidate_user_cache(user_id)
+    return {"ok": True, "dex": dex}
 
 
 

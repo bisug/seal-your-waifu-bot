@@ -23,7 +23,6 @@ def normalize_pokemon(entry: dict, catalog: dict | None = None) -> dict:
         "name": cat.get("name", f"Pokemon #{entry.get('dex', '?')}"),
         "types": cat.get("types", []),
         "img": cat.get("img", ""),
-        "rarity": cat.get("rarity", "Common"),
         "base_stats": cat.get("base_stats", {}),
         "level": level,
         "xp": int(entry.get("xp", 0)),

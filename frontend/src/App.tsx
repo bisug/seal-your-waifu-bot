@@ -32,10 +32,14 @@ const Upload = lazy(() => import('./pages/Upload').then((m) => ({ default: m.Upl
 const Staff = lazy(() => import('./pages/Staff').then((m) => ({ default: m.Staff })));
 const Minigames = lazy(() => import('./pages/Minigames').then((m) => ({ default: m.Minigames })));
 const Trading = lazy(() => import('./pages/Trading').then((m) => ({ default: m.Trading })));
+const MyPokemon = lazy(() => import('./pages/MyPokemon').then((m) => ({ default: m.MyPokemon })));
+const Pokedex = lazy(() => import('./pages/Pokedex').then((m) => ({ default: m.Pokedex })));
 
 const VALID_TABS = [
   'profile',
   'incubation',
+  'mypokemon',
+  'pokedex',
   'shop',
   'exchange',
   'gallery',
@@ -50,6 +54,10 @@ const VALID_TABS = [
   'trading',
 ];
 const TAB_ALIASES: Record<string, string> = {
+  pokemon: 'mypokemon',
+  my_pokemon: 'mypokemon',
+  pokedex: 'pokedex',
+  dex: 'pokedex',
   profile: 'profile',
   home: 'profile',
   me: 'profile',
@@ -367,6 +375,8 @@ const AppContent = () => {
               />
             )}
             {activeTab === 'incubation' && <Hatchery />}
+            {activeTab === 'mypokemon' && <MyPokemon />}
+            {activeTab === 'pokedex' && <Pokedex />}
             {activeTab === 'shop' && <Shop onCharClick={setSelectedChar} />}
             {activeTab === 'exchange' && <Exchange />}
             {activeTab === 'gallery' && <Gallery onCharClick={setSelectedChar} />}

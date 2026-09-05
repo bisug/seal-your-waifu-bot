@@ -90,7 +90,7 @@ class Database:
             # Pokémon catalog
             (self.pokemon_catalog,   lambda c: c.create_index("dex", unique=True)),
             (self.pokemon_catalog,   lambda c: c.create_index([("enabled", 1), ("sort_order", 1)])),
-            (self.pokemon_catalog,   lambda c: c.create_index("rarity")),
+            (self.pokemon_catalog,   lambda c: c.create_index("types")),
         ]
         failed = 0
         for collection, idx_fn in indexes:

@@ -152,13 +152,13 @@ async def get_shop_characters(user: dict = Depends(get_current_user_data)):
 async def get_pokemon_catalog(
     page: int = Query(1, ge=1),
     limit: int = Query(60, ge=1, le=120),
-    rarity: str | None = Query(None),
+    type: str | None = Query(None),
     user: dict = Depends(get_current_user_data),
 ):
-    """Browse the Pokémon catalog (paged, optional rarity filter)."""
+    """Browse the Pokémon catalog (paged, optional type filter)."""
     query = {"enabled": True}
-    if rarity:
-        query["rarity"] = rarity
+    if type:
+        query["types"] = type.lower()
     cursor = pokemon_catalog_collection.find(query, {"_id": 0}).sort("sort_order", 1)
     total = await pokemon_catalog_collection.count_documents(query)
     items = await cursor.skip((page - 1) * limit).limit(limit).to_list(length=limit)
