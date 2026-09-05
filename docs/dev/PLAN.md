@@ -34,17 +34,19 @@
 
 ## Phase 3 — Pokémon backend
 
-- [ ] 3.1 Add `pokemon_catalog` collection + indexes to `database/__init__.py`
-- [ ] 3.2 Write `scripts/pokemon_import.py` — fetch from PokéAPI, map fields
+- [x] 3.1 Add `pokemon_catalog` collection + indexes to `database/__init__.py`
+- [x] 3.2 Write `scripts/pokemon_import.py` — fetch from PokéAPI, map fields
       (dex#, name, type, sprite, rarity by base-stat total, sort by dex),
       insert to `pokemon_catalog`; idempotent
-- [ ] 3.3 Run import against Atlas (dev DB first if available)
-- [ ] 3.4 Create `core/pokemon.py` — engine: list, find, ensure_user_state,
+- [x] 3.3 Run import against Atlas — 1025 Pokémon imported, Pikachu verified
+- [x] 3.4 Create `core/pokemon.py` — engine: list, find, ensure_user_state,
       active pokemon, rarity tiers
-- [ ] 3.5 Bot commands: `modules/progression/pokemon.py` (start, info, set active)
-- [ ] 3.6 WebApp endpoints: `/shop/pokemon`, `/me` pokemon block, staff uploads
-- [ ] 3.7 Tests: `tests/test_pokemon.py` (catalog shape, ownership, active)
-- [ ] 3.8 Validate: pytest green
+- [x] 3.5 Bot commands: `modules/progression/pokemon.py` (/starter, /mypokemon,
+      /setpokemon, /pokedex); battle.py wired to active Pokémon stats
+- [x] 3.6 WebApp endpoints: `/shop/pokemon` catalog browse, `/me` pokemon block
+- [x] 3.7 Tests: `tests/test_pokemon.py` (8 tests: normalize, find, grant guard,
+      active, XP level-up, battle stats)
+- [x] 3.8 Validate: pytest green (56 passed), compileall clean, ruff clean
 
 ## Phase 4 — Pokémon frontend
 

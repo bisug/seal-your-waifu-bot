@@ -42,6 +42,7 @@ class Database:
         self.global_group_bans = self.db['global_group_bans']
         self.rarities = self.db['rarities']
         self.takedown_log = self.db['takedown_log']
+        self.pokemon_catalog = self.db['pokemon_catalog']
 
     async def ensure_indexes(self):
         """Create performance indexes for all collections."""
@@ -86,6 +87,10 @@ class Database:
             (self.global_user_bans,  lambda c: c.create_index("expires_at_dt", expireAfterSeconds=0)),
             (self.global_group_bans, lambda c: c.create_index("chat_id", unique=True)),
             (self.global_group_bans, lambda c: c.create_index("expires_at_dt", expireAfterSeconds=0)),
+            # Pokémon catalog
+            (self.pokemon_catalog,   lambda c: c.create_index("dex", unique=True)),
+            (self.pokemon_catalog,   lambda c: c.create_index([("enabled", 1), ("sort_order", 1)])),
+            (self.pokemon_catalog,   lambda c: c.create_index("rarity")),
         ]
         failed = 0
         for collection, idx_fn in indexes:
@@ -159,6 +164,7 @@ global_user_bans_collection = seal_db.global_user_bans
 global_group_bans_collection = seal_db.global_group_bans
 rarities_collection = seal_db.rarities
 takedown_log_collection = seal_db.takedown_log
+pokemon_catalog_collection = seal_db.pokemon_catalog
 
 
 async def close_connections():

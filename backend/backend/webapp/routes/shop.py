@@ -33,9 +33,10 @@ from backend.core.pass_payments import PassPaymentError, create_pass_invoice
 from backend.core.progression import get_user_progress
 from backend.core.roles import apply_role_discount
 from backend.core.utils import get_user_id_query, normalize_user_id
-from backend.database import client, collection, user_collection
+from backend.database import client, collection, pokemon_catalog_collection, user_collection
 from backend.modules.economy.shop import get_daily_shop_characters
 from backend.webapp.auth import get_current_user, get_current_user_data
+from backend.webapp.schemas import PokemonCatalogResponse
 
 LOGGER = get_logger(__name__)
 
@@ -145,6 +146,23 @@ async def get_shop_characters(user: dict = Depends(get_current_user_data)):
         char_dict["staff_discount"] = discount
         response.append(char_dict)
     return response
+
+
+@router.get("/shop/pokemon", response_model=PokemonCatalogResponse)
+async def get_pokemon_catalog(
+    page: int = Query(1, ge=1),
+    limit: int = Query(60, ge=1, le=120),
+    rarity: str | None = Query(None),
+    user: dict = Depends(get_current_user_data),
+):
+    """Browse the Pokémon catalog (paged, optional rarity filter)."""
+    query = {"enabled": True}
+    if rarity:
+        query["rarity"] = rarity
+    cursor = pokemon_catalog_collection.find(query, {"_id": 0}).sort("sort_order", 1)
+    total = await pokemon_catalog_collection.count_documents(query)
+    items = await cursor.skip((page - 1) * limit).limit(limit).to_list(length=limit)
+    return {"total": total, "page": page, "items": items}
 
 @router.post("/shop/buy/character/{char_id}")
 async def buy_character_api(char_id: str, user_id: int = Depends(get_current_user)):

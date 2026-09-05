@@ -19,13 +19,14 @@ from backend.core.pass_config import (
     get_active_pass_type,
     get_pass_incubation_slots,
 )
+from backend.core.pokemon import normalize_pokemon
 from backend.core.progression import get_level_from_xp, get_user_progress
 from backend.core.roles import get_role_payload
 from backend.core.tasks import run_background_task
 from backend.core.cache import invalidate_user_cache
 from backend.core.user import get_user_rank_with_fallback
 from backend.core.utils import get_user_id_query, normalize_user_id
-from backend.database import collection, user_collection
+from backend.database import collection, pokemon_catalog_collection, user_collection
 from backend.modules.progression.achievements import ACHIEVEMENTS
 from backend.webapp.auth import get_current_user, get_current_user_data, is_sudo_user_id
 from backend.webapp.schemas import UserProfileResponse
@@ -249,6 +250,25 @@ async def get_me(user: dict = Depends(get_current_user_data)):
 
     processed_eggs, migration_needed = _process_eggs(user, pass_type)
     resp_data["eggs"] = processed_eggs
+    
+    # Pokémon block: owned list + active, normalized against the catalog.
+    owned_pokemon = user.get("pokemon") or []
+    owned_dexes = [p.get("dex") for p in owned_pokemon]
+    catalog_docs = (
+        await pokemon_catalog_collection.find(
+            {"dex": {"$in": owned_dexes}}, {"_id": 0}
+        ).to_list(length=None)
+        if owned_dexes else []
+    )
+    catalog_map = {c["dex"]: c for c in catalog_docs}
+    resp_data["pokemon"] = [
+        normalize_pokemon(p, catalog_map.get(p.get("dex"))) for p in owned_pokemon
+    ]
+    active_ref = user.get("current_pokemon")
+    active_entry = next((p for p in owned_pokemon if p.get("dex") == active_ref), None)
+    resp_data["current_pokemon"] = (
+        normalize_pokemon(active_entry, catalog_map.get(active_ref)) if active_entry is not None else None
+    )
     
     if migration_needed:
         derived_fields = {"remaining_mins", "wait_min", "base_wait_min"}

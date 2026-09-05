@@ -7,6 +7,7 @@ from backend.client import app
 from backend.core.balance import check_and_deduct, get_user_balance, update_user_balance
 from backend.core.cache import is_on_cooldown as redis_cooldown
 from backend.core.logging import get_logger
+from backend.core.pokemon import battle_stats, get_active_pokemon
 from backend.core.progression import add_xp
 from backend.core.sessions import consume_session, create_session, get_session
 from backend.core.utils import handle_errors, html_escape
@@ -15,20 +16,26 @@ from backend.modules.progression.quests import update_quest_progress
 
 LOGGER = get_logger(__name__)
 
-def calculate_stats():
+FALLBACK_STATS = {
+    "name": "Fists",
+    "hp": 100,
+    "atk": 10,
+    "spd": 10,
+    "luck": 0.05,
+    "level": 1,
+    "max_hp": 100,
+}
+
+
+async def calculate_stats(user_id: int) -> dict:
     """
-    Flat combat stats for every fighter (pets removed; Pokémon stats arrive
-    in Phase 3 and will replace this).
+    Combat stats from the user's active Pokémon (level-scaled base stats).
+    Falls back to flat Fists stats when no Pokémon is active.
     """
-    return {
-        "name": "Fists",
-        "hp": 100,
-        "atk": 10,
-        "spd": 10,
-        "luck": 0.05,
-        "level": 1,
-        "max_hp": 100
-    }
+    active = await get_active_pokemon(user_id)
+    if not active:
+        return dict(FALLBACK_STATS)
+    return battle_stats(active)
 
 def simulate_battle(p1_stats, p2_stats, p1_name, p2_name):
     """
@@ -151,8 +158,8 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
     try:
         a_user = await app.get_users(attacker_id)
         d_user = await app.get_users(defender_id)
-        a_stats = calculate_stats()
-        d_stats = calculate_stats()
+        a_stats = await calculate_stats(attacker_id)
+        d_stats = await calculate_stats(defender_id)
         text = (
             f"⚔️ <b>Battle Started!</b>\n"
             f"🔴 <a href=\"tg://user?id={a_user.id}\">{html_escape(a_user.first_name)}</a> - <b>{html_escape(a_stats['name'])}</b> (Lvl {a_stats['level']})\n"

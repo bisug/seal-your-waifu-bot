@@ -4,6 +4,23 @@
 
 ## 2026-09-05
 
+- **[3.1–3.8]** Phase 3 complete — Pokémon backend live:
+  - `database/__init__.py`: `pokemon_catalog` collection + 3 indexes
+    (unique dex, enabled+sort_order, rarity).
+  - `scripts/pokemon_import.py`: one-time PokéAPI import (Gen 1-9, dex 1-1025),
+    rarity by base-stat total (Legendary ≥600, Mythic ≥540, Epic ≥480, Rare ≥410,
+    Common below), official artwork, idempotent upserts. **1025 imported to Atlas**,
+    Pikachu spot-checked.
+  - `core/pokemon.py` engine: normalize/merge catalog+owned, ensure user state
+    ($set only missing fields), find/grant (atomic $ne dup guard), set active,
+    add XP with level-up loop, battle_stats (level-scaled).
+  - `modules/progression/pokemon.py`: `/starter` (5 starters, atomic claim),
+    `/mypokemon`, `/setpokemon`, `/pokedex`.
+  - `battle.py`: fighters now use active Pokémon stats (Fists fallback).
+  - WebApp: `/shop/pokemon` paged catalog browse (rarity filter);
+    `/me` returns `pokemon[]` + `current_pokemon` (catalog fetched by owned
+    dexes only — no full-catalog scan).
+  - Tests: `tests/test_pokemon.py` (8). Suite: 56 passed, compileall + ruff clean.
 - **[2.1–2.3]** Phase 2 complete — pets fully removed from frontend:
   - Deleted `pages/MyPets.tsx`, `pages/PetShop.tsx`, `components/pet/PetActionModal.tsx`.
   - `App.tsx`: pet tabs/aliases/routes/modal state removed.

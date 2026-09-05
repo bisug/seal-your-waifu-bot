@@ -74,6 +74,22 @@ class UserProfileResponse(BaseModel):
     achievements: List[AchievementModel] = Field(default_factory=list)
     titles: TitlesModel
     eggs: List[EggModel] = Field(default_factory=list)
+    pokemon: List[dict] = Field(default_factory=list)
+    current_pokemon: Optional[dict] = None
+
+class PokemonCatalogItem(BaseModel):
+    dex: int
+    name: str
+    types: List[str] = Field(default_factory=list)
+    img: Optional[str] = None
+    rarity: str = "Common"
+    base_total: int = 0
+    desc: Optional[str] = None
+
+class PokemonCatalogResponse(BaseModel):
+    total: int
+    page: int
+    items: List[PokemonCatalogItem]
 
 class CharacterModel(BaseModel):
     id: str
