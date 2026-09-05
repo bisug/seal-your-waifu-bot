@@ -1,5 +1,5 @@
-import { BookOpen, Search, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { BookOpen, ChevronDown, Search, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { PokemonCard } from '../components/pokemon/PokemonCard';
 import { PokemonDetailModal } from '../components/pokemon/PokemonDetailModal';
 import { Button } from '../components/ui/Button';
@@ -26,7 +26,26 @@ const PAGE_SIZE = 60;
 
 export const Pokedex = () => {
   const [type, setType] = useState<string | null>(null);
+  const [typeMenuOpen, setTypeMenuOpen] = useState(false);
   const [detailDex, setDetailDex] = useState<number | null>(null);
+  const typeMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!typeMenuOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (typeMenuRef.current && !typeMenuRef.current.contains(e.target as Node)) {
+        setTypeMenuOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
+  }, [typeMenuOpen]);
+
+  const pickType = (t: string | null) => {
+    window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
+    setType(t);
+    setTypeMenuOpen(false);
+  };
   const gridParams = useMemo(() => (type ? { type } : {}), [type]);
   const { items, loading, search, setSearch, lastElementRef } = useInfiniteGrid<Pokemon>(
     '/shop/pokemon',
@@ -62,24 +81,46 @@ export const Pokedex = () => {
         )}
       </div>
 
-      <div className="flex gap-1.5 flex-wrap">
+      <div className="relative" ref={typeMenuRef}>
         <Button
-          variant={type === null ? 'secondary' : 'outline'}
+          variant="outline"
           size="sm"
-          onClick={() => setType(null)}
+          onClick={() => setTypeMenuOpen((v) => !v)}
+          rightIcon={
+            <ChevronDown
+              size={12}
+              className={`transition-transform duration-200 ${typeMenuOpen ? 'rotate-180' : ''}`}
+            />
+          }
         >
-          All
+          {type ? `${TYPE_EMOJI[type] ?? '❔'} ${type}` : 'All Types'}
         </Button>
-        {TYPES.map((t) => (
-          <Button
-            key={t}
-            variant={type === t ? 'secondary' : 'outline'}
-            size="sm"
-            onClick={() => setType(t)}
-          >
-            {TYPE_EMOJI[t]} {t}
-          </Button>
-        ))}
+        {typeMenuOpen && (
+          <div className="absolute left-0 z-50 mt-1.5 w-44 max-h-64 overflow-y-auto rounded-md border border-white/10 bg-zinc-950 p-1 shadow-xl shadow-black/60">
+            <button
+              key="all"
+              type="button"
+              onClick={() => pickType(null)}
+              className={`flex w-full items-center gap-2 rounded-sm px-2.5 py-2 text-left text-[11px] font-bold uppercase tracking-wider transition-colors ${
+                type === null ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200'
+              }`}
+            >
+              All
+            </button>
+            {TYPES.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => pickType(t)}
+                className={`flex w-full items-center gap-2 rounded-sm px-2.5 py-2 text-left text-[11px] font-bold uppercase tracking-wider transition-colors ${
+                  type === t ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200'
+                }`}
+              >
+                <span>{TYPE_EMOJI[t]}</span> {t}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {loading ? (
