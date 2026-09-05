@@ -4,7 +4,7 @@ Run: cd backend && uv run python -m pytest tests/test_pokemon.py -q
 """
 
 import asyncio
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import backend.core.pokemon as poke
 
@@ -84,11 +84,13 @@ def test_add_pokemon_xp_levels_up():
     """250 XP at level 2 (needs 200) -> level 3 with 50 carryover."""
     user_doc = {"id": 111, "pokemon": [{"dex": 25, "level": 2, "xp": 0}], "current_pokemon": 25}
     with patch.object(poke, "user_collection") as uc, \
-         patch.object(poke, "get_catalog_pokemon", new=AsyncMock(return_value=PIKA_CATALOG)):
+         patch.object(poke, "get_catalog_pokemon", new=AsyncMock(return_value=PIKA_CATALOG)), \
+         patch.object(poke, "evolve_pokemon", new=AsyncMock(return_value=None)):
         uc.find_one = AsyncMock(return_value=user_doc)
         uc.update_one = AsyncMock(return_value=_UpdateResult(1, 1))
-        level = asyncio.run(poke.add_pokemon_xp(111, 250))
+        level, evo = asyncio.run(poke.add_pokemon_xp(111, 250))
         assert level == 3
+        assert evo is None
         set_op = uc.update_one.call_args.args[1]["$set"]
         assert set_op["pokemon.$.level"] == 3
         assert set_op["pokemon.$.xp"] == 50
@@ -100,7 +102,89 @@ def test_battle_stats_scale_with_level():
         {**PIKA_CATALOG, "base_stats": PIKA_CATALOG["base_stats"]},
     ))
     assert stats["name"] == "Pikachu"
+    assert stats["types"] == ["electric"]
     assert stats["hp"] == 35 + 10 * 5
     assert stats["atk"] == (55 + 50) // 2 + 10 * 2
     assert stats["spd"] == 90 + 10
     assert stats["max_hp"] == stats["hp"]
+
+
+# --- Evolution ---
+
+RAI_CATALOG = {**PIKA_CATALOG, "dex": 26, "name": "Raichu", "evolves_from": 25}
+
+
+def test_evolve_pokemon_threshold_not_met():
+    """Level below EVOLVE_LEVELS[0] -> no evolution."""
+    user_doc = {"id": 111, "pokemon": [{"dex": 25, "level": 10, "xp": 0}], "current_pokemon": 25}
+    with patch.object(poke, "user_collection") as uc, \
+         patch.object(poke, "get_catalog_pokemon", new=AsyncMock(return_value=PIKA_CATALOG)), \
+         patch.object(poke, "pokemon_catalog_collection") as pcc:
+        pcc.find = MagicMock(return_value=MagicMock(to_list=AsyncMock(return_value=[{"dex": 26, "name": "Raichu"}])))
+        uc.find_one = AsyncMock(return_value=user_doc)
+        assert asyncio.run(poke.evolve_pokemon(111, 25)) is None
+        uc.update_one.assert_not_called()
+
+
+def test_evolve_pokemon_evolves_and_updates_active():
+    """Level >= threshold -> dex swapped, current_pokemon follows, info returned."""
+    user_doc = {"id": 111, "pokemon": [{"dex": 25, "level": 16, "xp": 0}], "current_pokemon": 25}
+    with patch.object(poke, "user_collection") as uc, \
+         patch.object(poke, "get_catalog_pokemon", new=AsyncMock(return_value=PIKA_CATALOG)), \
+         patch.object(poke, "pokemon_catalog_collection") as pcc:
+        pcc.find = MagicMock(return_value=MagicMock(to_list=AsyncMock(return_value=[{"dex": 26, "name": "Raichu"}])))
+        uc.find_one = AsyncMock(return_value=user_doc)
+        uc.update_one = AsyncMock(return_value=_UpdateResult(1, 1))
+        evo = asyncio.run(poke.evolve_pokemon(111, 25))
+        assert evo == {"from": 25, "to": 26, "from_name": "Pikachu", "to_name": "Raichu"}
+        # First update: swap the owned entry's dex.
+        first = uc.update_one.call_args_list[0]
+        assert first.args[0] == {"id": 111, "pokemon.dex": 25}
+        assert first.args[1]["$set"]["pokemon.$.dex"] == 26
+        # Second update: active pointer follows.
+        second = uc.update_one.call_args_list[1]
+        assert second.args[1]["$set"]["current_pokemon"] == 26
+
+
+def test_evolve_pokemon_skips_owned_target():
+    """Target already owned (no duplicate dexes) -> no evolution."""
+    user_doc = {
+        "id": 111,
+        "pokemon": [{"dex": 25, "level": 16, "xp": 0}, {"dex": 26, "level": 1, "xp": 0}],
+        "current_pokemon": 25,
+    }
+    with patch.object(poke, "user_collection") as uc, \
+         patch.object(poke, "get_catalog_pokemon", new=AsyncMock(return_value=PIKA_CATALOG)), \
+         patch.object(poke, "pokemon_catalog_collection") as pcc:
+        pcc.find = MagicMock(return_value=MagicMock(to_list=AsyncMock(return_value=[{"dex": 26, "name": "Raichu"}])))
+        uc.find_one = AsyncMock(return_value=user_doc)
+        assert asyncio.run(poke.evolve_pokemon(111, 25)) is None
+        uc.update_one.assert_not_called()
+
+
+def test_evolve_pokemon_branch_picks_available():
+    """Branch point (Eevee): owned targets excluded, remaining one picked."""
+    eevee_cat = {"dex": 133, "name": "Eevee", "evolution_chain": [133, 134, 135, 136]}
+    user_doc = {
+        "id": 111,
+        "pokemon": [{"dex": 133, "level": 16, "xp": 0}, {"dex": 134, "level": 1, "xp": 0}],
+        "current_pokemon": 133,
+    }
+    branches = [{"dex": 134, "name": "Jolteon"}, {"dex": 135, "name": "Flareon"}]
+    with patch.object(poke, "user_collection") as uc, \
+         patch.object(poke, "get_catalog_pokemon", new=AsyncMock(return_value=eevee_cat)), \
+         patch.object(poke, "pokemon_catalog_collection") as pcc:
+        pcc.find = MagicMock(return_value=MagicMock(to_list=AsyncMock(return_value=branches)))
+        uc.find_one = AsyncMock(return_value=user_doc)
+        uc.update_one = AsyncMock(return_value=_UpdateResult(1, 1))
+        evo = asyncio.run(poke.evolve_pokemon(111, 133))
+        assert evo is not None
+        assert evo["to"] == 135  # 134 owned -> only 135 available
+        assert evo["to_name"] == "Flareon"
+
+
+def test_evolve_threshold_scales_with_stage():
+    chain = [1, 2, 3]
+    assert poke._evolve_threshold(chain, 1) == poke.EVOLVE_LEVELS[0]
+    assert poke._evolve_threshold(chain, 2) == poke.EVOLVE_LEVELS[1]
+    assert poke._evolve_threshold(chain, 3) == poke.EVOLVE_LEVELS[1]  # capped at last stage

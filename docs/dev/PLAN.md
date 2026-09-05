@@ -71,6 +71,24 @@
       breeding info, evolution line, moves) wired into MyPokemon + Pokedex.
       Atlas re-imported: 1025 docs, 0 missing fields.
 
+- [x] 4.7 Evolution + battle integration:
+      - `core/pokemon.py`: `evolve_pokemon()` — auto-evolve on level-up via
+        catalog `evolves_from` successors (branch points like Eevee pick a
+        random unowned target; owned targets skipped, no duplicate dexes);
+        `EVOLVE_LEVELS = (16, 32)` stage-scaled thresholds; active pointer
+        follows the evolved dex. `add_pokemon_xp` returns
+        `(level, evolution)` and triggers evolution after level-ups.
+        `battle_stats` now includes `types`.
+      - `modules/games/battle.py`: full 18×18 `TYPE_CHART` (standard
+        multipliers incl. immunities), `type_multiplier()` product over
+        attacker/defender types, effectiveness text in the battle log
+        (super effective / not very / no effect), Pokémon XP for both
+        fighters (winner +40, loser +15) with evolution announcements
+        appended to the result message.
+      - Tests: `test_pokemon.py` evolution suite (threshold, swap+active
+        update, owned-target skip, branch pick, stage scaling) +
+        `test_battle_types.py` (chart lookups, dual types, immunity battle,
+        super-effective KO). 69 passed.
 ## Phase 5 — Integration + migration
 
 - [ ] 5.1 Full-stack smoke test (bot commands + WebApp flows)

@@ -7,7 +7,7 @@ from backend.client import app
 from backend.core.balance import check_and_deduct, get_user_balance, update_user_balance
 from backend.core.cache import is_on_cooldown as redis_cooldown
 from backend.core.logging import get_logger
-from backend.core.pokemon import battle_stats, get_active_pokemon
+from backend.core.pokemon import add_pokemon_xp, battle_stats, get_active_pokemon
 from backend.core.progression import add_xp
 from backend.core.sessions import consume_session, create_session, get_session
 from backend.core.utils import handle_errors, html_escape
@@ -18,6 +18,7 @@ LOGGER = get_logger(__name__)
 
 FALLBACK_STATS = {
     "name": "Fists",
+    "types": [],
     "hp": 100,
     "atk": 10,
     "spd": 10,
@@ -25,6 +26,49 @@ FALLBACK_STATS = {
     "level": 1,
     "max_hp": 100,
 }
+
+# Standard type-effectiveness chart: attacker type -> {defender type: multiplier}.
+# Only non-1x entries listed; everything else is neutral.
+TYPE_CHART = {
+    "normal": {"rock": 0.5, "ghost": 0, "steel": 0.5},
+    "fire": {"fire": 0.5, "water": 0.5, "grass": 2, "ice": 2, "bug": 2, "rock": 0.5, "dragon": 0.5, "steel": 2},
+    "water": {"fire": 2, "water": 0.5, "grass": 0.5, "ground": 2, "rock": 2, "dragon": 0.5},
+    "electric": {"water": 2, "electric": 0.5, "grass": 0.5, "ground": 0, "flying": 2, "dragon": 0.5},
+    "grass": {"fire": 0.5, "water": 2, "grass": 0.5, "poison": 0.5, "ground": 2, "flying": 0.5, "bug": 0.5, "rock": 2, "dragon": 0.5, "steel": 0.5},
+    "ice": {"fire": 0.5, "water": 0.5, "grass": 2, "ice": 0.5, "ground": 2, "flying": 2, "dragon": 2, "steel": 0.5},
+    "fighting": {"normal": 2, "ice": 2, "poison": 0.5, "flying": 0.5, "psychic": 0.5, "bug": 0.5, "rock": 2, "ghost": 0, "dark": 2, "steel": 2, "fairy": 0.5},
+    "poison": {"grass": 2, "poison": 0.5, "ground": 0.5, "rock": 0.5, "ghost": 0.5, "steel": 0},
+    "ground": {"fire": 2, "electric": 2, "grass": 0.5, "poison": 2, "flying": 0, "bug": 0.5, "rock": 2, "steel": 2},
+    "flying": {"electric": 0.5, "grass": 2, "fighting": 2, "bug": 2, "rock": 0.5, "steel": 0.5},
+    "psychic": {"fighting": 2, "poison": 2, "psychic": 0.5, "dark": 0, "steel": 0.5},
+    "bug": {"fire": 0.5, "grass": 2, "fighting": 0.5, "poison": 0.5, "flying": 0.5, "psychic": 2, "ghost": 2, "dark": 2, "steel": 0.5, "fairy": 0.5},
+    "rock": {"fire": 2, "ice": 2, "fighting": 0.5, "ground": 0.5, "flying": 2, "bug": 2, "steel": 0.5},
+    "ghost": {"normal": 0, "psychic": 2, "ghost": 2, "dark": 0.5},
+    "dragon": {"dragon": 2, "steel": 0.5, "fairy": 0},
+    "dark": {"fighting": 0.5, "psychic": 2, "ghost": 2, "dark": 0.5, "fairy": 0.5},
+    "steel": {"fire": 0.5, "water": 0.5, "electric": 0.5, "ice": 2, "rock": 2, "steel": 0.5, "fairy": 2},
+    "fairy": {"fire": 0.5, "fighting": 2, "poison": 0.5, "dragon": 2, "dark": 2, "steel": 0.5},
+}
+
+
+def type_multiplier(attack_types: list, defend_types: list) -> float:
+    """Effectiveness of an attack: product of attacker-type vs defender-type multipliers."""
+    mult = 1.0
+    for atk_t in attack_types or []:
+        row = TYPE_CHART.get(atk_t, {})
+        for def_t in defend_types or []:
+            mult *= row.get(def_t, 1.0)
+    return mult
+
+
+def effectiveness_text(mult: float) -> str:
+    if mult == 0:
+        return " 🚫 <b>It had no effect!</b>"
+    if mult >= 2:
+        return " 🔥 <b>Super effective!</b>"
+    if mult < 1:
+        return " 💠 <i>Not very effective...</i>"
+    return ""
 
 
 async def calculate_stats(user_id: int) -> dict:
@@ -64,10 +108,15 @@ def simulate_battle(p1_stats, p2_stats, p1_name, p2_name):
             crit_mult = 1.5
             is_crit = True
         variance = random.uniform(0.9, 1.1)
-        damage = int(attacker["atk"] * variance * crit_mult)
+        mult = type_multiplier(attacker.get("types"), defender.get("types"))
+        damage = int(attacker["atk"] * variance * crit_mult * mult)
         defender["hp"] -= damage
         crit_text = " 💥 <b>CRIT!</b>" if is_crit else ""
-        log.append(f"{a_icon} <b>{a_name}</b> hits for <code>{damage}</code>{crit_text} (HP: {max(0, defender['hp'])})")
+        eff_text = effectiveness_text(mult)
+        if damage == 0 and mult == 0:
+            log.append(f"{a_icon} <b>{a_name}</b>'s attack passed right through {d_name}!")
+        else:
+            log.append(f"{a_icon} <b>{a_name}</b> hits for <code>{damage}</code>{crit_text}{eff_text} (HP: {max(0, defender['hp'])})")
         if defender["hp"] <= 0:
             break
         attacker, defender = defender, attacker
@@ -183,6 +232,19 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
         await update_user_balance(winner_id, winnings)
         pot_paid = True
         await add_xp(winner_id, 30, "battle_win")
+        # Pokémon XP: winner's partner gains more, loser's still learns.
+        loser_id = defender_id if winner_idx == 1 else attacker_id
+        _, winner_evo = await add_pokemon_xp(winner_id, 40, "battle_win")
+        _, loser_evo = await add_pokemon_xp(loser_id, 15, "battle_loss")
+        loser_user = d_user if winner_idx == 1 else a_user
+        evo_lines = []
+        for evo, owner in ((winner_evo, winner_user), (loser_evo, loser_user)):
+            if evo:
+                evo_lines.append(
+                    f"✨ <b>{html_escape(evo['from_name'])}</b> evolved into "
+                    f"<b>{html_escape(evo['to_name'])}</b> "
+                    f"(<a href=\"tg://user?id={owner.id}\">{html_escape(owner.first_name)}</a>)!"
+                )
         await update_quest_progress(winner_id, "battle_veteran", 1)
         await update_quest_progress(winner_id, "weekly_battle", 1)
         await update_quest_progress(winner_id, "pass_battles", 1)
@@ -194,6 +256,8 @@ async def battle_accept_handler(_, query: types.CallbackQuery):
             f"<b>Tax:</b> <code>{tax}</code> 🪙\n"
             f"📈 <b>+30 XP</b> for {html_escape(winner_user.first_name)}"
         )
+        if evo_lines:
+            result_text += "\n\n" + "\n".join(evo_lines)
         await query.message.edit_text(result_text, parse_mode=enums.ParseMode.HTML)
 
     except Exception as e:

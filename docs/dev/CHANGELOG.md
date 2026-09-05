@@ -4,6 +4,26 @@
 
 ## 2026-09-05
 
+- **[4.7]** Evolution + battle integration:
+  - Evolution engine (`core/pokemon.py`): Pokémon auto-evolve when XP level-ups
+    push them past stage-scaled thresholds (`EVOLVE_LEVELS = (16, 32)`).
+    Successors resolved from catalog `evolves_from` (exact for branch points —
+    Eevee picks a random unowned eeveelution; owned targets skipped so no
+    duplicate dexes). `current_pokemon` follows the evolved dex.
+    `add_pokemon_xp` now returns `(new_level, evolution_info)`.
+  - Battle type effectiveness (`modules/games/battle.py`): full standard 18×18
+    `TYPE_CHART` with immunities (electric→ground 0x, normal→ghost 0x, etc.).
+    Damage multiplied by the product of attacker-type vs defender-type
+    multipliers; log shows Super effective / Not very effective / no-effect
+    lines. Immune hits log "passed right through".
+  - Battle Pokémon XP: winner's active partner +40 XP, loser's +15 — battles
+    now train Pokémon, and evolutions triggered mid-battle are announced in
+    the result message.
+  - `battle_stats` includes `types` for effectiveness; `FALLBACK_STATS`
+    (Fists) stays neutral.
+  - Tests: 13 new (evolution threshold/swap/branch/owned-skip, type chart
+    lookups, dual-type products, immunity battle, super-effective KO).
+    69 passed; compileall + ruff clean.
 - **[4.6]** Full PokéAPI feature set implemented:
   - `scripts/pokemon_import.py`: now imports shiny artwork, cry URL,
     height/weight, abilities (with hidden flag), moves (capped at 24), English
