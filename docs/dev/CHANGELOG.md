@@ -4,6 +4,23 @@
 
 ## 2026-09-05
 
+- **[4.8]** Guess-the-Pokémon random spawn:
+  - New chat minigame: a wild Pokémon spawns as spoilered artwork (random
+    enabled catalog pick via `$sample`); users type its name in chat — first
+    correct guess claims it. Name matching mirrors nguess (full name or any
+    part >2 chars, case-insensitive).
+  - State architecture mirrors character spawns exactly: Redis hash
+    (`pokespawn:state:{chat_id}`, 1h TTL) with Mongo fallback
+    (`kind: "pokemon"` docs in spawns collection); atomic claim via
+    Mongo `update_one` guard prevents double-wins.
+  - Trigger: every 8th spawn slot in `message_counter` becomes a Pokémon
+    spawn (skipped while one is unclaimed in the chat).
+  - Rewards: +150 coins, +15 user XP, +25 active-partner XP — partner XP
+    can trigger evolution, announced in the win message.
+  - Fixed during testing: Redis `hgetall` returns bytes keys — decode
+    before the `dex` guard (would have silently always fallen back to Mongo).
+  - Tests: 6 new (variants, claim atomicity, Redis bytes round-trip, Mongo
+    fallback). 75 passed; compileall + ruff clean.
 - **[4.7]** Evolution + battle integration:
   - Evolution engine (`core/pokemon.py`): Pokémon auto-evolve when XP level-ups
     push them past stage-scaled thresholds (`EVOLVE_LEVELS = (16, 32)`).

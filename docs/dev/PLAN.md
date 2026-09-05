@@ -88,8 +88,21 @@
       - Tests: `test_pokemon.py` evolution suite (threshold, swap+active
         update, owned-target skip, branch pick, stage scaling) +
         `test_battle_types.py` (chart lookups, dual types, immunity battle,
-        super-effective KO). 69 passed.
-## Phase 5 — Integration + migration
+        super-effective KO). 69 passed.- [x] 4.8 Guess-the-Pokémon random spawn:
+      - `core/spawns.py`: `send_pokemon_spawn()` — random enabled catalog
+        Pokémon ($sample) sent as spoilered artwork; state in Redis hash
+        `pokespawn:state:{chat_id}` + Mongo fallback (`kind: "pokemon"` in
+        spawns collection); `get_active_pokemon_spawn()` / atomic
+        `clear_active_pokemon_spawn()` claim (mirrors character-spawn
+        architecture). Rewards: 150 coins + 15 user XP + 25 partner XP
+        (evolution announced in the win message).
+      - `modules/collection/pokemon_guess.py`: group text handler (group=2,
+        after message counter) — first correct name variant in chat claims
+        the spawn; name matching mirrors nguess (full name + parts >2 chars).
+      - `modules/collection/message_counter.py`: every 8th spawn slot is a
+        Pokémon spawn (skipped if one is already active in the chat).
+      - Tests: `test_pokemon_spawn.py` (name variants, atomic claim,
+        Redis round-trip with bytes keys, Mongo fallback). 75 passed.## Phase 5 — Integration + migration
 
 - [ ] 5.1 Full-stack smoke test (bot commands + WebApp flows)
 - [ ] 5.2 Data migration script: strip `pets`/`current_pet` from user docs,

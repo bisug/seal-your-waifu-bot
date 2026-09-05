@@ -12,8 +12,11 @@ from backend.core.rarities import (
 )
 from backend.core.spawn_utils import get_target_spawn_frequency
 from backend.core.spawns import (
+    POKEMON_SPAWN_EVERY,
+    get_active_pokemon_spawn,
     increment_message_count,
     send_character,
+    send_pokemon_spawn,
     track_user_activity,
 )
 
@@ -32,6 +35,7 @@ async def message_counter_handler(_, message: types.Message):
     Main handler for counting messages and triggering character spawns.
     Tracks user activity, increments chat message counts, and determines
     when a character should be spawned based on thresholds or random chance.
+    Every Nth spawn is a guess-the-Pokémon minigame instead.
     """
     chat = message.chat
     if not chat or not message.from_user:
@@ -59,6 +63,12 @@ async def message_counter_handler(_, message: types.Message):
     # Standard spawn logic — frequency resolved by the shared helper
     target_freq, active_count = await get_target_spawn_frequency(chat_id)
     if count % target_freq == 0:
+        # Every Nth spawn is a Pokémon guessing game (if none is active).
+        if count % (target_freq * POKEMON_SPAWN_EVERY) == 0:
+            if not await get_active_pokemon_spawn(chat_id):
+                SPAWN_LOGGER.info(f"Pokémon spawn triggered in {chat_id} (count={count})")
+                await send_pokemon_spawn(chat_id)
+                return
         SPAWN_LOGGER.info(f"Standard spawn triggered in {chat_id} (count={count}, freq={target_freq})")
         selected_rarity = _pick_spawn_rarity(active_count)
         if selected_rarity:

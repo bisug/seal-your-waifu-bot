@@ -470,3 +470,125 @@ async def send_character(chat_id: int, rarity: str, *, force: bool = False):
         for task in (recent_task, chars_task):
             if not task.done():
                 task.cancel()
+
+
+# --- Pokémon spawns (guess-the-Pokémon minigame) ---
+
+# How often a Pokémon spawn fires instead of a character spawn (1 in N).
+POKEMON_SPAWN_EVERY = 8
+POKEMON_SPAWN_STATE_TTL = 3600  # Redis state expiry, matches character spawns
+POKEMON_GUESS_REWARD = 150      # coins for a correct guess
+POKEMON_GUESS_XP = 15           # user XP for a correct guess
+POKEMON_GUESS_MON_XP = 25      # active-partner XP for a correct guess
+
+
+async def send_pokemon_spawn(chat_id: int) -> None:
+    """Send a random catalog Pokémon silhouette for the guess minigame.
+
+    The artwork is sent as a spoiler so it stays hidden until guessed —
+    the name is never shown. State mirrors character spawns: Redis hash
+    first, Mongo fallback, atomic claim on correct guess.
+    """
+    from backend.database import pokemon_catalog_collection
+
+    pipeline = [{"$match": {"enabled": True}}, {"$sample": {"size": 1}}]
+    cursor = pokemon_catalog_collection.aggregate(pipeline)
+    docs = await cursor.to_list(length=1)
+    if not docs:
+        return
+    mon = docs[0]
+    caption = (
+        "🌀 <b>A wild Pokémon appeared!</b>\n"
+        "❓ Guess its name to win a reward!\n"
+        "💬 Type the name in chat (no command needed)."
+    )
+    try:
+        msg = await app.send_media_safe(
+            chat_id,
+            media_url=mon["img"],
+            caption=caption,
+            parse_mode=enums.ParseMode.HTML,
+            has_spoiler=True,
+        )
+        if not msg:
+            LOGGER.warning(f"send_pokemon_spawn: failed to send to {chat_id}")
+            return
+        await set_active_pokemon_spawn(chat_id, mon, msg.id)
+    except Exception as e:
+        LOGGER.error(f"Error sending Pokémon spawn: {e}")
+
+
+async def set_active_pokemon_spawn(chat_id: int, mon: Dict[str, Any], message_id: int) -> None:
+    """Register the active Pokémon spawn (Redis hash + Mongo fallback)."""
+    key = f"pokespawn:state:{chat_id}"
+    data = {
+        "dex": str(mon["dex"]),
+        "name": mon["name"],
+        "message_id": str(message_id),
+        "last_spawn_time": str(time.time()),
+    }
+    if _redis:
+        try:
+            async with _redis.pipeline(transaction=False) as pipe:
+                pipe.hset(key, mapping=data)
+                pipe.expire(key, POKEMON_SPAWN_STATE_TTL)
+                await pipe.execute()
+        except Exception as e:
+            LOGGER.debug(f"Redis operation bypassed: {e}")
+    run_background_task(
+        spawns_collection.update_one(
+            {"chat_id": chat_id, "kind": "pokemon"},
+            {"$set": {"kind": "pokemon", "pokemon": mon, "message_id": message_id,
+                      "last_spawn_time": time.time()}},
+            upsert=True,
+        )
+    )
+
+
+async def get_active_pokemon_spawn(chat_id: int) -> Optional[Dict[str, Any]]:
+    """Active Pokémon spawn for this chat: {dex, name, message_id} or None."""
+    key = f"pokespawn:state:{chat_id}"
+    if _redis:
+        try:
+            raw = await _redis.hgetall(key)
+            state = {
+                (k.decode() if isinstance(k, bytes) else k): (v.decode() if isinstance(v, bytes) else v)
+                for k, v in (raw or {}).items()
+            }
+            if state.get("dex"):
+                return {
+                    "dex": int(state["dex"]),
+                    "name": state["name"],
+                    "message_id": int(state["message_id"]),
+                }
+        except Exception as e:
+            LOGGER.debug(f"Redis read bypassed: {e}")
+    doc = await spawns_collection.find_one(
+        {"chat_id": chat_id, "kind": "pokemon", "pokemon": {"$ne": None}}
+    )
+    if not doc or not doc.get("pokemon"):
+        return None
+    return {
+        "dex": doc["pokemon"]["dex"],
+        "name": doc["pokemon"]["name"],
+        "message_id": doc.get("message_id"),
+    }
+
+
+async def clear_active_pokemon_spawn(chat_id: int, user_id: int) -> bool:
+    """Atomically claim the Pokémon spawn for this user. False if already won."""
+    result = await spawns_collection.update_one(
+        {"chat_id": chat_id, "kind": "pokemon", "pokemon": {"$ne": None}},
+        {"$set": {"winner_id": user_id}, "$unset": {"pokemon": "", "message_id": ""}},
+    )
+    if result.modified_count > 0:
+        if _redis:
+            try:
+                key = f"pokespawn:state:{chat_id}"
+                async with _redis.pipeline(transaction=False) as pipe:
+                    pipe.delete(key)
+                    await pipe.execute()
+            except Exception as e:
+                LOGGER.debug(f"Redis clear bypassed: {e}")
+        return True
+    return False
