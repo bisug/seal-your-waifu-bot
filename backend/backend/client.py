@@ -16,7 +16,7 @@ class SealClient(Client):
     def __init__(self, name="backend", bot_token=None, session_string=None):
         # Determine if we're using a bot token or a session string
         actual_bot_token = bot_token if not session_string else None
-        if not actual_bot_token and not session_string and name != "UserBot":
+        if not actual_bot_token and not session_string:
             actual_bot_token = config.TOKEN
 
         super().__init__(
@@ -286,8 +286,7 @@ class SealClient(Client):
             config.GAME_BOT_USERNAME = me.username
 
         # Sync bot commands with Telegram
-        if self.name != "UserBot":
-            await self._set_commands_internal()
+        await self._set_commands_internal()
 
         if self.name == "MainBot":
             from backend.core.deletion import deletion_worker
@@ -412,8 +411,7 @@ class SealClient(Client):
         LOGGER.info(f"{self.name} stopped.")
 
 
-# Client instances: the single MainBot/GameBot/UserBot objects shared app-wide.
+# Client instances: the single MainBot/GameBot objects shared app-wide.
 # Import these from backend.client, never from the package root.
 app = SealClient(name="MainBot", bot_token=config.TOKEN)
 game_bot = SealClient(name="GameBot", bot_token=config.SUB_TOKEN)
-userbot = SealClient(name="UserBot", session_string=config.STRING_SESSION) if config.STRING_SESSION else None

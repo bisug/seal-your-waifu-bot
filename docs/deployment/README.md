@@ -60,7 +60,6 @@ Required at runtime (create them in the platform's Secrets/Env UI — never comm
 | `SUPPORT_CHAT` / `UPDATE_CHAT` | Chat handles |
 | `PHOTO_URL` | Public bot photo URL |
 | `IMGBB_API_KEY` | imgbb key for uploads |
-| `STRING_SESSION` | Optional userbot session (empty is fine) |
 | `WEB_APP_URL` | Public HTTPS origin of your **frontend** (the Mini App) |
 | `MINI_APP_SHORT_NAME` | Short name set in BotFather |
 | `API_VERSION_PREFIX` | Must equal frontend `VITE_API_PREFIX` |
@@ -98,7 +97,6 @@ SUPPORT_CHAT=
 UPDATE_CHAT=
 PHOTO_URL=
 IMGBB_API_KEY=
-STRING_SESSION=
 WEB_APP_URL=
 MINI_APP_SHORT_NAME=app
 API_VERSION_PREFIX=v1_7b82

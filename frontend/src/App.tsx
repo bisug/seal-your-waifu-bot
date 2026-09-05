@@ -6,6 +6,7 @@ import { Header } from './components/Header';
 import { IntroLoading, type IntroStatus } from './components/IntroLoading';
 import { NavigationDrawer } from './components/NavigationDrawer';
 import { PetActionModal } from './components/pet/PetActionModal';
+import { TermsGate } from './components/TermsGate';
 import { GachaReveal } from './components/ui/GachaReveal';
 import { ToastProvider } from './components/ui/Toast';
 import { UserProvider, useUser } from './context/UserContext';
@@ -359,6 +360,7 @@ const AppContent = () => {
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-zinc-950">
+      <TermsGate />
       <Header onMenuClick={() => setIsMenuOpen(true)} onNavigate={handleNavigate} />
 
       <main className="app-scroller">

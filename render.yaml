@@ -34,8 +34,6 @@ services:
         sync: false
       - key: IMGBB_API_KEY
         sync: false
-      - key: STRING_SESSION
-        sync: false
       - key: LOG_LEVEL
         value: INFO
       - key: LOG_FORMAT

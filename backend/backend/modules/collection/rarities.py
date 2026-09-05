@@ -6,7 +6,7 @@ the `rarities` collection, and shows each tier's share of the archive.
 
 Backward-compat re-exports (same live dicts as core/rarities.py, so
 /rarityset edits apply everywhere without re-imports):
-    RARITY_MAP          — admin/scraper, admin/update_char, admin/upload,
+    RARITY_MAP          — admin/update_char, admin/upload,
                           collection/hmode, core/uploads, webapp upload route
     SHOP_RARITY_WEIGHTS — economy/shop
     RARITY_WEIGHTS / ACTIVE_RARITY_WEIGHTS — legacy aliases

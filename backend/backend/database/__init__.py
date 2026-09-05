@@ -38,7 +38,6 @@ class Database:
         self.quiz_questions = self.db['quiz_questions']
         self.deletion_queue = self.db['deletion_queue']
         self.daily_shop = self.db['daily_shop_inventory']
-        self.scraped_characters = self.db['scraped_characters']
         self.star_orders = self.db['star_orders']
         self.global_user_bans = self.db['global_user_bans']
         self.global_group_bans = self.db['global_group_bans']
@@ -77,7 +76,6 @@ class Database:
             # Search Performance Indexes (Multi-key for harem filtering)
             (self.users,             lambda c: c.create_index([("id", 1), ("characters.rarity", 1), ("characters.name", 1)])),
             (self.users,             lambda c: c.create_index([("id", 1), ("characters.anime", 1)])),
-            (self.scraped_characters, lambda c: c.create_index([("name", 1), ("anime", 1)], unique=True)),
             (self.sessions,          lambda c: c.create_index("expires_at_dt", expireAfterSeconds=0)),
             (self.sessions,          lambda c: c.create_index([("id", 1), ("type", 1), ("status", 1)])),
             (self.sessions,          lambda c: c.create_index([("type", 1), ("sender_id", 1), ("receiver_id", 1), ("status", 1)])),
@@ -165,7 +163,6 @@ sessions_collection = seal_db.sessions
 quiz_questions_collection = seal_db.quiz_questions
 deletion_queue_collection = seal_db.deletion_queue
 daily_shop_collection = seal_db.daily_shop
-scraped_characters_collection = seal_db.scraped_characters
 star_orders_collection = seal_db.star_orders
 global_user_bans_collection = seal_db.global_user_bans
 global_group_bans_collection = seal_db.global_group_bans

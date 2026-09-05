@@ -102,12 +102,6 @@ class Config:
     RESOURCE_REDIS_PURGE_BATCH_SIZE = _env_int("RESOURCE_REDIS_PURGE_BATCH_SIZE", 100)
     REDIS_MEMORY_LIMIT_MB = _env_int("REDIS_MEMORY_LIMIT_MB", 0)  # 0 = auto from Redis maxmemory
 
-    # --- USERBOT CONFIG ---
-    STRING_SESSION = os.getenv("STRING_SESSION", "")
-
     # --- CONTENT POLICY ---
-    # Only these chats (IDs or @usernames, comma-separated) may be scraped.
-    # Leave empty to disable scraping entirely.
-    SCRAPE_ALLOWLIST = os.getenv("SCRAPE_ALLOWLIST", "")
 
 config = Config()

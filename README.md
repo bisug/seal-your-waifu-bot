@@ -104,7 +104,7 @@ flowchart LR
 
 ## Security
 
-Never commit real bot tokens, Telegram API credentials, MongoDB URLs, Redis URLs, image host keys, or userbot session strings.
+Never commit real bot tokens, Telegram API credentials, MongoDB URLs, Redis URLs, or image host keys.
 
 Use `.env.example` as the safe template. Store production secrets in the host's secret manager or in a private `.env` file.
 
@@ -174,7 +174,6 @@ Seal-bot/
 | --- | --- | --- |
 | `app` / `MainBot` | `TOKEN` | Main collection, economy, social, progression, admin, and Mini App bot. |
 | `game_bot` / `GameBot` | `SUB_TOKEN` | Secondary quiz, scramble, and name-guess bot. |
-| `userbot` / `UserBot` | `STRING_SESSION` | Optional user session used by scraper features. |
 
 ### Startup Flow
 
@@ -184,7 +183,7 @@ At startup, `backend.runner.start_bots()`:
 2. Verifies MongoDB and Redis.
 3. Ensures MongoDB indexes.
 4. Seeds the pet catalog.
-5. Starts main bot, game bot, and optional userbot.
+5. Starts main bot and game bot.
 6. Syncs Telegram command lists.
 7. Starts background tasks for deletion, spawn flushing, resources, leaderboards, and maintenance.
 8. Configures the main bot menu button to open `WEB_APP_URL#shop`.
@@ -227,12 +226,11 @@ Shutdown cancels background tasks, stops clients, flushes message counts, closes
 | `SUDO_USERS` | Comma-separated startup moderators. DB roles can add more later. |
 | `MAIN_GROUP_ID` | Main community/group ID used by logs and giveaway notifications. |
 | `GALLERY_CHANNEL_ID` | Channel where uploaded character media is posted or edited. |
-| `LOG_GROUP_ID` | Review/log group for startup reports, scraping review, and update proposals. |
+| `LOG_GROUP_ID` | Review/log group for startup reports and update proposals. |
 | `SUPPORT_CHAT` | Support chat username used in buttons and starter checks. |
 | `UPDATE_CHAT` | Update channel username used in buttons and starter checks. |
 | `PHOTO_URL` | Comma-separated fallback/start images. |
 | `IMGBB_API_KEY` | Optional image host key for upload fallback paths. |
-| `STRING_SESSION` | Optional userbot session string for scraper access. |
 | `MINI_APP_SHORT_NAME` | BotFather Mini App short name. Defaults to `app`. |
 | `API_VERSION_PREFIX` | API path prefix. Defaults to `v1_7b82`. |
 
@@ -396,8 +394,6 @@ Owner can manage DB-backed staff roles with `/addsudo`, `/rmsudo`, and `/sudolis
 | `/takecoin <amount>` or `/takecoin <user_id> <amount>` | Moderator+ | Remove Shards with confirmation. |
 | `/gban`, `/ungban`, `/gbanlist`, `/gbanstatus` | Moderator+ | Global user ban management. |
 | `/gbangroup`, `/ungbangroup`, `/gchatban`, `/ungchatban` | Moderator+ | Global group/channel ban management. |
-| `/scrape <group_id_or_username> [limit]` | Moderator+ | Scan chat history for character posts. |
-| `/stop_scrape` | Moderator+ | Stop current scraper task. |
 | `/cnow` | Owner/Moderator | Force a character spawn. |
 | `/broadcast` | Owner | Send global broadcast. |
 | `/waifugen <waifu_id> <quantity>` | Owner | Generate limited redemption code and deep link. |
@@ -582,7 +578,6 @@ MongoDB database name: `Character_catchers`.
 | `gamebot_enabled_groups_collection` | `nguess_enabled_groups` | GameBot group state. |
 | `deletion_queue_collection` | `deletion_queue` | Scheduled message deletions. |
 | `daily_shop_collection` | `daily_shop_inventory` | Shop inventory state. |
-| `scraped_characters_collection` | `scraped_characters` | Scraper dedupe/review history. |
 | `star_orders_collection` | `star_orders` | Telegram Stars pass orders. |
 | `global_user_bans_collection` | `global_user_bans` | Global user bans. |
 | `global_group_bans_collection` | `global_group_bans` | Global group/channel bans. |

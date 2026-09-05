@@ -2,7 +2,7 @@ import asyncio
 import os
 import uuid
 
-from backend.client import app, game_bot, userbot
+from backend.client import app, game_bot
 from backend.core.logging import get_logger
 from backend.core.roles import sudo_roles, sudo_users
 
@@ -169,7 +169,7 @@ async def _bootstrap_infrastructure(status: dict):
 
 def _rebind_clients_to_current_loop():
     loop = asyncio.get_running_loop()
-    for bot in (app, game_bot, userbot):
+    for bot in (app, game_bot):
         if not bot:
             continue
         bot.loop = loop
@@ -242,7 +242,6 @@ async def start_bots():
             "pet_catalog": "pending",
             "main_bot": {"state": "pending"},
             "game_bot": {"state": "pending"},
-            "userbot": {"state": "disabled" if not userbot else "pending"},
             "resource_monitor": "pending",
         }
 
@@ -274,29 +273,6 @@ async def start_bots():
             await game_bot.start()
             started_bots.append(game_bot)
             status["game_bot"] = _bot_status(game_bot, state="started")
-
-            if userbot:
-                from pyrogram.errors import (
-                    AuthKeyDuplicated,
-                    AuthKeyInvalid,
-                    AuthKeyUnregistered,
-                    Unauthorized,
-                )
-                try:
-                    await userbot.start()
-                    started_bots.append(userbot)
-                    status["userbot"] = _bot_status(userbot, state="started")
-                except (AuthKeyInvalid, AuthKeyDuplicated, AuthKeyUnregistered, Unauthorized) as e:
-                    status["userbot"] = {"state": "degraded", "error": f"{type(e).__name__}: {e}"}
-                    LOGGER.warning("UserBot failed to start (Auth Issue): %s", e)
-                    LOGGER.warning("Scraper features will be disabled until STRING_SESSION is updated.")
-                except Exception as e:
-                    status["userbot"] = {"state": "degraded", "error": f"{type(e).__name__}: {e}"}
-                    if "AuthKeyNotFound" in type(e).__name__ or "Auth key not found" in str(e):
-                        LOGGER.warning("UserBot failed to start (Session Not Found): %s", e)
-                        LOGGER.warning("Scraper features will be disabled until a valid STRING_SESSION is added.")
-                    else:
-                        LOGGER.error("UserBot failed to start (Unexpected): %s", e)
 
             from backend.core.resources import start_resource_monitor
             start_resource_monitor()
@@ -340,7 +316,7 @@ async def stop_bots():
     except Exception as e:
         LOGGER.warning(f"Failed to flush message counts before shutdown: {e}")
 
-    for bot in (app, game_bot, userbot):
+    for bot in (app, game_bot):
         if not bot:
             continue
         try:

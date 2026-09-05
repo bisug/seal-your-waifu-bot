@@ -64,7 +64,6 @@ def _format_startup_status(startup_status: dict | None) -> list[str]:
     ]
     lines.extend(_format_bot_status("MainBot", startup_status.get("main_bot")))
     lines.extend(_format_bot_status("GameBot", startup_status.get("game_bot")))
-    lines.extend(_format_bot_status("UserBot", startup_status.get("userbot")))
     return lines
 
 

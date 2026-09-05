@@ -26,7 +26,6 @@ SUPPORT_CHAT:          # Support chat username
 UPDATE_CHAT:           # Update channel username
 PHOTO_URL:             # Public bot photo URL
 IMGBB_API_KEY:         # imgbb API key for uploads
-STRING_SESSION:        # Optional: userbot session string (leave empty)
 WEB_APP_URL:           # https://<your-service>.koyeb.app (public HTTPS URL)
 MINI_APP_SHORT_NAME:   # Short name set in BotFather
 API_VERSION_PREFIX:    # Must match frontend VITE_API_PREFIX

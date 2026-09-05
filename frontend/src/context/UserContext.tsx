@@ -103,6 +103,7 @@ export interface User {
   username: string;
   avatar: string;
   is_sudo?: boolean;
+  terms_accepted?: boolean;
   role?: string | null;
   role_label?: string | null;
   role_tag?: string | null;

@@ -71,10 +71,6 @@
       "description": "Optional image host key for upload fallback paths.",
       "required": false
     },
-    "STRING_SESSION": {
-      "description": "Optional userbot session string for scraper access.",
-      "required": false
-    },
     "MINI_APP_SHORT_NAME": {
       "description": "BotFather Mini App short name.",
       "value": "app",

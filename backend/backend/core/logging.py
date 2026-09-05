@@ -39,7 +39,6 @@ _SENSITIVE_CONFIG_NAMES = (
     "MONGO_URL",
     "REDIS_URL",
     "IMGBB_API_KEY",
-    "STRING_SESSION",
 )
 
 

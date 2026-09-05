@@ -267,6 +267,7 @@ async def get_me(user: dict = Depends(get_current_user_data)):
         "username": user.get("username"),
         "avatar": user.get("avatar"),
         "is_sudo": is_sudo_user_id(user_id),
+        "terms_accepted": bool(user.get("terms_accepted_at")),
         **role_payload,
         "balance": user.get("balance", 0),
         "zenith": user.get("zenith", 0),
@@ -323,6 +324,20 @@ async def get_me(user: dict = Depends(get_current_user_data)):
 async def get_profile_legacy():
     """Backward compatibility for old client versions."""
     return RedirectResponse(url="./me", status_code=307)
+
+
+@router.post("/terms/accept")
+async def accept_terms(user_id: int = Depends(get_current_user)):
+    """Record the user's terms acceptance. Idempotent — re-accepting is a no-op."""
+    now = datetime.now(timezone.utc)
+    result = await user_collection.update_one(
+        get_user_id_query(user_id),
+        {"$set": {"terms_accepted_at": now, "terms_version": 1}},
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="User not found.")
+    return {"status": "success", "accepted_at": now.isoformat()}
+
 
 @router.get("/leaderboard")
 async def get_leaderboard(

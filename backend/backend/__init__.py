@@ -4,7 +4,7 @@ Only bootstrap-level wiring lives here: the kurigram geo patch, logging
 setup, and the sudo/uploader custom filters. Everything else has a real
 home — import it from there:
 
-- clients (app, game_bot, userbot)  -> backend.client
+- clients (app, game_bot)         -> backend.client
 - DB collections                    -> backend.database
 - sudo state (sudo_users/roles)     -> backend.core.roles
 - chat IDs, URLs, identity          -> config

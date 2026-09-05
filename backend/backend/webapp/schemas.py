@@ -75,6 +75,7 @@ class UserProfileResponse(BaseModel):
     username: Optional[str] = None
     avatar: Optional[str] = None
     is_sudo: bool = False
+    terms_accepted: bool = False
     role: Optional[str] = None
     role_label: Optional[str] = None
     role_tag: Optional[str] = None
