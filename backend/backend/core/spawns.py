@@ -477,9 +477,38 @@ async def send_character(chat_id: int, rarity: str, *, force: bool = False):
 # How often a Pokémon spawn fires instead of a character spawn (1 in N).
 POKEMON_SPAWN_EVERY = 8
 POKEMON_SPAWN_STATE_TTL = 3600  # Redis state expiry, matches character spawns
+# Unguessed Pokémon spawns stop blocking new ones after this window (Mongo
+# fallback docs carry an expires_at_dt TTL index; reads filter on it too).
+POKEMON_SPAWN_MAX_AGE_SECONDS = 1800
 POKEMON_GUESS_REWARD = 150      # coins for a correct guess
 POKEMON_GUESS_XP = 15           # user XP for a correct guess
 POKEMON_GUESS_MON_XP = 25      # active-partner XP for a correct guess
+
+# In-process fallback for the Pokémon spawn slot counter (Redis-less mode).
+_pokemon_slot_counter: Dict[int, int] = {}
+
+
+async def _next_pokemon_spawn_slot(chat_id: int) -> bool:
+    """True when this spawn slot is the Pokémon one (stable 1-in-N counter).
+
+    Uses its own Redis counter so fluctuating character-spawn frequency
+    (activity-based target_freq) can't make the Pokémon slot un-hittable.
+    Falls back to a deterministic in-process counter when Redis is down.
+    """
+    n = POKEMON_SPAWN_EVERY
+    if not _redis:
+        _pokemon_slot_counter[chat_id] = (_pokemon_slot_counter.get(chat_id, 0) + 1) % n
+        return _pokemon_slot_counter[chat_id] == 0
+    try:
+        key = f"pokespawn:slot:{chat_id}"
+        async with _redis.pipeline(transaction=False) as pipe:
+            pipe.incr(key)
+            pipe.expire(key, 86400)
+            slot, _ = await pipe.execute()
+        return int(slot) % n == 0
+    except Exception as e:
+        LOGGER.debug(f"Pokémon slot counter failed for {chat_id}: {e}")
+        return False
 
 
 async def send_pokemon_spawn(chat_id: int) -> None:
@@ -519,7 +548,11 @@ async def send_pokemon_spawn(chat_id: int) -> None:
 
 
 async def set_active_pokemon_spawn(chat_id: int, mon: Dict[str, Any], message_id: int) -> None:
-    """Register the active Pokémon spawn (Redis hash + Mongo fallback)."""
+    """Register the active Pokémon spawn (Redis hash + Mongo fallback).
+
+    Uses a dedicated `_id` (`pokespawn:{chat_id}`) so the doc can never
+    collide with the character-spawn doc for the same chat.
+    """
     key = f"pokespawn:state:{chat_id}"
     data = {
         "dex": str(mon["dex"]),
@@ -537,16 +570,21 @@ async def set_active_pokemon_spawn(chat_id: int, mon: Dict[str, Any], message_id
             LOGGER.debug(f"Redis operation bypassed: {e}")
     run_background_task(
         spawns_collection.update_one(
-            {"chat_id": chat_id, "kind": "pokemon"},
+            {"_id": f"pokespawn:{chat_id}"},
             {"$set": {"kind": "pokemon", "pokemon": mon, "message_id": message_id,
-                      "last_spawn_time": time.time()}},
+                      "last_spawn_time": time.time(),
+                      "expires_at_dt": time.time() + POKEMON_SPAWN_MAX_AGE_SECONDS}},
             upsert=True,
         )
     )
 
 
 async def get_active_pokemon_spawn(chat_id: int) -> Optional[Dict[str, Any]]:
-    """Active Pokémon spawn for this chat: {dex, name, message_id} or None."""
+    """Active Pokémon spawn for this chat: {dex, name, message_id} or None.
+
+    Stale spawns (older than POKEMON_SPAWN_MAX_AGE_SECONDS) read as gone,
+    so an unguessed Pokémon never permanently blocks the next one.
+    """
     key = f"pokespawn:state:{chat_id}"
     if _redis:
         try:
@@ -563,9 +601,11 @@ async def get_active_pokemon_spawn(chat_id: int) -> Optional[Dict[str, Any]]:
                 }
         except Exception as e:
             LOGGER.debug(f"Redis read bypassed: {e}")
-    doc = await spawns_collection.find_one(
-        {"chat_id": chat_id, "kind": "pokemon", "pokemon": {"$ne": None}}
-    )
+    doc = await spawns_collection.find_one({
+        "_id": f"pokespawn:{chat_id}",
+        "pokemon": {"$ne": None},
+        "last_spawn_time": {"$gt": time.time() - POKEMON_SPAWN_MAX_AGE_SECONDS},
+    })
     if not doc or not doc.get("pokemon"):
         return None
     return {
@@ -578,7 +618,7 @@ async def get_active_pokemon_spawn(chat_id: int) -> Optional[Dict[str, Any]]:
 async def clear_active_pokemon_spawn(chat_id: int, user_id: int) -> bool:
     """Atomically claim the Pokémon spawn for this user. False if already won."""
     result = await spawns_collection.update_one(
-        {"chat_id": chat_id, "kind": "pokemon", "pokemon": {"$ne": None}},
+        {"_id": f"pokespawn:{chat_id}", "pokemon": {"$ne": None}},
         {"$set": {"winner_id": user_id}, "$unset": {"pokemon": "", "message_id": ""}},
     )
     if result.modified_count > 0:

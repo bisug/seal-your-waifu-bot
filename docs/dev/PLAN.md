@@ -119,6 +119,20 @@
       biome (5 pre-existing warnings) + tsc + vite build ✓.
 - [x] 5.5 Merge `dev` → `main`, push
 
+## Phase 6 — Production hardening
+
+- [x] 6.1 Fix spawn doc collision: Pokémon state keyed on
+      `_id: pokespawn:{chat_id}` (was `{"chat_id", "kind"}` — same doc as
+      character spawns, mutual overwrite).
+- [x] 6.2 Fix permanent block: unguessed spawns expire after 30 min
+      (`POKEMON_SPAWN_MAX_AGE_SECONDS`); Mongo fallback filters on
+      `last_spawn_time` freshness.
+- [x] 6.3 Fix unstable trigger: dedicated Redis slot counter
+      (`pokespawn:slot:{chat_id}`) replaces `count % (target_freq * 8)`;
+      in-process fallback when Redis is down.
+- [x] 6.4 Tests updated + new (expiry, slot counter) — 78 passing.
+- [ ] 6.5 Commit, push `dev` + `main`.
+
 ## Blockers / Notes
 
 - (none yet)

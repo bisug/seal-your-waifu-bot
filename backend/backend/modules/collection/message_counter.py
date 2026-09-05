@@ -12,7 +12,7 @@ from backend.core.rarities import (
 )
 from backend.core.spawn_utils import get_target_spawn_frequency
 from backend.core.spawns import (
-    POKEMON_SPAWN_EVERY,
+    _next_pokemon_spawn_slot,
     get_active_pokemon_spawn,
     increment_message_count,
     send_character,
@@ -64,7 +64,7 @@ async def message_counter_handler(_, message: types.Message):
     target_freq, active_count = await get_target_spawn_frequency(chat_id)
     if count % target_freq == 0:
         # Every Nth spawn is a Pokémon guessing game (if none is active).
-        if count % (target_freq * POKEMON_SPAWN_EVERY) == 0:
+        if await _next_pokemon_spawn_slot(chat_id):
             if not await get_active_pokemon_spawn(chat_id):
                 SPAWN_LOGGER.info(f"Pokémon spawn triggered in {chat_id} (count={count})")
                 await send_pokemon_spawn(chat_id)

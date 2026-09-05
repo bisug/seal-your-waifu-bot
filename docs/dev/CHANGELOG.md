@@ -4,6 +4,20 @@
 
 ## 2026-09-05
 
+- **[6.0]** Production hardening — 3 spawn bugs found in audit, fixed:
+  - **Doc collision**: Pokémon spawn state now keyed on dedicated
+    `_id: pokespawn:{chat_id}` — can no longer overwrite the character-spawn
+    doc for the same chat (old filter `{"chat_id", "kind": "pokemon"}` upserted
+    the same doc the character system uses).
+  - **Permanent block**: unguessed Pokémon spawns expire after 30 min
+    (`POKEMON_SPAWN_MAX_AGE_SECONDS`); Mongo fallback reads filter on
+    `last_spawn_time`, so a stale spawn never blocks new ones forever.
+  - **Unstable trigger**: Pokémon spawn slot now uses a dedicated Redis counter
+    (`pokespawn:slot:{chat_id}`) instead of `count % (target_freq * 8)` —
+    activity-driven `target_freq` fluctuations (40/60/80) no longer make the
+    Pokémon slot un-hittable. In-process fallback counter when Redis is down.
+  - Tests updated for `_id`-keyed filters + new expiry/slot-counter tests
+    (78 passing).
 - **[5.1–5.5]** Phase 5 complete — migration done, merged to main:
   - `scripts/pokemon_migration.py`: stripped pet fields from 99 user docs,
     gifted starters where needed (0 — all pet owners already had Pokémon),
