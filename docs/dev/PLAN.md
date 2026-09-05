@@ -60,6 +60,16 @@
       schemas, bot commands (type emoji badges), tests, frontend (Pokedex type
       filter, PokemonCard type emojis, UserContext interface); Atlas `$unset`
       rarity from 1025 catalog docs
+- [x] 4.6 Full PokéAPI feature set:
+      import script now stores shiny artwork, cry, height/weight, abilities,
+      moves (capped 24), flavor text, growth rate, gender rate, capture rate,
+      base happiness, egg groups, evolves_from + evolution chain, legendary/
+      mythical flags, generation. GET `/pokemon/{dex}` detail endpoint
+      (evolution line with owned flags). Bot `/pokedex` shows category,
+      height/weight, abilities, generation, legendary tags, flavor text.
+      Frontend `PokemonDetailModal` (stat bars, shiny toggle, cry playback,
+      breeding info, evolution line, moves) wired into MyPokemon + Pokedex.
+      Atlas re-imported: 1025 docs, 0 missing fields.
 
 ## Phase 5 — Integration + migration
 

@@ -10,9 +10,9 @@ from backend.core.pass_config import (
     get_active_pass_type,
     get_pass_incubation_slots,
 )
-from backend.core.pokemon import set_active_pokemon
+from backend.core.pokemon import get_catalog_pokemon, set_active_pokemon
 from backend.core.utils import get_now_utc, get_user_id_query, normalize_user_id
-from backend.database import user_collection
+from backend.database import pokemon_catalog_collection, user_collection
 from backend.modules.progression.quests import (
     PASS_MISSIONS,
     QUEST_POOL,
@@ -42,6 +42,42 @@ async def pokemon_set_active(
         raise HTTPException(status_code=400, detail="Pokémon not owned")
     await invalidate_user_cache(user_id)
     return {"ok": True, "dex": dex}
+
+
+@router.get("/pokemon/{dex}")
+async def pokemon_detail(dex: int, user: dict = Depends(get_current_user_data)):
+    """Full catalog detail for one Pokémon (all PokéAPI fields)."""
+    cat = await get_catalog_pokemon(dex)
+    if not cat:
+        raise HTTPException(status_code=404, detail="Pokémon not found")
+    cat.pop("_id", None)
+    # Resolve evolution line names + owned flags for display.
+    chain = cat.get("evolution_chain") or []
+    line_docs = (
+        await pokemon_catalog_collection.find(
+            {"dex": {"$in": chain}}, {"_id": 0, "dex": 1, "name": 1, "img": 1, "types": 1}
+        ).to_list(length=None)
+        if chain
+        else []
+    )
+    line_map = {d["dex"]: d for d in line_docs}
+    user_id = normalize_user_id(user["id"])
+    owned_dexes = set()
+    if user_id:
+        owned = await user_collection.find_one(get_user_id_query(user_id), {"pokemon.dex": 1})
+        owned_dexes = {p["dex"] for p in (owned.get("pokemon", []) if owned else [])}
+    cat["evolution_line"] = [
+        {
+            "dex": d,
+            "name": line_map.get(d, {}).get("name", f"#{d}"),
+            "img": line_map.get(d, {}).get("img", ""),
+            "types": line_map.get(d, {}).get("types", []),
+            "owned": d in owned_dexes,
+        }
+        for d in chain
+    ]
+    cat["owned"] = int(dex) in owned_dexes
+    return cat
 
 
 

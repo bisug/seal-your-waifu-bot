@@ -82,8 +82,26 @@ class PokemonCatalogItem(BaseModel):
     name: str
     types: List[str] = Field(default_factory=list)
     img: Optional[str] = None
+    shiny_img: Optional[str] = None
+    cry: Optional[str] = None
+    base_stats: dict = Field(default_factory=dict)
     base_total: int = 0
+    height_dm: Optional[int] = None
+    weight_hg: Optional[int] = None
+    abilities: List[dict] = Field(default_factory=list)
+    moves: List[str] = Field(default_factory=list)
     desc: Optional[str] = None
+    flavor_text: Optional[str] = None
+    growth_rate: Optional[str] = None
+    gender_rate: Optional[int] = None
+    capture_rate: Optional[int] = None
+    base_happiness: Optional[int] = None
+    egg_groups: List[str] = Field(default_factory=list)
+    evolves_from: Optional[int] = None
+    evolution_chain: List[int] = Field(default_factory=list)
+    is_legendary: bool = False
+    is_mythical: bool = False
+    generation: Optional[str] = None
 
 class PokemonCatalogResponse(BaseModel):
     total: int

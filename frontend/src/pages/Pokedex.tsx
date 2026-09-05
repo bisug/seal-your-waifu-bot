@@ -1,11 +1,11 @@
 import { BookOpen } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { apiFetch, getErrorMessage } from '../api/client';
+import { useMemo, useState } from 'react';
 import { PokemonCard } from '../components/pokemon/PokemonCard';
+import { PokemonDetailModal } from '../components/pokemon/PokemonDetailModal';
 import { Button } from '../components/ui/Button';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Skeleton } from '../components/ui/Skeleton';
-import { useToast } from '../components/ui/Toast';
+import { useInfiniteGrid } from '../hooks/useInfiniteGrid';
 import type { Pokemon } from '../context/UserContext';
 
 const TYPES = [
@@ -24,58 +24,14 @@ const TYPE_EMOJI: Record<string, string> = {
 const PAGE_SIZE = 60;
 
 export const Pokedex = () => {
-  const { addToast } = useToast();
-  const [items, setItems] = useState<Pokemon[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
   const [type, setType] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const params = new URLSearchParams({ page: '1', limit: String(PAGE_SIZE) });
-        if (type) params.set('type', type);
-        const res = await apiFetch(`/shop/pokemon?${params}`);
-        if (cancelled) return;
-        setItems(res.items ?? []);
-        setTotal(res.total ?? 0);
-        setPage(1);
-      } catch (err) {
-        if (!cancelled) addToast(getErrorMessage(err), 'error');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    setLoading(true);
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [type, addToast]);
-
-  const loadMore = async () => {
-    setLoadingMore(true);
-    try {
-      const params = new URLSearchParams({
-        page: String(page + 1),
-        limit: String(PAGE_SIZE),
-      });
-      if (type) params.set('type', type);
-      const res = await apiFetch(`/shop/pokemon?${params}`);
-      setItems((prev) => [...prev, ...(res.items ?? [])]);
-      setTotal(res.total ?? 0);
-      setPage((p) => p + 1);
-    } catch (err) {
-      addToast(getErrorMessage(err), 'error');
-    } finally {
-      setLoadingMore(false);
-    }
-  };
-
-  const hasMore = items.length < total;
+  const [detailDex, setDetailDex] = useState<number | null>(null);
+  const gridParams = useMemo(() => (type ? { type } : {}), [type]);
+  const { items, loading, lastElementRef } = useInfiniteGrid<Pokemon>(
+    '/shop/pokemon',
+    { params: gridParams, limit: PAGE_SIZE },
+  );
+  const total = items.length;
 
   return (
     <div className="p-4 space-y-4">
@@ -118,24 +74,23 @@ export const Pokedex = () => {
           message="No Pokémon match this filter."
         />
       ) : (
-        <>
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-            {items.map((p) => (
-              <PokemonCard key={p.dex} pokemon={p} compact />
-            ))}
-          </div>
-          {hasMore && (
-            <Button
-              variant="outline"
-              className="w-full"
-              disabled={loadingMore}
-              onClick={loadMore}
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+          {items.map((p, i) => (
+            <div
+              key={p.dex}
+              ref={i === items.length - 1 ? lastElementRef : null}
             >
-              {loadingMore ? 'Loading…' : `Load more (${items.length}/${total})`}
-            </Button>
-          )}
-        </>
+              <PokemonCard pokemon={p} compact onClick={(pk) => setDetailDex(pk.dex)} />
+            </div>
+          ))}
+          {loading &&
+            Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={`more-${i}`} className="aspect-square rounded-md" />
+            ))}
+        </div>
       )}
+
+      <PokemonDetailModal dex={detailDex} onClose={() => setDetailDex(null)} />
     </div>
   );
 };

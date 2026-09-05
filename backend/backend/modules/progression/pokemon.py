@@ -169,12 +169,32 @@ async def pokedex_cmd(_, message: types.Message):
         return await message.reply_text("❌ Not found in the Pokédex.", parse_mode=enums.ParseMode.HTML)
     badge = type_badges(cat["types"])
     stats = cat.get("base_stats", {})
-    await message.reply_text(
-        f"{badge} <b>#{cat['dex']:03d} {html_escape(cat['name'])}</b>\n"
-        f"<b>Type:</b> {'/'.join(cat['types'])}\n"
-        f"<b>Base stat total:</b> {cat.get('base_total', '?')}\n"
+    height_m = (cat.get("height_dm") or 0) / 10
+    weight_kg = (cat.get("weight_hg") or 0) / 10
+    abilities = ", ".join(
+        a["name"].replace("-", " ").title() + (" (hidden)" if a.get("is_hidden") else "")
+        for a in cat.get("abilities", [])
+    ) or "—"
+    tags = []
+    if cat.get("is_legendary"):
+        tags.append("🌟 Legendary")
+    if cat.get("is_mythical"):
+        tags.append("✨ Mythical")
+    gen = (cat.get("generation") or "").replace("generation-", "").upper()
+    lines = [
+        f"{badge} <b>#{cat['dex']:03d} {html_escape(cat['name'])}</b>",
+        f"<b>Type:</b> {'/'.join(cat['types'])}",
+        f"<b>Category:</b> {html_escape(cat.get('desc') or 'Pokémon')}",
+        f"<b>Height/Weight:</b> {height_m:.1f} m / {weight_kg:.1f} kg",
+        f"<b>Abilities:</b> {html_escape(abilities)}",
+        f"<b>Base stat total:</b> {cat.get('base_total', '?')}",
         f"<b>Stats:</b> ❤️ {stats.get('hp', '?')} | ⚔️ {stats.get('atk', '?')} | "
-        f"🛡 {stats.get('def', '?')} | ✨ {stats.get('spatk', '?')}/{stats.get('spdef', '?')} | 💨 {stats.get('spd', '?')}\n"
-        f"<i>{html_escape(cat.get('desc', ''))}</i>",
-        parse_mode=enums.ParseMode.HTML,
-    )
+        f"🛡 {stats.get('def', '?')} | ✨ {stats.get('spatk', '?')}/{stats.get('spdef', '?')} | 💨 {stats.get('spd', '?')}",
+    ]
+    if gen:
+        lines.append(f"<b>Generation:</b> {gen}")
+    if tags:
+        lines.append(" ".join(tags))
+    if cat.get("flavor_text"):
+        lines.append(f"<i>{html_escape(cat['flavor_text'])}</i>")
+    await message.reply_text("\n".join(lines), parse_mode=enums.ParseMode.HTML)

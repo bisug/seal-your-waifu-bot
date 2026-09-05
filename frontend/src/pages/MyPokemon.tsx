@@ -2,6 +2,7 @@ import { Sparkles, Star } from 'lucide-react';
 import { useState } from 'react';
 import { apiFetch, getErrorMessage } from '../api/client';
 import { PokemonCard } from '../components/pokemon/PokemonCard';
+import { PokemonDetailModal } from '../components/pokemon/PokemonDetailModal';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -13,6 +14,7 @@ export const MyPokemon = () => {
   const { user, triggerRefresh } = useUser();
   const { addToast } = useToast();
   const [actionDex, setActionDex] = useState<number | null>(null);
+  const [detailDex, setDetailDex] = useState<number | null>(null);
 
   const owned = user?.pokemon ?? [];
   const active = user?.current_pokemon ?? null;
@@ -76,7 +78,10 @@ export const MyPokemon = () => {
           <div key={p.dex} className="space-y-1.5">
             <PokemonCard
               pokemon={p}
-              onClick={() => !p.is_active && handleSetActive(p.dex)}
+              onClick={(pk) => {
+                if (pk.is_active) setDetailDex(pk.dex);
+                else handleSetActive(pk.dex);
+              }}
             />
             {!p.is_active && (
               <Button
@@ -92,6 +97,13 @@ export const MyPokemon = () => {
           </div>
         ))}
       </div>
+
+      <PokemonDetailModal
+        dex={detailDex}
+        onClose={() => setDetailDex(null)}
+        onSetActive={handleSetActive}
+        settingDex={actionDex}
+      />
     </div>
   );
 };

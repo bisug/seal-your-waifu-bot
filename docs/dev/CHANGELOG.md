@@ -4,6 +4,31 @@
 
 ## 2026-09-05
 
+- **[4.6]** Full PokéAPI feature set implemented:
+  - `scripts/pokemon_import.py`: now imports shiny artwork, cry URL,
+    height/weight, abilities (with hidden flag), moves (capped at 24), English
+    flavor text, growth rate, gender rate, capture rate, base happiness, egg
+    groups, evolves_from dex, full evolution chain, legendary/mythical flags,
+    generation. Atlas re-imported — 1025 docs, 0 missing fields.
+  - `core/pokemon.py` normalize + `schemas.py` PokemonCatalogItem extended with
+    all new fields.
+  - New endpoint GET `/pokemon/{dex}`: full detail + resolved evolution line
+    (name/img/types/owned per stage) + owned flag.
+  - Bot `/pokedex`: category, height/weight, abilities, generation, legendary/
+    mythical tags, flavor text.
+  - New `PokemonDetailModal.tsx`: artwork with shiny toggle, cry playback,
+    animated stat bars, profile grid (height/weight/friendship/catch rate),
+    abilities, breeding (gender %, egg groups, growth), clickable evolution
+    line, moves. Wired into MyPokemon (active card → detail) and Pokedex
+    (any card → detail).
+  - Refactor to existing libraries (no new deps): Pokedex uses `useInfiniteGrid`
+    (react-query infinite scroll, dedupe, cache) instead of manual load-more;
+    PokemonDetailModal uses `useApi` (cached detail fetch, auto-cancel) instead
+    of manual useState/useEffect fetching.
+  - Browser-verified via preview 4173 (stubbed telegram + API): Pokédex grid,
+    type filters, infinite scroll, detail modal (stats, abilities, breeding,
+    evolution line navigation, moves, shiny/cry buttons), MyPokemon active card.
+  - Validate: pytest 56, compileall/ruff clean, biome/tsc/build ✓.
 - **[4.5]** Rarity removed from Pokémon — organized by type instead:
   - Rationale: rarity tiers don't fit Pokémon; types are the natural taxonomy.
   - `scripts/pokemon_import.py`: RARITY_TIERS + rarity_for deleted; no rarity

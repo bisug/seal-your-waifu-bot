@@ -70,18 +70,50 @@ export interface Egg {
   incubation_pass_type?: string | null;
 }
 
+export interface PokemonAbility {
+  name: string;
+  is_hidden?: boolean;
+}
+
 export interface Pokemon {
   dex: number;
   name: string;
   types: string[];
   img: string;
+  shiny_img?: string | null;
+  cry?: string | null;
   base_stats?: Record<string, number>;
   base_total?: number;
+  height_dm?: number | null;
+  weight_hg?: number | null;
+  abilities?: PokemonAbility[];
+  moves?: string[];
   desc?: string | null;
+  flavor_text?: string | null;
+  growth_rate?: string | null;
+  gender_rate?: number | null;
+  capture_rate?: number | null;
+  base_happiness?: number | null;
+  egg_groups?: string[];
+  evolves_from?: number | null;
+  evolution_chain?: number[];
+  is_legendary?: boolean;
+  is_mythical?: boolean;
+  generation?: string | null;
   level?: number;
   xp?: number;
   xp_needed?: number;
   is_active?: boolean;
+  owned?: boolean;
+  evolution_line?: EvolutionMember[];
+}
+
+export interface EvolutionMember {
+  dex: number;
+  name: string;
+  img: string;
+  types: string[];
+  owned: boolean;
 }
 
 export interface User {
